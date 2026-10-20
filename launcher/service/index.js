@@ -124,13 +124,13 @@ function standAside(result, knownApp) {
   return true;
 }
 function permitted() {
-  if (state.guard.capability === 'non-frame') { return true; }
+  if (state.guard.capability === 'non-frame' || state.guard.capability === 'not-advertised') { return true; }
   if (state.guard.capability !== 'frame') { block('TV capability unknown'); return false; }
   if (state.guard.artMode !== 'off') { block('Art status: ' + state.guard.artMode); return false; }
   return true;
 }
 function freshOff(cb) {
-  if (state.guard.capability === 'non-frame') { cb('off'); return; }
+  if (state.guard.capability === 'non-frame' || state.guard.capability === 'not-advertised') { cb('off'); return; }
   if (state.guard.capability !== 'frame') { cb('unknown'); return; }
   art.fresh(cb);
 }
@@ -269,13 +269,21 @@ function discoverCapability() {
   if (stopped) { return; }
   get('/api/v2/', function (info) {
     if (stopped) { return; }
-    var flag = info && info.device && info.device.FrameTVSupport;
+    var device = info && info.device;
+    var flag = device && device.FrameTVSupport;
+    // Older APIs can omit this optional feature flag. A valid TV response without
+    // it keeps the normal watcher; a failed or malformed response does not.
+    var validDevice = device && typeof device === 'object' && !Array.isArray(device) &&
+      ((typeof device.modelName === 'string' && device.modelName.length > 0) ||
+       (typeof device.model === 'string' && device.model.length > 0) ||
+       device.PowerState === 'on' || device.PowerState === 'standby' || device.PowerState === 'off');
+    var omitted = validDevice && !Object.prototype.hasOwnProperty.call(device, 'FrameTVSupport');
     var capability = flag === true || flag === 'true' ? 'frame' :
-      flag === false || flag === 'false' ? 'non-frame' : 'unknown';
+      flag === false || flag === 'false' ? 'non-frame' : omitted ? 'not-advertised' : 'unknown';
     state.guard.capability = capability;
     record('capability', capability);
     if (capability === 'frame') { art.start(); }
-    else if (capability === 'non-frame') { state.guard.artMode = 'not-supported'; }
+    else if (capability === 'non-frame' || capability === 'not-advertised') { state.guard.artMode = 'not-supported'; }
     else { block('TV capability unknown'); capabilityRetry = setTimeout(discoverCapability, 5000); }
   });
 }

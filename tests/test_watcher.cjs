@@ -53,7 +53,11 @@ function harness(options = {}) {
   }
   function responseFor(path) {
     if (path === '/api/v2/') {
-      return { status: 200, body: { device: capability === 'missing' ? {} : { FrameTVSupport: capability, PowerState: powerState } } };
+      if (capability === 'http-error') return { status: 503, body: {} };
+      if (capability === 'malformed') return { status: 200, body: { device: {} } };
+      if (capability === 'bad-metadata') return { status: 200, body: { device: { PowerState: 'invalid' } } };
+      if (capability === 'legacy') return { status: 200, body: { device: { modelName: 'Legacy Samsung TV' } } };
+      return { status: 200, body: { device: capability === 'missing' ? { PowerState: powerState } : { FrameTVSupport: capability, PowerState: powerState } } };
     }
     const id = decodeURIComponent(path.slice('/api/v2/applications/'.length));
     return statuses.has(id) ? { status: 200, body: statuses.get(id) } : { status: 404, body: {} };
@@ -237,18 +241,31 @@ test('Art exit restarts the grace period before Home can be reclaimed', () => {
   assert.equal(h.launches.length, 1);
 });
 
-test('unknown capability blocks; only explicit non-Frame capability bypasses Art', () => {
-  for (const capability of ['missing', null, 'yes']) {
+test('malformed or unavailable capability blocks instead of assuming Art is unsupported', () => {
+  for (const capability of ['malformed', 'bad-metadata', 'http-error', null, 'yes']) {
     const h = harness({ capability }); h.api.onStart(); h.advance(12000);
     assert.equal(h.launches.length, 0);
     assert.equal(h.art.starts, 0);
     assert.equal(h.state().guard.capability, 'unknown');
   }
-  for (const capability of [false, 'false']) {
+});
+
+test('non-Frame and valid older APIs skip Art checks without starting its client', () => {
+  for (const capability of [false, 'false', 'missing', 'legacy']) {
     const h = harness({ capability }); h.api.onStart(); h.advance(5000);
     assert.equal(h.launches.length, 1);
     assert.equal(h.art.starts, 0);
     assert.equal(h.artReplies.length, 0);
+    assert.equal(h.state().guard.capability, capability === false || capability === 'false' ? 'non-frame' : 'not-advertised');
+  }
+});
+
+test('both supported Frame flag formats require the Art client and block until a fresh status', () => {
+  for (const capability of [true, 'true']) {
+    const h = harness({ capability }); h.api.onStart(); h.advance(12000);
+    assert.equal(h.state().guard.capability, 'frame');
+    assert.equal(h.art.starts, 1);
+    assert.equal(h.launches.length, 0);
   }
 });
 
