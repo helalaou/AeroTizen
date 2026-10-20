@@ -24,6 +24,7 @@ access aren't needed.
 On the TV:
 
 - Your apps in a 3-column grid with their real logos, inputs underneath
+- Opens HbbTV apps through Samsung's shared host using their installed launch metadata
 - Opens at power-on and comes back on Home (see [Limits](#limits))
 - Hold OK on a tile to move it around
 - Inputs list every HDMI port and the name of what's plugged in. You can rename them
@@ -96,6 +97,11 @@ To look at or remove installed apps, run `aerotizen apps` and `aerotizen debloat
 
 Samsung doesn't support any of this officially, so some parts are workarounds:
 
+- HbbTV launches use `http://samsung.com/tv/metadata/hbbtv.link` when an app declares it.
+  Missing or unavailable metadata keeps the normal app launch. BBC iPlayer was tested on a
+  2024 Frame QE65LS03DAUXXU (Tizen 9.0, firmware 2130.0). This TV's local API does not expose
+  HbbTV host visibility, so the watcher cannot detect Home inside it or identify an external
+  HbbTV launch. This path does not use the privileged WAS token API.
 - Pressing Home brings AeroTizen back after a second or two. That works from Samsung's home
   screen and inside Netflix, but not inside YouTube, Prime Video, Stremio or Spotify. Those apps
   don't report whether they're on screen, so there's no way to tell. Back still works everywhere.

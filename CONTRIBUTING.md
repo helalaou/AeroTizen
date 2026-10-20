@@ -20,6 +20,7 @@ Checks (CI runs the same):
 ruff check . && ruff format --check .
 pytest
 npm run lint
+npm run test:launcher
 ```
 
 ## Project layout
