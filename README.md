@@ -99,6 +99,11 @@ Samsung doesn't support any of this officially, so some parts are workarounds:
 - Pressing Home brings AeroTizen back after a second or two. That works from Samsung's home
   screen and inside Netflix, but not inside YouTube, Prime Video, Stremio or Spotify. Those apps
   don't report whether they're on screen, so there's no way to tell. Back still works everywhere.
+- On Frame TVs, the Home watcher checks Art Mode before every return to AeroTizen,
+  including startup. It leaves the screen alone while Art Mode is on. Missing TV capability,
+  power or Art status also blocks a return until reliable status is available.
+  Home → Art Mode → Home was verified on a 2024 Frame QE65LS03DAUXXU, firmware 2130.0
+  (Tizen 9.0). Cold-boot startup on that model is not yet verified.
 - On Tizen 6 and newer, store and preinstalled apps can't be removed over the developer
   connection. You can delete them on the TV under Apps → Settings. Samsung's system apps (TV Plus,
   Gaming Hub) can only be disabled.
