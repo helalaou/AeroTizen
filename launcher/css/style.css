@@ -42,7 +42,7 @@ html, body {
 .icon-btn svg { width: 40px; height: 40px; }
 .status-icon { width: 40px; height: 40px; color: var(--fg); }
 .view-tabs { display: flex; flex-shrink: 0; gap: 8px; padding: 6px; border-radius: 40px; background: rgba(28,28,30,.7); }
-.view-tab { border: 0; border-radius: 32px; padding: 12px 24px; font: inherit; font-size: 28px; color: var(--muted); background: transparent; cursor: pointer; }
+.view-tab { border: 0; border-radius: 32px; padding: 12px 24px; font: inherit; font-size: 36px; color: var(--muted); background: transparent; cursor: pointer; }
 .view-tab.active { color: var(--fg); background: rgba(255,255,255,.16); }
 .view-tab:focus { outline: none; }
 .view-tab.focused { transform: none; box-shadow: 0 0 0 4px var(--focus); }
