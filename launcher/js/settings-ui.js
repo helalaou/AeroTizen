@@ -119,20 +119,21 @@
   function renderUnits() {
     var units = A.$('units');
     units.textContent = '';
-    [['auto', 'Automatic'], ['F', '°F  Fahrenheit'], ['C', '°C  Celsius']].forEach(function (u) {
+    [['F', '°F  Fahrenheit'], ['C', '°C  Celsius']].forEach(function (u) {
       units.appendChild(pill('unit:' + u[0], u[1], S.tempUnit === u[0], function () { S.tempUnit = u[0]; changed(window.Weather.refresh); }));
     });
   }
 
   function renderDateTime() {
     var now = new Date(), times = A.$('time-formats'), dates = A.$('date-formats');
+    var dateStyle = A.clock.dateStyle(S.dateFormat);
     times.textContent = ''; dates.textContent = '';
     [['12', '(12-hour)'], ['24', '(24-hour)']].forEach(function (t) {
       times.appendChild(pill('time:' + t[0], A.clock.formatTime(now, t[0]) + '  ' + t[1], S.timeFormat === t[0],
         function () { S.timeFormat = t[0]; changed(A.clock.tick); }));
     });
     A.clock.DATE_FORMATS.forEach(function (f) {
-      dates.appendChild(pill('date:' + f.id, f.id === 'none' ? 'No date' : f.format(now), S.dateFormat === f.id,
+      dates.appendChild(pill('date:' + f.id, f.id === 'none' ? 'No date' : f.format(now), dateStyle === f.id,
         function () { S.dateFormat = f.id; changed(A.clock.tick); }));
     });
   }
@@ -213,11 +214,18 @@
   // ---- navigation (focus follows the item, so re-renders don't make it jump) -------
   function editorRows() {
     function kids(id) { return [].slice.call(A.$(id).children); }
+    // Content-sized date pills can wrap; remote navigation follows visible rows.
+    var dateRows = [];
+    kids('date-formats').forEach(function (el) {
+      var row = dateRows[dateRows.length - 1];
+      if (!row || row[0].offsetTop !== el.offsetTop) { dateRows.push([el]); }
+      else { row.push(el); }
+    });
     var r = A.chunk(kids('bg-anim'), 8);
     if (!A.$('speed-row').hidden) { r.push(kids('speed-row')); }
     var results = kids('weather-results').map(function (el) { return [el]; });
     return r.concat(A.chunk(kids('bg-still'), 8), [kids('weather-location')], results, [kids('weather-visibility')],
-      [kids('units')], [kids('time-formats')], [kids('date-formats')], [kids('live-tv-visibility')], [kids('input-visibility')],
+      [kids('units')], [kids('time-formats')], dateRows, [kids('live-tv-visibility')], [kids('input-visibility')],
       [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]).filter(function (row) { return row.length; });
   }
 

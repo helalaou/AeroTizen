@@ -188,6 +188,8 @@ body.tv .topbar, body.tv main { visibility: hidden; }
 .toast { position: fixed; left: 50%; bottom: 60px; transform: translateX(-50%); padding: 18px 34px; border-radius: 12px; background: #1c1c1e; font-size: 26px; }
 .weather[hidden] { display: none; }
 .units { display: flex; gap: 18px; margin-bottom: 40px; }
+#date-formats { flex-wrap: wrap; }
+#date-formats .pill { flex: 0 0 auto; white-space: nowrap; }
 .pill.unit { background: #1c1c1e; font-size: 26px; padding: 16px 34px; border-radius: 999px; }
 .pill.unit.on { background: var(--focus); }
 .pill.unit.focused { transform: scale(1.08); box-shadow: 0 0 0 4px #000, 0 0 0 8px #fff; }

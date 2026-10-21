@@ -16,7 +16,7 @@ function harness({ saved, settings = {}, blockedStorage = false } = {}) {
   const requests = [], intervals = new Map(), storage = new Map();
   let clock = NOW, timerId = 0;
   if (saved !== undefined) { storage.set(CACHE, typeof saved === 'string' ? saved : JSON.stringify(saved)); }
-  const preferences = { tempUnit: 'auto', weatherLocation: null, weatherShowLocation: true, ...settings };
+  const preferences = { tempUnit: 'C', weatherLocation: null, weatherShowLocation: true, ...settings };
   const el = {
     hidden: true, nodes: {},
     set innerHTML(html) {
@@ -57,7 +57,7 @@ function harness({ saved, settings = {}, blockedStorage = false } = {}) {
 }
 
 function cached(overrides = {}) {
-  return { temp: 12, code: 3, city: 'London', unit: 'auto', source: 'auto', at: NOW, ...overrides };
+  return { temp: 12, code: 3, city: 'London', unit: 'C', source: 'auto', at: NOW, ...overrides };
 }
 
 test('automatic location uses IP coordinates for the forecast', () => {
@@ -143,8 +143,8 @@ test('switching back to automatic location makes a fresh IP lookup', () => {
   assert.equal(h.requests[1].url, 'https://ipapi.co/json/');
 });
 
-test('automatic units follow the selected country; explicit units override it', () => {
-  for (const [unit, country, fahrenheit] of [['auto', 'US', true], ['auto', 'LR', true], ['auto', 'MM', true],
+test('explicit units override the selected country', () => {
+  for (const [unit, country, fahrenheit] of [['auto', 'US', false], ['auto', 'LR', false], ['auto', 'MM', false],
     ['auto', 'GB', false], ['C', 'US', false], ['F', 'GB', true]]) {
     const h = harness({ settings: { weatherLocation: { ...london, country_code: country }, tempUnit: unit } });
     h.start();
@@ -152,25 +152,27 @@ test('automatic units follow the selected country; explicit units override it', 
   }
 });
 
-test('unit changes hide the old value and discard its pending request', () => {
+test('unit changes convert the old value and discard its pending request', () => {
   const h = harness({ settings: { weatherLocation: london } }); h.start();
   h.requests[0].respond(conditions());
   h.weather.refresh();
   const delayed = h.requests[1];
   h.preferences.tempUnit = 'F'; h.weather.refresh();
-  assert.equal(h.el.hidden, true);
+  assert.equal(h.el.hidden, false);
+  assert.equal(h.el.nodes.b.textContent, '54°');
   h.requests[2].respond(conditions(54));
   delayed.respond(conditions(12));
   assert.equal(h.el.nodes.b.textContent, '54°');
 });
 
-test('fresh matching cached weather avoids a request; wrong location and unit do not render', () => {
+test('matching cache avoids requests, other units convert and wrong locations hide', () => {
   const h = harness({ saved: cached() }); h.start();
   assert.equal(h.requests.length, 0);
   assert.equal(h.el.hidden, false);
   for (const settings of [{ tempUnit: 'F' }, { weatherLocation: london }]) {
     const changed = harness({ saved: cached(), settings }); changed.start();
-    assert.equal(changed.el.hidden, true);
+    assert.equal(changed.el.hidden, !!settings.weatherLocation);
+    if (settings.tempUnit === 'F') { assert.equal(changed.el.nodes.b.textContent, '54°'); }
     assert.equal(changed.requests.length, 1);
   }
 });
@@ -263,7 +265,7 @@ test('old preferences keep the default visibility; location and visibility persi
     getItem: key => data.get(key), setItem: (key, value) => data.set(key, value)
   } });
   context.AeroTizen = context.window.AeroTizen = {};
-  for (const file of ['config.js', 'settings.js']) {
+  for (const file of ['config.js', 'settings.js', 'clock.js']) {
     vm.runInContext(fs.readFileSync(path.join(root, 'launcher/js', file), 'utf8'), context);
   }
   const settings = context.AeroTizen.settings;
@@ -275,4 +277,109 @@ test('old preferences keep the default visibility; location and visibility persi
   assert.equal(settings.weatherLocation.name, 'London');
   assert.equal(settings.weatherShowLocation, false);
   assert.equal(settings.tempUnit, 'C');
+});
+
+
+function preferences({ locale = 'en-GB', intl = Intl, saved = {}, legacy = false } = {}) {
+  const storage = new Map([[legacy ? 'hearth.home.v1' : 'aerotizen.settings.v1', JSON.stringify(saved)]]);
+  const A = {};
+  const context = vm.createContext({
+    AeroTizen: A, window: { AeroTizen: A, navigator: { languages: [locale], language: locale }, Intl: intl },
+    localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) }
+  });
+  for (const file of ['config.js', 'settings.js', 'clock.js']) {
+    vm.runInContext(fs.readFileSync(path.join(root, 'launcher/js', file), 'utf8'), context);
+  }
+  A.settings.load();
+  return { A, storage, context };
+}
+
+test('temperature defaults follow regional weather conventions, including non-US Fahrenheit regions',()=>{
+  for(const [locale,unit] of [
+    ['en-GB','C'],['en-US','F'],['es-US','F'],['fr-CA','C'],['en-AU','C'],['de-DE','C'],
+    ['en-BS','F'],['en-BZ','F'],['en-KY','F'],['es-PR','F'],['en-PW','F'],
+    ['en-LR','C'],['my-MM','C'],['ar-EG','C'],['fa-IR','C'],['hi-IN','C'],['ja-JP','C'],['zh-TW','C']
+  ]) {
+    const {A,storage}=preferences({locale});
+    assert.equal(A.settings.tempUnit,unit,locale);
+    assert.equal(JSON.parse(storage.get(A.config.STORAGE_KEY)).tempUnit,unit);
+  }
+});
+
+test('explicit locale temperature and regional overrides take precedence',()=>{
+  for(const [locale,unit] of [
+    ['en-US-u-mu-celsius','C'],['en-GB-u-mu-fahrenhe','F'],
+    ['fr-CA-u-rg-uszzzz','F'],['en-US-u-rg-gbzzzz','C'],
+    ['en-US-u-rg-gbzzzz-mu-fahrenhe','F'],['es-Latn-US','F'],
+    ['en-US-x-u-mu-celsius','F']
+  ]) { assert.equal(preferences({locale}).A.settings.tempUnit,unit,locale); }
+});
+
+test('older browsers can read explicit regions without Intl',()=>{
+  assert.equal(preferences({locale:'en-US',intl:null}).A.settings.tempUnit,'F');
+  assert.equal(preferences({locale:'en-GB',intl:null}).A.settings.tempUnit,'C');
+  assert.equal(preferences({locale:'unknown',intl:null}).A.settings.tempUnit,'C');
+});
+
+test('Automatic and invalid values migrate once, while saved manual choices remain',()=>{
+  for(const legacy of [false,true]) {
+    for(const [previous,expected] of [['auto','C'],[null,'C'],['invalid','C'],['F','F'],['C','C']]) {
+      const {A,storage,context}=preferences({legacy,saved:{tempUnit:previous}});
+      assert.equal(A.settings.tempUnit,expected);
+      A.settings.save();
+      assert.equal(JSON.parse(storage.get(A.config.STORAGE_KEY)).tempUnit,expected);
+      context.window.navigator.languages=['en-US'];
+      context.window.navigator.language='en-US';
+      A.settings.load();
+      assert.equal(A.settings.tempUnit,expected);
+    }
+  }
+});
+
+
+test('IP country cannot change either explicit temperature scale', () => {
+  for (const [unit, temp] of [['C', 10], ['F', 50]]) {
+    const h = harness({ settings: { tempUnit: unit } }); h.start();
+    h.requests[0].respond({ latitude: 0, longitude: 0, country_code: unit === 'C' ? 'US' : 'GB' });
+    assert.equal(new URL(h.requests[1].url).searchParams.get('temperature_unit') === 'fahrenheit', unit === 'F');
+    h.requests[1].respond(conditions(temp));
+    assert.equal(h.el.nodes.b.textContent, temp + '°');
+    assert.equal(h.cached().unit, unit);
+  }
+});
+
+test('unit switches convert cached weather both ways through an outage', () => {
+  const h = harness({ saved: cached({ temp: 10 }) }); h.start();
+  h.preferences.tempUnit = 'F'; h.weather.refresh();
+  assert.equal(h.el.nodes.b.textContent, '50°');
+  h.requests[0].onerror();
+  assert.equal(h.el.nodes.b.textContent, '50°');
+  h.preferences.tempUnit = 'C'; h.weather.refresh();
+  assert.equal(h.el.nodes.b.textContent, '10°');
+});
+
+test('Celsius converts a stored Fahrenheit reading before a fresh response', () => {
+  const h = harness({ saved: cached({ unit: 'F', temp: 50 }) }); h.start();
+  assert.equal(h.el.nodes.b.textContent, '10°');
+  assert.equal(h.requests.length, 1);
+  assert.equal(h.cached().unit, 'F');
+});
+
+test('legacy Automatic and invalid cache units cannot appear', () => {
+  for (const unit of ['auto', null, 'invalid']) {
+    const h = harness({ saved: cached({ unit, temp: 50 }) }); h.start();
+    assert.equal(h.el.hidden, true);
+    h.requests[0].respond({ latitude: 0, longitude: 0, country_code: 'US' });
+    h.requests[1].respond(conditions(10));
+    assert.equal(h.el.nodes.b.textContent, '10°');
+    assert.equal(h.cached().unit, 'C');
+  }
+});
+
+test('zero is a valid temperature and null cannot appear as zero', () => {
+  const h = harness({ settings: { weatherLocation: london } }); h.start();
+  h.requests[0].respond(conditions(null));
+  assert.equal(h.el.hidden, true);
+  h.weather.refresh(); h.requests[1].respond(conditions(0));
+  assert.equal(h.el.nodes.b.textContent, '0°');
 });
