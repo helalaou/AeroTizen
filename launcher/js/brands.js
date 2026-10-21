@@ -91,6 +91,8 @@
       image.onload = function () {
         clear();
         fallback.hidden = true;
+        // Do not let the fallback colour show through antialiased image corners.
+        tile.style.background = 'transparent';
         tile.classList.add('has-artwork');
         tile.appendChild(image);
       };
