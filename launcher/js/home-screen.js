@@ -31,12 +31,14 @@
       var tile;
       if (id === cfg.FIREPLACE_ID) {
         tile = A.el('div', 'tile fire');
+        tile.setAttribute('role', 'button');
+        tile.setAttribute('aria-label', 'Fireplace');
+        tile.title = 'Fireplace';
         tile.innerHTML = A.tiles.ICONS.flame;
-        tile.appendChild(A.el('div', 'name', 'Fireplace'));
         tile.onclick = A.apps.playFireplace;
       } else {
         var app = A.apps.byId(id);
-        tile = A.tiles.banner(app, '', function () { A.apps.launch(app); });
+        tile = A.tiles.app(app, '', function () { A.apps.launch(app); });
       }
       tile.dataset.id = id;
       grid.appendChild(tile);

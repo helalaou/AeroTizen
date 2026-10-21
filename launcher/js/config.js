@@ -28,7 +28,7 @@ AeroTizen.config = {
   FIREPLACE_ID: '__fire',
   FIREPLACE_VIDEO: 'WuHSBSLK3_A',
 
-  GRID_COLUMNS: 3,
+  GRID_COLUMNS: 5,
   LONG_PRESS_MS: 600,
   SPEED: { MIN: 0.25, MAX: 3, STEP: 0.25 },
 

@@ -185,7 +185,7 @@
         tile = A.tiles.card(app.name, A.tiles.ICONS.flame);
         tile.classList.add('fire');
       } else {
-        tile = A.tiles.banner(app);
+        tile = A.tiles.app(app);
       }
       tile.classList.toggle('on', S.home.indexOf(app.id) >= 0);
       tile.dataset.key = 'app:' + app.id;

@@ -1,9 +1,9 @@
-// App tiles: Android-TV-style banners (brand background + official logo) and icons.
+// Square app artwork, with brand icons and labels as a final fallback.
 (function (A) {
   'use strict';
 
   // match: lower-case name prefix; logo: Simple Icons slug from logos.js; fill: logo colour;
-  // text: wordmark beside the logo (null = the logo is the wordmark); big: oversized logo.
+  // text: fallback label beside the logo; big: oversized fallback logo.
   var BRANDS = [
     { match: 'youtube', bg: '#ffffff', logo: 'youtube', fill: '#ff0000', text: 'YouTube', ink: '#0f0f0f' },
     { match: 'netflix', bg: 'linear-gradient(135deg,#e50914,#8a0610)', logo: 'netflix', fill: '#ffffff', text: null },
@@ -42,7 +42,7 @@
   function brandFor(name) {
     var n = name.toLowerCase();
     for (var i = 0; i < BRANDS.length; i++) { if (n.indexOf(BRANDS[i].match) === 0) { return BRANDS[i]; } }
-    // Unknown apps: a stable colour derived from the name, plus the app's own icon.
+    // Preserve the original icon and generated background for unknown apps.
     var h = 0;
     for (var j = 0; j < n.length; j++) { h = (h * 31 + n.charCodeAt(j)) % 360; }
     return { bg: 'linear-gradient(135deg,hsl(' + h + ',55%,42%),hsl(' + ((h + 40) % 360) + ',65%,14%))',
@@ -54,26 +54,52 @@
     return d ? svg('<path fill="' + fill + '" d="' + d + '"/>', 'logo') : '';
   }
 
-  // A banner tile for an app; `onSelect` runs when the tile is chosen.
-  function banner(app, extraClass, onSelect) {
+  function appTile(app, extraClass, onSelect) {
     var b = brandFor(app.name), tile = A.el('div');
-    tile.className = 'tile' + (extraClass ? ' ' + extraClass : '') + (b.text ? '' : ' logo-only') + (b.big ? ' logo-big' : '');
+    tile.className = 'tile app-tile' + (extraClass ? ' ' + extraClass : '');
+    tile.setAttribute('role', 'button');
+    tile.setAttribute('aria-label', shortName(app.name));
+    tile.title = shortName(app.name);
     tile.style.background = b.bg;
-    if (b.logo) {
-      tile.innerHTML = logoSvg(b.logo, b.fill);
+    var fallback = A.el('div', 'app-fallback'), mark = b.logo && logoSvg(b.logo, b.fill);
+    if (!b.text) { fallback.classList.add('logo-only'); }
+    if (b.big) { fallback.classList.add('logo-big'); }
+    if (mark) {
+      fallback.innerHTML = mark;
     } else if (b.useIcon && app.icon) {
       var img = new Image();
       img.className = 'logo'; img.alt = '';
-      img.onerror = function () { tile.removeChild(img); };
+      img.onerror = function () { fallback.removeChild(img); };
       img.src = app.icon;
-      tile.appendChild(img);
+      fallback.appendChild(img);
     }
-    if (b.text) {
-      var name = A.el('div', 'name', b.text);
+    if (b.text || !mark) {
+      var name = A.el('div', 'name', b.text || shortName(app.name));
       name.style.color = b.ink;
-      tile.appendChild(name);
+      fallback.appendChild(name);
     }
+    tile.appendChild(fallback);
     tile.onclick = onSelect;
+
+    var sources = A.artwork.sources(app), at = 0;
+    function next() {
+      if (at >= sources.length) { return; }
+      var image = new Image(), src = sources[at++], timer;
+      function clear() { clearTimeout(timer); image.onload = image.onerror = null; }
+      function failed() { clear(); next(); }
+      image.className = 'app-artwork'; image.alt = '';
+      image.onload = function () {
+        clear();
+        fallback.hidden = true;
+        tile.classList.add('has-artwork');
+        tile.appendChild(image);
+      };
+      image.onerror = failed;
+      // Keep the fallback visible if a local file lookup stalls on older firmware.
+      timer = setTimeout(failed, 2000);
+      image.src = src;
+    }
+    next();
     return tile;
   }
 
@@ -86,5 +112,5 @@
     return tile;
   }
 
-  A.tiles = { ICONS: ICONS, banner: banner, card: card, shortName: shortName };
+  A.tiles = { ICONS: ICONS, app: appTile, card: card, shortName: shortName };
 })(window.AeroTizen);
