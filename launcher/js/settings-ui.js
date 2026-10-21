@@ -1,4 +1,4 @@
-// The Settings sheet: backgrounds (+ speed slider and preview), temperature unit, date and
+// The Settings sheet: backgrounds (+ speed slider and preview), weather, date and
 // time formats, input names, which apps show on the home screen, and a tucked-away escape
 // back to Samsung Home.
 (function (A) {
@@ -6,6 +6,7 @@
 
   var cfg = A.config, KEY = cfg.KEY, S = A.settings;
   var open = false, previewing = false, eRow = 0, eCol = [], focusKey = null;
+  var weatherQuery = '', weatherResults = [], weatherMessage = '', weatherSearchVersion = 0;
 
   function pill(key, text, selected, onSelect) {
     var p = A.el('div', 'pill unit' + (selected ? ' on' : ''), text);
@@ -49,6 +50,70 @@
     };
     row.appendChild(slider);
     row.appendChild(pill('preview', '▶  Preview', false, startPreview));
+  }
+
+  function renderWeatherResults() {
+    var box = A.$('weather-results'), status = A.$('weather-search-status');
+    status.textContent = weatherMessage; status.hidden = !weatherMessage;
+    box.textContent = ''; box.hidden = !weatherResults.length;
+    weatherResults.forEach(function (geo, i) {
+      box.appendChild(pill('weather:result:' + i, geo.label, false, function () {
+        S.weatherLocation = geo;
+        weatherSearchVersion++; weatherResults = []; weatherMessage = '';
+        focusKey = 'weather:query';
+        changed(window.Weather.refresh);
+      }));
+    });
+  }
+
+  function searchWeather() {
+    var query = weatherQuery.trim(), version = ++weatherSearchVersion;
+    weatherResults = [];
+    weatherMessage = query.length < 2 ? 'Enter at least two characters, then select Search.' : 'Searching…';
+    focusKey = 'weather:search';
+    renderWeather(); focus();
+    if (query.length < 2) { return; }
+    window.Weather.searchLocations(query, function (results) {
+      if (!open || version !== weatherSearchVersion) { return; }
+      weatherResults = results || [];
+      weatherMessage = results === null ? 'Could not search. Check your connection and try again.' :
+        results.length ? 'Select your location. Add a region or country to the search if needed.' :
+        'No locations found. Try a nearby town or add a region or country.';
+      renderWeatherResults(); focus();
+    });
+  }
+
+  function renderWeather() {
+    var box = A.$('weather-location'), visibility = A.$('weather-visibility');
+    A.$('weather-location-summary').textContent = S.weatherLocation ?
+      'Location: ' + (S.weatherLocation.label || S.weatherLocation.name) :
+      'Automatic location uses your internet address and can be inaccurate. Search for your town, city or postcode to set it.';
+    box.textContent = ''; visibility.textContent = '';
+    box.appendChild(pill('weather:auto', 'Automatic', !S.weatherLocation, function () {
+      S.weatherLocation = null;
+      weatherSearchVersion++; weatherResults = []; weatherMessage = '';
+      focusKey = 'weather:auto';
+      changed(window.Weather.refresh);
+    }));
+    var search = A.el('div', 'pill unit name-pill weather-search'), field = A.el('input');
+    search.dataset.key = 'weather:query';
+    field.type = 'text'; field.maxLength = 80; field.value = weatherQuery;
+    field.placeholder = 'Town, city or postcode';
+    field.setAttribute('aria-label', 'Weather location');
+    field.oninput = function () {
+      weatherQuery = field.value;
+      weatherSearchVersion++; weatherResults = []; weatherMessage = '';
+      renderWeatherResults();
+    };
+    search.appendChild(field);
+    search.onclick = function () { focusKey = 'weather:query'; field.focus(); };
+    box.appendChild(search);
+    box.appendChild(pill('weather:search', 'Search', false, searchWeather));
+    [true, false].forEach(function (show) {
+      visibility.appendChild(pill('weather:show:' + show, show ? 'Show location' : 'Hide location',
+        S.weatherShowLocation === show, function () { S.weatherShowLocation = show; changed(window.Weather.updateDisplay); }));
+    });
+    renderWeatherResults();
   }
 
   function renderUnits() {
@@ -118,7 +183,7 @@
   }
 
   function render() {
-    renderBackgrounds(); renderUnits(); renderDateTime(); renderInputNames(); renderAppMenu();
+    renderBackgrounds(); renderWeather(); renderUnits(); renderDateTime(); renderInputNames(); renderAppMenu();
     focus();
   }
 
@@ -127,8 +192,10 @@
     function kids(id) { return [].slice.call(A.$(id).children); }
     var r = A.chunk(kids('bg-anim'), 8);
     if (!A.$('speed-row').hidden) { r.push(kids('speed-row')); }
-    return r.concat(A.chunk(kids('bg-still'), 8), [kids('units')], [kids('time-formats')], [kids('date-formats')],
-      [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]);
+    var results = kids('weather-results').map(function (el) { return [el]; });
+    return r.concat(A.chunk(kids('bg-still'), 8), [kids('weather-location')], results, [kids('weather-visibility')],
+      [kids('units')], [kids('time-formats')], [kids('date-formats')],
+      [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]).filter(function (row) { return row.length; });
   }
 
   function focus() {
@@ -183,6 +250,7 @@
 
   function close() {
     open = false;
+    weatherSearchVersion++; weatherResults = []; weatherMessage = '';
     document.body.classList.remove('editing');
     A.$('editor').hidden = true;
     S.save();

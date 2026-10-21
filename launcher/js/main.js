@@ -12,9 +12,9 @@
 
   document.addEventListener('keydown', function (e) {
     var k = e.keyCode, active = document.activeElement;
-    // Typing an input name: the on-screen keyboard owns the keys; OK/Done/Back finish.
+    // Text entry: the on-screen keyboard owns the keys; OK/Done/Back finish.
     if (active && active.tagName === 'INPUT') {
-      if (k === KEY.ENTER || k === KEY.BACK || k === KEY.IME_DONE || k === KEY.IME_CANCEL) {
+      if (k === KEY.ENTER || k === KEY.BACK || k === KEY.ESC || k === KEY.IME_DONE || k === KEY.IME_CANCEL) {
         e.preventDefault(); active.blur(); A.settingsUi.focus();
       }
       return;
@@ -45,7 +45,7 @@
   A.applyBackground();
   A.clock.start();
   A.network.start();
-  window.Weather.start(function () { return A.settings.tempUnit; });
+  window.Weather.start(function () { return A.settings; });
   A.apps.load(function () {
     if (!A.settings.home.length) { A.settings.home = A.apps.defaultHome(); A.settings.save(); }
     A.homeScreen.render();

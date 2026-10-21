@@ -207,6 +207,11 @@ body.editing .topbar, body.editing main { visibility: hidden; }
 .name-pill input { width: 260px; font: inherit; font-size: 26px; color: #fff; background: transparent; border: 0; border-bottom: 2px solid #4a4a50; outline: none; padding: 4px 2px; }
 .name-pill input::placeholder { color: #77777f; }
 .name-pill.focused input, .name-pill input:focus { border-bottom-color: var(--focus); }
+/* Weather location search: each result is one remote-control navigation row. */
+.weather-search input { width: 520px; }
+.weather-results { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; margin-bottom: 40px; }
+.weather-results[hidden] { display: none; }
+.weather-results .pill { max-width: 1680px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .date[hidden] { display: none; }
 #time-formats { margin-bottom: 18px; }
 /* "Show in app menu": apps not on the home screen are dimmed until switched on */

@@ -3,6 +3,7 @@
   "private": true,
   "description": "Dev tooling for the AeroTizen launcher (the launcher itself has no dependencies).",
   "scripts": {
+    "postlint": "node --test tests/test_weather.cjs",
     "lint": "eslint launcher"
   },
   "devDependencies": {

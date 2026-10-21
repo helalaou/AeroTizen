@@ -90,6 +90,11 @@ You need a computer on the same network as the TV, with Python 3.10 or newer.
 
 That's it. The TV will start on AeroTizen from now on, and the gear icon opens settings.
 
+In **Settings → Weather**, search for a town, city or postcode, then select the matching
+place to save its location. Search uses Open-Meteo. **Automatic** uses an approximate IP
+location, which can be far from your TV. **Hide location** keeps the weather icon and
+temperature visible without the place name. These choices stay saved on the TV.
+
 To look at or remove installed apps, run `aerotizen apps` and `aerotizen debloat`.
 
 ## Limits
@@ -119,7 +124,7 @@ fixes, new themes or features are welcome too. See [CONTRIBUTING.md](CONTRIBUTIN
 - [Apps2Samsung](https://github.com/Apps2Samsung/Apps2Samsung) and [tizen-sdb](https://github.com/PatrickSt1991/tizen-sdb), for how the developer connection, certificates and signing work
 - [samsung-tizen-tv-debloat](https://github.com/ardazeytin/samsung-tizen-tv-debloat), for which packages are safe to remove
 - App logos from [Simple Icons](https://simpleicons.org) (trademarks belong to their owners)
-- Weather from [Open-Meteo](https://open-meteo.com), location from [ipapi](https://ipapi.co)
+- Weather and location search from [Open-Meteo](https://open-meteo.com), automatic location from [ipapi](https://ipapi.co)
 
 This project isn't affiliated with Samsung. Use it at your own risk.
 

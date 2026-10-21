@@ -35,6 +35,8 @@ AeroTizen.config = {
     background: 'aurora',
     speed: 1,
     tempUnit: 'auto',
+    weatherLocation: null,
+    weatherShowLocation: true,
     dateFormat: 'weekday',
     timeFormat: '12',
     inputNames: {}
