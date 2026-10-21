@@ -30,7 +30,7 @@ On the TV:
 - 31 backgrounds, 16 of them animated, with a speed slider and preview (for example [Snowfall](docs/screenshots/theme-snowfall.png) and [Lava](docs/screenshots/theme-lava.png))
 - Time, date, weather and your city in the top bar, in the format you pick
 - Shows whether the TV is on Ethernet or Wi-Fi
-- A Fireplace tile that plays a fireplace video
+- An optional Fireplace tile that plays a fireplace video. Hide it with **Settings → Show Fireplace → Off**
 - Settings to choose which apps show up, open the Samsung app store, or go back to Samsung's home screen
 
 From your computer (`aerotizen`):

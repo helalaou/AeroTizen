@@ -32,6 +32,7 @@ AeroTizen.config = {
 
   DEFAULTS: {
     home: [],
+    showFireplace: true,
     background: 'aurora',
     speed: 1,
     tempUnit: 'auto',

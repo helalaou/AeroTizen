@@ -95,6 +95,16 @@
     });
   }
 
+  function renderFireplace() {
+    var box = A.$('fireplace-options');
+    box.textContent = '';
+    [[true, 'On'], [false, 'Off']].forEach(function (option) {
+      box.appendChild(pill('fireplace:' + option[0], option[1], S.showFireplace === option[0], function () {
+        S.showFireplace = option[0]; changed();
+      }));
+    });
+  }
+
   // Every real app on the TV; OK shows or hides it on the home screen.
   function renderAppMenu() {
     var box = A.$('all-apps');
@@ -118,7 +128,7 @@
   }
 
   function render() {
-    renderBackgrounds(); renderUnits(); renderDateTime(); renderInputNames(); renderAppMenu();
+    renderBackgrounds(); renderUnits(); renderDateTime(); renderInputNames(); renderFireplace(); renderAppMenu();
     focus();
   }
 
@@ -128,7 +138,7 @@
     var r = A.chunk(kids('bg-anim'), 8);
     if (!A.$('speed-row').hidden) { r.push(kids('speed-row')); }
     return r.concat(A.chunk(kids('bg-still'), 8), [kids('units')], [kids('time-formats')], [kids('date-formats')],
-      [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]);
+      [kids('input-names')], [kids('fireplace-options')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]);
   }
 
   function focus() {
