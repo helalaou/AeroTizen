@@ -47,7 +47,11 @@ html, body {
 .weather b { font-weight: 700; }
 .weather span { color: var(--muted); font-weight: 400; }
 .date { font-size: 36px; font-weight: 400; }
-.time { font-size: 36px; font-weight: 700; }
+.time {
+  font-size: 36px; font-weight: 700; font-variant-numeric: tabular-nums;
+  width: 8ch; flex-shrink: 0; text-align: right; white-space: nowrap;
+}
+.time[data-format="24"] { width: 5ch; }
 
 /* ---- rows ---- */
 main { padding: 8px 64px 0; transition: transform .22s ease-out; will-change: transform; }
