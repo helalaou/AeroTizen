@@ -14,10 +14,8 @@
     var grid = A.$('grid'), home = A.settings.home;
     grid.textContent = '';
     home = home.filter(function (id) { return id === cfg.FIREPLACE_ID || A.apps.byId(id); });
-    if (home.indexOf(cfg.FIREPLACE_ID) < 0) { home.unshift(cfg.FIREPLACE_ID); }
     A.settings.home = home;
     home.forEach(function (id) {
-      if (id === cfg.FIREPLACE_ID && !A.settings.showFireplace) { return; }
       var tile;
       if (id === cfg.FIREPLACE_ID) {
         tile = A.el('div', 'tile fire');
@@ -104,13 +102,7 @@
   }
 
   function endMove() {
-    var home = gridTiles().map(function (t) { return t.dataset.id; });
-    // Keep the hidden tile's place and prevent an empty Home from resetting at boot.
-    var fireAt = A.settings.home.indexOf(cfg.FIREPLACE_ID);
-    if (!A.settings.showFireplace && fireAt >= 0) {
-      home.splice(Math.min(fireAt, home.length), 0, cfg.FIREPLACE_ID);
-    }
-    A.settings.home = home;
+    A.settings.home = gridTiles().map(function (t) { return t.dataset.id; });
     moving.classList.remove('moving');
     moving = null;
     showArrows();

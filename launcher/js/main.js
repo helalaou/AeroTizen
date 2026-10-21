@@ -47,7 +47,7 @@
   A.network.start();
   window.Weather.start(function () { return A.settings.tempUnit; });
   A.apps.load(function () {
-    if (!A.settings.home.length) { A.settings.home = A.apps.defaultHome(); A.settings.save(); }
+    if (A.settings.home === null) { A.settings.home = A.apps.defaultHome(); A.settings.save(); }
     A.homeScreen.render();
     A.inputs.load();
     A.homewatch.start();
