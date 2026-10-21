@@ -11,8 +11,14 @@
 
   apps.load = function (done) {
     if (!tz || !tz.application) {  // desktop browser preview
-      apps.all = ['YouTube', 'Netflix', 'Stremio', 'Prime Video', 'Spotify - Music and Podcasts', 'TizenBrew', 'Disney+', 'Plex']
-        .map(function (name, i) { return { id: 'demo' + i, name: name, icon: '' }; });
+      // Keep the original IDs stable; extra samples exercise long lists and a partial last row.
+      apps.all = [
+        'YouTube', 'Netflix', 'Stremio', 'Prime Video', 'Spotify - Music and Podcasts', 'TizenBrew', 'Disney+', 'Plex',
+        'Apple TV', 'BBC iPlayer', 'Channel 4', 'Crunchyroll', 'DAZN', 'discovery+', 'Hulu', 'ITVX', 'Jellyfin',
+        'Max', 'My5', 'NOW', 'Paramount+', 'Rakuten TV', 'Samsung TV Plus', 'Tubi', 'Twitch'
+      ]
+        .map(function (name, i) { return { id: 'demo' + i, name: name, icon: '' }; })
+        .sort(function (a, b) { return a.name.localeCompare(b.name); });
       return done();
     }
     tz.application.getAppsInfo(function (list) {

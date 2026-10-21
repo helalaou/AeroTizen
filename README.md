@@ -24,6 +24,7 @@ access aren't needed.
 On the TV:
 
 - Your apps in a 3-column grid with their real logos, inputs underneath
+- Home and All apps tabs: keep favourites on Home and open any installed app from All apps
 - Opens at power-on and comes back on Home (see [Limits](#limits))
 - Hold OK on a tile to move it around
 - Inputs list every HDMI port and the name of what's plugged in. You can rename them
