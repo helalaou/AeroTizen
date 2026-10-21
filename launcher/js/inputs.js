@@ -1,5 +1,5 @@
-// TV inputs: every HDMI port like the TV's own Source list, named by the user or the TV,
-// shown full screen inside the launcher.
+// TV inputs, named by the user or the TV, with an option to hide disconnected HDMI ports.
+// Selected inputs are shown full screen inside the launcher.
 (function (A) {
   'use strict';
 
@@ -23,6 +23,7 @@
     var row = A.$('inputs');
     row.textContent = '';
     inputs.sources.forEach(function (s) {
+      if (A.settings.hideDisconnectedHdmi && s.type === 'HDMI' && s.connected === false) { return; }
       var label = inputs.label(s), port = inputs.portName(s);
       var tile = A.tiles.card(label, iconFor(s, label), function () { inputs.show(s); });
       if (label !== port && s.type !== 'TV') { tile.querySelector('.name').appendChild(A.el('div', 'sub', port)); }

@@ -37,6 +37,7 @@ AeroTizen.config = {
     tempUnit: 'auto',
     dateFormat: 'weekday',
     timeFormat: '12',
+    hideDisconnectedHdmi: false,
     inputNames: {}
   }
 };

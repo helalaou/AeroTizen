@@ -1,5 +1,5 @@
 // The Settings sheet: backgrounds (+ speed slider and preview), temperature unit, date and
-// time formats, input names, which apps show on the home screen, and a tucked-away escape
+// time formats, HDMI visibility, input names, which apps show on the home screen, and an escape
 // back to Samsung Home.
 (function (A) {
   'use strict';
@@ -72,6 +72,16 @@
     });
   }
 
+  function renderInputVisibility() {
+    var box = A.$('input-visibility');
+    box.textContent = '';
+    [[false, 'Show all'], [true, 'Hide disconnected']].forEach(function (option) {
+      box.appendChild(pill('inputs:' + option[0], option[1], S.hideDisconnectedHdmi === option[0], function () {
+        S.hideDisconnectedHdmi = option[0]; changed(A.inputs.render);
+      }));
+    });
+  }
+
   // OK opens the TV's on-screen keyboard; an empty name falls back to the TV's own name.
   function renderInputNames() {
     var box = A.$('input-names');
@@ -118,7 +128,7 @@
   }
 
   function render() {
-    renderBackgrounds(); renderUnits(); renderDateTime(); renderInputNames(); renderAppMenu();
+    renderBackgrounds(); renderUnits(); renderDateTime(); renderInputVisibility(); renderInputNames(); renderAppMenu();
     focus();
   }
 
@@ -128,7 +138,7 @@
     var r = A.chunk(kids('bg-anim'), 8);
     if (!A.$('speed-row').hidden) { r.push(kids('speed-row')); }
     return r.concat(A.chunk(kids('bg-still'), 8), [kids('units')], [kids('time-formats')], [kids('date-formats')],
-      [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]);
+      [kids('input-visibility')], [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]);
   }
 
   function focus() {
