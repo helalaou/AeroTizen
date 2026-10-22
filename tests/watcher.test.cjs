@@ -352,6 +352,49 @@ test('Art round trip preserves a known app with unavailable visibility', () => {
   assert.equal(h.artReplies.length, 0);
 });
 
+test('non-Frame TVs open the launcher at boot and reclaim Home on the fast path', () => {
+  const h = harness({ capability: false }); h.api.onStart();
+  h.advance(2999);
+  assert.equal(h.launches.length, 0, 'waits for the boot delay');
+  h.advance(1);
+  assert.equal(h.launches.length, 1);
+  assert.ok(h.state().guard.history.some(item => item.kind === 'launch' && item.detail === 'boot'));
+  h.advance(5000);
+  h.statuses.set(SELF, { running: true, visible: false });
+  h.advance(900);
+  assert.equal(h.launches.length, 2, 'hidden launcher comes back within a second');
+  assert.equal(h.artReplies.length, 0);
+});
+
+test('non-Frame TVs return from a watched app without the Frame debounce', () => {
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
+  h.statuses.set('AppA', { running: true, visible: true });
+  h.statuses.set(SELF, { running: true, visible: false });
+  h.control('/apps?ids=AppA'); h.control('/watch?id=AppA');
+  h.advance(600);
+  assert.equal(h.state().seen, true);
+  h.statuses.set('AppA', { running: true, visible: false });
+  h.advance(600);
+  assert.equal(h.launches.length, 2);
+});
+
+test('an unresolved TV type still opens the launcher after the boot fallback', () => {
+  const h = harness({ capability: 'http-error' }); h.api.onStart();
+  h.advance(14999);
+  assert.equal(h.launches.length, 0);
+  h.advance(1);
+  assert.equal(h.launches.length, 1);
+  assert.equal(h.state().guard.capability, 'unknown');
+  h.advance(20000);
+  assert.equal(h.launches.length, 1, 'no reclaim while the type is unknown');
+});
+
+test('Frame TVs leave the boot launch to the guarded watcher', () => {
+  const h = harness(); h.api.onStart(); h.advance(0); h.setArt('on');
+  h.advance(20000);
+  assert.equal(h.launches.length, 0);
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log('PASS ' + name); }

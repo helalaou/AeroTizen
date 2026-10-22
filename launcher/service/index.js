@@ -1,11 +1,22 @@
 'use strict';
 
-// Screen changes and boot use the same guarded relaunch path.
+// Background watcher that makes the launcher behave like the TV's home screen.
+// Hidden web apps are frozen on retail TVs, so this runs as a Tizen web service started at
+// boot. It polls the TV's local API (port 8001) and relaunches the launcher when Samsung
+// Home covers it, while standing aside for apps opened elsewhere (e.g. a phone cast).
+//
+// Frame TVs get an extra guard: Art Mode also hides the launcher, so every relaunch there
+// needs two fresh "Art Mode off" replies and a recheck of the screen. Other TVs keep the
+// fast path (short grace period, direct relaunch). The launcher talks to this service over
+// http://127.0.0.1:47790.
 var http = require('http');
 var createArtMode = require('./artmode');
 var SELF = 'DclHome001.Home';
-var HIDDEN_GRACE = 1500;
+var HIDDEN_GRACE = 250;         // non-Frame: Samsung Home appears almost at once
+var FRAME_HIDDEN_GRACE = 1500;  // Frame: give Art Mode time to report before reclaiming
 var APP_GRACE = 2500;
+var BOOT_DELAY = 3000;
+var BOOT_FALLBACK = 15000;      // launch anyway if the TV type is still unknown
 var started = false;
 var stopped = false;
 var server = null;
@@ -15,6 +26,8 @@ var busy = false;
 var scanNumber = 0;
 var pending = null;
 var bootUntil = 0;
+var bootDone = false;
+var bootFallback = null;
 var state = {
   watched: null, seen: false, leaving: false,
   apps: [], running: {}, selfVisible: null, hiddenSince: 0,
@@ -123,6 +136,30 @@ function standAside(result, knownApp) {
   state.last = 'stand aside: ' + id;
   return true;
 }
+function isFrame() { return state.guard.capability === 'frame'; }
+function hiddenGrace() { return isFrame() ? FRAME_HIDDEN_GRACE : HIDDEN_GRACE; }
+function launchNow(why) {
+  if (Date.now() - state.lastLaunch < 2000) { return; }
+  state.lastLaunch = Date.now(); state.watched = null; state.seen = false;
+  state.guard.lastBlocked = null; state.guard.launchCalls += 1;
+  record('launch', why);
+  try {
+    tizen.application.launch(SELF, function () { state.last = 'relaunched: ' + why; },
+      function (e) { state.last = 'relaunch failed: ' + (e && e.message); });
+  } catch (e) { state.last = 'relaunch threw: ' + e.message; }
+}
+// Open the launcher once at boot on non-Frame TVs. Frame TVs leave this to the guarded
+// watcher, so a Frame booting into Art Mode stays there. If the type never resolves, launch
+// anyway: a TV that boots to Samsung Home is worse than a rare Art interruption.
+function bootLaunch() {
+  if (bootDone || stopped || state.leaving) { return; }
+  bootDone = true;
+  clearTimeout(bootFallback);
+  setTimeout(function () {
+    if (state.guard.capability === 'unknown') { launchNow('boot (TV type unknown)'); }
+    else if (!isFrame()) { launchSelf('boot'); }
+  }, Math.max(0, bootUntil - Date.now()));
+}
 function permitted() {
   if (state.guard.capability === 'non-frame' || state.guard.capability === 'not-advertised') { return true; }
   if (state.guard.capability !== 'frame') { block('TV capability unknown'); return false; }
@@ -182,6 +219,7 @@ function recheck(candidate, cb) {
 }
 function launchSelf(why) {
   if (pending || state.leaving || stopped || !permitted()) { return; }
+  if (!isFrame()) { launchNow(why); return; }
   if (Date.now() - state.lastLaunch < 2000) { return; }
   var candidate = { epoch: state.epoch, watched: state.watched, reason: why, timer: null };
   pending = candidate;
@@ -243,7 +281,9 @@ function tick() {
     }
     if (state.selfVisible !== false) { state.hiddenSince = now; }
     state.selfVisible = false;
-    if (now - state.hiddenSince < HIDDEN_GRACE || now - state.watchAt < APP_GRACE) { done(); return; }
+    var settling = now - state.hiddenSince < hiddenGrace() || now - state.watchAt < APP_GRACE;
+    // Frame waits out the grace period even for a watched app; other TVs check it at once.
+    if (settling && isFrame()) { done(); return; }
     if (state.watched) {
       var id = state.watched;
       appStatus(id, function (watched) {
@@ -251,12 +291,13 @@ function tick() {
         if (watched.visible) { state.seen = true; state.watchedHiddenSince = 0; }
         else if (state.seen) {
           if (!state.watchedHiddenSince) { state.watchedHiddenSince = Date.now(); }
-          if (Date.now() - state.watchedHiddenSince >= HIDDEN_GRACE) { launchSelf('home pressed in ' + id); }
+          if (!isFrame() || Date.now() - state.watchedHiddenSince >= FRAME_HIDDEN_GRACE) { launchSelf('home pressed in ' + id); }
         }
         done();
       });
       return;
     }
+    if (settling) { done(); return; }
     snapshot(function (result) {
       if (!valid()) { done(); return; }
       if (result.complete && !standAside(result)) { launchSelf('covered without an app'); }
@@ -282,14 +323,15 @@ function discoverCapability() {
       flag === false || flag === 'false' ? 'non-frame' : omitted ? 'not-advertised' : 'unknown';
     state.guard.capability = capability;
     record('capability', capability);
-    if (capability === 'frame') { art.start(); }
-    else if (capability === 'non-frame' || capability === 'not-advertised') { state.guard.artMode = 'not-supported'; }
+    if (capability === 'frame') { art.start(); bootLaunch(); }
+    else if (capability === 'non-frame' || capability === 'not-advertised') { state.guard.artMode = 'not-supported'; bootLaunch(); }
     else { block('TV capability unknown'); capabilityRetry = setTimeout(discoverCapability, 5000); }
   });
 }
 module.exports.onStart = function () {
   if (started) { return; }
-  started = true; bootUntil = Date.now() + 3000;
+  started = true; bootUntil = Date.now() + BOOT_DELAY;
+  bootFallback = setTimeout(bootLaunch, BOOT_FALLBACK);
   server = http.createServer(function (req, res) {
     var url = require('url').parse(req.url, true), query = url.query;
     if (url.pathname === '/watch') {
@@ -315,7 +357,7 @@ module.exports.onStart = function () {
 module.exports.onRequest = function () {};
 module.exports.onExit = function () {
   stopped = true; invalidate('service exit'); scanNumber += 1;
-  clearInterval(interval); clearTimeout(capabilityRetry);
+  clearInterval(interval); clearTimeout(capabilityRetry); clearTimeout(bootFallback);
   art.stop();
   if (server) { server.close(); server = null; }
 };

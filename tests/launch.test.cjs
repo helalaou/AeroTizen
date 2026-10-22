@@ -138,8 +138,12 @@ function watcherHarness() {
       const response = new EventEmitter();
       callback(response);
       queueMicrotask(() => {
-        const id = decodeURIComponent(options.path.split('/').pop());
-        response.emit('data', JSON.stringify(statuses[id] || {}));
+        // The device-info endpoint tells the watcher this is not a Frame TV.
+        const body = options.path === '/api/v2/'
+          ? { device: { modelName: 'TEST', FrameTVSupport: 'false', PowerState: 'on' } }
+          : statuses[decodeURIComponent(options.path.split('/').pop())] || {};
+        response.statusCode = 200;
+        response.emit('data', JSON.stringify(body));
         response.emit('end');
       });
       return request;
@@ -147,15 +151,20 @@ function watcherHarness() {
     createServer(callback) { handler = callback; return { listen() {} }; }
   };
   const context = vm.createContext({
-    require: name => name === 'http' ? http : require(name),
+    // Art Mode is never queried on a non-Frame TV, so its client is a stub here.
+    require: name => name === 'http' ? http
+      : name === './artmode' ? () => ({ start() {}, stop() {}, fresh() {}, getState: () => ({}) })
+      : require(name),
     module: { exports: {} },
     tizen: { application: { launch: id => launches.push(id) } },
     Date: { now: () => now },
     setInterval: fn => { tick = fn; },
-    setTimeout() {}
+    setTimeout() {},
+    clearTimeout() {}
   });
   vm.runInContext(fs.readFileSync(path.join(launcher, 'service', 'index.js'), 'utf8'), context);
   context.module.exports.onStart();
+  now += 3000; // past the boot delay
   function request(url) {
     let state;
     handler({ url }, { writeHead() {}, end(body) { state = JSON.parse(body); } });
@@ -164,7 +173,12 @@ function watcherHarness() {
   return {
     self, statuses, launches, request,
     advance: ms => { now += ms; },
-    async tick() { tick(); await new Promise(resolve => setImmediate(resolve)); }
+    async tick() {
+      // Let pending replies (including the device-info one at start) land first.
+      await new Promise(resolve => setImmediate(resolve));
+      tick();
+      await new Promise(resolve => setImmediate(resolve));
+    }
   };
 }
 
