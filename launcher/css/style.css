@@ -41,15 +41,26 @@ html, body {
 .icon-btn { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--fg); }
 .icon-btn svg { width: 40px; height: 40px; }
 .status-icon { width: 40px; height: 40px; color: var(--fg); }
+.view-tabs { display: flex; flex-shrink: 0; gap: 8px; padding: 6px; border-radius: 40px; background: rgba(28,28,30,.7); }
+.view-tab { border: 0; border-radius: 32px; padding: 12px 24px; font: inherit; font-size: 36px; color: var(--muted); background: transparent; cursor: pointer; }
+.view-tab.active { color: var(--fg); background: rgba(255,255,255,.16); }
+.view-tab:focus { outline: none; }
+.view-tab.focused { transform: none; box-shadow: 0 0 0 4px var(--focus); }
 .status-text { font-size: 34px; font-weight: 500; }
 .weather { display: flex; align-items: center; gap: 12px; font-size: 36px; margin-right: 18px; }
 .weather svg { width: 46px; height: 46px; }
 .weather b { font-weight: 700; }
 .weather span { color: var(--muted); font-weight: 400; }
 .date { font-size: 36px; font-weight: 400; }
-.time { font-size: 36px; font-weight: 700; }
+.time {
+  font-size: 36px; font-weight: 700; font-variant-numeric: tabular-nums;
+  width: 8ch; flex-shrink: 0; text-align: right; white-space: nowrap;
+}
+.time[data-format="24"] { width: 5ch; }
 
 /* ---- rows ---- */
+.content-viewport { height: 968px; overflow: hidden; }
+.apps-empty { font-size: 34px; color: var(--muted); padding: 40px 0; }
 main { padding: 8px 64px 0; transition: transform .22s ease-out; will-change: transform; }
 .row-wrap { margin-bottom: 30px; overflow: visible; }
 h2 { font-size: 39px; font-weight: 500; margin: 0 0 18px; }

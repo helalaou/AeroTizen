@@ -24,6 +24,8 @@ access aren't needed.
 On the TV:
 
 - Your apps in a 3-column grid with their real logos, inputs underneath
+- Home and All apps tabs: keep favourites on Home and open any installed app from All apps
+- Opens HbbTV apps such as BBC iPlayer
 - Opens at power-on and comes back on Home (see [Limits](#limits))
 - Hold OK on a tile to move it around
 - Inputs list every HDMI port and the name of what's plugged in. You can rename them
@@ -55,8 +57,9 @@ The device names and weather in these screenshots are placeholders.
 | TV | Year | Firmware |
 |---|---|---|
 | Samsung 65" Crystal UHD DU7200 (UN65DU7200FXZA) | 2024 | Tizen 9.0 |
+| Samsung 65" The Frame LS03D (QE65LS03DAUXXU) | 2024 | Tizen 9.0 |
 
-Other Samsung TVs from 2020 on should work, but this is the only model tested so far. If you try it
+Other Samsung TVs from 2020 on should work, but these are the only models tested so far. If you try it
 on yours, please [open a model report](../../issues/new?template=model_report.yml).
 
 ## Setup
@@ -102,8 +105,15 @@ To look at or remove installed apps, run `aerotizen apps` and `aerotizen debloat
 Samsung doesn't support any of this officially, so some parts are workarounds:
 
 - Pressing Home brings AeroTizen back after a second or two. That works from Samsung's home
-  screen and inside Netflix, but not inside YouTube, Prime Video, Stremio or Spotify. Those apps
+  screen and inside Netflix, but not inside YouTube, Prime Video, Stremio, Spotify or HbbTV apps. Those apps
   don't report whether they're on screen, so there's no way to tell. Back still works everywhere.
+- On TVs that advertise Frame support, the Home watcher checks Art Mode before every return
+  to AeroTizen, including startup. It leaves the screen alone while Art Mode is on.
+  Missing power or Art status on a known Frame blocks a return until reliable status is available.
+  Other TVs skip the Art API, including valid older TV responses without the optional Frame flag.
+  Failed or malformed TV discovery is retried; it is not treated as proof that Art Mode is absent.
+  Home → Art Mode → Home was verified on a 2024 Frame QE65LS03DAUXXU, firmware 2130.0
+  (Tizen 9.0). Cold-boot startup on that model is not yet verified.
 - On Tizen 6 and newer, store and preinstalled apps can't be removed over the developer
   connection. You can delete them on the TV under Apps → Settings. Samsung's system apps (TV Plus,
   Gaming Hub) can only be disabled.

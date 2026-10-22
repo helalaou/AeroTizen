@@ -16,6 +16,10 @@
       </div>
       <svg id="network" class="status-icon" viewBox="0 0 24 24" aria-label="Network"></svg>
     </div>
+    <nav class="view-tabs" aria-label="App views">
+      <button id="home-tab" class="view-tab active" type="button" tabindex="-1" aria-pressed="true">Home</button>
+      <button id="apps-tab" class="view-tab" type="button" tabindex="-1" aria-pressed="false">All apps</button>
+    </nav>
     <div class="topbar-right">
       <span id="weather" class="weather" hidden></span>
       <span id="date" class="date"></span>
@@ -23,13 +27,16 @@
     </div>
   </header>
 
-  <main id="rows">
-    <div id="grid" class="grid3"></div>
-    <section class="row-wrap inputs-wrap">
-      <h2>Inputs</h2>
-      <div id="inputs" class="row small"></div>
-    </section>
-  </main>
+  <div class="content-viewport">
+    <main id="rows">
+      <div id="grid" class="grid3" aria-label="Home apps"></div>
+      <p id="apps-empty" class="apps-empty" hidden>No apps found.</p>
+      <section id="inputs-section" class="row-wrap inputs-wrap">
+        <h2>Inputs</h2>
+        <div id="inputs" class="row small"></div>
+      </section>
+    </main>
+  </div>
 
   <div id="editor" class="sheet" hidden>
     <h2>Settings</h2>

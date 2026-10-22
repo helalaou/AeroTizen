@@ -13,9 +13,10 @@
     var arcs = ['M12 18.5a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6z', 'M5.6 13.4l1.8 1.8a6.5 6.5 0 0 1 9.2 0l1.8-1.8a9 9 0 0 0-12.8 0z',
                 'M2 9.8l1.8 1.8a11.6 11.6 0 0 1 16.4 0L22 9.8a14.1 14.1 0 0 0-20 0z'];
     var lit = strength === undefined ? 3 : strength > 0.66 ? 3 : strength > 0.33 ? 2 : 1;
-    return arcs.map(function (d, i) {
+    // Centre the artwork within the shared 24-unit icon box.
+    return '<g transform="translate(0 -2)">' + arcs.map(function (d, i) {
       return '<path fill="currentColor" opacity="' + (i < lit ? 1 : 0.28) + '" d="' + d + '"/>';
-    }).join('');
+    }).join('') + '</g>';
   }
 
   function show(kind, strength) {
