@@ -9,6 +9,20 @@
     return a.show !== false && (cfg.STORE_PACKAGE.test(a.packageId || '') || Object.prototype.hasOwnProperty.call(cfg.PRELOADED_APPS, a.id));
   }
 
+  function hbbtvLink(appId) {
+    try {
+      if (!tz.application.getAppMetaData) { return ''; }
+      var metadata = tz.application.getAppMetaData(appId);
+      for (var i = 0; metadata && i < metadata.length; i++) {
+        var item = metadata[i];
+        if (item && item.key === cfg.HBBTV_LINK_METADATA && typeof item.value === 'string' && item.value.trim()) {
+          return item.value;
+        }
+      }
+    } catch (e) { /* older TVs may not expose metadata for another app */ }
+    return '';
+  }
+
   apps.load = function (done) {
     if (!tz || !tz.application) {  // desktop browser preview
       apps.all = ['YouTube', 'Netflix', 'Stremio', 'Prime Video', 'Spotify - Music and Podcasts', 'TizenBrew', 'Disney+', 'Plex']
@@ -16,7 +30,8 @@
       return done();
     }
     tz.application.getAppsInfo(function (list) {
-      apps.realIds = list.filter(function (a) { return isRealApp(a) && !/service|DclHome001/i.test(a.id); })
+      // HbbTV content runs in a shared host; include it in the watcher's inventory.
+      apps.realIds = list.filter(function (a) { return (isRealApp(a) || a.id === cfg.HBBTV_APP_ID) && !/service|DclHome001/i.test(a.id); })
         .map(function (a) { return cfg.PRELOADED_APPS[a.id] || a.id; });
       apps.all = list.filter(function (a) { return isRealApp(a) && a.name && !cfg.HIDDEN_APPS.test(a.id) && !cfg.HIDDEN_APPS.test(a.name); })
         .map(function (a) { return { id: a.id, name: a.name, icon: a.iconPath || '' }; })
@@ -43,6 +58,20 @@
   apps.launch = function (app) {
     var label = A.tiles.shortName(app.name);
     if (!tz || !tz.application) { return A.toast('Would open ' + label); }
+    var link = hbbtvLink(app.id);
+    if (link) {
+      try {
+        var data = [
+          new tz.ApplicationControlData('tizenid', [app.id]),
+          new tz.ApplicationControlData('hbbtv', [link]),
+          new tz.ApplicationControlData('deeplink', ['true'])
+        ];
+        var control = new tz.ApplicationControl('http://tizen.org/appcontrol/operation/default', null, null, null, data);
+        A.homewatch.watch(cfg.HBBTV_APP_ID);
+        tz.application.launchAppControl(control, cfg.HBBTV_APP_ID, null, function () { A.toast('Could not open ' + label); });
+      } catch (e) { A.toast('Could not open ' + label); }
+      return;
+    }
     A.homewatch.watch(app.id);
     tz.application.launch(app.id, null, function () { A.toast('Could not open ' + label); });
   };

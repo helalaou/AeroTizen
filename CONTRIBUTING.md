@@ -20,6 +20,7 @@ Checks (CI runs the same):
 ruff check . && ruff format --check .
 pytest
 npm run lint
+npm test           # launcher tests: tests/*.test.cjs, run in a Node sandbox
 ```
 
 Run the local watcher tests with Node.js 18 or newer:
@@ -39,7 +40,7 @@ status checks, relaunch cancellation and app visibility. They do not contact a T
 | `launcher/` | The TV app (plain HTML/CSS/JS, no build step) |
 | `launcher/js/config.js` | Every launcher constant in one place |
 | `launcher/service/` | Background service that reclaims the screen from Samsung Home |
-| `tests/` | pytest suite (a fake TV covers the sdb protocol) |
+| `tests/` | pytest suite (`test_*.py`, a fake TV covers the sdb protocol) and launcher tests (`*.test.cjs`) |
 | `dns/`, `docs/` | Ad/telemetry blocklists and the settings guide |
 
 ## Working on the launcher
