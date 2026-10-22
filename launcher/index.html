@@ -16,6 +16,10 @@
       </div>
       <svg id="network" class="status-icon" viewBox="0 0 24 24" aria-label="Network"></svg>
     </div>
+    <nav class="view-tabs" aria-label="App views">
+      <button id="home-tab" class="view-tab active" type="button" tabindex="-1" aria-pressed="true">Home</button>
+      <button id="apps-tab" class="view-tab" type="button" tabindex="-1" aria-pressed="false">All apps</button>
+    </nav>
     <div class="topbar-right">
       <span id="weather" class="weather" hidden></span>
       <span id="date" class="date"></span>
@@ -23,13 +27,16 @@
     </div>
   </header>
 
-  <main id="rows">
-    <div id="grid" class="grid3"></div>
-    <section class="row-wrap inputs-wrap">
-      <h2>Inputs</h2>
-      <div id="inputs" class="row small"></div>
-    </section>
-  </main>
+  <div class="content-viewport">
+    <main id="rows">
+      <div id="grid" class="grid3" aria-label="Home apps"></div>
+      <p id="apps-empty" class="apps-empty" hidden>No apps found.</p>
+      <section id="inputs-section" class="row-wrap inputs-wrap">
+        <h2>Inputs</h2>
+        <div id="inputs" class="row small"></div>
+      </section>
+    </main>
+  </div>
 
   <div id="editor" class="sheet" hidden>
     <h2>Settings</h2>
@@ -38,6 +45,12 @@
     <div id="speed-row" class="speed-row" hidden></div>
     <h3>Still backgrounds</h3>
     <div id="bg-still" class="swatches"></div>
+    <h3>Weather</h3>
+    <p id="weather-location-summary" class="hint"></p>
+    <div id="weather-location" class="units"></div>
+    <p id="weather-search-status" class="hint" role="status" hidden></p>
+    <div id="weather-results" class="weather-results" hidden></div>
+    <div id="weather-visibility" class="units"></div>
     <h3>Temperature</h3>
     <div id="units" class="units"></div>
     <h3>Date &amp; time</h3>
@@ -49,7 +62,7 @@
     <h3>Input names</h3>
     <div id="input-names" class="units"></div>
     <h3>Show in app menu</h3>
-    <p class="hint">Every app installed on the TV. Press OK to show or hide it on the home screen. On the home screen, hold OK on a tile to move it.</p>
+    <p class="hint">Press OK to show or hide a tile on the home screen. On the home screen, hold OK on a tile to move it.</p>
     <div id="all-apps" class="grid"></div>
     <div id="escape" class="escape">Use Samsung Home instead</div>
   </div>

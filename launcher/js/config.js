@@ -22,6 +22,8 @@ AeroTizen.config = {
   PRELOADED_APPS: { 'org.tizen.netflix-app': '3201907018807', 'org.tizen.primevideo': '3201910019365' },
   HIDDEN_APPS: /service|emanual|companion|dummy|widget|DclHome001/i,
   STORE_APP_IDS: ['org.volt.apps', 'com.samsung.tv.store'],
+  HBBTV_APP_ID: 'org.tizen.hbbtv',
+  HBBTV_LINK_METADATA: 'http://samsung.com/tv/metadata/hbbtv.link',
 
   FIREPLACE_ID: '__fire',
   FIREPLACE_VIDEO: 'WuHSBSLK3_A',
@@ -31,10 +33,12 @@ AeroTizen.config = {
   SPEED: { MIN: 0.25, MAX: 3, STEP: 0.25 },
 
   DEFAULTS: {
-    home: [],
+    home: null,  // null selects defaults on first launch; [] keeps an empty Home.
     background: 'aurora',
     speed: 1,
     tempUnit: 'auto',
+    weatherLocation: null,
+    weatherShowLocation: true,
     dateFormat: 'weekday',
     timeFormat: '12',
     hideDisconnectedHdmi: false,
