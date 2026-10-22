@@ -60,6 +60,7 @@ function harness(options = {}) {
       return { status: 200, body: { device: capability === 'missing' ? { PowerState: powerState } : { FrameTVSupport: capability, PowerState: powerState } } };
     }
     const id = decodeURIComponent(path.slice('/api/v2/applications/'.length));
+    if (statuses.get(id) === 'error') return { status: 500, body: {} };
     return statuses.has(id) ? { status: 200, body: statuses.get(id) } : { status: 404, body: {} };
   }
   function respond(item, response = responseFor(item.options.path)) {
@@ -389,6 +390,16 @@ test('apps already running when the inventory arrives are not mistaken for a new
   h.advance(900);
   assert.equal(h.launches.length, 2);
   assert.equal(h.state().watched, null);
+});
+
+test('a failed app status does not hold up Home on non-Frame TVs', () => {
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(3000);
+  h.statuses.set('AppB', { running: false, visible: false });
+  h.control('/apps?ids=AppB'); h.advance(3000);
+  h.statuses.set('AppB', 'error');
+  h.statuses.set(SELF, { running: true, visible: false });
+  h.advance(900);
+  assert.equal(h.launches.length, 2);
 });
 
 test('an unresolved TV type still opens the launcher after the boot fallback', () => {

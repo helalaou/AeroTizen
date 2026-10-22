@@ -275,7 +275,7 @@ function tick() {
       state.watched = null; state.seen = false; state.watchedHiddenSince = 0;
       if (now - (state.snapAt || 0) > 5000) {
         state.snapAt = now;
-        snapshot(function (result) { if (valid() && result.complete) { state.running = result.running; } done(); });
+        snapshot(function (result) { if (valid() && (result.complete || !isFrame())) { state.running = result.running; } done(); });
       } else { done(); }
       return;
     }
@@ -300,7 +300,9 @@ function tick() {
     if (settling) { done(); return; }
     snapshot(function (result) {
       if (!valid()) { done(); return; }
-      if (result.complete && !standAside(result)) { launchSelf('covered without an app'); }
+      // A failed status reads as "not running" except on Frame TVs, where any gap blocks a
+      // relaunch. The TV's API can stall for seconds while Samsung Home loads.
+      if ((result.complete || !isFrame()) && !standAside(result)) { launchSelf('covered without an app'); }
       done();
     });
   });
