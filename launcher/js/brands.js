@@ -60,7 +60,7 @@
     tile.className = 'tile' + (extraClass ? ' ' + extraClass : '') + (b.text ? '' : ' logo-only') + (b.big ? ' logo-big' : '');
     tile.style.background = b.bg;
     if (b.logo) {
-      tile.innerHTML = logoSvg(b.logo, b.fill);
+      tile.insertAdjacentHTML('beforeend', logoSvg(b.logo, b.fill));
     } else if (b.useIcon && app.icon) {
       var img = new Image();
       img.className = 'logo'; img.alt = '';
@@ -80,7 +80,7 @@
   // A compact card (icon + label), used for inputs.
   function card(label, iconSvg, onSelect) {
     var tile = A.el('div', 'tile');
-    tile.innerHTML = iconSvg;
+    tile.insertAdjacentHTML('beforeend', iconSvg);
     tile.appendChild(A.el('div', 'name', label));
     tile.onclick = onSelect;
     return tile;

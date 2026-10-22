@@ -338,7 +338,7 @@ module.exports.onStart = function () {
     var url = require('url').parse(req.url, true), query = url.query;
     if (url.pathname === '/watch') {
       invalidate('app launch requested');
-      state.watched = query.id || null; state.seen = false; state.leaving = false;
+      state.watched = query.id && /^[a-zA-Z0-9.]+$/.test(query.id) ? query.id : null; state.seen = false; state.leaving = false;
       state.watchedHiddenSince = 0; state.watchAt = Date.now();
     } else if (url.pathname === '/apps') {
       invalidate('app inventory changed');
@@ -350,7 +350,7 @@ module.exports.onStart = function () {
       invalidate('launcher returned'); state.leaving = false; resetTracking();
     }
     var response = Object.assign({}, state, { art: art.getState() });
-    res.writeHead(200, { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.writeHead(200, { 'Access-Control-Allow-Origin': 'http://127.0.0.1:47790', 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify(response));
   });
   server.listen(47790, '127.0.0.1');

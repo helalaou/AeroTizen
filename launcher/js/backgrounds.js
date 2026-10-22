@@ -193,8 +193,19 @@ window.Backgrounds = (function () {
     [['rgba(30,130,190,.28)', 'bg-wave1'], ['rgba(20,90,150,.38)', 'bg-wave2']].forEach(function (w, i) {
       var d = document.createElement('div'); d.className = 'bg-wave ' + w[1];
       d.style.animationDuration = (WAVE_SECONDS[i] / speed) + 's';
-      d.innerHTML = '<svg viewBox="0 0 1920 200" preserveAspectRatio="none"><path fill="' + w[0] + '" d="' + paths[i] + '"/>' +
-                    '<path fill="' + w[0] + '" transform="translate(1920 0)" d="' + paths[i] + '"/></svg>';
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 1920 200');
+      svg.setAttribute('preserveAspectRatio', 'none');
+      var path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path1.setAttribute('fill', w[0]);
+      path1.setAttribute('d', paths[i]);
+      var path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path2.setAttribute('fill', w[0]);
+      path2.setAttribute('transform', 'translate(1920 0)');
+      path2.setAttribute('d', paths[i]);
+      svg.appendChild(path1);
+      svg.appendChild(path2);
+      d.appendChild(svg);
       layer.appendChild(d);
     });
   }

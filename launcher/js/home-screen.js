@@ -20,7 +20,7 @@
       var tile;
       if (id === cfg.FIREPLACE_ID) {
         tile = A.el('div', 'tile fire');
-        tile.innerHTML = A.tiles.ICONS.flame;
+        tile.insertAdjacentHTML('beforeend', A.tiles.ICONS.flame);
         tile.appendChild(A.el('div', 'name', 'Fireplace'));
         tile.onclick = A.apps.playFireplace;
       } else {
@@ -74,7 +74,7 @@
     Object.keys(can).forEach(function (dir) {
       if (!can[dir]) { return; }
       var arrow = A.el('div', 'move-arrow ' + dir);
-      arrow.innerHTML = '<svg viewBox="0 0 24 24"><path fill="none" stroke="#111" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="' + CHEVRONS[dir] + '"/></svg>';
+      arrow.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 24 24"><path fill="none" stroke="#111" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="' + CHEVRONS[dir] + '"/></svg>');
       moving.appendChild(arrow);
     });
   }
