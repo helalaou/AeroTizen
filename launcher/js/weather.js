@@ -1,11 +1,13 @@
-// Weather next to the clock: city from IP geolocation (ipapi.co), current conditions from
-// Open-Meteo. Both are free and keyless. Refreshes every 20 minutes; the last reading is
-// cached so the top bar isn't empty while offline.
+// Weather from Open-Meteo, using a saved location or an approximate IP location.
+// Refresh every 20 minutes; keep matching readings for up to two hours while offline.
 window.Weather = (function () {
   'use strict';
 
-  var CACHE = 'aerotizen.weather.v1';
+  var CACHE = 'aerotizen.weather.v2';
   var REFRESH = 20 * 60 * 1000;
+  var MAX_AGE = 2 * 60 * 60 * 1000;
+  var reading = null, requestVersion = 0, timer = null;
+  var settingsOf = function () { return {}; };
 
   // WMO weather codes -> simple icon shapes.
   var ICONS = {
@@ -29,47 +31,101 @@ window.Weather = (function () {
   }
 
   function getJSON(url, cb) {
-    var x = new XMLHttpRequest();
-    x.open('GET', url); x.timeout = 8000;
-    x.onload = function () { try { cb(x.status === 200 ? JSON.parse(x.responseText) : null); } catch (e) { cb(null); } };
-    x.onerror = x.ontimeout = function () { cb(null); };
-    x.send();
+    var x = new XMLHttpRequest(), finished = false;
+    function done(data) { if (!finished) { finished = true; cb(data); } }
+    x.onload = function () {
+      var data = null;
+      try { if (x.status === 200) { data = JSON.parse(x.responseText); } } catch (e) {}
+      done(data);
+    };
+    x.onerror = x.ontimeout = function () { done(null); };
+    try { x.open('GET', url); x.timeout = 8000; x.send(); } catch (e) { done(null); }
   }
 
-  function render(w) {
+  function number(value) { return typeof value === 'number' && isFinite(value); }
+
+  function validLocation(geo) {
+    return geo && !geo.error && number(geo.latitude) && Math.abs(geo.latitude) <= 90 &&
+      number(geo.longitude) && Math.abs(geo.longitude) <= 180;
+  }
+
+  function options() {
+    var s = settingsOf(), geo = s.weatherLocation;
+    if (!validLocation(geo) || typeof geo.name !== 'string' || !geo.name.trim()) { geo = null; }
+    return {
+      unit: s.tempUnit === 'F' || s.tempUnit === 'C' ? s.tempUnit : 'auto',
+      geo: geo,
+      source: geo ? JSON.stringify([geo.latitude, geo.longitude, geo.name, geo.country_code]) : 'auto',
+      showLocation: s.weatherShowLocation !== false
+    };
+  }
+
+  function validReading(w, opt) {
+    return w && number(w.temp) && number(w.code) && number(w.at) && w.unit === opt.unit &&
+      w.source === opt.source && Date.now() >= w.at && Date.now() - w.at <= MAX_AGE;
+  }
+
+  function render() {
+    var w = reading, opt = options();
     var el = document.getElementById('weather');
-    if (!el || !w) { return; }
-    el.innerHTML = '<svg viewBox="0 0 24 24">' + icon(w.code) + '</svg><b></b><span></span>';
+    if (!el) { return; }
+    if (!validReading(w, opt)) { el.textContent = ''; el.hidden = true; return; }
+    el.innerHTML = '<svg viewBox="0 0 24 24">' + icon(w.code) + '</svg><b></b>' + (opt.showLocation ? '<span></span>' : '');
     el.querySelector('b').textContent = Math.round(w.temp) + '°';
-    el.querySelector('span').textContent = w.city || '';
+    if (opt.showLocation) { el.querySelector('span').textContent = w.city || ''; }
     el.hidden = false;
   }
 
-  var unitOf = function () { return 'auto'; };
-
   function refresh() {
-    getJSON('https://ipapi.co/json/', function (geo) {
-      if (!geo || geo.latitude === undefined) { return; }
-      var pref = unitOf();
-      var f = pref === 'F' || (pref === 'auto' && (geo.country_code === 'US' || geo.country_code === 'LR' || geo.country_code === 'MM'));
+    var version = ++requestVersion, opt = options();
+    render(); // Remove weather for a previous location or unit before requesting new data.
+    function current() {
+      var now = options();
+      return version === requestVersion && now.source === opt.source && now.unit === opt.unit;
+    }
+    function forecast(geo) {
+      if (!current() || !validLocation(geo)) { return; }
+      var f = opt.unit === 'F' || (opt.unit === 'auto' && /^(US|LR|MM)$/.test(geo.country_code));
       getJSON('https://api.open-meteo.com/v1/forecast?latitude=' + geo.latitude + '&longitude=' + geo.longitude +
               '&current=temperature_2m,weather_code' + (f ? '&temperature_unit=fahrenheit' : ''), function (m) {
-        if (!m || !m.current) { return; }
-        var w = { temp: m.current.temperature_2m, code: m.current.weather_code, city: geo.city, unit: pref, at: Date.now() };
-        try { localStorage.setItem(CACHE, JSON.stringify(w)); } catch (e) {}
-        render(w);
+        if (!current() || !m || m.error || !m.current ||
+            !number(m.current.temperature_2m) || !number(m.current.weather_code)) { return; }
+        reading = { temp: m.current.temperature_2m, code: m.current.weather_code, city: geo.name || geo.city || '',
+          unit: opt.unit, source: opt.source, at: Date.now() };
+        try { localStorage.setItem(CACHE, JSON.stringify(reading)); } catch (e) {}
+        render();
       });
+    }
+    if (opt.geo) { forecast(opt.geo); } else { getJSON('https://ipapi.co/json/', forecast); }
+  }
+
+  function searchLocations(query, cb) {
+    query = query.trim();
+    if (query.length < 2) { cb([]); return; }
+    getJSON('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(query) +
+      '&count=5&language=en&format=json', function (data) {
+      if (!data || data.error || (data.results && !Array.isArray(data.results))) { cb(null); return; }
+      cb((data.results || []).filter(function (geo) {
+        return validLocation(geo) && typeof geo.name === 'string' && geo.name.trim();
+      }).map(function (geo) {
+        var parts = [geo.name];
+        [geo.admin2, geo.admin1, geo.country].forEach(function (part) {
+          if (typeof part === 'string' && part && parts.indexOf(part) < 0) { parts.push(part); }
+        });
+        return { name: geo.name, label: parts.join(', '), latitude: geo.latitude, longitude: geo.longitude,
+          country_code: geo.country_code || '' };
+      }));
     });
   }
 
-  function start(unitGetter) {
-    if (unitGetter) { unitOf = unitGetter; }
-    var cached = null;
-    try { cached = JSON.parse(localStorage.getItem(CACHE)); } catch (e) {}
-    if (cached) { render(cached); }
-    if (!cached || cached.unit !== unitOf() || Date.now() - cached.at > REFRESH) { refresh(); }
-    setInterval(refresh, REFRESH);
+  function start(settingsGetter) {
+    if (settingsGetter) { settingsOf = settingsGetter; }
+    try { reading = JSON.parse(localStorage.getItem(CACHE)); } catch (e) { reading = null; }
+    render();
+    if (!validReading(reading, options()) || Date.now() - reading.at >= REFRESH) { refresh(); }
+    if (timer !== null) { clearInterval(timer); }
+    timer = setInterval(refresh, REFRESH);
   }
 
-  return { start: start, refresh: refresh };
+  return { start: start, refresh: refresh, updateDisplay: render, searchLocations: searchLocations };
 })();

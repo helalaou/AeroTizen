@@ -30,10 +30,11 @@
   }
 
   function tick() {
-    var d = new Date(), dateEl = A.$('date');
+    var d = new Date(), dateEl = A.$('date'), timeEl = A.$('time');
     dateEl.textContent = formatDate(d, A.settings.dateFormat);
     dateEl.hidden = A.settings.dateFormat === 'none';
-    A.$('time').textContent = formatTime(d, A.settings.timeFormat);
+    timeEl.setAttribute('data-format', A.settings.timeFormat === '24' ? '24' : '12');
+    timeEl.textContent = formatTime(d, A.settings.timeFormat);
   }
 
   A.clock = {
