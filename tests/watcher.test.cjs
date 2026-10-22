@@ -378,6 +378,19 @@ test('non-Frame TVs return from a watched app without the Frame debounce', () =>
   assert.equal(h.launches.length, 2);
 });
 
+test('apps already running when the inventory arrives are not mistaken for a new app', () => {
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(3000);
+  assert.equal(h.launches.length, 1);
+  h.advance(600); // first snapshot runs before the launcher reports its apps
+  h.statuses.set('AppB', { running: true, visible: false });
+  h.control('/apps?ids=AppB');
+  h.advance(2000);
+  h.statuses.set(SELF, { running: true, visible: false });
+  h.advance(900);
+  assert.equal(h.launches.length, 2);
+  assert.equal(h.state().watched, null);
+});
+
 test('an unresolved TV type still opens the launcher after the boot fallback', () => {
   const h = harness({ capability: 'http-error' }); h.api.onStart();
   h.advance(14999);

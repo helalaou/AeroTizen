@@ -341,6 +341,7 @@ module.exports.onStart = function () {
     } else if (url.pathname === '/apps') {
       invalidate('app inventory changed');
       state.apps = (query.ids || '').split(',').filter(Boolean);
+      state.snapAt = 0; // re-read what is running before Home can be pressed
     } else if (url.pathname === '/leave') {
       invalidate('Samsung Home escape'); state.leaving = true; resetTracking();
     } else if (url.pathname === '/home') {
