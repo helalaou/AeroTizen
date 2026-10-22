@@ -4,7 +4,7 @@
   "description": "Dev tooling for the AeroTizen launcher (the launcher itself has no dependencies).",
   "scripts": {
     "lint": "eslint launcher",
-    "test:launcher": "node --test tests/test_launcher.cjs"
+    "test": "node --test tests/*.test.cjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
