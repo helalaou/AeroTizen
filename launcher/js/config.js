@@ -27,12 +27,13 @@ AeroTizen.config = {
   FIREPLACE_ID: '__fire',
   FIREPLACE_VIDEO: 'WuHSBSLK3_A',
 
-  GRID_COLUMNS: 5,
+  CARD_COLUMNS: { big: 3, small: 5 },  // Settings → App cards
   LONG_PRESS_MS: 600,
   SPEED: { MIN: 0.25, MAX: 3, STEP: 0.25 },
 
   DEFAULTS: {
     home: null,  // null selects defaults on first launch; [] keeps an empty Home.
+    cardSize: 'big',
     background: 'aurora',
     speed: 1,
     tempUnit: 'auto',

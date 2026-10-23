@@ -75,6 +75,9 @@ h2 { font-size: 39px; font-weight: 500; margin: 0 0 18px; }
 }
 .app-grid { display: flex; flex-wrap: wrap; gap: 30px 32px; margin: 6px 0 40px; }
 .app-grid .tile { width: 332px; height: 332px; }
+/* Big cards: three larger squares, centred, so two full rows fit on screen. */
+.app-grid.cards-big { justify-content: center; gap: 36px 48px; }
+.app-grid.cards-big .tile { width: 420px; height: 420px; }
 /* Inputs share the row width; more inputs shrink evenly. */
 #inputs { gap: 32px; }
 .small .tile { flex: 1 1 0; min-width: 0; max-width: 576px; height: 124px; justify-content: flex-start; padding: 0 28px; gap: 22px; }
