@@ -138,7 +138,13 @@
   }
 
   function renderInputVisibility() {
-    var box = A.$('input-visibility');
+    var liveTv = A.$('live-tv-visibility'), box = A.$('input-visibility');
+    liveTv.textContent = '';
+    [[true, 'Show'], [false, 'Hide']].forEach(function (option) {
+      liveTv.appendChild(pill('live-tv:' + option[0], option[1], S.showLiveTv === option[0], function () {
+        S.showLiveTv = option[0]; changed(A.inputs.render);
+      }));
+    });
     box.textContent = '';
     [[false, 'Show all'], [true, 'Hide disconnected']].forEach(function (option) {
       box.appendChild(pill('inputs:' + option[0], option[1], S.hideDisconnectedHdmi === option[0], function () {
@@ -211,7 +217,7 @@
     if (!A.$('speed-row').hidden) { r.push(kids('speed-row')); }
     var results = kids('weather-results').map(function (el) { return [el]; });
     return r.concat(A.chunk(kids('bg-still'), 8), [kids('weather-location')], results, [kids('weather-visibility')],
-      [kids('units')], [kids('time-formats')], [kids('date-formats')], [kids('input-visibility')],
+      [kids('units')], [kids('time-formats')], [kids('date-formats')], [kids('live-tv-visibility')], [kids('input-visibility')],
       [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]).filter(function (row) { return row.length; });
   }
 

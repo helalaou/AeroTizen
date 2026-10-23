@@ -41,6 +41,7 @@ AeroTizen.config = {
     weatherShowLocation: true,
     dateFormat: 'weekday',
     timeFormat: '12',
+    showLiveTv: true,
     hideDisconnectedHdmi: false,
     inputNames: {}
   }

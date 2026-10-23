@@ -19,7 +19,6 @@
     } else {
       home = A.apps.all.map(function (app) { return app.id; });
     }
-    A.$('inputs-section').hidden = page !== 'home';
     A.$('apps-empty').hidden = page === 'home' || home.length > 0;
     grid.setAttribute('aria-label', page === 'home' ? 'Home apps' : 'All apps');
     ['home', 'apps'].forEach(function (name) {
@@ -46,7 +45,9 @@
 
   function buildRows() {
     rows = [[A.$('gear'), A.$('home-tab'), A.$('apps-tab')]].concat(A.chunk(gridTiles(), COLS));
-    if (page === 'home') { rows.push([].slice.call(A.$('inputs').children)); }
+    var inputTiles = [].slice.call(A.$('inputs').children);
+    A.$('inputs-section').hidden = page !== 'home' || inputTiles.length === 0;
+    if (!A.$('inputs-section').hidden) { rows.push(inputTiles); }
     for (var r = 0; r < rows.length; r++) { if (col[r] === undefined) { col[r] = 0; } }
     focus();
   }

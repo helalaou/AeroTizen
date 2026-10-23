@@ -29,7 +29,8 @@ On the TV:
 - Opens at power-on and comes back on Home (see [Limits](#limits))
 - Hold OK on a tile to move it around
 - Inputs list every HDMI port and the name of what's plugged in. You can rename them
-  and choose to hide disconnected HDMI ports in Settings. All ports are shown by default
+  and choose to hide disconnected HDMI ports or Live TV in Settings. All inputs are shown
+  by default. If no inputs remain visible, the Inputs section and heading are hidden
 - 31 backgrounds, 16 of them animated, with a speed slider and preview (for example [Snowfall](docs/screenshots/theme-snowfall.png) and [Lava](docs/screenshots/theme-lava.png))
 - Time, date, weather and your city in the top bar, in the format you pick
 - Shows whether the TV is on Ethernet or Wi-Fi
