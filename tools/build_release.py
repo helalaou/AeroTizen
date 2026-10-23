@@ -120,9 +120,9 @@ def smoke_binaries(binaries, version):
         for binary in binaries:
             copied = directory / binary.name
             shutil.copy2(binary, copied)
-            for argument in ("--help", "--version"):
+            for arguments in (("--help",), ("--version",), ("inspect", "--help")):
                 result = subprocess.run(
-                    [str(copied), argument],
+                    [str(copied), *arguments],
                     cwd=directory,
                     env=env,
                     check=False,
@@ -131,8 +131,8 @@ def smoke_binaries(binaries, version):
                     timeout=60,
                 )
                 if result.returncode:
-                    raise ValueError(f"{binary.name} {argument} failed: {result.stdout}{result.stderr}")
-                if argument == "--version" and version not in result.stdout:
+                    raise ValueError(f"{binary.name} {arguments} failed: {result.stdout}{result.stderr}")
+                if arguments == ("--version",) and version not in result.stdout:
                     raise ValueError(f"{binary.name} reports the wrong version: {result.stdout!r}")
 
 

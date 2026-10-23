@@ -118,7 +118,8 @@ need the Python installation method. The native build jobs establish each platfo
 build and startup checks; they do not test TV hardware.
 These workflows do not apply Windows code signing or Apple notarization.
 
-The web inspector remains available through the Python package for development;
+The web inspector is included as `aerotizen inspect launcher` in both standalone
+and Python installations. It replaces the separate `aerotizen-inspect` Python command;
 see [Working on the launcher](../CONTRIBUTING.md#working-on-the-launcher).
 
 Launcher releases contain:

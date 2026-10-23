@@ -147,10 +147,10 @@ def test_cli_tag_must_match_before_build_starts(tmp_path):
     assert not (tmp_path / "dist").exists()
 
 
-@pytest.mark.parametrize("option", ["--help", "--version"])
-def test_inspector_options_do_not_contact_tv(option, tmp_path):
+@pytest.mark.parametrize("arguments", [("--help",), ("--version",), ("inspect", "--help")])
+def test_cli_options_do_not_contact_tv(arguments, tmp_path):
     result = subprocess.run(
-        [sys.executable, "-m", "aerotizen.inspect_app", option],
+        [sys.executable, "-m", "aerotizen.cli", *arguments],
         cwd=tmp_path,
         capture_output=True,
         text=True,

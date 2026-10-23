@@ -60,6 +60,7 @@ From your computer (`aerotizen`):
 - Creates the Samsung signing certificates for your TV (you sign in to your Samsung account once)
 - Signs and installs any `.wgt` app, including the launcher
 - Opens apps and checks that they actually came up on screen (`aerotizen launch`)
+- Restarts apps with Chrome DevTools for debugging (`aerotizen inspect launcher`)
 - Lists installed apps, flags the bloat, and removes it if your firmware allows
 
 There's also a short [guide to the settings worth turning off](docs/settings.md) (ads, viewing

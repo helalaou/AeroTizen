@@ -10,6 +10,8 @@
   aerotizen install PATH        sign + install a local app folder or .wgt
   aerotizen key KEY_VOLUP [n]   press a remote button
   aerotizen launch APPID        open an app and check that it came up
+  aerotizen inspect launcher    restart the launcher with Chrome DevTools
+  aerotizen inspect APPID       inspect another app (--port defaults to 9222)
 
 Add --tv IP to target a specific TV (otherwise the first one found is used).
 """
@@ -317,6 +319,22 @@ def cmd_launch(args):
     sys.exit(f"{args.appid} did not come to the screen.")
 
 
+def cmd_inspect(args):
+    from aerotizen import inspect_app, releases
+
+    app_id = releases.APP_ID if args.appid == "launcher" else args.appid
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", app_id):
+        sys.exit("Expected 'launcher' or an application ID (letters, digits, _, . or -).")
+    if not 1 <= args.port <= 65535:
+        sys.exit("--port must be between 1 and 65535.")
+    try:
+        inspect_app.run(pick_tv(args), app_id, args.port)
+    except KeyboardInterrupt:
+        print("\nInspector stopped.")
+    except (OSError, SdbError) as exc:
+        sys.exit(f"Inspect failed: {exc}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="aerotizen", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -351,6 +369,10 @@ def main():
     p = sub.add_parser("launch")
     p.add_argument("appid")
     p.set_defaults(fn=cmd_launch)
+    p = sub.add_parser("inspect", help="restart an app with its web inspector")
+    p.add_argument("appid", help="'launcher' or an application ID")
+    p.add_argument("--port", type=int, default=9222, help="local inspector port (default: 9222)")
+    p.set_defaults(fn=cmd_inspect)
     args = parser.parse_args()
     args.fn(args)
 
