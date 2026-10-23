@@ -2,12 +2,13 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const path = require('node:path');
-const { buildSync } = require('esbuild');
+const { readFileSync } = require('node:fs');
+const ts = require('typescript');
 
-const compiled = buildSync({
-  entryPoints: [path.join(__dirname, '../launcher/src/settings/controller.js')],
-  bundle: true, write: false, format: 'cjs', platform: 'node'
-}).outputFiles[0].text;
+const compiled = ts.transpileModule(
+  readFileSync(path.join(__dirname, '../launcher/src/settings/controller.ts'), 'utf8'),
+  { compilerOptions: { target: ts.ScriptTarget.ES2018, module: ts.ModuleKind.CommonJS } }
+).outputText;
 
 function harness() {
   const calls = { saves: 0, renders: 0, focus: 0, moves: 0, clock: 0 };
@@ -33,8 +34,10 @@ function harness() {
     apps: { openStore() {} }, homewatch: { useSamsungHome() {} },
     $() { return editor; }, clearFocus() {}, toast() {}, hideToast() {}, applyBackground() {}
   };
+  const module = { exports: {} };
   const context = {
-    module: { exports: {} },
+    module,
+    exports: module.exports,
     document: { body: { classList: {
       add(...items) { items.forEach(item => classes.add(item)); },
       remove(...items) { items.forEach(item => classes.delete(item)); }

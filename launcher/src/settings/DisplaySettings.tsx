@@ -1,15 +1,17 @@
-import { h, Fragment } from 'preact';
-import { Choice } from './Choice.jsx';
-import { Pill } from './Pill.jsx';
+import { Choice } from './Choice';
+import { Pill } from './Pill';
+import type { Clock, SettingsSectionProps } from './types';
 
-export const DisplaySettings = ({ settings, actions, clock }) => {
+interface Props extends SettingsSectionProps { clock: Clock }
+
+export const DisplaySettings = ({ settings, actions, clock }: Props) => {
   const now = new Date();
   const dateStyle = clock.dateStyle(settings.dateFormat);
   return (
     <>
       <h3>Date &amp; time</h3>
       <div id="time-formats" class="units">
-        {['12', '24'].map(format => (
+        {(['12', '24'] as const).map(format => (
           <Pill key={format} id={'time:' + format} selected={settings.showTime !== false && settings.timeFormat === format}
             onSelect={() => actions.setTimeFormat(format)}>
             {clock.formatTime(now, format) + '  (' + format + '-hour)'}

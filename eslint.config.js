@@ -3,6 +3,8 @@
 const js = require('@eslint/js');
 const globals = require('globals');
 const react = require('eslint-plugin-react');
+const tsParser = require('@typescript-eslint/parser');
+const tsPlugin = require('@typescript-eslint/eslint-plugin');
 
 module.exports = [
   { ignores: ['launcher/js/logos.js'] },
@@ -31,18 +33,22 @@ module.exports = [
     }
   },
   {
-    files: ['launcher/src/**/*.{js,jsx}'],
+    files: ['launcher/src/**/*.{ts,tsx}', 'vite.config.mts'],
     languageOptions: {
+      parser: tsParser,
       ecmaVersion: 2020,
       sourceType: 'module',
       parserOptions: { ecmaFeatures: { jsx: true } },
       globals: { ...globals.browser }
     },
-    plugins: { react },
+    plugins: { react, '@typescript-eslint': tsPlugin },
     // Use React 16 component detection for Preact; React is not a dependency.
     settings: { react: { pragma: 'h', fragment: 'Fragment', version: '16.0' } },
     rules: {
-      'react/jsx-uses-react': 'error',
+      ...tsPlugin.configs.recommended.rules,
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
       'react/jsx-uses-vars': 'error',
       'react/no-multi-comp': 'error',
       'react/function-component-definition': ['error', { namedComponents: 'arrow-function' }],

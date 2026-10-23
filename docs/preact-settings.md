@@ -8,10 +8,25 @@ release packaging before making Preact the default launcher.
 ## Current scope
 
 `npm run build` copies runtime files into `dist/launcher/`, replaces only the Settings
-markup and renderer, and includes Preact's license. It excludes JSX source. App IDs,
+markup and renderer, and includes Preact's license. It excludes TypeScript/TSX source. App IDs,
 the watcher, Home, CSS, persistence keys and TV APIs remain the same. Preact 10.29.8 is
 pinned with the lockfile. All code is bundled locally; no CDN or runtime module loader
 is required.
+
+The build uses Vite with the official `@preact/preset-vite`, following the
+[Preact Vite setup](https://preactjs.com/guide/v10/getting-started/#create-a-vite-powered-preact-app).
+This integrates the documented preset into the existing repository rather than generating
+a new application over the launcher. Vite library mode emits a single classic-script IIFE
+for the Settings entry point; the production widget has no Vite client or development entry.
+Two small Vite plugins retain the widget assets and load the existing boot script after
+the development Settings controller. The dev server uses the preset's hot refresh support.
+
+All new Settings code is TypeScript. `tsconfig.json` uses `strict: true`,
+`jsx: "react-jsx"` and `jsxImportSource: "preact"`, as documented in the
+[Preact TypeScript guide](https://preactjs.com/guide/v10/typescript/). Props, actions,
+runtime interfaces, events and refs are typed. The existing global JavaScript modules
+are described by a small interface; this does not type-check their implementations.
+`npm run typecheck` checks the browser source and Vite config. Builds and CI include it.
 
 The source `launcher/` remains the legacy baseline. Its normal installation path still
 works without Node. The compiled build is for development and validation until release
@@ -29,10 +44,10 @@ CSS behaviour or physical TV compatibility.
   arrow function. Exported helpers also use `const`. ESLint enforces const exports,
   arrow components and one component per file.
   Rendering does not write storage or call TV APIs.
-- `controller.js` owns Settings lifetime, pending location searches, persistence and
+- `controller.ts` owns Settings lifetime, pending location searches, persistence and
   calls into the existing runtime. App selections and input names replace their stored
   arrays/objects so earlier snapshots remain stable.
-- `navigation.js` owns transient focus. It caches rows between renders and rebuilds
+- `navigation.ts` owns transient focus. It caches rows between renders and rebuilds
   them after rendering or resizing. Date controls follow their wrapped visual rows.
   Arrow keys update focus directly without a component render.
 - The app-menu bridge mounts the existing artwork renderer once per app identity.
@@ -44,21 +59,26 @@ CSS behaviour or physical TV compatibility.
 ```sh
 npm ci
 npm run lint
+npm run typecheck
 npm run build
 npm test
 npm run dev
 ```
 
 Open `http://localhost:8019` at 1920×1080. The network URL is printed at startup.
-The dev server watches Settings source; restart it after changing copied runtime files.
+Vite watches source files and supplies hot refresh for Settings components.
 Use `dist/launcher/` when testing the compiled app. An installation of `launcher/` tests
-the legacy baseline.
+the legacy baseline. Use a modern desktop browser for Vite development; use the production
+build for TV compatibility checks.
 
-Browser comparisons use a second server for the baseline:
+Browser comparisons use separate static servers for the baseline and production build.
+Run the servers in separate terminals after building. The browser scripts test the
+Preact URL opened by the caller, so they can also check Vite at port 8019.
 
 ```sh
 python3 -m http.server 8020 --bind 127.0.0.1 --directory launcher
-npx --package @playwright/cli playwright-cli -s=settings open http://127.0.0.1:8019
+python3 -m http.server 8032 --bind 127.0.0.1 --directory dist/launcher
+npx --package @playwright/cli playwright-cli -s=settings open http://127.0.0.1:8032
 npx --package @playwright/cli playwright-cli -s=settings resize 1920 1080
 npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_ui.browser.js
 npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_performance.browser.js > /tmp/settings-performance.log
@@ -73,7 +93,7 @@ These are fixed-resolution TV screens; mobile layout is not part of this migrati
 ## Initial browser measurements: 23 October 2026
 
 Desktop Chromium 156.0.8078.48, 1920×1080, static Black background, matching sample app
-inventories, at commit `2c37209` before the component-file refactor. Five paired rounds
+inventories, at commit `2c37209` before the file refactor and Vite/TypeScript conversion. Five paired rounds
 alternate variant order. Values below are medians.
 Each round measures one first open, 25 reopens, 25 clock-format changes and 100 synthetic
 arrow events. Retained JavaScript heap is measured after garbage collection with Settings open.
@@ -98,7 +118,7 @@ No startup or animation result is claimed. Re-run on the final code and target h
 
 1. Merge PR #23, rebase, and make its launcher release job run the locked frontend build
    on the exact release commit. Package `dist/launcher/`, including its dependency license.
-   Verify the WGT contains compiled Settings and excludes JSX/source and build tools.
+   Verify the WGT contains compiled Settings and excludes TypeScript/source and build tools.
 2. Verify the release installer downloads that compiled package without Node and preserves
    settings. Remove the legacy renderer once the compiled release path is established;
    retain a comparison baseline from Git rather than two production implementations.

@@ -20,12 +20,13 @@ Checks (CI runs the same):
 ruff check . && ruff format --check .
 pytest
 npm run lint
-npm run build      # compiled Preact Settings in dist/launcher
+npm run typecheck  # strict TypeScript checks for Settings and Vite config
+npm run build      # type checks, then compiled Settings in dist/launcher
 npm test           # launcher tests: tests/*.test.cjs, run in a Node sandbox
 ```
 
-`npm test` needs Node.js 20 or newer (the date tests depend on its locale data). The watcher
-tests use mock clocks and network replies to cover the Art Mode protocol, status checks,
+Use Node.js 22.12 or newer, or Node 20.19+ within the 20.x series, as required by Vite.
+CI uses the latest Node 20.x. The watcher tests use mock clocks and network replies to cover the Art Mode protocol, status checks,
 relaunch cancellation and app visibility, without contacting a TV.
 
 ## Project layout
@@ -34,7 +35,8 @@ relaunch cancellation and app visibility, without contacting a TV.
 |---|---|
 | `src/aerotizen/` | Python CLI: sdb client, certificates, package signing, debloat |
 | `launcher/` | TV runtime files and the legacy Settings baseline |
-| `launcher/src/settings/` | Preact Settings components, actions and remote navigation |
+| `launcher/src/settings/` | TypeScript/TSX Settings components, actions and remote navigation |
+| `vite.config.mts` | Official Preact preset, dev server and TV bundle settings |
 | `dist/launcher/` | Generated TV runtime with compiled Settings; no Node needed on TV |
 | `launcher/js/config.js` | Launcher behaviour and settings |
 | `launcher/js/app-catalog.js` | App IDs, Samsung store IDs and optional fallback branding |
@@ -46,8 +48,8 @@ relaunch cancellation and app visibility, without contacting a TV.
 ## Working on the launcher
 
 - Run `npm run dev`, then open http://localhost:8019 at 1920×1080. The server also
-  prints a network URL for another device. Settings source changes rebuild automatically;
-  restart after changing legacy HTML, CSS or scripts. TV-only features use sample data.
+  prints a network URL for another device. Vite supplies hot updates for Settings
+  components and serves the legacy runtime files. TV-only features use sample data.
 - Run `npm run build` for the compiled runtime in `dist/launcher/`.
   This branch keeps the source launcher as a working baseline while the release process
   PR is pending. See [Preact Settings](docs/preact-settings.md) for scope and merge checks.

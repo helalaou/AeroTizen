@@ -1,7 +1,7 @@
-import { h, render } from 'preact';
-import { Settings } from './Settings.jsx';
-import { createNavigation } from './navigation.js';
-import { createSettingsController } from './controller.js';
+import { render } from 'preact';
+import { Settings } from './Settings';
+import { createNavigation } from './navigation';
+import { createSettingsController } from './controller';
 
 const A = window.AeroTizen;
 const navigation = createNavigation(A);

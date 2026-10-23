@@ -1,12 +1,17 @@
-import { h, Fragment } from 'preact';
 import { useMemo } from 'preact/hooks';
-import { BackgroundSettings } from './BackgroundSettings.jsx';
-import { WeatherSettings } from './WeatherSettings.jsx';
-import { DisplaySettings } from './DisplaySettings.jsx';
-import { InputSettings } from './InputSettings.jsx';
-import { AppMenu } from './AppMenu.jsx';
+import { BackgroundSettings } from './BackgroundSettings';
+import { WeatherSettings } from './WeatherSettings';
+import { DisplaySettings } from './DisplaySettings';
+import { InputSettings } from './InputSettings';
+import { AppMenu } from './AppMenu';
+import type { LauncherRuntime, SettingsActions, SettingsSnapshot } from './types';
 
-export const Settings = ({ A, settings, search, actions }) => {
+interface Props extends SettingsSnapshot {
+  A: LauncherRuntime;
+  actions: SettingsActions;
+}
+
+export const Settings = ({ A, settings, search, actions }: Props) => {
   // App artwork mounts once. Unrelated changes do not visit the app list.
   const apps = useMemo(() => (
     <AppMenu home={settings.home} apps={A.apps.all} actions={actions} tiles={A.tiles}

@@ -1,10 +1,12 @@
+import type { LauncherRuntime, Navigation, SearchState, SettingsActions, SettingsController, SettingsSnapshot, SettingsValues } from './types';
+
 // Components receive snapshots and named actions. Only this adapter writes the
 // existing settings store or calls the TV/runtime modules.
-export const createSettingsController = (A, navigation, render) => {
+export const createSettingsController = (A: LauncherRuntime, navigation: Navigation, render: (snapshot: SettingsSnapshot) => void): SettingsController => {
   let showing = false;
   let previewing = false;
   let searchVersion = 0;
-  let search = { query: '', results: [], message: '' };
+  let search: SearchState = { query: '', results: [], message: '' };
 
   function update() {
     if (!showing) {
@@ -15,7 +17,7 @@ export const createSettingsController = (A, navigation, render) => {
     navigation.focus();
   }
 
-  function commit(patch, after) {
+  function commit(patch: Partial<SettingsValues>, after?: () => void) {
     Object.assign(A.settings, patch);
     A.settings.save();
     if (after) {
@@ -51,7 +53,7 @@ export const createSettingsController = (A, navigation, render) => {
     });
   }
 
-  const actions = {
+  const actions: SettingsActions = {
     setBackground(background) { commit({ background }, A.applyBackground); },
     setWeatherVisible(showWeather) { commit({ showWeather }, () => window.Weather.updateVisibility()); },
     setLocationVisible(weatherShowLocation) { commit({ weatherShowLocation }, () => window.Weather.updateDisplay()); },
@@ -80,7 +82,7 @@ export const createSettingsController = (A, navigation, render) => {
     editInput(key, element) {
       navigation.select(key);
       navigation.focus();
-      element.querySelector('input').focus();
+      element.querySelector('input')?.focus();
     },
     saveInputName(port, value) {
       const inputNames = { ...A.settings.inputNames };
@@ -108,7 +110,7 @@ export const createSettingsController = (A, navigation, render) => {
   function close() {
     const active = document.activeElement;
     if (active && active.tagName === 'INPUT') {
-      active.blur();
+      (active as HTMLInputElement).blur();
     }
     showing = false;
     previewing = false;
@@ -120,7 +122,7 @@ export const createSettingsController = (A, navigation, render) => {
     A.homeScreen.render();
   }
 
-  function keydown(code, event) {
+  function keydown(code: number, event: Pick<KeyboardEvent, 'preventDefault'>) {
     const K = A.config.KEY;
     if (previewing) {
       event.preventDefault();

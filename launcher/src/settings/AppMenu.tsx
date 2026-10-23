@@ -1,7 +1,15 @@
-import { h, Fragment } from 'preact';
-import { AppTile } from './AppTile.jsx';
+import { AppTile } from './AppTile';
+import type { InstalledApp, SettingsActions, Tiles } from './types';
 
-export const AppMenu = ({ home, apps, actions, tiles, fireplaceId }) => {
+interface Props {
+  home: readonly string[];
+  apps: readonly InstalledApp[];
+  actions: SettingsActions;
+  tiles: Tiles;
+  fireplaceId: string;
+}
+
+export const AppMenu = ({ home, apps, actions, tiles, fireplaceId }: Props) => {
   return (
     <>
       <h3>Show in app menu</h3>

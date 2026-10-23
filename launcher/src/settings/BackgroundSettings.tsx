@@ -1,13 +1,15 @@
-import { h, Fragment } from 'preact';
-import { Pill } from './Pill.jsx';
+import { Pill } from './Pill';
+import type { LauncherConfig, SettingsSectionProps } from './types';
 
-export const BackgroundSettings = ({ settings, actions, config }) => {
+interface Props extends SettingsSectionProps { config: LauncherConfig }
+
+export const BackgroundSettings = ({ settings, actions, config }: Props) => {
   const list = window.Backgrounds.list;
   const selected = list.find(background => background.id === settings.background);
   const animated = Boolean(selected && selected.anim);
   const percent = (settings.speed - config.SPEED.MIN) / (config.SPEED.MAX - config.SPEED.MIN) * 100;
 
-  function swatches(isAnimated) {
+  function swatches(isAnimated: boolean) {
     return list.filter(background => Boolean(background.anim) === isAnimated).map(background => (
       <div key={background.id} class={'swatch' + (background.id === settings.background ? ' on' : '')}
         data-key={'bg:' + background.id} role="button" aria-pressed={background.id === settings.background}

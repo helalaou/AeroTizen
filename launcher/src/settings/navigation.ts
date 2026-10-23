@@ -1,22 +1,24 @@
+import type { LauncherRuntime, Navigation } from './types';
+
 // Remote focus is transient DOM state. Arrow keys never render components or
 // rebuild the row map. Rebuild after a render or resize, including wrapped dates.
-export const createNavigation = (A) => {
-  let rows = null;
-  let keys = Object.create(null);
+export const createNavigation = (A: LauncherRuntime): Navigation => {
+  let rows: HTMLElement[][] | null = null;
+  let keys: Record<string, [number, number]> = Object.create(null);
   let row = 0;
-  let columns = [];
-  let selected = null;
-  let previous = null;
+  let columns: number[] = [];
+  let selected: string | null | undefined = null;
+  let previous: HTMLElement | null = null;
 
-  function children(id) {
-    return Array.from(A.$(id).children);
+  function children(id: string): HTMLElement[] {
+    return Array.from(A.$(id).children).filter((element): element is HTMLElement => element instanceof HTMLElement);
   }
 
-  function getRows() {
+  function getRows(): HTMLElement[][] {
     if (rows) {
       return rows;
     }
-    const dateRows = [];
+    const dateRows: HTMLElement[][] = [];
     children('date-formats').forEach(element => {
       const last = dateRows[dateRows.length - 1];
       if (!last || last[0].offsetTop !== element.offsetTop) {
@@ -29,7 +31,7 @@ export const createNavigation = (A) => {
     if (!A.$('speed-row').hidden) {
       backgrounds.push(children('speed-row'));
     }
-    const apps = Array.from(A.$('all-apps').querySelectorAll('[data-key]'));
+    const apps = Array.from(A.$('all-apps').querySelectorAll<HTMLElement>('[data-key]'));
     rows = backgrounds.concat(A.chunk(children('bg-still'), 8), [children('weather-display')],
       [children('weather-location')], children('weather-results').map(element => [element]),
       [children('weather-visibility')], [children('units')], [children('time-formats')], dateRows,
@@ -38,7 +40,7 @@ export const createNavigation = (A) => {
       .filter(items => items.length);
     keys = Object.create(null);
     rows.forEach((items, i) => items.forEach((element, j) => {
-      keys[element.dataset.key] = [i, j];
+      if (element.dataset.key) { keys[element.dataset.key] = [i, j]; }
     }));
     return rows;
   }

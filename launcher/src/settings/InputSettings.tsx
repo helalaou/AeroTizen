@@ -1,8 +1,13 @@
-import { h, Fragment } from 'preact';
-import { Choice } from './Choice.jsx';
-import { InputName } from './InputName.jsx';
+import { Choice } from './Choice';
+import { InputName } from './InputName';
+import type { InputSource, SettingsSectionProps } from './types';
 
-export const InputSettings = ({ settings, actions, sources, portName }) => {
+interface Props extends SettingsSectionProps {
+  sources: readonly InputSource[];
+  portName(source: InputSource): string;
+}
+
+export const InputSettings = ({ settings, actions, sources, portName }: Props) => {
   return (
     <>
       <h3>HDMI ports</h3>

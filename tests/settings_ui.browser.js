@@ -1,6 +1,7 @@
 // Run with playwright-cli run-code --filename tests/settings_ui.browser.js.
 // This uses real browser rendering and DOM key events, with weather requests mocked.
 async (page) => {
+  const preactUrl = page.url();
   const results = [];
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -11,7 +12,7 @@ async (page) => {
     body: JSON.stringify({ latitude: 0, longitude: 0, city: 'Test location', country_code: 'GB',
       current: { temperature_2m: 20, weather_code: 0 }, results: [] }) }));
   for (const variant of ['baseline', 'preact']) {
-    await page.goto('http://127.0.0.1:' + (variant === 'preact' ? '8019' : '8020') + '/');
+    await page.goto(variant === 'preact' ? preactUrl : 'http://127.0.0.1:8020/');
     await page.evaluate(() => { localStorage.clear(); });
     await page.reload();
     await page.waitForFunction(() => window.AeroTizen && AeroTizen.apps.all.length > 0);

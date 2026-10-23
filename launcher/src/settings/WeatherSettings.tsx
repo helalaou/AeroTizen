@@ -1,8 +1,10 @@
-import { h, Fragment } from 'preact';
-import { Choice } from './Choice.jsx';
-import { Pill } from './Pill.jsx';
+import { Choice } from './Choice';
+import { Pill } from './Pill';
+import type { SearchState, SettingsSectionProps } from './types';
 
-export const WeatherSettings = ({ settings, search, actions }) => {
+interface Props extends SettingsSectionProps { search: Readonly<SearchState> }
+
+export const WeatherSettings = ({ settings, search, actions }: Props) => {
   return (
     <>
       <h3>Weather</h3>

@@ -2,11 +2,12 @@
 async page => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.route('https://**/*', route => route.fulfill({ contentType: 'application/json', body: '{}' }));
+  const preactUrl = page.url();
   const samples = [];
   const cdp = await page.context().newCDPSession(page);
   for (let round = 0; round < 5; round++) {
     for (const variant of round % 2 ? ['preact', 'baseline'] : ['baseline', 'preact']) {
-      const url = 'http://127.0.0.1:' + (variant === 'preact' ? '8019' : '8020');
+      const url = variant === 'preact' ? preactUrl : 'http://127.0.0.1:8020/';
       await page.goto(url);
       await page.evaluate(() => {
         localStorage.clear();
