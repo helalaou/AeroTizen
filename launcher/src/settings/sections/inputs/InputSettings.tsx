@@ -1,6 +1,6 @@
-import { Choice } from './Choice';
+import { Choice } from '../../components/Choice';
 import { InputName } from './InputName';
-import type { SettingsSectionProps, SettingsServices } from './types';
+import type { SettingsSectionProps, SettingsServices } from '../../types';
 
 interface Props extends SettingsSectionProps { inputs: ReturnType<SettingsServices['getInputs']> }
 

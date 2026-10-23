@@ -1,4 +1,6 @@
-import type { PillProps } from './types';
+import type { ComponentChildren } from 'preact';
+
+interface PillProps { id: string; selected?: boolean; onSelect(): void; children: ComponentChildren }
 
 export const Pill = ({ id, selected = false, onSelect, children }: PillProps) => {
   return (

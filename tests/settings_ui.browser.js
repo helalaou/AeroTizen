@@ -87,6 +87,15 @@ async (page) => {
       assert(A.settings.weatherShowLocation === false, 'location visibility saved');
       find('preview').click(); assert(document.body.classList.contains('previewing'), 'preview opens');
       key(K.RIGHT); assert(!document.body.classList.contains('previewing'), 'any key exits preview');
+      if (variant === 'preact') {
+        assert(A.$('toast').hidden, 'preview exit hides its message');
+        find('preview').click(); A.settingsUi.open();
+        assert(!document.body.classList.contains('previewing') && A.$('toast').hidden, 'open resets preview and its message together');
+        find('preview').click(); A.settingsUi.close();
+        assert(!document.body.classList.contains('editing') && !document.body.classList.contains('previewing') &&
+          A.$('toast').hidden, 'close clears all presentation state');
+        A.settingsUi.open();
+      }
       find('bg:black').click(); assert(document.querySelector('#speed-row').hidden, 'static background hides speed');
       find('bg:aurora').click();
       A.settingsUi.close(); A.settingsUi.open();

@@ -1,12 +1,12 @@
-import type { MutableStore } from '../shared/state/createStore';
-import type { NavigationHandlers, SettingsController, SettingsServices, SettingsStore, ViewState } from './types';
+import type { MutableStore } from '../../shared/state/createStore';
+import type { NavigationHandlers, SettingsBridge, SettingsServices, SettingsStore, ViewState } from '../types';
 
 // Compatibility with the existing app key router. Rendering is subscribed to the
 // stores; this bridge never builds markup or requests a root render.
 export const createSettingsBridge = (
   settings: SettingsStore, view: MutableStore<ViewState>, services: SettingsServices,
   transaction: (action: () => void) => void
-): SettingsController => {
+): SettingsBridge => {
   let handlers: NavigationHandlers | undefined;
   return {
     open() {

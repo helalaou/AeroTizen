@@ -1,5 +1,5 @@
-import type { MutableStore } from '../shared/state/createStore';
-import type { SettingsActions, SettingsServices, SettingsStore, SettingsValues, ViewState } from './types';
+import type { MutableStore } from '../../shared/state/createStore';
+import type { SettingsActions, SettingsServices, SettingsStore, SettingsValues, ViewState } from '../types';
 
 export const createSettingsActions = (
   settings: SettingsStore, services: SettingsServices, view: MutableStore<ViewState>,
@@ -41,7 +41,6 @@ export const createSettingsActions = (
     useSamsungHome: services.useSamsungHome,
     preview() {
       transaction(() => view.set({ ...view.getSnapshot(), previewing: true }));
-      services.showPreviewMessage();
     }
   };
 };

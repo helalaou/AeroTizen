@@ -1,6 +1,6 @@
-import { Choice } from './Choice';
-import { Pill } from './Pill';
-import type { Clock, SettingsSectionProps } from './types';
+import { Choice } from '../components/Choice';
+import { Pill } from '../components/Pill';
+import type { Clock, SettingsSectionProps } from '../types';
 
 interface Props extends SettingsSectionProps { clock: Omit<Clock, 'tick'> }
 

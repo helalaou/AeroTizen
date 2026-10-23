@@ -1,29 +1,24 @@
 import { useMemo } from 'preact/hooks';
 import { useStore } from '../shared/hooks/useStore';
-import { BackgroundSettings } from './BackgroundSettings';
-import { WeatherSettings } from './WeatherSettings';
-import { DisplaySettings } from './DisplaySettings';
-import { InputSettings } from './InputSettings';
-import { AppMenu } from './AppMenu';
+import { BackgroundSettings } from './sections/BackgroundSettings';
+import { WeatherSettings } from './sections/weather/WeatherSettings';
+import { DisplaySettings } from './sections/DisplaySettings';
+import { InputSettings } from './sections/inputs/InputSettings';
+import { AppMenu } from './sections/apps/AppMenu';
 import { useSettingsEnvironment } from './hooks/useSettingsEnvironment';
 import { useSettingsNavigation } from './hooks/useSettingsNavigation';
-import type { JSX } from 'preact';
 
 export const Settings = ({ active, previewing }: { active: boolean; previewing: boolean }) => {
-  const { settings: store, services, actions, navigation } = useSettingsEnvironment();
+  const { settings: store, services, actions } = useSettingsEnvironment();
   const settings = useStore(store, active);
-  useSettingsNavigation(active, previewing);
+  const navigationEvents = useSettingsNavigation(active, previewing);
   const apps = services.getApps();
   const appMenu = useMemo(() => (
     <AppMenu home={settings.home} apps={apps} actions={actions} active={active}
       describeApp={services.describeApp} fireplaceId={services.config.FIREPLACE_ID} />
   ), [settings.home, apps, actions, active, services]);
-  const select = (event: JSX.TargetedEvent<HTMLDivElement, Event>) => {
-    const element = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-key]') : null;
-    if (element) { navigation.select(element.dataset.key); navigation.focus(); }
-  };
   return (
-    <div onClickCapture={select} onFocusCapture={select}>
+    <div {...navigationEvents}>
       <h2>Settings</h2>
       <BackgroundSettings settings={settings} actions={actions} config={services.config} backgrounds={services.backgrounds} />
       <WeatherSettings settings={settings} actions={actions} active={active} />

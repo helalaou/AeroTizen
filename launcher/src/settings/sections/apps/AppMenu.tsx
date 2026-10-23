@@ -1,7 +1,7 @@
 import { AppTile } from './AppTile';
 import { AddAppsTile } from './AddAppsTile';
 import { FireplaceTile } from './FireplaceTile';
-import type { InstalledApp, SettingsActions, SettingsServices } from './types';
+import type { InstalledApp, SettingsActions, SettingsServices } from '../../types';
 
 interface Props {
   home: readonly string[];

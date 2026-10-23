@@ -1,4 +1,5 @@
-import type { LauncherRuntime, SettingsServices } from '../types';
+import type { SettingsServices } from '../types';
+import type { LauncherRuntime } from './launcherRuntime';
 
 // All dependencies on unmigrated modules are kept at this boundary. Components
 // receive data/commands; none can call the legacy tile DOM constructors.

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { flushSync } from 'preact/compat';
+import type { JSX } from 'preact';
 import { useSettingsEnvironment } from './useSettingsEnvironment';
 
 export const useSettingsNavigation = (active: boolean, previewing: boolean) => {
@@ -23,7 +24,7 @@ export const useSettingsNavigation = (active: boolean, previewing: boolean) => {
         if (view.getSnapshot().previewing) {
           event.preventDefault();
           flushSync(() => view.set({ ...view.getSnapshot(), previewing: false }));
-          services.hidePreviewMessage(); return;
+          return;
         }
         if (code === K.BACK || code === K.ESC) { event.preventDefault(); bridge.close(); return; }
         const current = navigation.current();
@@ -38,4 +39,9 @@ export const useSettingsNavigation = (active: boolean, previewing: boolean) => {
     });
     return () => { unregister(); window.removeEventListener('resize', resize); navigation.clear(); };
   }, [active, actions, bridge, navigation, root, services, view]);
+  const select = (event: JSX.TargetedEvent<HTMLDivElement, Event>) => {
+    const element = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-key]') : null;
+    if (element) { navigation.select(element.dataset.key); navigation.focus(); }
+  };
+  return { onClickCapture: select, onFocusCapture: select };
 };

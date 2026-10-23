@@ -1,4 +1,4 @@
-import type { ComponentChildren, RefObject } from 'preact';
+import type { RefObject } from 'preact';
 import type { MutableStore, Store } from '../shared/state/createStore';
 import type { Navigation } from '../shared/navigation/createNavigation';
 
@@ -30,9 +30,7 @@ export interface SettingsStore extends Store<SettingsSnapshot> {
   refresh(): void;
   dispose(): void;
 }
-export interface SearchState { query: string; results: WeatherLocation[]; message: string }
 export interface InstalledApp { id: string; name: string; icon?: string; storeId?: string }
-export interface InputSource { type: string; number?: number; editName?: string }
 export interface Background { id: string; name: string; anim?: string }
 export interface BackgroundOption extends Background { preview: string }
 export interface Clock {
@@ -53,19 +51,6 @@ export interface AppPresentation {
   title: string; background: string; label: string | null; textColour: string;
   logoPath: string | null; logoColour: string; largeLogo: boolean; useAppIcon: boolean;
   artwork: readonly string[];
-}
-export interface LauncherRuntime {
-  config: LauncherConfig;
-  settings: SettingsSource;
-  clock: Clock;
-  network: { updateVisibility(): void };
-  inputs: { sources: InputSource[]; portName(source: InputSource): string; render(): void };
-  homeScreen: { render(): void };
-  apps: { all: InstalledApp[]; openStore(): void };
-  homewatch: { useSamsungHome(): void };
-  tiles: { describe(app: InstalledApp): AppPresentation };
-  settingsUi: SettingsController;
-  clearFocus(): void; toast(message: string): void; hideToast(): void; applyBackground(): void;
 }
 export interface SettingsServices {
   config: LauncherConfig;
@@ -95,26 +80,14 @@ export interface ViewState { open: boolean; previewing: boolean; mounted: boolea
 export interface NavigationHandlers {
   focus(): void; blur(): void; keydown(code: number, event: Pick<KeyboardEvent, 'preventDefault'>): void;
 }
-export interface SettingsController {
+export interface SettingsBridge {
   open(): void; close(): void; isOpen(): boolean; focus(): void;
   keydown(code: number, event: Pick<KeyboardEvent, 'preventDefault'>): void;
   register(handlers: NavigationHandlers): () => void;
 }
 export interface SettingsEnvironment {
   settings: SettingsStore; view: MutableStore<ViewState>; services: SettingsServices;
-  actions: SettingsActions; bridge: SettingsController; navigation: Navigation;
+  actions: SettingsActions; bridge: SettingsBridge; navigation: Navigation;
   root: RefObject<HTMLDivElement>;
 }
 export interface SettingsSectionProps { settings: SettingsSnapshot; actions: SettingsActions }
-export interface PillProps { id: string; selected?: boolean; onSelect(): void; children: ComponentChildren }
-
-declare global {
-  interface Window {
-    AeroTizen: LauncherRuntime;
-    Backgrounds: { list: Background[]; preview(background: Background): string; setSpeed(speed: number): void };
-    Weather: {
-      updateVisibility(): void; updateDisplay(): void; refresh(): void;
-      searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): void;
-    };
-  }
-}

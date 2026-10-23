@@ -1,5 +1,5 @@
-import { useTextInput } from '../shared/hooks/useTextInput';
-import type { SettingsActions } from './types';
+import { useTextInput } from '../../../shared/hooks/useTextInput';
+import type { SettingsActions } from '../../types';
 
 interface Props { port: string; name?: string; placeholder?: string; actions: SettingsActions }
 

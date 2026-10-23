@@ -1,23 +1,12 @@
-import { useLayoutEffect, useRef } from 'preact/hooks';
-import { Choice } from './Choice';
-import { Pill } from './Pill';
-import { useWeatherSearch } from './hooks/useWeatherSearch';
-import { useSettingsEnvironment } from './hooks/useSettingsEnvironment';
-import type { SettingsSectionProps, WeatherLocation } from './types';
+import { Choice } from '../../components/Choice';
+import { Pill } from '../../components/Pill';
+import { useWeatherLocation } from './useWeatherLocation';
+import type { SettingsSectionProps } from '../../types';
 
 interface Props extends SettingsSectionProps { active: boolean }
 
 export const WeatherSettings = ({ settings, actions, active }: Props) => {
-  const { services, navigation, view } = useSettingsEnvironment();
-  const search = useWeatherSearch(services.searchLocations, active);
-  const input = useRef<HTMLInputElement>(null);
-  useLayoutEffect(() => {
-    navigation.invalidate();
-    if (active && !view.getSnapshot().previewing) { navigation.focus(); }
-  }, [search.results, search.message, active, navigation, view]);
-  const selectLocation = (location: WeatherLocation | null) => {
-    search.clear(); navigation.select(location ? 'weather:query' : 'weather:auto'); actions.setLocation(location);
-  };
+  const search = useWeatherLocation(active, actions);
   return (
     <>
       <h3>Weather</h3>
@@ -28,10 +17,10 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
           'Automatic location uses your internet address and can be inaccurate. Search for your town, city or postcode to set it.'}
       </p>
       <div id="weather-location" class="units">
-        <Pill id="weather:auto" selected={!settings.weatherLocation} onSelect={() => selectLocation(null)}>Automatic</Pill>
-        <div class="pill unit name-pill weather-search" data-key="weather:query" onClick={() => input.current?.focus()}>
-          <input ref={input} type="text" maxLength={80} value={search.query} placeholder="Town, city or postcode"
-            aria-label="Weather location" onInput={event => search.setQuery(event.currentTarget.value)} />
+        <Pill id="weather:auto" selected={!settings.weatherLocation} onSelect={() => search.selectLocation(null)}>Automatic</Pill>
+        <div class="pill unit name-pill weather-search" data-key="weather:query" onClick={search.focusQuery}>
+          <input ref={search.inputRef} type="text" maxLength={80} value={search.query} placeholder="Town, city or postcode"
+            aria-label="Weather location" onInput={search.onQueryInput} />
         </div>
         <Pill id="weather:search" onSelect={search.search}>Search</Pill>
       </div>
@@ -39,7 +28,7 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
       <div id="weather-results" class="weather-results" hidden={!search.results.length}>
         {search.results.map((location, index) => (
           <Pill key={location.label + ':' + index} id={'weather:result:' + index}
-            onSelect={() => selectLocation(location)}>{location.label}</Pill>
+            onSelect={() => search.selectLocation(location)}>{location.label}</Pill>
         ))}
       </div>
       <Choice id="weather-visibility" label="Weather location visibility" value={settings.weatherShowLocation}

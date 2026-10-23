@@ -51,9 +51,12 @@ CSS behaviour or physical TV compatibility.
   operations. It exposes data and commands, including data-only app branding. Only
   this boundary calls unmigrated services. The weather adapter can cancel callback
   delivery; the existing search client cannot abort an active request.
-- `settings/bridge.ts` retains the existing key-router interface. It changes open/closed
+- `settings/services/createSettingsBridge.ts` retains the existing key-router interface. It changes open/closed
   state and delegates keys to the current hook handlers. It does not build markup or
   request root renders. Commands flush store notifications before the next remote event.
+- `settings/hooks/useSettingsPresentation.ts` owns shell classes and the preview message.
+  Navigation hooks own pointer/remote focus; weather hooks own search and location entry.
+  Components compose these behaviors and render markup.
 - `shared/` contains the small store, navigation engine and hooks for subscriptions,
   input drafts, image retries and focus retention. Settings-specific navigation collects
   actual visual rows under the Settings root, so wrapped controls need no fixed column
@@ -74,6 +77,35 @@ CSS behaviour or physical TV compatibility.
 Keep these boundaries when adding Settings controls. Promote a helper to `shared/` only
 when it expresses a reusable behavior. Home and other screens keep their current DOM
 ownership until their own migration; this change adds no second rendering path there.
+
+## Directory layout
+
+```text
+launcher/src/
+  settings/
+    index.tsx, dev.ts              # Build/development entry points
+    SettingsRoot.tsx, Settings.tsx # Shell and screen composition
+    SettingsProvider.tsx, context.ts
+    types.ts, navigation.ts       # Feature contracts and visual row collection
+    components/                   # Controls used by Settings sections
+    sections/
+      BackgroundSettings.tsx, DisplaySettings.tsx
+      apps/                       # App menu and its tile components
+      inputs/                     # Input controls and names
+      weather/                    # Weather UI and location/search hooks
+    hooks/                        # Screen lifecycle and navigation hooks
+    state/                        # Settings snapshots and named actions
+    services/                     # Legacy runtime types, adapters and key-router bridge
+  shared/
+    hooks/                        # Reusable store, draft, focus and image behavior
+    navigation/                   # Screen-independent focus engine
+    state/                        # Observable store primitive
+```
+
+Keep section-specific hooks and components together. Keep props and local state types
+beside their owner; `types.ts` holds contracts used across Settings. Legacy globals are
+described only in `services/launcherRuntime.ts`. Use hooks for state and lifecycle work;
+keep deterministic commands and calculations as plain functions.
 
 ## Local verification
 
@@ -140,7 +172,7 @@ No startup or animation result is claimed. Re-run on the final code and target h
 
 ## Architecture pass measurements: 23 October 2026
 
-The same five-round script was repeated against the compiled architecture refactor,
+At commit `85b3aba`, the same five-round script was repeated against the compiled architecture refactor,
 with Chromium 156.0.8078.48, a 1920×1080 viewport, Black background and matching app
 inventories. The timing and hardware limits above still apply.
 

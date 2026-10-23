@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { flushSync } from 'preact/compat';
-import type { SearchState, SettingsServices } from '../types';
+import type { SettingsServices, WeatherLocation } from '../../types';
+
+interface SearchState { query: string; results: WeatherLocation[]; message: string }
 
 export const useWeatherSearch = (searchLocations: SettingsServices['searchLocations'], active: boolean) => {
   const [state, setState] = useState<SearchState>({ query: '', results: [], message: '' });

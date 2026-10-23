@@ -1,5 +1,5 @@
-import { Pill } from './Pill';
-import type { BackgroundOption, LauncherConfig, SettingsSectionProps } from './types';
+import { Pill } from '../components/Pill';
+import type { BackgroundOption, LauncherConfig, SettingsSectionProps } from '../types';
 
 interface Props extends SettingsSectionProps { config: LauncherConfig; backgrounds: readonly BackgroundOption[] }
 

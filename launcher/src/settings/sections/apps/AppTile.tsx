@@ -1,8 +1,8 @@
 import { useMemo } from 'preact/hooks';
-import { useImageSequence } from '../shared/hooks/useImageSequence';
-import { useFocusClass } from '../shared/hooks/useFocusClass';
-import { useSettingsEnvironment } from './hooks/useSettingsEnvironment';
-import type { InstalledApp, SettingsServices } from './types';
+import { useImageSequence } from '../../../shared/hooks/useImageSequence';
+import { useFocusClass } from '../../../shared/hooks/useFocusClass';
+import { useSettingsEnvironment } from '../../hooks/useSettingsEnvironment';
+import type { InstalledApp, SettingsServices } from '../../types';
 
 interface Props {
   app: InstalledApp;

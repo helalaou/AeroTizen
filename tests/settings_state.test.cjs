@@ -3,8 +3,8 @@ const assert = require('node:assert/strict');
 const { loadTypeScript } = require('./helpers/load_typescript.cjs');
 const { createSettingsStore } = loadTypeScript('launcher/src/settings/state/createSettingsStore.ts');
 const { createStore } = loadTypeScript('launcher/src/shared/state/createStore.ts');
-const { createSettingsActions } = loadTypeScript('launcher/src/settings/actions.ts');
-const { createSettingsBridge } = loadTypeScript('launcher/src/settings/bridge.ts');
+const { createSettingsActions } = loadTypeScript('launcher/src/settings/state/createSettingsActions.ts');
+const { createSettingsBridge } = loadTypeScript('launcher/src/settings/services/createSettingsBridge.ts');
 
 const harness = () => {
   const listeners = new Set();
