@@ -135,13 +135,14 @@
   function renderUnits() {
     var units = A.$('units');
     units.textContent = '';
-    [['auto', 'Automatic'], ['F', '°F  Fahrenheit'], ['C', '°C  Celsius']].forEach(function (u) {
+    [['F', '°F  Fahrenheit'], ['C', '°C  Celsius']].forEach(function (u) {
       units.appendChild(pill('unit:' + u[0], u[1], S.tempUnit === u[0], function () { S.tempUnit = u[0]; changed(window.Weather.refresh); }));
     });
   }
 
   function renderDateTime() {
     var now = new Date(), times = A.$('time-formats'), dates = A.$('date-formats');
+    var dateStyle = A.clock.dateStyle(S.dateFormat);
     times.textContent = ''; dates.textContent = '';
     [['12', '(12-hour)'], ['24', '(24-hour)']].forEach(function (t) {
       times.appendChild(pill('time:' + t[0], A.clock.formatTime(now, t[0]) + '  ' + t[1], S.showTime !== false && S.timeFormat === t[0],
@@ -150,13 +151,29 @@
     times.appendChild(pill('time:none', 'No time', S.showTime === false,
       function () { S.showTime = false; focusKey = 'time:none'; changed(A.clock.tick); }));
     A.clock.DATE_FORMATS.forEach(function (f) {
-      dates.appendChild(pill('date:' + f.id, f.id === 'none' ? 'No date' : f.format(now), S.dateFormat === f.id,
+      dates.appendChild(pill('date:' + f.id, f.id === 'none' ? 'No date' : f.format(now), dateStyle === f.id,
         function () { S.dateFormat = f.id; changed(A.clock.tick); }));
     });
   }
 
+  function renderCardSizes() {
+    var box = A.$('card-sizes');
+    box.textContent = '';
+    [['big', 'Big'], ['small', 'Small']].forEach(function (option) {
+      box.appendChild(pill('cards:' + option[0], option[1], (S.cardSize || 'big') === option[0], function () {
+        S.cardSize = option[0]; changed(A.homeScreen.render);
+      }));
+    });
+  }
+
   function renderInputVisibility() {
-    var box = A.$('input-visibility');
+    var liveTv = A.$('live-tv-visibility'), box = A.$('input-visibility');
+    liveTv.textContent = '';
+    [[true, 'Show'], [false, 'Hide']].forEach(function (option) {
+      liveTv.appendChild(pill('live-tv:' + option[0], option[1], S.showLiveTv === option[0], function () {
+        S.showLiveTv = option[0]; changed(A.inputs.render);
+      }));
+    });
     box.textContent = '';
     [[false, 'Show all'], [true, 'Hide disconnected']].forEach(function (option) {
       box.appendChild(pill('inputs:' + option[0], option[1], S.hideDisconnectedHdmi === option[0], function () {
@@ -203,7 +220,7 @@
         tile = A.tiles.card(app.name, A.tiles.ICONS.flame);
         tile.classList.add('fire');
       } else {
-        tile = A.tiles.banner(app);
+        tile = A.tiles.app(app);
       }
       tile.classList.toggle('on', S.home.indexOf(app.id) >= 0);
       tile.dataset.key = 'app:' + app.id;
@@ -220,19 +237,27 @@
   function render() {
     renderBackgrounds(); renderWeather(); renderUnits(); renderDateTime();
     renderVisibility('network-visibility', 'showNetwork', ['Show', 'Hide'], A.network.updateVisibility);
-    renderInputVisibility(); renderInputNames(); renderAppMenu();
+    renderCardSizes(); renderInputVisibility(); renderInputNames(); renderAppMenu();
     focus();
   }
 
   // ---- navigation (focus follows the item, so re-renders don't make it jump) -------
   function editorRows() {
     function kids(id) { return [].slice.call(A.$(id).children); }
+    // Content-sized date pills can wrap; remote navigation follows visible rows.
+    var dateRows = [];
+    kids('date-formats').forEach(function (el) {
+      var row = dateRows[dateRows.length - 1];
+      if (!row || row[0].offsetTop !== el.offsetTop) { dateRows.push([el]); }
+      else { row.push(el); }
+    });
     var r = A.chunk(kids('bg-anim'), 8);
     if (!A.$('speed-row').hidden) { r.push(kids('speed-row')); }
     var results = kids('weather-results').map(function (el) { return [el]; });
     return r.concat(A.chunk(kids('bg-still'), 8), [kids('weather-display')],
       [kids('weather-location')], results, [kids('weather-visibility')],
-      [kids('units')], [kids('time-formats')], [kids('date-formats')], [kids('network-visibility')], [kids('input-visibility')],
+      [kids('units')], [kids('time-formats')], dateRows, [kids('network-visibility')],
+      [kids('live-tv-visibility')], [kids('card-sizes')], [kids('input-visibility')],
       [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]).filter(function (row) { return row.length; });
   }
 

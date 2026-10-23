@@ -1,27 +1,6 @@
-// App tiles: Android-TV-style banners (brand background + official logo) and icons.
+// Render app and input cards. App identities and branding live in app-catalog.js.
 (function (A) {
   'use strict';
-
-  // match: lower-case name prefix; logo: Simple Icons slug from logos.js; fill: logo colour;
-  // text: wordmark beside the logo (null = the logo is the wordmark); big: oversized logo.
-  var BRANDS = [
-    { match: 'youtube', bg: '#ffffff', logo: 'youtube', fill: '#ff0000', text: 'YouTube', ink: '#0f0f0f' },
-    { match: 'netflix', bg: 'linear-gradient(135deg,#e50914,#8a0610)', logo: 'netflix', fill: '#ffffff', text: null },
-    { match: 'prime video', bg: 'linear-gradient(135deg,#1a98ff,#0f4c81)', logo: 'primevideo', fill: '#ffffff', text: null, big: true },
-    { match: 'spotify', bg: 'linear-gradient(135deg,#1ed760,#0f8a3c)', logo: 'spotify', fill: '#000000', text: 'Spotify', ink: '#000000' },
-    { match: 'stremio', bg: 'linear-gradient(135deg,#7b5bf5,#2b1d68)', logo: 'stremio', fill: '#ffffff', text: 'Stremio', ink: '#ffffff' },
-    { match: 'max', bg: '#002be7', logo: 'max', fill: '#ffffff', text: null },
-    { match: 'hulu', bg: '#1ce783', logo: 'hulu', fill: '#0b0c0f', text: null },
-    { match: 'apple tv', bg: 'linear-gradient(135deg,#4a4a4f,#1c1c1e)', logo: 'appletv', fill: '#ffffff', text: null },
-    { match: 'plex', bg: '#1f1f1f', logo: 'plex', fill: '#ebaf00', text: null },
-    { match: 'twitch', bg: '#9146ff', logo: 'twitch', fill: '#ffffff', text: 'Twitch', ink: '#ffffff' },
-    { match: 'crunchyroll', bg: '#f47521', logo: 'crunchyroll', fill: '#ffffff', text: 'Crunchyroll', ink: '#ffffff' },
-    { match: 'paramount', bg: '#0064ff', logo: 'paramountplus', fill: '#ffffff', text: null },
-    { match: 'tubi', bg: '#7408ff', logo: 'tubi', fill: '#ffffff', text: null },
-    { match: 'jellyfin', bg: 'linear-gradient(135deg,#aa5cc3,#00a4dc)', logo: 'jellyfin', fill: '#ffffff', text: 'Jellyfin', ink: '#ffffff' },
-    { match: 'disney', bg: 'linear-gradient(135deg,#1a3fa3,#06102e)', logo: null, text: 'Disney+', ink: '#ffffff' },
-    { match: 'tizenbrew', bg: 'linear-gradient(135deg,#ff9e1b,#7a2c00)', logo: null, text: 'TizenBrew', ink: '#ffffff', useIcon: true }
-  ];
 
   function svg(viewBoxContent, className) {
     return '<svg' + (className ? ' class="' + className + '"' : '') + ' viewBox="0 0 24 24">' + viewBoxContent + '</svg>';
@@ -39,41 +18,70 @@
 
   function shortName(name) { return name.replace(/ - .*/, '').replace(/NextGeneration$/, ''); }
 
-  function brandFor(name) {
-    var n = name.toLowerCase();
-    for (var i = 0; i < BRANDS.length; i++) { if (n.indexOf(BRANDS[i].match) === 0) { return BRANDS[i]; } }
-    // Unknown apps: a stable colour derived from the name, plus the app's own icon.
+  function brandFor(app) {
+    var known = A.catalog.brand(app);
+    if (known) { return known; }
+    var name = app.name, n = name.toLowerCase();
+    // Preserve the original icon and generated background for unknown apps.
     var h = 0;
     for (var j = 0; j < n.length; j++) { h = (h * 31 + n.charCodeAt(j)) % 360; }
-    return { bg: 'linear-gradient(135deg,hsl(' + h + ',55%,42%),hsl(' + ((h + 40) % 360) + ',65%,14%))',
-             logo: null, text: shortName(name), ink: '#ffffff', useIcon: true };
+    return { background: 'linear-gradient(135deg,hsl(' + h + ',55%,42%),hsl(' + ((h + 40) % 360) + ',65%,14%))',
+             logo: null, label: shortName(name), textColour: '#ffffff', useAppIcon: true };
   }
 
-  function logoSvg(slug, fill) {
-    var d = window.LOGOS && window.LOGOS[slug];
+  function logoSvg(logo, fill) {
+    var d = window.LOGOS && window.LOGOS[logo.slug];
     return d ? svg('<path fill="' + fill + '" d="' + d + '"/>', 'logo') : '';
   }
 
-  // A banner tile for an app; `onSelect` runs when the tile is chosen.
-  function banner(app, extraClass, onSelect) {
-    var b = brandFor(app.name), tile = A.el('div');
-    tile.className = 'tile' + (extraClass ? ' ' + extraClass : '') + (b.text ? '' : ' logo-only') + (b.big ? ' logo-big' : '');
-    tile.style.background = b.bg;
-    if (b.logo) {
-      tile.innerHTML = logoSvg(b.logo, b.fill);
-    } else if (b.useIcon && app.icon) {
+  function appTile(app, extraClass, onSelect) {
+    var b = brandFor(app), tile = A.el('div');
+    tile.className = 'tile app-tile' + (extraClass ? ' ' + extraClass : '');
+    tile.setAttribute('role', 'button');
+    tile.setAttribute('aria-label', shortName(app.name));
+    tile.title = shortName(app.name);
+    tile.style.background = b.background;
+    var fallback = A.el('div', 'app-fallback'), mark = b.logo && logoSvg(b.logo, b.logoColour);
+    if (!b.label) { fallback.classList.add('logo-only'); }
+    if (b.largeLogo) { fallback.classList.add('logo-big'); }
+    if (mark) {
+      fallback.innerHTML = mark;
+    } else if (b.useAppIcon && app.icon) {
       var img = new Image();
       img.className = 'logo'; img.alt = '';
-      img.onerror = function () { tile.removeChild(img); };
+      img.onerror = function () { fallback.removeChild(img); };
       img.src = app.icon;
-      tile.appendChild(img);
+      fallback.appendChild(img);
     }
-    if (b.text) {
-      var name = A.el('div', 'name', b.text);
-      name.style.color = b.ink;
-      tile.appendChild(name);
+    if (b.label || !mark) {
+      var name = A.el('div', 'name', b.label || shortName(app.name));
+      name.style.color = b.textColour;
+      fallback.appendChild(name);
     }
+    tile.appendChild(fallback);
     tile.onclick = onSelect;
+
+    var sources = A.artwork.sources(app), at = 0;
+    function next() {
+      if (at >= sources.length) { return; }
+      var image = new Image(), src = sources[at++], timer;
+      function clear() { clearTimeout(timer); image.onload = image.onerror = null; }
+      function failed() { clear(); next(); }
+      image.className = 'app-artwork'; image.alt = '';
+      image.onload = function () {
+        clear();
+        fallback.hidden = true;
+        // Do not let the fallback colour show through antialiased image corners.
+        tile.style.background = 'transparent';
+        tile.classList.add('has-artwork');
+        tile.appendChild(image);
+      };
+      image.onerror = failed;
+      // Keep the fallback visible if a local file lookup stalls on older firmware.
+      timer = setTimeout(failed, 2000);
+      image.src = src;
+    }
+    next();
     return tile;
   }
 
@@ -86,5 +94,5 @@
     return tile;
   }
 
-  A.tiles = { ICONS: ICONS, banner: banner, card: card, shortName: shortName };
+  A.tiles = { ICONS: ICONS, app: appTile, card: card, shortName: shortName };
 })(window.AeroTizen);

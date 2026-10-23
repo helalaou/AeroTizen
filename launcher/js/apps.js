@@ -6,7 +6,7 @@
   var apps = A.apps = { all: [], realIds: [] };
 
   function isRealApp(a) {
-    return a.show !== false && (cfg.STORE_PACKAGE.test(a.packageId || '') || Object.prototype.hasOwnProperty.call(cfg.PRELOADED_APPS, a.id));
+    return a.show !== false && (cfg.STORE_PACKAGE.test(a.packageId || '') || !!A.catalog.preloadedStoreId(a.id));
   }
 
   function hbbtvLink(appId) {
@@ -38,7 +38,7 @@
     tz.application.getAppsInfo(function (list) {
       // HbbTV content runs in a shared host; include it in the watcher's inventory.
       apps.realIds = list.filter(function (a) { return (isRealApp(a) || a.id === cfg.HBBTV_APP_ID) && !/service|DclHome001/i.test(a.id); })
-        .map(function (a) { return cfg.PRELOADED_APPS[a.id] || a.id; });
+        .map(function (a) { return A.catalog.preloadedStoreId(a.id) || a.id; });
       apps.all = list.filter(function (a) { return isRealApp(a) && a.name && !cfg.HIDDEN_APPS.test(a.id) && !cfg.HIDDEN_APPS.test(a.name); })
         .map(function (a) { return { id: a.id, name: a.name, icon: a.iconPath || '' }; })
         .sort(function (a, b) { return a.name.localeCompare(b.name); });

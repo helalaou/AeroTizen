@@ -73,7 +73,7 @@ window.Weather = (function () {
     var s = settingsOf(), geo = s.weatherLocation;
     if (!validLocation(geo) || typeof geo.name !== 'string' || !geo.name.trim()) { geo = null; }
     return {
-      unit: s.tempUnit === 'F' || s.tempUnit === 'C' ? s.tempUnit : 'auto',
+      unit: s.tempUnit === 'F' ? 'F' : 'C',
       geo: geo,
       source: geo ? JSON.stringify([geo.latitude, geo.longitude, geo.name, geo.country_code]) : 'auto',
       visible: s.showWeather !== false,
@@ -82,7 +82,7 @@ window.Weather = (function () {
   }
 
   function validReading(w, opt) {
-    return w && number(w.temp) && number(w.code) && number(w.at) && w.unit === opt.unit &&
+    return w && number(w.temp) && number(w.code) && number(w.at) && (w.unit === 'C' || w.unit === 'F') &&
       w.source === opt.source && Date.now() >= w.at && Date.now() - w.at <= MAX_AGE;
   }
 
@@ -92,7 +92,9 @@ window.Weather = (function () {
     if (!el) { return; }
     if (!opt.visible || !validReading(w, opt)) { el.textContent = ''; el.hidden = true; return; }
     el.innerHTML = '<svg viewBox="0 0 24 24">' + icon(w.code) + '</svg><b></b>' + (opt.showLocation ? '<span></span>' : '');
-    el.querySelector('b').textContent = Math.round(w.temp) + '°';
+    var temp = w.temp;
+    if (w.unit !== opt.unit) { temp = opt.unit === 'F' ? temp * 9 / 5 + 32 : (temp - 32) * 5 / 9; }
+    el.querySelector('b').textContent = Math.round(temp) + '°';
     if (opt.showLocation) { el.querySelector('span').textContent = w.city || ''; }
     el.hidden = false;
   }
@@ -100,7 +102,7 @@ window.Weather = (function () {
   function refresh() {
     cancelRequests();
     var version = requestVersion, opt = options();
-    render(); // Remove weather for a previous location or unit before requesting new data.
+    render(); // Convert a matching cached reading while fetching the selected unit.
     if (!opt.visible) { stopTimer(); return; }
     function current() {
       var now = options();
@@ -108,7 +110,7 @@ window.Weather = (function () {
     }
     function forecast(geo) {
       if (!current() || !validLocation(geo)) { return; }
-      var f = opt.unit === 'F' || (opt.unit === 'auto' && /^(US|LR|MM)$/.test(geo.country_code));
+      var f = opt.unit === 'F';
       getJSON('https://api.open-meteo.com/v1/forecast?latitude=' + geo.latitude + '&longitude=' + geo.longitude +
               '&current=temperature_2m,weather_code' + (f ? '&temperature_unit=fahrenheit' : ''), function (m) {
         if (!current() || !m || m.error || !m.current ||
@@ -149,7 +151,7 @@ window.Weather = (function () {
     }
     render();
     if (opt.visible && timer === null) {
-      if (!validReading(reading, opt) || Date.now() - reading.at >= REFRESH) { refresh(); }
+      if (!validReading(reading, opt) || reading.unit !== opt.unit || Date.now() - reading.at >= REFRESH) { refresh(); }
       timer = setInterval(refresh, REFRESH);
     }
   }

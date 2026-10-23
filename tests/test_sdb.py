@@ -1,3 +1,5 @@
+import pytest
+
 from aerotizen.sdb import Sdb, SdbError
 
 
@@ -30,3 +32,13 @@ def test_unreachable_tv_raises_helpful_error():
         assert "Developer Mode" in str(e)
     else:
         raise AssertionError("expected SdbError")
+
+
+def test_entering_a_connected_client_keeps_its_session(fake_tv, monkeypatch):
+    # cli.require_sdb() returns a connected client that callers then use in a `with` block.
+    tv = fake_tv({"0 getduid": "ABCDEF123\n"})
+    client = Sdb("127.0.0.1", port=tv.port, timeout=5).connect()
+    monkeypatch.setattr(client, "_connect_once", lambda: pytest.fail("opened a second sdb session"))
+    with client as same:
+        assert same is client
+        assert same.duid() == "ABCDEF123"

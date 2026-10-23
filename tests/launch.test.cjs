@@ -39,7 +39,7 @@ function appHarness(metadata, options = {}) {
     toast: message => calls.toast.push(message)
   };
   const context = vm.createContext({ window: { AeroTizen: A }, AeroTizen: A });
-  for (const file of ['config.js', 'apps.js']) {
+  for (const file of ['config.js', 'app-catalog.js', 'app-lookup.js', 'apps.js']) {
     vm.runInContext(fs.readFileSync(path.join(launcher, 'js', file), 'utf8'), context);
   }
   return { A, calls };

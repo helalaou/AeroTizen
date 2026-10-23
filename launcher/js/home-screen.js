@@ -2,7 +2,7 @@
 (function (A) {
   'use strict';
 
-  var cfg = A.config, COLS = cfg.GRID_COLUMNS;
+  var cfg = A.config, COLS = 3;
   var rows = [], row = 1, col = [], scrollY = 0;
   var page = 'home';
   var moving = null;
@@ -11,7 +11,9 @@
   function gridTiles() { return [].slice.call(A.$('grid').children); }
 
   function render() {
-    var grid = A.$('grid'), home = A.settings.home;
+    var grid = A.$('grid'), home = A.settings.home, size = A.settings.cardSize === 'small' ? 'small' : 'big';
+    COLS = cfg.CARD_COLUMNS[size];
+    grid.className = 'app-grid cards-' + size;
     grid.textContent = '';
     if (page === 'home') {
       home = home.filter(function (id) { return id === cfg.FIREPLACE_ID || A.apps.byId(id); });
@@ -19,7 +21,6 @@
     } else {
       home = A.apps.all.map(function (app) { return app.id; });
     }
-    A.$('inputs-section').hidden = page !== 'home';
     A.$('apps-empty').hidden = page === 'home' || home.length > 0;
     grid.setAttribute('aria-label', page === 'home' ? 'Home apps' : 'All apps');
     ['home', 'apps'].forEach(function (name) {
@@ -31,12 +32,14 @@
       var tile;
       if (id === cfg.FIREPLACE_ID) {
         tile = A.el('div', 'tile fire');
+        tile.setAttribute('role', 'button');
+        tile.setAttribute('aria-label', 'Fireplace');
+        tile.title = 'Fireplace';
         tile.innerHTML = A.tiles.ICONS.flame;
-        tile.appendChild(A.el('div', 'name', 'Fireplace'));
         tile.onclick = A.apps.playFireplace;
       } else {
         var app = A.apps.byId(id);
-        tile = A.tiles.banner(app, '', function () { A.apps.launch(app); });
+        tile = A.tiles.app(app, '', function () { A.apps.launch(app); });
       }
       tile.dataset.id = id;
       grid.appendChild(tile);
@@ -46,7 +49,9 @@
 
   function buildRows() {
     rows = [[A.$('gear'), A.$('home-tab'), A.$('apps-tab')]].concat(A.chunk(gridTiles(), COLS));
-    if (page === 'home') { rows.push([].slice.call(A.$('inputs').children)); }
+    var inputTiles = [].slice.call(A.$('inputs').children);
+    A.$('inputs-section').hidden = page !== 'home' || inputTiles.length === 0;
+    if (!A.$('inputs-section').hidden) { rows.push(inputTiles); }
     for (var r = 0; r < rows.length; r++) { if (col[r] === undefined) { col[r] = 0; } }
     focus();
   }
