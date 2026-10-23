@@ -1,5 +1,5 @@
-// The Settings sheet: backgrounds (+ speed slider and preview), header visibility, weather, date and
-// time formats, HDMI visibility, input names, which apps show on the home screen, and an escape
+// The Settings sheet: backgrounds (+ speed slider and preview), weather, date and
+// time formats, network and HDMI visibility, input names, which apps show on the home screen, and an escape
 // back to Samsung Home.
 (function (A) {
   'use strict';
@@ -18,24 +18,18 @@
   function changed(after) { S.save(); if (after) { after(); } render(); }
 
   // ---- sections ------------------------------------------------------------------
-  function renderHeaderVisibility() {
-    [
-      ['weather', 'showWeather', window.Weather.updateVisibility],
-      ['time', 'showTime', A.clock.tick],
-      ['network', 'showNetwork', A.network.updateVisibility]
-    ].forEach(function (item) {
-      var box = A.$('header-' + item[0]);
-      box.textContent = '';
-      [true, false].forEach(function (show) {
-        var key = 'header:' + item[0] + ':' + show;
-        var selected = (S[item[1]] !== false) === show;
-        var control = pill(key, show ? 'Show' : 'Hide', selected, function () {
-          S[item[1]] = show; focusKey = key; changed(item[2]);
-        });
-        control.setAttribute('role', 'button');
-        control.setAttribute('aria-pressed', String(selected));
-        box.appendChild(control);
+  function renderVisibility(id, setting, labels, after) {
+    var box = A.$(id);
+    box.textContent = '';
+    [true, false].forEach(function (show, index) {
+      var key = id + ':' + show;
+      var selected = (S[setting] !== false) === show;
+      var control = pill(key, labels[index], selected, function () {
+        S[setting] = show; focusKey = key; changed(after);
       });
+      control.setAttribute('role', 'button');
+      control.setAttribute('aria-pressed', String(selected));
+      box.appendChild(control);
     });
   }
 
@@ -105,6 +99,7 @@
   }
 
   function renderWeather() {
+    renderVisibility('weather-display', 'showWeather', ['Show weather', 'Hide weather'], window.Weather.updateVisibility);
     var box = A.$('weather-location'), visibility = A.$('weather-visibility');
     A.$('weather-location-summary').textContent = S.weatherLocation ?
       'Location: ' + (S.weatherLocation.label || S.weatherLocation.name) :
@@ -149,9 +144,11 @@
     var now = new Date(), times = A.$('time-formats'), dates = A.$('date-formats');
     times.textContent = ''; dates.textContent = '';
     [['12', '(12-hour)'], ['24', '(24-hour)']].forEach(function (t) {
-      times.appendChild(pill('time:' + t[0], A.clock.formatTime(now, t[0]) + '  ' + t[1], S.timeFormat === t[0],
-        function () { S.timeFormat = t[0]; changed(A.clock.tick); }));
+      times.appendChild(pill('time:' + t[0], A.clock.formatTime(now, t[0]) + '  ' + t[1], S.showTime !== false && S.timeFormat === t[0],
+        function () { S.showTime = true; S.timeFormat = t[0]; focusKey = 'time:' + t[0]; changed(A.clock.tick); }));
     });
+    times.appendChild(pill('time:none', 'No time', S.showTime === false,
+      function () { S.showTime = false; focusKey = 'time:none'; changed(A.clock.tick); }));
     A.clock.DATE_FORMATS.forEach(function (f) {
       dates.appendChild(pill('date:' + f.id, f.id === 'none' ? 'No date' : f.format(now), S.dateFormat === f.id,
         function () { S.dateFormat = f.id; changed(A.clock.tick); }));
@@ -221,7 +218,9 @@
   }
 
   function render() {
-    renderBackgrounds(); renderHeaderVisibility(); renderWeather(); renderUnits(); renderDateTime(); renderInputVisibility(); renderInputNames(); renderAppMenu();
+    renderBackgrounds(); renderWeather(); renderUnits(); renderDateTime();
+    renderVisibility('network-visibility', 'showNetwork', ['Show', 'Hide'], A.network.updateVisibility);
+    renderInputVisibility(); renderInputNames(); renderAppMenu();
     focus();
   }
 
@@ -231,9 +230,9 @@
     var r = A.chunk(kids('bg-anim'), 8);
     if (!A.$('speed-row').hidden) { r.push(kids('speed-row')); }
     var results = kids('weather-results').map(function (el) { return [el]; });
-    return r.concat(A.chunk(kids('bg-still'), 8), [kids('header-weather')], [kids('header-time')], [kids('header-network')],
+    return r.concat(A.chunk(kids('bg-still'), 8), [kids('weather-display')],
       [kids('weather-location')], results, [kids('weather-visibility')],
-      [kids('units')], [kids('time-formats')], [kids('date-formats')], [kids('input-visibility')],
+      [kids('units')], [kids('time-formats')], [kids('date-formats')], [kids('network-visibility')], [kids('input-visibility')],
       [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]).filter(function (row) { return row.length; });
   }
 

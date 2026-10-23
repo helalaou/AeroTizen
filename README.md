@@ -32,7 +32,7 @@ On the TV:
   and choose to hide disconnected HDMI ports in Settings. All ports are shown by default
 - 31 backgrounds, 16 of them animated, with a speed slider and preview (for example [Snowfall](docs/screenshots/theme-snowfall.png) and [Lava](docs/screenshots/theme-lava.png))
 - Time, date, weather and your city in the top bar, in the format you pick. Show or hide
-  weather, time and the network indicator separately in **Settings → Header**
+  weather, time and the network indicator in their own Settings sections
 - Shows whether the TV is on Ethernet or Wi-Fi
 - An optional Fireplace tile that plays a fireplace video. Show or hide it under **Settings → Show in app menu**, like the other tiles
 - Settings to choose which apps show up, open the Samsung app store, or go back to Samsung's home screen
@@ -96,10 +96,12 @@ You need a computer on the same network as the TV, with Python 3.10 or newer.
 
 That's it. The TV will start on AeroTizen from now on, and the gear icon opens settings.
 
-In **Settings → Header**, choose **Show** or **Hide** for weather, time and the network
-indicator. All three are shown by default. Choices apply at once and stay saved after a
-restart. Hiding weather stops automatic location and forecast requests, while keeping
-your saved location and units. Date visibility stays under **Date & time → No date**.
+In **Settings → Weather**, choose **Show weather** or **Hide weather**. Hiding weather
+stops automatic location and forecast requests, while keeping your saved location and
+units. In **Date & time**, choose **No time** or **No date** to hide either item; selecting
+a format shows it again. **Network indicator** has its own **Show** and **Hide** controls.
+All three header items are shown by default. Choices apply at once and stay saved after
+a restart.
 
 In **Settings → Weather**, search for a town, city or postcode, then select the matching
 place to save its location. Search uses Open-Meteo. **Automatic** uses an approximate IP
