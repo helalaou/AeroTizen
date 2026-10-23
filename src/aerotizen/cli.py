@@ -248,10 +248,13 @@ def cmd_launch(args):
     print(f"REST launch: {reply}")
     if not accepted:
         # Older firmware may only take launches over the remote channel.
-        with remote.Remote(host) as r:
-            answer = r.launch(args.appid)
-        print(f"remote-channel launch: {'no reply' if answer is None else answer}")
-        accepted = answer in (200, "200")  # TVs that reply send 200 on success, an error code otherwise
+        try:
+            with remote.Remote(host) as r:
+                answer = r.launch(args.appid)
+            print(f"remote-channel launch: {'no reply' if answer is None else answer}")
+            accepted = answer in (200, "200")  # TVs that reply send 200 on success, an error code otherwise
+        except Exception as e:
+            print(f"remote-channel launch failed: {e}")
     status = wait_on_screen(host, args.appid)
     if status is None:
         print(f"{args.appid}: the TV doesn't report this app's state. Check the screen.")

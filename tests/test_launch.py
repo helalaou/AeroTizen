@@ -86,6 +86,20 @@ def test_launch_fails_loudly_when_the_tv_ignores_it(monkeypatch, fast_clock, cap
     assert "remote-channel launch: no reply" in capsys.readouterr().out
 
 
+def test_launch_checks_status_after_remote_connection_failure(monkeypatch, fast_clock, capsys):
+    monkeypatch.setattr(remote, "rest_launch", lambda host, app: (False, "connection refused"))
+
+    def refused_remote(host):
+        raise RuntimeError("TV refused the remote connection")
+
+    monkeypatch.setattr(remote, "Remote", refused_remote)
+    monkeypatch.setattr(remote, "app_status", lambda host, app: {"running": True, "visible": True})
+    cli.cmd_launch(launch_args())
+    out = capsys.readouterr().out
+    assert "remote-channel launch failed: TV refused the remote connection" in out
+    assert f"{APP}: running=True visible=True" in out
+
+
 def test_launch_uses_rest_and_waits_for_the_app_to_show(monkeypatch, fast_clock, capsys):
     replies = iter([{"running": True, "visible": False}] * 2 + [{"running": True, "visible": True}])
     monkeypatch.setattr(remote, "rest_launch", lambda host, app: (True, "HTTP 200 true"))
