@@ -1,6 +1,6 @@
 // Components receive snapshots and named actions. Only this adapter writes the
 // existing settings store or calls the TV/runtime modules.
-export function createSettingsController(A, navigation, render) {
+export const createSettingsController = (A, navigation, render) => {
   let showing = false;
   let previewing = false;
   let searchVersion = 0;
@@ -178,4 +178,4 @@ export function createSettingsController(A, navigation, render) {
       }
     }
   };
-}
+};

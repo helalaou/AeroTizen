@@ -1,7 +1,8 @@
 import { h, Fragment } from 'preact';
-import { Choice, Pill } from './controls.jsx';
+import { Choice } from './Choice.jsx';
+import { Pill } from './Pill.jsx';
 
-export function DisplaySettings({ settings, actions, clock }) {
+export const DisplaySettings = ({ settings, actions, clock }) => {
   const now = new Date();
   const dateStyle = clock.dateStyle(settings.dateFormat);
   return (
@@ -34,4 +35,4 @@ export function DisplaySettings({ settings, actions, clock }) {
         options={[['big', 'Big'], ['small', 'Small']]} onSelect={actions.setCardSize} />
     </>
   );
-}
+};

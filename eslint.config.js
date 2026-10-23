@@ -39,10 +39,20 @@ module.exports = [
       globals: { ...globals.browser }
     },
     plugins: { react },
-    settings: { react: { pragma: 'h', fragment: 'Fragment' } },
+    // Use React 16 component detection for Preact; React is not a dependency.
+    settings: { react: { pragma: 'h', fragment: 'Fragment', version: '16.0' } },
     rules: {
       'react/jsx-uses-react': 'error',
       'react/jsx-uses-vars': 'error',
+      'react/no-multi-comp': 'error',
+      'react/function-component-definition': ['error', { namedComponents: 'arrow-function' }],
+      'no-restricted-syntax': ['error', {
+        selector: 'ExportNamedDeclaration > FunctionDeclaration',
+        message: 'Export functions as const arrow functions.'
+      }, {
+        selector: 'ExportNamedDeclaration > VariableDeclaration[kind!="const"]',
+        message: 'Use const for named exports.'
+      }],
       eqeqeq: 'error',
       curly: 'error'
     }

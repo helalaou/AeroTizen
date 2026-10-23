@@ -25,6 +25,9 @@ CSS behaviour or physical TV compatibility.
 ## Code boundaries
 
 - Components in `launcher/src/settings/` receive settings snapshots and named actions.
+  Each component has its own file, named after the component, and uses an `export const`
+  arrow function. Exported helpers also use `const`. ESLint enforces const exports,
+  arrow components and one component per file.
   Rendering does not write storage or call TV APIs.
 - `controller.js` owns Settings lifetime, pending location searches, persistence and
   calls into the existing runtime. App selections and input names replace their stored
@@ -70,7 +73,8 @@ These are fixed-resolution TV screens; mobile layout is not part of this migrati
 ## Initial browser measurements: 23 October 2026
 
 Desktop Chromium 156.0.8078.48, 1920×1080, static Black background, matching sample app
-inventories. Five paired rounds alternate variant order. Values below are medians.
+inventories, at commit `2c37209` before the component-file refactor. Five paired rounds
+alternate variant order. Values below are medians.
 Each round measures one first open, 25 reopens, 25 clock-format changes and 100 synthetic
 arrow events. Retained JavaScript heap is measured after garbage collection with Settings open.
 

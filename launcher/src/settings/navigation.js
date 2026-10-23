@@ -1,6 +1,6 @@
 // Remote focus is transient DOM state. Arrow keys never render components or
 // rebuild the row map. Rebuild after a render or resize, including wrapped dates.
-export function createNavigation(A) {
+export const createNavigation = (A) => {
   let rows = null;
   let keys = Object.create(null);
   let row = 0;
@@ -90,4 +90,4 @@ export function createNavigation(A) {
       focus();
     }
   };
-}
+};

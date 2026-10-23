@@ -1,7 +1,7 @@
 import { h, Fragment } from 'preact';
-import { Pill } from './controls.jsx';
+import { Pill } from './Pill.jsx';
 
-export function BackgroundSettings({ settings, actions, config }) {
+export const BackgroundSettings = ({ settings, actions, config }) => {
   const list = window.Backgrounds.list;
   const selected = list.find(background => background.id === settings.background);
   const animated = Boolean(selected && selected.anim);
@@ -41,4 +41,4 @@ export function BackgroundSettings({ settings, actions, config }) {
       <div id="bg-still" class="swatches">{swatches(false)}</div>
     </>
   );
-}
+};

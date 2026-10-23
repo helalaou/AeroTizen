@@ -1,7 +1,8 @@
 import { h, Fragment } from 'preact';
-import { Choice, Pill } from './controls.jsx';
+import { Choice } from './Choice.jsx';
+import { Pill } from './Pill.jsx';
 
-export function WeatherSettings({ settings, search, actions }) {
+export const WeatherSettings = ({ settings, search, actions }) => {
   return (
     <>
       <h3>Weather</h3>
@@ -36,4 +37,4 @@ export function WeatherSettings({ settings, search, actions }) {
         options={[['F', '°F  Fahrenheit'], ['C', '°C  Celsius']]} onSelect={actions.setTempUnit} />
     </>
   );
-}
+};
