@@ -111,6 +111,8 @@ Samsung doesn't support any of this officially, so some parts are workarounds:
 - Pressing Home brings AeroTizen back after a second or two. That works from Samsung's home
   screen and inside Netflix, but not inside YouTube, Prime Video, Stremio, Spotify or HbbTV apps. Those apps
   don't report whether they're on screen, so there's no way to tell. Back still works everywhere.
+  After Home in one of them, AeroTizen comes back once that app closes or you open an app that does
+  report itself, such as Netflix. You can also open AeroTizen from Samsung's app row.
 - On TVs that advertise Frame support, the Home watcher checks Art Mode before every return
   to AeroTizen, including startup. It leaves the screen alone while Art Mode is on.
   Missing power or Art status on a known Frame blocks a return until reliable status is available.
