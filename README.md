@@ -90,7 +90,7 @@ You need a computer on the same network as the TV.
 1. Download the latest **CLI** release (`cli-v...`) from
    [Releases](https://github.com/helalaou/AeroTizen/releases). Extract the archive for your
    computer: Linux x64, Windows x64, or macOS Apple silicon / Intel. It contains
-   `aerotizen` and `aerotizen-inspect`, including Python and their dependencies.
+   `aerotizen`, including Python and its dependencies.
 
    Put the extracted directory on your `PATH`, then check that it finds your TV:
 

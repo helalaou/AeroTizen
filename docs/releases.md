@@ -65,12 +65,15 @@ the widget version; it must not change the Tizen `required_version` attribute.
 ## Assets and installation
 
 CLI releases contain archives for Linux x64, Windows x64, macOS Apple silicon, and
-macOS Intel. Each archive contains `aerotizen`, `aerotizen-inspect`, and the license.
-Python, dependencies, and Samsung CA files are included in the executables. Each
+macOS Intel. Each archive contains `aerotizen` and the license.
+Python, dependencies, and Samsung CA files are included in the executable. Each
 archive has a `.sha256` checksum file. Linux builds use Ubuntu 22.04; older systems may
 need the Python installation method. The native build jobs establish each platform's
 build and startup checks; they do not test TV hardware.
 These workflows do not apply Windows code signing or Apple notarization.
+
+The web inspector remains available through the Python package for development;
+see [Working on the launcher](../CONTRIBUTING.md#working-on-the-launcher).
 
 Launcher releases contain:
 

@@ -44,9 +44,13 @@ relaunch cancellation and app visibility, without contacting a TV.
 
 - Preview in a desktop browser: `python3 -m http.server -d launcher`, open
   http://localhost:8000 at 1920×1080. TV-only features fall back to sample data.
-- On the TV: `aerotizen install ./launcher`, then `aerotizen-inspect <tv-ip> DclHome001.Home`
+- On the TV: `aerotizen install ./launcher`, then
+  `python -m aerotizen.inspect_app <tv-ip> DclHome001.Home`
   gives you Chrome DevTools for the running app at http://localhost:9222.
 - Keep it ES5-compatible (older Tizen runtimes) and animate with `transform` only.
+
+The Python package also installs the `aerotizen-inspect` development command.
+Standalone release archives contain only `aerotizen` and the license.
 
 `aerotizen install launcher` installs the latest published launcher, even when a
 `launcher` directory exists in the current directory. Use `./launcher` to test your

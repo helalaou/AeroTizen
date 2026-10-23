@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
 TIZEN = "{http://tizen.org/ns/widgets}"
-ENTRYPOINTS = {"aerotizen": "cli", "aerotizen-inspect": "inspect_app"}
+ENTRYPOINTS = {"aerotizen": "cli"}
 
 
 def check_version(value):
