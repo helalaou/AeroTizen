@@ -5,10 +5,12 @@ is cached so later connections are silent.
 """
 
 import base64
+import http.client
 import json
 import os
 import ssl
 import time
+import urllib.error
 import urllib.request
 
 import websocket
@@ -33,6 +35,28 @@ def app_status(host, app_id):
         )
     except Exception:
         return None
+
+
+def rest_launch(host, app_id, port=8001):
+    """Open an app through the TV's local REST API. Returns (accepted, what the TV said).
+
+    2022 (Tizen 6.5) TVs ignore ed.apps.launch on the remote channel without replying, but
+    accept this. The TV answers `true` when it took the request.
+    """
+    req = urllib.request.Request(
+        f"http://{host}:{port}/api/v2/applications/{app_id}", method="POST", data=b""
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=8) as r:
+            body = r.read().decode(errors="replace").strip()
+            return r.status == 200 and body == "true", f"HTTP {r.status} {body[:120]}"
+    except urllib.error.HTTPError as e:
+        with e:
+            return False, f"HTTP {e.code} {e.read().decode(errors='replace').strip()[:120]}"
+    except OSError as e:
+        return False, str(getattr(e, "reason", e))
+    except (http.client.HTTPException, ValueError) as e:  # e.g. an app id that isn't URL-safe
+        return False, f"{type(e).__name__}: {e}"
 
 
 class Remote:
@@ -123,7 +147,8 @@ class Remote:
             key, times = (step, 1) if isinstance(step, str) else step
             self.key(key, times, delay)
 
-    def launch(self, app_id):
+    def launch(self, app_id, wait=3.0):
+        """Open an app over the remote channel. Returns the TV's reply, or None if it sent none."""
         self.ws.send(
             json.dumps(
                 {
@@ -136,3 +161,18 @@ class Remote:
                 }
             )
         )
+        deadline = time.monotonic() + wait
+        try:
+            while time.monotonic() < deadline:
+                self.ws.settimeout(max(0.1, deadline - time.monotonic()))
+                try:
+                    msg = json.loads(self.ws.recv())
+                except ValueError:
+                    continue
+                if msg.get("event") == "ed.apps.launch":
+                    return msg.get("data")
+        except (websocket.WebSocketTimeoutException, websocket.WebSocketConnectionClosedException):
+            pass
+        finally:
+            self.ws.settimeout(self.timeout)
+        return None
