@@ -6,7 +6,8 @@
   aerotizen debloat             pick packages to remove, then remove them
   aerotizen debloat --remove PKGID[,PKGID...] [--yes]
   aerotizen certs               sign in to Samsung, create signing certs for this TV
-  aerotizen install PATH        sign + install an app folder or .wgt (e.g. launcher)
+  aerotizen install launcher    download, sign, and install the latest launcher
+  aerotizen install PATH        sign + install a local app folder or .wgt
   aerotizen key KEY_VOLUP [n]   press a remote button
   aerotizen launch APPID        open an app and check that it came up
 
@@ -17,11 +18,16 @@ import argparse
 import datetime
 import json
 import os
+import re
 import sys
 import time
+import xml.etree.ElementTree as ET
+import zipfile
 from collections import OrderedDict
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from aerotizen import catalog, discover, remote
+from aerotizen import __version__, catalog, discover, remote
 from aerotizen.sdb import Sdb, SdbError
 
 STATE_DIR = remote.CONFIG_DIR
@@ -186,45 +192,85 @@ def cmd_certs(args):
     print(f"Certificates for TV {duid} saved to {out}")
 
 
-def app_id_of(src):
-    """Read <tizen:application id="..."> from a folder's or .wgt's config.xml."""
-    import re
-    import zipfile
-
-    if os.path.isdir(src):
-        with open(os.path.join(src, "config.xml"), encoding="utf-8") as f:
-            xml = f.read()
+def app_metadata_of(src):
+    """Read the application ID and widget version before opening a TV connection."""
+    path = Path(src)
+    if path.is_dir():
+        xml = (path / "config.xml").read_bytes()
+    elif path.is_file() and path.suffix.lower() == ".wgt":
+        with zipfile.ZipFile(path) as archive:
+            xml = archive.read("config.xml")
     else:
-        with zipfile.ZipFile(src) as z:
-            xml = z.read("config.xml").decode("utf-8")
-    m = re.search(r"<tizen:application[^>]*\bid=\"([^\"]+)\"", xml)
-    if not m:
-        sys.exit("config.xml has no <tizen:application id=...>")
-    return m.group(1)
+        raise ValueError(f"Not an app folder or .wgt file: {src}")
+    root = ET.fromstring(xml)
+    application = root.find("{http://tizen.org/ns/widgets}application")
+    app_id = application.get("id", "") if application is not None else ""
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", app_id):
+        raise ValueError("config.xml has no valid <tizen:application id=...>")
+    return app_id, root.get("version")
+
+
+def verify_install(app_id, version, output, applist):
+    """Require the exact app and reject an old installation after an install error."""
+    statuses = []
+    for line in output.splitlines():
+        # IDs and filenames can contain words such as "Error" without describing a failure.
+        if re.fullmatch(rf"\s*install\s+{re.escape(app_id)}\s*", line):
+            continue
+        if re.fullmatch(r"\s*package_path\s+\S+\s*", line):
+            continue
+        statuses.append(re.sub(r"app_id\[[A-Za-z0-9_.-]+\]", "", line))
+    if re.search(r"\b(?:fail(?:ed|ure)?|error|denied|cannot)\b|\bcan\s+not\b", "\n".join(statuses), re.I):
+        raise ValueError("The TV reported an installation error. See its reply above.")
+    installed = next((app for app in catalog.parse_applist(applist) if app["appid"] == app_id), None)
+    if installed is None:
+        raise ValueError(f"The TV does not list {app_id} as installed.")
+    installed_version = installed.get("version")
+    if version and installed_version:
+        if installed_version != version:
+            raise ValueError(f"The TV reports version {installed_version}; expected {version}.")
+        print(f"\nInstalled: {app_id} (version {installed_version} verified)")
+        return
+    # Captured vd_appinstall reply from a Samsung Frame; progress alone is not confirmation.
+    completed = re.search(rf"app_id\[{re.escape(app_id)}\]\s+install completed\b", output, re.I)
+    if not completed:
+        raise ValueError("The TV did not confirm installation; the installed version is unverified.")
+    print(f"\nTV confirmed installation: {app_id}. Installed version is unverified.")
 
 
 def cmd_install(args):
-    from aerotizen import signer
+    from aerotizen import releases, signer
 
-    host = pick_tv(args)
-    s = require_sdb(host)
-    duid, tool_path = s.duid(), s.capability().get("sdk_toolpath", "/home/owner/share/tmp/sdk_tools")
-    cdir = cert_dir_for(duid)
-    if not os.path.exists(os.path.join(cdir, "distributor.p12")):
-        sys.exit(f"No certificates for this TV yet. Run: aerotizen --tv {host} certs")
-    app_id = app_id_of(args.src)
-    signed = os.path.join(STATE_DIR, f"{app_id.split('.')[0]}-signed.wgt")
-    signer.sign_wgt(args.src, signed, cdir)
-    with open(os.path.join(cdir, "device-profile.xml"), "rb") as f:
-        s.push(f.read(), f"{tool_path}/device-profile.xml")
-    with open(signed, "rb") as f:
-        out = s.install(app_id, f.read(), tool_path)
-    print(out.strip())
-    installed = app_id.split(".")[0] in s.applist()
-    s.close()
-    print(f"\n{'Installed' if installed else 'NOT installed'}: {app_id}")
-    if not installed:
-        sys.exit(1)
+    if args.src != "launcher" and (args.release_version is not None or args.release_repo is not None):
+        sys.exit("--version and --release-repo apply only to 'install launcher'.")
+    try:
+        with TemporaryDirectory(prefix="aerotizen-install-") as temporary:
+            src = args.src
+            if src == "launcher":
+                downloaded = releases.download_launcher(
+                    Path(temporary),
+                    version=args.release_version,
+                    repository=args.release_repo or releases.DEFAULT_REPOSITORY,
+                )
+                src = downloaded.path
+                print(f"Downloaded launcher {downloaded.version}.")
+            app_id, version = app_metadata_of(src)
+            host = pick_tv(args)
+            with require_sdb(host) as s:
+                duid = s.duid()
+                tool_path = s.capability().get("sdk_toolpath", "/home/owner/share/tmp/sdk_tools")
+                cdir = cert_dir_for(duid)
+                if not os.path.exists(os.path.join(cdir, "distributor.p12")):
+                    sys.exit(f"No certificates for this TV yet. Run: aerotizen --tv {host} certs")
+                signed = Path(temporary) / f"{app_id.split('.')[0]}-signed.wgt"
+                signer.sign_wgt(src, signed, cdir)
+                with open(os.path.join(cdir, "device-profile.xml"), "rb") as f:
+                    s.push(f.read(), f"{tool_path}/device-profile.xml")
+                output = s.install(app_id, signed.read_bytes(), tool_path)
+                print(output.strip())
+                verify_install(app_id, version, output, s.applist())
+    except (OSError, ValueError, zipfile.BadZipFile, ET.ParseError, KeyError, SdbError) as exc:
+        sys.exit(f"Install failed: {exc}")
 
 
 def cmd_key(args):
@@ -276,6 +322,7 @@ def main():
         prog="aerotizen", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--tv", help="TV IP address")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("discover").set_defaults(fn=cmd_discover)
     sub.add_parser("status").set_defaults(fn=cmd_status)
@@ -291,7 +338,11 @@ def main():
     p.add_argument("--force", action="store_true")
     p.set_defaults(fn=cmd_certs)
     p = sub.add_parser("install")
-    p.add_argument("src", help="app folder (with config.xml) or .wgt file")
+    p.add_argument("src", help="'launcher' for a release, or a local app folder (./launcher) or .wgt file")
+    p.add_argument("--version", dest="release_version", metavar="X.Y.Z", help="install this launcher version")
+    p.add_argument(
+        "--release-repo", metavar="OWNER/REPO", help="download launcher releases from this repository"
+    )
     p.set_defaults(fn=cmd_install)
     p = sub.add_parser("key")
     p.add_argument("key")

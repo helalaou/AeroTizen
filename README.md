@@ -85,14 +85,22 @@ on yours, please [open a model report](../../issues/new?template=model_report.ym
 
 ## Setup
 
-You need a computer on the same network as the TV, with Python 3.10 or newer.
+You need a computer on the same network as the TV.
 
-1. Install the CLI and check that it finds your TV:
+1. Download the latest **CLI** release (`cli-v...`) from
+   [Releases](https://github.com/helalaou/AeroTizen/releases). Extract the archive for your
+   computer: Linux x64, Windows x64, or macOS Apple silicon / Intel. It contains
+   `aerotizen` and `aerotizen-inspect`, including Python and their dependencies.
+
+   Put the extracted directory on your `PATH`, then check that it finds your TV:
 
    ```bash
-   pip install git+https://github.com/helalaou/AeroTizen
    aerotizen discover
    ```
+
+   To run directly from the extracted directory, use `./aerotizen` on macOS/Linux
+   or `.\aerotizen.exe` in Windows PowerShell. If you already use Python 3.10 or newer,
+   `pip install git+https://github.com/helalaou/AeroTizen` remains available.
 
 2. Turn on Developer Mode on the TV. Open **Apps**, type `12345` on the remote (or with the
    on-screen number pad), switch Developer mode on, and set Host PC IP to your computer's IP.
@@ -108,9 +116,23 @@ You need a computer on the same network as the TV, with Python 3.10 or newer.
 4. Install the launcher:
 
    ```bash
-   git clone https://github.com/helalaou/AeroTizen && cd AeroTizen
    aerotizen install launcher
    ```
+
+   This downloads the latest stable **launcher** release, checks its checksum and
+   compatibility, signs it with your TV certificates, and installs it. No source checkout
+   or Node.js is needed. Keep your existing certificates for future app updates.
+
+   Run the same command to install a newer launcher. To select a version, use
+   `aerotizen install launcher --version 2.2.0` (replace the number with a published
+   launcher version). CLI and launcher versions are independent; a launcher release
+   can require a newer CLI. Use `aerotizen --version` to check your CLI version.
+
+   To install local development files or a downloaded package, use an explicit path:
+   `aerotizen install ./launcher` or `aerotizen install ./app.wgt`.
+
+   If no launcher release has been published yet, use the local development method in
+   [Contributing](CONTRIBUTING.md). The installer does not fall back to unreleased source.
 
 That's it. The TV will start on AeroTizen from now on, and the gear icon opens settings.
 

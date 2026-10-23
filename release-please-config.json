@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "ddbaf46130e9753ae4a04d929e6c1dec0d3f9512",
+  "separate-pull-requests": true,
+  "include-component-in-tag": true,
+  "include-v-in-tag": true,
+  "tag-separator": "-",
+  "draft": true,
+  "force-tag-creation": true,
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "component": "cli",
+      "package-name": "aerotizen",
+      "changelog-path": "CHANGELOG-CLI.md",
+      "exclude-paths": ["launcher", "tests"]
+    },
+    "launcher": {
+      "release-type": "simple",
+      "component": "launcher",
+      "package-name": "aerotizen-launcher",
+      "version-file": "version.txt",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "xml",
+          "path": "config.xml",
+          "xpath": "/*[local-name()='widget' and namespace-uri()='http://www.w3.org/ns/widgets']/@version"
+        }
+      ]
+    }
+  }
+}

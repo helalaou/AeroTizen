@@ -51,3 +51,13 @@ def test_non_removable_and_infrastructure_are_protected():
 def test_legacy_line_format_falls_back_to_store_pattern():
     apps = catalog.parse_applist("Jz7aUrV2Q4.Twitch\tTwitch\norg.tizen.settings\tSettings\n")
     assert {a["name"]: catalog.classify(a) for a in apps} == {"Twitch": "bloat", "Settings": "protected"}
+
+
+def test_app_versions_are_optional_in_block_and_key_value_formats():
+    block = _block("DclHome001.Home", "AeroTizen", "DclHome001.Home", "DclHome001")
+    assert catalog.parse_applist(block)[0]["version"] is None
+    block += "--------------app_version                         =2.2.0-------------\n"
+    assert catalog.parse_applist(block)[0]["version"] == "2.2.0"
+    line = "app_id=DclHome001.Home app_version=2.2.0"
+    assert catalog.parse_applist(line)[0]["version"] == "2.2.0"
+    assert catalog.parse_applist("DclHome001.Home")[0]["version"] is None

@@ -44,9 +44,24 @@ relaunch cancellation and app visibility, without contacting a TV.
 
 - Preview in a desktop browser: `python3 -m http.server -d launcher`, open
   http://localhost:8000 at 1920×1080. TV-only features fall back to sample data.
-- On the TV: `aerotizen install launcher`, then `aerotizen-inspect <tv-ip> DclHome001.Home`
+- On the TV: `aerotizen install ./launcher`, then `aerotizen-inspect <tv-ip> DclHome001.Home`
   gives you Chrome DevTools for the running app at http://localhost:9222.
 - Keep it ES5-compatible (older Tizen runtimes) and animate with `transform` only.
+
+`aerotizen install launcher` installs the latest published launcher, even when a
+`launcher` directory exists in the current directory. Use `./launcher` to test your
+local changes. For a fork's published app, use
+`aerotizen install launcher --release-repo OWNER/REPO`.
+
+## Releases
+
+The CLI and TV launcher have independent versions, release PRs, and GitHub releases.
+Use conventional commit titles (`feat:`, `fix:`, and `feat!:` for breaking changes)
+so Release Please can select versions and write release notes. Source paths determine
+which component changes; commit scopes alone do not route releases.
+
+See [Release process](docs/releases.md) for setup, assets, local package checks, and
+failed-build recovery. Build outputs belong in release assets, not in Git.
 
 ## Updating app metadata
 
