@@ -1,7 +1,8 @@
 // The launcher runs on Samsung's Tizen web runtime (Chromium-based, but older models lag),
-// so it is plain ES5-style scripts sharing one namespace, with no build step.
+// so legacy scripts retain ES5 syntax and compiled Settings targets Chromium 69.
 const js = require('@eslint/js');
 const globals = require('globals');
+const react = require('eslint-plugin-react');
 
 module.exports = [
   { ignores: ['launcher/js/logos.js'] },
@@ -28,6 +29,27 @@ module.exports = [
       curly: 'error',
       'no-var': 'off'
     }
+  },
+  {
+    files: ['launcher/src/**/*.{js,jsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      sourceType: 'module',
+      parserOptions: { ecmaFeatures: { jsx: true } },
+      globals: { ...globals.browser }
+    },
+    plugins: { react },
+    settings: { react: { pragma: 'h', fragment: 'Fragment' } },
+    rules: {
+      'react/jsx-uses-react': 'error',
+      'react/jsx-uses-vars': 'error',
+      eqeqeq: 'error',
+      curly: 'error'
+    }
+  },
+  {
+    files: ['tools/build-launcher.mjs'],
+    languageOptions: { sourceType: 'module', globals: { ...globals.node } }
   },
   {
     files: ['launcher/service/**/*.js'],

@@ -11,7 +11,7 @@ git clone https://github.com/helalaou/AeroTizen
 cd AeroTizen
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"     # the aerotizen CLI + pytest + ruff
-npm install                 # ESLint for the launcher (optional)
+npm ci                      # launcher build and lint tools
 ```
 
 Checks (CI runs the same):
@@ -20,6 +20,7 @@ Checks (CI runs the same):
 ruff check . && ruff format --check .
 pytest
 npm run lint
+npm run build      # compiled Preact Settings in dist/launcher
 npm test           # launcher tests: tests/*.test.cjs, run in a Node sandbox
 ```
 
@@ -32,7 +33,9 @@ relaunch cancellation and app visibility, without contacting a TV.
 | Path | What |
 |---|---|
 | `src/aerotizen/` | Python CLI: sdb client, certificates, package signing, debloat |
-| `launcher/` | The TV app (plain HTML/CSS/JS, no build step) |
+| `launcher/` | TV runtime files and the legacy Settings baseline |
+| `launcher/src/settings/` | Preact Settings components, actions and remote navigation |
+| `dist/launcher/` | Generated TV runtime with compiled Settings; no Node needed on TV |
 | `launcher/js/config.js` | Launcher behaviour and settings |
 | `launcher/js/app-catalog.js` | App IDs, Samsung store IDs and optional fallback branding |
 | `launcher/js/app-lookup.js` | Shared ID lookup and legacy name compatibility |
@@ -42,11 +45,18 @@ relaunch cancellation and app visibility, without contacting a TV.
 
 ## Working on the launcher
 
+- Run `npm run dev`, then open http://localhost:8019 at 1920×1080. The server also
+  prints a network URL for another device. Settings source changes rebuild automatically;
+  restart after changing legacy HTML, CSS or scripts. TV-only features use sample data.
+- Run `npm run build` for the compiled runtime in `dist/launcher/`.
+  This branch keeps the source launcher as a working baseline while the release process
+  PR is pending. See [Preact Settings](docs/preact-settings.md) for scope and merge checks.
 - Preview in a desktop browser: `python3 -m http.server -d launcher`, open
-  http://localhost:8000 at 1920×1080. TV-only features fall back to sample data.
+  http://localhost:8000 at 1920×1080. This serves the legacy Settings baseline.
 - On the TV: `aerotizen install launcher`, then `aerotizen-inspect <tv-ip> DclHome001.Home`
   gives you Chrome DevTools for the running app at http://localhost:9222.
-- Keep it ES5-compatible (older Tizen runtimes) and animate with `transform` only.
+- Keep legacy scripts ES5-compatible. Compiled Settings targets Chromium 69, the 2020
+  TV engine, with an ES2018 syntax ceiling. Animate with `transform` only.
 
 ## Updating app metadata
 

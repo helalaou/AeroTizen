@@ -1,14 +1,22 @@
 {
   "name": "aerotizen-launcher",
   "private": true,
-  "description": "Dev tooling for the AeroTizen launcher (the launcher itself has no dependencies).",
+  "description": "AeroTizen launcher tooling and Preact Settings build.",
   "scripts": {
-    "lint": "eslint launcher",
+    "lint": "eslint launcher tools/build-launcher.mjs",
+    "build": "node tools/build-launcher.mjs",
+    "dev": "node tools/build-launcher.mjs --serve",
     "test": "node --test tests/*.test.cjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
+    "acorn": "8.19.0",
+    "esbuild": "0.28.2",
     "eslint": "^9.39.0",
+    "eslint-plugin-react": "7.37.5",
     "globals": "^16.5.0"
+  },
+  "dependencies": {
+    "preact": "10.29.8"
   }
 }
