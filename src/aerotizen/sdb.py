@@ -102,7 +102,8 @@ class Sdb:
             self.sock = None
 
     def __enter__(self):
-        return self.connect()
+        # `with Sdb(host).connect() as s` must not open a second session; the TV allows one.
+        return self if self.sock else self.connect()
 
     def __exit__(self, *exc):
         self.close()
