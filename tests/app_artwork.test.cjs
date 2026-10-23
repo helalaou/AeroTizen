@@ -32,7 +32,7 @@ function runtime(tv = false) {
     setTimeout: (fn) => { timers.set(++nextTimer, fn); return nextTimer; },
     clearTimeout: (id) => timers.delete(id)
   });
-  for (const file of ['config.js', 'artwork.js', 'brands.js']) {
+  for (const file of ['config.js', 'app-catalog.js', 'app-lookup.js', 'artwork.js', 'brands.js']) {
     vm.runInContext(fs.readFileSync(path.join(root, 'js', file), 'utf8'), context);
   }
   return { A, images, timers };

@@ -27,7 +27,7 @@
   A.homewatch = {
     start: start,
     // The launcher is about to open `appId`; Home inside it should come back here.
-    watch: function (appId) { tell('/watch?id=' + encodeURIComponent(cfg.PRELOADED_APPS[appId] || appId)); },
+    watch: function (appId) { tell('/watch?id=' + encodeURIComponent(A.catalog.preloadedStoreId(appId) || appId)); },
     // Every real app, so the service can tell a cast/launch from elsewhere apart from Home.
     reportApps: function (ids) { tell('/apps?ids=' + ids.map(encodeURIComponent).join(',')); },
     // The tucked-away escape: hand the TV back to Samsung Home until the launcher is reopened.

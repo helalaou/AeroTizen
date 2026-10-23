@@ -1,4 +1,4 @@
-// AeroTizen launcher: every constant in one place.
+// AeroTizen launcher behaviour and settings. App identities live in app-catalog.js.
 window.AeroTizen = window.AeroTizen || {};
 
 AeroTizen.config = {
@@ -19,7 +19,6 @@ AeroTizen.config = {
   // which the TV's local API knows by their store ids. getAppsInfo() returns ~470 entries;
   // everything else is firmware plumbing.
   STORE_PACKAGE: /^[A-Za-z0-9]{10}$/,
-  PRELOADED_APPS: { 'org.tizen.netflix-app': '3201907018807', 'org.tizen.primevideo': '3201910019365' },
   HIDDEN_APPS: /service|emanual|companion|dummy|widget|DclHome001/i,
   STORE_APP_IDS: ['org.volt.apps', 'com.samsung.tv.store'],
   HBBTV_APP_ID: 'org.tizen.hbbtv',
