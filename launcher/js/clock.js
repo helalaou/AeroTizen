@@ -6,6 +6,8 @@
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
                 'September', 'October', 'November', 'December'];
 
+  var timeWidths = {};
+
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
   function systemFormat(method, short) {
@@ -113,14 +115,52 @@
     return readableDate(d, 'short');
   }
 
-  function formatTime(d, id) {
+  function timeLocaleKey(id) {
+    var nav = window.navigator || {};
+    return id + ':' + String(nav.languages || nav.language || '');
+  }
+
+  function timeFormatter(id) {
     try {
       var cycle = id === '24' ? 'h23' : 'h12';
       var formatter = localFormatter({ hour: id === '24' ? '2-digit' : 'numeric', minute: '2-digit', hourCycle: cycle });
-      if (formatter.resolvedOptions().hourCycle === cycle) { return formatter.format(d); }
+      if (formatter.resolvedOptions().hourCycle === cycle) { return formatter; }
     } catch (e) { /* older TVs keep the chosen format without Intl */ }
+    return null;
+  }
+
+  function timeText(d, id, formatter) {
+    try { if (formatter) { return formatter.format(d); } }
+    catch (e) { /* unavailable formatting: use the legacy clock */ }
     if (id === '24') { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
     return (d.getHours() % 12 || 12) + ':' + pad(d.getMinutes()) + (d.getHours() < 12 ? ' am' : ' pm');
+  }
+
+  function formatTime(d, id) {
+    // A fresh formatter picks up system time-zone changes without a page reload.
+    return timeText(d, id, timeFormatter(id));
+  }
+
+  function sizeTime(el, id) {
+    if (!el.style || typeof window.getComputedStyle !== 'function') { return; }
+    var style = window.getComputedStyle(el);
+    var font = style.fontWeight + ' ' + style.fontSize + ' ' + style.fontFamily;
+    var key = timeLocaleKey(id) + ':' + font;
+    if (timeWidths[key] === undefined) {
+      var context = document.createElement('canvas').getContext('2d');
+      if (!context) { return; }
+      context.font = font;
+      // Keep the header still for the whole day, including local digits and AM/PM.
+      // Measure once per locale/font/format; retain the original 8ch/5ch minimum.
+      var width = context.measureText('0').width * (id === '24' ? 5 : 8);
+      var sample = new Date(2000, 0, 1), formatter = timeFormatter(id);
+      for (var minute = 0; minute < 24 * 60; minute++) {
+        sample.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
+        width = Math.max(width, context.measureText(timeText(sample, id, formatter)).width + 1);
+      }
+      timeWidths[key] = Math.ceil(width);
+    }
+    el.style.width = timeWidths[key] + 'px';
   }
 
   function tick() {
@@ -129,6 +169,7 @@
     dateEl.hidden = A.settings.dateFormat === 'none';
     timeEl.setAttribute('data-format', A.settings.timeFormat === '24' ? '24' : '12');
     timeEl.textContent = formatTime(d, A.settings.timeFormat);
+    sizeTime(timeEl, A.settings.timeFormat);
   }
 
   A.clock = {

@@ -12,8 +12,8 @@ function loadSettings(storage) {
     setItem: (k, v) => { store[k] = String(v); }
   };
   const A = {};
-  const context = vm.createContext({ window: { AeroTizen: A }, AeroTizen: A, localStorage });
-  for (const file of ['config.js', 'settings.js']) {
+  const context = vm.createContext({ window: { AeroTizen: A, Intl, navigator: { language: 'en-GB', languages: ['en-GB'] } }, AeroTizen: A, localStorage });
+  for (const file of ['config.js', 'settings.js', 'clock.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'launcher', 'js', file), 'utf8'), context);
   }
   A.settings.load();
@@ -23,7 +23,8 @@ function loadSettings(storage) {
 test('defaults apply when nothing is saved', () => {
   const { settings } = loadSettings({});
   assert.equal(settings.background, 'aurora');
-  assert.equal(settings.tempUnit, 'auto');
+  assert.equal(settings.tempUnit, 'C');
+  assert.equal(settings.timeFormat, '24');
   assert.equal(settings.home, null, 'null picks the default tiles on first launch');
 });
 

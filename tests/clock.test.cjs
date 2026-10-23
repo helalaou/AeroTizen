@@ -4,12 +4,15 @@ const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 
-function runtime({ locale = 'en-GB', time, intl = Intl, saved = {}, legacy = false } = {}) {
+function runtime({ locale = 'en-GB', time, intl = Intl, saved = {}, legacy = false, measure } = {}) {
   const storage = new Map([[legacy ? 'hearth.home.v1' : 'aerotizen.settings.v1', JSON.stringify(saved)]]);
   const elements = { date: {}, time: { setAttribute(name, value) { this[name] = value; } } };
+  if (measure) { elements.time.style = {}; }
   const A = { $: (id) => elements[id] };
   const context = vm.createContext({
-    window: { AeroTizen: A, navigator: { languages: [locale], language: locale }, Intl: intl, tizen: time ? { time } : undefined },
+    window: { AeroTizen: A, navigator: { languages: [locale], language: locale }, Intl: intl, tizen: time ? { time } : undefined,
+      getComputedStyle: measure ? () => ({ fontWeight: '700', fontSize: '36px', fontFamily: 'Arial' }) : undefined },
+    document: measure ? { createElement: () => ({ getContext: () => ({ measureText: measure }) }) } : undefined,
     AeroTizen: A,
     localStorage: { getItem: (key) => storage.get(key), setItem: (key, value) => storage.set(key, value) }
   });
@@ -227,4 +230,37 @@ test('device detection still works without Intl', () => {
   const { A } = runtime({ intl: null, time: {getTimeFormat: () => 'h:m:s'} });
   assert.equal(A.settings.timeFormat, '24');
   assert.equal(A.clock.formatTime(sample, A.settings.timeFormat), '17:04');
+});
+
+
+test('clock output follows a changed system time zone without reloading', () => {
+  let timeZone = 'Europe/London';
+  const intl = { DateTimeFormat: function (locale, options) {
+    return new Intl.DateTimeFormat(locale, { ...options, timeZone });
+  } };
+  const { A } = runtime({ intl });
+  const instant = new Date('2026-01-01T13:00:00Z');
+  assert.equal(A.clock.formatTime(instant, '24'), '13:00');
+  timeZone = 'Asia/Tokyo';
+  assert.equal(A.clock.formatTime(instant, '24'), '22:00');
+});
+
+test('older Intl keeps a stable fitting clock without repeated layout measurement', () => {
+  let constructors = 0, measurements = 0;
+  const intl = { DateTimeFormat: function () {
+    constructors++;
+    return { resolvedOptions: () => ({ hour12: false }), format: () => 'date' };
+  } };
+  const { A, elements } = runtime({ intl, measure: text => {
+    measurements++;
+    return { width: text.length * 10 };
+  } });
+  const initialConstructors = constructors;
+  A.clock.tick();
+  assert.ok(constructors - initialConstructors < 8, 'unsupported hourCycle must not create a formatter for each minute');
+  assert.ok(parseFloat(elements.time.style.width) >= elements.time.textContent.length * 10);
+  const width = elements.time.style.width, measured = measurements;
+  A.clock.tick();
+  assert.equal(elements.time.style.width, width);
+  assert.equal(measurements, measured, 'normal clock updates reuse the reserved width');
 });
