@@ -1,4 +1,4 @@
-// TV inputs, named by the user or the TV, with an option to hide disconnected HDMI ports.
+// TV inputs, named by the user or the TV, with visibility settings for Live TV and HDMI ports.
 // Selected inputs are shown full screen inside the launcher.
 (function (A) {
   'use strict';
@@ -23,6 +23,7 @@
     var row = A.$('inputs');
     row.textContent = '';
     inputs.sources.forEach(function (s) {
+      if (!A.settings.showLiveTv && s.type === 'TV') { return; }
       if (A.settings.hideDisconnectedHdmi && s.type === 'HDMI' && s.connected === false) { return; }
       var label = inputs.label(s), port = inputs.portName(s);
       var tile = A.tiles.card(label, iconFor(s, label), function () { inputs.show(s); });
