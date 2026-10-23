@@ -101,3 +101,15 @@ test('corrupt storage falls back to defaults', () => {
   const { settings } = loadSettings({ 'aerotizen.settings.v1': '{not json' });
   assert.equal(settings.background, 'aurora');
 });
+
+test('settings publish saves and reloads, and unsubscribe is safe to repeat', () => {
+  const { settings } = loadSettings({});
+  const values = [];
+  const unsubscribe = settings.subscribe(() => values.push(settings.background));
+  settings.background = 'snow'; settings.save();
+  settings.background = 'black'; settings.load();
+  assert.deepEqual(values, ['snow', 'snow']);
+  unsubscribe(); unsubscribe();
+  settings.background = 'lava'; settings.save();
+  assert.deepEqual(values, ['snow', 'snow']);
+});

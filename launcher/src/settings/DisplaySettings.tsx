@@ -2,7 +2,7 @@ import { Choice } from './Choice';
 import { Pill } from './Pill';
 import type { Clock, SettingsSectionProps } from './types';
 
-interface Props extends SettingsSectionProps { clock: Clock }
+interface Props extends SettingsSectionProps { clock: Omit<Clock, 'tick'> }
 
 export const DisplaySettings = ({ settings, actions, clock }: Props) => {
   const now = new Date();

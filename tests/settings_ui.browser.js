@@ -128,18 +128,60 @@ async (page) => {
     A.tiles.app = app => { window.settingsArtworkConstructions++; return original(app); };
     A.artwork.sources = () => ['https://artwork.test/bad', 'https://artwork.test/good'];
     A.settingsUi.open();
+    document.querySelector('#all-apps .app-tile').click();
   });
   await page.waitForFunction(() => document.querySelectorAll('#all-apps .has-artwork').length === AeroTizen.apps.all.length);
   const artwork = await page.evaluate(() => {
     const tile = document.querySelector('#all-apps .app-tile');
     if (!tile.querySelector('.app-fallback').hidden) throw new Error('Artwork did not replace fallback');
+    if (!tile.classList.contains('focused')) throw new Error('Artwork arrival removed remote focus');
     document.querySelector('[data-key="time:12"]').click();
     if (tile !== document.querySelector('#all-apps .app-tile')) throw new Error('Clock change rebuilt artwork');
     tile.click();
     if (tile !== document.querySelector('#all-apps .app-tile')) throw new Error('Selection rebuilt artwork');
-    if (window.settingsArtworkConstructions !== AeroTizen.apps.all.length) throw new Error('Artwork constructed repeatedly');
+    if (window.settingsArtworkConstructions !== 0) throw new Error('Settings called a legacy DOM constructor');
     return { asynchronous: true, fallback: true, stableOnClockAndSelection: true };
   });
+  // External legacy writes publish into the same Settings store.
+  await page.evaluate(() => {
+    AeroTizen.settings.timeFormat = '24';
+    AeroTizen.settings.inputNames = { 'HDMI 1': 'External name' };
+    AeroTizen.settings.save();
+  });
+  await page.waitForFunction(() => document.querySelector('[data-key="time:24"]').getAttribute('aria-pressed') === 'true' &&
+    document.querySelector('[data-key="name:HDMI 1"] input').value === 'External name');
+  const lifecycle = await page.evaluate(async () => {
+    const A = AeroTizen;
+    const find = key => document.querySelector('#editor [data-key="' + key + '"]');
+    const field = find('name:HDMI 1').querySelector('input');
+    field.focus(); field.value = 'Local draft'; field.dispatchEvent(new Event('input', { bubbles: true }));
+    A.settings.inputNames = { 'HDMI 1': 'Concurrent value' }; A.settings.save();
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    if (field.value !== 'Local draft') throw new Error('External update discarded an active draft');
+    A.settingsUi.close();
+    if (A.settings.inputNames['HDMI 1'] !== 'Local draft') throw new Error('Close did not commit active draft');
+    A.settings.inputNames = { 'HDMI 1': 'Changed while closed' }; A.settings.save();
+    A.settingsUi.open();
+    if (field.value !== 'Changed while closed') throw new Error('Reopen missed an external update');
+    if (field !== find('name:HDMI 1').querySelector('input')) throw new Error('Reopen rebuilt the cached form');
+    // A pending reply delivered after close + reopen must remain cancelled.
+    const replies = [];
+    Weather.searchLocations = (query, done) => replies.push(done);
+    const query = find('weather:query').querySelector('input');
+    query.value = 'Pending'; query.dispatchEvent(new Event('input', { bubbles: true }));
+    find('weather:search').click(); A.settingsUi.close(); A.settingsUi.open();
+    replies.shift()([{ label: 'Outdated result', name: 'Outdated result', latitude: 0, longitude: 0 }]);
+    if (document.querySelector('#weather-results').textContent.includes('Outdated result')) throw new Error('Reopen accepted an old reply');
+    const original = A.settings.speed;
+    for (let i = 0; i < 10; i++) { A.settingsUi.close(); A.settingsUi.open(); }
+    find('bg:aurora').click();
+    for (let i = 0; i < 9; i++) A.settingsUi.keydown(A.config.KEY.LEFT, { preventDefault() {} });
+    A.settingsUi.keydown(A.config.KEY.DOWN, { preventDefault() {} });
+    A.settingsUi.keydown(A.config.KEY.DOWN, { preventDefault() {} });
+    A.settingsUi.keydown(A.config.KEY.RIGHT, { preventDefault() {} });
+    if (A.settings.speed !== original + A.config.SPEED.STEP) throw new Error('Repeated opens duplicated key handlers');
+    return { externalUpdates: true, draftPreserved: true, closeCommitsDraft: true, staleAfterReopen: true, repeatedOpen: true };
+  });
   if (errors.length) throw new Error(JSON.stringify(errors));
-  return { results, artwork, runtimeErrors: errors };
+  return { results, artwork, lifecycle, runtimeErrors: errors };
 }

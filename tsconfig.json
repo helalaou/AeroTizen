@@ -11,7 +11,7 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "forceConsistentCasingInFileNames": true,
-    "types": []
+    "types": ["vite/client"]
   },
   "include": ["launcher/src/**/*.ts", "launcher/src/**/*.tsx"]
 }

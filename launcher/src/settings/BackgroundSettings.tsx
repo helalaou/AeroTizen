@@ -1,24 +1,23 @@
 import { Pill } from './Pill';
-import type { LauncherConfig, SettingsSectionProps } from './types';
+import type { BackgroundOption, LauncherConfig, SettingsSectionProps } from './types';
 
-interface Props extends SettingsSectionProps { config: LauncherConfig }
+interface Props extends SettingsSectionProps { config: LauncherConfig; backgrounds: readonly BackgroundOption[] }
 
-export const BackgroundSettings = ({ settings, actions, config }: Props) => {
-  const list = window.Backgrounds.list;
+export const BackgroundSettings = ({ settings, actions, config, backgrounds: list }: Props) => {
   const selected = list.find(background => background.id === settings.background);
   const animated = Boolean(selected && selected.anim);
   const percent = (settings.speed - config.SPEED.MIN) / (config.SPEED.MAX - config.SPEED.MIN) * 100;
 
-  function swatches(isAnimated: boolean) {
+  const swatches = (isAnimated: boolean) => {
     return list.filter(background => Boolean(background.anim) === isAnimated).map(background => (
       <div key={background.id} class={'swatch' + (background.id === settings.background ? ' on' : '')}
         data-key={'bg:' + background.id} role="button" aria-pressed={background.id === settings.background}
-        style={{ background: window.Backgrounds.preview(background) }}
+        style={{ background: background.preview }}
         onClick={() => actions.setBackground(background.id)}>
         <span>{background.name}</span>
       </div>
     ));
-  }
+  };
 
   return (
     <>

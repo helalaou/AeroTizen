@@ -12,7 +12,7 @@ execFileSync(process.execPath, ['tools/build-launcher.mjs'], { cwd: root });
 
 test('compiled Settings ships local scripts, a mount point and the Preact license', () => {
   const html = read(output, 'index.html');
-  assert.match(html, /<div id="editor" class="sheet" hidden><\/div>/);
+  assert.match(html, /<div id="settings-root"><\/div>/);
   assert.doesNotMatch(html, /type="module"|https?:[^"']+\.js|@vite\/client|src\/settings/);
   const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map(match => match[1]);
   assert.ok(scripts.includes('js/settings-ui.js'));

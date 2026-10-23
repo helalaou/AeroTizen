@@ -35,7 +35,8 @@ relaunch cancellation and app visibility, without contacting a TV.
 |---|---|
 | `src/aerotizen/` | Python CLI: sdb client, certificates, package signing, debloat |
 | `launcher/` | TV runtime files and the legacy Settings baseline |
-| `launcher/src/settings/` | TypeScript/TSX Settings components, actions and remote navigation |
+| `launcher/src/settings/` | TypeScript/TSX Settings components, state, actions and service adapters |
+| `launcher/src/shared/` | Store, remote navigation and reusable lifecycle hooks |
 | `vite.config.mts` | Official Preact preset, dev server and TV bundle settings |
 | `dist/launcher/` | Generated TV runtime with compiled Settings; no Node needed on TV |
 | `launcher/js/config.js` | Launcher behaviour and settings |

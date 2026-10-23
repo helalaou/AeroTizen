@@ -14,7 +14,7 @@ const settingsHtml = (html: string): string => {
   if (!editor.test(html)) {
     throw new Error('Cannot find the Settings mount point.');
   }
-  return html.replace(editor, '<div id="editor" class="sheet" hidden></div>\n\n');
+  return html.replace(editor, '<div id="settings-root"></div>\n\n');
 };
 
 // Keep the existing widget files and script order. Vite owns the Settings bundle.

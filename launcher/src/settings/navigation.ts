@@ -1,95 +1,19 @@
-import type { LauncherRuntime, Navigation } from './types';
+const groups = ['bg-anim', 'speed-row', 'bg-still', 'weather-display', 'weather-location',
+  'weather-results', 'weather-visibility', 'units', 'time-formats', 'date-formats',
+  'network-visibility', 'live-tv-visibility', 'card-sizes', 'input-visibility', 'input-names', 'all-apps', 'escape'];
 
-// Remote focus is transient DOM state. Arrow keys never render components or
-// rebuild the row map. Rebuild after a render or resize, including wrapped dates.
-export const createNavigation = (A: LauncherRuntime): Navigation => {
-  let rows: HTMLElement[][] | null = null;
-  let keys: Record<string, [number, number]> = Object.create(null);
-  let row = 0;
-  let columns: number[] = [];
-  let selected: string | null | undefined = null;
-  let previous: HTMLElement | null = null;
-
-  function children(id: string): HTMLElement[] {
-    return Array.from(A.$(id).children).filter((element): element is HTMLElement => element instanceof HTMLElement);
-  }
-
-  function getRows(): HTMLElement[][] {
-    if (rows) {
-      return rows;
-    }
-    const dateRows: HTMLElement[][] = [];
-    children('date-formats').forEach(element => {
-      const last = dateRows[dateRows.length - 1];
-      if (!last || last[0].offsetTop !== element.offsetTop) {
-        dateRows.push([element]);
-      } else {
-        last.push(element);
-      }
+export const collectSettingsRows = (root: HTMLElement | null): HTMLElement[][] => {
+  const rows: HTMLElement[][] = [];
+  groups.forEach(id => {
+    const group = root?.querySelector<HTMLElement>('#' + id);
+    if (!group || group.hidden) { return; }
+    const items = group.dataset.key ? [group] : Array.from(group.children)
+      .filter((element): element is HTMLElement => element instanceof HTMLElement && Boolean(element.dataset.key));
+    let last: HTMLElement[] | undefined;
+    items.forEach(element => {
+      if (!last || last[0].offsetTop !== element.offsetTop) { last = []; rows.push(last); }
+      last.push(element);
     });
-    const backgrounds = A.chunk(children('bg-anim'), 8);
-    if (!A.$('speed-row').hidden) {
-      backgrounds.push(children('speed-row'));
-    }
-    const apps = Array.from(A.$('all-apps').querySelectorAll<HTMLElement>('[data-key]'));
-    rows = backgrounds.concat(A.chunk(children('bg-still'), 8), [children('weather-display')],
-      [children('weather-location')], children('weather-results').map(element => [element]),
-      [children('weather-visibility')], [children('units')], [children('time-formats')], dateRows,
-      [children('network-visibility')], [children('live-tv-visibility')], [children('card-sizes')],
-      [children('input-visibility')], [children('input-names')], A.chunk(apps, 5), [[A.$('escape')]])
-      .filter(items => items.length);
-    keys = Object.create(null);
-    rows.forEach((items, i) => items.forEach((element, j) => {
-      if (element.dataset.key) { keys[element.dataset.key] = [i, j]; }
-    }));
-    return rows;
-  }
-
-  function focus() {
-    const all = getRows();
-    if (selected && keys[selected]) {
-      row = keys[selected][0];
-      columns[row] = keys[selected][1];
-    }
-    row = Math.max(0, Math.min(row, all.length - 1));
-    columns[row] = Math.max(0, Math.min(columns[row] || 0, all[row].length - 1));
-    const element = all[row][columns[row]];
-    if (previous && previous !== element) {
-      previous.classList.remove('focused');
-    }
-    element.classList.add('focused');
-    previous = element;
-    selected = element.dataset.key;
-    A.$('editor').scrollTop = Math.max(0, element.offsetTop - 640);
-    return element;
-  }
-
-  return {
-    focus,
-    invalidate() { rows = null; },
-    select(key) { selected = key; },
-    reset(key) {
-      A.clearFocus();
-      previous = null;
-      row = 0;
-      columns = [];
-      selected = key;
-      rows = null;
-    },
-    current() {
-      const all = getRows();
-      return all[row] && all[row][columns[row] || 0];
-    },
-    move(code) {
-      const count = getRows().length;
-      const column = columns[row] || 0;
-      const K = A.config.KEY;
-      selected = null;
-      if (code === K.LEFT) { columns[row] = column - 1; }
-      else if (code === K.RIGHT) { columns[row] = column + 1; }
-      else if (code === K.UP) { row = Math.max(0, row - 1); columns[row] = column; }
-      else if (code === K.DOWN) { row = Math.min(count - 1, row + 1); columns[row] = column; }
-      focus();
-    }
-  };
+  });
+  return rows;
 };

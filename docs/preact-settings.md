@@ -19,7 +19,7 @@ This integrates the documented preset into the existing repository rather than g
 a new application over the launcher. Vite library mode emits a single classic-script IIFE
 for the Settings entry point; the production widget has no Vite client or development entry.
 Two small Vite plugins retain the widget assets and load the existing boot script after
-the development Settings controller. The dev server uses the preset's hot refresh support.
+the development Settings entry point. The dev server uses the preset's hot refresh support.
 
 All new Settings code is TypeScript. `tsconfig.json` uses `strict: true`,
 `jsx: "react-jsx"` and `jsxImportSource: "preact"`, as documented in the
@@ -39,20 +39,41 @@ CSS behaviour or physical TV compatibility.
 
 ## Code boundaries
 
-- Components in `launcher/src/settings/` receive settings snapshots and named actions.
-  Each component has its own file, named after the component, and uses an `export const`
-  arrow function. Exported helpers also use `const`. ESLint enforces const exports,
-  arrow components and one component per file.
-  Rendering does not write storage or call TV APIs.
-- `controller.ts` owns Settings lifetime, pending location searches, persistence and
-  calls into the existing runtime. App selections and input names replace their stored
-  arrays/objects so earlier snapshots remain stable.
-- `navigation.ts` owns transient focus. It caches rows between renders and rebuilds
-  them after rendering or resizing. Date controls follow their wrapped visual rows.
-  Arrow keys update focus directly without a component render.
-- The app-menu bridge mounts the existing artwork renderer once per app identity.
-  It retains image callbacks, local cache fallbacks and icon/name fallbacks. Unrelated
-  updates reuse those nodes. Moving artwork itself into Preact is a later shared-tile step.
+- `settings/index.tsx` is the composition root. It creates the stores, services,
+  actions and remote-key bridge once, then mounts a provider and the Settings root.
+  Components use typed context or props; they do not read the launcher global.
+- `settings/state/createSettingsStore.ts` publishes immutable snapshots of the existing
+  `A.settings` object. That object remains the source of persisted preferences.
+  Its small `subscribe` API publishes saves and loads, including changes made by legacy
+  modules. Unchanged snapshots and nested values retain their identity. Actions use
+  named commands and replace arrays/maps; components do not write storage.
+- `settings/services/createSettingsServices.ts` adapts the existing TV and launcher
+  operations. It exposes data and commands, including data-only app branding. Only
+  this boundary calls unmigrated services. The weather adapter can cancel callback
+  delivery; the existing search client cannot abort an active request.
+- `settings/bridge.ts` retains the existing key-router interface. It changes open/closed
+  state and delegates keys to the current hook handlers. It does not build markup or
+  request root renders. Commands flush store notifications before the next remote event.
+- `shared/` contains the small store, navigation engine and hooks for subscriptions,
+  input drafts, image retries and focus retention. Settings-specific navigation collects
+  actual visual rows under the Settings root, so wrapped controls need no fixed column
+  counts. Arrow keys use cached rows and update focus without component renders.
+- Preact owns all markup inside `#settings-root`, including the sheet and app artwork.
+  The data-only branding helper in `brands.js` reuses existing brand rules; Settings
+  does not call legacy tile constructors, append child nodes or copy HTML strings.
+  Imperative DOM access is limited to focus, scroll, input focus/blur and shell body
+  classes. Navigation owns the `focused` class; the focus hook restores it after a
+  local image render. Preact owns the remaining classes, attributes and children.
+- Saved preferences are shared state. Open/preview state belongs to the screen store;
+  text drafts and weather search state belong to their hooks. The cached form stays
+  mounted after first open. Closing removes its settings subscription, pending image
+  timers and pending callback delivery. Reopening reads current preferences.
+- Every component has its own file and uses an `export const` arrow function.
+  Exported helpers also use `const`. ESLint enforces these conventions.
+
+Keep these boundaries when adding Settings controls. Promote a helper to `shared/` only
+when it expresses a reusable behavior. Home and other screens keep their current DOM
+ownership until their own migration; this change adds no second rendering path there.
 
 ## Local verification
 
@@ -81,13 +102,16 @@ python3 -m http.server 8032 --bind 127.0.0.1 --directory dist/launcher
 npx --package @playwright/cli playwright-cli -s=settings open http://127.0.0.1:8032
 npx --package @playwright/cli playwright-cli -s=settings resize 1920 1080
 npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_ui.browser.js
+npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_resources.browser.js
 npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_performance.browser.js > /tmp/settings-performance.log
 ```
 
 The UI check mocks weather requests. It checks remote opening/closing, focus bounds,
 scrolling, IME Done, saved and empty input names, visibility controls, app selection,
 speed bounds, preview, stale search callbacks, persistence and stable DOM nodes.
-It also checks asynchronous artwork failure/fallback/success and console errors.
+It also checks asynchronous artwork failure/fallback/success, focus during image loads,
+external settings updates, active drafts, repeated opens and console errors. The resource
+check controls artwork deadlines to verify retries, detached image events and cleanup.
 These are fixed-resolution TV screens; mobile layout is not part of this migration.
 
 ## Initial browser measurements: 23 October 2026
@@ -113,6 +137,26 @@ resolution for Preact. These tests run events in tight loops and do not measure 
 physical remote transmission or screen latency. First-open and heap samples are small.
 Do not compare these desktop values directly with the older Frame trial in the issue.
 No startup or animation result is claimed. Re-run on the final code and target hardware.
+
+## Architecture pass measurements: 23 October 2026
+
+The same five-round script was repeated against the compiled architecture refactor,
+with Chromium 156.0.8078.48, a 1920×1080 viewport, Black background and matching app
+inventories. The timing and hardware limits above still apply.
+
+| Measurement | Legacy | Preact |
+|---|---:|---:|
+| First open, median synchronous work | 3.6 ms | 6.0 ms |
+| Reopen, median synchronous work | 1.4 ms | 1.4 ms |
+| Clock change, median synchronous work | 1.5 ms | 0.7 ms |
+| Arrow event, p95 synchronous work | 0.1 ms | 0.1 ms |
+| Retained JavaScript heap, median | 1.82 MiB | 2.43 MiB |
+| Settings script, including Preact | 14,540 bytes | 38,055 bytes |
+
+This version includes subscribed state, synchronous remote-event transactions and
+Preact-owned artwork with cleanup. The added code and cached component state cost
+bytes and heap. This desktop sample supports no claim of a first-open improvement.
+Keep the hardware measurements as a merge requirement.
 
 ## Required before merge
 
