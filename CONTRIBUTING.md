@@ -2,7 +2,7 @@
 
 Thanks for taking a look. The most useful contribution is trying AeroTizen on your TV and
 opening a "Tested on my TV" issue: every model and firmware year behaves a bit differently, and
-so far only one model has been tested.
+only a handful of models have been tested so far.
 
 ## Development setup
 
@@ -23,14 +23,9 @@ npm run lint
 npm test           # launcher tests: tests/*.test.cjs, run in a Node sandbox
 ```
 
-Run the local watcher tests with Node.js 18 or newer:
-
-```bash
-npm run test:watcher
-```
-
-These tests use mock clocks and network replies. They cover the Art Mode protocol, fresh
-status checks, relaunch cancellation and app visibility. They do not contact a TV.
+`npm test` needs Node.js 20 or newer (the date tests depend on its locale data). The watcher
+tests use mock clocks and network replies to cover the Art Mode protocol, status checks,
+relaunch cancellation and app visibility, without contacting a TV.
 
 ## Project layout
 

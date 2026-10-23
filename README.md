@@ -1,8 +1,19 @@
 # AeroTizen
 
+[![CI](https://github.com/helalaou/AeroTizen/actions/workflows/ci.yml/badge.svg)](https://github.com/helalaou/AeroTizen/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Contributors](https://img.shields.io/github/contributors/helalaou/AeroTizen)](https://github.com/helalaou/AeroTizen/graphs/contributors)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 A simple home screen for Samsung TVs, and a command-line tool to clean the TV up from your computer.
 
-![AeroTizen home screen](docs/screenshots/home.png)
+Built with help from these contributors. [Join them](CONTRIBUTING.md): testing on your TV counts too.
+
+<a href="https://github.com/helalaou/AeroTizen/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=helalaou/AeroTizen" alt="AeroTizen contributors">
+</a>
+
+![AeroTizen home screen on a Samsung TV](docs/screenshots/app-cards-samsung-tv.png)
 
 ## Motivation
 
@@ -23,20 +34,23 @@ access aren't needed.
 
 On the TV:
 
-- Your apps in a 5-column grid with square Samsung artwork, inputs underneath
-- Uses Samsung artwork already stored on the TV, with the previous app icons as a fallback
-- Home and All apps tabs: keep favourites on Home and open any installed app from All apps
-- Opens HbbTV apps such as BBC iPlayer
-- Opens at power-on and comes back on Home (see [Limits](#limits))
+- Your apps as square cards using each app's own artwork from the TV. Pick **Big** (3 across) or
+  **Small** (5 across). Apps without artwork show their icon and name
+- **Home** and **All apps** tabs: keep favourites on Home and open any installed app from All apps
+- Opens at power-on and comes back when you press Home (see [Limits](#limits))
 - Hold OK on a tile to move it around
-- Inputs list every HDMI port and the name of what's plugged in. You can rename them
-  and choose to hide disconnected HDMI ports or Live TV in Settings. All inputs are shown
-  by default. If no inputs remain visible, the Inputs section and heading are hidden
+- Opens HbbTV apps such as BBC iPlayer
+- Inputs list every HDMI port and the name of what's plugged in. You can rename them, and hide
+  disconnected ports or the Live TV tile
 - 31 backgrounds, 16 of them animated, with a speed slider and preview (for example [Snowfall](docs/screenshots/theme-snowfall.png) and [Lava](docs/screenshots/theme-lava.png))
-- Time, date, weather and your city in the top bar, in the format you pick. Show or hide
-  weather, time and the network indicator in their own Settings sections
-- Shows whether the TV is on Ethernet or Wi-Fi
-- An optional Fireplace tile that plays a fireplace video. Show or hide it under **Settings → Show in app menu**, like the other tiles
+- Time, date and weather in the top bar. Date and time follow the TV's language and 12/24-hour
+  setting, and °C or °F is picked from your region. You can change their formats or visibility
+  in Settings
+- Weather for a town you search for, or an approximate location from your internet address. The
+  place name can be hidden
+- Shows whether the TV is on Ethernet or Wi-Fi. Show or hide it in **Settings → Network indicator**
+- An optional Fireplace tile that plays a fireplace video
+- Works on The Frame: AeroTizen leaves Art Mode alone
 - Settings to choose which apps show up, open the Samsung app store, or go back to Samsung's home screen
 
 From your computer (`aerotizen`):
@@ -45,6 +59,7 @@ From your computer (`aerotizen`):
 - Connects to the TV's developer port directly in Python, on macOS, Linux or Windows
 - Creates the Samsung signing certificates for your TV (you sign in to your Samsung account once)
 - Signs and installs any `.wgt` app, including the launcher
+- Opens apps and checks that they actually came up on screen (`aerotizen launch`)
 - Lists installed apps, flags the bloat, and removes it if your firmware allows
 
 There's also a short [guide to the settings worth turning off](docs/settings.md) (ads, viewing
@@ -63,6 +78,7 @@ The device names and weather in these screenshots are placeholders.
 | Samsung 65" Crystal UHD DU7200 (UN65DU7200FXZA) | 2024 | Tizen 9.0 |
 | Samsung 65" The Frame LS03D (QE65LS03DAUXXU) | 2024 | Tizen 9.0 |
 | Samsung 65" OLED S90C (QE65S90CATXZT) | 2023 | Tizen 7.0 |
+| Samsung 75" QLED Q60B (QE75Q60BAUXXC) | 2022 | Tizen 6.5 |
 
 Other Samsung TVs from 2020 on should work, but these are the only models tested so far. If you try it
 on yours, please [open a model report](../../issues/new?template=model_report.yml).
@@ -105,10 +121,7 @@ a format shows it again. **Network indicator** has its own **Show** and **Hide**
 All three header items are shown by default. Choices apply at once and stay saved after
 a restart.
 
-In **Settings → Weather**, search for a town, city or postcode, then select the matching
-place to save its location. Search uses Open-Meteo. **Automatic** uses an approximate IP
-location, which can be far from your TV. **Hide location** keeps the weather icon and
-temperature visible without the place name. These choices stay saved on the TV.
+For accurate weather, open **Settings → Weather** and search for your town or postcode.
 
 To look at or remove installed apps, run `aerotizen apps` and `aerotizen debloat`.
 
@@ -119,13 +132,11 @@ Samsung doesn't support any of this officially, so some parts are workarounds:
 - Pressing Home brings AeroTizen back after a second or two. That works from Samsung's home
   screen and inside Netflix, but not inside YouTube, Prime Video, Stremio, Spotify or HbbTV apps. Those apps
   don't report whether they're on screen, so there's no way to tell. Back still works everywhere.
-- On TVs that advertise Frame support, the Home watcher checks Art Mode before every return
-  to AeroTizen, including startup. It leaves the screen alone while Art Mode is on.
-  Missing power or Art status on a known Frame blocks a return until reliable status is available.
-  Other TVs skip the Art API, including valid older TV responses without the optional Frame flag.
-  Failed or malformed TV discovery is retried; it is not treated as proof that Art Mode is absent.
-  Home → Art Mode → Home was verified on a 2024 Frame QE65LS03DAUXXU, firmware 2130.0
-  (Tizen 9.0). Cold-boot startup on that model is not yet verified.
+  After Home in one of them, AeroTizen comes back once that app closes or you open an app that does
+  report itself, such as Netflix. You can also open AeroTizen from Samsung's app row.
+- On The Frame, AeroTizen checks Art Mode before every return and stays out of the way while it's
+  on. If the TV doesn't report its power or Art Mode state, AeroTizen waits rather than guess.
+  Tested on a 2024 Frame (QE65LS03DAUXXU, Tizen 9.0); starting from a cold boot isn't verified yet.
 - On Tizen 6 and newer, store and preinstalled apps can't be removed over the developer
   connection. You can delete them on the TV under Apps → Settings. Samsung's system apps (TV Plus,
   Gaming Hub) can only be disabled.
@@ -145,7 +156,8 @@ fixes, new themes or features are welcome too. See [CONTRIBUTING.md](CONTRIBUTIN
 - [LTvLauncher](https://github.com/leanbitlab-org/LtvLauncher), which the layout is based on
 - [Apps2Samsung](https://github.com/Apps2Samsung/Apps2Samsung) and [tizen-sdb](https://github.com/PatrickSt1991/tizen-sdb), for how the developer connection, certificates and signing work
 - [samsung-tizen-tv-debloat](https://github.com/ardazeytin/samsung-tizen-tv-debloat), for which packages are safe to remove
-- App artwork is read from Samsung's local tile cache on each TV. No Samsung app images are bundled or downloaded by the launcher. Missing artwork falls back to the previous icon and label; browser previews show these fallbacks. Fallback logos are from [Simple Icons](https://simpleicons.org). Artwork and trademarks belong to their owners.
+- App artwork is read from Samsung's cache on each TV; none is bundled or downloaded. Fallback logos
+  are from [Simple Icons](https://simpleicons.org). Artwork and trademarks belong to their owners
 - Weather and location search from [Open-Meteo](https://open-meteo.com), automatic location from [ipapi](https://ipapi.co)
 
 This project isn't affiliated with Samsung. Use it at your own risk.

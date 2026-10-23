@@ -15,6 +15,9 @@ var SELF = 'DclHome001.Home';
 var HIDDEN_GRACE = 250;         // non-Frame: Samsung Home appears almost at once
 var FRAME_HIDDEN_GRACE = 1500;  // Frame: give Art Mode time to report before reclaiming
 var APP_GRACE = 2500;
+var WATCH_STOP_GRACE = 1500;    // a watched app must stay stopped this long before it's dropped
+var WATCH_COVER_GRACE = 10000;  // an app the launcher opened may take this long to cover it
+var UNSEEN_SCAN = 5000;         // same pace as the visible snapshot: other apps while one is unseen
 var BOOT_DELAY = 3000;
 var BOOT_FALLBACK = 15000;      // launch anyway if the TV type is still unknown
 var started = false;
@@ -54,12 +57,16 @@ function invalidate(reason) {
   pending = null;
   state.guard.pending = null;
 }
+// Call whenever state.watched changes: what we learned about the previous app doesn't carry over.
+function resetWatchedTiming() {
+  state.watchedHiddenSince = 0; state.watchedRan = false; state.watchedStoppedSince = 0;
+}
 function resetHiddenTiming() {
-  state.hiddenSince = 0; state.watchedHiddenSince = 0;
+  state.hiddenSince = 0; state.watchedHiddenSince = 0; state.watchedStoppedSince = 0;
   state.selfVisible = null; state.watchAt = Date.now();
 }
 function resetTracking() {
-  state.watched = null; state.seen = false; resetHiddenTiming();
+  state.watched = null; state.seen = false; resetWatchedTiming(); resetHiddenTiming();
 }
 
 var art = createArtMode({ onChange: function (value, reason) {
@@ -132,7 +139,7 @@ function standAside(result, knownApp) {
   if (!id) { return false; }
   invalidate('another app is active');
   state.watched = id; state.seen = result.visible === id;
-  state.watchedHiddenSince = 0;
+  resetWatchedTiming();
   state.last = 'stand aside: ' + id;
   return true;
 }
@@ -272,7 +279,9 @@ function tick() {
     var now = Date.now();
     if (me.visible) {
       state.selfVisible = true; state.hiddenSince = 0;
-      state.watched = null; state.seen = false; state.watchedHiddenSince = 0;
+      // The launcher stays on screen for a moment after opening an app; keep that watch until the
+      // app has had time to cover it. A real return to the launcher resets it through /home.
+      if (now - state.watchAt >= WATCH_COVER_GRACE) { state.watched = null; state.seen = false; resetWatchedTiming(); }
       if (now - (state.snapAt || 0) > 5000) {
         state.snapAt = now;
         snapshot(function (result) { if (valid() && (result.complete || !isFrame())) { state.running = result.running; } done(); });
@@ -292,6 +301,30 @@ function tick() {
         else if (state.seen) {
           if (!state.watchedHiddenSince) { state.watchedHiddenSince = Date.now(); }
           if (!isFrame() || Date.now() - state.watchedHiddenSince >= FRAME_HIDDEN_GRACE) { launchSelf('home pressed in ' + id); }
+        } else if (watched.running) {
+          state.watchedRan = true; state.watchedStoppedSince = 0;
+          if (Date.now() - (state.unseenScanAt || 0) >= UNSEEN_SCAN) {
+            // Some apps (YouTube, some third-party players) never report themselves visible.
+            // Meanwhile, follow any app that does, e.g. one opened from Samsung Home, so Home in
+            // it still returns.
+            state.unseenScanAt = Date.now();
+            snapshot(function (result) {
+              if (valid() && state.watched === id && result.visible && result.visible !== id) {
+                record('unseen', id + ' never reported visible; following ' + result.visible);
+                standAside(result, id);
+              }
+              done();
+            });
+            return;
+          }
+        } else if (state.watchedRan) {
+          // It ran and has stayed stopped, so it closed and can't be covering the launcher.
+          // Without this, an app that never reports itself visible held the watcher forever.
+          if (!state.watchedStoppedSince) { state.watchedStoppedSince = Date.now(); }
+          if (Date.now() - state.watchedStoppedSince >= WATCH_STOP_GRACE) {
+            record('unwatched', id + ' stopped running');
+            state.watched = null; state.watchedHiddenSince = 0;
+          }
         }
         done();
       });
@@ -339,7 +372,7 @@ module.exports.onStart = function () {
     if (url.pathname === '/watch') {
       invalidate('app launch requested');
       state.watched = query.id || null; state.seen = false; state.leaving = false;
-      state.watchedHiddenSince = 0; state.watchAt = Date.now();
+      resetWatchedTiming(); state.watchAt = Date.now();
     } else if (url.pathname === '/apps') {
       invalidate('app inventory changed');
       state.apps = (query.ids || '').split(',').filter(Boolean);

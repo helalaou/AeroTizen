@@ -419,6 +419,100 @@ test('Frame TVs leave the boot launch to the guarded watcher', () => {
   assert.equal(h.launches.length, 0);
 });
 
+// Seen on a 2022 Q60B (Tizen 6.5): a third-party player runs but never reports itself visible.
+test('an app that never reports visible holds Home only while it is running', () => {
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
+  assert.equal(h.launches.length, 1);
+  h.statuses.set('AppA', { running: true, visible: false });
+  h.control('/apps?ids=AppA'); h.control('/watch?id=AppA');
+  h.statuses.set(SELF, { running: true, visible: false });
+  h.advance(20000);
+  assert.equal(h.launches.length, 1, 'an unseen running app is never interrupted');
+  assert.equal(h.state().watched, 'AppA');
+  h.statuses.set('AppA', { running: false, visible: false });  // closed, e.g. with Back
+  h.advance(1200);
+  assert.equal(h.launches.length, 1, 'a stop must hold before the watch is dropped');
+  h.advance(1200);
+  assert.equal(h.launches.length, 2);
+  assert.ok(h.state().guard.history.some(item => item.kind === 'unwatched' && item.detail === 'AppA stopped running'));
+  assert.equal(h.state().watched, null);
+});
+
+test('a watch survives the moment before the opened app covers the launcher', () => {
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
+  h.statuses.set('AppA', { running: true, visible: false });  // already running in the background
+  h.control('/apps?ids=AppA'); h.advance(6000);
+  h.control('/watch?id=AppA');
+  h.advance(1500);  // the launcher is still on screen while AppA comes up
+  h.statuses.set(SELF, { running: true, visible: false });
+  h.advance(20000);
+  assert.equal(h.launches.length, 1, 'the launcher must not cover the app it just opened');
+  assert.equal(h.state().watched, 'AppA');
+});
+
+test('a watch for an app that never opened clears while the launcher stays on screen', () => {
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
+  h.control('/watch?id=AppA');  // the launch failed, so the launcher never left the screen
+  h.advance(9000);
+  assert.equal(h.state().watched, 'AppA');
+  h.advance(1500);
+  assert.equal(h.state().watched, null);
+});
+
+test('a brief not-running reading does not drop a watched app', () => {
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
+  h.statuses.set('AppA', { running: true, visible: false });
+  h.control('/apps?ids=AppA'); h.control('/watch?id=AppA');
+  h.statuses.set(SELF, { running: true, visible: false });
+  h.advance(5000);
+  h.statuses.set('AppA', { running: false, visible: false });
+  h.advance(600);
+  h.statuses.set('AppA', { running: true, visible: false });
+  h.advance(10000);
+  assert.equal(h.launches.length, 1);
+  assert.equal(h.state().watched, 'AppA');
+});
+
+test('a watched app that never reports running is never covered', () => {
+  // Status replies may say running:false for an app that is on screen; only a seen stop counts.
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
+  h.statuses.set('AppA', { running: false, visible: false });
+  h.control('/apps?ids=AppA'); h.control('/watch?id=AppA');
+  h.statuses.set(SELF, { running: true, visible: false });
+  h.advance(30000);
+  assert.equal(h.launches.length, 1);
+  assert.equal(h.state().watched, 'AppA');
+});
+
+test('an unseen watched app hands Home over to an app that reports visible', () => {
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
+  h.statuses.set('AppA', { running: true, visible: false });
+  h.statuses.set('AppB', { running: false, visible: false });
+  h.control('/apps?ids=AppA,AppB'); h.control('/watch?id=AppA');
+  h.statuses.set(SELF, { running: true, visible: false });
+  h.advance(5000);
+  h.statuses.set('AppB', { running: true, visible: true });  // opened from Samsung Home
+  h.advance(2500);
+  assert.equal(h.state().watched, 'AppB');
+  assert.equal(h.state().seen, true);
+  assert.equal(h.launches.length, 1);
+  h.statuses.set('AppB', { running: true, visible: false });  // Home pressed in AppB
+  h.advance(900);
+  assert.equal(h.launches.length, 2);
+});
+
+test('Frame TVs keep the Art guard after a watched app closes', () => {
+  const h = ready();
+  h.statuses.set('AppA', { running: true, visible: false });
+  h.control('/apps?ids=AppA'); h.control('/watch?id=AppA');
+  h.advance(12000);
+  assert.equal(h.artReplies.length, 0, 'an unseen running app is left alone');
+  h.statuses.set('AppA', { running: false, visible: false });
+  h.advance(4500);
+  assert.equal(h.launches.length, 0, 'no launch without fresh Art replies');
+  assert.equal(h.artReplies.length, 1);
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log('PASS ' + name); }

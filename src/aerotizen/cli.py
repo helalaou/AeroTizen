@@ -8,7 +8,7 @@
   aerotizen certs               sign in to Samsung, create signing certs for this TV
   aerotizen install PATH        sign + install an app folder or .wgt (e.g. launcher)
   aerotizen key KEY_VOLUP [n]   press a remote button
-  aerotizen launch APPID        open an app
+  aerotizen launch APPID        open an app and check that it came up
 
 Add --tv IP to target a specific TV (otherwise the first one found is used).
 """
@@ -18,6 +18,7 @@ import datetime
 import json
 import os
 import sys
+import time
 from collections import OrderedDict
 
 from aerotizen import catalog, discover, remote
@@ -231,9 +232,43 @@ def cmd_key(args):
         r.key(args.key, args.times)
 
 
+def wait_on_screen(host, app_id, seconds=12.0):
+    """Poll the TV until app_id reports visible; returns the last status (None if unknown)."""
+    deadline, status = time.monotonic() + seconds, None
+    while True:
+        status = remote.app_status(host, app_id) or status
+        if (status and status.get("visible")) or time.monotonic() >= deadline:
+            return status
+        time.sleep(0.5)
+
+
 def cmd_launch(args):
-    with remote.Remote(pick_tv(args)) as r:
-        r.launch(args.appid)
+    host = pick_tv(args)
+    accepted, reply = remote.rest_launch(host, args.appid)
+    print(f"REST launch: {reply}")
+    if not accepted:
+        # Older firmware may only take launches over the remote channel.
+        try:
+            with remote.Remote(host) as r:
+                answer = r.launch(args.appid)
+            print(f"remote-channel launch: {'no reply' if answer is None else answer}")
+            accepted = answer in (200, "200")  # TVs that reply send 200 on success, an error code otherwise
+        except Exception as e:
+            print(f"remote-channel launch failed: {e}")
+    status = wait_on_screen(host, args.appid)
+    if status is None:
+        print(f"{args.appid}: the TV doesn't report this app's state. Check the screen.")
+        if not accepted:
+            sys.exit("The TV did not confirm the launch.")
+        return
+    print(f"{args.appid}: running={status.get('running')} visible={status.get('visible')}")
+    if status.get("visible"):
+        return
+    if accepted and status.get("running"):
+        # Some apps (YouTube, Prime Video) never report themselves on screen.
+        print("The TV accepted the launch, but doesn't report the app as on screen. Check the screen.")
+        return
+    sys.exit(f"{args.appid} did not come to the screen.")
 
 
 def main():
