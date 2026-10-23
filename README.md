@@ -23,7 +23,8 @@ access aren't needed.
 
 On the TV:
 
-- Your apps in a 3-column grid with their real logos, inputs underneath
+- Your apps in a 5-column grid with square Samsung artwork, inputs underneath
+- Uses Samsung artwork already stored on the TV, with the previous app icons as a fallback
 - Home and All apps tabs: keep favourites on Home and open any installed app from All apps
 - Opens HbbTV apps such as BBC iPlayer
 - Opens at power-on and comes back on Home (see [Limits](#limits))
@@ -136,7 +137,7 @@ fixes, new themes or features are welcome too. See [CONTRIBUTING.md](CONTRIBUTIN
 - [LTvLauncher](https://github.com/leanbitlab-org/LtvLauncher), which the layout is based on
 - [Apps2Samsung](https://github.com/Apps2Samsung/Apps2Samsung) and [tizen-sdb](https://github.com/PatrickSt1991/tizen-sdb), for how the developer connection, certificates and signing work
 - [samsung-tizen-tv-debloat](https://github.com/ardazeytin/samsung-tizen-tv-debloat), for which packages are safe to remove
-- App logos from [Simple Icons](https://simpleicons.org) (trademarks belong to their owners)
+- App artwork is read from Samsung's local tile cache on each TV. No Samsung app images are bundled or downloaded by the launcher. Missing artwork falls back to the previous icon and label; browser previews show these fallbacks. Fallback logos are from [Simple Icons](https://simpleicons.org). Artwork and trademarks belong to their owners.
 - Weather and location search from [Open-Meteo](https://open-meteo.com), automatic location from [ipapi](https://ipapi.co)
 
 This project isn't affiliated with Samsung. Use it at your own risk.

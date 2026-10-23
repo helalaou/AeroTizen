@@ -1,4 +1,4 @@
-/* Visual language modelled on LTvLauncher: true black, white type, banner tiles, violet focus ring. */
+/* True black, white type, square app artwork and a violet focus ring. */
 :root {
   --bg: #000;
   --fg: #fff;
@@ -73,37 +73,29 @@ h2 { font-size: 39px; font-weight: 500; margin: 0 0 18px; }
   transform: translateZ(0);
   transition: transform .15s ease-out;
 }
-.grid3 { display: flex; flex-wrap: wrap; gap: 30px 32px; margin: 6px 0 40px; }
-.grid3 .tile { width: 576px; height: 300px; }
-.medium .tile { width: 333px; height: 187px; }
-/* Inputs share the row width (3 line up with the app grid; more shrink evenly). */
+.app-grid { display: flex; flex-wrap: wrap; gap: 30px 32px; margin: 6px 0 40px; }
+.app-grid .tile { width: 332px; height: 332px; }
+/* Big cards: three larger squares, centred, so two full rows fit on screen. */
+.app-grid.cards-big { justify-content: center; gap: 36px 48px; }
+.app-grid.cards-big .tile { width: 420px; height: 420px; }
+/* Inputs share the row width; more inputs shrink evenly. */
 #inputs { gap: 32px; }
 .small .tile { flex: 1 1 0; min-width: 0; max-width: 576px; height: 124px; justify-content: flex-start; padding: 0 28px; gap: 22px; }
 
 .tile .logo { flex: 0 0 auto; object-fit: contain; }
-.grid3 .tile .logo { width: 150px; height: 150px; }
-.medium .tile .logo { width: 84px; height: 84px; }
-/* Logo-only banners (Netflix, Prime Video, Max...): the logo is the wordmark, so it fills the tile. */
-.grid3 .tile.logo-only .logo { width: 380px; height: 190px; }
-/* Prime Video's mark is a wide wordmark with lots of empty viewBox; scale it up to match the others. */
-.grid3 .tile.logo-big .logo { width: 560px; height: 280px; }
-.grid .tile.logo-big .logo { width: 300px; height: 150px; }
-.medium .tile.logo-only .logo { width: 210px; height: 106px; }
-.grid .tile.logo-only .logo { width: 210px; height: 106px; }
+.app-fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; width: 100%; height: 100%; padding: 24px; }
+.app-fallback[hidden] { display: none; }
+.app-fallback .logo { width: 150px; height: 150px; }
+.app-fallback.logo-only .logo { width: 250px; height: 190px; }
+.app-fallback.logo-big .logo { width: 300px; height: 220px; }
+/* The tile clips artwork once; a moving tile opens its overflow for arrows. */
+.app-artwork { position: absolute; top: 0; left: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
+.tile.moving .app-artwork { border-radius: inherit; }
 .small .tile .logo, .small .tile svg { flex: 0 0 auto; width: 72px; height: 72px; border-radius: 12px; }
 
 .tile .name { font-weight: 500; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.35); max-width: 60%; line-height: 1.1; }
-.grid3 .tile .name { font-size: 60px; }
-.medium .tile .name { font-size: 36px; }
+.app-fallback .name { max-width: 100%; font-size: 34px; text-align: center; overflow-wrap: break-word; }
 .small .tile .name { font-size: 30px; font-weight: 500; color: #f0f0f3; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tile.nologo .name { max-width: 88%; text-align: center; }
-.grid3 .tile.nologo .name { font-size: 72px; font-weight: 700; }
-.medium .tile.nologo .name { font-size: 46px; font-weight: 700; }
-
-/* decorative swooshes like LTvLauncher's banner art */
-.tile .swoosh { position: absolute; border-radius: 50%; background: rgba(255,255,255,.07); pointer-events: none; }
-.tile .s1 { width: 70%; height: 140%; right: -28%; top: -60%; }
-.tile .s2 { width: 50%; height: 100%; left: -22%; bottom: -62%; background: rgba(0,0,0,.18); }
 
 .focused {
   transform: translateZ(0) scale(1.035);
@@ -112,10 +104,8 @@ h2 { font-size: 39px; font-weight: 500; margin: 0 0 18px; }
 }
 .icon-btn.focused { transform: none; box-shadow: 0 0 0 4px var(--focus); background: rgba(124,92,255,.18); }
 
-.tile.fire { background: radial-gradient(110% 120% at 50% 110%, #ff8a1e 0%, #c2380d 35%, #3a0d04 70%, #120402 100%); }
+.tile.fire { flex-direction: column; gap: 20px; background: radial-gradient(110% 120% at 50% 110%, #ff8a1e 0%, #c2380d 35%, #3a0d04 70%, #120402 100%); }
 .tile.fire svg.flame { width: 140px; height: 140px; }
-.medium .tile.fire svg.flame { width: 84px; height: 84px; }
-.grid .tile.fire svg.flame { width: 92px; height: 92px; }
 
 /* ---- settings sheet ---- */
 .sheet { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.62); padding: 64px 64px 120px; overflow: hidden; }
@@ -161,8 +151,7 @@ h2 { font-size: 39px; font-weight: 500; margin: 0 0 18px; }
 .small .tile.off { opacity: .42; }
 .small .tile.off.focused { opacity: .8; }
 .grid { display: flex; flex-wrap: wrap; gap: 26px 22px; width: 1792px; }
-.grid .tile { width: 333px; height: 187px; }
-.grid .tile .logo { width: 92px; height: 92px; }
+.grid .tile { width: 333px; height: 333px; }
 .grid .tile .name { font-size: 34px; }
 .grid .tile.on::after {
   content: ""; position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; border-radius: 50%;

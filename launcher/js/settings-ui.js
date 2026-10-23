@@ -138,6 +138,16 @@
     });
   }
 
+  function renderCardSizes() {
+    var box = A.$('card-sizes');
+    box.textContent = '';
+    [['big', 'Big'], ['small', 'Small']].forEach(function (option) {
+      box.appendChild(pill('cards:' + option[0], option[1], (S.cardSize || 'big') === option[0], function () {
+        S.cardSize = option[0]; changed(A.homeScreen.render);
+      }));
+    });
+  }
+
   function renderInputVisibility() {
     var liveTv = A.$('live-tv-visibility'), box = A.$('input-visibility');
     liveTv.textContent = '';
@@ -192,7 +202,7 @@
         tile = A.tiles.card(app.name, A.tiles.ICONS.flame);
         tile.classList.add('fire');
       } else {
-        tile = A.tiles.banner(app);
+        tile = A.tiles.app(app);
       }
       tile.classList.toggle('on', S.home.indexOf(app.id) >= 0);
       tile.dataset.key = 'app:' + app.id;
@@ -207,7 +217,7 @@
   }
 
   function render() {
-    renderBackgrounds(); renderWeather(); renderUnits(); renderDateTime(); renderInputVisibility(); renderInputNames(); renderAppMenu();
+    renderBackgrounds(); renderWeather(); renderUnits(); renderDateTime(); renderCardSizes(); renderInputVisibility(); renderInputNames(); renderAppMenu();
     focus();
   }
 
@@ -225,7 +235,7 @@
     if (!A.$('speed-row').hidden) { r.push(kids('speed-row')); }
     var results = kids('weather-results').map(function (el) { return [el]; });
     return r.concat(A.chunk(kids('bg-still'), 8), [kids('weather-location')], results, [kids('weather-visibility')],
-      [kids('units')], [kids('time-formats')], dateRows, [kids('live-tv-visibility')], [kids('input-visibility')],
+      [kids('units')], [kids('time-formats')], dateRows, [kids('card-sizes')], [kids('live-tv-visibility')], [kids('input-visibility')],
       [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]).filter(function (row) { return row.length; });
   }
 
