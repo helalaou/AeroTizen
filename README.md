@@ -93,31 +93,37 @@ You need a computer on the same network as the TV.
    computer: Linux x64, Windows x64, or macOS Apple silicon / Intel. It contains
    `aerotizen`, including Python and its dependencies.
 
-   Put the extracted directory on your `PATH`, then check that it finds your TV:
+   Open a terminal in the extracted directory and check that it finds your TV.
+   On macOS or Linux:
 
    ```bash
-   aerotizen discover
+   ./aerotizen discover
    ```
 
-   To run directly from the extracted directory, use `./aerotizen` on macOS/Linux
-   or `.\aerotizen.exe` in Windows PowerShell. If you already use Python 3.10 or newer,
-   `pip install git+https://github.com/helalaou/AeroTizen` remains available.
+   In Windows PowerShell:
+
+   ```powershell
+   .\aerotizen.exe discover
+   ```
+
+   Run the remaining commands from this directory. The examples below use
+   `./aerotizen`; in Windows PowerShell, use `.\aerotizen.exe` instead.
 
 2. Turn on Developer Mode on the TV. Open **Apps**, type `12345` on the remote (or with the
    on-screen number pad), switch Developer mode on, and set Host PC IP to your computer's IP.
    Then unplug the TV for a minute. Turning it off with the remote isn't enough for the change to
-   apply. `aerotizen status` should now show `developerMode=1`.
+   apply. `./aerotizen status` should now show `developerMode=1`.
 
 3. Create the certificates. This opens Samsung's sign-in page in your browser:
 
    ```bash
-   aerotizen certs
+   ./aerotizen certs
    ```
 
 4. Install the launcher:
 
    ```bash
-   aerotizen install launcher
+   ./aerotizen install launcher
    ```
 
    This downloads the latest stable **launcher** release, checks its checksum and
@@ -125,15 +131,18 @@ You need a computer on the same network as the TV.
    or Node.js is needed. Keep your existing certificates for future app updates.
 
    Run the same command to install a newer launcher. To select a version, use
-   `aerotizen install launcher --version 2.2.0` (replace the number with a published
+   `./aerotizen install launcher --version 2.2.0` (replace the number with a published
    launcher version). CLI and launcher versions are independent; a launcher release
-   can require a newer CLI. Use `aerotizen --version` to check your CLI version.
+   can require a newer CLI. Use `./aerotizen --version` to check your CLI version.
 
    To install local development files or a downloaded package, use an explicit path:
-   `aerotizen install ./launcher` or `aerotizen install ./app.wgt`.
+   `./aerotizen install ./launcher` or `./aerotizen install ./app.wgt`.
 
-   If no launcher release has been published yet, use the local development method in
-   [Contributing](CONTRIBUTING.md). The installer does not fall back to unreleased source.
+Optional: add the extracted directory to your `PATH` to run `aerotizen` from any
+directory. You can then omit `./` (macOS/Linux) or `.\` (Windows) from the commands.
+
+If you already use Python 3.10 or newer, you can instead install the CLI with
+`pip install git+https://github.com/helalaou/AeroTizen` and run it as `aerotizen`.
 
 That's it. The TV will start on AeroTizen from now on, and the gear icon opens settings.
 
@@ -146,7 +155,7 @@ a restart.
 
 For accurate weather, open **Settings → Weather** and search for your town or postcode.
 
-To look at or remove installed apps, run `aerotizen apps` and `aerotizen debloat`.
+To look at or remove installed apps, run `./aerotizen apps` and `./aerotizen debloat`.
 
 ## Limits
 
