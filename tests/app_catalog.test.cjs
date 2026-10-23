@@ -53,7 +53,10 @@ test('catalogue fallback logos exist and legacy rules are explicit', () => {
       assert.ok(entry.fallback.background);
       assert.ok(entry.fallback.label === null || typeof entry.fallback.label === 'string');
       if (entry.fallback.logo !== null) {
-        assert.ok(Object.hasOwn(logos, entry.fallback.logo), `Missing logo: ${entry.key}/${entry.fallback.logo}`);
+        const { slug, version } = entry.fallback.logo;
+        assert.match(slug, /^[a-z0-9][a-z0-9-]*$/);
+        assert.match(version, /^\d+\.\d+\.\d+$/);
+        assert.ok(Object.hasOwn(logos, slug), `Missing logo: ${entry.key}/${slug}`);
         assert.equal(typeof entry.fallback.logoColour, 'string');
       }
     }
@@ -76,7 +79,7 @@ test('verified app and store IDs select the same record despite renamed or confl
   for (const id of ['IkWsFHtOY9.Stremio', '3202306031311']) {
     const app = { id, name: 'YouTube' };
     assert.equal(A.catalog.artworkStoreId(app), '3202306031311');
-    assert.equal(A.catalog.brand(app).logo, 'stremio');
+    assert.equal(A.catalog.brand(app).logo.slug, 'stremio');
   }
   assert.equal(A.catalog.brand({ id: 'DqEoaplKlw.bbchybrid', name: 'YouTube' }), null);
   assert.equal(A.catalog.artworkStoreId({ id: 'DqEoaplKlw.bbchybrid', name: 'Renamed app' }), '3201601007670');
@@ -85,7 +88,7 @@ test('verified app and store IDs select the same record despite renamed or confl
 test('legacy prefix branding does not enable artwork for an unrelated app name', () => {
   const { A } = runtime();
   const app = { id: 'unknown.app', name: 'YouTube TV' };
-  assert.equal(A.catalog.brand(app).logo, 'youtube');
+  assert.equal(A.catalog.brand(app).logo.slug, 'youtube');
   assert.equal(A.catalog.artworkStoreId(app), null);
   assert.equal(A.catalog.artworkStoreId({ id: 'unknown.app', name: 'Amazon Prime Video' }), '3201910019365');
   assert.equal(A.catalog.brand({ id: 'unknown.app', name: 'Amazon Prime Video' }), null);

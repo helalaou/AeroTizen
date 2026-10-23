@@ -29,8 +29,8 @@
              logo: null, label: shortName(name), textColour: '#ffffff', useAppIcon: true };
   }
 
-  function logoSvg(slug, fill) {
-    var d = window.LOGOS && window.LOGOS[slug];
+  function logoSvg(logo, fill) {
+    var d = window.LOGOS && window.LOGOS[logo.slug];
     return d ? svg('<path fill="' + fill + '" d="' + d + '"/>', 'logo') : '';
   }
 

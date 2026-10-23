@@ -23,7 +23,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "#ffffff",
-        "logo": "youtube",
+        "logo": {
+          "slug": "youtube",
+          "version": "16.35.0"
+        },
         "logoColour": "#ff0000",
         "label": "YouTube",
         "textColour": "#0f0f0f"
@@ -46,7 +49,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "linear-gradient(135deg,#e50914,#8a0610)",
-        "logo": "netflix",
+        "logo": {
+          "slug": "netflix",
+          "version": "16.35.0"
+        },
         "logoColour": "#ffffff",
         "label": null,
         "textColour": null
@@ -73,7 +79,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "linear-gradient(135deg,#1a98ff,#0f4c81)",
-        "logo": "primevideo",
+        "logo": {
+          "slug": "primevideo",
+          "version": "13.0.0"
+        },
         "logoColour": "#ffffff",
         "label": null,
         "textColour": null,
@@ -98,7 +107,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "linear-gradient(135deg,#1ed760,#0f8a3c)",
-        "logo": "spotify",
+        "logo": {
+          "slug": "spotify",
+          "version": "16.35.0"
+        },
         "logoColour": "#000000",
         "label": "Spotify",
         "textColour": "#000000"
@@ -123,7 +135,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "linear-gradient(135deg,#7b5bf5,#2b1d68)",
-        "logo": "stremio",
+        "logo": {
+          "slug": "stremio",
+          "version": "16.35.0"
+        },
         "logoColour": "#ffffff",
         "label": "Stremio",
         "textColour": "#ffffff"
@@ -140,7 +155,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "#002be7",
-        "logo": "max",
+        "logo": {
+          "slug": "max",
+          "version": "16.35.0"
+        },
         "logoColour": "#ffffff",
         "label": null,
         "textColour": null
@@ -157,7 +175,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "#1ce783",
-        "logo": "hulu",
+        "logo": {
+          "slug": "hulu",
+          "version": "9.0.0"
+        },
         "logoColour": "#0b0c0f",
         "label": null,
         "textColour": null
@@ -174,7 +195,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "linear-gradient(135deg,#4a4a4f,#1c1c1e)",
-        "logo": "appletv",
+        "logo": {
+          "slug": "appletv",
+          "version": "16.35.0"
+        },
         "logoColour": "#ffffff",
         "label": null,
         "textColour": null
@@ -191,7 +215,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "#1f1f1f",
-        "logo": "plex",
+        "logo": {
+          "slug": "plex",
+          "version": "16.35.0"
+        },
         "logoColour": "#ebaf00",
         "label": null,
         "textColour": null
@@ -208,7 +235,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "#9146ff",
-        "logo": "twitch",
+        "logo": {
+          "slug": "twitch",
+          "version": "16.35.0"
+        },
         "logoColour": "#ffffff",
         "label": "Twitch",
         "textColour": "#ffffff"
@@ -225,7 +255,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "#f47521",
-        "logo": "crunchyroll",
+        "logo": {
+          "slug": "crunchyroll",
+          "version": "16.35.0"
+        },
         "logoColour": "#ffffff",
         "label": "Crunchyroll",
         "textColour": "#ffffff"
@@ -242,7 +275,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "#0064ff",
-        "logo": "paramountplus",
+        "logo": {
+          "slug": "paramountplus",
+          "version": "16.35.0"
+        },
         "logoColour": "#ffffff",
         "label": null,
         "textColour": null
@@ -259,7 +295,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "#7408ff",
-        "logo": "tubi",
+        "logo": {
+          "slug": "tubi",
+          "version": "16.35.0"
+        },
         "logoColour": "#ffffff",
         "label": null,
         "textColour": null
@@ -276,7 +315,10 @@ window.AeroTizen.catalog = {
       },
       "fallback": {
         "background": "linear-gradient(135deg,#aa5cc3,#00a4dc)",
-        "logo": "jellyfin",
+        "logo": {
+          "slug": "jellyfin",
+          "version": "16.35.0"
+        },
         "logoColour": "#ffffff",
         "label": "Jellyfin",
         "textColour": "#ffffff"

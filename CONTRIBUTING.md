@@ -63,8 +63,9 @@ without a build step or an asynchronous JSON request. Keep one record per app:
   strings. Add variants for known identifiers; do not guess IDs for untested apps.
 - `preloaded: true` marks native apps whose discovery and Home watcher use the
   Samsung store ID. Existing Netflix and Prime Video mappings are kept here.
-- `fallback` holds optional background, logo, label and colour settings. Logo names
-  refer to `launcher/js/logos.js`. A `null` label keeps an existing logo-only card.
+- `fallback` holds optional background, logo, label and colour settings. A logo
+  pairs its Simple Icons `slug` with a pinned source `version`; use `null` for no
+  logo. A `null` label keeps an existing logo-only card.
 - `legacy.artworkNames` retains exact name matches; `legacy.brandPrefixes` retains
   prefix matches. These are compatibility fallbacks while more IDs are verified.
 
@@ -72,6 +73,13 @@ Both artwork and fallback branding check verified IDs first. TV-provided store I
 and cache paths still take precedence over catalogue artwork mappings. Apps without
 a match keep their own icon and name on the generated default background. Image
 files and cache paths do not need to be added to the catalogue.
+
+To add or update a fallback logo, edit its catalogue entry and run
+`python3 tools/fetch_logos.py`. The generator reads the catalogue and writes
+`launcher/js/logos.js`; do not edit the generated SVG paths. Keep the catalogue
+object valid JSON inside its script wrapper so both Python and the launcher can
+read it. Some logos require an older source version because newer Simple Icons
+releases removed them.
 
 Run `npm test` and `npm run lint`. Catalogue tests check unique IDs, valid logo
 references, legacy matching and the preloaded IDs sent to the Home watcher.
