@@ -25,6 +25,52 @@ test('defaults apply when nothing is saved', () => {
   assert.equal(settings.background, 'aurora');
   assert.equal(settings.tempUnit, 'auto');
   assert.equal(settings.home, null, 'null picks the default tiles on first launch');
+  assert.equal(settings.showWeather, true);
+  assert.equal(settings.showTime, true);
+  assert.equal(settings.showNetwork, true);
+});
+
+test('older current and legacy saves keep all header items visible', () => {
+  for (const key of ['aerotizen.settings.v1', 'hearth.home.v1', 'declutter.home.v5']) {
+    const { settings } = loadSettings({ [key]: JSON.stringify({ tempUnit: 'F', dateFormat: 'none' }) });
+    assert.equal(settings.showWeather, true, key);
+    assert.equal(settings.showTime, true, key);
+    assert.equal(settings.showNetwork, true, key);
+    assert.equal(settings.dateFormat, 'none', 'date remains under its existing setting');
+    assert.equal(settings.tempUnit, 'F');
+  }
+});
+
+test('header visibility survives a restart without changing date or weather preferences', () => {
+  const location = { name: 'London', latitude: 51.5085, longitude: -0.1257, country_code: 'GB' };
+  const { settings, store } = loadSettings({});
+  Object.assign(settings, {
+    showWeather: false, showTime: false, showNetwork: false,
+    dateFormat: 'iso', timeFormat: '24', weatherLocation: location,
+    tempUnit: 'F', weatherShowLocation: false
+  });
+  settings.save();
+  const restarted = loadSettings(store).settings;
+  assert.equal(restarted.showWeather, false);
+  assert.equal(restarted.showTime, false);
+  assert.equal(restarted.showNetwork, false);
+  assert.equal(restarted.dateFormat, 'iso');
+  assert.equal(restarted.timeFormat, '24');
+  assert.deepEqual(JSON.parse(JSON.stringify(restarted.weatherLocation)), location);
+  assert.equal(restarted.tempUnit, 'F');
+  assert.equal(restarted.weatherShowLocation, false);
+
+  restarted.showWeather = true;
+  restarted.showTime = true;
+  restarted.showNetwork = true;
+  restarted.save();
+  restarted.load();
+  assert.equal(restarted.showWeather, true);
+  assert.equal(restarted.showTime, true);
+  assert.equal(restarted.showNetwork, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(restarted.weatherLocation)), location);
+  assert.equal(restarted.tempUnit, 'F');
+  assert.equal(restarted.dateFormat, 'iso');
 });
 
 test('an empty saved Home stays empty', () => {

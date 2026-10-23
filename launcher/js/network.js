@@ -26,6 +26,13 @@
     el.classList.toggle('offline', kind === 'offline');
   }
 
+  function updateVisibility() {
+    var el = A.$('network');
+    // SVG elements do not expose the HTML hidden property on every TV.
+    if (A.settings.showNetwork === false) { el.setAttribute('hidden', ''); }
+    else { el.removeAttribute('hidden'); }
+  }
+
   function refresh() {
     if (!tz || !tz.systeminfo) { return show(navigator.onLine === false ? 'offline' : 'wifi'); }
     try {
@@ -40,7 +47,9 @@
   }
 
   A.network = {
+    updateVisibility: updateVisibility,
     start: function () {
+      updateVisibility();
       refresh();
       if (tz && tz.systeminfo) {
         try { tz.systeminfo.addPropertyValueChangeListener('NETWORK', refresh); } catch (e) {}

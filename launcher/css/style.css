@@ -38,6 +38,7 @@ html, body {
 /* ---- top bar ---- */
 .topbar { display: flex; justify-content: space-between; align-items: center; height: 112px; padding: 0 64px; }
 .topbar-left, .topbar-right { display: flex; align-items: center; gap: 28px; }
+.topbar [hidden] { display: none; }
 .icon-btn { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--fg); }
 .icon-btn svg { width: 40px; height: 40px; }
 .status-icon { width: 40px; height: 40px; color: var(--fg); }
@@ -48,6 +49,7 @@ html, body {
 .view-tab.focused { transform: none; box-shadow: 0 0 0 4px var(--focus); }
 .status-text { font-size: 34px; font-weight: 500; }
 .weather { display: flex; align-items: center; gap: 12px; font-size: 36px; margin-right: 18px; }
+.topbar-right.weather-only .weather { margin-right: 0; }
 .weather svg { width: 46px; height: 46px; }
 .weather b { font-weight: 700; }
 .weather span { color: var(--muted); font-weight: 400; }

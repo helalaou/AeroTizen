@@ -36,6 +36,9 @@ AeroTizen.config = {
     home: null,  // null selects defaults on first launch; [] keeps an empty Home.
     background: 'aurora',
     speed: 1,
+    showWeather: true,
+    showTime: true,
+    showNetwork: true,
     tempUnit: 'auto',
     weatherLocation: null,
     weatherShowLocation: true,

@@ -6,7 +6,7 @@ window.Weather = (function () {
   var CACHE = 'aerotizen.weather.v2';
   var REFRESH = 20 * 60 * 1000;
   var MAX_AGE = 2 * 60 * 60 * 1000;
-  var reading = null, requestVersion = 0, timer = null;
+  var reading = null, requestVersion = 0, timer = null, automaticRequests = [];
   var settingsOf = function () { return {}; };
 
   // WMO weather codes -> simple icon shapes.
@@ -30,16 +30,36 @@ window.Weather = (function () {
     return ICONS.cloud;
   }
 
-  function getJSON(url, cb) {
+  function getJSON(url, cb, automatic) {
     var x = new XMLHttpRequest(), finished = false;
-    function done(data) { if (!finished) { finished = true; cb(data); } }
+    function forget() {
+      var index = automaticRequests.indexOf(cancel);
+      if (index >= 0) { automaticRequests.splice(index, 1); }
+    }
+    function done(data) { if (!finished) { finished = true; forget(); cb(data); } }
+    function cancel() {
+      if (finished) { return; }
+      finished = true;
+      forget();
+      try { x.abort(); } catch (e) {}
+    }
     x.onload = function () {
       var data = null;
       try { if (x.status === 200) { data = JSON.parse(x.responseText); } } catch (e) {}
       done(data);
     };
-    x.onerror = x.ontimeout = function () { done(null); };
+    x.onerror = x.ontimeout = x.onabort = function () { done(null); };
+    if (automatic) { automaticRequests.push(cancel); }
     try { x.open('GET', url); x.timeout = 8000; x.send(); } catch (e) { done(null); }
+  }
+
+  function cancelRequests() {
+    requestVersion++;
+    automaticRequests.slice().forEach(function (cancel) { cancel(); });
+  }
+
+  function stopTimer() {
+    if (timer !== null) { clearInterval(timer); timer = null; }
   }
 
   function number(value) { return typeof value === 'number' && isFinite(value); }
@@ -56,6 +76,7 @@ window.Weather = (function () {
       unit: s.tempUnit === 'F' || s.tempUnit === 'C' ? s.tempUnit : 'auto',
       geo: geo,
       source: geo ? JSON.stringify([geo.latitude, geo.longitude, geo.name, geo.country_code]) : 'auto',
+      visible: s.showWeather !== false,
       showLocation: s.weatherShowLocation !== false
     };
   }
@@ -69,7 +90,7 @@ window.Weather = (function () {
     var w = reading, opt = options();
     var el = document.getElementById('weather');
     if (!el) { return; }
-    if (!validReading(w, opt)) { el.textContent = ''; el.hidden = true; return; }
+    if (!opt.visible || !validReading(w, opt)) { el.textContent = ''; el.hidden = true; return; }
     el.innerHTML = '<svg viewBox="0 0 24 24">' + icon(w.code) + '</svg><b></b>' + (opt.showLocation ? '<span></span>' : '');
     el.querySelector('b').textContent = Math.round(w.temp) + '°';
     if (opt.showLocation) { el.querySelector('span').textContent = w.city || ''; }
@@ -77,11 +98,13 @@ window.Weather = (function () {
   }
 
   function refresh() {
-    var version = ++requestVersion, opt = options();
+    cancelRequests();
+    var version = requestVersion, opt = options();
     render(); // Remove weather for a previous location or unit before requesting new data.
+    if (!opt.visible) { stopTimer(); return; }
     function current() {
       var now = options();
-      return version === requestVersion && now.source === opt.source && now.unit === opt.unit;
+      return now.visible && version === requestVersion && now.source === opt.source && now.unit === opt.unit;
     }
     function forecast(geo) {
       if (!current() || !validLocation(geo)) { return; }
@@ -94,9 +117,9 @@ window.Weather = (function () {
           unit: opt.unit, source: opt.source, at: Date.now() };
         try { localStorage.setItem(CACHE, JSON.stringify(reading)); } catch (e) {}
         render();
-      });
+      }, true);
     }
-    if (opt.geo) { forecast(opt.geo); } else { getJSON('https://ipapi.co/json/', forecast); }
+    if (opt.geo) { forecast(opt.geo); } else { getJSON('https://ipapi.co/json/', forecast, true); }
   }
 
   function searchLocations(query, cb) {
@@ -118,14 +141,27 @@ window.Weather = (function () {
     });
   }
 
-  function start(settingsGetter) {
-    if (settingsGetter) { settingsOf = settingsGetter; }
-    try { reading = JSON.parse(localStorage.getItem(CACHE)); } catch (e) { reading = null; }
+  function updateVisibility() {
+    var opt = options();
+    if (!opt.visible) {
+      stopTimer();
+      cancelRequests();
+    }
     render();
-    if (!validReading(reading, options()) || Date.now() - reading.at >= REFRESH) { refresh(); }
-    if (timer !== null) { clearInterval(timer); }
-    timer = setInterval(refresh, REFRESH);
+    if (opt.visible && timer === null) {
+      if (!validReading(reading, opt) || Date.now() - reading.at >= REFRESH) { refresh(); }
+      timer = setInterval(refresh, REFRESH);
+    }
   }
 
-  return { start: start, refresh: refresh, updateDisplay: render, searchLocations: searchLocations };
+  function start(settingsGetter) {
+    stopTimer();
+    cancelRequests();
+    if (settingsGetter) { settingsOf = settingsGetter; }
+    try { reading = JSON.parse(localStorage.getItem(CACHE)); } catch (e) { reading = null; }
+    updateVisibility();
+  }
+
+  return { start: start, refresh: refresh, updateDisplay: render, updateVisibility: updateVisibility,
+    searchLocations: searchLocations };
 })();

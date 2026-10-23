@@ -30,6 +30,7 @@ function harness({ saved, settings = {}, blockedStorage = false } = {}) {
   class FakeXHR {
     open(method, url) { this.url = url; }
     send() { requests.push(this); }
+    abort() { this.aborted = true; this.onabort(); }
     respond(data, status = 200) {
       this.status = status;
       this.responseText = typeof data === 'string' ? data : JSON.stringify(data);
@@ -255,6 +256,157 @@ test('blocked storage does not prevent weather; repeated start keeps one refresh
   h.start();
   assert.equal(h.intervals.size, 1);
   assert.equal([...h.intervals.values()][0].ms, 20 * 60000);
+});
+
+test('weather off at startup hides fresh or stale cache and makes no automatic requests', () => {
+  for (const saved of [undefined, cached(), cached({ at: NOW - 30 * 60000 })]) {
+    const h = harness({ saved, settings: { showWeather: false } }); h.start();
+    assert.equal(h.el.hidden, true);
+    assert.equal(h.el.html, '');
+    assert.equal(h.requests.length, 0);
+    assert.equal(h.intervals.size, 0);
+    if (saved) { assert.deepEqual(h.cached(), saved); }
+  }
+});
+
+test('hiding weather removes it at once and restores matching cache with saved preferences', () => {
+  const saved = cached({ unit: 'F', source: JSON.stringify([london.latitude, london.longitude, london.name, london.country_code]) });
+  const h = harness({ saved, settings: { weatherLocation: london, tempUnit: 'F', weatherShowLocation: false } });
+  h.start();
+  const queuedRefresh = [...h.intervals.values()][0].fn;
+  h.preferences.showWeather = false; h.weather.updateVisibility();
+  assert.equal(h.el.hidden, true);
+  assert.equal(h.el.html, '');
+  assert.equal(h.intervals.size, 0);
+  queuedRefresh();
+  assert.equal(h.requests.length, 0);
+  assert.deepEqual(h.cached(), saved);
+  assert.equal(h.preferences.weatherLocation, london);
+  assert.equal(h.preferences.tempUnit, 'F');
+  h.preferences.showWeather = true; h.weather.updateVisibility();
+  assert.equal(h.el.hidden, false);
+  assert.equal(h.el.nodes.b.textContent, '12°');
+  assert.equal(h.el.querySelector('span'), null);
+  assert.equal(h.requests.length, 0);
+  assert.equal(h.intervals.size, 1);
+});
+
+test('hiding weather aborts pending IP lookup and a late response cannot start a forecast', () => {
+  const h = harness(); h.start();
+  const ip = h.requests[0];
+  h.preferences.showWeather = false; h.weather.updateVisibility();
+  assert.equal(ip.aborted, true);
+  ip.respond({ city: 'London', latitude: 51.5, longitude: -0.12, country_code: 'GB' });
+  assert.equal(h.requests.length, 1);
+  assert.equal(h.el.hidden, true);
+  assert.equal(h.intervals.size, 0);
+  assert.equal(h.storage.has(CACHE), false);
+});
+
+test('hiding weather aborts pending forecast and a late response cannot replace its cache', () => {
+  const saved = cached({ at: NOW - 30 * 60000 });
+  const h = harness({ saved }); h.start();
+  h.requests[0].respond({ city: 'London', latitude: 51.5, longitude: -0.12, country_code: 'GB' });
+  const forecast = h.requests[1];
+  h.preferences.showWeather = false; h.weather.updateVisibility();
+  assert.equal(forecast.aborted, true);
+  forecast.respond(conditions(99));
+  assert.equal(h.el.hidden, true);
+  assert.equal(h.intervals.size, 0);
+  assert.deepEqual(h.cached(), saved);
+});
+
+test('an IP response from before off/on cannot start another forecast after weather resumes', () => {
+  const h = harness(); h.start();
+  const oldIP = h.requests[0];
+  h.preferences.showWeather = false; h.weather.updateVisibility();
+  h.preferences.showWeather = true; h.weather.updateVisibility();
+  assert.equal(h.requests.length, 2);
+  oldIP.respond({ city: 'Wrong city', latitude: 1, longitude: 1 });
+  assert.equal(h.requests.length, 2);
+  h.requests[1].respond({ city: 'London', latitude: 51.5, longitude: -0.12, country_code: 'GB' });
+  h.requests[2].respond(conditions());
+  assert.equal(h.el.nodes.span.textContent, 'London');
+  assert.equal(h.cached().city, 'London');
+  assert.equal(h.intervals.size, 1);
+});
+
+test('a forecast from before off/on cannot replace the resumed forecast or cache', () => {
+  const h = harness({ settings: { weatherLocation: london } }); h.start();
+  const oldForecast = h.requests[0];
+  h.preferences.showWeather = false; h.weather.updateVisibility();
+  h.preferences.showWeather = true; h.weather.updateVisibility();
+  h.requests[1].respond(conditions(15));
+  oldForecast.respond(conditions(99));
+  assert.equal(h.el.hidden, false);
+  assert.equal(h.el.nodes.b.textContent, '15°');
+  assert.equal(h.cached().temp, 15);
+  assert.equal(h.intervals.size, 1);
+});
+
+test('refresh and location or unit changes while off do not request data; resume uses current settings', () => {
+  const saved = cached();
+  const h = harness({ saved, settings: { showWeather: false } }); h.start();
+  h.weather.refresh();
+  h.preferences.tempUnit = 'F'; h.weather.refresh();
+  h.preferences.weatherLocation = boston; h.weather.refresh();
+  h.preferences.weatherShowLocation = false; h.weather.updateDisplay();
+  assert.equal(h.requests.length, 0);
+  assert.equal(h.intervals.size, 0);
+  assert.equal(h.el.hidden, true);
+  assert.deepEqual(h.cached(), saved);
+  h.preferences.showWeather = true; h.weather.updateVisibility();
+  assert.equal(h.requests.length, 1);
+  const url = new URL(h.requests[0].url);
+  assert.equal(url.hostname, 'api.open-meteo.com');
+  assert.equal(url.searchParams.get('latitude'), String(boston.latitude));
+  assert.equal(url.searchParams.get('temperature_unit'), 'fahrenheit');
+  h.requests[0].respond(conditions(55));
+  assert.equal(h.el.nodes.b.textContent, '55°');
+  assert.equal(h.el.querySelector('span'), null);
+});
+
+test('resume refreshes stale cache and repeated visibility updates keep one timer and request', () => {
+  const h = harness({ saved: cached(), settings: { showWeather: false } }); h.start();
+  h.advance(21 * 60000);
+  h.preferences.showWeather = true;
+  h.weather.updateVisibility(); h.weather.updateVisibility(); h.weather.updateVisibility();
+  assert.equal(h.el.hidden, false);
+  assert.equal(h.requests.length, 1);
+  assert.equal(h.intervals.size, 1);
+  assert.equal([...h.intervals.values()][0].ms, 20 * 60000);
+  for (let i = 0; i < 3; i++) {
+    h.preferences.showWeather = false; h.weather.updateVisibility();
+    assert.equal(h.intervals.size, 0);
+    h.preferences.showWeather = true; h.weather.updateVisibility();
+    assert.equal(h.intervals.size, 1);
+  }
+  assert.equal(h.requests.slice(0, -1).every(request => request.aborted), true);
+});
+
+test('visibility guards reject automatic responses even before the visibility handler runs', () => {
+  for (const settings of [{}, { weatherLocation: london }]) {
+    const h = harness({ settings }); h.start();
+    h.preferences.showWeather = false;
+    h.requests[0].respond(settings.weatherLocation ? conditions(99) : london);
+    h.weather.updateDisplay();
+    assert.equal(h.requests.length, 1);
+    assert.equal(h.el.hidden, true);
+    assert.equal(h.storage.has(CACHE), false);
+  }
+});
+
+test('explicit location search remains available while off and is not canceled by hiding weather', () => {
+  const h = harness({ settings: { showWeather: false } }); h.start();
+  let found;
+  h.weather.searchLocations('London', value => { found = value; });
+  h.weather.updateVisibility();
+  assert.equal(h.requests.length, 1);
+  assert.equal(h.requests[0].aborted, undefined);
+  h.requests[0].respond({ results: [london] });
+  assert.equal(found[0].name, 'London');
+  assert.equal(h.el.hidden, true);
+  assert.equal(h.intervals.size, 0);
 });
 
 test('old preferences keep the default visibility; location and visibility persist on save', () => {

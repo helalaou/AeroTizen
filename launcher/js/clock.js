@@ -33,6 +33,8 @@
     var d = new Date(), dateEl = A.$('date'), timeEl = A.$('time');
     dateEl.textContent = formatDate(d, A.settings.dateFormat);
     dateEl.hidden = A.settings.dateFormat === 'none';
+    timeEl.hidden = A.settings.showTime === false;
+    timeEl.parentNode.classList.toggle('weather-only', timeEl.hidden && dateEl.hidden);
     timeEl.setAttribute('data-format', A.settings.timeFormat === '24' ? '24' : '12');
     timeEl.textContent = formatTime(d, A.settings.timeFormat);
   }
