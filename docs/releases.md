@@ -46,6 +46,10 @@ to select a fork explicitly. It never selects a repository from local Git remote
    smoke-tests the CLI binaries. It publishes the release only after all required jobs
    succeed and all assets have been uploaded.
 
+Release Please refreshes pending release PRs even when their release notes have not
+changed. This keeps the shared version manifest current after another component is
+released. Let CI pass again if that refresh changes the PR commit.
+
 Launcher source changes belong under `launcher/`. The CLI excludes `launcher/` and
 `tests/` from its release calculation, so a launcher change with JavaScript tests does
 not force a CLI release. A CLI source change with tests still releases the CLI. Shared
