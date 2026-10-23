@@ -19,6 +19,10 @@ for each job.
 
 The default `GITHUB_TOKEN` creates release PRs whose CI runs require approval. A user
 with write access selects **Approve workflows to run** on the PR before merging.
+GitHub does not start the `pull_request_target` title workflow for a PR created or
+updated by this token. After approving CI, edit the release PR description to trigger
+**Validate PR title**; the conventional title can stay unchanged. Repeat this after a
+bot refresh that adds commits. The optional token below also starts the title check.
 For unattended PR checks, optionally add a `RELEASE_PLEASE_TOKEN` Actions secret with
 a fine-grained personal access token granting repository **Contents**, **Issues**, and
 **Pull requests** read/write permissions. A GitHub App integration can supply an
@@ -36,9 +40,51 @@ The workflow runs in the repository where it is enabled. Test releases in a fork
 in that fork. The CLI defaults to `helalaou/AeroTizen`; use `--release-repo OWNER/REPO`
 to select a fork explicitly. It never selects a repository from local Git remotes.
 
+### Squash merges and branch protection
+
+A repository administrator must apply these settings in GitHub; adding the workflow
+files does not change them.
+
+In **Settings → General → Pull Requests**:
+
+1. Enable **Allow squash merging**.
+2. Set its default commit message to **Pull request title**. This also uses the title
+   for PRs with only one commit.
+3. Disable **Allow merge commits** and **Allow rebase merging**.
+
+Create an **Active** branch ruleset targeting `main` under **Settings → Rules →
+Rulesets**, or apply equivalent branch protection:
+
+- Require a pull request before merging, so direct pushes cannot skip the title check.
+- Require status checks before merging: **Validate PR title**, **python (3.10)**,
+  **python (3.12)**, **python (3.13)**, and **launcher**. Select GitHub Actions as the
+  expected check source where available.
+- Require branches to be up to date before merging.
+- Require linear history, block force pushes, and block branch deletion.
+- Apply the rules to maintainers and administrators too; avoid routine bypass entries.
+
+Do not require the Release Please or Build release jobs as PR checks: they run after
+merging a release PR. Review approvals can follow the repository's own policy.
+
+The **PR title** workflow uses `pull_request_target`, so it can check contributions
+from forks with read-only PR access. It checks metadata and does not check out or run
+the contributor's code. It rechecks titles on PR edits and new commits, including
+Release Please PRs, using the same allowed types listed in
+[CONTRIBUTING](../CONTRIBUTING.md#releases).
+
+For initial setup, merge the workflow into `main` first. It cannot run from the PR
+that first introduces it. Open or update a PR after that merge to produce a
+**Validate PR title** check, then make that check required. Until both the workflow
+and repository settings are active, title validation does not block merges.
+
+Keep the validated PR title when confirming a squash merge. The title check validates
+the PR, not a different commit message typed into the merge dialog. See
+[GitHub's squash settings](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/configuring-commit-squashing-for-pull-requests)
+and [required status checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#require-status-checks-to-pass-before-merging).
+
 ## Normal release
 
-1. Merge changes into `main` with conventional commit titles.
+1. Squash-merge changes into `main` using the validated Conventional Commit PR title.
 2. Release Please opens a separate release PR for each changed component. Review its
    version and notes and let CI pass.
 3. Merge the release PR. Release Please creates its tag and a **draft** GitHub release.

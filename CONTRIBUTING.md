@@ -60,12 +60,27 @@ local changes. For a fork's published app, use
 ## Releases
 
 The CLI and TV launcher have independent versions, release PRs, and GitHub releases.
-Use conventional commit titles (`feat:`, `fix:`, and `feat!:` for breaking changes)
-so Release Please can select versions and write release notes. Source paths determine
-which component changes; commit scopes alone do not route releases.
+Use a Conventional Commit title for each pull request. The **Validate PR title** check
+runs when a PR is opened, reopened, edited, or updated with new commits. Supported
+types are `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`,
+`chore`, and `revert`. Scopes are optional. For example:
 
-See [Release process](docs/releases.md) for setup, assets, local package checks, and
-failed-build recovery. Build outputs belong in release assets, not in Git.
+```text
+feat(launcher): add a settings screen
+fix(cli): handle failed launcher downloads
+feat(cli)!: change certificate storage
+chore(main): release cli 2.2.0
+```
+
+Use `!` in the title for a breaking change. Squash-merge each PR and keep its validated
+title as the final commit title, so Release Please can select versions and write
+release notes. Individual commits on a development branch do not need this format.
+Source paths determine which component changes; commit scopes alone do not route
+releases.
+
+See [Release process](docs/releases.md) for required repository settings, assets,
+local package checks, and failed-build recovery. Build outputs belong in release
+assets, not in Git.
 
 ## Updating app metadata
 
