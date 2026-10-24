@@ -59,3 +59,13 @@ test('no private device identifiers, baseline or compiled executable are committ
   assert.doesNotMatch(combined, /\.pfx\b|\.wgt\b|DUID[=:]/);
   assert.match(project, /<TargetFramework>net6\.0<\/TargetFramework>/);
 });
+
+test('S90C partial native writes retain best-effort original-state undo', () => {
+  assert.match(native, /static void UndoPartialWrite\(\)/);
+  assert.match(native, /if \(!OtherKeysUnmodified\(s\) \|\|/);
+  assert.match(native, /if \(s\.Main != Samsung\) WriteOperation\(Samsung\)/);
+  assert.match(native, /if \(s\.Home != Samsung\) WriteKey\(Samsung\)/);
+  assert.match(native, /if \(!Original\(Read\(\)\)\)/);
+  assert.match(native, /S90C_AUTO_UNDO_VERIFIED/);
+  assert.match(native, /S90C_AUTO_UNDO_UNCERTAIN/);
+});
