@@ -6,6 +6,7 @@ It sends a single TV status GET and asks the existing AeroTizen SDB connector
 for capabilities; it never uploads files, runs shell commands or writes vconf.
 Matching an independently reported TV does NOT authorize use of any helper.
 """
+
 import argparse
 import ipaddress
 import json
@@ -22,8 +23,7 @@ def private_ipv4(value):
         raise argparse.ArgumentTypeError("Expected a private TV IPv4 address") from error
     # RFC 1918 only: ipaddress.is_private also includes special-use ranges
     # such as documentation addresses, which are not home LAN destinations.
-    lan = [ipaddress.ip_network(net) for net in (
-        "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")]
+    lan = [ipaddress.ip_network(net) for net in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")]
     if address.version != 4 or not any(address in block for block in lan):
         raise argparse.ArgumentTypeError("Expected an RFC 1918 TV IPv4 address")
     return str(address)
@@ -54,7 +54,8 @@ def assess(device, capabilities, catalogue):
     # successful physical-HOME evidence even if model and Tizen match.
     firmware_comparison = (
         reported_firmware == known["firmware"]
-        if known is not None and reported_firmware is not None else None
+        if known is not None and reported_firmware is not None
+        else None
     )
     comparable = (
         known is not None
@@ -82,7 +83,7 @@ def assess(device, capabilities, catalogue):
         "next_step": (
             "Independent native read-only baseline, firmware/library/runtime review, "
             "and private restore validation required"
-        )
+        ),
     }
 
 
@@ -93,6 +94,7 @@ def query_read_only(host):
         raise ValueError("Invalid TV status response")
     # Existing AeroTizen CLI SDB module. Sdb.capability is a read-only command.
     from aerotizen.sdb import Sdb
+
     with Sdb(host, timeout=9) as connection:
         caps = connection.capability()
     catalog = json.loads(REFERENCES.read_text(encoding="utf-8"))
