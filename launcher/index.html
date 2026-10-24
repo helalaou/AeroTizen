@@ -6,20 +6,27 @@
   <title>AeroTizen</title>
   <link rel="icon" href="icon.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/glass-layout.css">
 </head>
 <body>
   <div id="bg" class="bg"></div>
   <!-- Layout inspired by LTvLauncher (github.com/leanbitlab-org/LtvLauncher); no code shared. -->
   <header class="topbar">
     <div class="topbar-left">
+      <div id="aero-header-focus" aria-hidden="true"></div>
       <div id="gear" class="icon-btn" data-row="0" aria-label="Settings">
         <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1L11 21h4l.4-2.9a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5A3.5 3.5 0 1 1 13 8.5a3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+      </div>
+      <div id="samsung-home-shortcut" class="icon-btn" role="button" aria-label="Samsung Home" title="Samsung Home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.8 2.6 11a1 1 0 0 0 1.3 1.5L5 11.6V21h6v-6h2v6h6v-9.4l1.1.9a1 1 0 1 0 1.3-1.5L12 2.8z"/></svg>
       </div>
       <svg id="network" class="status-icon" viewBox="0 0 24 24" aria-label="Network"></svg>
     </div>
     <nav class="view-tabs" aria-label="App views">
-      <button id="home-tab" class="view-tab active" type="button" tabindex="-1" aria-pressed="true">Home</button>
-      <button id="apps-tab" class="view-tab" type="button" tabindex="-1" aria-pressed="false">All apps</button>
+      <div id="aero-tab-glider" aria-hidden="true"></div>
+      <div id="aero-tab-focus" aria-hidden="true"></div>
+      <button id="home-tab" class="view-tab active" type="button" tabindex="-1" aria-pressed="true"><svg class="aero-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3.5l8.5 7v9a1 1 0 0 1-1 1H14v-6h-4v6H4.5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round"/></svg><span>Home</span></button>
+      <button id="apps-tab" class="view-tab" type="button" tabindex="-1" aria-pressed="false"><svg class="aero-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.65" fill="none" stroke="currentColor" stroke-width="1.65"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.65" fill="none" stroke="currentColor" stroke-width="1.65"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.65" fill="none" stroke="currentColor" stroke-width="1.65"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.65" fill="none" stroke="currentColor" stroke-width="1.65"/></svg><span>All apps</span></button>
     </nav>
     <div class="topbar-right">
       <span id="weather" class="weather" hidden></span>
@@ -101,6 +108,7 @@
   <script src="js/inputs.js"></script>
   <script src="js/home-screen.js"></script>
   <script src="js/settings-ui.js"></script>
+  <script src="js/glass-ui.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
