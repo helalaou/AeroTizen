@@ -41,8 +41,9 @@
   });
 
   // ---- boot ----------------------------------------------------------------------
-  var launcherReady = false;
+  var launcherReady = false, settingsReady = false;
   A.i18n.start(function () {
+    if (!settingsReady) { return; }
     A.clock.tick();
     if (!launcherReady) { return; }
     if (A.settingsUi.isOpen()) { A.settingsUi.render(); }
@@ -51,6 +52,7 @@
     window.Weather.updateDisplay();
   });
   A.settings.load();
+  settingsReady = true;
   A.applyBackground();
   A.clock.start();
   A.network.start();

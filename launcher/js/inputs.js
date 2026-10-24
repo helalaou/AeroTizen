@@ -8,8 +8,14 @@
 
   inputs.portName = function (s) { return s.type === 'TV' ? 'Live TV' : s.type + ' ' + s.number; };
 
-  inputs.label = function (s) { return A.settings.inputNames[inputs.portName(s)] || s.editName ||
-    (s.type === 'TV' ? A.i18n.t('Live TV') : inputs.portName(s)); };
+  inputs.label = function (s) {
+    var custom = A.settings.inputNames[inputs.portName(s)];
+    if (custom) { return custom; }
+    if (s.type === 'TV') {
+      return s.editName && s.editName !== 'TV' && s.editName !== 'Live TV' ? s.editName : A.i18n.t('Live TV');
+    }
+    return s.editName || inputs.portName(s);
+  };
 
   function iconFor(s, label) {
     if (s.type === 'TV') { return ICONS.tv; }
