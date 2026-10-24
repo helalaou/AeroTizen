@@ -154,8 +154,8 @@
         changed(A.clockLayouts.apply);
       });
       control.classList.add('clock-layout-choice');
-      control.appendChild(A.el('strong', '', option[1]));
-      control.appendChild(A.el('small', '', option[2]));
+      control.appendChild(A.el('strong', '', A.i18n ? A.i18n.t(option[1]) : option[1]));
+      control.appendChild(A.el('small', '', A.i18n ? A.i18n.t(option[2]) : option[2]));
       layoutBox.appendChild(control);
     });
     A.$('clock-style-section').hidden = S.clockLayout !== 'custom';
@@ -173,7 +173,7 @@
       });
       control.classList.add('clock-style-choice');
       control.appendChild(A.el('span', 'clock-preview', option[2]));
-      control.appendChild(A.el('small', '', option[1]));
+      control.appendChild(A.el('small', '', A.i18n ? A.i18n.t(option[1]) : option[1]));
       styleBox.appendChild(control);
     });
   }
