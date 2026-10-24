@@ -248,3 +248,68 @@ test('layout Settings use translated labels and headings when PR #27 is present'
   assert.match(html, /data-i18n="Home tile layout"/);
   assert.match(html, /data-i18n="Apps per row"/);
 });
+
+
+function samsungArtworkHarness(paths) {
+  const images = [];
+  let sourceCalls = 0;
+  const A = {
+    settings: { homeCardMode: 'square' },
+    catalog: {
+      brand: () => ({ background: '#222', logo: null,
+        label: 'YouTube', textColour: '#fff' })
+    },
+    artwork: { sources() { sourceCalls++; return paths.slice(); } },
+    el: mockElement
+  };
+  const ctx = {
+    window: { AeroTizen: A, LOGOS: {} },
+    document: { createElement: tag => mockElement(tag) },
+    Image: function () {
+      const img = mockElement('img');
+      images.push(img);
+      return img;
+    },
+    setTimeout: () => 1,
+    clearTimeout() {}
+  };
+  vm.runInNewContext(read('js/brands.js'), ctx);
+  return { A, images, get sourceCalls() { return sourceCalls; } };
+}
+
+test('Samsung Square artwork lookups are shared across simultaneous Home and All Apps tiles', () => {
+  const h = samsungArtworkHarness(['/cache/samsung.png']);
+  const app = { id: 'youtube', name: 'YouTube', icon: '' };
+  const home = h.A.tiles.app(app, 'home-display');
+  const all = h.A.tiles.app(app, 'home-display');
+  assert.equal(h.images.length, 1, 'only one native cache probe in progress');
+  h.images[0].onload();
+  assert.equal(h.images.length, 3, 'both cards independently load the confirmed image');
+  h.images[1].onload();
+  h.images[2].onload();
+  assert.ok(home.classList.contains('has-artwork'));
+  assert.ok(all.classList.contains('has-artwork'));
+  assert.equal(home.children[0].hidden, true);
+  assert.equal(all.children[0].hidden, true);
+  const repeated = h.A.tiles.app(app, 'home-display');
+  assert.equal(h.images.length, 4, 'positive cache avoids another discovery probe');
+  h.images[3].onload();
+  assert.ok(repeated.classList.contains('has-artwork'));
+  assert.equal(h.sourceCalls, 3, 'the upstream path resolver is unchanged');
+});
+
+test('missing Samsung square artwork caches failures but preserves readable fallbacks', () => {
+  const h = samsungArtworkHarness(['/missing/one.png', '/missing/two.png']);
+  const app = { id: 'youtube', name: 'YouTube', icon: '' };
+  const first = h.A.tiles.app(app, 'home-display');
+  const second = h.A.tiles.app(app, 'home-display');
+  assert.equal(h.images.length, 1);
+  h.images[0].onerror();
+  assert.equal(h.images.length, 2, 'second candidate gets a chance');
+  h.images[1].onerror();
+  assert.equal(h.images.length, 2);
+  assert.equal(first.children[0].hidden, undefined);
+  assert.equal(second.children[0].hidden, undefined);
+  h.A.tiles.app(app, 'home-display');
+  assert.equal(h.images.length, 2, 'negative results prevent duplicate failed probes');
+});
