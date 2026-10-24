@@ -139,3 +139,42 @@ test('Selected shape and columns persist through the official settings storage',
   assert.equal(A.settings.homeCardMode, 'rectangle');
   assert.equal(A.settings.homeCardColumns, 4);
 });
+
+
+test('all nine original PNGs are used only for their matching Rectangle app', () => {
+  const mapping = [
+    ['Netflix','netflix-custom.png'],
+    ['Disney+','disney-plus-official.png'],
+    ['Xbox','xbox-official.png'],
+    ['Amazon Luna','luna-official.png'],
+    ['Amazon Alexa','alexa-official.png'],
+    ['NOW','now-official.png'],
+    ['Rakuten TV','rakuten-tv-official.png'],
+    ['QVC+','qvc-plus-official.png'],
+    ['RaiPlay','raiplay-official.png']
+  ];
+  const h = brandHarness('rectangle');
+  mapping.forEach(([name,expected]) => {
+    assert.ok(fs.existsSync(path.join(__dirname,'../launcher/assets/brands',expected)),
+      'missing original asset: ' + expected);
+    const tile = h.A.tiles.app({ id:name, name, icon:'native-square.png' },'home-display');
+    assert.ok(tile.classList.contains('brand-original-banner'),name);
+    assert.equal(tile.children[1].src,'assets/brands/' + expected,name);
+    assert.equal(tile.children[0].hidden,undefined,'fallback stays present until PNG loads');
+    tile.children[1].onload();
+    assert.equal(tile.children[0].hidden,true);
+  });
+});
+
+test('missing custom PNG restores readable fallback and never blocks launch', () => {
+  const h = brandHarness('rectangle');
+  let open=0;
+  const tile=h.A.tiles.app({ id:'netflix', name:'Netflix', icon:'' },'home-display',()=>open++);
+  const img=tile.children[1];
+  img.onload();
+  assert.equal(tile.children[0].hidden,true);
+  img.onerror();
+  assert.equal(tile.children[0].hidden,false);
+  tile.onclick();
+  assert.equal(open,1);
+});
