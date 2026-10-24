@@ -61,7 +61,7 @@ function makeElement(tag = 'div', className = '', id = '') {
   };
   return el;
 }
-function harness() {
+function harness(options = {}) {
   const editor = makeElement('div', 'sheet', 'editor');
   const heading = makeElement('h2');
   heading.textContent = 'Settings';
@@ -82,6 +82,9 @@ function harness() {
   group('Network indicator', 'network-visibility', 'network:true');
   group('Show in app menu', 'all-apps', 'app:test');
   group('HDMI ports', 'input-visibility', 'input:all');
+  if (options.hdmiOverride) {
+    group('HDMI always visible', 'hdmi-force-visibility', 'hdmi-keep:1');
+  }
   const escape = makeElement('div', '', 'escape');
   escape.dataset.key = 'escape'; escape.rectTop = 920; editor.appendChild(escape);
   const document = { createElement: tag => makeElement(tag), body: makeElement('body') };
@@ -155,4 +158,12 @@ test('glass assets load after the upstream settings module and preserve non-glas
   assert.doesNotMatch(css, /(?:^|\s)(?:-webkit-)?backdrop-filter\s*:/m);
   assert.match(css, /prefers-reduced-motion/);
   assert.match(css, /\.aero-content-glider/);
+});
+test('manual HDMI exceptions from PR #29 stay inside the Sources Settings category', () => {
+  const h = harness({ hdmiOverride: true });
+  h.A.glassUI.activate('sources');
+  const visible = h.A.glassUI.rows().flat();
+  assert.ok(visible.includes(h.ids['input-visibility'].choice));
+  assert.ok(visible.includes(h.ids['hdmi-force-visibility'].choice));
+  assert.equal(h.A.glassUI.activeId(), 'sources');
 });
