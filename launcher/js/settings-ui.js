@@ -166,6 +166,32 @@
     });
   }
 
+  function renderHomeCardModes() {
+    var modes = A.$('home-card-modes'), cols = A.$('home-card-columns');
+    if (!modes || !cols) { return; }
+    var italian = A.i18n && A.i18n.code && A.i18n.code() === 'it';
+    modes.textContent = ''; cols.textContent = '';
+    [['square', italian ? 'Quadrato' : 'Square'],
+     ['rectangle', italian ? 'Rettangolo' : 'Rectangle']].forEach(function (item) {
+      modes.appendChild(pill('home-cards:' + item[0], item[1],
+        (S.homeCardMode || 'square') === item[0], function () {
+          S.homeCardMode = item[0]; focusKey = 'home-cards:' + item[0];
+          changed(A.homeScreen.render);
+        }));
+    });
+    var chosen = Number(S.homeCardColumns);
+    if (chosen !== 3 && chosen !== 4 && chosen !== 5) {
+      chosen = cfg.CARD_COLUMNS[S.cardSize === 'small' ? 'small' : 'big'];
+    }
+    [3, 4, 5].forEach(function (value) {
+      cols.appendChild(pill('home-columns:' + value,
+        value + (italian ? ' per riga' : ' per row'), chosen === value, function () {
+          S.homeCardColumns = value; focusKey = 'home-columns:' + value;
+          changed(A.homeScreen.render);
+        }));
+    });
+  }
+
   function renderInputVisibility() {
     var liveTv = A.$('live-tv-visibility'), box = A.$('input-visibility');
     liveTv.textContent = '';
