@@ -160,10 +160,10 @@
     });
     A.$('clock-style-section').hidden = S.clockLayout !== 'custom';
     [
-      ['vertical', 'Large vertical', '16\\n32'],
+      ['vertical', 'Large vertical', '16\n32'],
       ['horizontal', 'Horizontal', '16:32'],
-      ['minimal', 'Thin', '16\\n32'],
-      ['bold', 'Bold', '16\\n32']
+      ['minimal', 'Thin', '16\n32'],
+      ['bold', 'Bold', '16\n32']
     ].forEach(function (option) {
       var key = 'clock-style:' + option[0];
       var control = pill(key, '', (S.aeroClockStyle || 'vertical') === option[0], function () {
