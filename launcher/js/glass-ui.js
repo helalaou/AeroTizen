@@ -140,7 +140,10 @@
       if (child.tagName === 'H3') {
         var text = (child.getAttribute('data-i18n') || child.textContent || '').trim();
         section = headings[text] || 'appearance';
-      } else if (child.id === 'escape') { section = 'apps'; }
+      } else if (child.id === 'escape') {
+        section = 'apps';
+        child.dataset.key = 'escape';
+      }
       // Keep section headings and informational copy alongside their
       // original controls, including the weather search status.
       state.panes[section].appendChild(child);

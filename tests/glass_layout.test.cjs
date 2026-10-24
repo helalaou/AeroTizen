@@ -86,7 +86,7 @@ function harness(options = {}) {
     group('HDMI always visible', 'hdmi-force-visibility', 'hdmi-keep:1');
   }
   const escape = makeElement('div', '', 'escape');
-  escape.dataset.key = 'escape'; escape.rectTop = 920; editor.appendChild(escape);
+  escape.rectTop = 920; editor.appendChild(escape);
   const document = { createElement: tag => makeElement(tag), body: makeElement('body') };
   const A = { $: id => id === 'editor' ? editor : null, settingsUi: {
     isOpen: () => true, close() {}, focus() {}
