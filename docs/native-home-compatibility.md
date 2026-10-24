@@ -53,9 +53,11 @@ From a developer checkout with AeroTizen's Python package available:
 python tools/native-home-compatibility/survey.py --host <PRIVATE_TV_IPV4>
 ```
 
-The local-network address is read from the command line; the survey does not save the address, connect to a third-party server, or invoke a native setter. It reads TV identification via the TV's local `/api/v2/` API and SDB's **capability service**. This is still device access: run it only against your own authorised TV. The output **always** contains `native_write_authorized: false` and `restore_validated: false`.
+The local-network address is read from the command line; the survey does not save the address, connect to a third-party server, or invoke a native setter. It reads TV identification via the TV's local `/api/v2/` API and SDB's **capability service**. This is still device access: run it only against your own authorised TV. The output **always** contains `native_write_authorized: false` and `restore_validated: false`. A `reference_match` is only an informational comparison of the reported model, architecture and Tizen version. If the TV additionally reports a firmware version that conflicts with the reference, the match is rejected. If the TV does not report firmware, the match remains provisional; even a reported matching firmware is **not** independent verification or write permission.
 
-For read-only native source inspection, see [NativeHomeQuery.cs](../tools/native-home-compatibility/NativeHomeQuery.cs) and its [standalone project](../tools/native-home-compatibility/NativeHomeQuery.csproj). No native execution transport is bundled for unknown devices, and no new firmware has been tested with that helper.\n\nThe JSON references are examples, not authorization profiles. An unlisted TV can still be investigated safely. An exact reported model plus Tizen version is not a firmware/ABI verification, and an exact firmware must not be assumed from a reference.
+For read-only native source inspection, see [NativeHomeQuery.cs](../tools/native-home-compatibility/NativeHomeQuery.cs) and its [standalone project](../tools/native-home-compatibility/NativeHomeQuery.csproj). No native execution transport is bundled for unknown devices, and no new firmware has been tested with that helper.
+
+The JSON references are examples, not authorization profiles. An unlisted TV can still be investigated safely. An exact reported model plus Tizen version is not a firmware/ABI verification, and an exact firmware must not be assumed from a reference.
 
 ## Branch policy
 
