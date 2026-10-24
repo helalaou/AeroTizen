@@ -6,6 +6,10 @@
   var KEY = A.config.KEY;
 
   A.applyBackground = function () {
+    if (A.settings.weatherPhoto && A.photoWeather && A.photoWeather.update()) {
+      return; // The static photo module stops the original canvas animation.
+    }
+    if (A.photoWeather) { A.photoWeather.hide(); }
     window.Backgrounds.setSpeed(A.settings.speed);
     window.Backgrounds.apply(A.settings.background);
   };
