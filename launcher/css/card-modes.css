@@ -1,0 +1,109 @@
+/* Square / Rectangle appearance modes, adapted from the tested AeroTizen
+   brand-banner geometry. Square is unchanged by default.
+   Layout is sized explicitly for older TV WebKit versions (no aspect-ratio). */
+
+/* Square keeps its existing appearance unless a user chooses 4 columns or
+   overrides the previous Big/Small 3/5-column presets. */
+.app-grid.cards-square.cols-3.cards-small,
+.app-grid.cards-square.cols-4,
+.app-grid.cards-square.cols-5 {
+  justify-content: flex-start;
+  gap: 30px 32px;
+}
+.app-grid.cards-square.cols-3.cards-small .tile,
+.app-grid.cards-square.cols-4 .tile,
+.app-grid.cards-square.cols-5 .tile {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.app-grid.cards-square.cols-3.cards-small .tile { width: 576px; height: 576px; }
+.app-grid.cards-square.cols-4 .tile { width: 424px; height: 424px; }
+.app-grid.cards-square.cols-5 .tile { width: 332.8px; height: 332.8px; }
+
+/* Reference rectangle geometry is 576 x 300 at three columns.
+   Smaller modes retain its aspect ratio exactly. */
+.app-grid.cards-rectangle {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-content: flex-start;
+  width: 100%;
+  gap: 30px 32px;
+  margin: 6px 0 40px;
+}
+.app-grid.cards-rectangle .tile {
+  box-sizing: border-box;
+  display: flex;
+  flex: 0 0 auto;
+  min-width: 0; min-height: 0;
+  align-items: center; justify-content: center;
+  padding: 0 14px;
+  gap: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform .17s ease-out, box-shadow .17s ease-out;
+}
+.app-grid.cards-rectangle.cols-3 .tile { width: 576px; height: 300px; }
+.app-grid.cards-rectangle.cols-4 .tile { width: 424px; height: 221px; gap: 16px; }
+.app-grid.cards-rectangle.cols-5 .tile { width: 332.8px; height: 173px; gap: 13px; }
+
+/* The fallback is built from the official AeroTizen brand metadata,
+   with its original wordmark/logo rather than square Samsung artwork. */
+.app-grid.cards-rectangle .tile.app-tile .app-fallback {
+  display: flex; flex-direction: row;
+  width: 100%; height: 100%;
+  padding: 0; gap: 20px;
+  align-items: center; justify-content: center;
+}
+.app-grid.cards-rectangle .tile.app-tile .logo {
+  display: block; flex: 0 0 auto;
+  width: 150px; height: 150px;
+  object-fit: contain; border-radius: 0;
+}
+.app-grid.cards-rectangle .tile.app-tile .app-fallback.logo-only .logo {
+  width: 380px; height: 190px; max-width: 90%;
+}
+.app-grid.cards-rectangle .tile.app-tile .app-fallback.logo-big .logo {
+  width: 90%; height: 280px; max-width: 90%;
+}
+.app-grid.cards-rectangle .tile.app-tile .name {
+  display: block; min-width: 0; flex: 0 1 auto;
+  width: auto; max-width: 65%;
+  font-size: 39px; line-height: 1.1;
+  font-weight: 600; text-align: left;
+  white-space: normal; overflow: hidden; text-overflow: ellipsis;
+}
+.app-grid.cards-rectangle.cols-4 .tile.app-tile .app-fallback { gap: 16px; }
+.app-grid.cards-rectangle.cols-5 .tile.app-tile .app-fallback { gap: 13px; }
+.app-grid.cards-rectangle.cols-4 .tile.app-tile .logo { width: 112px; height: 112px; }
+.app-grid.cards-rectangle.cols-5 .tile.app-tile .logo { width: 86px; height: 86px; }
+.app-grid.cards-rectangle.cols-4 .tile.app-tile .app-fallback.logo-only .logo { width: 280px; height: 140px; }
+.app-grid.cards-rectangle.cols-5 .tile.app-tile .app-fallback.logo-only .logo { width: 216px; height: 109px; }
+.app-grid.cards-rectangle.cols-4 .tile.app-tile .app-fallback.logo-big .logo { height: 208px; }
+.app-grid.cards-rectangle.cols-5 .tile.app-tile .app-fallback.logo-big .logo { height: 160px; }
+.app-grid.cards-rectangle.cols-4 .tile.app-tile .name { font-size: 30px; }
+.app-grid.cards-rectangle.cols-5 .tile.app-tile .name { font-size: 23px; }
+
+/* Fireplace is still a first-class item in both modes. */
+.app-grid.cards-rectangle .tile.fire {
+  background: radial-gradient(110% 120% at 50% 110%,
+    #ff8a1e 0%,#c2380d 35%,#3a0d04 70%,#120402 100%);
+}
+.app-grid.cards-rectangle .tile.fire svg.flame {
+  flex: 0 0 34%; width: 34%; height: 72%;
+}
+.app-grid.cards-rectangle .tile.fire .name {
+  max-width: 58%; font-size: 34px; line-height: 1.1;
+}
+.app-grid.cards-rectangle.cols-5 .tile.fire .name { font-size: 25px; }
+
+/* Reuse the project's existing focus behaviour rather than installing
+   another border: avoid double outlines when Glass UI is enabled. */
+.app-grid.cards-rectangle .tile.focused {
+  transform: translateZ(0) scale(1.035);
+  box-shadow: 0 0 0 4px var(--bg), 0 0 0 9px var(--focus),
+    0 18px 40px rgba(0,0,0,.55);
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-grid.cards-rectangle .tile { transition: none; }
+}
