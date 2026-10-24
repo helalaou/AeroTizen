@@ -139,3 +139,29 @@
 @media (prefers-reduced-motion: reduce) {
   .app-grid.cards-rectangle .tile { transition: none; }
 }
+
+/* Preserve original reference brand PNGs without cropping in Square mode.
+   These horizontal assets are intentionally excluded from Square/Home picker. */
+.app-grid.cards-rectangle .tile.brand-original-banner {
+  position: relative; padding: 0 !important; gap: 0 !important;
+  align-items: center; justify-content: center;
+}
+.app-grid.cards-rectangle .tile.brand-original-banner > .brand-custom-art {
+  position: absolute; inset: 0; display: block;
+  width: 100% !important; height: 100% !important;
+  object-fit: cover; flex: 0 0 100%;
+  border-radius: inherit; pointer-events: none;
+  transform: none !important; box-shadow: none !important;
+}
+.app-grid.cards-rectangle .tile.brand-original-banner .app-fallback {
+  padding: 0 18px; text-align: center;
+}
+.app-grid.cards-rectangle .tile.brand-original-banner .app-fallback[hidden] {
+  display: none !important;
+}
+.app-grid.cards-rectangle .tile.brand-original-banner.moving > .brand-custom-art {
+  border-radius: inherit; overflow: hidden;
+}
+.app-grid.cards-rectangle .tile.brand-original-banner.focused > .brand-custom-art {
+  border-radius: inherit;
+}
