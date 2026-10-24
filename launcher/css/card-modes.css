@@ -4,21 +4,23 @@
 
 /* Square keeps its existing appearance unless a user chooses 4 columns or
    overrides the previous Big/Small 3/5-column presets. */
-.app-grid.cards-square.cols-3.cards-small,
 .app-grid.cards-square.cols-4,
-.app-grid.cards-square.cols-5 {
+.app-grid.cards-square.cols-5.cards-big {
   justify-content: flex-start;
   gap: 30px 32px;
 }
+.app-grid.cards-square.cols-3.cards-small {
+  justify-content: center; gap: 36px 48px;
+}
 .app-grid.cards-square.cols-3.cards-small .tile,
 .app-grid.cards-square.cols-4 .tile,
-.app-grid.cards-square.cols-5 .tile {
+.app-grid.cards-square.cols-5.cards-big .tile {
   flex: 0 0 auto;
   min-width: 0;
 }
-.app-grid.cards-square.cols-3.cards-small .tile { width: 576px; height: 576px; }
+.app-grid.cards-square.cols-3.cards-small .tile { width: 420px; height: 420px; }
 .app-grid.cards-square.cols-4 .tile { width: 424px; height: 424px; }
-.app-grid.cards-square.cols-5 .tile { width: 332.8px; height: 332.8px; }
+.app-grid.cards-square.cols-5.cards-big .tile { width: 332px; height: 332px; }
 
 /* Reference rectangle geometry is 576 x 300 at three columns.
    Smaller modes retain its aspect ratio exactly. */
