@@ -10,6 +10,15 @@
 
   inputs.label = function (s) { return A.settings.inputNames[inputs.portName(s)] || s.editName || inputs.portName(s); };
 
+  function iconFor(s, label) {
+    if (s.type === 'TV') { return ICONS.tv; }
+    var n = label.toLowerCase();
+    if (/xbox|playstation|ps\d|switch|nintendo|game|console/.test(n)) { return ICONS.game; }
+    if (/pc|computer|mac|laptop/.test(n)) { return ICONS.pc; }
+    if (/cable|box|roku|fire|apple|shield|chromecast|blu|dvd|satellite/.test(n)) { return ICONS.box; }
+    return ICONS.hdmi;
+  }
+
   // A configured device can appear in VIDEOSOURCE.disconnected while asleep.
   // Use the TV-provided editName, never a custom AeroTizen input name, as evidence.
   inputs.hasRecognizedDevice = function (s) {
@@ -27,15 +36,6 @@
     if (s.type !== 'HDMI' || A.settings.hideDisconnectedHdmi !== true) { return true; }
     return s.connected === true || s.active === true || inputs.hasRecognizedDevice(s);
   };
-
-  function iconFor(s, label) {
-    if (s.type === 'TV') { return ICONS.tv; }
-    var n = label.toLowerCase();
-    if (/xbox|playstation|ps\d|switch|nintendo|game|console/.test(n)) { return ICONS.game; }
-    if (/pc|computer|mac|laptop/.test(n)) { return ICONS.pc; }
-    if (/cable|box|roku|fire|apple|shield|chromecast|blu|dvd|satellite/.test(n)) { return ICONS.box; }
-    return ICONS.hdmi;
-  }
 
   inputs.render = function () {
     var row = A.$('inputs');
