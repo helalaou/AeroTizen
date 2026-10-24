@@ -115,6 +115,8 @@
         var text = (child.getAttribute('data-i18n') || child.textContent || '').trim();
         section = headings[text] || 'appearance';
       } else if (child.id === 'escape') { section = 'apps'; }
+      // Keep section headings and informational copy alongside their
+      // original controls, including the weather search status.
       state.panes[section].appendChild(child);
     }
     editor.classList.add('aero-settings-ready');
@@ -153,7 +155,7 @@
     var controls = content.querySelectorAll('[data-key]');
     for (var i = 0; i < controls.length; i++) {
       var item = controls[i];
-      if (item.hidden || item.offsetParent === null) { continue; }
+      if (item.hidden || item.offsetParent === null || item.getAttribute('aria-hidden') === 'true') { continue; }
       var top = item.getBoundingClientRect().top;
       if (line.length && (top > lastTop + 5 || line.length >= 5)) {
         rows.push(line); line = [];
