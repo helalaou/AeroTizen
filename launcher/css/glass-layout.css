@@ -1,0 +1,267 @@
+/* Unified AeroTizen visual layout port. Based on the tested settings
+   sidebar, satin/glass menu, moving plates and final single-outline polish.
+   No backdrop-filter or per-control geometry animation. */
+
+/* Header: two small round shortcuts; Home / All Apps are centred glass tabs. */
+.topbar { position: relative; z-index: 4; }
+.topbar-left { position: relative; gap: 18px; }
+.topbar-left > #aero-header-focus {
+  position: absolute; top: 0; left: 0; z-index: 0;
+  pointer-events: none; opacity: 0; box-sizing: border-box;
+  border: 2px solid rgba(255,255,255,.90);
+  border-radius: 50%; background: rgba(236,242,255,.18);
+  box-shadow: inset 0 1px rgba(255,255,255,.20);
+  transform: translate3d(0,0,0);
+  transition: transform .15s ease-out, opacity .10s linear;
+}
+.topbar-left > #aero-header-focus.is-visible { opacity: 1; }
+.topbar-left > #gear, .topbar-left > #samsung-home-shortcut {
+  position: relative; z-index: 1; flex: 0 0 64px;
+  border: 2px solid transparent; border-radius: 50%;
+  background: transparent; transition: color .10s linear;
+}
+.topbar-left > #gear.focused, .topbar-left > #samsung-home-shortcut.focused {
+  border-color: transparent !important; box-shadow: none !important;
+  outline: none !important; transform: none !important; color: #fff;
+}
+.topbar > .view-tabs {
+  position: absolute; left: 50%; top: 24px;
+  transform: translate3d(-50%,0,0);
+  display: flex; align-items: stretch; gap: 0; padding: 7px;
+  min-height: 76px; box-sizing: border-box; isolation: isolate;
+  border: 1px solid rgba(255,255,255,.30);
+  border-radius: 28px;
+  background: linear-gradient(165deg,rgba(255,255,255,.19) 0%,rgba(60,68,78,.43) 22%,rgba(20,25,35,.62) 63%,rgba(15,20,28,.72) 100%);
+  box-shadow: inset 0 1px rgba(255,255,255,.24), 0 13px 32px rgba(0,0,0,.27);
+}
+.topbar > .view-tabs .view-tab {
+  position: relative; z-index: 1; display: flex; align-items: center;
+  justify-content: center; gap: 12px; min-width: 155px;
+  height: 60px; box-sizing: border-box; padding: 0 25px;
+  font-family: "SamsungOne","Roboto",Arial,sans-serif;
+  font-size: 25px; font-weight: 500; color: rgba(234,239,247,.78);
+  border: 1px solid transparent; border-radius: 20px;
+  background: transparent; box-shadow: none !important;
+  transform: none !important; transition: color .10s linear;
+}
+.topbar > .view-tabs .view-tab:last-child { min-width: 205px; }
+.topbar > .view-tabs .view-tab.active {
+  color: #fff; background: transparent; box-shadow: none !important;
+}
+.topbar > .view-tabs .view-tab.focused { color: #fff; outline: none; box-shadow: none !important; }
+.view-tab .aero-tab-icon { width: 26px; height: 26px; flex: 0 0 26px; stroke: currentColor; }
+.topbar > .view-tabs > #aero-tab-glider,
+.topbar > .view-tabs > #aero-tab-focus {
+  position: absolute; top: 7px; left: 7px; z-index: 0;
+  height: 60px; width: 1px; box-sizing: border-box;
+  border-radius: 19px; pointer-events: none;
+  transform: translate3d(0,0,0); transition: transform .15s ease-out, opacity .10s linear;
+}
+.topbar > .view-tabs > #aero-tab-glider {
+  background: rgba(236,242,255,.16);
+  border: 1px solid rgba(255,255,255,.24);
+  box-shadow: inset 0 1px rgba(255,255,255,.20);
+}
+.topbar > .view-tabs > #aero-tab-focus {
+  border: 2px solid rgba(255,255,255,.90);
+  background: rgba(236,242,255,.12); opacity: 0;
+  z-index: 1;
+}
+.topbar > .view-tabs > #aero-tab-focus.is-visible { opacity: 1; }
+.topbar > .view-tabs > .view-tab { z-index: 2; }
+/* Keep the native app artwork, Home grid and TV source dock untouched. */
+
+/* Compact glass settings sheet with the live launcher dimmed behind it. */
+body.editing:not(.previewing) .topbar,
+body.editing:not(.previewing) main {
+  visibility: visible !important; opacity: .48;
+  pointer-events: none;
+}
+#editor.sheet.aero-settings-ready {
+  position: fixed; inset: 0; z-index: 100;
+  padding: 0 !important; margin: 0;
+  background: rgba(0,0,13,.35); overflow: hidden;
+}
+#editor.sheet.aero-settings-ready[hidden] { display: none !important; }
+#editor .aero-settings-frame {
+  position: absolute; top: 112px; left: 60px;
+  box-sizing: border-box; display: flex;
+  width: 1440px; height: 850px;
+  max-width: calc(100% - 120px); max-height: calc(100% - 146px);
+  background: linear-gradient(160deg,#626a78 0%,#333b4a 13%,#232b39 51%,#151a25 100%);
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 25px; overflow: hidden;
+  box-shadow: inset 0 1px rgba(255,255,255,.24),0 12px 28px rgba(0,0,0,.40);
+  color: #f7f8fa; font-family: "SamsungOne","Roboto",Arial,sans-serif;
+  animation: aero-glass-enter .20s ease-out both;
+}
+@keyframes aero-glass-enter {
+  from { opacity: 0; transform: translate3d(0,-12px,0); }
+  to { opacity: 1; transform: translate3d(0,0,0); }
+}
+#editor .aero-settings-sidebar {
+  display: flex; flex-direction: column;
+  box-sizing: border-box; flex: 0 0 330px; min-width: 330px;
+  height: 100%; padding: 29px 13px 25px;
+  background: transparent; border-right: 1px solid rgba(255,255,255,.12);
+}
+#editor .aero-settings-head { padding: 0 10px 5px 21px; }
+#editor .aero-settings-kicker {
+  font-size: 12px; color: rgba(235,241,249,.72);
+  letter-spacing: 2.8px; font-weight: 600;
+}
+#editor .aero-settings-sidebar h2 {
+  font-size: 31px !important; font-weight: 500 !important;
+  margin: 7px 0 22px !important;
+}
+#editor .aero-settings-menu {
+  position: relative; flex: 1 1 auto; min-height: 0; isolation: isolate;
+  padding: 10px 4px 12px; overflow-y: auto; overflow-x: hidden;
+}
+#editor .aero-section-entry {
+  position: relative; z-index: 1; display: flex; box-sizing: border-box;
+  width: 100%; min-height: 78px; align-items: center;
+  margin: 0 0 7px; padding: 10px; gap: 11px;
+  border: 2px solid transparent; border-radius: 17px;
+  background: transparent !important;
+  color: rgba(243,246,255,.79); box-shadow: none !important;
+  transform: none !important; transition: color .10s linear;
+}
+#editor .aero-section-entry.focused,
+#editor .aero-section-entry.aero-current-section {
+  color: #fff; outline: none !important; box-shadow: none !important;
+  border-color: transparent !important;
+}
+#editor .aero-section-icon {
+  flex: 0 0 35px; width: 35px; text-align: center;
+  font-size: 27px; color: inherit;
+}
+#editor .aero-section-label {
+  display: flex; flex-direction: column; gap: 3px; min-width: 0;
+}
+#editor .aero-section-label strong {
+  font-size: 20px; font-weight: 500; color: inherit; white-space: nowrap;
+}
+#editor .aero-section-label small {
+  font-size: 12px; line-height: 1.15;
+  color: rgba(225,234,249,.69); white-space: nowrap;
+}
+#editor .aero-section-chevron { margin-left: auto; font-size: 27px; color: inherit; }
+#editor .aero-settings-menu > .aero-settings-glider {
+  position: absolute; top: 0; left: 4px; z-index: 0;
+  width: calc(100% - 8px); height: 76px; box-sizing: border-box;
+  border: 2px solid rgba(255,255,255,.89); border-radius: 17px;
+  background: rgba(236,242,255,.18); pointer-events: none; opacity: 0;
+  box-shadow: inset 0 1px rgba(255,255,255,.20);
+  transform: translate3d(0,0,0);
+  transition: transform .15s ease-out,opacity .10s linear;
+}
+#editor .aero-settings-glider.is-visible { opacity: 1; }
+#editor .aero-settings-glider.is-content { opacity: .46; }
+#editor .aero-settings-help {
+  border-top: 1px solid rgba(255,255,255,.12);
+  padding: 16px 2px 0; text-align: center;
+  font-size: 13px; color: rgba(235,241,249,.72); white-space: nowrap;
+}
+#editor .aero-settings-main {
+  position: relative; display: flex; flex-direction: column;
+  flex: 1 1 auto; min-width: 0; box-sizing: border-box;
+  height: 100%; padding: 30px 35px 36px 38px;
+  background: rgba(10,16,28,.17);
+}
+#editor .aero-settings-content-head {
+  position: relative; flex: 0 0 auto;
+  border-bottom: 1px solid rgba(255,255,255,.14); padding-bottom: 18px;
+}
+#editor .aero-settings-content-kicker {
+  font-size: 13px; color: rgba(235,241,249,.69); letter-spacing: 2px;
+}
+#editor .aero-settings-active-title {
+  margin: 6px 0 0 !important; font-size: 37px !important; font-weight: 500 !important;
+}
+#editor .aero-settings-close {
+  position: absolute; top: 0; right: 0;
+  display: flex; justify-content: center; align-items: center;
+  width: 42px; height: 42px; border-radius: 12px;
+  font-size: 32px; color: #fff; background: rgba(255,255,255,.07);
+}
+#editor .aero-settings-scroll {
+  position: relative; flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding: 24px 9px 25px 4px;
+}
+#editor .aero-section-pane[hidden] { display: none !important; }
+#editor .aero-section-pane h3 {
+  margin: 5px 0 15px; font-size: 24px !important; font-weight: 500 !important;
+}
+#editor .aero-section-pane .hint { font-size: 20px; line-height: 1.3; }
+#editor .aero-section-pane .units {
+  display: flex; flex-wrap: wrap; max-width: 100%;
+  margin: 0 0 30px !important; gap: 12px;
+}
+#editor .aero-section-pane .pill.unit,
+#editor .aero-section-pane .name-pill {
+  font-size: 20px; padding: 12px 20px;
+  border: 2px solid rgba(255,255,255,.12);
+  border-radius: 17px !important;
+  color: #fff; background: rgba(236,242,255,.08);
+  transform: none !important;
+}
+#editor .aero-section-pane .pill.unit.on {
+  background: rgba(236,242,255,.14) !important;
+  color: #fff !important;
+}
+#editor .aero-section-pane .pill.unit.focused,
+#editor .aero-section-pane .name-pill.focused,
+#editor .aero-section-pane .swatch.focused,
+#editor .aero-section-pane .slider.focused,
+#editor .aero-section-pane #all-apps .tile.focused,
+#editor .aero-section-pane [data-key].focused {
+  border-color: transparent !important;
+  outline: none !important; outline-offset: 0 !important;
+  box-shadow: none !important; transform: none !important;
+  color: #fff !important; transition: color .10s linear,background-color .10s linear;
+}
+#editor .aero-section-pane .swatches { width: 100% !important; gap: 15px; }
+#editor .aero-section-pane .swatch {
+  width: 168px; height: 96px;
+  max-width: calc(20% - 12px);
+}
+#editor .aero-section-pane #all-apps { width: 100% !important; gap: 18px; }
+#editor .aero-section-pane #all-apps .tile {
+  width: calc(25% - 14px) !important;
+  height: 132px !important; min-width: 0; border-radius: 17px !important;
+}
+#editor .aero-section-pane #all-apps .tile .name { font-size: 19px !important; }
+#editor .aero-section-pane .name-pill input { width: 210px; max-width: 100%; }
+#editor .aero-section-pane #escape {
+  margin: 0 0 20px; padding: 20px; max-width: 800px;
+  width: 100%; font-size: 21px; text-align: left;
+  border-radius: 17px; background: rgba(236,242,255,.08);
+}
+#editor .aero-settings-scroll > .aero-content-glider {
+  position: absolute; top: 0; left: 0; z-index: 12;
+  width: 1px; height: 1px; box-sizing: border-box;
+  border: 2px solid rgba(255,255,255,.89);
+  border-radius: 17px; background: rgba(236,242,255,.055);
+  box-shadow: inset 0 1px rgba(255,255,255,.19);
+  opacity: 0; pointer-events: none;
+  transform: translate3d(0,0,0);
+  transition: transform .15s ease-out, opacity .10s linear, border-radius .12s ease-out;
+}
+#editor .aero-content-glider.is-visible { opacity: 1; }
+#editor .aero-content-glider.no-motion { transition: opacity .10s linear; }
+#editor .aero-section-pane .pill.unit.focused,
+#editor .aero-section-pane .name-pill.focused,
+#editor .aero-section-pane #all-apps .tile.focused {
+  background: rgba(236,242,255,.15) !important;
+}
+#editor .aero-section-pane .swatch.focused { background-blend-mode: normal !important; }
+@media (prefers-reduced-motion: reduce) {
+  .topbar-left > #aero-header-focus,
+  .topbar > .view-tabs > #aero-tab-glider,
+  .topbar > .view-tabs > #aero-tab-focus,
+  #editor .aero-settings-glider,
+  #editor .aero-content-glider,
+  #editor .aero-settings-frame { animation: none !important; transition: none !important; }
+}

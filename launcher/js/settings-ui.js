@@ -238,11 +238,13 @@
     renderBackgrounds(); renderWeather(); renderUnits(); renderDateTime();
     renderVisibility('network-visibility', 'showNetwork', ['Show', 'Hide'], A.network.updateVisibility);
     renderCardSizes(); renderInputVisibility(); renderInputNames(); renderAppMenu();
+    if (A.glassUI && A.glassUI.refreshLabels) { A.glassUI.refreshLabels(); }
     focus();
   }
 
   // ---- navigation (focus follows the item, so re-renders don't make it jump) -------
   function editorRows() {
+    if (A.glassUI && A.glassUI.isActive()) { return A.glassUI.rows(); }
     function kids(id) { return [].slice.call(A.$(id).children); }
     // Content-sized date pills can wrap; remote navigation follows visible rows.
     var dateRows = [];
@@ -274,7 +276,12 @@
     var el = r[eRow][eCol[eRow]];
     el.classList.add('focused');
     focusKey = el.dataset.key || null;
-    A.$('editor').scrollTop = Math.max(0, el.offsetTop - 640);
+    if (A.glassUI && A.glassUI.isActive()) {
+      A.glassUI.scrollTo(el);
+      A.glassUI.updateHighlight(el);
+    } else {
+      A.$('editor').scrollTop = Math.max(0, el.offsetTop - 640);
+    }
   }
 
   function startPreview() {
@@ -288,6 +295,75 @@
     if (previewing) {
       e.preventDefault(); previewing = false;
       document.body.classList.remove('previewing'); A.hideToast(); focus();
+      return;
+    }
+    // Category/content navigation ported from the reference Settings D-pad
+    // routing. Do not modify existing click handlers or stored preferences.
+    if (A.glassUI && A.glassUI.isActive()) {
+      var ui = A.glassUI, rr = editorRows(), menuCount = ui.navCount();
+      var inSidebar = eRow < menuCount;
+      var current = rr[eRow] && rr[eRow][eCol[eRow] || 0];
+      if (k === KEY.BACK || k === KEY.ESC) {
+        e.preventDefault();
+        if (!inSidebar) {
+          eRow = ui.activeIndex(); eCol[eRow] = 0;
+          focusKey = 'section:' + ui.activeId();
+          focus();
+          return;
+        }
+        return close();
+      }
+      if (inSidebar) {
+        if (k === KEY.UP || k === KEY.DOWN) {
+          e.preventDefault();
+          eRow = Math.max(0, Math.min(menuCount - 1, eRow + (k === KEY.UP ? -1 : 1)));
+          eCol[eRow] = 0;
+          ui.activate(rr[eRow][0].dataset.sectionMenu);
+          focusKey = rr[eRow][0].dataset.key;
+          focus();
+          return;
+        }
+        if (k === KEY.ENTER || k === KEY.RIGHT) {
+          e.preventDefault();
+          var expanded = editorRows();
+          if (expanded.length > menuCount) {
+            eRow = menuCount; eCol[eRow] = 0; focusKey = null; focus();
+          }
+          return;
+        }
+        if (k === KEY.LEFT) { e.preventDefault(); return; }
+        return;
+      }
+      if (k === KEY.LEFT || k === KEY.RIGHT) {
+        e.preventDefault();
+        if (current && current.adjust) { current.adjust(k === KEY.LEFT ? -1 : 1); return; }
+        var cc = eCol[eRow] || 0;
+        if (k === KEY.LEFT && cc === 0) {
+          eRow = ui.activeIndex(); eCol[eRow] = 0;
+          focusKey = 'section:' + ui.activeId(); focus();
+          return;
+        }
+        eCol[eRow] = Math.max(0, Math.min(rr[eRow].length - 1, cc + (k === KEY.RIGHT ? 1 : -1)));
+        focusKey = null; focus();
+        return;
+      }
+      if (k === KEY.UP || k === KEY.DOWN) {
+        e.preventDefault();
+        var step = eRow + (k === KEY.UP ? -1 : 1);
+        if (step >= menuCount && step < rr.length) {
+          eRow = step;
+          eCol[eRow] = Math.max(0, Math.min(rr[eRow].length - 1, eCol[eRow] || 0));
+          focusKey = null; focus();
+        }
+        return;
+      }
+      if (k === KEY.ENTER) {
+        e.preventDefault();
+        focusKey = current && current.dataset.key;
+        if (current === A.$('escape')) { A.homewatch.useSamsungHome(); }
+        else if (current && current.onclick) { current.onclick(); }
+        return;
+      }
       return;
     }
     if (k === KEY.BACK || k === KEY.ESC) { e.preventDefault(); return close(); }
@@ -305,9 +381,10 @@
   }
 
   function openSheet() {
-    open = true; eRow = 0; eCol = []; focusKey = 'bg:' + S.background;
+    open = true; eRow = 0; eCol = []; focusKey = 'section:appearance';
     document.body.classList.add('editing');
     A.$('editor').hidden = false;
+    if (A.glassUI) { A.glassUI.create(); A.glassUI.activate('appearance'); }
     render();
   }
 
@@ -320,5 +397,5 @@
     A.homeScreen.render();
   }
 
-  A.settingsUi = { open: openSheet, close: close, isOpen: function () { return open; }, focus: focus, keydown: keydown };
+  A.settingsUi = { open: openSheet, close: close, isOpen: function () { return open; }, focus: focus, keydown: keydown, render: render };
 })(window.AeroTizen);
