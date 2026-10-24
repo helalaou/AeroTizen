@@ -41,7 +41,29 @@
     if (label !== undefined) { n.textContent = label; }
     return n;
   }
-  function translate(text) { return A.i18n ? A.i18n.t(text) : text; }
+  // Temporary fallback for new labels until the localization contribution
+  // owns them; existing upstream translations always take precedence.
+  var italianLabels = {
+    'Home appearance': 'Aspetto Home',
+    'Layout and indicators': 'Stile, disposizione e rete',
+    'Applications': 'Applicazioni',
+    'Home favourites and Samsung Home': 'App visibili e Home Samsung',
+    'Backgrounds': 'Sfondi',
+    'Colours and animation': 'Colori e animazioni',
+    'Weather and clock': 'Meteo e orologio',
+    'Weather, time and date': 'Meteo, ora e data',
+    'Inputs': 'Sorgenti',
+    'Live TV and HDMI': 'TV in diretta e HDMI',
+    'Close settings': 'Chiudi impostazioni'
+  };
+  function translate(text) {
+    var translated = A.i18n && A.i18n.t ? A.i18n.t(text) : text;
+    if (translated !== text) { return translated; }
+    if (A.i18n && A.i18n.code && A.i18n.code() === 'it') {
+      return italianLabels[text] || text;
+    }
+    return text;
+  }
   function findGroup(id) {
     for (var i = 0; i < groups.length; i++) {
       if (groups[i].id === id) { return groups[i]; }
@@ -229,8 +251,20 @@
     }
     return 0;
   }
+  function refreshLabels() {
+    if (!state.built) { return; }
+    groups.forEach(function (group, i) {
+      var label = state.nav[i].querySelector('.aero-section-label');
+      if (label) {
+        label.querySelector('strong').textContent = translate(group.title);
+        label.querySelector('small').textContent = translate(group.hint);
+      }
+      state.nav[i].setAttribute('aria-label', translate(group.title));
+    });
+    state.title.textContent = translate(findGroup(state.active).title);
+  }
   A.glassUI = {
-    create: create, activate: activate, rows: rows,
+    create: create, activate: activate, rows: rows, refreshLabels: refreshLabels,
     scrollTo: scrollTo, updateHighlight: updateHighlight,
     navCount: function () { return state.nav.length; },
     activeIndex: activeIndex,
