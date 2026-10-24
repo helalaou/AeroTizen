@@ -38,6 +38,7 @@ function runtime(saved = {}, cache) {
     'aero-v991-minutes', 'aero-v991-date', 'aero-v991-weather-icon',
     'aero-v991-temp', 'aero-v991-condition', 'aero-v991-city'
   ].forEach(id => { elements[id] = element(); });
+  elements['aero-v991-weather-icon'].parentNode = element();
   const document = {
     body: element(),
     getElementById: id => elements[id],
