@@ -1,8 +1,8 @@
 """Read-only device compatibility tests; all network and SDB calls are mocked."""
 import argparse
 import importlib.util
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 SOURCE = Path(__file__).resolve().parents[1] / "tools" / "native-home-s90c" / "preflight.py"
 spec = importlib.util.spec_from_file_location("native_home_s90c_preflight", SOURCE)
