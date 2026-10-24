@@ -12,8 +12,11 @@
 
   function render() {
     var grid = A.$('grid'), home = A.settings.home, size = A.settings.cardSize === 'small' ? 'small' : 'big';
-    COLS = cfg.CARD_COLUMNS[size];
-    grid.className = 'app-grid cards-' + size;
+    var mode = A.settings.homeCardMode === 'rectangle' ? 'rectangle' : 'square';
+    var userCols = Number(A.settings.homeCardColumns);
+    COLS = userCols === 3 || userCols === 4 || userCols === 5 ?
+      userCols : cfg.CARD_COLUMNS[size];
+    grid.className = 'app-grid cards-' + size + ' cards-' + mode + ' cols-' + COLS;
     grid.textContent = '';
     if (page === 'home') {
       home = home.filter(function (id) { return id === cfg.FIREPLACE_ID || A.apps.byId(id); });
