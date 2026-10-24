@@ -61,7 +61,7 @@ test('original compact header remains the default, including old saved preferenc
   }
 });
 
-test('all four V992.56 clock styles share the upstream locale and persist', () => {
+test('all four custom clock styles share the upstream locale and persist', () => {
   const { A, elements, css, values } = runtime({ clockLayout: 'custom', timeFormat: '12' }, 'en-US');
   A.clockLayouts.apply();
   assert.equal(css.has('clock-custom'), true);
