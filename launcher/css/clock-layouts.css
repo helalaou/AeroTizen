@@ -1,4 +1,4 @@
-/* Two clock layouts adapted from the V992.56 reference build.
+/* Two clock layouts adapted from an independent AeroTizen implementation.
    Classic keeps the upstream header and app layout unchanged. */
 body.clock-custom .topbar { position: relative; }
 body.clock-custom .topbar-right {
