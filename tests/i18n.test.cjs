@@ -139,3 +139,14 @@ test('V992.56 artwork and photo-weather options localise without changing user d
     assert.equal(en.A.i18n.t(english), english);
   }
 });
+
+test('manual HDMI exceptions from the independent input PR localise safely', () => {
+  const it = harness('it-IT', false);
+  assert.equal(it.A.i18n.t('HDMI always visible'), 'HDMI sempre visibili');
+  assert.equal(it.A.i18n.t('Always visible'), 'Sempre visibile');
+  assert.match(it.A.i18n.t('Optionally keep an unidentified HDMI port visible while disconnected.'),
+    /porta HDMI non identificata/);
+  assert.equal(it.A.i18n.label('name:HDMI 2', 'PlayStation 5'), 'PlayStation 5');
+  const en = harness('en-GB', false);
+  assert.equal(en.A.i18n.t('HDMI always visible'), 'HDMI always visible');
+});
