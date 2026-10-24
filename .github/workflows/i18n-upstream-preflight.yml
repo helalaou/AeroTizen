@@ -1,0 +1,22 @@
+name: i18n-upstream preflight
+
+on:
+  push:
+    branches:
+      - feat/launcher-automatic-it-en
+
+permissions:
+  contents: read
+
+jobs:
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check launcher syntax
+        run: find launcher -name '*.js' -type f -print0 | xargs -0 -n1 node --check
+      - name: Run upstream and feature tests
+        run: node --test tests/*.test.cjs
