@@ -159,6 +159,7 @@ test('all nine original PNGs are used only for their matching Rectangle app', ()
       'missing original asset: ' + expected);
     const tile = h.A.tiles.app({ id:name, name, icon:'native-square.png' },'home-display');
     assert.ok(tile.classList.contains('brand-original-banner'),name);
+    if (name === 'RaiPlay') { assert.ok(tile.classList.contains('brand-raiplay')); }
     assert.equal(tile.children[1].src,'assets/brands/' + expected,name);
     assert.equal(tile.children[0].hidden,undefined,'fallback stays present until PNG loads');
     tile.children[1].onload();
