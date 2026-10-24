@@ -1,0 +1,32 @@
+name: Multi-model native HOME review
+
+on:
+  push:
+    branches:
+      - feat/s90c-physical-home-binding
+
+permissions:
+  contents: read
+
+jobs:
+  native-home-source:
+    name: Read-only multi-model checks and S90C helper build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript and native contract regression tests
+        run: node --test tests/*.test.cjs
+      - name: Read-only Samsung compatibility unit tests (no TV access)
+        run: python3 -m unittest discover -s tests -p 'test_native_home_*.py' -v
+      - name: Validate Python survey syntax
+        run: |
+          python3 -m py_compile tools/native-home-compatibility/survey.py
+          python3 -m py_compile tools/native-home-s90c/preflight.py
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+      - name: Build the firmware-locked S90C native helper, no device access
+        run: dotnet build tools/native-home-s90c/S90CHomeBinding.csproj --configuration Release
