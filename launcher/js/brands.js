@@ -34,6 +34,32 @@
     return d ? svg('<path fill="' + fill + '" d="' + d + '"/>', 'logo') : '';
   }
 
+  // Verified, locally bundled horizontal PNGs from reference/v99256.
+  // Used only in Rectangle mode; Square mode retains Samsung artwork.
+  var originalBanners = [
+    ['netflix', 'netflix-custom.png', '#000000'],
+    ['disney', 'disney-plus-official.png', '#052e43'],
+    ['xbox', 'xbox-official.png', '#057013'],
+    ['amazon luna', 'luna-official.png', '#7431e6'],
+    ['luna', 'luna-official.png', '#7431e6'],
+    ['amazon alexa', 'alexa-official.png', '#ffffff'],
+    ['alexa', 'alexa-official.png', '#ffffff'],
+    ['now', 'now-official.png', '#006d6f'],
+    ['rakuten tv', 'rakuten-tv-official.png', '#bb0000'],
+    ['rakuten', 'rakuten-tv-official.png', '#bb0000'],
+    ['qvc', 'qvc-plus-official.png', '#29364f'],
+    ['raiplay', 'raiplay-official.png', '#05061e']
+  ];
+  function originalBanner(name) {
+    var normalized = String(name || '').toLowerCase();
+    for (var i = 0; i < originalBanners.length; i++) {
+      if (normalized.indexOf(originalBanners[i][0]) === 0) {
+        return { file: originalBanners[i][1], background: originalBanners[i][2] };
+      }
+    }
+    return null;
+  }
+
   function appTile(app, extraClass, onSelect) {
     var b = brandFor(app), tile = A.el('div');
     tile.className = 'tile app-tile' + (extraClass ? ' ' + extraClass : '');
@@ -46,7 +72,10 @@
     if (b.largeLogo) { fallback.classList.add('logo-big'); }
     if (mark) {
       fallback.innerHTML = mark;
-    } else if (b.useAppIcon && app.icon) {
+    } else if (b.useAppIcon && app.icon &&
+               !(extraClass === 'home-display' && A.settings.homeCardMode === 'rectangle')) {
+      // Rectangle uses the original brand-banner text fallback. Native Tizen
+      // square icons are reserved for Square mode and Settings app pickers.
       var img = new Image();
       img.className = 'logo'; img.alt = '';
       img.onerror = function () { fallback.removeChild(img); };
@@ -60,6 +89,36 @@
     }
     tile.appendChild(fallback);
     tile.onclick = onSelect;
+
+    // Rectangular brand banners use the project's existing verified brand
+    // metadata, rather than loading square Samsung artwork into wide cards.
+    // Restrict this to the Home / All Apps grid: Settings keeps normal tiles.
+    if (extraClass === 'home-display' && A.settings.homeCardMode === 'rectangle') {
+      tile.classList.add('brand-rectangle');
+      var banner = originalBanner(app.name);
+      if (banner) {
+        tile.style.background = banner.background;
+        tile.classList.add('brand-original-banner');
+        if (banner.file === 'raiplay-official.png') {
+          tile.classList.add('brand-raiplay');
+        }
+        var photo = new Image();
+        photo.className = 'brand-custom-art';
+        photo.alt = '';
+        photo.onload = function () {
+          fallback.hidden = true;
+        };
+        photo.onerror = function () {
+          // If a PNG is unavailable on a given TV, keep the same
+          // clickable tile, original fallback title and focus geometry.
+          if (photo.parentNode) { photo.parentNode.removeChild(photo); }
+          fallback.hidden = false;
+        };
+        tile.appendChild(photo);
+        photo.src = 'assets/brands/' + banner.file;
+      }
+      return tile;
+    }
 
     var sources = A.artwork.sources(app), at = 0;
     function next() {

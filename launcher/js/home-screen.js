@@ -12,8 +12,11 @@
 
   function render() {
     var grid = A.$('grid'), home = A.settings.home, size = A.settings.cardSize === 'small' ? 'small' : 'big';
-    COLS = cfg.CARD_COLUMNS[size];
-    grid.className = 'app-grid cards-' + size;
+    var mode = A.settings.homeCardMode === 'rectangle' ? 'rectangle' : 'square';
+    var userCols = Number(A.settings.homeCardColumns);
+    COLS = userCols === 3 || userCols === 4 || userCols === 5 ?
+      userCols : cfg.CARD_COLUMNS[size];
+    grid.className = 'app-grid cards-' + size + ' cards-' + mode + ' cols-' + COLS;
     grid.textContent = '';
     if (page === 'home') {
       home = home.filter(function (id) { return id === cfg.FIREPLACE_ID || A.apps.byId(id); });
@@ -36,10 +39,14 @@
         tile.setAttribute('aria-label', 'Fireplace');
         tile.title = 'Fireplace';
         tile.innerHTML = A.tiles.ICONS.flame;
+        if (mode === 'rectangle') {
+          tile.classList.add('brand-rectangle');
+          tile.appendChild(A.el('div', 'name', 'Fireplace'));
+        }
         tile.onclick = A.apps.playFireplace;
       } else {
         var app = A.apps.byId(id);
-        tile = A.tiles.app(app, '', function () { A.apps.launch(app); });
+        tile = A.tiles.app(app, 'home-display', function () { A.apps.launch(app); });
       }
       tile.dataset.id = id;
       grid.appendChild(tile);
