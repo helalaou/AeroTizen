@@ -61,6 +61,14 @@
     tile.appendChild(fallback);
     tile.onclick = onSelect;
 
+    // Rectangular brand banners use the project's existing verified brand
+    // metadata, rather than loading square Samsung artwork into wide cards.
+    // Restrict this to the Home / All Apps grid: Settings keeps normal tiles.
+    if (extraClass === 'home-display' && A.settings.homeCardMode === 'rectangle') {
+      tile.classList.add('brand-rectangle');
+      return tile;
+    }
+
     var sources = A.artwork.sources(app), at = 0;
     function next() {
       if (at >= sources.length) { return; }
