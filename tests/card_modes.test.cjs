@@ -58,6 +58,18 @@ test('Rectangle brand cards reuse upstream brand rendering without square artwor
   assert.equal(launched, true);
 });
 
+test('Unknown Rectangle app uses a readable banner instead of a tiny square Tizen icon', () => {
+  const original = read('js/brands.js');
+  assert.match(original, /extraClass === 'home-display' && A.settings.homeCardMode === 'rectangle'/);
+  assert.match(original, /!\(extraClass === 'home-display' && A.settings.homeCardMode === 'rectangle'\)/);
+  const h = brandHarness('rectangle');
+  const card = h.A.tiles.app({ name: 'Unknown App', id: 'unknown', icon: '/native-square.png' },
+    'home-display');
+  assert.equal(h.imageInstances, 0, 'rectangle must not load a square Tizen icon');
+  assert.equal(h.sourcesCalled, 0, 'rectangle must not request square Samsung artwork');
+  assert.ok(card.classList.contains('brand-rectangle'));
+});
+
 test('Settings app cards are unaffected by the Home rectangle selection', () => {
   const h = brandHarness('rectangle');
   const card = h.A.tiles.app({ name: 'YouTube', id: 'yt', icon: '' });
