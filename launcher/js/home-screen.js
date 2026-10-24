@@ -204,7 +204,13 @@
   }
 
   A.homeScreen = { render: render, buildRows: buildRows, focus: focus, keydown: keydown, keyup: keyup };
-  A.$('samsung-home-shortcut').onclick = function () { A.homewatch.useSamsungHome(); };
+  // When the native handoff enhancement is installed, preserve AeroTizen
+  // so pressing the physical Home key can return to the launcher.
+  // Older builds retain the original upstream exit-based escape.
+  A.$('samsung-home-shortcut').onclick = function () {
+    if (A.homewatch.openSamsungHome) { A.homewatch.openSamsungHome(); }
+    else { A.homewatch.useSamsungHome(); }
+  };
   A.$('gear').onclick = function () {
     if (moving) { endMove(); }
     A.settingsUi.open();
