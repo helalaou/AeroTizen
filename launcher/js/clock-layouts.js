@@ -1,4 +1,4 @@
-// Classic AeroTizen header and the four custom clock styles from V992.56.
+// Classic AeroTizen header and four optional custom clock styles.
 // Reuses the existing locale, weather and preference engines; no additional timer or API.
 (function (A) {
   'use strict';
