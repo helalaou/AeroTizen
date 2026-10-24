@@ -90,6 +90,8 @@ test('failed Samsung Home launch rearms HomeWatcher', () => {
   h.A.homewatch.openSamsungHome();
   h.http[0].respond(200);
   h.apps[0].fail();
+  assert.equal(h.controls[0].id, 'com.samsung.tv.csfs');
+  h.controls[0].fail();
   assert.match(h.http[h.http.length - 1].url, /\/home$/);
   assert.match(h.toasts[0], /Could not open Samsung Home/);
 });
