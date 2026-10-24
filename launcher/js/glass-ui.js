@@ -35,6 +35,7 @@
     'App cards': 'appearance',
     'Live TV': 'sources',
     'HDMI ports': 'sources',
+    'HDMI always visible': 'sources',
     'Input names': 'sources',
     'Show in app menu': 'apps'
   };
