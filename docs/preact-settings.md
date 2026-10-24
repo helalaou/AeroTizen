@@ -89,8 +89,9 @@ CSS behaviour or physical TV compatibility.
 - Saved preferences are shared state. Open/preview state belongs to the screen store;
   text drafts and weather search state belong to their hooks. Drafts override saved
   values only while editing; they are not copied from props in an effect. One effect
-  owns each pending image attempt and its cleanup. Closing cancels pending image timers
-  and search callback delivery. The cached form keeps its store subscription until
+  owns each pending image attempt and its cleanup. Closing cancels pending image timers,
+  resets failed image sequences for the next opening, and cancels search callback delivery.
+  Successfully loaded image nodes stay cached. The cached form keeps its store subscription until
   unmount, so external preference changes remain current while the form is hidden.
 - Every component has its own file and uses an `export const` arrow function.
   Exported helpers also use `const`. ESLint enforces these conventions.
@@ -184,6 +185,8 @@ focus after text entry.
 Regression cases also cover first pointer activation, Space without consuming input
 spaces, stable date previews, zero geometry reads for an unrelated clock setting, and
 late TV discovery/hot-plug callbacks while preserving an active text draft.
+Artwork recovery also checks that reopening retries exhausted candidates from the first
+source while preserving loaded image nodes and avoiding another request for them.
 These are fixed-resolution TV screens; mobile layout is not part of this migration.
 
 ## Desktop measurements: 24 October 2026
@@ -200,7 +203,7 @@ heap is measured after garbage collection with Settings open.
 | Clock change, median synchronous work | 1.7 ms | 0.9 ms |
 | Arrow event, p95 synchronous work | 0.2 ms | 0.5 ms |
 | Retained JavaScript heap, median | 1.85 MiB | 2.60 MiB |
-| Settings script, including Preact | 14,540 bytes | 39,444 bytes |
+| Settings script, including Preact | 14,540 bytes | 39,507 bytes |
 
 Rendering focus state and native focus events adds work compared with direct class
 writes. It also gives Preact full ownership of the rendered controls. The physical TV

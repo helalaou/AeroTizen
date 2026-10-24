@@ -13,7 +13,12 @@ export const useImageSequence = (sources: readonly string[], active: boolean) =>
   const token = useMemo(() => ({ key, index: current.index, loaded: current.loaded, active }), [key, current.index, current.loaded, active]);
   const attempt = useRef<Attempt | null>(null);
   useLayoutEffect(() => {
-    if (!active || current.loaded || !source) { return; }
+    if (!active) {
+      // Retry failed sequences from the start next time; keep loaded images cached.
+      if (!current.loaded && current.index !== 0) { setState({ key, index: 0, loaded: false }); }
+      return;
+    }
+    if (current.loaded || !source) { return; }
     let live = true;
     const settle = (loaded: boolean) => {
       if (!live) { return; }
