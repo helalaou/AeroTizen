@@ -179,3 +179,72 @@ test('missing custom PNG restores readable fallback and never blocks launch', ()
   tile.onclick();
   assert.equal(open,1);
 });
+
+test('layout Settings render in English without the optional localization module', () => {
+  const settings = read('js/settings-ui.js');
+  const start = settings.indexOf('  function renderHomeCardModes() {');
+  const end = settings.indexOf('\n\n  function renderInputVisibility()', start);
+  assert.ok(start >= 0 && end > start);
+  const panels = {};
+  for (const id of ['home-card-modes', 'home-card-columns']) {
+    panels[id] = {
+      children: [], attributes: {},
+      appendChild(child) { this.children.push(child); },
+      setAttribute(key, value) { this.attributes[key] = value; }
+    };
+  }
+  const A = { $: id => panels[id], homeScreen: { render() {} } };
+  const S = { homeCardMode: 'rectangle', homeCardColumns: 4, cardSize: 'big' };
+  const cfg = { CARD_COLUMNS: { big: 3, small: 5 } };
+  const pill = (key, label, selected, onSelect) => ({ key, label, selected, onSelect });
+  const render = vm.runInNewContext('(' + settings.slice(start, end).trim() + ')',
+    { A, S, cfg, pill, changed: after => { if (after) { after(); } } });
+  render();
+  assert.deepEqual(panels['home-card-modes'].children.map(p => p.label), ['Square', 'Rectangle']);
+  assert.deepEqual(panels['home-card-columns'].children.map(p => p.label),
+    ['3 per row', '4 per row', '5 per row']);
+  assert.equal(panels['home-card-modes'].attributes['aria-label'], 'Home tile layout');
+  assert.equal(panels['home-card-columns'].attributes['aria-label'], 'Apps per row');
+  panels['home-card-modes'].children[0].onSelect();
+  panels['home-card-columns'].children[2].onSelect();
+  assert.equal(S.homeCardMode, 'square');
+  assert.equal(S.homeCardColumns, 5);
+});
+
+test('layout Settings use translated labels and headings when PR #27 is present', () => {
+  const source = read('js/settings-ui.js');
+  const start = source.indexOf('  function renderHomeCardModes() {');
+  const end = source.indexOf('\n\n  function renderInputVisibility()', start);
+  const dict = {
+    'Square': 'Quadrato', 'Rectangle': 'Rettangolo',
+    '3 per row': '3 per riga', '4 per row': '4 per riga', '5 per row': '5 per riga',
+    'Home tile layout': 'Layout tessere Home', 'Apps per row': 'App per riga'
+  };
+  const panels = {};
+  for (const id of ['home-card-modes', 'home-card-columns']) {
+    panels[id] = {
+      children: [], attributes: {},
+      appendChild(child) { this.children.push(child); },
+      setAttribute(key, value) { this.attributes[key] = value; }
+    };
+  }
+  const A = {
+    $: id => panels[id],
+    i18n: { label: (key, english) => dict[english] || english },
+    homeScreen: { render() {} }
+  };
+  const S = { homeCardMode: 'square', homeCardColumns: 3, cardSize: 'big' };
+  const cfg = { CARD_COLUMNS: { big: 3, small: 5 } };
+  const pill = (key, label, selected, onSelect) => ({ key, label, selected, onSelect });
+  const render = vm.runInNewContext('(' + source.slice(start, end).trim() + ')',
+    { A, S, cfg, pill, changed: after => { if (after) { after(); } } });
+  render();
+  assert.deepEqual(panels['home-card-modes'].children.map(p => p.label), ['Quadrato', 'Rettangolo']);
+  assert.deepEqual(panels['home-card-columns'].children.map(p => p.label),
+    ['3 per riga', '4 per riga', '5 per riga']);
+  assert.equal(panels['home-card-modes'].attributes['aria-label'], 'Layout tessere Home');
+  assert.equal(panels['home-card-columns'].attributes['aria-label'], 'App per riga');
+  const html = read('index.html');
+  assert.match(html, /data-i18n="Home tile layout"/);
+  assert.match(html, /data-i18n="Apps per row"/);
+});
