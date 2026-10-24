@@ -149,3 +149,62 @@ test('all nine original photo assets and page wiring are present', () => {
   assert.match(css,/#weather-photo\.weather-photo/);
   assert.doesNotMatch(css,/(?:-webkit-)?backdrop-filter:/);
 });
+
+test('photo-weather Settings render without PR #27 and preserve selection', () => {
+  const source = read('launcher/js/settings-ui.js');
+  const start = source.indexOf('  function renderPhotoWeather() {');
+  const end = source.indexOf('\n\n  function renderBackgrounds()', start);
+  assert.ok(start >= 0 && end > start);
+  const panel = {
+    children: [], attributes: {},
+    appendChild(child) { this.children.push(child); },
+    setAttribute(key, value) { this.attributes[key] = value; }
+  };
+  const S = { weatherPhoto: false };
+  let saved = 0, refreshed = 0;
+  const A = {
+    $: () => panel, photoWeather: {},
+    applyBackground() { refreshed++; }
+  };
+  const pill = (key, label, selected, onSelect) =>
+    ({ key, label, selected, onSelect, setAttribute() {} });
+  const render = vm.runInNewContext('(' + source.slice(start, end).trim() + ')',
+    { A, S, pill, changed: after => { saved++; after(); }, window: {
+      Weather: { updateVisibility() { refreshed++; } }
+    } });
+  render();
+  assert.deepEqual(panel.children.map(p => p.label), ['Off', 'Automatic (weather)']);
+  assert.equal(panel.attributes['aria-label'], 'Weather wallpaper');
+  panel.children[1].onSelect();
+  assert.equal(S.weatherPhoto, true);
+  assert.equal(saved, 1);
+  assert.equal(refreshed, 2);
+});
+
+test('photo-weather Settings use the shared i18n labels when available', () => {
+  const source = read('launcher/js/settings-ui.js');
+  const start = source.indexOf('  function renderPhotoWeather() {');
+  const end = source.indexOf('\n\n  function renderBackgrounds()', start);
+  const panel = {
+    children: [], attributes: {},
+    appendChild(child) { this.children.push(child); },
+    setAttribute(key, value) { this.attributes[key] = value; }
+  };
+  const dict = { Off: 'Disattivato', 'Automatic (weather)': 'Automatico (meteo)',
+    'Weather wallpaper': 'Sfondo meteo' };
+  const A = {
+    $: () => panel, photoWeather: {},
+    i18n: { t: value => dict[value] || value,
+      label: (key, english) => dict[english] || english }
+  };
+  const pill = (key, label, selected, onSelect) =>
+    ({ key, label, selected, onSelect, setAttribute() {} });
+  const render = vm.runInNewContext('(' + source.slice(start, end).trim() + ')',
+    { A, S: { weatherPhoto: true }, pill, changed() {},
+      window: { Weather: { updateVisibility() {} } } });
+  render();
+  assert.deepEqual(panel.children.map(p => p.label),
+    ['Disattivato', 'Automatico (meteo)']);
+  assert.equal(panel.attributes['aria-label'], 'Sfondo meteo');
+  assert.match(read('launcher/index.html'), /data-i18n="Weather wallpaper"/);
+});
