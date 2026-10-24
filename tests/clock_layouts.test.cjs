@@ -86,6 +86,7 @@ test('time/date visibility and upstream formats apply to the custom clock', () =
   assert.match(elements['clock-custom-hours'].textContent, /^\\d{2}$/);
   assert.match(elements['clock-custom-date'].textContent, /^\\d{4}-\\d{2}-\\d{2}$/);
   A.settings.showTime = false;
+  A.settings.showWeather = false;
   A.settings.dateFormat = 'none';
   A.clock.tick();
   assert.equal(elements['clock-custom-digits'].hidden, true);
