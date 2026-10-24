@@ -6,6 +6,7 @@
   <title>AeroTizen</title>
   <link rel="icon" href="icon.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/clock-layouts.css">
 </head>
 <body>
   <div id="bg" class="bg"></div>
@@ -25,6 +26,15 @@
       <span id="weather" class="weather" hidden></span>
       <span id="date" class="date"></span>
       <span id="time" class="time"></span>
+    </div>
+    <div id="clock-custom-widget" class="clock-custom-widget" hidden>
+      <div id="clock-custom-digits" class="clock-custom-digits">
+        <span id="clock-custom-hours"></span>
+        <span id="clock-custom-minutes"></span>
+        <span id="clock-custom-period" class="clock-custom-period" hidden></span>
+      </div>
+      <div id="clock-custom-date" class="clock-custom-date"></div>
+      <div id="clock-custom-weather" class="clock-custom-weather" hidden></div>
     </div>
   </header>
 
@@ -56,6 +66,12 @@
     <h3>Temperature</h3>
     <div id="units" class="units"></div>
     <h3>Date &amp; time</h3>
+    <h3>Clock layout</h3>
+    <div id="clock-layouts" class="units"></div>
+    <div id="clock-style-section" hidden>
+      <h3>Clock style</h3>
+      <div id="clock-styles" class="units"></div>
+    </div>
     <div id="time-formats" class="units"></div>
     <div id="date-formats" class="units"></div>
     <h3>Network indicator</h3>
@@ -101,6 +117,7 @@
   <script src="js/inputs.js"></script>
   <script src="js/home-screen.js"></script>
   <script src="js/settings-ui.js"></script>
+  <script src="js/clock-layouts.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
