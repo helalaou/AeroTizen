@@ -140,7 +140,9 @@ test('focused controls use a single moving outline matching their radius', () =>
 test('the header shortcut reuses the existing Samsung Home exit method', () => {
   const home = read('launcher/js/home-screen.js');
   const index = read('launcher/index.html');
-  assert.match(home, /samsung-home-shortcut'\)\.onclick\s*=\s*function\s*\(\)\s*\{\s*A\.homewatch\.useSamsungHome\(\)/);
+  assert.match(home, /if \(A\.homewatch\.openSamsungHome\)/);
+  assert.match(home, /A\.homewatch\.openSamsungHome\(\)/);
+  assert.match(home, /A\.homewatch\.useSamsungHome\(\)/);
   assert.match(index, /id="samsung-home-shortcut"/);
   assert.match(home, /rows\s*=\s*\[\[A\.\$\('gear'\),\s*A\.\$\('samsung-home-shortcut'\)/);
 });
