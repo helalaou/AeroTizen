@@ -1,0 +1,100 @@
+/* Two clock layouts adapted from the V992.56 reference build.
+   Classic keeps the upstream header and app layout unchanged. */
+body.clock-custom .topbar { position: relative; }
+body.clock-custom .topbar-right {
+  position: absolute; width: 0; height: 0; overflow: hidden;
+  opacity: 0; pointer-events: none;
+}
+body.clock-custom .view-tabs {
+  position: absolute; top: 24px; left: 50%;
+  transform: translateX(-50%);
+}
+body.clock-custom main#rows { padding-top: 285px; }
+
+.clock-custom-widget {
+  position: absolute; top: 112px; right: 64px;
+  width: 475px; display: flex; flex-direction: column;
+  align-items: flex-end; text-align: right; pointer-events: none;
+  color: #f3f7ff; text-shadow: 0 3px 16px rgba(0,0,0,.6);
+}
+.topbar .clock-custom-widget[hidden],
+.topbar .clock-custom-widget [hidden] { display: none; }
+.clock-custom-digits {
+  display: flex; flex-direction: column; align-items: flex-end;
+  font-family: "SamsungOne","Helvetica Neue","Segoe UI",Arial,sans-serif;
+  font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
+  font-size: 118px; font-weight: 300; letter-spacing: -7px;
+  line-height: .85; white-space: nowrap;
+}
+.clock-custom-digits span { display: block; }
+.clock-custom-period { font-size: .20em; letter-spacing: 0; line-height: 1; font-weight: 400; }
+.clock-custom-date { font-size: 30px; font-weight: 400; margin-top: 13px; white-space: nowrap; }
+.clock-custom-weather {
+  display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+  margin-top: 14px; font-size: 24px; min-height: 32px;
+  color: #e8eff8; white-space: nowrap;
+}
+.clock-custom-weather svg { width: 33px; height: 33px; }
+.clock-custom-weather b { font-size: 31px; font-weight: 400; }
+.clock-custom-weather span {
+  font-size: 18px; color: rgba(235,241,249,.85);
+  overflow: hidden; text-overflow: ellipsis; max-width: 200px;
+}
+
+/* Horizontal — single-line large hour and minute display. */
+.clock-custom-widget.style-horizontal { width: 640px; }
+.style-horizontal .clock-custom-digits {
+  flex-direction: row; align-items: baseline; font-size: 110px;
+  line-height: 1.05; font-weight: 300; letter-spacing: -5px;
+}
+.style-horizontal #clock-custom-hours::after {
+  content: ':'; margin: 0 5px 0 2px; opacity: .77; font-weight: 200;
+}
+.style-horizontal .clock-custom-date { font-size: 29px; }
+
+/* Thin — airy, understated typography. */
+.style-minimal .clock-custom-digits {
+  font-family: "Helvetica Neue","SamsungOne","Segoe UI",Arial,sans-serif;
+  font-size: 82px; font-weight: 100; letter-spacing: 7px;
+  line-height: 1.08; color: rgba(248,251,255,.93);
+}
+.style-minimal .clock-custom-date {
+  font-size: 23px; font-weight: 300; letter-spacing: 1.15px;
+  margin-top: 18px;
+}
+.style-minimal .clock-custom-weather { font-size: 21px; }
+.style-minimal .clock-custom-weather b { font-size: 26px; }
+
+/* Bold — dense editorial display. */
+.style-bold .clock-custom-digits {
+  font-family: "Arial Black","SamsungOne","Segoe UI",Arial,sans-serif;
+  font-size: 126px; font-weight: 900; letter-spacing: -11px;
+  line-height: .79; color: #fff;
+  -webkit-text-stroke: 1.9px rgba(255,255,255,.85);
+}
+.style-bold .clock-custom-date {
+  font-size: 22px; font-weight: 700; letter-spacing: 1.7px;
+  text-transform: uppercase; margin-top: 19px;
+}
+
+/* Settings use the same pill/focus mechanism as the upstream sheet. */
+#clock-layouts, #clock-styles { flex-wrap: wrap; }
+#clock-layouts .pill, #clock-styles .pill {
+  border-radius: 14px; min-height: 92px;
+  display: flex; flex-direction: column; justify-content: center;
+  align-items: center; text-align: center; gap: 5px;
+}
+#clock-layouts .pill { min-width: 290px; }
+#clock-styles .pill { min-width: 180px; }
+#clock-layouts .pill strong { font-size: 24px; line-height: 1.12; }
+#clock-layouts .pill small, #clock-styles .pill small { font-size: 17px; }
+#clock-styles .clock-preview {
+  font-family: "SamsungOne","Helvetica Neue",Arial,sans-serif;
+  font-size: 36px; line-height: .9; white-space: pre-line;
+}
+#clock-styles [data-key="clock-style:horizontal"] .clock-preview { font-size: 29px; letter-spacing: -2px; }
+#clock-styles [data-key="clock-style:minimal"] .clock-preview { font-weight: 100; letter-spacing: 3px; }
+#clock-styles [data-key="clock-style:bold"] .clock-preview {
+  font-family: "Arial Black","SamsungOne",Arial,sans-serif;
+  font-weight: 900; letter-spacing: -3px;
+}
