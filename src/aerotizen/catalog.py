@@ -89,6 +89,7 @@ def parse_blocks(text):
                 "removable": f.get("is_removable") == "1",
                 "size_mb": int(f.get("app_size") or 0) // (1024 * 1024),
                 "uses": int(f.get("use_count") or 0),
+                "version": f.get("app_version") or None,
             }
         )
     return apps
@@ -123,6 +124,7 @@ def parse_applist(text):
                 "pkgid": appid.split(".")[0] if "." in appid else appid,
                 "name": (name or appid).strip(),
                 "raw": line,
+                "version": fields.get("app_version") or None,
             }
         )
     return apps

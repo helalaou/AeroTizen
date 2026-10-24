@@ -1,0 +1,169 @@
+name: Build release
+
+on:
+  workflow_call:
+    secrets:
+      RELEASE_PLEASE_TOKEN:
+        required: false
+    inputs:
+      component:
+        type: string
+        required: true
+      tag:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      component:
+        description: Component to build
+        type: choice
+        options: [cli, launcher]
+        required: true
+      tag:
+        description: Existing draft release tag (cli-vX.Y.Z or launcher-vX.Y.Z)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      # GitHub exposes draft releases only to callers with push access.
+      contents: write
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - name: Check release tag and draft
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          GH_REPO: ${{ github.repository }}
+          COMPONENT: ${{ inputs.component }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          [[ "$COMPONENT" == cli || "$COMPONENT" == launcher ]]
+          [[ "$RELEASE_TAG" =~ ^${COMPONENT}-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          gh release view "$RELEASE_TAG" --json tagName,isDraft,isPrerelease > release.json
+          jq -e --arg tag "$RELEASE_TAG" '.tagName == $tag and .isDraft and (.isPrerelease | not)' release.json
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
+      - name: Record exact release commit
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  tests:
+    needs: prepare
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ needs.prepare.outputs.sha }}
+
+  cli:
+    needs: [prepare, tests]
+    if: inputs.component == 'cli'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            platform: linux-x86_64
+          - runner: windows-2022
+            platform: windows-x86_64
+          - runner: macos-15
+            platform: macos-arm64
+          - runner: macos-15-intel
+            platform: macos-x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[dev]" "pyinstaller>=6,<7" certifi
+      - name: Build and smoke-test standalone executables
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        shell: bash
+        run: python tools/build_release.py cli --output dist/cli --tag "$RELEASE_TAG"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ inputs.tag }}-${{ matrix.platform }}
+          path: dist/cli/*
+          if-no-files-found: error
+          retention-days: 7
+
+  launcher:
+    needs: [prepare, tests]
+    if: inputs.component == 'launcher'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build unsigned launcher package
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: python tools/build_release.py launcher --output dist/launcher --tag "$RELEASE_TAG"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ inputs.tag }}-launcher
+          path: dist/launcher/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [prepare, tests, cli, launcher]
+    if: >-
+      always() && !cancelled() &&
+      needs.prepare.result == 'success' && needs.tests.result == 'success' &&
+      ((needs.cli.result == 'success' && needs.launcher.result == 'skipped') ||
+      (needs.launcher.result == 'success' && needs.cli.result == 'skipped'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-${{ inputs.tag }}-*
+          merge-multiple: true
+          path: dist
+      - name: Check release asset checksums
+        working-directory: dist
+        env:
+          COMPONENT: ${{ inputs.component }}
+        run: |
+          if [[ "$COMPONENT" == cli ]]; then
+            checksums=(*.sha256)
+            [[ ${#checksums[@]} -eq 4 ]]
+            sha256sum --check "${checksums[@]}"
+          else
+            sha256sum --check SHA256SUMS
+          fi
+      - name: Upload assets and publish release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          EXPECTED_SHA: ${{ needs.prepare.outputs.sha }}
+        run: |
+          # Retry uploads only while the release is still a draft.
+          gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft | grep -qx true
+          gh release upload "$RELEASE_TAG" dist/* --clobber
+          # Do not publish these assets if the tag moved during the build.
+          current_sha=$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq .sha)
+          [[ "$current_sha" == "$EXPECTED_SHA" ]]
+          gh release edit "$RELEASE_TAG" --draft=false --latest=false

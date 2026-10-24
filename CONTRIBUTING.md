@@ -61,10 +61,47 @@ relaunch cancellation and app visibility, without contacting a TV.
   PR is pending. See [Preact Settings](docs/preact-settings.md) for scope and merge checks.
 - Preview in a desktop browser: `python3 -m http.server -d launcher`, open
   http://localhost:8000 at 1920×1080. This serves the legacy Settings baseline.
-- On the TV: `aerotizen install launcher`, then `aerotizen-inspect <tv-ip> DclHome001.Home`
-  gives you Chrome DevTools for the running app at http://localhost:9222.
+- On the TV: `aerotizen install ./dist/launcher`, then `aerotizen inspect launcher`.
+  This restarts the launcher in debug mode and exposes Chrome DevTools at
+  http://localhost:9222/json. Press Ctrl+C to stop forwarding.
 - Keep legacy scripts ES5-compatible. Compiled Settings targets Chromium 69, the 2020
   TV engine, with an ES2018 syntax ceiling. Animate with `transform` only.
+
+Inspection is included in both the Python package and standalone CLI. It uses the
+same automatic TV discovery as other commands. To select a TV, use
+`aerotizen --tv <tv-ip> inspect launcher`. To inspect another app or choose a local
+port, use `aerotizen inspect APPID --port 9223`.
+The separate `aerotizen-inspect` Python command has been replaced by `aerotizen inspect`.
+
+`aerotizen install launcher` installs the latest published launcher, even when a
+`launcher` directory exists in the current directory. Use `./launcher` to test your
+local changes. For a fork's published app, use
+`aerotizen install launcher --release-repo OWNER/REPO`.
+
+## Releases
+
+The CLI and TV launcher have independent versions, release PRs, and GitHub releases.
+Use a Conventional Commit title for each pull request. The **Validate PR title** check
+runs when a PR is opened, reopened, edited, or updated with new commits. Supported
+types are `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`,
+`chore`, and `revert`. Scopes are optional. For example:
+
+```text
+feat(launcher): add a settings screen
+fix(cli): handle failed launcher downloads
+feat(cli)!: change certificate storage
+chore(main): release cli 2.2.0
+```
+
+Use `!` in the title for a breaking change. Squash-merge each PR and keep its validated
+title as the final commit title, so Release Please can select versions and write
+release notes. Individual commits on a development branch do not need this format.
+Source paths determine which component changes; commit scopes alone do not route
+releases.
+
+See [Release process](docs/releases.md) for required repository settings, assets,
+local package checks, and failed-build recovery. Build outputs belong in release
+assets, not in Git.
 
 ## Updating app metadata
 

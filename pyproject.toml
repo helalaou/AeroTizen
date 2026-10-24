@@ -26,7 +26,6 @@ dev = ["pytest>=8", "ruff>=0.6", "lxml>=5"]
 
 [project.scripts]
 aerotizen = "aerotizen.cli:main"
-aerotizen-inspect = "aerotizen.inspect_app:main"
 
 [tool.setuptools.dynamic]
 version = { attr = "aerotizen.__version__" }

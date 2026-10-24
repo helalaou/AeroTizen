@@ -1,4 +1,4 @@
-"""Tiny Chrome DevTools Protocol client for a TV app exposed by inspect_app.
+"""Tiny Chrome DevTools Protocol client for a TV app exposed by aerotizen inspect.
 
 python3 -m aerotizen.cdp eval "document.title"
 python3 -m aerotizen.cdp shot out.png
