@@ -27,7 +27,7 @@ test('S90C native helper refuses incorrect firmware, UID or 64-bit architecture'
   assert.match(native, /getuid\(\) != 901/);
   assert.match(native, /IntPtr\.Size != 4/);
   assert.match(native, /Version=" \+ Firmware \+ ";"/);
-  assert.match(docs, /host-side model/i);
+  assert.match(docs, /exact model/i);
 });
 test('native helper has explicit query with no write on query code path', () => {
   assert.match(native, /if \(query\) \{/);
