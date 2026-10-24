@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "purpose": "Examples of physical HOME reassignment on distinct Samsung firmware families, not a write allowlist.",
+  "references": [
+    {
+      "model": "QE65S90CATXZT",
+      "firmware": "T-PTMCDEUC-0090-2220.4",
+      "tizen": "9.0",
+      "arch": "armv7",
+      "bitness": "32",
+      "evidence": "owner_device_success",
+      "home_button": "confirmed",
+      "reference": "docs/physical-home-s90c.md",
+      "binary_interchangeable": false,
+      "native_write_authorized": false,
+      "auto_start_reference": 0
+    },
+    {
+      "model": "QA55LS03DAWXXY",
+      "firmware": "T-PTMDUABC-0090-2130.0",
+      "tizen": "9.0",
+      "arch": "armv7",
+      "bitness": "32",
+      "evidence": "independent_device_report",
+      "home_button": "confirmed_from_netflix",
+      "reference": "https://github.com/nthnclrk/CleanFrame/blob/main/docs/agent-tv-setup-guide.md",
+      "binary_interchangeable": false,
+      "native_write_authorized": false,
+      "auto_start_reference": null
+    },
+    {
+      "model": "QE65Q70BATXXC",
+      "firmware": "T-PTMDEUC-1720.7",
+      "tizen": "6.5",
+      "arch": "armv7",
+      "bitness": "32",
+      "evidence": "independent_device_report",
+      "home_button": "confirmed",
+      "reference": "https://github.com/NelsonEU/arn0-tv/blob/main/docs/setup-tv.md",
+      "binary_interchangeable": false,
+      "native_write_authorized": false,
+      "auto_start_reference": 1
+    }
+  ]
+}
