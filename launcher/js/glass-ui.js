@@ -21,6 +21,7 @@
   // Map by original heading text, not control IDs; the original controls
   // remain compatible with upstream changes in their own renderers.
   var headings = {
+    'Weather wallpaper': 'wallpaper',
     'Animated backgrounds': 'wallpaper',
     'Still backgrounds': 'wallpaper',
     'Weather': 'status',
