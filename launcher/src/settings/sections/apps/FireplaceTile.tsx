@@ -1,5 +1,5 @@
+import { FlameIcon } from '../../../shared/icons/FlameIcon';
 import { RemoteControl } from '../../components/RemoteControl';
-import { FlameIcon } from './FlameIcon';
 
 export const FireplaceTile = ({ id, selected, onSelect }: { id: string; selected: boolean; onSelect(): void }) => (
   <RemoteControl class={'tile fire' + (selected ? ' on' : '')} focusKey={'app:' + id} role="button"

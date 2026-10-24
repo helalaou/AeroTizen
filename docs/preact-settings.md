@@ -104,6 +104,7 @@ launcher/src/
     services/                     # Legacy runtime types, adapters and key-router bridge
   shared/
     hooks/                        # Reusable store subscription, draft and image behavior
+    icons/                        # SVG icon components, one per TSX file
     navigation/                   # Ref registry, visual rows and focus state
     state/                        # Observable store primitive
 ```
@@ -177,7 +178,7 @@ heap is measured after garbage collection with Settings open.
 | Clock change, median synchronous work | 1.3 ms | 1.0 ms |
 | Arrow event, p95 synchronous work | 0.1 ms | 0.3 ms |
 | Retained JavaScript heap, median | 1.85 MiB | 2.59 MiB |
-| Settings script, including Preact | 14,540 bytes | 38,402 bytes |
+| Settings script, including Preact | 14,540 bytes | 38,466 bytes |
 
 Rendering focus state and native focus events adds work compared with direct class
 writes. It also gives Preact full ownership of the rendered controls. The physical TV

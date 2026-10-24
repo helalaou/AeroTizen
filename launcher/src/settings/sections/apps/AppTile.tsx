@@ -1,5 +1,6 @@
 import { useMemo } from 'preact/hooks';
 import { useImageSequence } from '../../../shared/hooks/useImageSequence';
+import { AppLogoIcon } from '../../../shared/icons/AppLogoIcon';
 import { RemoteControl } from '../../components/RemoteControl';
 import type { InstalledApp, SettingsServices } from '../../types';
 
@@ -22,9 +23,7 @@ export const AppTile = ({ app, selected, active, onSelect, describeApp }: Props)
       aria-pressed={selected} onClick={onSelect} style={{ background: artwork.loaded ? 'transparent' : brand.background }}>
       <div class={'app-fallback' + (!brand.label ? ' logo-only' : '') + (brand.largeLogo ? ' logo-big' : '')}
         hidden={artwork.loaded}>
-        {brand.logoPath ? <svg class="logo" viewBox="0 0 24 24" aria-hidden="true">
-          <path d={brand.logoPath} fill={brand.logoColour} />
-        </svg> : icon.src ? <img key={icon.src} class="logo" alt="" src={icon.src}
+        {brand.logoPath ? <AppLogoIcon path={brand.logoPath} colour={brand.logoColour} /> : icon.src ? <img key={icon.src} class="logo" alt="" src={icon.src}
           onLoad={icon.onLoad} onError={icon.onError} /> : null}
         {brand.label || !brand.logoPath ? <div class="name" style={{ color: brand.textColour }}>{brand.label || brand.title}</div> : null}
       </div>

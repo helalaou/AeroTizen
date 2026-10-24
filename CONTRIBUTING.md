@@ -38,6 +38,7 @@ relaunch cancellation and app visibility, without contacting a TV.
 | `launcher/src/settings/` | TypeScript/TSX Settings components, state, actions and service adapters |
 | `launcher/src/settings/sections/` | Settings sections with their own controls and hooks |
 | `launcher/src/shared/` | Store subscriptions, ref-based navigation and reusable lifecycle hooks |
+| `launcher/src/shared/icons/` | SVG icon components, one per TSX file |
 | `vite.config.mts` | Official Preact preset, dev server and TV bundle settings |
 | `dist/launcher/` | Generated TV runtime with compiled Settings; no Node needed on TV |
 | `launcher/js/config.js` | Launcher behaviour and settings |
