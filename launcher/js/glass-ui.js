@@ -26,6 +26,8 @@
     'Weather': 'status',
     'Temperature': 'status',
     'Date & time': 'status',
+    'Home tile layout': 'appearance',
+    'Apps per row': 'appearance',
     'Clock layout': 'status',
     'Clock style': 'status',
     'Network indicator': 'appearance',
