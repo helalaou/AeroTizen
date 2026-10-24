@@ -15,7 +15,11 @@ function makeElement(tag = 'div', className = '', id = '') {
     parentNode: null, hidden: false, style: {}, textContent: '',
     offsetLeft: 7, offsetTop: 10, offsetWidth: 200, offsetHeight: 65,
     scrollTop: 0, scrollLeft: 0, scrollHeight: 900, clientHeight: 800,
-    className,
+    get className() { return Array.from(classes).join(' '); },
+    set className(value) {
+      classes.clear();
+      String(value).split(' ').filter(Boolean).forEach(name => classes.add(name));
+    },
     classList: {
       add: name => classes.add(name),
       remove: (...names) => names.forEach(name => classes.delete(name)),
