@@ -5,12 +5,14 @@
   var cfg = A.config, COLS = 3;
   var rows = [], row = 1, col = [], scrollY = 0;
   var page = 'home';
+  var tabCache = { home: null, apps: null };
   var moving = null, tileMenu = null;
   var CHEVRONS = { left: 'M15 5l-7 7 7 7', right: 'M9 5l7 7-7 7', up: 'M5 15l7-7 7 7', down: 'M5 9l7 7 7-7' };
 
   function gridTiles() { return [].slice.call(A.$('grid').children); }
 
-  function render() {
+  function render(fromTabSwitch) {
+    if (!fromTabSwitch) { tabCache.home = null; tabCache.apps = null; }
     if (tileMenu) { closeTileMenu(false); }
     var grid = A.$('grid'), home = A.settings.home, size = A.settings.cardSize === 'small' ? 'small' : 'big';
     COLS = cfg.CARD_COLUMNS[size];
@@ -29,6 +31,13 @@
       tab.classList.toggle('active', selected);
       tab.setAttribute('aria-pressed', String(selected));
     });
+    if (fromTabSwitch && tabCache[page]) {
+      grid.appendChild(tabCache[page]);
+      tabCache[page] = null;
+      buildRows();
+      return;
+    }
+    var batch = document.createDocumentFragment();
     home.forEach(function (id) {
       var tile;
       if (id === cfg.FIREPLACE_ID) {
@@ -43,8 +52,9 @@
         tile = A.tiles.app(app, '', function () { A.apps.launch(app); });
       }
       tile.dataset.id = id;
-      grid.appendChild(tile);
+      batch.appendChild(tile);
     });
+    grid.appendChild(batch);
     buildRows();
   }
 
@@ -90,10 +100,14 @@
     if (tileMenu) { closeTileMenu(false); }
     if (moving) { endMove(); }
     clearTimeout(pressTimer); pressTimer = null;
+    if (page === next) { return; }
+    var grid = A.$('grid'), parked = document.createDocumentFragment();
+    while (grid.firstChild) { parked.appendChild(grid.firstChild); }
+    tabCache[page] = parked;
     page = next;
     row = 0; col = [page === 'home' ? 1 : 2]; scrollY = 0;
     A.$('rows').style.transform = 'translate3d(0,0,0)';
-    render();
+    render(true);
   }
 
 

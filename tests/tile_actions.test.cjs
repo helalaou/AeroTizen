@@ -42,6 +42,10 @@ class Element {
   get offsetWidth() { return 332; }
   get offsetHeight() { return 332; }
   appendChild(child) {
+    if (child.tagName === '#FRAGMENT') {
+      while (child.firstChild) { this.appendChild(child.firstChild); }
+      return child;
+    }
     if (child.parentNode) { child.parentNode.removeChild(child); }
     this.children.push(child);
     child.parentNode = this;
@@ -135,7 +139,7 @@ function fixture(initial = ['a', 'b'], withInput = true) {
   };
   // Avoid counting launches twice: the app's launch method is what is tested.
   A.apps.launch = () => {};
-  const document = { body, querySelectorAll: selector => body.querySelectorAll(selector) };
+  const document = { body, createDocumentFragment: () => new Element('#fragment'), querySelectorAll: selector => body.querySelectorAll(selector) };
   const context = vm.createContext({
     window: { AeroTizen: A, innerWidth: 1920, innerHeight: 1080,
       requestAnimationFrame: fn => fn() },
@@ -188,7 +192,7 @@ test('holding OK only opens Home actions and release does nothing', () => {
   h.key(39); // move right
   h.key(13); // drop
   h.A.homeScreen.keyup(13);
-  assert.deepEqual(h.settings.home, ['b', 'a']);
+  assert.deepEqual(Array.from(h.settings.home), ['b', 'a']);
   assert.equal(h.launches, 0);
 });
 
@@ -251,4 +255,21 @@ test('a long press on a navigation tab never opens tile actions', () => {
   assert.equal(h.menuOptions().length, 0);
   assert.equal(h.launches, 0);
   assert.equal(h.settingsOpens, 0);
+});
+
+
+test('tab switches reuse tile DOM, while a changed favourite list invalidates parked tiles', () => {
+  const h = fixture(['a']);
+  const original = h.grid.children[0];
+  h.appsTab.onclick();
+  const all = h.grid.children.slice();
+  h.homeTab.onclick();
+  assert.equal(h.grid.children[0], original);
+  h.appsTab.onclick();
+  assert.equal(h.grid.children[0], all[0]);
+  h.settings.home = ['b'];
+  h.A.homeScreen.render();
+  h.homeTab.onclick();
+  assert.equal(h.grid.children[0].dataset.id, 'b');
+  assert.notEqual(h.grid.children[0], original);
 });
