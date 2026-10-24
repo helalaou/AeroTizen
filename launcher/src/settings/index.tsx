@@ -5,6 +5,7 @@ import { createNavigation } from '../shared/navigation/createNavigation';
 import { focusControl } from '../shared/navigation/focusControl';
 import { createSettingsStore } from './state/createSettingsStore';
 import { createSettingsServices } from './services/createSettingsServices';
+import { createSettingsInventory } from './services/createSettingsInventory';
 import { createSettingsActions } from './state/createSettingsActions';
 import { createSettingsBridge } from './services/createSettingsBridge';
 import { SettingsProvider } from './SettingsProvider';
@@ -15,7 +16,8 @@ const runtime = window.AeroTizen;
 const mount = document.getElementById('settings-root');
 if (!mount) { throw new Error('Settings mount point is missing.'); }
 const settings = createSettingsStore(runtime.settings, { ...runtime.config.DEFAULTS, home: [], tempUnit: 'C', timeFormat: '12' });
-const view = createStore<ViewState>({ open: false, previewing: false, mounted: false });
+const view = createStore<ViewState>({ open: false, previewing: false, mounted: false, openedAt: 0 });
+const inventory = createSettingsInventory(runtime);
 const services = createSettingsServices(runtime);
 const actions = createSettingsActions(settings, services, view, flushSync);
 const bridge = createSettingsBridge(settings, view, services, flushSync);
@@ -25,10 +27,10 @@ const navigation = createNavigation(element => {
   focusControl(element);
   if (root.current) { root.current.scrollTop = Math.max(0, element.offsetTop - 640); }
 });
-const environment: SettingsEnvironment = { settings, view, services, actions, bridge, navigation, root };
+const environment: SettingsEnvironment = { settings, inventory, view, services, actions, bridge, navigation, root };
 runtime.settingsUi = bridge;
 render(<SettingsProvider environment={environment}><SettingsRoot /></SettingsProvider>, mount);
 
 if (import.meta.hot) {
-  import.meta.hot.dispose(() => { render(null, mount); settings.dispose(); });
+  import.meta.hot.dispose(() => { render(null, mount); settings.dispose(); inventory.dispose(); });
 }

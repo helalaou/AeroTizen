@@ -1,11 +1,6 @@
 import { createStore } from '../../shared/state/createStore';
+import { equalRecord } from '../../shared/state/equalRecord';
 import type { SettingsSnapshot, SettingsSource, SettingsStore, SettingsValues } from '../types';
-
-const equalRecord = (a: object, b: object): boolean => {
-  const left = a as Record<string, unknown>, right = b as Record<string, unknown>;
-  const keys = Object.keys(left);
-  return keys.length === Object.keys(right).length && keys.every(key => Object.is(left[key], right[key]));
-};
 
 export const createSettingsStore = (source: SettingsSource, defaults: SettingsValues): SettingsStore => {
   const read = (previous?: SettingsSnapshot): SettingsSnapshot => {

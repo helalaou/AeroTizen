@@ -5,20 +5,26 @@ import type { NavigationHandlers, SettingsBridge, SettingsServices, SettingsStor
 // stores; this bridge never builds markup or requests a root render.
 export const createSettingsBridge = (
   settings: SettingsStore, view: MutableStore<ViewState>, services: SettingsServices,
-  transaction: (action: () => void) => void
+  transaction: (action: () => void) => void, now: () => number = Date.now
 ): SettingsBridge => {
   let handlers: NavigationHandlers | undefined;
   return {
     open() {
-      settings.refresh();
-      if (!view.getSnapshot().open) { services.clearHomeFocus(); }
-      transaction(() => view.set({ open: true, previewing: false, mounted: true }));
+      transaction(() => {
+        settings.refresh();
+        const current = view.getSnapshot();
+        if (!current.open) { services.clearHomeFocus(); }
+        view.set({ open: true, previewing: false, mounted: true,
+          openedAt: current.open ? current.openedAt : now() });
+      });
     },
     close() {
-      handlers?.blur();
-      transaction(() => view.set({ ...view.getSnapshot(), open: false, previewing: false }));
-      services.finishEditing();
-      settings.refresh();
+      transaction(() => {
+        handlers?.blur();
+        view.set({ ...view.getSnapshot(), open: false, previewing: false });
+        services.finishEditing();
+        settings.refresh();
+      });
     },
     isOpen: () => view.getSnapshot().open,
     focus: () => { handlers?.focus(); },

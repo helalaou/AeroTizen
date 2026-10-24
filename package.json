@@ -7,10 +7,12 @@
     "build": "npm run typecheck && node tools/build-launcher.mjs",
     "dev": "vite",
     "test": "node --test tests/*.test.cjs",
+    "test:browser": "npm run build && playwright test",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
+    "@playwright/test": "1.64.1",
     "@preact/preset-vite": "2.10.6",
     "@types/babel__core": "7.20.5",
     "@types/node": "20.19.43",

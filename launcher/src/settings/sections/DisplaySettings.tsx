@@ -2,10 +2,10 @@ import { Choice } from '../components/Choice';
 import { Pill } from '../components/Pill';
 import type { Clock, SettingsSectionProps } from '../types';
 
-interface Props extends SettingsSectionProps { clock: Omit<Clock, 'tick'> }
+interface Props extends SettingsSectionProps { clock: Omit<Clock, 'tick'>; openedAt: number }
 
-export const DisplaySettings = ({ settings, actions, clock }: Props) => {
-  const now = new Date();
+export const DisplaySettings = ({ settings, actions, clock, openedAt }: Props) => {
+  const now = new Date(openedAt);
   const dateStyle = clock.dateStyle(settings.dateFormat);
   return (
     <>

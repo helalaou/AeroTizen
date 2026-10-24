@@ -11,10 +11,6 @@ export const createSettingsServices = (runtime: LauncherRuntime): SettingsServic
     DATE_FORMATS: runtime.clock.DATE_FORMATS
   },
   backgrounds: window.Backgrounds.list.map(background => ({ ...background, preview: window.Backgrounds.preview(background) })),
-  getApps: () => runtime.apps.all,
-  getInputs: () => runtime.inputs.sources.filter(source => source.type !== 'TV').map(source => ({
-    port: runtime.inputs.portName(source), placeholder: source.editName
-  })),
   describeApp: app => runtime.tiles.describe(app),
   searchLocations(query, done) {
     let cancelled = false;

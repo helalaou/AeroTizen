@@ -1,6 +1,6 @@
 // Run on the compiled Settings URL. Keep image transport pending and control only
 // artwork's two-second deadline to test retries and cleanup without real delays.
-async page => {
+const runSettingsResources = async page => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.route('https://**/*', route => route.fulfill({ contentType: 'application/json', body: '{}' }));
@@ -57,7 +57,11 @@ async page => {
     window.restoreTimers();
     return { pendingCleanup: true, staleImageIgnored: true, timeoutRetry: true, exhaustedFallback: true };
   });
-  for (const route of routes) await route.abort();
+  // Complete the detached requests without intentional network-error console noise.
+  for (const route of routes) await route.fulfill({ contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" />' });
   if (errors.length) throw new Error(JSON.stringify(errors));
   return result;
-}
+};
+
+module.exports = { runSettingsResources };

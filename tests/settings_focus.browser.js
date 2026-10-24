@@ -1,5 +1,5 @@
 // Exercise real browser focus and keyboard events on the Preact URL.
-async page => {
+const runSettingsFocus = async page => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.route('https://**/*', route => route.fulfill({ contentType: 'application/json', body: '{}' }));
@@ -35,4 +35,6 @@ async page => {
   }
   if (errors.length) throw new Error(JSON.stringify(errors));
   return { nativeArrows: true, nativeImeDone: true, renderedFocus: focused, nativeClose: true };
-}
+};
+
+module.exports = { runSettingsFocus };

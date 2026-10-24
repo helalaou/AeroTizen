@@ -8,7 +8,7 @@ export interface Navigation extends Store<string | undefined> {
   select(key: string | undefined): void; reset(key: string): void;
   current(): HTMLElement | undefined; move(direction: Direction): void;
 }
-interface Target { key: string; node: HTMLElement }
+interface Target { key: string; node: HTMLElement; left: number }
 
 // Ref callbacks register controls. Geometry is read only when the layout changes;
 // the selected key is observable state, and components render its focus styling.
@@ -24,14 +24,20 @@ export const createNavigation = (onFocus: (element: HTMLElement) => void): Navig
       const measuredRows: Target[][] = [];
       keys = new Map();
       const positions = [...nodes].filter(([, node]) => node.offsetParent !== null)
-        .map(([key, node]) => ({ key, node, top: node.offsetTop, left: node.offsetLeft }))
+        .map(([key, node]) => {
+          const top = node.offsetTop;
+          return { key, node, top, bottom: top + node.offsetHeight, left: node.offsetLeft };
+        })
         .sort((a, b) => a.top - b.top || a.left - b.left);
-      let top: number | undefined;
+      let bottom = -Infinity;
       positions.forEach(target => {
-        if (top !== target.top) { top = target.top; measuredRows.push([]); }
-        const items = measuredRows[measuredRows.length - 1];
-        keys.set(target.key, [measuredRows.length - 1, items.length]);
-        items.push(target);
+        if (target.top >= bottom) { measuredRows.push([]); bottom = target.bottom; }
+        else { bottom = Math.min(bottom, target.bottom); }
+        measuredRows[measuredRows.length - 1].push(target);
+      });
+      measuredRows.forEach((items, rowIndex) => {
+        items.sort((a, b) => a.left - b.left);
+        items.forEach((target, columnIndex) => keys.set(target.key, [rowIndex, columnIndex]));
       });
       rows = measuredRows;
     }
@@ -63,7 +69,7 @@ export const createNavigation = (onFocus: (element: HTMLElement) => void): Navig
     current: () => currentTarget()?.node,
     clear: () => focused.set(undefined),
     invalidate: () => { rows = undefined; },
-    select: key => { selected = key; },
+    select: key => { selected = key; focused.set(key); },
     reset: key => { focused.set(undefined); row = column = 0; selected = key; rows = undefined; },
     move: direction => {
       currentTarget(); selected = undefined;

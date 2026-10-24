@@ -1,6 +1,6 @@
-// Run with playwright-cli run-code --filename tests/settings_ui.browser.js.
+// Run by npm run test:browser against the baseline and compiled launcher.
 // This uses real browser rendering and DOM key events, with weather requests mocked.
-async (page) => {
+const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
   const preactUrl = page.url();
   const results = [];
   const errors = [];
@@ -12,7 +12,7 @@ async (page) => {
     body: JSON.stringify({ latitude: 0, longitude: 0, city: 'Test location', country_code: 'GB',
       current: { temperature_2m: 20, weather_code: 0 }, results: [] }) }));
   for (const variant of ['baseline', 'preact']) {
-    await page.goto(variant === 'preact' ? preactUrl : 'http://127.0.0.1:8020/');
+    await page.goto(variant === 'preact' ? preactUrl : baselineUrl);
     await page.evaluate(() => { localStorage.clear(); });
     await page.reload();
     await page.waitForFunction(() => window.AeroTizen && AeroTizen.apps.all.length > 0);
@@ -131,7 +131,7 @@ async (page) => {
     }, variant);
     results.push(check);
     await page.evaluate(() => AeroTizen.settingsUi.open());
-    await page.screenshot({ path: '/private/tmp/aerotizen-preact-settings-' + variant + '.png' });
+    await page.screenshot({ path: screenshotPath(variant) });
     await page.reload();
     if (!(await page.evaluate(() => AeroTizen.settings.timeFormat === '24' && AeroTizen.settings.weatherShowLocation === false))) {
       throw new Error(variant + ': settings did not survive reload');
@@ -206,4 +206,6 @@ async (page) => {
   });
   if (errors.length) throw new Error(JSON.stringify(errors));
   return { results, artwork, lifecycle, runtimeErrors: errors };
-}
+};
+
+module.exports = { runSettingsUi };

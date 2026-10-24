@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { loadTypeScript } = require('./helpers/load_typescript.cjs');
 const { createNavigation } = loadTypeScript('launcher/src/shared/navigation/createNavigation.ts');
 
-const element = (top, left) => ({ offsetParent: {}, offsetTop: top, offsetLeft: left });
+const element = (top, left, height = 50) => ({ offsetParent: {}, offsetTop: top, offsetLeft: left, offsetHeight: height });
 
 test('navigation publishes a focus key and follows registered visual rows without writing DOM', () => {
   const a = element(0, 0), b = element(0, 100), c = element(100, 0), d = element(200, 0);
@@ -31,5 +31,20 @@ test('navigation publishes a focus key and follows registered visual rows withou
   assert.equal(nav.focus(), undefined);
   nav.move('up'); nav.move('down'); assert.equal(nav.current(), undefined);
   assert.ok(scrolled.length > 0);
+  const focusCalls = scrolled.length;
+  nav.select('pointer');
+  assert.equal(nav.getSnapshot(), 'pointer', 'pointer selection publishes focus styling');
+  assert.equal(scrolled.length, focusCalls, 'selection does not request browser focus or scrolling');
   unsubscribe();
+});
+
+test('navigation groups vertically centred controls of different heights in left-to-right order', () => {
+  const first = element(0, 0), speed = element(101, 0, 62), preview = element(100, 900, 64), next = element(200, 0);
+  const nav = createNavigation(() => {});
+  for (const [key, node] of [['first', first], ['preview', preview], ['speed', speed], ['next', next]]) nav.register(key, node);
+  nav.reset('first'); nav.focus();
+  nav.move('down'); assert.equal(nav.current(), speed);
+  nav.move('right'); assert.equal(nav.current(), preview);
+  nav.move('down'); assert.equal(nav.current(), next);
+  nav.move('up'); assert.equal(nav.current(), speed);
 });

@@ -7,9 +7,9 @@ export interface LauncherRuntime {
   settings: SettingsSource;
   clock: Clock;
   network: { updateVisibility(): void };
-  inputs: { sources: InputSource[]; portName(source: InputSource): string; render(): void };
+  inputs: { sources: InputSource[]; portName(source: InputSource): string; render(): void; subscribe(listener: () => void): () => void };
   homeScreen: { render(): void };
-  apps: { all: InstalledApp[]; openStore(): void };
+  apps: { all: InstalledApp[]; openStore(): void; subscribe(listener: () => void): () => void };
   homewatch: { useSamsungHome(): void };
   tiles: { describe(app: InstalledApp): AppPresentation };
   settingsUi: SettingsBridge;

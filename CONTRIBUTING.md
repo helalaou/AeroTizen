@@ -23,6 +23,8 @@ npm run lint
 npm run typecheck  # strict TypeScript checks for Settings and Vite config
 npm run build      # type checks, then compiled Settings in dist/launcher
 npm test           # launcher tests: tests/*.test.cjs, run in a Node sandbox
+npx playwright install chromium # once per Playwright version; CI also installs OS dependencies
+npm run test:browser # compiled Settings and legacy comparison, with managed local servers
 ```
 
 Use Node.js 22.12 or newer, or Node 20.19+ within the 20.x series, as required by Vite.
@@ -39,6 +41,7 @@ relaunch cancellation and app visibility, without contacting a TV.
 | `launcher/src/settings/sections/` | Settings sections with their own controls and hooks |
 | `launcher/src/shared/` | Store subscriptions, ref-based navigation and reusable lifecycle hooks |
 | `launcher/src/shared/icons/` | SVG icon components, one per TSX file |
+| `tests/browser/` | Playwright regression checks at the TV's 1920×1080 viewport |
 | `vite.config.mts` | Official Preact preset, dev server and TV bundle settings |
 | `dist/launcher/` | Generated TV runtime with compiled Settings; no Node needed on TV |
 | `launcher/js/config.js` | Launcher behaviour and settings |

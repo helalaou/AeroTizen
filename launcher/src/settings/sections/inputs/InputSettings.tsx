@@ -1,8 +1,8 @@
 import { Choice } from '../../components/Choice';
 import { InputName } from './InputName';
-import type { SettingsSectionProps, SettingsServices } from '../../types';
+import type { InputOption, SettingsSectionProps } from '../../types';
 
-interface Props extends SettingsSectionProps { inputs: ReturnType<SettingsServices['getInputs']> }
+interface Props extends SettingsSectionProps { inputs: readonly InputOption[] }
 
 export const InputSettings = ({ settings, actions, inputs }: Props) => (
   <>

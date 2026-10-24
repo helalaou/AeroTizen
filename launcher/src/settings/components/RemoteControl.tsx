@@ -22,7 +22,7 @@ export const RemoteControl = ({ focusKey, class: className = '', onClick, onFocu
   useLayoutEffect(() => {
     if (focused) { focusControl(ref.current); }
   }, [focused]);
-  const select = () => flushSync(() => { navigation.select(focusKey); navigation.focus(); });
+  const select = () => flushSync(() => navigation.select(focusKey));
   return <div {...props} ref={register} data-key={focusKey} tabIndex={focused ? 0 : -1}
     onClick={event => { select(); onClick?.(event); }}
     onFocusCapture={event => { select(); onFocusCapture?.(event); }}

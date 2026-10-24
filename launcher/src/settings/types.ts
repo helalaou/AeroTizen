@@ -31,6 +31,12 @@ export interface SettingsStore extends Store<SettingsSnapshot> {
   dispose(): void;
 }
 export interface InstalledApp { id: string; name: string; icon?: string; storeId?: string }
+export interface InputOption { readonly port: string; readonly placeholder?: string }
+export interface SettingsInventorySnapshot {
+  readonly apps: readonly Readonly<InstalledApp>[];
+  readonly inputs: readonly InputOption[];
+}
+export interface SettingsInventory extends Store<SettingsInventorySnapshot> { dispose(): void }
 export interface Background { id: string; name: string; anim?: string }
 export interface BackgroundOption extends Background { preview: string }
 export interface Clock {
@@ -56,8 +62,6 @@ export interface SettingsServices {
   config: LauncherConfig;
   clock: Omit<Clock, 'tick'>;
   backgrounds: readonly BackgroundOption[];
-  getApps(): readonly InstalledApp[];
-  getInputs(): readonly { port: string; placeholder?: string }[];
   describeApp(app: InstalledApp): AppPresentation;
   searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): () => void;
   applyBackground(): void; applySpeed(speed: number): void; applyClock(): void;
@@ -76,7 +80,7 @@ export interface SettingsActions {
   saveInputName(port: string, value: string): void; toggleApp(id: string): void;
   openStore(): void; useSamsungHome(): void; preview(): void;
 }
-export interface ViewState { open: boolean; previewing: boolean; mounted: boolean }
+export interface ViewState { open: boolean; previewing: boolean; mounted: boolean; openedAt: number }
 export interface NavigationHandlers {
   focus(): void; blur(): void; keydown(code: number, event: Pick<KeyboardEvent, 'preventDefault'>): void;
 }
@@ -86,7 +90,7 @@ export interface SettingsBridge {
   register(handlers: NavigationHandlers): () => void;
 }
 export interface SettingsEnvironment {
-  settings: SettingsStore; view: MutableStore<ViewState>; services: SettingsServices;
+  settings: SettingsStore; inventory: SettingsInventory; view: MutableStore<ViewState>; services: SettingsServices;
   actions: SettingsActions; bridge: SettingsBridge; navigation: Navigation;
   root: RefObject<HTMLDivElement>;
 }

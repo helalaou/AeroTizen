@@ -47,6 +47,10 @@ CSS behaviour or physical TV compatibility.
   Its small `subscribe` API publishes saves and loads, including changes made by legacy
   modules. Unchanged snapshots and nested values retain their identity. Actions use
   named commands and replace arrays/maps; components do not write storage.
+- `settings/services/createSettingsInventory.ts` subscribes to app discovery and input
+  changes. It publishes cached immutable lists, so a late TV callback or hot-plug update
+  reaches the open or cached Settings form without a preference change. Matching lists
+  retain identity; the composition root disposes both subscriptions on replacement.
 - `settings/services/createSettingsServices.ts` adapts the existing TV and launcher
   operations. It exposes data and commands, including data-only app branding. Only
   this boundary calls unmigrated services. The weather adapter can cancel callback
@@ -64,8 +68,19 @@ CSS behaviour or physical TV compatibility.
   from the selected key in context. Its ref callback registers the control with the
   navigation engine. Layout reads these registered nodes, including wrapped and hidden
   controls; there are no DOM selector lists or imperative focus-class repairs.
+  Rows use vertical overlap, so centred controls with different heights stay together.
   Arrow keys update focus state and rerender the control hosts. App artwork and section
   components do not need to rerender for focus changes.
+  Pointer focus selects a key without remote scrolling, so a click cannot move its target
+  between pointer-down and pointer-up. Space uses the button activation command;
+  text fields retain native space entry. TV arrow, OK and IME handling remain in the router.
+- Navigation remeasures when the screen opens, preview visibility or section layout
+  changes, inventory changes, weather results/status change, or the viewport resizes.
+  Unrelated preference updates reuse the geometry cache. Open/close commands keep their
+  store updates and browser-focus work within one synchronous integration transaction.
+- Date/time examples use a timestamp captured by the open command. They stay stable
+  during that opening and refresh on the next opening, without a timer or wall-clock
+  reads during rendering.
 - Preact owns all markup inside `#settings-root`, including classes, attributes,
   children, the sheet and app artwork. The data-only branding helper in `brands.js`
   reuses existing brand rules. Refs handle browser focus, blur, scrolling, measurements
@@ -128,6 +143,8 @@ npm run lint
 npm run typecheck
 npm run build
 npm test
+npx playwright install chromium
+npm run test:browser
 npm run dev
 ```
 
@@ -137,18 +154,20 @@ Use `dist/launcher/` when testing the compiled app. An installation of `launcher
 the legacy baseline. Use a modern desktop browser for Vite development; use the production
 build for TV compatibility checks.
 
-Browser comparisons use separate static servers for the baseline and production build.
-Run the servers in separate terminals after building. The browser scripts test the
-Preact URL opened by the caller, so they can also check Vite at port 8019.
+`npm run test:browser` builds the launcher and runs the pinned Playwright runner.
+It starts and stops baseline/production static servers on loopback ports 8170/8171.
+Each test gets a separate browser context at 1920×1080. CI installs Chromium with its
+OS dependencies and runs the same command. Failure screenshots and traces are saved
+under ignored `test-results/` and uploaded by CI; comparison screenshots are test artifacts.
+
+The separate performance sample remains a manual desktop comparison. Start these
+servers in separate terminals after building:
 
 ```sh
 python3 -m http.server 8020 --bind 127.0.0.1 --directory launcher
 python3 -m http.server 8032 --bind 127.0.0.1 --directory dist/launcher
 npx --package @playwright/cli playwright-cli -s=settings open http://127.0.0.1:8032
 npx --package @playwright/cli playwright-cli -s=settings resize 1920 1080
-npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_ui.browser.js
-npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_resources.browser.js
-npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_focus.browser.js
 npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_performance.browser.js > /tmp/settings-performance.log
 ```
 
@@ -162,6 +181,9 @@ Fixtures wait for the initial paint and passive subscriptions before driving the
 rapid interactions within each fixture still exercise synchronous remote transactions.
 The focus check also uses real browser arrow, Enter and Escape events and checks native
 focus after text entry.
+Regression cases also cover first pointer activation, Space without consuming input
+spaces, stable date previews, zero geometry reads for an unrelated clock setting, and
+late TV discovery/hot-plug callbacks while preserving an active text draft.
 These are fixed-resolution TV screens; mobile layout is not part of this migration.
 
 ## Desktop measurements: 24 October 2026
@@ -173,12 +195,12 @@ heap is measured after garbage collection with Settings open.
 
 | Measurement | Legacy | Preact |
 |---|---:|---:|
-| First open, median synchronous work | 3.6 ms | 7.2 ms |
-| Reopen, median synchronous work | 1.2 ms | 1.7 ms |
-| Clock change, median synchronous work | 1.3 ms | 1.0 ms |
-| Arrow event, p95 synchronous work | 0.1 ms | 0.3 ms |
-| Retained JavaScript heap, median | 1.85 MiB | 2.59 MiB |
-| Settings script, including Preact | 14,540 bytes | 38,466 bytes |
+| First open, median synchronous work | 3.7 ms | 7.4 ms |
+| Reopen, median synchronous work | 1.6 ms | 1.3 ms |
+| Clock change, median synchronous work | 1.7 ms | 0.9 ms |
+| Arrow event, p95 synchronous work | 0.2 ms | 0.5 ms |
+| Retained JavaScript heap, median | 1.85 MiB | 2.60 MiB |
+| Settings script, including Preact | 14,540 bytes | 39,444 bytes |
 
 Rendering focus state and native focus events adds work compared with direct class
 writes. It also gives Preact full ownership of the rendered controls. The physical TV
