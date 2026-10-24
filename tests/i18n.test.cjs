@@ -111,3 +111,31 @@ test('the previously tested app menu and clock choices remain translatable', () 
   assert.equal(h.A.i18n.t('Thin'), 'Sottile');
   assert.equal(h.A.i18n.t('Bold'), 'Grassetto');
 });
+
+test('V992.56 artwork and photo-weather options localise without changing user data', () => {
+  const it = harness('it-IT', false);
+  const translations = {
+    'Weather wallpaper': 'Sfondo meteo',
+    'Off': 'Disattivato',
+    'Automatic (weather)': 'Automatico (meteo)',
+    'Home tile layout': 'Layout tessere Home',
+    'Apps per row': 'App per riga',
+    'App card shape': 'Forma delle tessere',
+    'Square': 'Quadrato',
+    'Rectangle': 'Rettangolo',
+    'Default': 'Predefinito',
+    '3 per row': '3 per riga',
+    '4 per row': '4 per riga',
+    '5 per row': '5 per riga'
+  };
+  for (const [english, italian] of Object.entries(translations)) {
+    assert.equal(it.A.i18n.t(english), italian, english);
+    assert.equal(it.A.i18n.label('card:option:' + english, english), italian);
+  }
+  assert.equal(it.A.i18n.label('name:HDMI 1', 'My Xbox'), 'My Xbox');
+  assert.equal(it.A.i18n.label('weather:result:0', 'Alghero, Sardinia'), 'Alghero, Sardinia');
+  const en = harness('en-GB', false);
+  for (const english of Object.keys(translations)) {
+    assert.equal(en.A.i18n.t(english), english);
+  }
+});
