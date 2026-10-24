@@ -215,8 +215,15 @@ window.Backgrounds = (function () {
 
   function hide() { if (layer) { layer.hidden = true; } }
 
+  // Unlike hide(), suspend also stops any canvas animation. A static
+  // photographic background should not burn GPU cycles behind the photo.
+  function suspend() {
+    clear();
+    if (layer) { layer.hidden = true; }
+  }
+
   // One multiplier for every animated background (0.5 = half speed, 2 = double).
   function setSpeed(m) { speed = m || 1; if (current) { apply(current); } }
 
-  return { list: LIST, preview: preview, apply: apply, hide: hide, setSpeed: setSpeed };
+  return { list: LIST, preview: preview, apply: apply, hide: hide, suspend: suspend, setSpeed: setSpeed };
 })();
