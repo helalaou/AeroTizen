@@ -20,8 +20,12 @@ def private_ipv4(value):
         address = ipaddress.ip_address(value)
     except ValueError as error:
         raise argparse.ArgumentTypeError("Expected a private TV IPv4 address") from error
-    if address.version != 4 or not address.is_private or address.is_loopback or address.is_link_local:
-        raise argparse.ArgumentTypeError("Expected a private TV IPv4 address")
+    # RFC 1918 only: ipaddress.is_private also includes special-use ranges
+    # such as documentation addresses, which are not home LAN destinations.
+    lan = [ipaddress.ip_network(net) for net in (
+        "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")]
+    if address.version != 4 or not any(address in block for block in lan):
+        raise argparse.ArgumentTypeError("Expected an RFC 1918 TV IPv4 address")
     return str(address)
 
 
