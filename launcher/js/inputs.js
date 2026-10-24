@@ -34,7 +34,9 @@
   inputs.isVisible = function (s) {
     if (s.type === 'TV') { return A.settings.showLiveTv !== false; }
     if (s.type !== 'HDMI' || A.settings.hideDisconnectedHdmi !== true) { return true; }
-    return s.connected === true || s.active === true || inputs.hasRecognizedDevice(s);
+    var manual = A.settings.hdmiKeepVisible || {};
+    return s.connected === true || s.active === true ||
+      inputs.hasRecognizedDevice(s) || manual[String(s.number)] === true;
   };
 
   inputs.render = function () {
