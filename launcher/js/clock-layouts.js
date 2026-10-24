@@ -1,93 +1,143 @@
-// Classic AeroTizen header and four optional custom clock styles.
-// Reuses the existing locale, weather and preference engines; no additional timer or API.
+// Port of the independently tested large clock, weather cache renderer, and
+// clock style selection. The original upstream header remains the default.
+// The source routines are adapted only where the upstream DOM/locale differs.
 (function (A) {
   'use strict';
+  var S = A.settings;
+  var widget = document.getElementById('aero-v991-widget');
+  if (!widget) { return; }
+  var hours = document.getElementById('aero-v991-hours');
+  var minutes = document.getElementById('aero-v991-minutes');
+  var date = document.getElementById('aero-v991-date');
+  var icon = document.getElementById('aero-v991-weather-icon');
+  var temp = document.getElementById('aero-v991-temp');
+  var condition = document.getElementById('aero-v991-condition');
+  var city = document.getElementById('aero-v991-city');
+  var weatherOrigin = document.getElementById('weather');
 
-  var LAYOUTS = ['classic', 'custom'];
-  var STYLES = ['vertical', 'horizontal', 'minimal', 'bold'];
-  var widget = document.getElementById('clock-custom-widget');
-  var digits = document.getElementById('clock-custom-digits');
-  var hours = document.getElementById('clock-custom-hours');
-  var minutes = document.getElementById('clock-custom-minutes');
-  var period = document.getElementById('clock-custom-period');
-  var date = document.getElementById('clock-custom-date');
-  var weather = document.getElementById('clock-custom-weather');
-  var nativeWeather = document.getElementById('weather');
-
-  function selected(value, allowed, fallback) {
-    return allowed.indexOf(value) >= 0 ? value : fallback;
+  // The same four styles and values used in the reference implementation.
+  var clockOptions = ['vertical', 'horizontal', 'minimal', 'bold'];
+  var clockLayouts = ['classic', 'custom'];
+  function clockSetting(key, allowed, fallback) {
+    return allowed.indexOf(S[key]) >= 0 ? S[key] : fallback;
   }
+  function applyClock() {
+    var t = clockSetting('aeroClockStyle', clockOptions, 'vertical');
+    widget.classList.remove('style-horizontal', 'style-minimal', 'style-bold');
+    if (t !== 'vertical') { widget.classList.add('style-' + t); }
+    document.body.classList.toggle('aero-clock-horizontal', t === 'horizontal');
+    var classic = clockSetting('clockLayout', clockLayouts, 'classic') === 'classic';
+    document.body.classList.toggle('s90c-clock-classic', classic);
+    widget.hidden = classic;
+    tick();
+    refreshWeather();
+  }
+  function tr(s) { return A.i18n && A.i18n.t ? A.i18n.t(s) : s; }
+  function p2(n) { return n < 10 ? '0' + n : String(n); }
 
-  function update() {
-    if (!widget || A.settings.clockLayout !== 'custom') { return; }
-    var S = A.settings, now = new Date();
-    var showTime = S.showTime !== false, showDate = S.dateFormat !== 'none';
-    digits.hidden = !showTime;
-    date.hidden = !showDate;
-    if (showTime) {
-      // Keep the TV's selected 12/24-hour convention and locale digits.
-      var formatted = A.clock.formatTime(now, S.timeFormat);
-      var parts = /^([^:\uFF1A\u066B]+)[:\uFF1A\u066B]([^\s]+)(.*)$/.exec(formatted);
-      hours.textContent = parts ? parts[1].trim() : formatted;
-      minutes.textContent = parts ? parts[2] : '';
-      period.textContent = parts ? parts[3].trim() : '';
-      minutes.hidden = !parts;
-      period.hidden = !parts || !parts[3].trim();
+  // Source clock update: time/date formatting remains owned by upstream.
+  function tick() {
+    if (S.clockLayout !== 'custom') { return; }
+    var now = new Date();
+    var timeFormat = S.timeFormat === '12' ? '12' : '24';
+    var dateFormat = S.dateFormat || 'long';
+    var time = A.clock && A.clock.formatTime ? A.clock.formatTime(now, timeFormat) :
+      (p2(now.getHours()) + ':' + p2(now.getMinutes()));
+    var match = /^([0-9]{1,2}):([0-9]{2})(?:\s*(am|pm))?$/i.exec(time);
+    var hh = match ? match[1] : p2(now.getHours());
+    var mm = match ? match[2] : p2(now.getMinutes());
+    var meridiem = match && match[3] ? match[3].toUpperCase() : '';
+    hours.textContent = hh;
+    minutes.textContent = mm;
+    if (meridiem) {
+      var marker = document.createElement('span');
+      marker.textContent = ' ' + meridiem;
+      marker.style.cssText = 'display:inline-block;font-size:.20em;line-height:1;'
+        + 'letter-spacing:0;margin-left:4px;font-weight:400;vertical-align:baseline;';
+      minutes.appendChild(marker);
     }
-    if (showDate) { date.textContent = A.clock.formatDate(now, S.dateFormat); }
-    syncWeather();
-    widget.hidden = !showTime && !showDate && weather.hidden;
+    var formattedDate = A.clock && A.clock.formatDate ? A.clock.formatDate(now, dateFormat) : '';
+    date.textContent = formattedDate;
+    date.style.display = formattedDate && S.dateFormat !== 'none' ? '' : 'none';
+    hours.style.display = minutes.style.display = S.showTime === false ? 'none' : '';
+    widget.hidden = S.showTime === false && (S.dateFormat === 'none') && S.showWeather === false;
   }
 
-  function syncWeather() {
-    if (!widget || !nativeWeather) { return; }
-    var show = A.settings.showWeather !== false && !nativeWeather.hidden;
-    weather.hidden = !show;
-    if (!show) { weather.textContent = ''; return; }
-    // Weather remains owned by the upstream renderer. Copy the visible artwork,
-    // temperature and optional city rather than issuing separate network calls.
-    weather.textContent = '';
-    for (var i = 0; i < nativeWeather.childNodes.length; i++) {
-      weather.appendChild(nativeWeather.childNodes[i].cloneNode(true));
+  // Same WMO code mapping as the reference widget, with English labels
+  // because English is the upstream source language.
+  function describe(c) {
+    if (c === 0) { return 'Clear'; }
+    if (c === 1) { return 'Mainly clear'; }
+    if (c === 2) { return 'Partly cloudy'; }
+    if (c === 3) { return 'Cloudy'; }
+    if (c === 45 || c === 48) { return 'Fog'; }
+    if (c >= 51 && c <= 57) { return 'Drizzle'; }
+    if (c >= 61 && c <= 67) { return 'Rain'; }
+    if ((c >= 71 && c <= 77) || c === 85 || c === 86) { return 'Snow'; }
+    if (c >= 80 && c <= 82) { return 'Showers'; }
+    if (c >= 95 && c <= 99) { return 'Thunderstorm'; }
+    return 'Weather';
+  }
+  // Directly uses the reference implementation's existing Open-Meteo cache
+  // validation rather than cloning or re-requesting the upstream weather UI.
+  function refreshWeather() {
+    if (S.clockLayout !== 'custom') { return; }
+    var value = null;
+    try { value = JSON.parse(localStorage.getItem('aerotizen.weather.v2') || 'null'); }
+    catch (e) {}
+    var g = S.weatherLocation;
+    var source = g && g.name && typeof g.latitude === 'number' && typeof g.longitude === 'number'
+      ? JSON.stringify([g.latitude, g.longitude, g.name, g.country_code]) : 'auto';
+    var unit = S.tempUnit === 'C' || S.tempUnit === 'F' ? S.tempUnit : 'auto';
+    if (!value || value.source !== source || value.unit !== unit ||
+        typeof value.at !== 'number' || Date.now() - value.at > 7200000 || Date.now() < value.at) {
+      value = null;
     }
+    var displayWeather = S.showWeather !== false;
+    var parent = icon.parentNode;
+    parent.style.display = displayWeather ? '' : 'none';
+    city.style.display = displayWeather && S.weatherShowLocation !== false ? '' : 'none';
+    if (!displayWeather) { return; }
+    if (!value || !isFinite(Number(value.temp))) {
+      temp.textContent = '--°';
+      condition.textContent = tr('Weather unavailable');
+      city.textContent = '';
+      icon.textContent = '';
+      return;
+    }
+    temp.textContent = Math.round(Number(value.temp)) + '°';
+    condition.textContent = tr(describe(Number(value.code)));
+    var oldIcon = weatherOrigin && weatherOrigin.querySelector('svg');
+    icon.textContent = '';
+    if (oldIcon) { icon.appendChild(oldIcon.cloneNode(true)); }
+    city.textContent = S.weatherShowLocation === false ? '' : String(value.city || '');
   }
-
-  function apply() {
-    if (!widget) { return; }
-    var layout = selected(A.settings.clockLayout, LAYOUTS, 'classic');
-    var style = selected(A.settings.aeroClockStyle, STYLES, 'vertical');
-    document.body.classList.toggle('clock-custom', layout === 'custom');
-    widget.className = 'clock-custom-widget style-' + style;
-    widget.hidden = layout !== 'custom';
-    update();
+  function chooseLayout(value) {
+    S.clockLayout = clockLayouts.indexOf(value) >= 0 ? value : 'classic';
+    S.save();
+    applyClock();
   }
-
-  function chooseLayout(layout) {
-    A.settings.clockLayout = selected(layout, LAYOUTS, 'classic');
-    A.settings.save();
-    apply();
+  function chooseStyle(value) {
+    S.aeroClockStyle = clockOptions.indexOf(value) >= 0 ? value : 'vertical';
+    S.save();
+    applyClock();
   }
-
-  function chooseStyle(style) {
-    A.settings.aeroClockStyle = selected(style, STYLES, 'vertical');
-    A.settings.save();
-    apply();
-  }
-
   A.clockLayouts = {
-    LAYOUTS: LAYOUTS,
-    STYLES: STYLES,
-    apply: apply,
-    update: update,
+    LAYOUTS: clockLayouts,
+    STYLES: clockOptions,
+    apply: applyClock,
+    update: function () { tick(); },
+    refreshWeather: refreshWeather,
     chooseLayout: chooseLayout,
     chooseStyle: chooseStyle
   };
-
-  if (nativeWeather && window.MutationObserver) {
-    var observer = new window.MutationObserver(function () { update(); });
-    observer.observe(nativeWeather, {
-      childList: true, subtree: true, characterData: true,
-      attributes: true, attributeFilter: ['hidden']
+  if (weatherOrigin && window.MutationObserver) {
+    var observer = new window.MutationObserver(function () { refreshWeather(); });
+    observer.observe(weatherOrigin, {
+      childList: true, subtree: true, attributes: true, attributeFilter: ['hidden']
     });
   }
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) { tick(); refreshWeather(); }
+  });
 })(window.AeroTizen);
