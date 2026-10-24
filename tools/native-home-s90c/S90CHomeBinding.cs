@@ -138,6 +138,24 @@ internal static class S90CHomeBinding
             throw new InvalidOperationException("STOP: final state does not match reference");
     }
 
+    // The original Stage 6.1 helper attempts a bounded reversal if a
+    // two-key apply partially succeeds. Keep this safety property here.
+    // An unknown or externally modified state must remain untouched.
+    static void UndoPartialWrite()
+    {
+        Snapshot s = Read();
+        if (!OtherKeysUnmodified(s) ||
+            (s.Main != Samsung && s.Main != Aero) ||
+            (s.Home != Samsung && s.Home != Aero))
+            throw new InvalidOperationException(
+                "Cannot safely undo: state is unknown or other keys changed");
+        if (s.Main != Samsung) WriteOperation(Samsung);
+        if (s.Home != Samsung) WriteKey(Samsung);
+        if (!Original(Read()))
+            throw new InvalidOperationException(
+                "Original Samsung Home read-back incomplete after undo");
+    }
+
     public static int Main(string[] args)
     {
         bool attemptedWrite = false;
@@ -178,7 +196,19 @@ internal static class S90CHomeBinding
         } catch (Exception error) {
             Console.Error.WriteLine("STOP: " + error.GetType().Name + ": " + error.Message);
             if (attemptedWrite)
-                Console.Error.WriteLine("State might be partially modified: query and use separately validated private recovery; do not re-apply.");
+            {
+                try
+                {
+                    UndoPartialWrite();
+                    Console.Error.WriteLine("S90C_AUTO_UNDO_VERIFIED");
+                }
+                catch (Exception undoError)
+                {
+                    Console.Error.WriteLine("S90C_AUTO_UNDO_UNCERTAIN: " + undoError.Message);
+                    Console.Error.WriteLine(
+                        "Use separately validated private recovery. Do not retry apply blindly.");
+                }
+            }
             return 1;
         }
     }
