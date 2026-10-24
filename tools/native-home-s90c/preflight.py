@@ -5,6 +5,7 @@ Never installs, stages, launches or runs any native helper. It does not
 write settings. The firmware and native original-state still need independent
 verification; successful preflight is NOT permission to apply.
 """
+
 import argparse
 import ipaddress
 import json
@@ -14,9 +15,9 @@ import urllib.request
 MODEL = "QE65S90CATXZT"
 # Restrict probing to RFC 1918 LAN addresses. ipaddress.is_private also
 # accepts special-use/documentation ranges, which are not private home LANs.
-RFC1918_NETWORKS = tuple(ipaddress.ip_network(net) for net in (
-    "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"
-))
+RFC1918_NETWORKS = tuple(
+    ipaddress.ip_network(net) for net in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")
+)
 CAPS = {
     "cpu_arch": "armv7",
     "architecture": "32",
@@ -57,6 +58,7 @@ def probe(host):
         payload = json.load(response)
     model = check_model(payload.get("device") if isinstance(payload, dict) else None)
     from aerotizen.sdb import Sdb
+
     with Sdb(host, timeout=9) as device:
         check_capabilities(device.capability())
     return {
@@ -76,8 +78,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Read-only Samsung S90C HOME preflight. Does not modify the TV."
     )
-    parser.add_argument("--host", type=check_host, required=True,
-                        help="private IPv4 address of the owner's Samsung S90C")
+    parser.add_argument(
+        "--host", type=check_host, required=True, help="private IPv4 address of the owner's Samsung S90C"
+    )
     args = parser.parse_args(argv)
     try:
         print(json.dumps(probe(args.host), indent=2))
