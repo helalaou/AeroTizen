@@ -1,4 +1,5 @@
 """Read-only device compatibility tests; all network and SDB calls are mocked."""
+
 import argparse
 import importlib.util
 import unittest
@@ -14,18 +15,26 @@ class NativeHomePreflightTests(unittest.TestCase):
     def test_private_ipv4_only(self):
         for host in ["192.168.1.88", "10.20.30.40", "172.31.255.254"]:
             self.assertEqual(preflight.check_host(host), host)
-        for host in ["127.0.0.1", "8.8.8.8", "169.254.1.3",
-                     "192.0.2.1", "198.51.100.2", "203.0.113.8",
-                     "100.64.0.1", "172.32.0.4", "240.0.0.1",
-                     "example.org", "2001:db8::1", ""]:
+        for host in [
+            "127.0.0.1",
+            "8.8.8.8",
+            "169.254.1.3",
+            "192.0.2.1",
+            "198.51.100.2",
+            "203.0.113.8",
+            "100.64.0.1",
+            "172.32.0.4",
+            "240.0.0.1",
+            "example.org",
+            "2001:db8::1",
+            "",
+        ]:
             with self.subTest(host=host), self.assertRaises(argparse.ArgumentTypeError):
                 preflight.check_host(host)
 
     def test_exact_model(self):
-        self.assertEqual(
-            preflight.check_model({"modelName": "QE65S90CATXZT"}), preflight.MODEL)
-        for device in [None, {}, {"modelName": "QE65S95CATXZT"},
-                       {"modelName": "QE65S90CATXZT-modded"}]:
+        self.assertEqual(preflight.check_model({"modelName": "QE65S90CATXZT"}), preflight.MODEL)
+        for device in [None, {}, {"modelName": "QE65S95CATXZT"}, {"modelName": "QE65S90CATXZT-modded"}]:
             with self.subTest(device=device), self.assertRaises(RuntimeError):
                 preflight.check_model(device)
 
