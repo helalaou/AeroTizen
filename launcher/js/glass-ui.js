@@ -233,6 +233,8 @@
     if (!item || !state.built) { return; }
     var inMenu = !!(item.dataset && item.dataset.sectionMenu);
     var scroller = inMenu ? state.menu : state.scroll;
+    // All sidebar entries normally fit: avoid a forced layout on each arrow.
+    if (inMenu && scroller.scrollHeight <= scroller.clientHeight) { return; }
     var child = item.getBoundingClientRect();
     var outer = scroller.getBoundingClientRect();
     var topInset = inMenu ? 22 : 76;

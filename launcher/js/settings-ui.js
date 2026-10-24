@@ -41,7 +41,15 @@
       sw.style.background = window.Backgrounds.preview(b);
       sw.appendChild(A.el('span', '', b.name));
       sw.dataset.key = 'bg:' + b.id;
-      sw.onclick = function () { S.background = b.id; changed(A.applyBackground); };
+      sw.onclick = function () {
+        S.background = b.id;
+        // Selecting a concrete background leaves automatic weather-photo mode.
+        if (A.photoWeather) { S.weatherPhoto = false; }
+        changed(function () {
+          A.applyBackground();
+          if (window.Weather.updateVisibility) { window.Weather.updateVisibility(); }
+        });
+      };
       (b.anim ? anim : still).appendChild(sw);
       if (b.id === S.background) { selected = b; }
     });
@@ -239,6 +247,7 @@
     renderVisibility('network-visibility', 'showNetwork', ['Show', 'Hide'], A.network.updateVisibility);
     renderCardSizes(); renderInputVisibility(); renderInputNames(); renderAppMenu();
     if (A.glassUI && A.glassUI.refreshLabels) { A.glassUI.refreshLabels(); }
+    if (A.wallpapers) { A.wallpapers.refresh(); }
     focus();
   }
 

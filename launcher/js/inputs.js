@@ -25,7 +25,7 @@
       return sourceIcon('<rect x="3.5" y="5.5" width="17" height="12.5" rx="2"/>' +
         '<path d="M8 21h8M12 18v3"/>');
     }
-    if (/xbox|playstation|ps\\d|switch|nintendo|game|console/.test(n)) {
+    if (/xbox|playstation|ps\d|switch|nintendo|game|console/.test(n)) {
       return sourceIcon('<path d="M7.5 8h9a3.5 3.5 0 0 1 3.4 2.8l1 5a2 2 0 0 1-3.3 1.9L15 15H9l-2.6 2.7a2 2 0 0 1-3.3-1.9l1-5A3.5 3.5 0 0 1 7.5 8z"/>' +
         '<path d="M7.5 10.5v4m-2-2h4"/><circle cx="15.5" cy="11.2" r=".7" fill="currentColor" stroke="none"/><circle cx="17.5" cy="13.1" r=".7" fill="currentColor" stroke="none"/>');
     }
