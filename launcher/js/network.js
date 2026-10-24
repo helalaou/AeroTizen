@@ -22,7 +22,7 @@
   function show(kind, strength) {
     var el = A.$('network');
     el.innerHTML = kind === 'ethernet' ? ICONS.ethernet : kind === 'offline' ? ICONS.offline : wifi(strength);
-    el.setAttribute('aria-label', kind === 'ethernet' ? 'Ethernet' : kind === 'offline' ? 'Offline' : 'Wi-Fi');
+    el.setAttribute('aria-label', kind === 'ethernet' ? 'Ethernet' : kind === 'offline' ? A.i18n.t('Offline') : 'Wi-Fi');
     el.classList.toggle('offline', kind === 'offline');
   }
 

@@ -37,10 +37,19 @@
   });
 
   document.addEventListener('visibilitychange', function () {
-    if (!document.hidden) { A.clock.tick(); A.inputs.load(); }
+    if (!document.hidden) { A.i18n.refresh(); A.clock.tick(); A.inputs.load(); }
   });
 
   // ---- boot ----------------------------------------------------------------------
+  var launcherReady = false;
+  A.i18n.start(function () {
+    A.clock.tick();
+    if (!launcherReady) { return; }
+    if (A.settingsUi.isOpen()) { A.settingsUi.render(); }
+    A.homeScreen.render();
+    A.inputs.render();
+    window.Weather.updateDisplay();
+  });
   A.settings.load();
   A.applyBackground();
   A.clock.start();
@@ -49,6 +58,7 @@
   A.apps.load(function () {
     if (A.settings.home === null) { A.settings.home = A.apps.defaultHome(); A.settings.save(); }
     A.homeScreen.render();
+    launcherReady = true;
     A.inputs.load();
     A.homewatch.start();
     setTimeout(function () { A.homewatch.reportApps(A.apps.realIds); }, 1500);

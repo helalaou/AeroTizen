@@ -9,7 +9,7 @@
   var weatherQuery = '', weatherResults = [], weatherMessage = '', weatherSearchVersion = 0;
 
   function pill(key, text, selected, onSelect) {
-    var p = A.el('div', 'pill unit' + (selected ? ' on' : ''), text);
+    var p = A.el('div', 'pill unit' + (selected ? ' on' : ''), A.i18n.label(key, text));
     p.dataset.key = key;
     p.onclick = onSelect;
     return p;
@@ -39,7 +39,7 @@
     window.Backgrounds.list.forEach(function (b) {
       var sw = A.el('div', 'swatch' + (b.id === S.background ? ' on' : ''));
       sw.style.background = window.Backgrounds.preview(b);
-      sw.appendChild(A.el('span', '', b.name));
+      sw.appendChild(A.el('span', '', A.i18n.t(b.name)));
       sw.dataset.key = 'bg:' + b.id;
       sw.onclick = function () { S.background = b.id; changed(A.applyBackground); };
       (b.anim ? anim : still).appendChild(sw);
@@ -53,7 +53,7 @@
     var pct = (S.speed - cfg.SPEED.MIN) / (cfg.SPEED.MAX - cfg.SPEED.MIN) * 100;
     var slider = A.el('div', 'slider');
     slider.dataset.key = 'speed';
-    slider.innerHTML = '<span class="slider-label">Speed</span><div class="track"><div class="fill"></div><div class="thumb"></div></div>' +
+    slider.innerHTML = '<span class="slider-label">' + A.i18n.t('Speed') + '</span><div class="track"><div class="fill"></div><div class="thumb"></div></div>' +
                        '<span class="slider-value"></span><span class="slider-hint">◀ ▶</span>';
     slider.querySelector('.fill').style.width = pct + '%';
     slider.querySelector('.thumb').style.left = pct + '%';
@@ -69,7 +69,7 @@
 
   function renderWeatherResults() {
     var box = A.$('weather-results'), status = A.$('weather-search-status');
-    status.textContent = weatherMessage; status.hidden = !weatherMessage;
+    status.textContent = A.i18n.t(weatherMessage); status.hidden = !weatherMessage;
     box.textContent = ''; box.hidden = !weatherResults.length;
     weatherResults.forEach(function (geo, i) {
       box.appendChild(pill('weather:result:' + i, geo.label, false, function () {
@@ -102,8 +102,8 @@
     renderVisibility('weather-display', 'showWeather', ['Show weather', 'Hide weather'], window.Weather.updateVisibility);
     var box = A.$('weather-location'), visibility = A.$('weather-visibility');
     A.$('weather-location-summary').textContent = S.weatherLocation ?
-      'Location: ' + (S.weatherLocation.label || S.weatherLocation.name) :
-      'Automatic location uses your internet address and can be inaccurate. Search for your town, city or postcode to set it.';
+      A.i18n.t('Location: ') + (S.weatherLocation.label || S.weatherLocation.name) :
+      A.i18n.t('Automatic location uses your internet address and can be inaccurate. Search for your town, city or postcode to set it.');
     box.textContent = ''; visibility.textContent = '';
     box.appendChild(pill('weather:auto', 'Automatic', !S.weatherLocation, function () {
       S.weatherLocation = null;
@@ -114,8 +114,8 @@
     var search = A.el('div', 'pill unit name-pill weather-search'), field = A.el('input');
     search.dataset.key = 'weather:query';
     field.type = 'text'; field.maxLength = 80; field.value = weatherQuery;
-    field.placeholder = 'Town, city or postcode';
-    field.setAttribute('aria-label', 'Weather location');
+    field.placeholder = A.i18n.t('Town, city or postcode');
+    field.setAttribute('aria-label', A.i18n.t('Weather location'));
     field.oninput = function () {
       weatherQuery = field.value;
       weatherSearchVersion++; weatherResults = []; weatherMessage = '';
@@ -193,7 +193,7 @@
       var field = A.el('input');
       field.type = 'text'; field.maxLength = 24;
       field.value = S.inputNames[port] || '';
-      field.placeholder = s.editName || 'Add a name';
+      field.placeholder = s.editName || A.i18n.t('Add a name');
       field.onchange = field.onblur = function () {
         var v = field.value.trim();
         if (v) { S.inputNames[port] = v; } else { delete S.inputNames[port]; }
@@ -211,13 +211,13 @@
     box.textContent = '';
     var add = A.el('div', 'tile addapps');
     add.dataset.key = 'add';
-    add.innerHTML = A.tiles.ICONS.plus + '<div class="name">Add apps<div class="sub">Samsung app store</div></div>';
+    add.innerHTML = A.tiles.ICONS.plus + '<div class="name">' + A.i18n.t('Add apps') + '<div class="sub">' + A.i18n.t('Samsung app store') + '</div></div>';
     add.onclick = A.apps.openStore;
     box.appendChild(add);
     [{ id: cfg.FIREPLACE_ID, name: 'Fireplace' }].concat(A.apps.all).forEach(function (app) {
       var tile;
       if (app.id === cfg.FIREPLACE_ID) {
-        tile = A.tiles.card(app.name, A.tiles.ICONS.flame);
+        tile = A.tiles.card(A.i18n.t('Fireplace'), A.tiles.ICONS.flame);
         tile.classList.add('fire');
       } else {
         tile = A.tiles.app(app);
@@ -320,5 +320,5 @@
     A.homeScreen.render();
   }
 
-  A.settingsUi = { open: openSheet, close: close, isOpen: function () { return open; }, focus: focus, keydown: keydown };
+  A.settingsUi = { open: openSheet, close: close, render: render, isOpen: function () { return open; }, focus: focus, keydown: keydown };
 })(window.AeroTizen);
