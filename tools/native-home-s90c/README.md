@@ -6,6 +6,12 @@ This folder contains **source code only** for the S90C-specific native HOME bind
 
 On the tested Samsung S90C, physical remote HOME was assigned to `DclHome001.Home` by **two native system settings**, independently of the HomeWatcher JavaScript service. See [the technical explanation](../../docs/physical-home-s90c.md).
 
+## Other Samsung models and firmware
+
+The **method is not confined to the S90C**. Comparable physical HOME remapping has been reported on Tizen 6.5 Q70B and Tizen 9.0 Frame TVs, but their original native values and rollback assumptions differ. See [the compatibility matrix](../../docs/native-home-compatibility.md). 
+
+To identify an additional TV without native writes, use the separate [read-only compatibility survey](../native-home-compatibility/survey.py). **Do not remove this S90C helper's exact firmware guard to test a different TV.** Device-specific write and restore validation remain necessary.
+
 ## Scope and gates
 
 - Only `QE65S90CATXZT` **after the host independently confirms that exact model**, `T-PTMCDEUC-0090-2220.4`, ARM32 and SDK UID 901.
