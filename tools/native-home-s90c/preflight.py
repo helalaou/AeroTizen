@@ -12,6 +12,11 @@ import urllib.error
 import urllib.request
 
 MODEL = "QE65S90CATXZT"
+# Restrict probing to RFC 1918 LAN addresses. ipaddress.is_private also
+# accepts special-use/documentation ranges, which are not private home LANs.
+RFC1918_NETWORKS = tuple(ipaddress.ip_network(net) for net in (
+    "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"
+))
 CAPS = {
     "cpu_arch": "armv7",
     "architecture": "32",
@@ -26,7 +31,7 @@ def check_host(value):
         host = ipaddress.ip_address(value)
     except ValueError as exc:
         raise argparse.ArgumentTypeError("Use the TV's private IPv4 address") from exc
-    if host.version != 4 or not host.is_private or host.is_loopback or host.is_link_local:
+    if host.version != 4 or not any(host in net for net in RFC1918_NETWORKS):
         raise argparse.ArgumentTypeError("Expected a private, non-loopback TV IPv4 address")
     return str(host)
 
