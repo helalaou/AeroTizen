@@ -163,9 +163,9 @@
 
   function label(key, value) {
     // Names originating from a TV or a weather search are never UI translations.
+    if (key === 'time:none' || key === 'date:none') { return t(value); }
     if (key.indexOf('weather:result:') === 0 || key.indexOf('name:') === 0 ||
         key.indexOf('date:') === 0) { return value; }
-    if (key === 'time:none' || key === 'date:none') { return t(value); }
     if (key.indexOf('time:') === 0) {
       return value.replace('  (12-hour)', '  ' + t('(12-hour)'))
         .replace('  (24-hour)', '  ' + t('(24-hour)'));
