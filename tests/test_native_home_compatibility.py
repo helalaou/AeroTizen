@@ -32,6 +32,32 @@ class MultiModelSurveyTests(unittest.TestCase):
         self.assertFalse(result["native_write_authorized"])
         self.assertFalse(result["restore_validated"])
 
+    def test_reported_firmware_mismatch_never_inherits_successful_reference(self):
+        caps = {"cpu_arch": "armv7", "architecture": "32", "platform_version": "9.0"}
+        device = {"modelName": "QE65S90CATXZT",
+                  "firmwareVersion": "T-PTMCDEUC-0090-9999.9"}
+        result = survey.assess(device, caps, CATALOG)
+        self.assertFalse(result["reference_match"])
+        self.assertEqual(result["reference_evidence"], "unverified")
+        self.assertIsNone(result["reference_firmware"])
+        self.assertFalse(result["firmware_reported_matches_reference"])
+        self.assertFalse(result["native_write_authorized"])
+
+        device["firmwareVersion"] = "T-PTMCDEUC-0090-2220.4"
+        matching = survey.assess(device, caps, CATALOG)
+        self.assertTrue(matching["reference_match"])
+        self.assertTrue(matching["firmware_reported_matches_reference"])
+        self.assertFalse(matching["native_write_authorized"])
+        self.assertFalse(matching["restore_validated"])
+
+        # Missing firmware permits only a provisional model/ABI reference
+        # match; it is never a certificate or authorisation.
+        del device["firmwareVersion"]
+        missing = survey.assess(device, caps, CATALOG)
+        self.assertTrue(missing["reference_match"])
+        self.assertIsNone(missing["firmware_reported_matches_reference"])
+        self.assertFalse(missing["native_write_authorized"])
+
     def test_external_frame_and_q70b_are_research_only_not_write_targets(self):
         for model, system in [
             ("QA55LS03DAWXXY", "9.0"),
