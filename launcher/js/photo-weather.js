@@ -100,6 +100,7 @@
 
   function select(enabled) {
     A.settings.weatherPhoto = enabled === true;
+    if (!A.settings.weatherPhoto) { hide(); }
     A.settings.save();
     if (A.applyBackground) { A.applyBackground(); }
     if (window.Weather && window.Weather.updateVisibility) {
