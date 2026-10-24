@@ -43,7 +43,7 @@
   // ---- boot ----------------------------------------------------------------------
   A.settings.load();
   A.applyBackground();
-  A.clockLayouts.apply();
+  if (A.clockLayouts) { A.clockLayouts.apply(); }
   A.clock.start();
   A.network.start();
   window.Weather.start(function () { return A.settings; });
