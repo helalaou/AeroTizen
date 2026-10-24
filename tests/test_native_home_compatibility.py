@@ -1,4 +1,5 @@
 """Read-only, offline tests for cross-firmware physical HOME capability survey."""
+
 import argparse
 import importlib.util
 import json
@@ -34,8 +35,7 @@ class MultiModelSurveyTests(unittest.TestCase):
 
     def test_reported_firmware_mismatch_never_inherits_successful_reference(self):
         caps = {"cpu_arch": "armv7", "architecture": "32", "platform_version": "9.0"}
-        device = {"modelName": "QE65S90CATXZT",
-                  "firmwareVersion": "T-PTMCDEUC-0090-9999.9"}
+        device = {"modelName": "QE65S90CATXZT", "firmwareVersion": "T-PTMCDEUC-0090-9999.9"}
         result = survey.assess(device, caps, CATALOG)
         self.assertFalse(result["reference_match"])
         self.assertEqual(result["reference_evidence"], "unverified")
@@ -67,7 +67,8 @@ class MultiModelSurveyTests(unittest.TestCase):
                 result = survey.assess(
                     {"modelName": model},
                     {"cpu_arch": "armv7", "architecture": "32", "platform_version": system},
-                    CATALOG)
+                    CATALOG,
+                )
                 self.assertTrue(result["reference_match"])
                 self.assertEqual(result["reference_evidence"], "independent_device_report")
                 self.assertFalse(result["native_write_authorized"])
@@ -79,9 +80,7 @@ class MultiModelSurveyTests(unittest.TestCase):
             result = survey.assess({"modelName": model}, base, CATALOG)
             self.assertFalse(result["reference_match"])
             self.assertFalse(result["native_write_authorized"])
-        result = survey.assess(
-            {"modelName": "QE65Q70BATXXC"},
-            base, CATALOG)
+        result = survey.assess({"modelName": "QE65Q70BATXXC"}, base, CATALOG)
         self.assertFalse(result["reference_match"])
 
     def test_incomplete_capabilities_do_not_infer_compatibility(self):
@@ -95,16 +94,28 @@ class MultiModelSurveyTests(unittest.TestCase):
     def test_only_rfc1918_lan_targets_pass(self):
         for host in ["192.168.0.50", "10.42.0.2", "172.31.4.20"]:
             self.assertEqual(survey.private_ipv4(host), host)
-        for host in ["127.0.0.1", "203.0.113.8", "192.0.2.2",
-                     "172.32.0.4", "100.64.0.1", "8.8.8.8", "::1",
-                     "a.example.com"]:
+        for host in [
+            "127.0.0.1",
+            "203.0.113.8",
+            "192.0.2.2",
+            "172.32.0.4",
+            "100.64.0.1",
+            "8.8.8.8",
+            "::1",
+            "a.example.com",
+        ]:
             with self.subTest(host=host), self.assertRaises(argparse.ArgumentTypeError):
                 survey.private_ipv4(host)
 
     def test_generic_survey_cannot_modify_native_home(self):
         source = SOURCE.read_text()
-        for forbidden in ["vconf_set_str(", "app_operation_set_current_app(",
-                          "subprocess.", ".push(", ".shell("]:
+        for forbidden in [
+            "vconf_set_str(",
+            "app_operation_set_current_app(",
+            "subprocess.",
+            ".push(",
+            ".shell(",
+        ]:
             self.assertNotIn(forbidden, source)
         self.assertIn('"native_write_authorized": False', source)
 
