@@ -263,7 +263,7 @@
   function render() {
     renderBackgrounds(); renderWeather(); renderUnits(); renderDateTime();
     renderVisibility('network-visibility', 'showNetwork', ['Show', 'Hide'], A.network.updateVisibility);
-    renderCardSizes(); renderInputVisibility(); renderInputNames(); renderAppMenu();
+    renderCardSizes(); renderHomeCardModes(); renderInputVisibility(); renderInputNames(); renderAppMenu();
     focus();
   }
 
