@@ -238,6 +238,7 @@
     renderBackgrounds(); renderWeather(); renderUnits(); renderDateTime();
     renderVisibility('network-visibility', 'showNetwork', ['Show', 'Hide'], A.network.updateVisibility);
     renderCardSizes(); renderInputVisibility(); renderInputNames(); renderAppMenu();
+    if (A.glassUI && A.glassUI.refreshLabels) { A.glassUI.refreshLabels(); }
     focus();
   }
 
