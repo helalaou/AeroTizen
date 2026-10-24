@@ -61,4 +61,6 @@ For read-only native source inspection, see [NativeHomeQuery.cs](../tools/native
 
 This branch keeps the tested original S90C write source tightly guarded and adds only a generic read-only survey, compatibility references and tests. No universal automated remap or installer hook is introduced.
 
-**Status:** Cross-firmware technique confirmed by independent reference work; multi-model physical HOME support **not yet validated for AeroTizen**. The S90C portable-code port passed offline build and tests, but no deployment from this branch has been attempted.
+**Verification (24 October 2026):** [GitHub Actions run #40106116433](https://github.com/motorgrid-ita/AeroTizen/actions/runs/40106116433) completed successfully: **107/107 Node tests**, **11 Python tests**, source syntax checks, and independent .NET 6 compilation of both the S90C write helper and the cross-firmware read-only native query. No TV was contacted by these automated tests.
+
+**Status:** Cross-firmware technique supported by independent reports on Tizen 6.5 and 9.0; multi-model physical HOME support **not yet validated for AeroTizen**. The S90C portable-code port passed offline build and tests, but no deployment from this branch has been attempted.
