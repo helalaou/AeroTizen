@@ -18,6 +18,8 @@ jobs:
           node-version: '22'
       - name: Run upstream and native HOME contract tests
         run: node --test tests/*.test.cjs
+      - name: Test read-only Python device preflight without a TV
+        run: python3 -m unittest discover -s tests -p 'test_native_home_preflight.py' -v
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 6.0.x
