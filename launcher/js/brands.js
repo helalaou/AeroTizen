@@ -76,13 +76,17 @@
     job = { done: false, src: null, waiters: [callback] };
     artworkJobs[key] = job;
     var at = 0;
-    function finish(src) {
+    function finish(src, loadedImage) {
       if (job.done) { return; }
       job.done = true;
       job.src = src;
       var waiters = job.waiters;
       job.waiters = [];
-      waiters.forEach(function (notify) { notify(src); });
+      // The first tile reuses the decoded probe image, matching original
+      // onload timing; subsequent tiles create their own DOM-owned image.
+      waiters.forEach(function (notify, i) {
+        notify(src, i === 0 ? loadedImage : null);
+      });
     }
     function next() {
       if (at >= sources.length) { finish(null); return; }
@@ -94,7 +98,7 @@
       }
       image.onload = function () {
         if (settled) { return; }
-        settled = true; clear(); finish(src);
+        settled = true; clear(); finish(src, image);
       };
       image.onerror = fail;
       timer = setTimeout(fail, 2000);
@@ -163,17 +167,19 @@
       return tile;
     }
 
-    discoverArtwork(A.artwork.sources(app), function (src) {
+    discoverArtwork(A.artwork.sources(app), function (src, loadedImage) {
       if (!src) { return; } // Original brand fallback remains visible.
-      var image = new Image();
+      var image = loadedImage || new Image();
       image.className = 'app-artwork'; image.alt = '';
-      image.onload = function () {
+      function display() {
         image.onload = image.onerror = null;
         fallback.hidden = true;
         tile.style.background = 'transparent';
         tile.classList.add('has-artwork');
         tile.appendChild(image);
-      };
+      }
+      if (loadedImage) { display(); return; }
+      image.onload = display;
       image.onerror = function () {
         image.onload = image.onerror = null;
         // Keep native app/brand fallback if the cached image disappears.
