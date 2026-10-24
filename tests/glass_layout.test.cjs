@@ -38,7 +38,7 @@ function makeElement(tag = 'div', className = '', id = '') {
     setAttribute(name, value) { attrs[name] = value; },
     getAttribute(name) { return attrs[name] || null; },
     addEventListener() {},
-    getBoundingClientRect() { return { top: 150, bottom: 214, left: 400, right: 600, width: 200, height: 64 }; },
+    getBoundingClientRect() { const top = this.rectTop || 150; return { top, bottom: top + 64, left: 400, right: 600, width: 200, height: 64 }; },
     contains(child) {
       for (let p = child; p; p = p.parentNode) if (p === this) return true;
       return false;
@@ -68,6 +68,7 @@ function harness() {
     const parent = makeElement('div', 'units', id); editor.appendChild(parent);
     const choice = makeElement('div', 'pill unit');
     choice.dataset.key = key;
+    choice.rectTop = 150 + Object.keys(ids).length * 120;
     choice.onclick = () => { choice.clicked = true; };
     parent.appendChild(choice);
     ids[id] = { parent, choice };
@@ -78,7 +79,7 @@ function harness() {
   group('Show in app menu', 'all-apps', 'app:test');
   group('HDMI ports', 'input-visibility', 'input:all');
   const escape = makeElement('div', '', 'escape');
-  escape.dataset.key = 'escape'; editor.appendChild(escape);
+  escape.dataset.key = 'escape'; escape.rectTop = 920; editor.appendChild(escape);
   const document = { createElement: tag => makeElement(tag), body: makeElement('body') };
   const A = { $: id => id === 'editor' ? editor : null, settingsUi: {
     isOpen: () => true, close() {}, focus() {}
