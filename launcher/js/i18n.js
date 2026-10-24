@@ -114,7 +114,20 @@
     'Arctic': 'Artico',
     'Mint': 'Menta',
     'Slate': 'Ardesia',
-    'Teal Night': 'Notte petrolio'
+    'Teal Night': 'Notte petrolio',
+    // Opt-in V992.56 photographic backgrounds and original branded cards.
+    'Weather wallpaper': 'Sfondo meteo',
+    'Off': 'Disattivato',
+    'Automatic (weather)': 'Automatico (meteo)',
+    'Home tile layout': 'Layout tessere Home',
+    'Apps per row': 'App per riga',
+    'App card shape': 'Forma delle tessere',
+    'Square': 'Quadrato',
+    'Rectangle': 'Rettangolo',
+    'Default': 'Predefinito',
+    '3 per row': '3 per riga',
+    '4 per row': '4 per riga',
+    '5 per row': '5 per riga'
   };
   var lang = 'en', locale = 'en-GB', onChange = null;
 
