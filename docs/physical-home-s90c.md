@@ -1,6 +1,6 @@
 # Physical Samsung HOME key — optional native S90C integration
 
-**Scope: Samsung QE65S90CATXZT with exact firmware T-PTMCDEUC-0090-2220.4 only. Not a universal Tizen feature or an official Samsung API.**
+**Scope of the bundled *write helper*: Samsung QE65S90CATXZT with firmware T-PTMCDEUC-0090-2220.4.** The **underlying physical HOME reassignment method is not restricted to this firmware**: independent references show similar native routing on Tizen 6.5 and Tizen 9.0. See [cross-firmware compatibility research](native-home-compatibility.md). This remains an undocumented Samsung platform technique, **not** an official consumer Tizen API or universal installer.
 
 ## What V992.56 actually required
 
