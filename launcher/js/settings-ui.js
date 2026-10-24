@@ -169,13 +169,16 @@
   function renderHomeCardModes() {
     var modes = A.$('home-card-modes'), cols = A.$('home-card-columns');
     if (!modes || !cols) { return; }
-    var italian = A.i18n && A.i18n.code && A.i18n.code() === 'it';
+    // Optional i18n bridge: this feature also works before the locale PR is merged.
+    function label(key, english) {
+      return A.i18n && A.i18n.label ? A.i18n.label(key, english) : english;
+    }
     modes.textContent = ''; cols.textContent = '';
-    [['square', italian ? 'Quadrato' : 'Square'],
-     ['rectangle', italian ? 'Rettangolo' : 'Rectangle']].forEach(function (item) {
-      modes.appendChild(pill('home-cards:' + item[0], item[1],
+    [['square', 'Square'], ['rectangle', 'Rectangle']].forEach(function (item) {
+      var key = 'home-cards:' + item[0];
+      modes.appendChild(pill(key, label(key, item[1]),
         (S.homeCardMode || 'square') === item[0], function () {
-          S.homeCardMode = item[0]; focusKey = 'home-cards:' + item[0];
+          S.homeCardMode = item[0]; focusKey = key;
           changed(A.homeScreen.render);
         }));
     });
@@ -184,11 +187,11 @@
       chosen = cfg.CARD_COLUMNS[S.cardSize === 'small' ? 'small' : 'big'];
     }
     [3, 4, 5].forEach(function (value) {
-      cols.appendChild(pill('home-columns:' + value,
-        value + (italian ? ' per riga' : ' per row'), chosen === value, function () {
-          S.homeCardColumns = value; focusKey = 'home-columns:' + value;
-          changed(A.homeScreen.render);
-        }));
+      var key = 'home-columns:' + value, english = value + ' per row';
+      cols.appendChild(pill(key, label(key, english), chosen === value, function () {
+        S.homeCardColumns = value; focusKey = key;
+        changed(A.homeScreen.render);
+      }));
     });
   }
 
