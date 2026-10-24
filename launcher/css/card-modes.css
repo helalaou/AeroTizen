@@ -101,10 +101,40 @@
 
 /* Reuse the project's existing focus behaviour rather than installing
    another border: avoid double outlines when Glass UI is enabled. */
+/* Original optical 3D depth: composited 2D transform, static highlights
+   and shadows. No constantly animated blur or expensive perspective layer.
+   Mirrors the final reference rectangle card treatment. */
+.app-grid.cards-rectangle .tile {
+  transform: translateZ(0) scale(.955) !important;
+  transform-origin: center center;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.11),
+    0 11px 21px rgba(0,0,0,.30) !important;
+  transition: transform .17s cubic-bezier(.20,.72,.25,1) !important;
+}
+.app-grid.cards-rectangle .tile::before {
+  content: ''; position: absolute; inset: 0; display: block;
+  pointer-events: none; z-index: 2; border-radius: inherit;
+  background: linear-gradient(to bottom,
+    rgba(255,255,255,.075) 0%,transparent 34%,rgba(0,0,0,.07) 100%);
+}
 .app-grid.cards-rectangle .tile.focused {
-  transform: translateZ(0) scale(1.035);
-  box-shadow: 0 0 0 4px var(--bg), 0 0 0 9px var(--focus),
-    0 18px 40px rgba(0,0,0,.55);
+  transform: translate3d(0,-7px,0) scale(1.065) !important;
+  border-radius: 10px; z-index: 8;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.94),
+    0 0 13px 3px rgba(248,250,255,.23),
+    0 19px 30px rgba(0,0,0,.49),
+    0 37px 51px rgba(0,0,0,.32) !important;
+}
+.app-grid.cards-rectangle .tile.moving {
+  overflow: visible !important;
+  transform: translate3d(0,-7px,0) scale(1.065) !important;
+  z-index: 30 !important;
+}
+.app-grid.cards-rectangle .tile.moving > .move-arrow {
+  display: flex !important; z-index: 31;
+}
+.app-grid.cards-rectangle .tile.moving .app-fallback {
+  border-radius: inherit; overflow: hidden;
 }
 @media (prefers-reduced-motion: reduce) {
   .app-grid.cards-rectangle .tile { transition: none; }
