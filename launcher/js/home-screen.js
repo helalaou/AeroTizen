@@ -8,6 +8,36 @@
   var moving = null;
   var CHEVRONS = { left: 'M15 5l-7 7 7 7', right: 'M9 5l7 7-7 7', up: 'M5 15l7-7 7 7', down: 'M5 9l7 7 7-7' };
 
+  // Moving focus plates from the existing satin/glass interface.
+  // Focus still belongs to the original remote-selectable elements.
+  function positionGlass(el) {
+    var head = A.$('aero-header-focus');
+    var gear = A.$('gear'), samsung = A.$('samsung-home-shortcut');
+    if (head) {
+      var isAction = el === gear || el === samsung;
+      head.classList.toggle('is-visible', isAction);
+      if (isAction) {
+        head.style.width = el.offsetWidth + 'px';
+        head.style.height = el.offsetHeight + 'px';
+        head.style.transform = 'translate3d(' + el.offsetLeft + 'px,' + el.offsetTop + 'px,0)';
+      }
+    }
+    var nav = A.$('home-tab').parentNode;
+    var selected = A.$(page === 'home' ? 'home-tab' : 'apps-tab');
+    var chosen = A.$('aero-tab-glider');
+    var focused = A.$('aero-tab-focus');
+    if (!nav || !chosen || !focused) { return; }
+    var origin = selected.offsetLeft - 7;
+    chosen.style.width = selected.offsetWidth + 'px';
+    chosen.style.transform = 'translate3d(' + origin + 'px,0,0)';
+    var inTabs = el === A.$('home-tab') || el === A.$('apps-tab');
+    focused.classList.toggle('is-visible', inTabs);
+    if (inTabs) {
+      focused.style.width = el.offsetWidth + 'px';
+      focused.style.transform = 'translate3d(' + (el.offsetLeft - 7) + 'px,0,0)';
+    }
+  }
+
   function gridTiles() { return [].slice.call(A.$('grid').children); }
 
   function render() {
@@ -48,7 +78,7 @@
   }
 
   function buildRows() {
-    rows = [[A.$('gear'), A.$('home-tab'), A.$('apps-tab')]].concat(A.chunk(gridTiles(), COLS));
+    rows = [[A.$('gear'), A.$('samsung-home-shortcut'), A.$('home-tab'), A.$('apps-tab')]].concat(A.chunk(gridTiles(), COLS));
     var inputTiles = [].slice.call(A.$('inputs').children);
     A.$('inputs-section').hidden = page !== 'home' || inputTiles.length === 0;
     if (!A.$('inputs-section').hidden) { rows.push(inputTiles); }
@@ -64,6 +94,7 @@
     col[row] = Math.max(0, Math.min(col[row] || 0, rows[row].length - 1));
     var el = rows[row][col[row]];
     el.classList.add('focused');
+    positionGlass(el);
     // Keep the focused row on screen (only matters with more than 6 apps). Measured on screen,
     // since offsetTop is relative to the nearest positioned parent.
     var main = A.$('rows'), rect = el.getBoundingClientRect(), mainTop = main.getBoundingClientRect().top;
@@ -80,7 +111,7 @@
     while (r > 0 && r < rows.length && !rows[r].length) { r += dRow; }
     if (r < 0 || r >= rows.length) { return; }
     // Returning to the header selects the current page, regardless of the app column.
-    row = r; col[row] = row === 0 ? (page === 'home' ? 1 : 2) : c; focus();
+    row = r; col[row] = row === 0 ? (page === 'home' ? 2 : 3) : c; focus();
   }
 
   function current() { return rows[row] && rows[row][col[row]]; }
@@ -89,7 +120,7 @@
     if (moving) { endMove(); }
     clearTimeout(pressTimer); pressTimer = null;
     page = next;
-    row = 0; col = [page === 'home' ? 1 : 2]; scrollY = 0;
+    row = 0; col = [page === 'home' ? 2 : 3]; scrollY = 0;
     A.$('rows').style.transform = 'translate3d(0,0,0)';
     render();
   }
@@ -173,6 +204,7 @@
   }
 
   A.homeScreen = { render: render, buildRows: buildRows, focus: focus, keydown: keydown, keyup: keyup };
+  A.$('samsung-home-shortcut').onclick = function () { A.homewatch.useSamsungHome(); };
   A.$('gear').onclick = function () {
     if (moving) { endMove(); }
     A.settingsUi.open();
