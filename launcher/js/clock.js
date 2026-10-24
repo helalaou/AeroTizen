@@ -172,6 +172,7 @@
     timeEl.setAttribute('data-format', A.settings.timeFormat === '24' ? '24' : '12');
     timeEl.textContent = formatTime(d, A.settings.timeFormat);
     sizeTime(timeEl, A.settings.timeFormat);
+    if (A.clockLayouts) { A.clockLayouts.update(); }
   }
 
   A.clock = {
