@@ -64,6 +64,27 @@
   apps.launch = function (app) {
     var label = A.tiles.shortName(app.name);
     if (!tz || !tz.application) { return A.toast('Would open ' + label); }
+    // TV-tested V992.56: preloaded YouTube/Cobalt can always report
+    // visible=false. Pause HomeWatcher BEFORE native launch to avoid
+    // prematurely reclaiming the TV screen. Leave all other apps unchanged.
+    if (/^youtube$/i.test(String(app.name || '').trim()) &&
+        A.homewatch && A.homewatch.suspendForExternal) {
+      A.homewatch.suspendForExternal(function () {
+        try {
+          tz.application.launch(app.id, null, function (err) {
+            A.homewatch.resume();
+            A.toast('Could not open ' + label +
+              (err && err.message ? ': ' + err.message : ''));
+          });
+        } catch (err) {
+          A.homewatch.resume();
+          A.toast('Could not open ' + label);
+        }
+      }, function (reason) {
+        A.toast('YouTube not launched: ' + reason);
+      });
+      return;
+    }
     var link = hbbtvLink(app.id);
     if (link) {
       try {
