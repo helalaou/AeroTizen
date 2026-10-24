@@ -120,9 +120,16 @@ test('focused controls use a single moving outline matching their radius', () =>
   h.A.glassUI.activate('status');
   const item = h.ids['time-formats'].choice;
   h.A.glassUI.updateHighlight(item);
-  const frame = h.editor.children.find(x => x.classList.contains('aero-settings-frame'));
-  const scroll = frame.children[1].children[1];
-  const plate = scroll.children[0];
+  function findPlate(node) {
+    if (node.classList.contains('aero-content-glider')) return node;
+    for (const child of node.children) {
+      const found = findPlate(child);
+      if (found) return found;
+    }
+    return null;
+  }
+  const plate = findPlate(h.editor);
+  assert.ok(plate, 'the moving outline should be mounted in Settings');
   assert.equal(plate.style.borderRadius, '17px');
   assert.equal(plate.classList.contains('is-visible'), true);
 });
