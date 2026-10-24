@@ -46,7 +46,7 @@
         tile.onclick = A.apps.playFireplace;
       } else {
         var app = A.apps.byId(id);
-        tile = A.tiles.app(app, '', function () { A.apps.launch(app); });
+        tile = A.tiles.app(app, 'home-display', function () { A.apps.launch(app); });
       }
       tile.dataset.id = id;
       grid.appendChild(tile);
