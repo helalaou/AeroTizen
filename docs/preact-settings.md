@@ -1,9 +1,12 @@
 # Preact Settings migration
 
 This is the first implementation stage of [issue #18](https://github.com/helalaou/AeroTizen/issues/18).
-The work starts from upstream `main`, independently of [release PR #23](https://github.com/helalaou/AeroTizen/pull/23).
-Merge the release process first. Rebase this branch and connect its compiled output to
-release packaging before making Preact the default launcher.
+It builds on the merged [release PR #23](https://github.com/helalaou/AeroTizen/pull/23).
+Release packaging compiles Settings on the exact release commit and ships that output.
+
+Merge this Settings migration before other launcher UI feature PRs. Rebase pending
+Settings changes onto these components after it lands, so new controls use the Preact
+state and navigation patterns and the cutover does not require another port.
 
 ## Current scope
 
@@ -28,9 +31,9 @@ runtime interfaces, events and refs are typed. The existing global JavaScript mo
 are described by a small interface; this does not type-check their implementations.
 `npm run typecheck` checks the browser source and Vite config. Builds and CI include it.
 
-The source `launcher/` remains the legacy baseline. Its normal installation path still
-works without Node. The compiled build is for development and validation until release
-packaging is connected; this branch does not change published packages.
+The source `launcher/` retains the legacy Settings comparison baseline. Release packages
+contain only the compiled renderer. Install `dist/launcher/` to test local changes;
+installing the source directory tests the baseline. Release users do not need Node.
 
 The build targets Chromium 69 and also checks every shipped script against ES2018.
 [Samsung's engine table](https://developer.samsung.com/smarttv/develop/specifications/web-engine-specifications.html)
@@ -211,19 +214,22 @@ checks remain required; these small desktop samples do not establish TV response
 The script runs events in tight loops and measures synchronous work, excluding paint,
 physical remote transmission and screen latency. No startup or animation result is claimed.
 
-## Required before merge
+## Release and TV validation
 
-1. Merge PR #23, rebase, and make its launcher release job run the locked frontend build
-   on the exact release commit. Package `dist/launcher/`, including its dependency license.
-   Verify the WGT contains compiled Settings and excludes TypeScript/source and build tools.
-2. Verify the release installer downloads that compiled package without Node and preserves
-   settings. Remove the legacy renderer once the compiled release path is established;
-   retain a comparison baseline from Git rather than two production implementations.
-3. Repeat paired performance checks on the supported TV hardware: first open, startup,
-   reopens, retained heap, animation and remote response. Check physical remote input,
-   focus, scrolling, text entry, persistence and artwork loading/failure.
-4. Test a physical 2020 TV. The existing Tizen 9 trial is useful prior evidence, but this
-   implementation has not been installed on any TV.
+The release process builds the compiled runtime before packaging. Package checks require
+the Settings bundle, mount and Preact license, reject a stale manifest, and verify the
+unsigned archive through the release downloader. CI also builds a real release package.
+
+On 24 October 2026, this Settings implementation was installed in place on a Samsung
+Frame QE65LS03DAUXXU running Tizen 9. The installed runtime matched the compiled package,
+saved settings and five Home items were preserved, and key-event checks covered opening,
+closing, reopening and vertical navigation. The tester then checked Settings with the TV
+remote. The Home watcher and Frame Art Mode guard remained active.
+
+This is functional validation. Paired performance measurements of this final build,
+startup, retained heap, animation and physical remote latency remain outstanding.
+Physical 2020 TV testing also remains outstanding; the Chromium 69 build target is not
+hardware proof.
 
 Keep this first change limited to Settings. Migrate Home, shared tiles and dialogs in
 separate changes after the build and hardware checks are complete.

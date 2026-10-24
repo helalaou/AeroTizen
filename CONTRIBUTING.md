@@ -57,8 +57,9 @@ relaunch cancellation and app visibility, without contacting a TV.
   prints a network URL for another device. Vite supplies hot updates for Settings
   components and serves the legacy runtime files. TV-only features use sample data.
 - Run `npm run build` for the compiled runtime in `dist/launcher/`.
-  This branch keeps the source launcher as a working baseline while the release process
-  PR is pending. See [Preact Settings](docs/preact-settings.md) for scope and merge checks.
+  Releases package this directory. The source launcher retains the legacy Settings
+  comparison baseline. Edit the TSX components for Settings changes.
+  See [Preact Settings](docs/preact-settings.md) for scope and validation.
 - Preview in a desktop browser: `python3 -m http.server -d launcher`, open
   http://localhost:8000 at 1920×1080. This serves the legacy Settings baseline.
 - On the TV: `aerotizen install ./dist/launcher`, then `aerotizen inspect launcher`.
@@ -74,8 +75,8 @@ port, use `aerotizen inspect APPID --port 9223`.
 The separate `aerotizen-inspect` Python command has been replaced by `aerotizen inspect`.
 
 `aerotizen install launcher` installs the latest published launcher, even when a
-`launcher` directory exists in the current directory. Use `./launcher` to test your
-local changes. For a fork's published app, use
+`launcher` directory exists in the current directory. Build first, then use
+`aerotizen install ./dist/launcher` to test local changes. For a fork's published app, use
 `aerotizen install launcher --release-repo OWNER/REPO`.
 
 ## Releases

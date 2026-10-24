@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -50,12 +51,20 @@ def launcher(tmp_path):
         "css/.DS_Store",
     ):
         (app / filename).write_text("must not ship")
+    runtime = root / "dist/launcher"
+    shutil.copytree(app, runtime)
+    (runtime / "index.html").write_text('<div id="settings-root"></div>')
+    (runtime / "js/settings-ui.js").write_text("compiled Settings")
+    (runtime / "licenses").mkdir()
+    (runtime / "licenses/preact.txt").write_text("MIT License")
+    (runtime / "src/settings").mkdir(parents=True)
+    (runtime / "src/settings/index.tsx").write_text("must not ship")
     return root
 
 
 def test_launcher_is_unsigned_deterministic_and_has_verified_manifest(launcher, tmp_path):
     first = build.build_launcher(launcher, tmp_path / "first", "launcher-v2.3.0")
-    for source in (launcher / "launcher").rglob("*"):
+    for source in (launcher / "dist/launcher").rglob("*"):
         os.utime(source, (1_800_000_000, 1_800_000_000))
     second = build.build_launcher(launcher, tmp_path / "second", "launcher-v2.3.0")
     assert first.read_bytes() == second.read_bytes()
@@ -66,11 +75,13 @@ def test_launcher_is_unsigned_deterministic_and_has_verified_manifest(launcher, 
             "icon.png",
             "index.html",
             "js/main.js",
+            "js/settings-ui.js",
+            "licenses/preact.txt",
             "service/artmode.js",
             "service/index.js",
         ]
         for name in archive.namelist():
-            assert archive.read(name) == (launcher / "launcher" / name).read_bytes()
+            assert archive.read(name) == (launcher / "dist/launcher" / name).read_bytes()
     manifest = json.loads((first.parent / "launcher-release.json").read_text())
     assert manifest == {
         "schema_version": 1,
@@ -127,18 +138,48 @@ def test_launcher_rejects_mismatched_versions(launcher, tmp_path):
 
 
 def test_launcher_requires_background_service(launcher, tmp_path):
-    (launcher / "launcher/service/index.js").unlink()
+    (launcher / "dist/launcher/service/index.js").unlink()
     with pytest.raises(ValueError, match="missing required runtime file"):
         build.build_launcher(launcher, tmp_path / "dist")
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Creating symlinks requires elevated Windows privileges")
 def test_launcher_rejects_symlink_runtime_file(launcher, tmp_path):
-    source = launcher / "launcher/js/main.js"
+    source = launcher / "dist/launcher/js/main.js"
     source.unlink()
     source.symlink_to(launcher / "launcher/release.json")
     with pytest.raises(ValueError, match="without symlinks"):
         build.build_launcher(launcher, tmp_path / "dist")
+
+
+def test_launcher_requires_compiled_runtime(launcher, tmp_path):
+    shutil.rmtree(launcher / "dist/launcher")
+    with pytest.raises(ValueError, match="run npm ci and npm run build"):
+        build.build_launcher(launcher, tmp_path / "assets")
+    assert not (tmp_path / "assets").exists()
+
+
+def test_launcher_rejects_stale_compiled_manifest(launcher, tmp_path):
+    manifest = launcher / "dist/launcher/config.xml"
+    manifest.write_text(manifest.read_text().replace('version="2.3.0"', 'version="2.2.0"'))
+    with pytest.raises(ValueError, match="stale"):
+        build.build_launcher(launcher, tmp_path / "assets")
+    assert not (tmp_path / "assets").exists()
+
+
+@pytest.mark.parametrize("name", ["js/settings-ui.js", "licenses/preact.txt"])
+def test_launcher_requires_preact_runtime_and_license(launcher, tmp_path, name):
+    (launcher / "dist/launcher" / name).unlink()
+    with pytest.raises(ValueError, match=r"(?i)runtime file"):
+        build.build_launcher(launcher, tmp_path / "assets")
+    assert not (tmp_path / "assets").exists()
+
+
+def test_launcher_rejects_legacy_settings_markup(launcher, tmp_path):
+    (launcher / "dist/launcher/index.html").write_text('<div id="editor"></div>')
+    with pytest.raises(ValueError, match="Preact Settings mount"):
+        build.build_launcher(launcher, tmp_path / "assets")
+    assert not (tmp_path / "assets").exists()
 
 
 def test_cli_tag_must_match_before_build_starts(tmp_path):

@@ -50,6 +50,8 @@ jobs:
       - run: npm test
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
+      - name: Check compiled launcher release packaging
+        run: python tools/build_release.py launcher --output dist/release-check
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
