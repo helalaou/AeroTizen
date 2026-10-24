@@ -1,4 +1,5 @@
 import { Pill } from '../components/Pill';
+import { RemoteControl } from '../components/RemoteControl';
 import type { BackgroundOption, LauncherConfig, SettingsSectionProps } from '../types';
 
 interface Props extends SettingsSectionProps { config: LauncherConfig; backgrounds: readonly BackgroundOption[] }
@@ -10,12 +11,12 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
 
   const swatches = (isAnimated: boolean) => {
     return list.filter(background => Boolean(background.anim) === isAnimated).map(background => (
-      <div key={background.id} class={'swatch' + (background.id === settings.background ? ' on' : '')}
-        data-key={'bg:' + background.id} role="button" aria-pressed={background.id === settings.background}
+      <RemoteControl key={background.id} class={'swatch' + (background.id === settings.background ? ' on' : '')}
+        focusKey={'bg:' + background.id} role="button" aria-pressed={background.id === settings.background}
         style={{ background: background.preview }}
         onClick={() => actions.setBackground(background.id)}>
         <span>{background.name}</span>
-      </div>
+      </RemoteControl>
     ));
   };
 
@@ -25,7 +26,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
       <div id="bg-anim" class="swatches">{swatches(true)}</div>
       <div id="speed-row" class="speed-row" hidden={!animated}>
         {animated ? <>
-          <div class="slider" data-key="speed" role="slider" aria-label="Background speed"
+          <RemoteControl class="slider" focusKey="speed" role="slider" aria-label="Background speed"
             aria-valuemin={config.SPEED.MIN} aria-valuemax={config.SPEED.MAX} aria-valuenow={settings.speed}>
             <span class="slider-label">Speed</span>
             <div class="track">
@@ -34,7 +35,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
             </div>
             <span class="slider-value">{settings.speed}×</span>
             <span class="slider-hint">◀ ▶</span>
-          </div>
+          </RemoteControl>
           <Pill id="preview" onSelect={actions.preview}>▶  Preview</Pill>
         </> : null}
       </div>

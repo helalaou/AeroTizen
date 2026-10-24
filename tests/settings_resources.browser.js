@@ -8,6 +8,7 @@ async page => {
   await page.route('https://pending-artwork.test/**', route => { routes.push(route); });
   await page.reload();
   await page.waitForFunction(() => AeroTizen.apps.all.length > 0);
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
     const A = AeroTizen;
     const nativeSet = window.setTimeout, nativeClear = window.clearTimeout;

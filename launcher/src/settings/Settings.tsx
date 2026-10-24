@@ -1,3 +1,4 @@
+import { RemoteControl } from './components/RemoteControl';
 import { useMemo } from 'preact/hooks';
 import { useStore } from '../shared/hooks/useStore';
 import { BackgroundSettings } from './sections/BackgroundSettings';
@@ -10,24 +11,24 @@ import { useSettingsNavigation } from './hooks/useSettingsNavigation';
 
 export const Settings = ({ active, previewing }: { active: boolean; previewing: boolean }) => {
   const { settings: store, services, actions } = useSettingsEnvironment();
-  const settings = useStore(store, active);
-  const navigationEvents = useSettingsNavigation(active, previewing);
+  const settings = useStore(store);
+  useSettingsNavigation(active, previewing);
   const apps = services.getApps();
   const appMenu = useMemo(() => (
     <AppMenu home={settings.home} apps={apps} actions={actions} active={active}
       describeApp={services.describeApp} fireplaceId={services.config.FIREPLACE_ID} />
   ), [settings.home, apps, actions, active, services]);
   return (
-    <div {...navigationEvents}>
+    <>
       <h2>Settings</h2>
       <BackgroundSettings settings={settings} actions={actions} config={services.config} backgrounds={services.backgrounds} />
       <WeatherSettings settings={settings} actions={actions} active={active} />
       <DisplaySettings settings={settings} actions={actions} clock={services.clock} />
       <InputSettings settings={settings} actions={actions} inputs={services.getInputs()} />
       {appMenu}
-      <div id="escape" class="escape" data-key="escape" role="button" onClick={actions.useSamsungHome}>
+      <RemoteControl id="escape" class="escape" focusKey="escape" role="button" onClick={actions.useSamsungHome}>
         Use Samsung Home instead
-      </div>
-    </div>
+      </RemoteControl>
+    </>
   );
 };

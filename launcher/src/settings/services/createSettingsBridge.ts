@@ -11,7 +11,7 @@ export const createSettingsBridge = (
   return {
     open() {
       settings.refresh();
-      services.clearHomeFocus();
+      if (!view.getSnapshot().open) { services.clearHomeFocus(); }
       transaction(() => view.set({ open: true, previewing: false, mounted: true }));
     },
     close() {

@@ -110,6 +110,7 @@ h2 { font-size: 39px; font-weight: 500; margin: 0 0 18px; }
 .tile.fire svg.flame { width: 140px; height: 140px; }
 
 /* ---- settings sheet ---- */
+#settings-root [data-key] { outline: none; }
 .sheet { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.62); padding: 64px 64px 120px; overflow: hidden; }
 .sheet h2 { font-size: 52px; font-weight: 700; margin-bottom: 28px; }
 .sheet h3 { font-size: 34px; font-weight: 500; margin: 0 0 18px; }

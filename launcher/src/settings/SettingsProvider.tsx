@@ -1,7 +1,13 @@
 import type { ComponentChildren } from 'preact';
-import { SettingsContext } from './context';
+import { useStore } from '../shared/hooks/useStore';
+import { FocusedControlContext, SettingsContext } from './context';
 import type { SettingsEnvironment } from './types';
 
-export const SettingsProvider = ({ environment, children }: { environment: SettingsEnvironment; children: ComponentChildren }) => (
-  <SettingsContext.Provider value={environment}>{children}</SettingsContext.Provider>
-);
+export const SettingsProvider = ({ environment, children }: { environment: SettingsEnvironment; children: ComponentChildren }) => {
+  const focusedKey = useStore(environment.navigation);
+  return (
+    <SettingsContext.Provider value={environment}>
+      <FocusedControlContext.Provider value={focusedKey}>{children}</FocusedControlContext.Provider>
+    </SettingsContext.Provider>
+  );
+};

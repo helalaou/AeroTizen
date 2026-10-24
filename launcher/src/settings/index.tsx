@@ -2,11 +2,11 @@ import { createRef, render } from 'preact';
 import { flushSync } from 'preact/compat';
 import { createStore } from '../shared/state/createStore';
 import { createNavigation } from '../shared/navigation/createNavigation';
+import { focusControl } from '../shared/navigation/focusControl';
 import { createSettingsStore } from './state/createSettingsStore';
 import { createSettingsServices } from './services/createSettingsServices';
 import { createSettingsActions } from './state/createSettingsActions';
 import { createSettingsBridge } from './services/createSettingsBridge';
-import { collectSettingsRows } from './navigation';
 import { SettingsProvider } from './SettingsProvider';
 import { SettingsRoot } from './SettingsRoot';
 import type { SettingsEnvironment, ViewState } from './types';
@@ -20,7 +20,9 @@ const services = createSettingsServices(runtime);
 const actions = createSettingsActions(settings, services, view, flushSync);
 const bridge = createSettingsBridge(settings, view, services, flushSync);
 const root = createRef<HTMLDivElement>();
-const navigation = createNavigation(() => collectSettingsRows(root.current), element => {
+const navigation = createNavigation(element => {
+  // A command can restore browser focus without changing the selected key (IME Done).
+  focusControl(element);
   if (root.current) { root.current.scrollTop = Math.max(0, element.offsetTop - 640); }
 });
 const environment: SettingsEnvironment = { settings, view, services, actions, bridge, navigation, root };

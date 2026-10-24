@@ -57,20 +57,26 @@ CSS behaviour or physical TV compatibility.
 - `settings/hooks/useSettingsPresentation.ts` owns shell classes and the preview message.
   Navigation hooks own pointer/remote focus; weather hooks own search and location entry.
   Components compose these behaviors and render markup.
-- `shared/` contains the small store, navigation engine and hooks for subscriptions,
-  input drafts, image retries and focus retention. Settings-specific navigation collects
-  actual visual rows under the Settings root, so wrapped controls need no fixed column
-  counts. Arrow keys use cached rows and update focus without component renders.
-- Preact owns all markup inside `#settings-root`, including the sheet and app artwork.
-  The data-only branding helper in `brands.js` reuses existing brand rules; Settings
-  does not call legacy tile constructors, append child nodes or copy HTML strings.
-  Imperative DOM access is limited to focus, scroll, input focus/blur and shell body
-  classes. Navigation owns the `focused` class; the focus hook restores it after a
-  local image render. Preact owns the remaining classes, attributes and children.
+- `shared/` contains the small store, navigation engine and hooks for external store
+  subscriptions, input drafts and image retries. Store subscriptions use Preact's
+  documented `useSyncExternalStore` hook.
+- `settings/components/RemoteControl.tsx` renders the focused class and tab position
+  from the selected key in context. Its ref callback registers the control with the
+  navigation engine. Layout reads these registered nodes, including wrapped and hidden
+  controls; there are no DOM selector lists or imperative focus-class repairs.
+  Arrow keys update focus state and rerender the control hosts. App artwork and section
+  components do not need to rerender for focus changes.
+- Preact owns all markup inside `#settings-root`, including classes, attributes,
+  children, the sheet and app artwork. The data-only branding helper in `brands.js`
+  reuses existing brand rules. Refs handle browser focus, blur, scrolling, measurements
+  and remote activation. The presentation hook synchronizes body classes and the
+  existing toast outside the Settings root. These are external browser/runtime effects.
 - Saved preferences are shared state. Open/preview state belongs to the screen store;
-  text drafts and weather search state belong to their hooks. The cached form stays
-  mounted after first open. Closing removes its settings subscription, pending image
-  timers and pending callback delivery. Reopening reads current preferences.
+  text drafts and weather search state belong to their hooks. Drafts override saved
+  values only while editing; they are not copied from props in an effect. One effect
+  owns each pending image attempt and its cleanup. Closing cancels pending image timers
+  and search callback delivery. The cached form keeps its store subscription until
+  unmount, so external preference changes remain current while the form is hidden.
 - Every component has its own file and uses an `export const` arrow function.
   Exported helpers also use `const`. ESLint enforces these conventions.
 
@@ -86,8 +92,8 @@ launcher/src/
     index.tsx, dev.ts              # Build/development entry points
     SettingsRoot.tsx, Settings.tsx # Shell and screen composition
     SettingsProvider.tsx, context.ts
-    types.ts, navigation.ts       # Feature contracts and visual row collection
-    components/                   # Controls used by Settings sections
+    types.ts                      # Feature contracts
+    components/                   # Declarative remote-control host and section controls
     sections/
       BackgroundSettings.tsx, DisplaySettings.tsx
       apps/                       # App menu and its tile components
@@ -97,8 +103,8 @@ launcher/src/
     state/                        # Settings snapshots and named actions
     services/                     # Legacy runtime types, adapters and key-router bridge
   shared/
-    hooks/                        # Reusable store, draft, focus and image behavior
-    navigation/                   # Screen-independent focus engine
+    hooks/                        # Reusable store subscription, draft and image behavior
+    navigation/                   # Ref registry, visual rows and focus state
     state/                        # Observable store primitive
 ```
 
@@ -106,6 +112,12 @@ Keep section-specific hooks and components together. Keep props and local state 
 beside their owner; `types.ts` holds contracts used across Settings. Legacy globals are
 described only in `services/launcherRuntime.ts`. Use hooks for state and lifecycle work;
 keep deterministic commands and calculations as plain functions.
+
+This follows the documented distinction between [rendered UI and ref-based browser
+operations](https://react.dev/learn/manipulating-the-dom-with-refs), with the
+[Preact external store hook](https://preactjs.com/guide/v10/hooks/#usesyncexternalstore)
+for the existing launcher state. ESLint enforces hook ordering and complete dependency
+arrays through `eslint-plugin-react-hooks`.
 
 ## Local verification
 
@@ -135,6 +147,7 @@ npx --package @playwright/cli playwright-cli -s=settings open http://127.0.0.1:8
 npx --package @playwright/cli playwright-cli -s=settings resize 1920 1080
 npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_ui.browser.js
 npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_resources.browser.js
+npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_focus.browser.js
 npx --package @playwright/cli playwright-cli -s=settings run-code --filename tests/settings_performance.browser.js > /tmp/settings-performance.log
 ```
 
@@ -142,53 +155,35 @@ The UI check mocks weather requests. It checks remote opening/closing, focus bou
 scrolling, IME Done, saved and empty input names, visibility controls, app selection,
 speed bounds, preview, stale search callbacks, persistence and stable DOM nodes.
 It also checks asynchronous artwork failure/fallback/success, focus during image loads,
-external settings updates, active drafts, repeated opens and console errors. The resource
+external settings updates, active drafts, repeated opens, native focus/tab position and console errors. The resource
 check controls artwork deadlines to verify retries, detached image events and cleanup.
+Fixtures wait for the initial paint and passive subscriptions before driving the UI;
+rapid interactions within each fixture still exercise synchronous remote transactions.
+The focus check also uses real browser arrow, Enter and Escape events and checks native
+focus after text entry.
 These are fixed-resolution TV screens; mobile layout is not part of this migration.
 
-## Initial browser measurements: 23 October 2026
+## Desktop measurements: 24 October 2026
 
-Desktop Chromium 156.0.8078.48, 1920×1080, static Black background, matching sample app
-inventories, at commit `2c37209` before the file refactor and Vite/TypeScript conversion. Five paired rounds
-alternate variant order. Values below are medians.
-Each round measures one first open, 25 reopens, 25 clock-format changes and 100 synthetic
-arrow events. Retained JavaScript heap is measured after garbage collection with Settings open.
-
-| Measurement | Legacy | Preact |
-|---|---:|---:|
-| First open, synchronous work | 3.8 ms | 5.2 ms |
-| Reopen, synchronous work | 1.6 ms | 1.2 ms |
-| Clock change, synchronous work | 1.6 ms | 0.6 ms |
-| Arrow event, p95 synchronous work | 0.2 ms | 0.1 ms |
-| Retained JavaScript heap | 1.81 MiB | 2.12 MiB |
-| Settings script, including Preact | 14,540 bytes | 25,093 bytes |
-
-The first open costs more work and heap. Reopens and clock updates cost less work in
-this desktop sample. The synchronous arrow median is below this browser's useful timer
-resolution for Preact. These tests run events in tight loops and do not measure paint,
-physical remote transmission or screen latency. First-open and heap samples are small.
-Do not compare these desktop values directly with the older Frame trial in the issue.
-No startup or animation result is claimed. Re-run on the final code and target hardware.
-
-## Architecture pass measurements: 23 October 2026
-
-At commit `85b3aba`, the same five-round script was repeated against the compiled architecture refactor,
-with Chromium 156.0.8078.48, a 1920×1080 viewport, Black background and matching app
-inventories. The timing and hardware limits above still apply.
+Desktop Chromium 156.0.8078.48, 1920×1080, Black background and matching sample app
+inventories. Five paired rounds alternate variant order. Each round measures one first
+open, 25 reopens, 25 clock changes and 100 synthetic arrow events. Retained JavaScript
+heap is measured after garbage collection with Settings open.
 
 | Measurement | Legacy | Preact |
 |---|---:|---:|
-| First open, median synchronous work | 3.6 ms | 6.0 ms |
-| Reopen, median synchronous work | 1.4 ms | 1.4 ms |
-| Clock change, median synchronous work | 1.5 ms | 0.7 ms |
-| Arrow event, p95 synchronous work | 0.1 ms | 0.1 ms |
-| Retained JavaScript heap, median | 1.82 MiB | 2.43 MiB |
-| Settings script, including Preact | 14,540 bytes | 38,055 bytes |
+| First open, median synchronous work | 3.6 ms | 7.2 ms |
+| Reopen, median synchronous work | 1.2 ms | 1.7 ms |
+| Clock change, median synchronous work | 1.3 ms | 1.0 ms |
+| Arrow event, p95 synchronous work | 0.1 ms | 0.3 ms |
+| Retained JavaScript heap, median | 1.85 MiB | 2.59 MiB |
+| Settings script, including Preact | 14,540 bytes | 38,402 bytes |
 
-This version includes subscribed state, synchronous remote-event transactions and
-Preact-owned artwork with cleanup. The added code and cached component state cost
-bytes and heap. This desktop sample supports no claim of a first-open improvement.
-Keep the hardware measurements as a merge requirement.
+Rendering focus state and native focus events adds work compared with direct class
+writes. It also gives Preact full ownership of the rendered controls. The physical TV
+checks remain required; these small desktop samples do not establish TV response time.
+The script runs events in tight loops and measures synchronous work, excluding paint,
+physical remote transmission and screen latency. No startup or animation result is claimed.
 
 ## Required before merge
 

@@ -1,3 +1,4 @@
+import { RemoteControl } from '../../components/RemoteControl';
 import { Choice } from '../../components/Choice';
 import { Pill } from '../../components/Pill';
 import { useWeatherLocation } from './useWeatherLocation';
@@ -18,10 +19,10 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
       </p>
       <div id="weather-location" class="units">
         <Pill id="weather:auto" selected={!settings.weatherLocation} onSelect={() => search.selectLocation(null)}>Automatic</Pill>
-        <div class="pill unit name-pill weather-search" data-key="weather:query" onClick={search.focusQuery}>
+        <RemoteControl class="pill unit name-pill weather-search" focusKey="weather:query" onClick={search.focusQuery}>
           <input ref={search.inputRef} type="text" maxLength={80} value={search.query} placeholder="Town, city or postcode"
             aria-label="Weather location" onInput={search.onQueryInput} />
-        </div>
+        </RemoteControl>
         <Pill id="weather:search" onSelect={search.search}>Search</Pill>
       </div>
       <p id="weather-search-status" class="hint" role="status" hidden={!search.message}>{search.message}</p>

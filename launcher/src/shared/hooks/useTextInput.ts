@@ -1,21 +1,19 @@
-import { useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
 
-// Keep drafts local. A remote Done/Back blurs the field through the app key router.
+// null means no edit is in progress: display the current saved value directly.
 export const useTextInput = (value: string, commit: (value: string) => void) => {
   const ref = useRef<HTMLInputElement>(null);
-  const editing = useRef(false);
-  const [draft, setDraft] = useState(value);
-  useLayoutEffect(() => { if (!editing.current) { setDraft(value); } }, [value]);
+  const [draft, setDraft] = useState<string | null>(null);
   return {
-    ref, value: draft,
+    ref, value: draft ?? value,
     focus: () => ref.current?.focus(),
-    onFocus: () => { editing.current = true; },
+    onFocus: () => setDraft(previous => previous ?? value),
     onInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => setDraft(event.currentTarget.value),
     onBlur: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => {
-      editing.current = false;
       const next = event.currentTarget.value.trim();
-      setDraft(next); commit(next);
+      setDraft(null);
+      commit(next);
     }
   };
 };

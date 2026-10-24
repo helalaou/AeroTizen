@@ -23,13 +23,24 @@ async (page) => {
         const event = new Event(type, { bubbles: true, cancelable: true });
         Object.defineProperty(event, 'keyCode', { value: code }); document.dispatchEvent(event);
       }
-      function find(value) { return document.querySelector('#editor [data-key="' + value + '"]'); }
+      function find(value) {
+        const element = document.querySelector('#editor [data-key="' + value + '"]');
+        assert(element, 'missing control: ' + value);
+        return element;
+      }
       function input(field, value) { field.value = value; field.dispatchEvent(new Event('input', { bubbles: true })); }
+      // Allow the initial commit and passive store subscriptions to complete.
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const before = JSON.stringify(A.settings.home);
       // Use the real home -> gear -> OK -> Settings route.
       key(K.UP); key(K.LEFT); key(K.ENTER); key(K.ENTER, 'keyup');
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       assert(A.settingsUi.isOpen(), 'remote opens Settings');
       assert(document.querySelector('#editor .focused').dataset.key === 'bg:aurora', 'initial focus');
+      if (variant === 'preact') {
+        assert(document.activeElement === document.querySelector('#editor .focused'), 'remote state and browser focus agree');
+        assert(document.querySelectorAll('#editor [data-key][tabindex="0"]').length === 1, 'one remote control is in the tab order');
+      }
       assert(document.querySelectorAll('#editor [data-key]').length >= 80, 'all sections present');
       for (let i = 0; i < 10; i++) key(K.UP);
       assert(document.querySelectorAll('#editor .focused').length === 1, 'top boundary keeps one focus');
@@ -91,6 +102,7 @@ async (page) => {
         assert(A.$('toast').hidden, 'preview exit hides its message');
         find('preview').click(); A.settingsUi.open();
         assert(!document.body.classList.contains('previewing') && A.$('toast').hidden, 'open resets preview and its message together');
+        assert(document.activeElement === document.querySelector('#editor .focused'), 'preview return restores browser focus');
         find('preview').click(); A.settingsUi.close();
         assert(!document.body.classList.contains('editing') && !document.body.classList.contains('previewing') &&
           A.$('toast').hidden, 'close clears all presentation state');
@@ -126,6 +138,7 @@ async (page) => {
     }
   }
   // Test the real asynchronous artwork loader, including invalid-image fallback.
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.route('https://artwork.test/**', route => route.fulfill({
     contentType: 'image/svg+xml', body: route.request().url().endsWith('/bad') ? 'invalid image' :
       '<svg xmlns="http://www.w3.org/2000/svg" width="304" height="304"><rect width="304" height="304" fill="purple"/></svg>'

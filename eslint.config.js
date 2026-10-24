@@ -3,6 +3,7 @@
 const js = require('@eslint/js');
 const globals = require('globals');
 const react = require('eslint-plugin-react');
+const reactHooks = require('eslint-plugin-react-hooks');
 const tsParser = require('@typescript-eslint/parser');
 const tsPlugin = require('@typescript-eslint/eslint-plugin');
 
@@ -41,7 +42,7 @@ module.exports = [
       parserOptions: { ecmaFeatures: { jsx: true } },
       globals: { ...globals.browser }
     },
-    plugins: { react, '@typescript-eslint': tsPlugin },
+    plugins: { react, 'react-hooks': reactHooks, '@typescript-eslint': tsPlugin },
     // Use React 16 component detection for Preact; React is not a dependency.
     settings: { react: { pragma: 'h', fragment: 'Fragment', version: '16.0' } },
     rules: {
@@ -50,6 +51,8 @@ module.exports = [
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
       'react/jsx-uses-vars': 'error',
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'error',
       'react/no-multi-comp': 'error',
       'react/function-component-definition': ['error', { namedComponents: 'arrow-function' }],
       'no-restricted-syntax': ['error', {

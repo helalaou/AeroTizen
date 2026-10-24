@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useCallback, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { flushSync } from 'preact/compat';
 import type { SettingsServices, WeatherLocation } from '../../types';
 
@@ -6,27 +6,30 @@ interface SearchState { query: string; results: WeatherLocation[]; message: stri
 
 export const useWeatherSearch = (searchLocations: SettingsServices['searchLocations'], active: boolean) => {
   const [state, setState] = useState<SearchState>({ query: '', results: [], message: '' });
-  const query = useRef('');
   const cancel = useRef<(() => void) | undefined>(undefined);
   const version = useRef(0);
   const enabled = useRef(active);
-  enabled.current = active;
-  const clear = () => {
+  const cancelSearch = useCallback(() => {
     version.current++; cancel.current?.(); cancel.current = undefined;
+  }, []);
+  const clear = useCallback(() => {
+    cancelSearch();
     setState(previous => ({ ...previous, results: [], message: '' }));
-  };
+  }, [cancelSearch]);
   useLayoutEffect(() => {
+    enabled.current = active;
     if (!active) { clear(); }
-    return () => { version.current++; cancel.current?.(); cancel.current = undefined; };
-  }, [active]);
+    return cancelSearch;
+  }, [active, clear, cancelSearch]);
   return {
     ...state, clear,
     setQuery: (next: string) => {
-      clear(); query.current = next; setState({ query: next, results: [], message: '' });
+      clear();
+      flushSync(() => setState({ query: next, results: [], message: '' }));
     },
     search: () => {
       clear();
-      const text = query.current.trim(), request = version.current;
+      const text = state.query.trim(), request = version.current;
       setState(previous => ({ ...previous, message: text.length < 2 ?
         'Enter at least two characters, then select Search.' : 'Searching…' }));
       if (text.length < 2) { return; }
