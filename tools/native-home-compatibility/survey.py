@@ -9,8 +9,8 @@ Matching an independently reported TV does NOT authorize use of any helper.
 import argparse
 import ipaddress
 import json
-from pathlib import Path
 import urllib.request
+from pathlib import Path
 
 REFERENCES = Path(__file__).with_name("references.json")
 
@@ -79,7 +79,10 @@ def assess(device, capabilities, catalogue):
         "native_helper_compiled_for_this_tv": False,
         "restore_validated": False,
         "native_write_authorized": False,
-        "next_step": "Independent native read-only baseline, firmware/library/runtime review, and private restore validation required"
+        "next_step": (
+            "Independent native read-only baseline, firmware/library/runtime review, "
+            "and private restore validation required"
+        )
     }
 
 
