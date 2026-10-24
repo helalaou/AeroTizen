@@ -167,7 +167,7 @@
     backdrop.onclick = function () { closeTileMenu(true); };
     var menu = A.el('div', 'tile-actions-menu');
     menu.setAttribute('role', 'menu');
-    menu.setAttribute('aria-label', 'App actions');
+    menu.setAttribute('aria-label', A.i18n ? A.i18n.t('App actions') : 'App actions');
     var glider = A.el('div', 'tile-actions-glider');
     glider.setAttribute('aria-hidden', 'true');
     menu.appendChild(glider);
@@ -176,7 +176,7 @@
       var icon = A.el('span', 'tile-actions-icon');
       icon.innerHTML = actionIcon(choice.action);
       option.appendChild(icon);
-      option.appendChild(A.el('span', 'tile-actions-label', choice.label));
+      option.appendChild(A.el('span', 'tile-actions-label', A.i18n ? A.i18n.t(choice.label) : choice.label));
       option.setAttribute('role', 'menuitem');
       option.onclick = function () { chooseTileMenuAction(index); };
       menu.appendChild(option);
@@ -193,13 +193,18 @@
     tileMenu = { element: menu, backdrop: backdrop, glider: glider,
       id: id, page: page, choices: choices, selected: 0 };
     updateTileMenu();
+    el.classList.add('focused');
     function show() {
       if (tileMenu && tileMenu.element === menu) {
         backdrop.classList.add('is-open');
         menu.classList.add('is-open');
       }
     }
-    if (window.requestAnimationFrame) { window.requestAnimationFrame(show); }
+    var reducedMotion = false;
+    try { reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+    catch (e) { reducedMotion = false; }
+    if (reducedMotion) { show(); }
+    else if (window.requestAnimationFrame) { window.requestAnimationFrame(show); }
     else { setTimeout(show, 16); }
     return true;
   }
@@ -343,10 +348,10 @@
       }, cfg.LONG_PRESS_MS);
       return;
     }
-    if (k === KEY.LEFT) { moveFocus(0, -1); }
-    else if (k === KEY.RIGHT) { moveFocus(0, 1); }
-    else if (k === KEY.UP) { moveFocus(-1); }
-    else if (k === KEY.DOWN) { moveFocus(1); }
+    if (k === KEY.LEFT) { e.preventDefault(); moveFocus(0, -1); }
+    else if (k === KEY.RIGHT) { e.preventDefault(); moveFocus(0, 1); }
+    else if (k === KEY.UP) { e.preventDefault(); moveFocus(-1); }
+    else if (k === KEY.DOWN) { e.preventDefault(); moveFocus(1); }
     else if (k === KEY.BACK || k === KEY.ESC) {
       e.preventDefault();
       if (page !== 'home') { showPage('home'); }
