@@ -283,7 +283,8 @@
     return r.concat(A.chunk(kids('bg-still'), 8), [kids('weather-display')],
       [kids('weather-location')], results, [kids('weather-visibility')],
       [kids('units')], [kids('time-formats')], dateRows, [kids('network-visibility')],
-      [kids('live-tv-visibility')], [kids('card-sizes')], [kids('input-visibility')],
+      [kids('live-tv-visibility')], [kids('card-sizes')],
+      [kids('home-card-modes')], [kids('home-card-columns')], [kids('input-visibility')],
       [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]).filter(function (row) { return row.length; });
   }
 
