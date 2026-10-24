@@ -60,6 +60,49 @@
     return null;
   }
 
+  // V992.56 artwork optimisation: discover each Samsung-cache candidate list
+  // once per launcher session. Share both successful and negative resolutions
+  // across Home, All Apps and Settings; each tile still owns its DOM image.
+  var artworkJobs = {};
+  function discoverArtwork(sources, callback) {
+    if (!sources || !sources.length) { callback(null); return; }
+    var key = JSON.stringify(sources);
+    var job = artworkJobs[key];
+    if (job) {
+      if (job.done) { callback(job.src); }
+      else { job.waiters.push(callback); }
+      return;
+    }
+    job = { done: false, src: null, waiters: [callback] };
+    artworkJobs[key] = job;
+    var at = 0;
+    function finish(src) {
+      if (job.done) { return; }
+      job.done = true;
+      job.src = src;
+      var waiters = job.waiters;
+      job.waiters = [];
+      waiters.forEach(function (notify) { notify(src); });
+    }
+    function next() {
+      if (at >= sources.length) { finish(null); return; }
+      var image = new Image(), src = sources[at++], timer = null, settled = false;
+      function clear() { clearTimeout(timer); image.onload = image.onerror = null; }
+      function fail() {
+        if (settled) { return; }
+        settled = true; clear(); next();
+      }
+      image.onload = function () {
+        if (settled) { return; }
+        settled = true; clear(); finish(src);
+      };
+      image.onerror = fail;
+      timer = setTimeout(fail, 2000);
+      image.src = src;
+    }
+    next();
+  }
+
   function appTile(app, extraClass, onSelect) {
     var b = brandFor(app), tile = A.el('div');
     tile.className = 'tile app-tile' + (extraClass ? ' ' + extraClass : '');
@@ -120,27 +163,23 @@
       return tile;
     }
 
-    var sources = A.artwork.sources(app), at = 0;
-    function next() {
-      if (at >= sources.length) { return; }
-      var image = new Image(), src = sources[at++], timer;
-      function clear() { clearTimeout(timer); image.onload = image.onerror = null; }
-      function failed() { clear(); next(); }
+    discoverArtwork(A.artwork.sources(app), function (src) {
+      if (!src) { return; } // Original brand fallback remains visible.
+      var image = new Image();
       image.className = 'app-artwork'; image.alt = '';
       image.onload = function () {
-        clear();
+        image.onload = image.onerror = null;
         fallback.hidden = true;
-        // Do not let the fallback colour show through antialiased image corners.
         tile.style.background = 'transparent';
         tile.classList.add('has-artwork');
         tile.appendChild(image);
       };
-      image.onerror = failed;
-      // Keep the fallback visible if a local file lookup stalls on older firmware.
-      timer = setTimeout(failed, 2000);
+      image.onerror = function () {
+        image.onload = image.onerror = null;
+        // Keep native app/brand fallback if the cached image disappears.
+      };
       image.src = src;
-    }
-    next();
+    });
     return tile;
   }
 
