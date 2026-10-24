@@ -27,6 +27,7 @@ body.clock-custom main#rows { padding-top: 285px; }
   line-height: .85; white-space: nowrap;
 }
 .clock-custom-digits span { display: block; }
+.clock-custom-minute-row { display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; }
 .clock-custom-period { font-size: .20em; letter-spacing: 0; line-height: 1; font-weight: 400; }
 .clock-custom-date { font-size: 30px; font-weight: 400; margin-top: 13px; white-space: nowrap; }
 .clock-custom-weather {
