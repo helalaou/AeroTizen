@@ -98,3 +98,16 @@ test('returning to the foreground can refresh the system locale', () => {
   h.sendLocale('eng_GBR');
   assert.equal(h.A.i18n.code(), 'en');
 });
+
+test('the previously tested app menu and clock choices remain translatable', () => {
+  const h = harness('it-IT', false);
+  assert.equal(h.A.i18n.t('Move'), 'Sposta');
+  assert.equal(h.A.i18n.t('Add to Home'), 'Aggiungi alla Home');
+  assert.equal(h.A.i18n.t('Remove from Home'), 'Rimuovi dalla Home');
+  assert.equal(h.A.i18n.t('Classic AeroTizen'), 'Classica AeroTizen');
+  assert.equal(h.A.i18n.t('Clock style'), 'Stile orologio');
+  assert.equal(h.A.i18n.t('Large vertical'), 'Verticale grande');
+  assert.equal(h.A.i18n.t('Horizontal'), 'Orizzontale');
+  assert.equal(h.A.i18n.t('Thin'), 'Sottile');
+  assert.equal(h.A.i18n.t('Bold'), 'Grassetto');
+});
