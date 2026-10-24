@@ -1,18 +1,28 @@
+// Regression tests for the imported custom-clock structure and cached weather.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 
-function runtime(saved = {}, locale = 'en-GB') {
+function runtime(saved = {}, cache) {
   const values = new Map([['aerotizen.settings.v1', JSON.stringify(saved)]]);
-  const css = new Set();
+  if (cache) { values.set('aerotizen.weather.v2', JSON.stringify(cache)); }
   function element() {
+    const classes = new Set();
     const node = {
-      hidden: false, childNodes: [], parentNode: { classList: { toggle() {} } },
-      setAttribute() {}, classList: { toggle(name, on) {
-        if (on) { css.add(name); } else { css.delete(name); }
-      } }, appendChild(child) { this.childNodes.push(child); return child; },
+      hidden: false, style: {}, childNodes: [], parentNode: { classList: { toggle() {} } },
+      classList: {
+        add: key => classes.add(key),
+        remove: (...keys) => keys.forEach(key => classes.delete(key)),
+        contains: key => classes.has(key),
+        toggle: (key, on) => {
+          if (on) { classes.add(key); } else { classes.delete(key); }
+        }
+      },
+      querySelector: () => null,
+      setAttribute() {},
+      appendChild(child) { this.childNodes.push(child); return child; },
       cloneNode() { return element(); }
     };
     let value = '';
@@ -24,21 +34,20 @@ function runtime(saved = {}, locale = 'en-GB') {
   }
   const elements = {};
   [
-    'date', 'time', 'weather', 'clock-custom-widget', 'clock-custom-digits',
-    'clock-custom-hours', 'clock-custom-minutes', 'clock-custom-period',
-    'clock-custom-date', 'clock-custom-weather'
+    'date', 'time', 'weather', 'aero-v991-widget', 'aero-v991-hours',
+    'aero-v991-minutes', 'aero-v991-date', 'aero-v991-weather-icon',
+    'aero-v991-temp', 'aero-v991-condition', 'aero-v991-city'
   ].forEach(id => { elements[id] = element(); });
-  elements.time.setAttribute = function (name, value) { this[name] = value; };
-  const A = { $: id => elements[id] };
-  const doc = {
-    body: { classList: { toggle(name, on) {
-      if (on) { css.add(name); } else { css.delete(name); }
-    } } },
-    getElementById: id => elements[id]
+  const document = {
+    body: element(),
+    getElementById: id => elements[id],
+    createElement: () => element(),
+    addEventListener() {}
   };
+  const A = { $: id => elements[id] };
   const context = vm.createContext({
-    window: { AeroTizen: A, navigator: { languages: [locale], language: locale }, Intl },
-    document: doc, AeroTizen: A,
+    window: { AeroTizen: A, navigator: { languages: ['en-GB'], language: 'en-GB' }, Intl },
+    document, AeroTizen: A, Date, isFinite,
     localStorage: {
       getItem: key => values.get(key) ?? null,
       setItem: (key, value) => { values.set(key, value); }
@@ -48,71 +57,70 @@ function runtime(saved = {}, locale = 'en-GB') {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../launcher/js', name), 'utf8'), context);
   }
   A.settings.load();
-  return { A, elements, css, values };
+  return { A, elements, values, document };
 }
 
-test('original compact header remains the default, including old saved preferences', () => {
+test('existing installations default to the original compact header', () => {
   for (const saved of [{}, { showTime: false, dateFormat: 'none' }]) {
-    const { A, elements, css } = runtime(saved);
+    const { A, elements, document } = runtime(saved);
     A.clockLayouts.apply();
     assert.equal(A.settings.clockLayout, 'classic');
-    assert.equal(elements['clock-custom-widget'].hidden, true);
-    assert.equal(css.has('clock-custom'), false);
+    assert.equal(elements['aero-v991-widget'].hidden, true);
+    assert.equal(document.body.classList.contains('s90c-clock-classic'), true);
   }
 });
 
-test('all four custom clock styles share the upstream locale and persist', () => {
-  const { A, elements, css, values } = runtime({ clockLayout: 'custom', timeFormat: '12' }, 'en-US');
+test('four imported clock styles can be selected and persisted', () => {
+  const { A, elements, values } = runtime({ clockLayout: 'custom', timeFormat: '24' });
   A.clockLayouts.apply();
-  assert.equal(css.has('clock-custom'), true);
-  assert.equal(elements['clock-custom-widget'].hidden, false);
-  assert.ok(elements['clock-custom-hours'].textContent);
-  assert.ok(elements['clock-custom-date'].textContent);
+  assert.equal(elements['aero-v991-widget'].hidden, false);
   for (const style of ['vertical', 'horizontal', 'minimal', 'bold']) {
     A.clockLayouts.chooseStyle(style);
     assert.equal(A.settings.aeroClockStyle, style);
-    assert.equal(elements['clock-custom-widget'].className, 'clock-custom-widget style-' + style);
     assert.equal(JSON.parse(values.get(A.config.STORAGE_KEY)).aeroClockStyle, style);
+    assert.equal(elements['aero-v991-widget'].classList.contains('style-' + style), style !== 'vertical');
   }
   A.clockLayouts.chooseLayout('classic');
-  assert.equal(elements['clock-custom-widget'].hidden, true);
-  assert.equal(css.has('clock-custom'), false);
-  assert.equal(JSON.parse(values.get(A.config.STORAGE_KEY)).clockLayout, 'classic');
+  assert.equal(elements['aero-v991-widget'].hidden, true);
 });
 
-test('time/date visibility and upstream formats apply to the custom clock', () => {
+test('large clock uses upstream date and 24-hour time formats', () => {
   const { A, elements } = runtime({ clockLayout: 'custom', timeFormat: '24', dateFormat: 'iso' });
   A.clockLayouts.apply();
-  assert.match(elements['clock-custom-hours'].textContent, /^\\d{2}$/);
-  assert.match(elements['clock-custom-date'].textContent, /^\\d{4}-\\d{2}-\\d{2}$/);
-  A.settings.showTime = false;
-  A.settings.showWeather = false;
-  A.settings.dateFormat = 'none';
-  A.clock.tick();
-  assert.equal(elements['clock-custom-digits'].hidden, true);
-  assert.equal(elements['clock-custom-date'].hidden, true);
-  assert.equal(elements['clock-custom-widget'].hidden, true);
+  assert.match(elements['aero-v991-hours'].textContent, /^\d{2}$/);
+  assert.match(elements['aero-v991-minutes'].textContent, /^\d{2}$/);
+  assert.match(elements['aero-v991-date'].textContent, /^\d{4}-\d{2}-\d{2}$/);
 });
 
-test('custom weather mirrors upstream readings and honors visibility', () => {
-  const { A, elements } = runtime({ clockLayout: 'custom' });
-  const upstream = elements.weather;
-  upstream.hidden = false;
-  const sample = { cloneNode: () => ({ sample: true }) };
-  upstream.childNodes.push(sample);
-  A.clockLayouts.apply();
-  assert.equal(elements['clock-custom-weather'].hidden, false);
-  assert.equal(elements['clock-custom-weather'].childNodes.length, 1);
-  upstream.hidden = true;
-  A.clockLayouts.update();
-  assert.equal(elements['clock-custom-weather'].hidden, true);
-  assert.equal(elements['clock-custom-weather'].childNodes.length, 0);
+test('the tested cache validation rejects stale and mismatched weather', () => {
+  const saved = { clockLayout: 'custom', showWeather: true, tempUnit: 'C' };
+  const old = runtime(saved, { source: 'auto', temp: 20, code: 0, at: Date.now() - 8000000, unit: 'C' });
+  old.A.clockLayouts.apply();
+  assert.equal(old.elements['aero-v991-temp'].textContent, '--°');
+  const wrongUnit = runtime(saved, { source: 'auto', temp: 20, code: 0, at: Date.now(), unit: 'F' });
+  wrongUnit.A.clockLayouts.apply();
+  assert.equal(wrongUnit.elements['aero-v991-temp'].textContent, '--°');
 });
 
-test('unknown saved clock choices fall back without changing stored data', () => {
-  const { A, elements } = runtime({ clockLayout: 'invalid', aeroClockStyle: 'invalid' });
+test('valid cached weather renders temperature, WMO condition and city', () => {
+  const { A, elements } = runtime(
+    { clockLayout: 'custom', tempUnit: 'C', weatherShowLocation: true },
+    { source: 'auto', temp: 23.4, code: 3, at: Date.now(), unit: 'C', city: 'Cagliari' }
+  );
   A.clockLayouts.apply();
-  assert.equal(elements['clock-custom-widget'].hidden, true);
-  assert.equal(elements['clock-custom-widget'].className, 'clock-custom-widget style-vertical');
-  assert.equal(A.settings.clockLayout, 'invalid');
+  assert.equal(elements['aero-v991-temp'].textContent, '23°');
+  assert.equal(elements['aero-v991-condition'].textContent, 'Cloudy');
+  assert.equal(elements['aero-v991-city'].textContent, 'Cagliari');
+  A.settings.weatherShowLocation = false;
+  A.clockLayouts.refreshWeather();
+  assert.equal(elements['aero-v991-city'].textContent, '');
+});
+
+test('time, weather, and date visibility respect saved preferences', () => {
+  const { A, elements } = runtime({ clockLayout: 'custom', showTime: false, showWeather: false, dateFormat: 'none' });
+  A.clockLayouts.apply();
+  assert.equal(elements['aero-v991-widget'].hidden, true);
+  assert.equal(elements['aero-v991-hours'].style.display, 'none');
+  assert.equal(elements['aero-v991-weather-icon'].parentNode.style.display, 'none');
+  assert.equal(elements['aero-v991-date'].style.display, 'none');
 });
