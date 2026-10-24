@@ -174,6 +174,8 @@
       return A.i18n && A.i18n.label ? A.i18n.label(key, english) : english;
     }
     modes.textContent = ''; cols.textContent = '';
+    modes.setAttribute('aria-label', label('home-cards:heading', 'Home tile layout'));
+    cols.setAttribute('aria-label', label('home-columns:heading', 'Apps per row'));
     [['square', 'Square'], ['rectangle', 'Rectangle']].forEach(function (item) {
       var key = 'home-cards:' + item[0];
       modes.appendChild(pill(key, label(key, item[1]),
