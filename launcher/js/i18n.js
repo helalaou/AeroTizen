@@ -4,6 +4,13 @@
   'use strict';
 
   var italian = {
+    "Weather photos": "Foto meteo",
+    "Solid colour": "Tinta unita",
+    "Gradients": "Gradienti",
+    "Background type": "Tipo di sfondo",
+    "Wi-Fi (signal unavailable)": "Wi-Fi (intensità non disponibile)",
+    "Network status unavailable": "Stato rete non disponibile",
+
     'All apps': 'Tutte le app',
     'Home apps': 'App Home',
     'No apps found.': 'Nessuna app trovata.',
