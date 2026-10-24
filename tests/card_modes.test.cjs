@@ -101,3 +101,29 @@ test('Rectangle geometry matches reference at 3, 4 and 5 columns', () => {
   assert.match(css, /\.app-grid\.cards-rectangle \.tile\.focused/);
   assert.match(html, /href="css\/card-modes\.css"/);
 });
+
+test('Selected shape and columns persist through the official settings storage', () => {
+  const storage = {};
+  const A = {};
+  const window = {
+    AeroTizen: A,
+    navigator: { language: 'it-IT', languages: ['it-IT'] }
+  };
+  vm.runInNewContext(read('js/config.js'), { window, AeroTizen: A });
+  A.clock = { defaultTimeFormat: () => '24' };
+  const localStorage = {
+    getItem: key => storage[key] || null,
+    setItem: (key, value) => { storage[key] = value; }
+  };
+  vm.runInNewContext(read('js/settings.js'), { window, localStorage });
+  A.settings.load();
+  assert.equal(A.settings.homeCardMode, 'square');
+  A.settings.homeCardMode = 'rectangle';
+  A.settings.homeCardColumns = 4;
+  A.settings.save();
+  A.settings.homeCardMode = 'square';
+  A.settings.homeCardColumns = null;
+  A.settings.load();
+  assert.equal(A.settings.homeCardMode, 'rectangle');
+  assert.equal(A.settings.homeCardColumns, 4);
+});
