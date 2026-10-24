@@ -39,6 +39,10 @@
         tile.setAttribute('aria-label', 'Fireplace');
         tile.title = 'Fireplace';
         tile.innerHTML = A.tiles.ICONS.flame;
+        if (mode === 'rectangle') {
+          tile.classList.add('brand-rectangle');
+          tile.appendChild(A.el('div', 'name', 'Fireplace'));
+        }
         tile.onclick = A.apps.playFireplace;
       } else {
         var app = A.apps.byId(id);
