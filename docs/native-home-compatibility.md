@@ -38,7 +38,7 @@ Additional example: [Clean Home's 2024 helper](https://github.com/chaosmanage/sa
 
 1. **Discover (read-only):** use `tools/native-home-compatibility/survey.py` to query the model, platform and architecture. It records an evidence category; it never stages an executable or authorizes a write.
 2. **Investigate:** confirm exact firmware independently on the TV, ABI, native library and SDK-user eligibility. The same firmware family name is not sufficient.
-3. **Query native values with separately reviewed code:** save an original, typed six-key baseline **privately**. A model's original `auto_start` is not transferable to another model.
+3. **Query native values with separately reviewed code:** `tools/native-home-compatibility/NativeHomeQuery.cs` is a **source-only, read-only** diagnostic that has no setters and requires ARM32, SDK UID 901 and the expected native libraries. It is **not automatically executed, installed or authorized for an unknown firmware**. Only after separate owner approval, ABI/library review and a safe native execution route, use it to save an original, typed six-key baseline **privately**. A model's original `auto_start` is not transferable to another model.
 4. **Design a firmware-specific write adapter and inverse restore** from that baseline. Do not weaken `S90CHomeBinding.cs` guards to accommodate an unknown TV.
 5. **Validate recovery first:** demonstrate the native query and restore transport can operate safely on that model. An uploaded file or a successful build is insufficient.
 6. **Request explicit approval for an individual device**, then perform the minimum required native assignment. Requery after each native setter.
@@ -55,7 +55,7 @@ python tools/native-home-compatibility/survey.py --host <PRIVATE_TV_IPV4>
 
 The local-network address is read from the command line; the survey does not save the address, connect to a third-party server, or invoke a native setter. It reads TV identification via the TV's local `/api/v2/` API and SDB's **capability service**. This is still device access: run it only against your own authorised TV. The output **always** contains `native_write_authorized: false` and `restore_validated: false`.
 
-The JSON references are examples, not authorization profiles. An unlisted TV can still be investigated safely. An exact reported model plus Tizen version is not a firmware/ABI verification, and an exact firmware must not be assumed from a reference.
+For read-only native source inspection, see [NativeHomeQuery.cs](../tools/native-home-compatibility/NativeHomeQuery.cs) and its [standalone project](../tools/native-home-compatibility/NativeHomeQuery.csproj). No native execution transport is bundled for unknown devices, and no new firmware has been tested with that helper.\n\nThe JSON references are examples, not authorization profiles. An unlisted TV can still be investigated safely. An exact reported model plus Tizen version is not a firmware/ABI verification, and an exact firmware must not be assumed from a reference.
 
 ## Branch policy
 
