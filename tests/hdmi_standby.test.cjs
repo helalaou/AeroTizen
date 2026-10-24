@@ -142,3 +142,82 @@ test('visibility with no filtering remains backward compatible', () => {
   assert.equal(h.tiles[1].classes.has('off'), false);
   assert.equal(h.builds, 1);
 });
+
+test('manual per-port exception preserves an unidentified but explicitly selected HDMI input', () => {
+  const h = harness({ hdmiKeepVisible: { '2': true } }, {
+    disconnected: [
+      { type: 'HDMI', number: 1, editName: 'HDMI 1' },
+      { type: 'HDMI', number: 2, editName: 'HDMI 2' }
+    ]
+  });
+  h.A.inputs.load();
+  assert.deepEqual(h.tiles.map(x => x.name), ['HDMI 2']);
+  assert.equal(h.tiles[0].classes.has('off'), true, 'override must not claim a signal');
+  h.A.settings.hdmiKeepVisible = {};
+  h.A.inputs.render();
+  assert.equal(h.tiles.length, 0);
+});
+
+test('Settings override controls use persisted source numbers and accept remote selection', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../launcher/js/settings-ui.js'), 'utf8');
+  const start = source.indexOf('  function renderHdmiOverrides() {');
+  const end = source.indexOf('\n\n  // OK opens the TV', start);
+  assert.ok(start >= 0 && end > start);
+  const box = {
+    children: [],
+    set textContent(value) { if (value === '') this.children.length = 0; },
+    appendChild(child) { this.children.push(child); }
+  };
+  const S = { hdmiKeepVisible: {}, save() {} };
+  let renders = 0;
+  const A = {
+    $: name => name === 'hdmi-force-visibility' ? box : null,
+    inputs: {
+      sources: [
+        { type: 'HDMI', number: 3 }, { type: 'HDMI', number: 1 },
+        { type: 'HDMI', number: 3 }, { type: 'TV', number: 1 }
+      ],
+      render() { renders++; }
+    }
+  };
+  const pill = (key, label, selected, callback) => ({
+    key, label, selected, callback, attributes: {},
+    setAttribute(name, value) { this.attributes[name] = value; }
+  });
+  const render = vm.runInNewContext('(' + source.slice(start, end).trim() + ')',
+    { A, S, pill, changed: fn => fn(), focusKey: null });
+  render();
+  assert.deepEqual(box.children.map(x => x.key), ['hdmi-keep:1', 'hdmi-keep:3']);
+  assert.equal(box.children[0].attributes['aria-pressed'], 'false');
+  box.children[0].callback();
+  assert.equal(S.hdmiKeepVisible['1'], true);
+  assert.equal(renders, 1);
+  render();
+  assert.equal(box.children[0].attributes['aria-pressed'], 'true');
+  box.children[0].callback();
+  assert.equal(S.hdmiKeepVisible['1'], undefined);
+  assert.match(source, /kids\('hdmi-force-visibility'\)/);
+  assert.match(fs.readFileSync(path.join(__dirname, '../launcher/index.html'), 'utf8'),
+    /id="hdmi-force-visibility"/);
+});
+
+test('HDMI per-port exceptions survive the existing official settings storage', () => {
+  const store = {};
+  const A = { clock: { defaultTimeFormat: () => '24' } };
+  const window = { AeroTizen: A, navigator: { language: 'it-IT' } };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../launcher/js/config.js'), 'utf8'),
+    { window, AeroTizen: A });
+  const localStorage = {
+    getItem: key => store[key] || null,
+    setItem: (key, data) => { store[key] = data; }
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../launcher/js/settings.js'), 'utf8'),
+    { window, localStorage });
+  A.settings.load();
+  assert.equal(Object.keys(A.settings.hdmiKeepVisible).length, 0);
+  A.settings.hdmiKeepVisible['2'] = true;
+  A.settings.save();
+  A.settings.hdmiKeepVisible = {};
+  A.settings.load();
+  assert.equal(A.settings.hdmiKeepVisible['2'], true);
+});
