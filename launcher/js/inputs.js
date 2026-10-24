@@ -3,7 +3,7 @@
 (function (A) {
   'use strict';
 
-  var tz = A.tizen, ICONS = A.tiles.ICONS;
+  var tz = A.tizen;
   var inputs = A.inputs = { sources: [], watching: false };
 
   inputs.portName = function (s) { return s.type === 'TV' ? 'Live TV' : s.type + ' ' + s.number; };
