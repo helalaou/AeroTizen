@@ -265,3 +265,8 @@ body.editing:not(.previewing) main {
   #editor .aero-content-glider,
   #editor .aero-settings-frame { animation: none !important; transition: none !important; }
 }
+
+/* Compact category browsing from V992.56; expansion never waits for animation. */
+#editor.aero-settings-collapsed .aero-settings-frame { width: 390px; }
+#editor.aero-settings-collapsed .aero-settings-sidebar { flex: 1 1 auto; border-right: 0; }
+#editor.aero-settings-collapsed .aero-settings-main { display: none; }

@@ -167,3 +167,16 @@ test('manual HDMI exceptions from PR #29 stay inside the Sources Settings catego
   assert.ok(visible.includes(h.ids['hdmi-force-visibility'].choice));
   assert.equal(h.A.glassUI.activeId(), 'sources');
 });
+
+
+test('compact category arrows defer detail layout until expansion', () => {
+  const h = harness();
+  h.A.glassUI.collapse();
+  h.A.glassUI.select('sources');
+  assert.equal(h.A.glassUI.activeId(), 'sources');
+  assert.equal(h.A.glassUI.rows().length, 5);
+  h.A.glassUI.expand();
+  assert.equal(h.A.glassUI.rows()[5][0], h.ids['input-visibility'].choice);
+  h.A.glassUI.collapse();
+  assert.equal(h.A.glassUI.rows().length, 5);
+});

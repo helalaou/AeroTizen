@@ -315,6 +315,7 @@
       if (k === KEY.BACK || k === KEY.ESC) {
         e.preventDefault();
         if (!inSidebar) {
+          if (ui.collapse) { ui.collapse(); }
           eRow = ui.activeIndex(); eCol[eRow] = 0;
           focusKey = 'section:' + ui.activeId();
           focus();
@@ -327,13 +328,15 @@
           e.preventDefault();
           eRow = Math.max(0, Math.min(menuCount - 1, eRow + (k === KEY.UP ? -1 : 1)));
           eCol[eRow] = 0;
-          ui.activate(rr[eRow][0].dataset.sectionMenu);
+          if (ui.select) { ui.select(rr[eRow][0].dataset.sectionMenu); }
+          else { ui.activate(rr[eRow][0].dataset.sectionMenu); }
           focusKey = rr[eRow][0].dataset.key;
           focus();
           return;
         }
         if (k === KEY.ENTER || k === KEY.RIGHT) {
           e.preventDefault();
+          if (ui.expand) { ui.expand(); }
           var expanded = editorRows();
           if (expanded.length > menuCount) {
             eRow = menuCount; eCol[eRow] = 0; focusKey = null; focus();
@@ -348,6 +351,7 @@
         if (current && current.adjust) { current.adjust(k === KEY.LEFT ? -1 : 1); return; }
         var cc = eCol[eRow] || 0;
         if (k === KEY.LEFT && cc === 0) {
+          if (ui.collapse) { ui.collapse(); }
           eRow = ui.activeIndex(); eCol[eRow] = 0;
           focusKey = 'section:' + ui.activeId(); focus();
           return;
@@ -393,7 +397,7 @@
     open = true; eRow = 0; eCol = []; focusKey = 'section:appearance';
     document.body.classList.add('editing');
     A.$('editor').hidden = false;
-    if (A.glassUI) { A.glassUI.create(); A.glassUI.activate('appearance'); }
+    if (A.glassUI) { A.glassUI.create(); A.glassUI.activate('appearance'); if (A.glassUI.collapse) { A.glassUI.collapse(); } }
     render();
   }
 

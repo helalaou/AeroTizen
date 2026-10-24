@@ -160,6 +160,8 @@
   function activate(id) {
     if (!state.built) { create(); }
     if (!state.panes[id]) { return; }
+    state.expanded = true;
+    editor.classList.remove('aero-settings-collapsed');
     var changed = state.active !== id;
     state.active = id;
     if (changed) {
@@ -191,7 +193,25 @@
     if (line.length) { rows.push(line); }
     return rows;
   }
-  function rows() { return state.nav.map(function (n) { return [n]; }).concat(visibleRows()); }
+  function rows() {
+    return state.nav.map(function (n) { return [n]; }).concat(state.expanded ? visibleRows() : []);
+  }
+  function collapse() {
+    state.expanded = false;
+    editor.classList.add('aero-settings-collapsed');
+    state.contentGlider.classList.remove('is-visible');
+  }
+  function select(id) {
+    if (state.expanded) { activate(id); return; }
+    if (!state.panes[id]) { return; }
+    // In the compact menu, arrows only update selection; details wait for OK.
+    state.active = id;
+    groups.forEach(function (group, i) {
+      state.nav[i].classList.toggle('aero-current-section', group.id === id);
+    });
+  }
+  function expand() { activate(state.active); }
+
   function updateHighlight(focused) {
     if (!state.built) { return; }
     var inMenu = !!(focused && focused.dataset && focused.dataset.sectionMenu);
@@ -270,7 +290,8 @@
     state.title.textContent = translate(findGroup(state.active).title);
   }
   A.glassUI = {
-    create: create, activate: activate, rows: rows, refreshLabels: refreshLabels,
+    create: create, activate: activate, select: select, expand: expand, collapse: collapse,
+    rows: rows, refreshLabels: refreshLabels,
     scrollTo: scrollTo, updateHighlight: updateHighlight,
     navCount: function () { return state.nav.length; },
     activeIndex: activeIndex,
