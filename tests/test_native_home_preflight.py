@@ -12,8 +12,11 @@ spec.loader.exec_module(preflight)
 
 class NativeHomePreflightTests(unittest.TestCase):
     def test_private_ipv4_only(self):
-        self.assertEqual(preflight.check_host("192.168.1.88"), "192.168.1.88")
+        for host in ["192.168.1.88", "10.20.30.40", "172.31.255.254"]:
+            self.assertEqual(preflight.check_host(host), host)
         for host in ["127.0.0.1", "8.8.8.8", "169.254.1.3",
+                     "192.0.2.1", "198.51.100.2", "203.0.113.8",
+                     "100.64.0.1", "172.32.0.4", "240.0.0.1",
                      "example.org", "2001:db8::1", ""]:
             with self.subTest(host=host), self.assertRaises(argparse.ArgumentTypeError):
                 preflight.check_host(host)
