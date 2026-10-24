@@ -37,6 +37,8 @@
     var panel = A.$('weather-photo-choice');
     if (!panel || !A.photoWeather) { return; }
     panel.textContent = '';
+    panel.setAttribute('aria-label',
+      A.i18n && A.i18n.t ? A.i18n.t('Weather wallpaper') : 'Weather wallpaper');
     [['off', 'Off'], ['auto', 'Automatic (weather)']].forEach(function (choice) {
       var key = 'photo-weather:' + choice[0];
       var selected = (S.weatherPhoto === true) === (choice[0] === 'auto');
