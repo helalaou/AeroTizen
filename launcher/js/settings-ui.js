@@ -40,7 +40,8 @@
     [['off', 'Off'], ['auto', 'Automatic (weather)']].forEach(function (choice) {
       var key = 'photo-weather:' + choice[0];
       var selected = (S.weatherPhoto === true) === (choice[0] === 'auto');
-      var control = pill(key, choice[1], selected, function () {
+      var label = A.i18n && A.i18n.label ? A.i18n.label(key, choice[1]) : choice[1];
+      var control = pill(key, label, selected, function () {
         S.weatherPhoto = choice[0] === 'auto';
         focusKey = key;
         changed(function () {
