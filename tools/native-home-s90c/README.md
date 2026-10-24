@@ -17,6 +17,16 @@ On the tested Samsung S90C, physical remote HOME was assigned to `DclHome001.Hom
 
 **Do not run `apply` just because you installed or upgraded AeroTizen.** If HOME already opens AeroTizen, the existing native mapping may remain valid after an in-place update with the same package ID.
 
+## Read-only compatibility check (no native staging)
+
+After confirming the TV is the expected S90C, run this command from a development checkout with the project's Python package installed:
+
+```sh
+python tools/native-home-s90c/preflight.py --host <PRIVATE_TV_IP>
+```
+
+It reads only the TV's public status and SDB capability data, rejects a different model or unsupported architecture, and **does not query or modify the native HOME assignment**. It deliberately reports `permission_to_apply: false` even when its checks pass. Exact firmware and the native original-state readback still require the separately reviewed device helper.
+
 ## Build and transport
 
 The native helper was previously built and verified only on the owner's Samsung S90C using a firmware-specific .NET 6 runtime and an undocumented Developer Mode transport. **The compiled device DLL, private original-state snapshot, install credentials, network address and the execution transport are intentionally NOT included.** Merely building this project does not install, activate or change the TV.
