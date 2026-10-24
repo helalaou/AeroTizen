@@ -46,7 +46,10 @@
     if (b.largeLogo) { fallback.classList.add('logo-big'); }
     if (mark) {
       fallback.innerHTML = mark;
-    } else if (b.useAppIcon && app.icon) {
+    } else if (b.useAppIcon && app.icon &&
+               !(extraClass === 'home-display' && A.settings.homeCardMode === 'rectangle')) {
+      // Rectangle uses the original brand-banner text fallback. Native Tizen
+      // square icons are reserved for Square mode and Settings app pickers.
       var img = new Image();
       img.className = 'logo'; img.alt = '';
       img.onerror = function () { fallback.removeChild(img); };
