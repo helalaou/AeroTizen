@@ -43,7 +43,7 @@ test('apply checks original snapshot and boot eligibility and requires confirmat
 test('restore requires distinct confirmation and does not change unknown states', () => {
   assert.match(native, /CONFIRM_SAMSUNG_RESTORE/);
   assert.match(native, /unknown state|unexpected state/i);
-  assert.match(native, /SetBoth\(Samsung\)/);
+  assert.match(native, /WritePair\(before, apply \? Aero : Samsung\)/);
 });
 test('only the two validated HOME setters are present', () => {
   const refs = [...native.matchAll(/vconf_set_str\(([^)]+)\)/g)].map(x => x[1]);
