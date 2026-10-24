@@ -99,6 +99,9 @@
       if (banner) {
         tile.style.background = banner.background;
         tile.classList.add('brand-original-banner');
+        if (banner.file === 'raiplay-official.png') {
+          tile.classList.add('brand-raiplay');
+        }
         var photo = new Image();
         photo.className = 'brand-custom-art';
         photo.alt = '';
