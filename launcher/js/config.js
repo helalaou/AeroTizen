@@ -46,6 +46,7 @@ AeroTizen.config = {
     timeFormat: null,  // Detect 12/24-hour format when first loaded.
     showLiveTv: true,
     hideDisconnectedHdmi: false,
+    hdmiKeepVisible: {},  // Optional per-port exception for an unidentified device.
     inputNames: {}
   }
 };
