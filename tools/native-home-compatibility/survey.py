@@ -46,13 +46,30 @@ def assess(device, capabilities, catalogue):
     if not platform or not arch or not bits:
         raise ValueError("Incomplete SDB capabilities")
     known = reference_for(model, catalogue)
-    comparable = known is not None and arch == known["arch"] and bits == known["bitness"] and platform == known["tizen"]
+    reported_firmware = device.get("firmwareVersion")
+    reported_firmware = reported_firmware.strip() if isinstance(reported_firmware, str) else None
+    reported_firmware = reported_firmware or None
+    # Reported firmware is informational, not cryptographically verified.
+    # A *different* reported version must never inherit the reference device's
+    # successful physical-HOME evidence even if model and Tizen match.
+    firmware_comparison = (
+        reported_firmware == known["firmware"]
+        if known is not None and reported_firmware is not None else None
+    )
+    comparable = (
+        known is not None
+        and arch == known["arch"]
+        and bits == known["bitness"]
+        and platform == known["tizen"]
+        and firmware_comparison is not False
+    )
     return {
         "model": model,
         "tizen_reported": platform,
         "cpu_arch_reported": arch,
         "architecture_reported": bits,
-        "firmware_reported_unverified": device.get("firmwareVersion") or None,
+        "firmware_reported_unverified": reported_firmware,
+        "firmware_reported_matches_reference": firmware_comparison,
         "reference_match": comparable,
         "reference_evidence": known["evidence"] if comparable else "unverified",
         "reference_firmware": known["firmware"] if comparable else None,
