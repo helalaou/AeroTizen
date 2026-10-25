@@ -142,6 +142,42 @@ the cold boot. The user restored Night Mode to on and left AeroTizen visible.
 Final state and the full test sequence are recorded in
 [the current round-trip evidence](home-pc-roundtrip-tv-20261025.json).
 
+### Foreground investigation on 25 October
+
+A further cold boot, with no routing changes, took about 30 seconds by user
+estimate. Its saved trace showed Home-rendered at 1555 ms and app discovery at
+17331 ms after first script. All 74 complete LevelDB log records passed CRC32C
+validation. The early PC sampler failed; its temporary staging was checked and
+no files remained. Its timing is not usable evidence.
+
+The diagnostic build records window focus and bounded launch-routing flags;
+other application payloads are excluded. From Samsung Home, one physical Home
+press left AeroTizen hidden and unfocused. Its current requested app-control
+nevertheless contained `entry_point=smarthub_key` and `SkipReload=Yes`. No new
+JavaScript app-control, focus or visibility event was recorded. An ordinary
+`tizen.application.launch` then opened AeroTizen, with focus, immediately.
+The native request therefore reaches the selected app; foreground resume remains
+an open issue. The absence of a JavaScript event alone does not prove a missing
+native request. A separate Home relay is a possible follow-up, not a tested Frame
+fix. No Home, boot or Art setting was changed in this investigation.
+
+With focus diagnostics installed, a further cold boot took about 33 seconds.
+Home rendered at 1227 ms, gained focus at 1417 ms, and app discovery completed
+at 20858 ms after first script. The launch carried `__K_BG_LAUNCH=enable` and
+`entry_point=cold_booting`. Samsung's boot manager exited at 8.9 seconds of kernel
+uptime. This run does not support a 30-second boot-manager wait or a late window
+focus as the explanation for the full visible delay.
+
+A controlled trial deferred discovery when a saved Home and app cache existed.
+It still took about 30 seconds to appear. The saved trace confirmed discovery
+started at 32117 ms and finished at 34013 ms after first script; Home rendered
+at 1377 ms and gained focus at 1545 ms. The 83 and 88 complete records in these
+two captures passed CRC32C validation. The extra discovery delay was removed
+and the diagnostic build reinstalled with all 33 runtime files and saved
+settings verified. Startup remains unresolved; these user estimates and browser
+marks do not identify the remaining firmware or display wait. Watcher activity
+remained zero. No foreground relaunch, relay or system patch was added.
+
 ## Recovery when Samsung's HTTP API is unavailable
 
 Native Home can be usable before port 8001 starts. Home commands now connect over

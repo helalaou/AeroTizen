@@ -50,6 +50,7 @@
   A.homeScreen.render();
   startup.mark('home-rendered');
   function discover() {
+    startup.captureLaunch();
     A.network.start();
     window.Weather.start(function () { return A.settings; });
     A.inputs.load();
