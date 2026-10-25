@@ -29,6 +29,8 @@ namespace AeroTizen.Home
         public bool Boot { get; set; }
         public bool ArtReturn { get; set; }
         public string RestoreBootTransaction { get; set; }
+        public bool LauncherAbsent { get; set; }
+        public bool RecoveryBoot { get; set; }
     }
     public sealed class Result
     {
@@ -42,6 +44,7 @@ namespace AeroTizen.Home
     {
         string Firmware { get; }
         bool LauncherEligible();
+        bool LauncherInstalled();
         Snapshot Read();
         void SetMain(string value);
         void SetString(string key, string value);
@@ -103,10 +106,15 @@ namespace AeroTizen.Home
                 throw new Exception("Watcher handoff readback failed.");
             return value;
         }
-        private static void Write(IPlatform platform, Snapshot desired)
+        private static void RequireAbsent(IPlatform platform)
+        {
+            if (platform.LauncherInstalled()) throw new Exception("AeroTizen is installed; watcher coordination is required.");
+        }
+        private static void Write(IPlatform platform, Snapshot desired, bool requireAbsent = false)
         {
             if (platform.Read().Main != desired.Main)
             {
+                if (requireAbsent) RequireAbsent(platform);
                 platform.SetMain(desired.Main);
                 if (platform.Read().Main != desired.Main) throw new Exception("Home operation readback failed.");
             }
@@ -115,15 +123,33 @@ namespace AeroTizen.Home
             foreach (string key in Keys)
             {
                 if (platform.Read().Strings[key] == desired.Strings[key]) continue;
+                if (requireAbsent) RequireAbsent(platform);
                 platform.SetString(key, desired.Strings[key]);
                 if (platform.Read().Strings[key] != desired.Strings[key]) throw new Exception("Setting readback failed: " + key);
             }
             if (platform.Read().AutoStart != desired.AutoStart)
             {
+                if (requireAbsent) RequireAbsent(platform);
                 platform.SetAutoStart(desired.AutoStart);
                 if (platform.Read().AutoStart != desired.AutoStart) throw new Exception("Autostart readback failed.");
             }
             if (!Same(platform.Read(), desired)) throw new Exception("Final Home readback failed.");
+            if (requireAbsent) RequireAbsent(platform);
+        }
+        private static Result RestoreAbsent(IPlatform platform, Request request, Snapshot before)
+        {
+            Compatible(before, request.Original, request.RecoveryBoot);
+            try
+            {
+                RequireAbsent(platform);
+                if (!Same(platform.Read(), before)) throw new Exception("Home changed during restore preflight.");
+                Write(platform, request.Original, true);
+                return new Result { Success = true, After = platform.Read() };
+            }
+            catch (Exception error)
+            {
+                return new Result { Error = "Restore incomplete; preserve the PC backup and receipts, inspect status and retry: " + error.Message };
+            }
         }
         public static Result Execute(IPlatform platform, Request request)
         {
@@ -131,10 +157,18 @@ namespace AeroTizen.Home
             if (request.Action != "apply" && request.Action != "restore") throw new Exception("Unknown Home action.");
             if ((request.Boot && request.Action != "apply") ||
                 (request.ArtReturn && request.Action != "apply") ||
-                (request.RestoreBootTransaction != null && request.Action != "restore"))
+                (request.RestoreBootTransaction != null && request.Action != "restore") ||
+                (request.LauncherAbsent && (request.Action != "restore" || request.RestoreBootTransaction != null)) ||
+                (request.RecoveryBoot && !request.LauncherAbsent))
                 throw new Exception("Invalid boot request.");
             if (platform.Firmware != request.Firmware) throw new Exception("Firmware differs from the saved baseline.");
             var before = platform.Read();
+            if (request.Action == "restore")
+            {
+                bool installed = platform.LauncherInstalled();
+                if (installed == request.LauncherAbsent) throw new Exception("AeroTizen installation changed; query status and retry.");
+                if (!installed) return RestoreAbsent(platform, request, before);
+            }
             var watcher = CheckWatcher(platform.ReadWatcher());
             if (watcher.Mode != "watcher" && watcher.BaselineHash != request.BaselineHash)
                 throw new Exception("Watcher belongs to a different Home baseline.");

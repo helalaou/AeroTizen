@@ -8,6 +8,7 @@ import re
 import secrets
 import tempfile
 from datetime import datetime, timezone
+from itertools import islice
 from pathlib import Path
 
 from aerotizen import home, remote, sdk
@@ -18,6 +19,7 @@ PREFIX = "AEROTIZEN_HOME_CONTROL="
 SUPPORTED_DEVICE = ("QE65LS03DAUXXU", "T-PTMDDEUC-0090-REL-202605141701")
 MAX_RECEIPT_BYTES = 2 * 1024 * 1024
 MAX_RECOVERY_CHAIN = 128
+MAX_RECOVERY_RECEIPTS = 1024
 
 
 def load_helper():
@@ -39,7 +41,9 @@ def preview(action, backup=None, *, boot=False, art_return=False):
         "will_write": False,
         "requires_yes": True,
         "target": home.releases.APP_ID if action == "apply" else "saved original Home",
-        "watcher_after": "native" if action == "apply" else "watcher",
+        "watcher_after": "native"
+        if action == "apply"
+        else "watcher if AeroTizen is installed; otherwise absent",
         "startup": "Preserve the original startup settings; native boot is a separate phase.",
     }
     if boot:
@@ -116,6 +120,55 @@ def parse_result(output, action, exit_code):
         ) from exc
 
 
+def _receipt_request(path, token, raw, digest):
+    try:
+        if path.stat().st_size > MAX_RECEIPT_BYTES:
+            return None
+        request = json.loads(path.read_text())["request"]
+        if (
+            type(request.get("schema_version")) is not int
+            or request["schema_version"] != 1
+            or request["transaction"] != token
+            or request["baseline_sha256"] != digest
+            or base64.b64decode(request["baseline_base64"], validate=True) != raw
+        ):
+            return None
+        return request
+    except (OSError, AttributeError, KeyError, TypeError, ValueError):
+        return None
+
+
+def _uninstalled_boot_request(backup, raw, digest):
+    # Uninstall removes the service's active token. A matching, durable PC boot
+    # apply request still proves which baseline authorised the autostart change.
+    paths = list(islice((backup.parent / "transactions").glob("*.json"), MAX_RECOVERY_RECEIPTS + 1))
+    if len(paths) > MAX_RECOVERY_RECEIPTS:
+        raise home.HomeError("Too many recovery receipts; preserve the folder and review it before restore.")
+    for path in sorted(paths):
+        if not re.fullmatch(r"[a-f0-9]{32}", path.stem):
+            continue
+        request = _receipt_request(path, path.stem, raw, digest)
+        if (
+            request
+            and request.get("action") == "apply"
+            and request.get("boot") is True
+            and type(request.get("art_return", False)) is bool
+            and "restore_boot_transaction" not in request
+        ):
+            return {
+                key: request[key]
+                for key in (
+                    "schema_version",
+                    "action",
+                    "transaction",
+                    "boot",
+                    "baseline_sha256",
+                    "baseline_base64",
+                )
+            }
+    return None
+
+
 def _boot_restore_transaction(status, backup, raw, digest):
     control = status["watcher"].get("control", {})
     token = control.get("transaction")
@@ -136,16 +189,8 @@ def _boot_restore_transaction(status, backup, raw, digest):
         seen.add(token)
         try:
             path = Path(backup).parent / "transactions" / f"{token}.json"
-            if path.stat().st_size > MAX_RECEIPT_BYTES:
-                return None
-            request = json.loads(path.read_text())["request"]
-            if (
-                type(request.get("schema_version")) is not int
-                or request["schema_version"] != 1
-                or request["transaction"] != token
-                or request["baseline_sha256"] != digest
-                or base64.b64decode(request["baseline_base64"], validate=True) != raw
-            ):
+            request = _receipt_request(path, token, raw, digest)
+            if request is None:
                 return None
             if request["action"] == "apply":
                 return active if request.get("boot") is True else None
@@ -189,6 +234,17 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False, ar
             )
     if (device["model"], device["firmware_build"]) != SUPPORTED_DEVICE:
         raise home.HomeError("Home writes are not enabled for this model and firmware.")
+    installed = status.get("launcher", {}).get("installed")
+    if type(installed) is not bool:
+        raise home.HomeError("Cannot confirm whether AeroTizen is installed; no write was attempted.")
+    if installed and status["watcher"].get("reachable") is not True:
+        raise home.HomeError(
+            "AeroTizen is installed but its control service is unavailable; start it and retry."
+        )
+    if not installed and (action == "apply" or status["watcher"]["reachable"]):
+        raise home.HomeError(
+            "Apply needs an installed launcher; an unexpected running service also blocks restore."
+        )
     token = secrets.token_hex(16)
     raw = backup.read_bytes()
     if hashlib.sha256(raw).hexdigest() != digest:
@@ -205,16 +261,21 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False, ar
     if art_return:
         request["art_return"] = True
     if action == "restore":
-        source = _boot_restore_transaction(status, backup, raw, digest)
+        if not installed:
+            request["launcher_absent"] = True
+        source = _boot_restore_transaction(status, backup, raw, digest) if installed else None
         if source:
             request["restore_boot_transaction"] = source
         elif (
             status["home"]["settings"]["db/menu/smart_hub/ontvsetting/auto_start"]["value"]
             != original["home"]["settings"]["db/menu/smart_hub/ontvsetting/auto_start"]["value"]
         ):
-            raise home.HomeError(
-                "Autostart changed and the matching boot receipt is unavailable; no write was attempted."
-            )
+            proof = None if installed else _uninstalled_boot_request(backup, raw, digest)
+            if proof is None:
+                raise home.HomeError(
+                    "Autostart changed and the matching boot receipt is unavailable; no write was attempted."
+                )
+            request["recovery_apply"] = proof
     receipt_path = backup.parent / "transactions" / f"{token}.json"
     receipt = {
         "schema_version": 1,
@@ -264,15 +325,23 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False, ar
                 if value["type"] == "string" and value["value"] == home.releases.APP_ID:
                     expected_settings[key]["value"] = home.releases.APP_ID
         control = final["watcher"].get("control", {})
+        watcher_valid = (
+            (
+                control.get("mode") == ("native" if action == "apply" else "watcher")
+                and control.get("protocol") == 1
+                and control.get("app_id") == home.releases.APP_ID
+                and control.get("persistent") is True
+            )
+            if installed
+            else final["watcher"].get("reachable") is False
+        )
         if (
             not final["complete"]
             or final["device"]["identity_sha256"] != identity
             or final["home"]["main_operation"]["value"] != expected
             or observed != expected_settings
-            or control.get("mode") != ("native" if action == "apply" else "watcher")
-            or control.get("protocol") != 1
-            or control.get("app_id") != home.releases.APP_ID
-            or control.get("persistent") is not True
+            or final.get("launcher", {}).get("installed") is not installed
+            or not watcher_valid
         ):
             raise home.HomeError(
                 "The writer completed, but final Home/watcher verification failed. "

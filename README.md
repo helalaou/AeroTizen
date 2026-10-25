@@ -192,13 +192,15 @@ The TV's original Home and startup values are saved once on the PC in
 Keep the **whole folder**, including its recovery records; you can copy it to another
 authorised PC. This is a backup of the settings changed by this feature, not the whole TV.
 
-To revert, **before uninstalling AeroTizen**, run:
+To revert, whether AeroTizen is still installed or has been uninstalled, run:
 
 ```sh
 ./aerotizen --tv TV_IP home restore --yes
 ```
 
-Restore uses your saved values, not hardcoded Samsung defaults, and re-enables the watcher.
+Restore uses your saved values, not hardcoded Samsung defaults. If AeroTizen is installed,
+it coordinates with the control service and re-enables the watcher. After uninstall, the
+CLI restores directly through the developer connection; no reinstall or root is needed.
 **After apply or restore, disconnect TV/One Connect power for 60 seconds, then restart.**
 Samsung Home remains available from AeroTizen Settings; Samsung's Art Mode sleep and
 Night Mode settings stay unchanged. See [setup and recovery](docs/home-pc-flow.md) for
@@ -218,7 +220,8 @@ Samsung doesn't support any of this officially, so some parts are workarounds:
   Tested on a 2024 Frame (QE65LS03DAUXXU, Tizen 9.0); starting from a cold boot isn't verified yet.
 - **Native Home:** Cold startup took about 30–33 seconds in the latest Frame tests. Home from
   YouTube and Art Mode worked after a full restart. From Samsung's own menus, Home still leaves
-  AeroTizen hidden; open it manually from Samsung's app list.
+  AeroTizen hidden; open it manually from Samsung's app list. Restore after uninstall has local
+  test coverage; its TV test is pending.
 - On Tizen 6 and newer, store and preinstalled apps can't be removed over the developer
   connection. You can delete them on the TV under Apps → Settings. Samsung's system apps (TV Plus,
   Gaming Hub) can only be disabled.

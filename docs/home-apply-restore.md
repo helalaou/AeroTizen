@@ -51,9 +51,10 @@ all writes; neither command creates or replaces the original.
 
 ## Execution, when device testing is authorised
 
-An updated, signed launcher with the new service must first be installed in place
-and started. Installation, launching and the commands below are separate device
-operations. Do not run them while playback must remain untouched.
+Apply needs an updated, signed launcher with the new service installed and started.
+Restore detects whether it remains installed. Installation, launching and the
+commands below are separate device operations. Do not run them while playback
+must remain untouched.
 
 ```sh
 aerotizen --tv TV_IP home status
@@ -103,9 +104,14 @@ The loopback mutation endpoint requires POST, JSON, a native-control header, no
 browser origin, and matching mode/transaction/baseline values. It is not exposed
 by the launcher UI. Existing watcher behavior remains the default on installations
 that have no saved native mode. A service without durable storage refuses apply.
-If the service is unavailable or its state is blocked, writes stop; resolve that
-service state before retrying restore. A successful local build is not recovery
-proof on a TV.
+If AeroTizen is installed but its service is unavailable or blocked, writes stop;
+resolve that service state before retrying restore. If the native application
+registry confirms both launcher and service were uninstalled, restore instead
+uses the PC backup directly, with a matching PC boot apply receipt required for
+changed autostart. The writer rechecks absence before each setter and refuses
+unrelated native changes. It does not bypass the watcher because of a timeout.
+A successful local build is not recovery proof on a TV; physical recovery after
+uninstall remains untested.
 
 ## Launcher escape and later device checks
 
@@ -121,7 +127,8 @@ baseline, but does not prove setters or rollback. Then test apply → physical H
 from another app → Samsung escape → restore. Restore returns the old watcher-based
 setup; use Samsung escape to keep the stock screen open. Check Back, app switching
 and Art Mode separately. Native power-on behavior is a later phase. Do not uninstall
-the assigned Home app before restore, and preserve the original backup and receipts.
+the assigned Home app during this installed-app test. Preserve the original backup
+and receipts; the same restore command also supports recovery after uninstall.
 
 ## Local validation
 

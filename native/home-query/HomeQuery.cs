@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using AeroTizen.Home;
 
 internal static class HomeQuery
 {
@@ -129,7 +130,7 @@ internal static class HomeQuery
             var result = new {
                 schema_version = 1, read_only = true, uid = uid, architecture_bits = IntPtr.Size * 8,
                 os_release = os, main_operation = StringValue(MainOperation, true),
-                settings = settings, watcher = Watcher(), boot = Boot()
+                settings = settings, watcher = Watcher(), boot = Boot(), launcher = Installation.Status()
             };
             Console.WriteLine("AEROTIZEN_HOME_QUERY=" + JsonSerializer.Serialize(result));
             return 0;

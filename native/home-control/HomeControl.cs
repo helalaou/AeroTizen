@@ -40,6 +40,7 @@ internal sealed class NativePlatform : IPlatform, IDisposable
     }
     public string Firmware => OsRelease()["BUILD_ID"];
     public bool LauncherEligible() => Directory.Exists("/opt/usr/apps/DclHome001") && util_is_appbooting_supported_webapp_byappid(Policy.Target) != 0;
+    public bool LauncherInstalled() => Installation.Exists();
     private string String(string key)
     {
         IntPtr value = vconf_get_str(key);
@@ -100,19 +101,21 @@ internal sealed class NativePlatform : IPlatform, IDisposable
 
 internal static class HomeControl
 {
-    private static Request ReadRequest(string path)
+    internal static Request ReadRequest(string path)
     {
-        if (new FileInfo(path).Length > 196608) throw new Exception("Control request too large.");
+        // An uninstalled recovery can carry the original boot apply request too.
+        if (new FileInfo(path).Length > 393216) throw new Exception("Control request too large.");
         using (var doc = JsonDocument.Parse(File.ReadAllText(path)))
         {
             var root = doc.RootElement;
             if (root.GetProperty("schema_version").GetInt32() != 1) throw new Exception("Invalid request schema.");
             string hash = root.GetProperty("baseline_sha256").GetString();
             string transaction = root.GetProperty("transaction").GetString();
-            JsonElement bootValue, restoreBootValue, artReturnValue;
+            JsonElement bootValue, restoreBootValue, artReturnValue, absentValue, recovery;
             bool boot = root.TryGetProperty("boot", out bootValue) && bootValue.GetBoolean();
             bool artReturn = root.TryGetProperty("art_return", out artReturnValue) && artReturnValue.GetBoolean();
             string restoreBoot = root.TryGetProperty("restore_boot_transaction", out restoreBootValue) ? restoreBootValue.GetString() : null;
+            bool absent = root.TryGetProperty("launcher_absent", out absentValue) && absentValue.GetBoolean();
             if (!Regex.IsMatch(hash, "^[a-f0-9]{64}$") || !Regex.IsMatch(transaction, "^[a-f0-9]{32}$"))
                 throw new Exception("Invalid request identity.");
             if (restoreBoot != null && !Regex.IsMatch(restoreBoot, "^[a-f0-9]{32}$")) throw new Exception("Invalid boot recovery transaction.");
@@ -120,6 +123,17 @@ internal static class HomeControl
             using (var sha = SHA256.Create())
                 if (BitConverter.ToString(sha.ComputeHash(original)).Replace("-", "").ToLowerInvariant() != hash)
                     throw new Exception("Original backup checksum mismatch.");
+            bool recoveryBoot = false;
+            if (root.TryGetProperty("recovery_apply", out recovery))
+            {
+                if (!absent || recovery.GetProperty("schema_version").GetInt32() != 1 ||
+                    recovery.GetProperty("action").GetString() != "apply" || !recovery.GetProperty("boot").GetBoolean() ||
+                    !Regex.IsMatch(recovery.GetProperty("transaction").GetString(), "^[a-f0-9]{32}$") ||
+                    recovery.GetProperty("baseline_sha256").GetString() != hash ||
+                    Convert.ToBase64String(Convert.FromBase64String(recovery.GetProperty("baseline_base64").GetString())) != Convert.ToBase64String(original))
+                    throw new Exception("Invalid PC boot recovery receipt.");
+                recoveryBoot = true;
+            }
             using (var baseline = JsonDocument.Parse(original))
             {
                 var saved = baseline.RootElement;
@@ -142,6 +156,7 @@ internal static class HomeControl
                 return new Request {
                     Action = root.GetProperty("action").GetString(), Transaction = transaction, BaselineHash = hash,
                     Boot = boot, ArtReturn = artReturn, RestoreBootTransaction = restoreBoot,
+                    LauncherAbsent = absent, RecoveryBoot = recoveryBoot,
                     Firmware = saved.GetProperty("device").GetProperty("firmware_build").GetString(),
                     Original = new Snapshot { Main = home.GetProperty("default_app").GetString(), Strings = strings, AutoStart = auto.GetProperty("value").GetInt32() }
                 };

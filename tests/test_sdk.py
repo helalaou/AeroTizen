@@ -63,6 +63,8 @@ def test_read_query_requires_the_selected_uid_and_confirms_sdk_cleanup():
         (Path(__file__).resolve().parents[1] / "docs/home-sdk-read-only-tv-20261024.json").read_text()
     )
     query = evidence["query"]
+    # Historical device evidence predates the installation-state query.
+    query["launcher"] = {"installed": True, "error": None}
     stdout = home.QUERY_PREFIX + json.dumps(query) + "\n" + sdk.CLEANUP_MARKER
     assert home.parse_query(stdout, expected_uid=901, cleanup_marker=sdk.CLEANUP_MARKER)["uid"] == 901
     with pytest.raises(home.HomeError):

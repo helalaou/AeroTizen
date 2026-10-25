@@ -17,7 +17,10 @@ It does not install a boot daemon or enable the watcher.
 
 The boot request is saved in a private transaction receipt before the writer runs.
 Restore permits changed autostart only when the current service transaction matches
-that receipt, including its original backup bytes and checksum. A missing or
+that receipt, including its original backup bytes and checksum. If the application
+registry confirms AeroTizen was uninstalled, the same restore command validates a
+matching boot apply receipt on the PC instead. This recovery branch has local
+test coverage; its physical TV test is pending. A missing or
 unrelated receipt blocks that restore before any write. Preserve the whole private
 device backup folder, not only `original-home.json`. Older Home control builds
 cannot restore the new boot setting; use the boot-aware build or this checkout.

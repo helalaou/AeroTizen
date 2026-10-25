@@ -10,4 +10,7 @@
     <PathMap>$(MSBuildProjectDirectory)=/_/home-query</PathMap>
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../home-common/Installation.cs" Link="Installation.cs"/>
+  </ItemGroup>
 </Project>

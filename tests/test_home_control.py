@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import subprocess
+from contextlib import nullcontext
 from pathlib import Path
 
 import pytest
@@ -23,6 +24,7 @@ def status():
         "schema_version": 1,
         "queried_at": "2026-10-24T18:00:00+00:00",
         "complete": True,
+        "launcher": {"installed": True, "error": None},
         "device": {**evidence["device"], "identity_sha256": "a" * 64},
         "home": evidence["home"],
         "watcher": {
@@ -54,7 +56,12 @@ def test_control_payload_matches_current_sources():
     manifest = json.loads(home_control.PAYLOAD_PATH.read_text())
     sources = b"\0".join(
         (ROOT / "native/home-control" / name).read_bytes()
-        for name in ("HomeControl.cs", "ControlPolicy.cs", "HomeControl.csproj")
+        for name in (
+            "HomeControl.cs",
+            "ControlPolicy.cs",
+            "HomeControl.csproj",
+            "../home-common/Installation.cs",
+        )
     )
     assert manifest["source_sha256"] == hashlib.sha256(sources).hexdigest()
     assert home_control.load_helper()[home_control.HELPER_FILES[0]].startswith(b"MZ")
@@ -182,7 +189,7 @@ def test_native_policy_failure_boundaries_run_on_host_without_tizen():
         timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "POLICY_TESTS_PASSED=36" in result.stdout
+    assert "POLICY_TESTS_PASSED=61" in result.stdout
 
 
 def test_boot_preview_has_no_device_contact(monkeypatch, capsys):
@@ -440,3 +447,152 @@ def test_boot_recovery_chain_is_bounded(monkeypatch, boot_backup):
         home_control._boot_restore_transaction(native, backup, raw, root["request"]["baseline_sha256"])
         is None
     )
+
+
+def absent_status(status):
+    result = copy.deepcopy(status)
+    result["launcher"] = {"installed": False, "error": None}
+    result["watcher"] = {"reachable": False, "state": "unknown"}
+    return result
+
+
+@pytest.mark.parametrize("exported", [False, True])
+@pytest.mark.parametrize("lost_reply", [False, True])
+def test_uninstalled_boot_restore_retries_with_pc_evidence(
+    monkeypatch, tmp_path, status, boot_backup, exported, lost_reply
+):
+    backup, raw, applied = boot_backup
+    if exported:
+        destination = tmp_path / "copied-backup"
+        shutil.copytree(backup.parent, destination)
+        backup = destination / backup.name
+    current = absent_status(applied)
+    original = absent_status(status)
+    monkeypatch.setattr(home, "read_status", lambda *args: copy.deepcopy(current))
+    attempts = 0
+
+    def run(session, files, entrypoint, args):
+        nonlocal attempts
+        request = json.loads(files["request.json"])
+        assert request["launcher_absent"] is True
+        assert "restore_boot_transaction" not in request
+        assert base64.b64decode(request["recovery_apply"]["baseline_base64"]) == raw
+        assert request["recovery_apply"]["boot"] is True
+        receipt = backup.parent / "transactions" / f"{request['transaction']}.json"
+        assert json.loads(receipt.read_text())["state"] == "pending"
+        attempts += 1
+        if attempts == 1:
+            current["home"]["main_operation"] = copy.deepcopy(status["home"]["main_operation"])
+            if lost_reply:
+                raise OSError("reply lost after uninstall")
+            return native_result("restore", success=False)
+        current.clear()
+        current.update(copy.deepcopy(original))
+        return native_result("restore")
+
+    monkeypatch.setattr(sdk, "run", run)
+    with pytest.raises((home.HomeError, OSError)):
+        home_control.change(object(), {}, "restore", backup=backup, state_dir=tmp_path / "new-pc")
+    result = home_control.change(object(), {}, "restore", backup=backup, state_dir=tmp_path / "new-pc")
+    assert result["success"] and attempts == 2 and backup.read_bytes() == raw
+    assert result["status"]["launcher"]["installed"] is False
+    assert not (tmp_path / "new-pc").exists()
+
+
+@pytest.mark.parametrize("already_original", [False, True])
+def test_same_restore_cli_works_without_launcher_or_boot_receipt(
+    monkeypatch, tmp_path, status, already_original, capsys
+):
+    backup = home.save_backup(status, state_dir=tmp_path)["path"]
+    original = absent_status(status)
+    current = copy.deepcopy(original)
+    if not already_original:
+        current["home"]["main_operation"]["value"] = home.releases.APP_ID
+        current["home"]["settings"][home.HOME_KEY]["value"] = home.releases.APP_ID
+    reads = iter([current, original])
+    monkeypatch.setattr(home, "read_status", lambda *args: next(reads))
+    monkeypatch.setattr(cli, "require_sdb", lambda host: nullcontext(object()))
+    monkeypatch.setattr(home, "device_info", lambda *args, **kwargs: {})
+    monkeypatch.setattr(cli, "STATE_DIR", tmp_path)
+
+    def run(session, files, entrypoint, args):
+        request = json.loads(files["request.json"])
+        assert request["launcher_absent"] and "recovery_apply" not in request
+        return native_result("restore")
+
+    monkeypatch.setattr(sdk, "run", run)
+    monkeypatch.setattr("sys.argv", ["aerotizen", "--tv", "192.0.2.10", "home", "restore", "--yes", "--json"])
+    cli.main()
+    assert json.loads(capsys.readouterr().out)["success"]
+    assert Path(backup).is_file()
+
+
+@pytest.mark.parametrize(
+    "case", ["unknown", "missing", "installed_service_offline", "absent_service_online", "apply_absent"]
+)
+def test_installation_uncertainty_never_bypasses_service(monkeypatch, tmp_path, status, case):
+    home.save_backup(status, state_dir=tmp_path)
+    action = "restore"
+    if case == "unknown":
+        status["launcher"] = {"installed": None, "error": "permission denied"}
+    elif case == "missing":
+        status.pop("launcher")
+    elif case == "installed_service_offline":
+        status["watcher"] = {"reachable": False, "state": "unknown"}
+    else:
+        status["launcher"]["installed"] = False
+        if case == "apply_absent":
+            action = "apply"
+            status["watcher"]["reachable"] = False
+    monkeypatch.setattr(home, "read_status", lambda *args: status)
+    monkeypatch.setattr(sdk, "run", lambda *args: pytest.fail("No writer allowed"))
+    with pytest.raises(home.HomeError):
+        home_control.change(object(), {}, action, state_dir=tmp_path)
+    assert not list(tmp_path.rglob("transactions/*.json"))
+
+
+@pytest.mark.parametrize("corruption", ["missing", "hash", "raw", "token", "schema", "not_boot", "oversized"])
+def test_uninstalled_boot_restore_refuses_invalid_pc_proof(monkeypatch, tmp_path, boot_backup, corruption):
+    backup, raw, current = boot_backup
+    current = absent_status(current)
+    path = backup.parent / "transactions" / ("b" * 32 + ".json")
+    receipt = json.loads(path.read_text())
+    request = receipt["request"]
+    if corruption == "hash":
+        request["baseline_sha256"] = "c" * 64
+    elif corruption == "raw":
+        request["baseline_base64"] = base64.b64encode(b"other original").decode()
+    elif corruption == "token":
+        request["transaction"] = "c" * 32
+    elif corruption == "schema":
+        request["schema_version"] = True
+    elif corruption == "not_boot":
+        request["boot"] = False
+    path.write_text(json.dumps(receipt))
+    if corruption == "missing":
+        path.unlink()
+    elif corruption == "oversized":
+        path.write_bytes(b" " * (home_control.MAX_RECEIPT_BYTES + 1))
+    monkeypatch.setattr(home, "read_status", lambda *args: current)
+    monkeypatch.setattr(sdk, "run", lambda *args: pytest.fail("No writer allowed"))
+    with pytest.raises(home.HomeError, match="matching boot receipt"):
+        home_control.change(object(), {}, "restore", backup=backup, state_dir=tmp_path)
+    assert backup.read_bytes() == raw
+
+
+def test_uninstalled_receipt_scan_is_bounded(monkeypatch, boot_backup):
+    backup, raw, current = boot_backup
+    monkeypatch.setattr(home_control, "MAX_RECOVERY_RECEIPTS", 0)
+    with pytest.raises(home.HomeError, match="Too many recovery receipts"):
+        home_control._uninstalled_boot_request(backup, raw, current["watcher"]["control"]["baseline_sha256"])
+
+
+def test_reinstallation_during_restore_cannot_claim_verified_success(monkeypatch, status, tmp_path):
+    home.save_backup(status, state_dir=tmp_path)
+    reads = iter([absent_status(status), status])
+    monkeypatch.setattr(home, "read_status", lambda *args: next(reads))
+    monkeypatch.setattr(sdk, "run", lambda *args: native_result("restore"))
+    with pytest.raises(home.HomeError, match="final Home/watcher"):
+        home_control.change(object(), {}, "restore", state_dir=tmp_path)
+    receipt = json.loads(next(tmp_path.rglob("transactions/*.json")).read_text())
+    assert receipt["state"] == "restored" and "error" in receipt

@@ -43,7 +43,12 @@ def build(dotnet):
             }
         sources = b"\0".join(
             (SOURCE / name).read_bytes()
-            for name in ("HomeControl.cs", "ControlPolicy.cs", "HomeControl.csproj")
+            for name in (
+                "HomeControl.cs",
+                "ControlPolicy.cs",
+                "HomeControl.csproj",
+                "../home-common/Installation.cs",
+            )
         )
         manifest = {
             "schema_version": 1,

@@ -46,7 +46,14 @@ def build(dotnet):
                 "base64": base64.b64encode(data).decode(),
                 "sha256": hashlib.sha256(data).hexdigest(),
             }
-        sources = (SOURCE / "HomeQuery.cs").read_bytes() + b"\0" + (SOURCE / "HomeQuery.csproj").read_bytes()
+        sources = b"\0".join(
+            path.read_bytes()
+            for path in (
+                SOURCE / "HomeQuery.cs",
+                SOURCE / "HomeQuery.csproj",
+                SOURCE.parent / "home-common/Installation.cs",
+            )
+        )
         manifest = {
             "schema_version": 1,
             "target_framework": "netcoreapp3.1",

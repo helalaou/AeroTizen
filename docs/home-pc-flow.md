@@ -1,6 +1,6 @@
 # PC-managed native Home
 
-Use the updated CLI and a compatible signed launcher. The PC owns the original
+Apply needs the updated CLI and a compatible signed launcher. The PC owns the original
 Home backup and transaction receipts. Apply and restore run from the CLI; the
 launcher does not change these native settings from its UI. The TV then operates
 without a running PC or watcher polling.
@@ -47,12 +47,26 @@ blocks apply and restore. No Samsung defaults are guessed.
 
 ## Restore and transfer to another PC
 
-Keep the launcher and its control service available until restore completes:
+The same command restores with or without AeroTizen installed:
 
 ```sh
 aerotizen home restore                                  # offline preview
 aerotizen --tv TV_IP home restore --yes
 ```
+
+The CLI checks the TV's native application registry, including both launcher and
+service registrations. If installed, restore uses the persistent watcher handoff.
+If both are absent, the SDK helper restores directly without contacting the
+removed service. It needs no root or launcher reinstall. A service timeout is
+not proof of uninstall: unknown installation state or an installed app with an
+unavailable control service stops restore before writes.
+
+Both paths keep the device, firmware, original checksum and current-value checks.
+If uninstall removed the active service transaction, changed autostart requires
+a matching boot apply request from the PC's saved receipts. No defaults are guessed.
+The native writer rechecks installation before each setter during this recovery.
+Local tests cover absent-app restore, partial failures, retries, copied folders
+and a concurrent reinstall. Physical recovery after uninstall is not yet TV-tested.
 
 For another authorised PC, copy the complete folder containing `original-home.json`
 and `transactions/`. Install the updated CLI and allow that PC's IP in the TV's
@@ -65,10 +79,9 @@ aerotizen --tv TV_IP home restore --backup /path/to/copied-folder/original-home.
 
 Receipts are read and written beside the selected baseline, including on the new
 PC. That folder must be writable. The original device and firmware checks remain
-in force. Restore still returns the previous watcher mode after putting the saved
-native settings back. Restart the TV fully so Art reloads its original target.
-Complete restore before uninstalling the assigned launcher. Keep the PC backup
-after uninstall; it is independent of app storage on the TV.
+in force. Restore re-enables the watcher if AeroTizen remains installed; no watcher
+is needed after uninstall. Restart the TV fully so Art reloads its original target.
+Keep the PC backup after uninstall; it is independent of app storage on the TV.
 
 If a restore fails or its reply is lost, inspect `home status` before retrying.
 When the service is left on hold, the CLI validates its saved restore requests

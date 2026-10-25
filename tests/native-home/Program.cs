@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text.Json;
 using AeroTizen.Home;
 
 sealed class Fake : IPlatform
 {
     public string Firmware { get; set; } = "TEST-1";
     public bool Eligible = true, SideEffects, AutoSideEffects, AutoBadScreen, FailAll, SilentMain, LostCommit, ChangeDuringHold;
+    public bool Installed = true, WatcherUnavailable, InstallationUnavailable, ReinstallOnWrite;
     public int FailWrite, FailFrom, Writes;
     public readonly List<string> Events = new List<string>();
     public Snapshot Current = Original();
@@ -17,11 +21,17 @@ sealed class Fake : IPlatform
         return new Snapshot { Main = "Samsung.Home", Strings = strings, AutoStart = 0 };
     }
     public bool LauncherEligible() => Eligible;
+    public bool LauncherInstalled()
+    {
+        if (InstallationUnavailable) throw new Exception("installation lookup unavailable");
+        return Installed;
+    }
     public Snapshot Read() => Current.Copy();
     private void Write(string kind)
     {
         Events.Add("write:" + kind); Writes++;
         if (FailAll || Writes == FailWrite || (FailFrom > 0 && Writes >= FailFrom)) throw new Exception("simulated write failure");
+        if (ReinstallOnWrite) Installed = true;
     }
     public void SetMain(string value)
     {
@@ -42,7 +52,11 @@ sealed class Fake : IPlatform
         }
         if (AutoBadScreen && value == 1) Current.Strings["db/first_screen/type"] = "Other.Home";
     }
-    public Watcher ReadWatcher() => Control;
+    public Watcher ReadWatcher()
+    {
+        if (WatcherUnavailable) throw new Exception("watcher must not be read after uninstall");
+        return Control;
+    }
     public Watcher ChangeWatcher(Watcher expected, string mode, string transaction, string hash)
     {
         Program.Check(expected == Control, "CAS must use current control state");
@@ -71,6 +85,38 @@ static class Program
     {
         fake.Current.Main = Policy.Target; fake.Current.Strings[Policy.HomeKey] = Policy.Target;
         fake.Control = new Watcher { Protocol = 1, AppId = Policy.Target, Persistent = true, Mode = "native", Transaction = new string('c', 32), BaselineHash = new string('b', 64) };
+    }
+    static Request RecoveryRequest(Action<Dictionary<string, object>> alter = null)
+    {
+        var original = Fake.Original();
+        var settings = new Dictionary<string, object>();
+        foreach (string key in Policy.Keys) settings[key] = new { type = "string", value = original.Strings[key] };
+        settings["db/menu/smart_hub/ontvsetting/auto_start"] = new { type = "int", value = original.AutoStart };
+        byte[] raw = JsonSerializer.SerializeToUtf8Bytes(new {
+            schema_version = 1, kind = "aerotizen.home-baseline",
+            device = new { model = "QE65LS03DAUXXU", firmware_build = "TEST-1" },
+            home = new { operation = "http://tizen.org/appcontrol/operation/main", default_app = original.Main, settings = settings }
+        });
+        string hash;
+        using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(raw)).Replace("-", "").ToLowerInvariant();
+        var proof = new Dictionary<string, object> {
+            ["schema_version"] = 1, ["action"] = "apply", ["boot"] = true,
+            ["transaction"] = new string('b', 32), ["baseline_sha256"] = hash, ["baseline_base64"] = Convert.ToBase64String(raw)
+        };
+        var root = new Dictionary<string, object> {
+            ["schema_version"] = 1, ["action"] = "restore", ["launcher_absent"] = true,
+            ["transaction"] = new string('a', 32), ["baseline_sha256"] = hash, ["baseline_base64"] = Convert.ToBase64String(raw),
+            ["recovery_apply"] = proof
+        };
+        alter?.Invoke(root);
+        string path = Path.GetTempFileName();
+        try { File.WriteAllText(path, JsonSerializer.Serialize(root)); return HomeControl.ReadRequest(path); }
+        finally { File.Delete(path); }
+    }
+    static void BadRecovery(Action<Dictionary<string, object>> alter)
+    {
+        bool failed = false; try { RecoveryRequest(alter); } catch { failed = true; }
+        Check(failed, "invalid PC proof must be rejected by the native parser");
     }
     static int Main()
     {
@@ -209,6 +255,89 @@ static class Program
         Test("unrelated first screen during Art boot rolls back", () => {
             var fake = new Fake { AutoBadScreen = true }; var request = Request(); request.ArtReturn = true; request.Boot = true;
             Check(Policy.Execute(fake, request).RolledBack && Policy.Same(fake.Current, Fake.Original()));
+        });
+        Test("uninstalled Home restore does not contact a watcher", () => {
+            var fake = new Fake(); Applied(fake); fake.Installed = false; fake.WatcherUnavailable = true;
+            var request = Request("restore"); request.LauncherAbsent = true;
+            Check(Policy.Execute(fake, request).Success && Policy.Same(fake.Current, Fake.Original()));
+            Check(fake.Events.TrueForAll(e => e.StartsWith("write:")));
+        });
+        Test("uninstalled original state is already restored", () => {
+            var fake = new Fake { Installed = false, WatcherUnavailable = true };
+            var request = Request("restore"); request.LauncherAbsent = true;
+            Check(Policy.Execute(fake, request).Success && fake.Events.Count == 0);
+        });
+        for (int index = 1; index <= 6; index++) {
+            int failure = index;
+            Test("uninstalled boot/Art restore retries failed setter " + index, () => {
+                var fake = new Fake { Installed = false, WatcherUnavailable = true, FailWrite = failure };
+                fake.Current.Main = Policy.Target; fake.Current.AutoStart = 1;
+                foreach (string key in Policy.Keys) fake.Current.Strings[key] = Policy.Target;
+                var request = Request("restore"); request.LauncherAbsent = true; request.RecoveryBoot = true;
+                Check(!Policy.Execute(fake, request).Success);
+                Check(Policy.Execute(fake, request).Success && Policy.Same(fake.Current, Fake.Original()));
+                Check(fake.Events.TrueForAll(e => e.StartsWith("write:")));
+            });
+        }
+        Test("uninstalled boot restore still requires PC boot evidence", () => {
+            var fake = new Fake { Installed = false, WatcherUnavailable = true }; fake.Current.AutoStart = 1;
+            var request = Request("restore"); request.LauncherAbsent = true; Refused(fake, request);
+        });
+        Test("uninstalled recovery preserves third-party preferences", () => {
+            var fake = new Fake { Installed = false, WatcherUnavailable = true }; fake.Current.Main = "Other.Home";
+            var request = Request("restore"); request.LauncherAbsent = true; request.RecoveryBoot = true;
+            Refused(fake, request);
+        });
+        Test("unknown installation state cannot bypass the watcher", () => {
+            Refused(new Fake { InstallationUnavailable = true }, Request("restore"));
+        });
+        Test("an installed app with an unavailable watcher refuses restore", () => {
+            Refused(new Fake { WatcherUnavailable = true }, Request("restore"));
+        });
+        Test("uninstall between host and native preflight stops restore", () => {
+            Refused(new Fake { Installed = false }, Request("restore"));
+        });
+        Test("reinstall between host and native preflight stops restore", () => {
+            var request = Request("restore"); request.LauncherAbsent = true; Refused(new Fake(), request);
+        });
+        Test("reinstall during recovery stops further writes", () => {
+            var fake = new Fake { Installed = false, WatcherUnavailable = true, ReinstallOnWrite = true };
+            fake.Current.Main = Policy.Target; fake.Current.Strings[Policy.HomeKey] = Policy.Target;
+            var request = Request("restore"); request.LauncherAbsent = true;
+            Check(!Policy.Execute(fake, request).Success && fake.Writes == 1);
+            Check(fake.Current.Strings[Policy.HomeKey] == Policy.Target);
+        });
+        Test("apply cannot request uninstalled recovery", () => {
+            var request = Request(); request.LauncherAbsent = true; Refused(new Fake(), request);
+        });
+        Test("installed restore cannot use uninstalled boot permission", () => {
+            var request = Request("restore"); request.RecoveryBoot = true; Refused(new Fake(), request);
+        });
+        Test("native request parser validates the PC boot proof", () => {
+            var request = RecoveryRequest(); Check(request.LauncherAbsent && request.RecoveryBoot);
+            var fake = new Fake { Installed = false, WatcherUnavailable = true }; fake.Current.AutoStart = 1;
+            Check(Policy.Execute(fake, request).Success && Policy.Same(fake.Current, Fake.Original()));
+        });
+        Test("native PC proof must contain the identical original bytes", () => {
+            BadRecovery(root => ((Dictionary<string, object>)root["recovery_apply"])["baseline_base64"] = Convert.ToBase64String(new byte[] { 1 }));
+        });
+        Test("native PC proof must contain the identical original checksum", () => {
+            BadRecovery(root => ((Dictionary<string, object>)root["recovery_apply"])["baseline_sha256"] = new string('c', 64));
+        });
+        Test("native PC proof requires boot apply", () => {
+            BadRecovery(root => ((Dictionary<string, object>)root["recovery_apply"])["boot"] = false);
+        });
+        Test("native PC proof requires a valid transaction", () => {
+            BadRecovery(root => ((Dictionary<string, object>)root["recovery_apply"])["transaction"] = "../other");
+        });
+        Test("native PC proof rejects a boolean schema", () => {
+            BadRecovery(root => ((Dictionary<string, object>)root["recovery_apply"])["schema_version"] = true);
+        });
+        Test("native PC proof cannot use a restore as its source", () => {
+            BadRecovery(root => ((Dictionary<string, object>)root["recovery_apply"])["action"] = "restore");
+        });
+        Test("native PC proof cannot bypass an installed watcher", () => {
+            BadRecovery(root => root["launcher_absent"] = false);
         });
         Console.WriteLine("POLICY_TESTS_PASSED=" + count); return 0;
     }

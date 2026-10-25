@@ -31,6 +31,7 @@ def query():
             for key, kind in home.SETTINGS.items()
         },
         "watcher": {"state": "active", "reachable": True},
+        "launcher": {"installed": True, "error": None},
     }
 
 
@@ -83,6 +84,7 @@ def status():
             "mode": "stock",
         },
         "watcher": q["watcher"],
+        "launcher": q["launcher"],
         "evidence": {
             "authenticated": True,
             "upstream_staging_cleaned": True,
@@ -108,12 +110,29 @@ def test_packaged_helper_matches_current_source_and_loads():
         (ROOT / "native/home-query/HomeQuery.cs").read_bytes()
         + b"\0"
         + (ROOT / "native/home-query/HomeQuery.csproj").read_bytes()
+        + b"\0"
+        + (ROOT / "native/home-common/Installation.cs").read_bytes()
     )
     assert manifest["source_sha256"] == hashlib.sha256(sources).hexdigest()
     files = home.load_helper()
     assert files[home.HELPER_FILES[0]].startswith(b"MZ")
     runtime = json.loads(files[home.HELPER_FILES[1]])["runtimeOptions"]
     assert runtime["rollForward"] == "Major"
+
+
+@pytest.mark.parametrize("installed", [True, False, None])
+def test_installation_evidence_distinguishes_absent_from_unknown(installed):
+    value = query()
+    value["launcher"] = {"installed": installed, "error": "query denied" if installed is None else None}
+    assert home.parse_query(output(value))["launcher"]["installed"] is installed
+
+
+@pytest.mark.parametrize("launcher", [{}, {"installed": 0}, {"installed": "false"}, None])
+def test_malformed_installation_evidence_is_refused(launcher):
+    value = query()
+    value["launcher"] = launcher
+    with pytest.raises(home.HomeError):
+        home.parse_query(output(value))
 
 
 @pytest.mark.parametrize("manifest", [[], {}, {"schema_version": True, "files": {}}])

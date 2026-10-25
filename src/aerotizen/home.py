@@ -135,6 +135,12 @@ def parse_query(stdout, *, expected_uid=0, cleanup_marker=CLEANUP_MARKER):
         for key, kind in SETTINGS.items():
             _value(query["settings"][key], kind)
         boot = query.get("boot")
+        launcher = query["launcher"]
+        if not isinstance(launcher, dict) or (
+            type(launcher.get("installed")) is not bool
+            and not (launcher.get("installed") is None and isinstance(launcher.get("error"), str))
+        ):
+            raise ValueError("Invalid launcher installation evidence")
         if boot is not None and (
             not isinstance(boot, dict)
             or not isinstance(boot.get("id"), str)
@@ -239,6 +245,7 @@ def read_status(session, provider, info):
             "mode": _mode(main, settings),
         },
         "watcher": query["watcher"],
+        "launcher": query["launcher"],
         "boot": query.get("boot"),
         "complete": all(item["status"] == "ok" for item in [main, *settings.values()]),
         "evidence": {
