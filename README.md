@@ -26,9 +26,9 @@ The default home screen on recent Samsung TVs is mostly ads. The "Top Picks for 
 removed, Samsung TV Plus starts playing on its own at boot, and the TV tracks what you watch unless
 you find the privacy settings to turn it off.
 
-On Android TV you would install a different launcher and remove the junk over ADB. Tizen allows
-neither: there's no way to replace the home screen, no shell, and the official developer tools are
-a large SDK that doesn't run natively on Apple Silicon.
+On Android TV you would install a different launcher and remove the junk over ADB. Tizen makes
+this harder: developer access is limited, and the official developer tools are a large SDK that
+doesn't run natively on Apple Silicon.
 
 AeroTizen works around that. The launcher is a normal TV app that acts as the home screen: it opens
 when the TV turns on and comes back when you press Home. The CLI handles the setup (certificates,
@@ -42,7 +42,8 @@ On the TV:
 - Your apps as square cards using each app's own artwork from the TV. Pick **Big** (3 across) or
   **Small** (5 across). Apps without artwork show their icon and name
 - **Home** and **All apps** tabs: keep favourites on Home and open any installed app from All apps
-- Opens at power-on and comes back when you press Home (see [Limits](#limits))
+- Opens at power-on and comes back when you press Home (see [Home options](#choose-how-home-works)
+  and [Limits](#limits))
 - Hold OK on a tile for **Move**, **Add to Home** or **Remove from Home**
 - Opens HbbTV apps such as BBC iPlayer
 - Inputs list every HDMI port and the name of what's plugged in. You can rename them, and hide
@@ -66,17 +67,8 @@ From your computer (`aerotizen`):
 - Signs and installs any `.wgt` app, including the launcher
 - Opens apps and checks that they actually came up on screen (`aerotizen launch`)
 - Restarts apps with Chrome DevTools for debugging (`aerotizen inspect launcher`)
-- Reads native Home state and saves an immutable local baseline with optional temporary root
-  ([`aerotizen home status` and `home backup`](docs/home-read-only.md))
-- Previews native Home assignment and exact restore, with guarded SDK-only writes
-  and a persistent watcher handoff ([apply/restore guide](docs/home-apply-restore.md)).
-  The write path is limited to the recorded Frame and firmware.
-  [Native boot and Art Mode](docs/home-native-boot.md) have separate device checks.
-  The [startup and Art return guide](docs/home-startup-art-return.md) describes
-  the explicit `--art-return` option and its restart requirement.
-- Keeps Home backups and transaction receipts on the PC. Copy the complete backup
-  folder to another PC and use `home restore --backup PATH --yes` to restore it
-  ([PC-managed flow](docs/home-pc-flow.md)).
+- Checks, backs up, applies and restores native Home settings from the PC, with no root
+  needed for normal setup ([Home options](#choose-how-home-works))
 - Lists installed apps, flags the bloat, and removes it if your firmware allows
 
 There's also a short [guide to the settings worth turning off](docs/settings.md) (ads, viewing
@@ -162,7 +154,8 @@ directory. You can then omit `./` (macOS/Linux) or `.\` (Windows) from the comma
 If you already use Python 3.10 or newer, you can instead install the CLI with
 `pip install git+https://github.com/helalaou/AeroTizen` and run it as `aerotizen`.
 
-That's it. The TV will start on AeroTizen from now on, and the gear icon opens settings.
+The launcher is now installed and uses the watcher by default. The gear icon opens settings.
+For the optional native Home setup, see [Home options](#choose-how-home-works).
 
 In **Settings → Weather**, choose **Show weather** or **Hide weather**. Hiding weather
 stops automatic location and forecast requests, while keeping your saved location and
@@ -175,18 +168,57 @@ For accurate weather, open **Settings → Weather** and search for your town or 
 
 To look at or remove installed apps, run `./aerotizen apps` and `./aerotizen debloat`.
 
+## Choose how Home works
+
+Both options run on the TV; your computer can be switched off after setup. Neither needs root.
+
+| Option | How it works |
+|---|---|
+| **Watcher (default)** | A background service detects a return to Samsung Home and reopens AeroTizen. Some apps cannot be detected (see [Limits](#limits)). |
+| **Native Home (opt-in)** | The TV routes Home from other apps, power-on and Home from Art Mode to AeroTizen. The watcher is disabled. |
+
+Native writes are currently limited to the tested Frame QE65LS03DAUXXU and its recorded
+Tizen 9 firmware. Install and open the compatible launcher, then run from your computer
+(replace `TV_IP` with your TV's address):
+
+```sh
+./aerotizen --tv TV_IP home status
+./aerotizen --tv TV_IP home backup
+./aerotizen --tv TV_IP home apply --boot --art-return --yes
+```
+
+The TV's original Home and startup values are saved once on the PC in
+`~/.config/aerotizen/backups/<TV identity>/`. Later backups preserve that original.
+Keep the **whole folder**, including its recovery records; you can copy it to another
+authorised PC. This is a backup of the settings changed by this feature, not the whole TV.
+
+To revert, **before uninstalling AeroTizen**, run:
+
+```sh
+./aerotizen --tv TV_IP home restore --yes
+```
+
+Restore uses your saved values, not hardcoded Samsung defaults, and re-enables the watcher.
+**After apply or restore, disconnect TV/One Connect power for 60 seconds, then restart.**
+Samsung Home remains available from AeroTizen Settings; Samsung's Art Mode sleep and
+Night Mode settings stay unchanged. See [setup and recovery](docs/home-pc-flow.md) for
+backup transfer and recovery steps.
+
 ## Limits
 
 Samsung doesn't support any of this officially, so some parts are workarounds:
 
-- Pressing Home brings AeroTizen back after a second or two. That works from Samsung's home
+- **Watcher:** Pressing Home brings AeroTizen back after a second or two. That works from Samsung's home
   screen and inside Netflix, but not inside YouTube, Prime Video, Stremio, Spotify or HbbTV apps. Those apps
   don't report whether they're on screen, so there's no way to tell. Back still works everywhere.
   After Home in one of them, AeroTizen comes back once that app closes or you open an app that does
   report itself, such as Netflix. You can also open AeroTizen from Samsung's app row.
-- On The Frame, AeroTizen checks Art Mode before every return and stays out of the way while it's
+- **Watcher on The Frame:** AeroTizen checks Art Mode before every return and stays out of the way while it's
   on. If the TV doesn't report its power or Art Mode state, AeroTizen waits rather than guess.
   Tested on a 2024 Frame (QE65LS03DAUXXU, Tizen 9.0); starting from a cold boot isn't verified yet.
+- **Native Home:** Cold startup took about 30–33 seconds in the latest Frame tests. Home from
+  YouTube and Art Mode worked after a full restart. From Samsung's own menus, Home still leaves
+  AeroTizen hidden; open it manually from Samsung's app list.
 - On Tizen 6 and newer, store and preinstalled apps can't be removed over the developer
   connection. You can delete them on the TV under Apps → Settings. Samsung's system apps (TV Plus,
   Gaming Hub) can only be disabled.

@@ -28,9 +28,10 @@ Restart the TV fully after applying Art return, then test Home, boot and Art Mod
 Complete this restart before testing Home from other apps. On the recorded Frame,
 Home from YouTube did nothing after an in-place update and restore/apply cycle;
 one Home press returned to AeroTizen after a full power restart.
-The latest cold test took about 45 seconds to show AeroTizen, by user estimate.
-Startup performance remains an open issue; early browser render marks do not
-measure the panel's power-to-screen delay.
+The latest cold tests took about 30–33 seconds to show AeroTizen, by user estimate
+(45 seconds in an earlier test). Startup performance remains an open issue; early
+browser render marks do not measure the panel's power-to-screen delay. See the
+[startup investigation](home-startup-art-return.md#foreground-investigation-on-25-october).
 
 Art Mode keeps Samsung's existing sleep and sensor settings. In the current
 test, Night Mode was on and the panel entered standby while Art remained active
