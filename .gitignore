@@ -9,4 +9,5 @@ dist/
 password.txt
 device-profile.xml
 node_modules/
-package-lock.json
+test-results/
+playwright-report/

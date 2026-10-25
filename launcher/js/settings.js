@@ -4,6 +4,17 @@
 
   var cfg = A.config;
   var settings = A.settings = {};
+  var listeners = [];
+
+  function notify() { listeners.slice().forEach(function (listener) { listener(); }); }
+
+  settings.subscribe = function (listener) {
+    listeners.push(listener);
+    return function () {
+      var index = listeners.indexOf(listener);
+      if (index >= 0) { listeners.splice(index, 1); }
+    };
+  };
 
   function defaults() { return JSON.parse(JSON.stringify(cfg.DEFAULTS)); }
 
@@ -55,12 +66,13 @@
     if (detectTempUnit) { data.tempUnit = defaultTempUnit(); }
     Object.keys(data).forEach(function (k) { settings[k] = data[k]; });
     // Resolve older Automatic settings once, then retain the selected option.
-    if (detectTimeFormat || detectTempUnit) { settings.save(); }
+    if (detectTimeFormat || detectTempUnit) { settings.save(); } else { notify(); }
   };
 
   settings.save = function () {
     var out = {};
     Object.keys(cfg.DEFAULTS).forEach(function (k) { out[k] = settings[k]; });
     try { localStorage.setItem(cfg.STORAGE_KEY, JSON.stringify(out)); } catch (e) { /* storage full or blocked */ }
+    notify();
   };
 })(window.AeroTizen);

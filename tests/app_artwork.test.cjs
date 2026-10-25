@@ -126,3 +126,18 @@ test('unknown apps retain their original icon and readable label if all images f
   assert.equal(fallback.children.length, 1);
   assert.equal(fallback.children[0].textContent, 'Unknown app');
 });
+
+test('Settings can read brand and artwork data without creating DOM nodes or image timers', () => {
+  const { A, images, timers } = runtime(true);
+  const known = A.tiles.describe({ id: '111299001912', name: 'YouTube' });
+  assert.equal(known.title, 'YouTube');
+  assert.equal(known.logoPath, 'M0 0');
+  assert.equal(known.artwork.length, 2);
+  const unknown = A.tiles.describe({ id: 'unknown', name: 'Unknown app - example', icon: 'local/icon.png' });
+  assert.equal(unknown.title, 'Unknown app');
+  assert.equal(unknown.label, 'Unknown app');
+  assert.equal(unknown.useAppIcon, true);
+  assert.equal(unknown.logoPath, null);
+  assert.equal(images.length, 0);
+  assert.equal(timers.size, 0);
+});

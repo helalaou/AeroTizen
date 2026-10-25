@@ -114,14 +114,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
       - name: Build unsigned launcher package
         env:
           RELEASE_TAG: ${{ inputs.tag }}
-        run: python tools/build_release.py launcher --output dist/launcher --tag "$RELEASE_TAG"
+        run: python tools/build_release.py launcher --output dist/releases/launcher --tag "$RELEASE_TAG"
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ inputs.tag }}-launcher
-          path: dist/launcher/*
+          path: dist/releases/launcher/*
           if-no-files-found: error
           retention-days: 7
 

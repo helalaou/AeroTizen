@@ -4,6 +4,20 @@
 
   var cfg = A.config, tz = A.tizen;
   var apps = A.apps = { all: [], realIds: [] };
+  var listeners = [];
+
+  apps.subscribe = function (listener) {
+    listeners.push(listener);
+    return function () {
+      var index = listeners.indexOf(listener);
+      if (index >= 0) { listeners.splice(index, 1); }
+    };
+  };
+
+  function publish(done) {
+    listeners.slice().forEach(function (listener) { listener(); });
+    done();
+  }
 
   function isRealApp(a) {
     return a.show !== false && (cfg.STORE_PACKAGE.test(a.packageId || '') || !!A.catalog.preloadedStoreId(a.id));
@@ -33,7 +47,7 @@
       ]
         .map(function (name, i) { return { id: 'demo' + i, name: name, icon: '' }; })
         .sort(function (a, b) { return a.name.localeCompare(b.name); });
-      return done();
+      return publish(done);
     }
     tz.application.getAppsInfo(function (list) {
       // HbbTV content runs in a shared host; include it in the watcher's inventory.
@@ -42,8 +56,8 @@
       apps.all = list.filter(function (a) { return isRealApp(a) && a.name && !cfg.HIDDEN_APPS.test(a.id) && !cfg.HIDDEN_APPS.test(a.name); })
         .map(function (a) { return { id: a.id, name: a.name, icon: a.iconPath || '' }; })
         .sort(function (a, b) { return a.name.localeCompare(b.name); });
-      done();
-    }, function () { apps.all = []; done(); });
+      publish(done);
+    }, function () { apps.all = []; publish(done); });
   };
 
   apps.byId = function (id) {

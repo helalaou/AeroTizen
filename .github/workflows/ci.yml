@@ -44,6 +44,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - run: npm run lint
+      - run: npm run build
       - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - name: Check compiled launcher release packaging
+        run: python tools/build_release.py launcher --output dist/release-check
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: settings-browser-failures
+          path: test-results/
+          retention-days: 7

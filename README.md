@@ -136,7 +136,8 @@ You need a computer on the same network as the TV.
    can require a newer CLI. Use `./aerotizen --version` to check your CLI version.
 
    To install local development files or a downloaded package, use an explicit path:
-   `./aerotizen install ./launcher` or `./aerotizen install ./app.wgt`.
+   `./aerotizen install ./dist/launcher` (after `npm ci && npm run build`) or
+   `./aerotizen install ./app.wgt`.
 
 Optional: add the extracted directory to your `PATH` to run `aerotizen` from any
 directory. You can then omit `./` (macOS/Linux) or `.\` (Windows) from the commands.

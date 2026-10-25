@@ -46,26 +46,33 @@ def write_checksums(path, assets):
 
 
 def build_launcher(root, output, tag=None):
-    launcher = root / "launcher"
-    widget = ET.parse(launcher / "config.xml").getroot()
+    source = root / "launcher"
+    launcher = root / "dist/launcher"
+    widget = ET.parse(source / "config.xml").getroot()
     version = check_version(widget.get("version"))
-    if (launcher / "version.txt").read_text(encoding="utf-8").strip() != version:
+    if (source / "version.txt").read_text(encoding="utf-8").strip() != version:
         raise ValueError("Launcher version.txt does not match config.xml")
     check_tag("launcher", version, tag)
     application = widget.find(f"{TIZEN}application")
     if application is None or not application.get("id") or not application.get("package"):
         raise ValueError("Launcher config.xml must contain a Tizen application id and package")
-    settings = json.loads((launcher / "release.json").read_text(encoding="utf-8"))
+    settings = json.loads((source / "release.json").read_text(encoding="utf-8"))
     minimum = check_version(settings["min_cli_version"])
-    files = [launcher / name for name in ("config.xml", "index.html", "icon.png")]
+    if not (launcher / "config.xml").is_file():
+        raise ValueError("Compiled launcher is missing; run npm ci and npm run build first")
+    if (launcher / "config.xml").read_bytes() != (source / "config.xml").read_bytes():
+        raise ValueError("Compiled launcher config.xml is stale; run npm run build again")
+    files = [launcher / name for name in ("config.xml", "index.html", "icon.png", "licenses/preact.txt")]
     for directory, suffix in (("css", ".css"), ("js", ".js"), ("service", ".js")):
         files.extend((launcher / directory).rglob(f"*{suffix}"))
-    for name in ("service/index.js", "service/artmode.js"):
+    for name in ("js/settings-ui.js", "service/index.js", "service/artmode.js"):
         if launcher / name not in files:
             raise ValueError(f"Launcher is missing required runtime file {name}")
     for source in files:
         if not source.is_file() or source.resolve() != source.absolute():
             raise ValueError(f"Runtime file must be a regular file without symlinks: {source}")
+    if 'id="settings-root"' not in (launcher / "index.html").read_text(encoding="utf-8"):
+        raise ValueError("Compiled launcher is missing the Preact Settings mount")
 
     output.mkdir(parents=True, exist_ok=True)
     package = output / f"aerotizen-launcher-{version}.wgt"

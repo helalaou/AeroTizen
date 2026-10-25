@@ -11,7 +11,7 @@ git clone https://github.com/helalaou/AeroTizen
 cd AeroTizen
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"     # the aerotizen CLI + pytest + ruff
-npm install                 # ESLint for the launcher (optional)
+npm ci                      # launcher build and lint tools
 ```
 
 Checks (CI runs the same):
@@ -20,11 +20,15 @@ Checks (CI runs the same):
 ruff check . && ruff format --check .
 pytest
 npm run lint
+npm run typecheck  # strict TypeScript checks for Settings and Vite config
+npm run build      # type checks, then compiled Settings in dist/launcher
 npm test           # launcher tests: tests/*.test.cjs, run in a Node sandbox
+npx playwright install chromium # once per Playwright version; CI also installs OS dependencies
+npm run test:browser # compiled Settings and legacy comparison, with managed local servers
 ```
 
-`npm test` needs Node.js 20 or newer (the date tests depend on its locale data). The watcher
-tests use mock clocks and network replies to cover the Art Mode protocol, status checks,
+Use Node.js 22.12 or newer, or Node 20.19+ within the 20.x series, as required by Vite.
+CI uses the latest Node 20.x. The watcher tests use mock clocks and network replies to cover the Art Mode protocol, status checks,
 relaunch cancellation and app visibility, without contacting a TV.
 
 ## Project layout
@@ -32,7 +36,14 @@ relaunch cancellation and app visibility, without contacting a TV.
 | Path | What |
 |---|---|
 | `src/aerotizen/` | Python CLI: sdb client, certificates, package signing, debloat |
-| `launcher/` | The TV app (plain HTML/CSS/JS, no build step) |
+| `launcher/` | TV runtime files and the legacy Settings baseline |
+| `launcher/src/settings/` | TypeScript/TSX Settings components, state, actions and service adapters |
+| `launcher/src/settings/sections/` | Settings sections with their own controls and hooks |
+| `launcher/src/shared/` | Store subscriptions, ref-based navigation and reusable lifecycle hooks |
+| `launcher/src/shared/icons/` | SVG icon components, one per TSX file |
+| `tests/browser/` | Playwright regression checks at the TV's 1920×1080 viewport |
+| `vite.config.mts` | Official Preact preset, dev server and TV bundle settings |
+| `dist/launcher/` | Generated TV runtime with compiled Settings; no Node needed on TV |
 | `launcher/js/config.js` | Launcher behaviour and settings |
 | `launcher/js/app-catalog.js` | App IDs, Samsung store IDs and optional fallback branding |
 | `launcher/js/app-lookup.js` | Shared ID lookup and legacy name compatibility |
@@ -42,12 +53,20 @@ relaunch cancellation and app visibility, without contacting a TV.
 
 ## Working on the launcher
 
+- Run `npm run dev`, then open http://localhost:8019 at 1920×1080. The server also
+  prints a network URL for another device. Vite supplies hot updates for Settings
+  components and serves the legacy runtime files. TV-only features use sample data.
+- Run `npm run build` for the compiled runtime in `dist/launcher/`.
+  Releases package this directory. The source launcher retains the legacy Settings
+  comparison baseline. Edit the TSX components for Settings changes.
+  See [Preact Settings](docs/preact-settings.md) for scope and validation.
 - Preview in a desktop browser: `python3 -m http.server -d launcher`, open
-  http://localhost:8000 at 1920×1080. TV-only features fall back to sample data.
-- On the TV: `aerotizen install ./launcher`, then `aerotizen inspect launcher`.
+  http://localhost:8000 at 1920×1080. This serves the legacy Settings baseline.
+- On the TV: `aerotizen install ./dist/launcher`, then `aerotizen inspect launcher`.
   This restarts the launcher in debug mode and exposes Chrome DevTools at
   http://localhost:9222/json. Press Ctrl+C to stop forwarding.
-- Keep it ES5-compatible (older Tizen runtimes) and animate with `transform` only.
+- Keep legacy scripts ES5-compatible. Compiled Settings targets Chromium 69, the 2020
+  TV engine, with an ES2018 syntax ceiling. Animate with `transform` only.
 
 Inspection is included in both the Python package and standalone CLI. It uses the
 same automatic TV discovery as other commands. To select a TV, use
@@ -56,8 +75,8 @@ port, use `aerotizen inspect APPID --port 9223`.
 The separate `aerotizen-inspect` Python command has been replaced by `aerotizen inspect`.
 
 `aerotizen install launcher` installs the latest published launcher, even when a
-`launcher` directory exists in the current directory. Use `./launcher` to test your
-local changes. For a fork's published app, use
+`launcher` directory exists in the current directory. Build first, then use
+`aerotizen install ./dist/launcher` to test local changes. For a fork's published app, use
 `aerotizen install launcher --release-repo OWNER/REPO`.
 
 ## Releases
