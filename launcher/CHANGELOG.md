@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.2.0...launcher-v2.3.0) (2026-10-25)
+
+
+### Features
+
+* **launcher:** manage Home favourites from app tiles ([#26](https://github.com/helalaou/AeroTizen/issues/26)) ([2716815](https://github.com/helalaou/AeroTizen/commit/2716815559db61b915e53a274d58229491119708))
+* **launcher:** migrate Settings to Preact and TypeScript ([#36](https://github.com/helalaou/AeroTizen/issues/36)) ([27c0919](https://github.com/helalaou/AeroTizen/commit/27c09193035955a1e39c5da71619743655ae22f4))
+
 ## [2.2.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.1.0...launcher-v2.2.0) (2026-10-23)
 
 
