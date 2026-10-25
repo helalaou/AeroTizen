@@ -65,7 +65,13 @@ def build_launcher(root, output, tag=None):
     files = [launcher / name for name in ("config.xml", "index.html", "icon.png", "licenses/preact.txt")]
     for directory, suffix in (("css", ".css"), ("js", ".js"), ("service", ".js")):
         files.extend((launcher / directory).rglob(f"*{suffix}"))
-    for name in ("js/settings-ui.js", "service/index.js", "service/artmode.js"):
+    for name in (
+        "js/settings-ui.js",
+        "service/index.js",
+        "service/artmode.js",
+        "service/home-mode.js",
+        "service/home-store.js",
+    ):
         if launcher / name not in files:
             raise ValueError(f"Launcher is missing required runtime file {name}")
     for source in files:
@@ -127,7 +133,18 @@ def smoke_binaries(binaries, version):
         for binary in binaries:
             copied = directory / binary.name
             shutil.copy2(binary, copied)
-            for arguments in (("--help",), ("--version",), ("inspect", "--help")):
+            for arguments in (
+                ("--help",),
+                ("--version",),
+                ("inspect", "--help"),
+                ("home", "status", "--help"),
+                ("home", "backup", "--help"),
+                ("home", "apply", "--help"),
+                ("home", "restore", "--help"),
+                ("home", "apply", "--json"),
+                ("home", "apply", "--boot", "--json"),
+                ("home", "restore", "--json"),
+            ):
                 result = subprocess.run(
                     [str(copied), *arguments],
                     cwd=directory,
@@ -146,6 +163,10 @@ def smoke_binaries(binaries, version):
 def build_cli(root, output, tag=None):
     version = cli_version(root)
     check_tag("cli", version, tag)
+    if not (root / "src/aerotizen/helpers/home-query.json").is_file():
+        raise ValueError("Build the read-only Home helper with python tools/build_home_query.py first")
+    if not (root / "src/aerotizen/helpers/home-control.json").is_file():
+        raise ValueError("Build the guarded Home writer with python tools/build_home_control.py first")
     target = platform_name()
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="aerotizen-build-") as temporary:

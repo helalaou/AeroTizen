@@ -38,6 +38,8 @@ def launcher(tmp_path):
         "js/main.js",
         "service/index.js",
         "service/artmode.js",
+        "service/home-mode.js",
+        "service/home-store.js",
     ):
         (app / filename).write_bytes(f"contents: {filename}".encode())
     (app / "release.json").write_text('{"min_cli_version": "2.2.0"}')
@@ -78,6 +80,8 @@ def test_launcher_is_unsigned_deterministic_and_has_verified_manifest(launcher, 
             "js/settings-ui.js",
             "licenses/preact.txt",
             "service/artmode.js",
+            "service/home-mode.js",
+            "service/home-store.js",
             "service/index.js",
         ]
         for name in archive.namelist():
@@ -188,7 +192,18 @@ def test_cli_tag_must_match_before_build_starts(tmp_path):
     assert not (tmp_path / "dist").exists()
 
 
-@pytest.mark.parametrize("arguments", [("--help",), ("--version",), ("inspect", "--help")])
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ("--help",),
+        ("--version",),
+        ("inspect", "--help"),
+        ("home", "status", "--help"),
+        ("home", "backup", "--help"),
+        ("home", "apply", "--help"),
+        ("home", "restore", "--help"),
+    ],
+)
 def test_cli_options_do_not_contact_tv(arguments, tmp_path):
     result = subprocess.run(
         [sys.executable, "-m", "aerotizen.cli", *arguments],
@@ -199,3 +214,12 @@ def test_cli_options_do_not_contact_tv(arguments, tmp_path):
         timeout=5,
     )
     assert "aerotizen" in result.stdout
+
+
+def test_cli_release_requires_the_home_helper_before_freezing(tmp_path):
+    source = tmp_path / "src/aerotizen"
+    source.mkdir(parents=True)
+    (source / "__init__.py").write_text('__version__ = "2.2.0"\n')
+    with pytest.raises(ValueError, match="Home helper"):
+        build.build_cli(tmp_path, tmp_path / "output")
+    assert not (tmp_path / "output").exists()

@@ -14,6 +14,21 @@ pip install -e ".[dev]"     # the aerotizen CLI + pytest + ruff
 npm ci                      # launcher build and lint tools
 ```
 
+The separate native Home query and control helpers require the .NET 6 SDK:
+
+```bash
+python tools/build_home_query.py
+python tools/build_home_control.py
+```
+
+Build both before running the full Python suite or building a standalone CLI. CI
+uses SDK 6.0.428. Standalone CLI releases include both payloads; users do not need
+a .NET SDK. Home commands use the SDK user by default; temporary root is an
+explicit option for reads only. See [inspection](docs/home-read-only.md) and
+[apply/restore](docs/home-apply-restore.md). The policy test harness runs on the
+host without loading any Tizen library. Set `AEROTIZEN_DOTNET` if the SDK is not on
+`PATH`. Tests use mocks or localhost servers; they do not contact a real TV.
+
 Checks (CI runs the same):
 
 ```bash

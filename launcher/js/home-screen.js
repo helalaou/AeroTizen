@@ -7,6 +7,7 @@
   var page = 'home';
   var tabCache = { home: null, apps: null };
   var moving = null, tileMenu = null;
+  var refreshPending = false;
   var CHEVRONS = { left: 'M15 5l-7 7 7 7', right: 'M9 5l7 7-7 7', up: 'M5 15l7-7 7 7', down: 'M5 9l7 7 7-7' };
 
   function gridTiles() { return [].slice.call(A.$('grid').children); }
@@ -14,13 +15,15 @@
   function render(fromTabSwitch) {
     if (!fromTabSwitch) { tabCache.home = null; tabCache.apps = null; }
     if (tileMenu) { closeTileMenu(false); }
-    var grid = A.$('grid'), home = A.settings.home, size = A.settings.cardSize === 'small' ? 'small' : 'big';
+    var grid = A.$('grid'), home = A.settings.home || [cfg.FIREPLACE_ID], size = A.settings.cardSize === 'small' ? 'small' : 'big';
     COLS = cfg.CARD_COLUMNS[size];
     grid.className = 'app-grid cards-' + size;
     grid.textContent = '';
     if (page === 'home') {
-      home = home.filter(function (id) { return id === cfg.FIREPLACE_ID || A.apps.byId(id); });
-      A.settings.home = home;
+      if (A.apps.ready) {
+        home = home.filter(function (id) { return id === cfg.FIREPLACE_ID || A.apps.byId(id); });
+        A.settings.home = home;
+      }
     } else {
       home = A.apps.all.map(function (app) { return app.id; });
     }
@@ -309,6 +312,7 @@
     showArrows();
     A.settings.save();
     A.hideToast();
+    if (refreshPending) { refreshPending = false; render(); }
   }
 
   // ---- keys --------------------------------------------------------------------
@@ -385,7 +389,8 @@
     else if (el && el.onclick) { el.onclick(); }
   }
 
-  A.homeScreen = { render: render, buildRows: buildRows, focus: focus, keydown: keydown, keyup: keyup };
+  A.homeScreen = { render: render, buildRows: buildRows, focus: focus, keydown: keydown, keyup: keyup,
+    refreshApps: function () { if (moving) { refreshPending = true; } else { render(); } } };
   A.$('gear').onclick = function () {
     if (moving) { endMove(); }
     A.settingsUi.open();

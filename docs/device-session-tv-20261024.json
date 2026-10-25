@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-10-24T18:33:05.998968+00:00",
+  "device": {
+    "model": "QE65LS03DAUXXU",
+    "platform": "24_PTM_FTV_T09",
+    "cpu_arch": "armv7",
+    "os_version": "9.0.0",
+    "build_id": "T-PTMDDEUC-0090-REL-202605141701"
+  },
+  "tools": {
+    "samsung_tv_root": "0.0.12",
+    "sdb": "4.2.36",
+    "root_archive_sha256": "8ee4587462963f8ad0374f921e41050bd9198a7cb0b15899a5f35a7ad8f50f2c",
+    "sdb_archive_sha256": "0bd307ac8382c857be5c2106dd5b8587b10c1c91ac1e504de8432c8276bc28c5"
+  },
+  "checks": {
+    "passed": true,
+    "same_device": true,
+    "applications_unchanged": true,
+    "authenticated": true,
+    "system_files_unchanged": true,
+    "staging_cleaned": true
+  },
+  "root_identity": {
+    "uid": 0,
+    "euid": 0,
+    "gid": 0,
+    "egid": 0,
+    "cap_eff": "0000003fffffffff",
+    "smack": "User",
+    "runtime": "6.0"
+  },
+  "applications": {
+    "before_count": 15,
+    "after_count": 15
+  },
+  "commands": [
+    {
+      "command": "id",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "uid=0(owner) gid=0(root) groups=0(root),29(audio),44(video),201(display),1901(log),6509(app_logging),6525(usb_device),10001(priv_externalstorage),10002(priv_externalstorage_appdata),10013(priv_tee_client),10014(priv_peripheralio),10212(priv_platform),10501(priv_camera),10502(priv_mediastorage),10503(priv_recorder),10704(priv_internet),10705(priv_network_get),10711(priv_tethering_admin),10901(priv_email),10903(priv_message_read),11103(priv_mapservice),11201(priv_appdebugging) context=\"User\"\n",
+      "timed_out": false
+    },
+    {
+      "command": "uname -m",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "armv7l\n",
+      "timed_out": false
+    },
+    {
+      "command": "cat /etc/os-release",
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "NAME=Tizen\nVERSION=\"9.0.0 (Tizen9/TV)\"\nID=tizen\nVERSION_ID=9.0.0\nPRETTY_NAME=\"Tizen 9.0.0 (Tizen9/TV)\"\nANSI_COLOR=\"0;36\"\nCPE_NAME=\"cpe:/o:tizen:tizen:9.0.0\"\nBUILD_ID=T-PTMDDEUC-0090-REL-202605141701\n",
+      "timed_out": false
+    }
+  ],
+  "scope": [
+    "Temporary root and direct SDB reconnection verified.",
+    "No Home commands, boot service, UEP change, app installation or viewing-history read.",
+    "System-file check covers upstream-selected /etc/passwd and /usr/share/sdbd/public.pem."
+  ]
+}

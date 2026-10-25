@@ -3,7 +3,7 @@
   'use strict';
 
   var cfg = A.config, tz = A.tizen;
-  var apps = A.apps = { all: [], realIds: [] };
+  var apps = A.apps = { all: [], realIds: [], ready: false };
   var listeners = [];
 
   apps.subscribe = function (listener) {
@@ -14,10 +14,24 @@
     };
   };
 
-  function publish(done) {
+  function publish(done, success) {
     listeners.slice().forEach(function (listener) { listener(); });
-    done();
+    done(success);
   }
+  var CACHE_KEY = 'aerotizen.apps.v1';
+
+  // Cached labels make saved Home tiles usable while package discovery is busy.
+  // A failed discovery must never remove the user's favourites.
+  apps.restore = function () {
+    try {
+      var cached = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
+      if (!Array.isArray(cached) || cached.length > 1000) { return; }
+      apps.all = cached.filter(function (app) {
+        return app && typeof app.id === 'string' && app.id && typeof app.name === 'string' &&
+          app.name && typeof app.icon === 'string';
+      });
+    } catch (e) { /* cache is optional */ }
+  };
 
   function isRealApp(a) {
     return a.show !== false && (cfg.STORE_PACKAGE.test(a.packageId || '') || !!A.catalog.preloadedStoreId(a.id));
@@ -47,22 +61,29 @@
       ]
         .map(function (name, i) { return { id: 'demo' + i, name: name, icon: '' }; })
         .sort(function (a, b) { return a.name.localeCompare(b.name); });
-      return publish(done);
+      apps.ready = true;
+      return publish(done, true);
     }
-    tz.application.getAppsInfo(function (list) {
+    var settled = false;
+    function failed() { if (!settled) { settled = true; publish(done, false); } }
+    try { tz.application.getAppsInfo(function (list) {
+      if (settled) { return; }
+      settled = true;
       // HbbTV content runs in a shared host; include it in the watcher's inventory.
       apps.realIds = list.filter(function (a) { return (isRealApp(a) || a.id === cfg.HBBTV_APP_ID) && !/service|DclHome001/i.test(a.id); })
         .map(function (a) { return A.catalog.preloadedStoreId(a.id) || a.id; });
       apps.all = list.filter(function (a) { return isRealApp(a) && a.name && !cfg.HIDDEN_APPS.test(a.id) && !cfg.HIDDEN_APPS.test(a.name); })
         .map(function (a) { return { id: a.id, name: a.name, icon: a.iconPath || '' }; })
         .sort(function (a, b) { return a.name.localeCompare(b.name); });
-      publish(done);
-    }, function () { apps.all = []; publish(done); });
+      apps.ready = true;
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(apps.all)); } catch (e) { /* cache is optional */ }
+      publish(done, true);
+    }, failed); } catch (e) { failed(); }
   };
 
   apps.byId = function (id) {
     for (var i = 0; i < apps.all.length; i++) { if (apps.all[i].id === id) { return apps.all[i]; } }
-    return null;
+    return apps.ready ? null : { id: id, name: id, icon: '' };
   };
 
   apps.defaultHome = function () {

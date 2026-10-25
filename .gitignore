@@ -11,3 +11,9 @@ device-profile.xml
 node_modules/
 test-results/
 playwright-report/
+native/**/bin/
+native/**/obj/
+src/aerotizen/helpers/home-query.json
+src/aerotizen/helpers/home-control.json
+tests/native-home/bin/
+tests/native-home/obj/

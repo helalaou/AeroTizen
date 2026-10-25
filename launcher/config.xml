@@ -3,8 +3,12 @@
   <name>AeroTizen</name>
   <icon src="icon.png"/>
   <content src="index.html"/>
+  <tizen:app-control>
+    <tizen:src name="index.html" reload="disable"/>
+    <tizen:operation name="http://tizen.org/appcontrol/operation/main"/>
+  </tizen:app-control>
   <feature name="http://tizen.org/feature/screen.size.normal.1080.1920"/>
-  <tizen:application id="DclHome001.Home" package="DclHome001" required_version="2.3"/>
+  <tizen:application id="DclHome001.Home" package="DclHome001" required_version="2.4"/>
   <tizen:service id="DclHome001.Watcher" on-boot="true" auto-restart="true">
     <tizen:content src="service/index.js"/>
     <tizen:name>HomeWatcher</tizen:name>
@@ -13,9 +17,12 @@
   <tizen:profile name="tv-samsung"/>
   <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="enable" encryption="disable" install-location="auto" hwkey-event="enable"/>
   <tizen:metadata key="http://samsung.com/tv/metadata/prelaunch.support" value="true"/>
+  <tizen:metadata key="http://samsung.com/tv/metadata/use.network" value="false"/>
   <tizen:metadata key="http://tizen.org/metadata/app_ui_type/base_screen_resolution" value="extensive"/>
   <access origin="*" subdomains="true"/>
   <tizen:privilege name="http://tizen.org/privilege/internet"/>
+  <tizen:privilege name="http://tizen.org/privilege/filesystem.read"/>
+  <tizen:privilege name="http://tizen.org/privilege/filesystem.write"/>
   <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
   <tizen:privilege name="http://tizen.org/privilege/application.info"/>
   <tizen:privilege name="http://tizen.org/privilege/tv.window"/>

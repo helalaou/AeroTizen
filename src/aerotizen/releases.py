@@ -180,6 +180,11 @@ def _check_package(data, version):
                     raise ReleaseError("Expected an unsigned launcher package.")
                 names.add(name)
             required = {"config.xml", "index.html", "service/index.js", "service/artmode.js"}
+            if "service/index.js" in names:
+                watcher_source = package.read("service/index.js")
+                for module in ("home-mode", "home-store"):
+                    if ("./" + module).encode() in watcher_source:
+                        required.add("service/" + module + ".js")
             if not required <= names:
                 raise ReleaseError("The launcher package is missing required application files.")
             config = package.read("config.xml")

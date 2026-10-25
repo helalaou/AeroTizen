@@ -50,7 +50,7 @@
       var img = new Image();
       img.className = 'logo'; img.alt = '';
       img.onerror = function () { fallback.removeChild(img); };
-      img.src = app.icon;
+      window.AeroStartup.afterLoad(function () { img.src = app.icon; });
       fallback.appendChild(img);
     }
     if (b.label || !mark) {
@@ -81,7 +81,7 @@
       timer = setTimeout(failed, 2000);
       image.src = src;
     }
-    next();
+    window.AeroStartup.afterLoad(next);
     return tile;
   }
 

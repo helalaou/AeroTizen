@@ -66,6 +66,17 @@ From your computer (`aerotizen`):
 - Signs and installs any `.wgt` app, including the launcher
 - Opens apps and checks that they actually came up on screen (`aerotizen launch`)
 - Restarts apps with Chrome DevTools for debugging (`aerotizen inspect launcher`)
+- Reads native Home state and saves an immutable local baseline with optional temporary root
+  ([`aerotizen home status` and `home backup`](docs/home-read-only.md))
+- Previews native Home assignment and exact restore, with guarded SDK-only writes
+  and a persistent watcher handoff ([apply/restore guide](docs/home-apply-restore.md)).
+  The write path is limited to the recorded Frame and firmware.
+  [Native boot and Art Mode](docs/home-native-boot.md) have separate device checks.
+  The [startup and Art return guide](docs/home-startup-art-return.md) describes
+  the explicit `--art-return` option and its restart requirement.
+- Keeps Home backups and transaction receipts on the PC. Copy the complete backup
+  folder to another PC and use `home restore --backup PATH --yes` to restore it
+  ([PC-managed flow](docs/home-pc-flow.md)).
 - Lists installed apps, flags the bloat, and removes it if your firmware allows
 
 There's also a short [guide to the settings worth turning off](docs/settings.md) (ads, viewing

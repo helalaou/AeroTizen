@@ -222,9 +222,10 @@
       } else {
         tile = A.tiles.app(app);
       }
-      tile.classList.toggle('on', S.home.indexOf(app.id) >= 0);
+      tile.classList.toggle('on', (S.home || [cfg.FIREPLACE_ID]).indexOf(app.id) >= 0);
       tile.dataset.key = 'app:' + app.id;
       tile.onclick = function () {
+        if (S.home === null) { S.home = [cfg.FIREPLACE_ID]; }
         var i = S.home.indexOf(app.id);
         if (i >= 0) { S.home.splice(i, 1); } else { S.home.push(app.id); }
         tile.classList.toggle('on', i < 0);

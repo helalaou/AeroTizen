@@ -111,12 +111,20 @@ class Sdb:
     # -- services ------------------------------------------------------------
     def service(self, name):
         """Open a stream to `name` (e.g. "shell:0 vd_applist") and return all output."""
+        return self._service(name)
+
+    def _service(self, name, deadline=None, max_output=None):
         local_id = self._next_id
         self._next_id += 1
         self._send(OPEN, local_id, 0, name.encode() + b"\0")
         out = bytearray()
         remote_id = None
         while True:
+            if deadline is not None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise SdbError("SDB command deadline exceeded")
+                self.sock.settimeout(remaining)
             cmd, arg0, arg1, payload = self._recv()
             if arg1 != local_id:
                 continue
@@ -124,11 +132,21 @@ class Sdb:
                 remote_id = arg0
             elif cmd == WRTE:
                 out += payload
+                if max_output is not None and len(out) > max_output:
+                    raise SdbError("SDB command output limit exceeded")
                 self._send(OKAY, local_id, arg0)
             elif cmd == CLSE:
                 if remote_id is not None:
                     self._send(CLSE, local_id, arg0)
                 return out.decode(errors="replace")
+
+    def shell_bounded(self, command, timeout=30, max_output=131072):
+        previous = self.sock.gettimeout()
+        try:
+            return self._service(f"shell:{command}", time.monotonic() + timeout, max_output)
+        finally:
+            if self.sock is not None:
+                self.sock.settimeout(previous)
 
     def push(self, data, remote_path):
         """Upload bytes to remote_path using the adb-style sync protocol."""
