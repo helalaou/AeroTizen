@@ -5,6 +5,10 @@ Home backup and transaction receipts. Apply and restore run from the CLI; the
 launcher does not change these native settings from its UI. The TV then operates
 without a running PC or watcher polling.
 
+Samsung Home remains available from AeroTizen Settings. On the recorded Frame,
+pressing Home inside Samsung's own menus does not return to AeroTizen. Open
+AeroTizen manually from Samsung's app list after using this escape.
+
 ## Setup
 
 After installing and opening the compatible launcher:
@@ -21,6 +25,19 @@ The original is saved once in the PC's
 Before the native writer runs, its request and baseline bytes are durably saved
 under the adjacent `transactions/` directory. Apply needs no TV backup endpoint.
 Restart the TV fully after applying Art return, then test Home, boot and Art Mode.
+Complete this restart before testing Home from other apps. On the recorded Frame,
+Home from YouTube did nothing after an in-place update and restore/apply cycle;
+one Home press returned to AeroTizen after a full power restart.
+The latest cold test took about 45 seconds to show AeroTizen, by user estimate.
+Startup performance remains an open issue; early browser render marks do not
+measure the panel's power-to-screen delay.
+
+Art Mode keeps Samsung's existing sleep and sensor settings. In the current
+test, Night Mode was on and the panel entered standby while Art remained active
+and AeroTizen was hidden. With Night Mode temporarily off, artwork stayed for
+two minutes and one Home press opened AeroTizen. See the
+[device results](home-pc-roundtrip-tv-20261025.json) for the full test sequence.
+Night Mode was restored to its original on setting after this comparison.
 
 Running `home backup` after apply keeps the validated original file unchanged.
 It reports that the current native settings differ from the original; it does

@@ -109,6 +109,39 @@ These two user estimates started from different visible screens; they are not a
 controlled benchmark. Art-only startup with no Power press after reconnect was
 not tested. See [device evidence](home-startup-art-return-tv-20261024.json).
 
+### Combined upstream build on 25 October
+
+The branch was rebased onto upstream `029b2a9`, including Preact Settings and
+the tile menu. The 2.3.0 signed package passed verification of all 33 installed
+runtime files, and saved settings were unchanged. A copied PC backup restored
+every saved native value exactly; the watcher resumed and the user confirmed
+that Home opened Samsung Home. Fresh native Home, boot and Art-return apply
+passed readback. Home from YouTube did not work before a full restart. After
+the restart, YouTube stayed open and one physical Home press opened AeroTizen.
+
+The cold boot changed the kernel boot ID and opened AeroTizen automatically.
+The user estimated about 45 seconds from Power to AeroTizen. Native settings
+and native control mode persisted, with zero watcher polls, Art queries and
+launches. A read-only temporary-root copy of the saved LevelDB trace showed
+Home-rendered at 1281 ms, frame-ready at 1296 ms, apps-requested at 1529 ms and
+apps-loaded at 20984 ms after the first script. All 53 complete log records
+passed CRC32C validation before the WriteBatch data was decoded. Staging was
+cleaned and the selected system-file checks were unchanged.
+
+The internal render mark does not measure physical panel readiness or explain
+the full reported 45-second delay. Startup remains an open performance issue;
+these user estimates are not a controlled before/after benchmark.
+
+The Samsung Home escape opened Samsung Home from the new Settings UI. Home
+inside Samsung's own menus did not return to AeroTizen; the user reopened it
+manually. Two Art trials with Night Mode on ended with a black panel. At that
+point the TV reported Art on, power standby, and AeroTizen hidden. With Night
+Mode temporarily off, the artwork stayed for two minutes and one Home press
+opened AeroTizen. No watcher polls, Art queries or launches were recorded after
+the cold boot. The user restored Night Mode to on and left AeroTizen visible.
+Final state and the full test sequence are recorded in
+[the current round-trip evidence](home-pc-roundtrip-tv-20261025.json).
+
 ## Recovery when Samsung's HTTP API is unavailable
 
 Native Home can be usable before port 8001 starts. Home commands now connect over
