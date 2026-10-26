@@ -38,7 +38,14 @@ def status():
                 "baseline_sha256": None,
             },
         },
-        "evidence": evidence["query_evidence"],
+        "evidence": {
+            **evidence["query_evidence"],
+            "access": "sdk_uid_901",
+            "uid": 901,
+            "authenticated": True,
+            "sdk_staging_cleaned": True,
+            "query_staging_cleaned": True,
+        },
     }
 
 
@@ -59,6 +66,7 @@ def test_control_payload_matches_current_sources():
         for name in (
             "HomeControl.cs",
             "ControlPolicy.cs",
+            "Compatibility.cs",
             "HomeControl.csproj",
             "../home-common/Installation.cs",
         )
@@ -119,19 +127,127 @@ def test_change_journals_before_writer_and_preserves_original(monkeypatch, tmp_p
         assert receipt.stat().st_mode & 0o777 == 0o600
 
 
-@pytest.mark.parametrize("alteration", ["firmware", "identity", "incomplete"])
+@pytest.mark.parametrize(
+    "alteration", ["firmware", "identity", "model", "os_version", "cpu_arch", "incomplete"]
+)
 def test_preflight_never_invokes_writer_on_mismatch(monkeypatch, tmp_path, status, alteration):
     saved = home.save_backup(status, state_dir=tmp_path)
     if alteration == "firmware":
         status["device"]["firmware_build"] = "OTHER"
     elif alteration == "identity":
         status["device"]["identity_sha256"] = "c" * 64
+    elif alteration in ("model", "os_version", "cpu_arch"):
+        status["device"][alteration] = "OTHER"
     else:
         status["complete"] = False
     monkeypatch.setattr(home, "read_status", lambda *args: status)
     monkeypatch.setattr(sdk, "run", lambda *args: pytest.fail("writer must not run"))
     with pytest.raises(home.HomeError):
         home_control.change(object(), {}, "apply", backup=saved["path"], state_dir=tmp_path)
+    assert not list(tmp_path.rglob("transactions/*.json"))
+
+
+@pytest.mark.parametrize(
+    "model,firmware",
+    [
+        ("QE65S90CATXZT", "T-OTHER-TIZEN7"),
+        ("QE55Q70BATXXU", "T-OTHER-TIZEN6"),
+    ],
+)
+@pytest.mark.parametrize("boot", [False, True])
+@pytest.mark.parametrize("installed", [False, True])
+def test_other_models_roundtrip_their_own_original_values(
+    monkeypatch, tmp_path, status, model, firmware, boot, installed
+):
+    status["device"].update(model=model, firmware_build=firmware, os_version="7.0.0", cpu_arch="armv7l")
+    status["home"]["main_operation"]["value"] = "Other.StockHome"
+    status["home"]["settings"][home.HOME_KEY]["value"] = "Other.StockHome"
+    status["home"]["settings"]["db/appfw/startup_appid"]["value"] = "Other.Startup"
+    status["home"]["settings"]["db/first_screen/type"]["value"] = "Other.ArtReturn"
+    saved = home.save_backup(status, state_dir=tmp_path)
+    backup = Path(saved["path"])
+    raw = backup.read_bytes()
+    native = copy.deepcopy(status)
+    native["home"]["main_operation"]["value"] = home.releases.APP_ID
+    native["home"]["settings"][home.HOME_KEY]["value"] = home.releases.APP_ID
+    native["watcher"]["control"].update(mode="native", baseline_sha256=hashlib.sha256(raw).hexdigest())
+    if boot:
+        native["home"]["settings"]["db/menu/smart_hub/ontvsetting/auto_start"]["value"] = 1
+    restoring = copy.deepcopy(native)
+    restored = copy.deepcopy(status)
+    if not installed:
+        for snapshot in (restoring, restored):
+            snapshot["launcher"]["installed"] = False
+            snapshot["watcher"] = {"state": "unknown", "reachable": False}
+    reads = iter([status, native, restoring, restored])
+    monkeypatch.setattr(home, "read_status", lambda *args: next(reads))
+
+    def run(session, files, entrypoint, args):
+        request = json.loads(files["request.json"])
+        assert base64.b64decode(request["baseline_base64"]) == raw
+        receipt = backup.parent / "transactions" / (request["transaction"] + ".json")
+        assert json.loads(receipt.read_text())["state"] == "pending"
+        if request["action"] == "apply":
+            native["watcher"]["control"]["transaction"] = request["transaction"]
+            if installed:
+                restoring["watcher"]["control"]["transaction"] = request["transaction"]
+        elif boot:
+            assert ("restore_boot_transaction" if installed else "recovery_apply") in request
+        return native_result(request["action"])
+
+    monkeypatch.setattr(sdk, "run", run)
+    assert home_control.change(object(), {}, "apply", boot=boot, state_dir=tmp_path)["success"]
+    assert home_control.change(object(), {}, "restore", state_dir=tmp_path)["success"]
+    assert backup.read_bytes() == raw
+
+
+@pytest.mark.parametrize("action", ["apply", "restore"])
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "arm64",
+        "x86",
+        "missing_arch",
+        "root",
+        "wrong_uid",
+        "unauthenticated",
+        "unclean_query",
+        "unclean_sdk",
+        "wrong_type",
+        "missing_key",
+        "unavailable",
+        "empty_value",
+        "autostart_value",
+    ],
+)
+def test_incompatible_state_never_journals_or_invokes_writer(monkeypatch, tmp_path, status, action, failure):
+    if failure in ("arm64", "x86", "missing_arch"):
+        status["device"]["cpu_arch"] = None if failure == "missing_arch" else failure
+    saved = home.save_backup(status, state_dir=tmp_path)
+    if failure == "root":
+        status["evidence"].update(access="temporary_root", uid=0)
+    elif failure == "wrong_uid":
+        status["evidence"]["uid"] = 5001
+    elif failure == "unauthenticated":
+        status["evidence"]["authenticated"] = False
+    elif failure == "unclean_query":
+        status["evidence"]["query_staging_cleaned"] = False
+    elif failure == "unclean_sdk":
+        status["evidence"]["sdk_staging_cleaned"] = False
+    elif failure == "wrong_type":
+        status["home"]["settings"][home.HOME_KEY]["type"] = "int"
+    elif failure == "missing_key":
+        del status["home"]["settings"][home.HOME_KEY]
+    elif failure == "unavailable":
+        status["home"]["settings"][home.HOME_KEY].update(status="unavailable", value=None, error="missing")
+    elif failure == "empty_value":
+        status["home"]["settings"][home.HOME_KEY]["value"] = " "
+    elif failure == "autostart_value":
+        status["home"]["settings"]["db/menu/smart_hub/ontvsetting/auto_start"]["value"] = 2
+    monkeypatch.setattr(home, "read_status", lambda *args: status)
+    monkeypatch.setattr(sdk, "run", lambda *args: pytest.fail("writer must not run"))
+    with pytest.raises(home.HomeError):
+        home_control.change(object(), {}, action, backup=saved["path"], state_dir=tmp_path)
     assert not list(tmp_path.rglob("transactions/*.json"))
 
 
@@ -189,7 +305,7 @@ def test_native_policy_failure_boundaries_run_on_host_without_tizen():
         timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "POLICY_TESTS_PASSED=61" in result.stdout
+    assert "POLICY_TESTS_PASSED=91" in result.stdout
 
 
 def test_boot_preview_has_no_device_contact(monkeypatch, capsys):

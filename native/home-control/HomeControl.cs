@@ -15,17 +15,17 @@ internal sealed class NativePlatform : IPlatform, IDisposable
     private const string Operation = "http://tizen.org/appcontrol/operation/main";
     private const string AutoKey = "db/menu/smart_hub/ontvsetting/auto_start";
     private readonly HttpClient client = new HttpClient(new HttpClientHandler { UseProxy = false }) { Timeout = TimeSpan.FromSeconds(3) };
-    [DllImport("libc.so.6")] internal static extern uint getuid();
-    [DllImport("libc.so.6")] private static extern void free(IntPtr value);
-    [DllImport("libvconf.so.0")] private static extern IntPtr vconf_get_str(string key);
-    [DllImport("libvconf.so.0")] private static extern int vconf_get_int(string key, out int value);
-    [DllImport("libvconf.so.0")] private static extern int vconf_set_str(string key, string value);
-    [DllImport("libvconf.so.0")] private static extern int vconf_set_int(string key, int value);
-    [DllImport("libcapi-appfw-app-operation-tv.so.0")]
+    [DllImport(Compatibility.Libc)] internal static extern uint getuid();
+    [DllImport(Compatibility.Libc)] private static extern void free(IntPtr value);
+    [DllImport(Compatibility.Vconf)] private static extern IntPtr vconf_get_str(string key);
+    [DllImport(Compatibility.Vconf)] private static extern int vconf_get_int(string key, out int value);
+    [DllImport(Compatibility.Vconf)] private static extern int vconf_set_str(string key, string value);
+    [DllImport(Compatibility.Vconf)] private static extern int vconf_set_int(string key, int value);
+    [DllImport(Compatibility.AppOperation)]
     private static extern int app_operation_get_current_app(string operation, out IntPtr appId);
-    [DllImport("libcapi-appfw-app-operation-tv.so.0")]
+    [DllImport(Compatibility.AppOperation)]
     private static extern int app_operation_set_current_app(string operation, string appId);
-    [DllImport("libapp-context-manager-common.so")]
+    [DllImport(Compatibility.AppContext)]
     private static extern byte util_is_appbooting_supported_webapp_byappid(string appId);
     internal static void Check(int code) { if (code != 0) throw new Exception("Native call failed: " + code); }
     internal static Dictionary<string, string> OsRelease()
@@ -37,6 +37,11 @@ internal sealed class NativePlatform : IPlatform, IDisposable
             if (separator > 0) result[line.Substring(0, separator)] = line.Substring(separator + 1).Trim('"');
         }
         return result;
+    }
+    public void CheckCompatibility(bool applying)
+    {
+        Compatibility.RequireRuntime(IntPtr.Size, RuntimeInformation.ProcessArchitecture, getuid(), OsRelease());
+        Compatibility.RequireApis(applying, Compatibility.RequireExports);
     }
     public string Firmware => OsRelease()["BUILD_ID"];
     public bool LauncherEligible() => Directory.Exists("/opt/usr/apps/DclHome001") && util_is_appbooting_supported_webapp_byappid(Policy.Target) != 0;
@@ -140,8 +145,9 @@ internal static class HomeControl
             {
                 var saved = baseline.RootElement;
                 if (saved.GetProperty("schema_version").GetInt32() != 1 || saved.GetProperty("kind").GetString() != "aerotizen.home-baseline" ||
-                    saved.GetProperty("device").GetProperty("model").GetString() != "QE65LS03DAUXXU")
-                    throw new Exception("Unverified device or baseline schema.");
+                    string.IsNullOrWhiteSpace(saved.GetProperty("device").GetProperty("model").GetString()) ||
+                    string.IsNullOrWhiteSpace(saved.GetProperty("device").GetProperty("firmware_build").GetString()))
+                    throw new Exception("Invalid device metadata or baseline schema.");
                 var home = saved.GetProperty("home");
                 if (home.GetProperty("operation").GetString() != "http://tizen.org/appcontrol/operation/main")
                     throw new Exception("Unexpected baseline operation.");
@@ -175,9 +181,6 @@ internal static class HomeControl
             uid = NativePlatform.getuid();
             if (args.Length != 1 || IntPtr.Size != 4 || uid != 901)
                 throw new Exception("Expected one request file and 32-bit SDK UID 901; root is not used.");
-            var os = NativePlatform.OsRelease();
-            if (os["ID"] != "tizen" || os["BUILD_ID"] != "T-PTMDDEUC-0090-REL-202605141701")
-                throw new Exception("This Home writer has not been verified for this firmware.");
             var request = ReadRequest(args[0]);
             action = request.Action;
             using (var guard = new FileStream("/home/owner/share/tmp/sdk_tools/.aerotizen-home-control.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))

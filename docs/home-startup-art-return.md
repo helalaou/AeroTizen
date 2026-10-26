@@ -6,9 +6,10 @@ spinner with this override and restored Home by removing it. Home plus boot pass
 with Samsung's original Art target; startup still took about 30 seconds and Art
 return required two Home presses. Earlier experiments below describe removed code.
 
-Home writes are restricted to the recorded QE65LS03DAUXXU firmware. They use
-UID 901, native value setters and the immutable original backup. They do not
-require root or enable the watcher.
+Home writes now use [compatibility checks](home-pc-flow.md#compatibility-and-testing-on-another-tv)
+instead of a model/firmware allowlist. The physical results here cover the recorded
+QE65LS03DAUXXU firmware. Writes use SDK UID 901 and the immutable original backup;
+root and watcher polling remain disabled.
 
 ```sh
 aerotizen home apply --boot                       # offline preview

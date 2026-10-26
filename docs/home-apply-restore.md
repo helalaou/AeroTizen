@@ -9,9 +9,12 @@ Settings → Samsung Home opens the stock Home screen. Native mode survived an
 in-place package update and service restart. Exact original Home and startup
 values were restored after the tests. See the
 [device evidence](home-apply-restore-tv-20261024.json).
-The first write path is limited to `QE65LS03DAUXXU`, 32-bit Tizen 9, build
-`T-PTMDDEUC-0090-REL-202605141701`. It never acquires root or falls back to root.
-Other models and firmware remain unverified. [Native boot and Art Mode](home-native-boot.md)
+Physical results above cover `QE65LS03DAUXXU`, Tizen 9, build
+`T-PTMDDEUC-0090-REL-202605141701`. Other models and firmware can now test after
+[compatibility checks](home-pc-flow.md#compatibility-and-testing-on-another-tv).
+The writer requires a 32-bit ARM Tizen runtime, SDK UID 901, available native APIs
+and complete typed settings; it never acquires root or falls back to root.
+Other models and firmware remain physically unverified. [Native boot and Art Mode](home-native-boot.md)
 passed a separate device test, with a slow startup and a two-press Art exit.
 The TV's Art and app-control APIs already timed out before this update.
 
@@ -65,9 +68,11 @@ aerotizen --tv TV_IP home restore --yes
 `--yes` is required for execution. Before the writer runs, the CLI verifies device
 identity, model, architecture, OS and exact firmware against the backup. It stores
 a private transaction receipt with the original backup bytes and checksum. The
-native helper checks UID 901, 32-bit Tizen, the enabled firmware, the original
-backup checksum and schema, and the live Home state. Apply also checks that the
-installed AeroTizen app is eligible for native Home.
+native helper checks UID 901, a 32-bit ARM Tizen runtime, required native library
+exports, firmware matching the saved original, the backup checksum/schema, and
+complete live Home values. It resolves setter symbols without invoking them before
+watcher handoff or native writes. Missing APIs or incompatible settings stop the change.
+Apply also checks that the installed AeroTizen app is eligible for native Home.
 
 The writer is a separate assembly from the getter-only query. A normal status or
 backup command cannot call its setters. Each payload and staged request has a

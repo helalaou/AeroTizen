@@ -187,18 +187,27 @@ Both options run on the TV; your computer can be switched off after setup. Neith
 | **Watcher (default)** | A background service detects a return to Samsung Home and reopens AeroTizen. Some apps cannot be detected (see [Limits](#limits)). |
 | **Native Home (opt-in)** | The TV routes Home from other apps to AeroTizen, with optional automatic startup. The watcher is disabled. |
 
-Native Home is experimental and currently limited to the Frame QE65LS03DAUXXU and its recorded
-Tizen 9 firmware. Install and open the compatible launcher, then run from your computer
-(replace `TV_IP` with your TV's address):
+Native Home is experimental. Other models and firmware can now test if compatibility checks
+pass: a 32-bit ARM Tizen runtime, developer access, required native functions and complete
+settings reads. Apply also checks the installed launcher's eligibility and control service.
+Only the 2024 Frame on Tizen 9 has physical test results for this flow; passing preflight does
+not prove Home or boot behaviour on another TV.
+
+Use matching updated builds of the CLI and signed launcher, then open the launcher. Start
+with Home only (replace `TV_IP` with your TV's address):
 
 ```sh
 ./aerotizen --tv TV_IP home status
 ./aerotizen --tv TV_IP home backup
-./aerotizen --tv TV_IP home apply --boot --yes
+./aerotizen --tv TV_IP home apply --yes
 ```
 
-`--boot` adds automatic startup. For Home only, run apply without `--boot`.
-Restore an existing native assignment before changing its options.
+Restart fully, then test Home from YouTube, Prime Video and Samsung Home. Run restore and
+check that Samsung Home returns. To test automatic startup separately, restore first, then
+run `./aerotizen --tv TV_IP home apply --boot --yes`. Restore before changing options.
+If compatibility checks fail, the command stops before changing settings or pausing the watcher.
+Native function availability does not prove write permission; failed writes attempt rollback.
+Keep the backup folder and inspect `home status` if a change fails.
 See the [controlled TV tests](docs/home-profile-isolation-tv-20261026.json).
 
 The TV's original Home and startup values are saved once on the PC in
@@ -219,7 +228,8 @@ CLI restores directly through the developer connection; no reinstall or root is 
 Before `uninstall launcher`, restore native Home; uninstall stops while Home or startup still points to AeroTizen.
 Samsung Home remains available from AeroTizen Settings; Samsung's Art Mode sleep and
 Night Mode settings stay unchanged. See [setup and recovery](docs/home-pc-flow.md) for
-backup transfer and recovery steps.
+backup transfer and recovery steps. Test reports should include the CLI commit, TV model,
+firmware, and Home/restore/boot results; remove device IDs and private paths before sharing.
 
 ## Limits
 

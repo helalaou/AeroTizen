@@ -1,7 +1,9 @@
 # Native boot and Frame Art Mode
 
-Use the existing immutable Home backup. The boot option is limited to the recorded
-Frame and firmware, as described in [Home control](home-apply-restore.md).
+Use the existing immutable Home backup. Other models and firmware can test after
+[compatibility checks](home-pc-flow.md#compatibility-and-testing-on-another-tv).
+Physical boot results here cover only the recorded Frame and firmware. Test Home
+and restore before adding boot.
 
 ```sh
 aerotizen home apply --boot                 # offline preview
@@ -84,5 +86,5 @@ The configuration follows the published [Tizen 9 native startup experiment](http
 That source establishes a test approach, not compatibility proof for this Frame.
 
 The later [startup and Art return investigation](home-startup-art-return.md)
-adds an explicit first-screen option. The results above describe the earlier
-configuration, which preserved Samsung's first-screen setting.
+records a first-screen override that was subsequently removed. Current applies
+preserve Samsung's first-screen setting, as did the configuration above.

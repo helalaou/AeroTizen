@@ -46,6 +46,7 @@ def build(dotnet):
             for name in (
                 "HomeControl.cs",
                 "ControlPolicy.cs",
+                "Compatibility.cs",
                 "HomeControl.csproj",
                 "../home-common/Installation.cs",
             )

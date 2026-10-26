@@ -16,7 +16,6 @@ from aerotizen import home, remote, sdk
 PAYLOAD_PATH = Path(__file__).parent / "helpers/home-control.json"
 HELPER_FILES = ("AeroTizenHomeControl.dll", "AeroTizenHomeControl.runtimeconfig.json")
 PREFIX = "AEROTIZEN_HOME_CONTROL="
-SUPPORTED_DEVICE = ("QE65LS03DAUXXU", "T-PTMDDEUC-0090-REL-202605141701")
 MAX_RECEIPT_BYTES = 2 * 1024 * 1024
 MAX_RECOVERY_CHAIN = 128
 MAX_RECOVERY_RECEIPTS = 1024
@@ -201,6 +200,37 @@ def _boot_restore_transaction(status, backup, raw, digest):
     return None
 
 
+def _check_compatibility(status):
+    """Require a successful SDK query and complete typed settings, on any model."""
+    if status["device"].get("cpu_arch") not in ("arm", "armv7", "armv7l"):
+        raise home.HomeError("Native Home needs a 32-bit ARM Tizen runtime; no write was attempted.")
+    evidence = status.get("evidence", {})
+    if (
+        evidence.get("access") != "sdk_uid_901"
+        or type(evidence.get("uid")) is not int
+        or evidence["uid"] != 901
+        or any(
+            evidence.get(key) is not True
+            for key in ("authenticated", "sdk_staging_cleaned", "query_staging_cleaned")
+        )
+    ):
+        raise home.HomeError("A verified SDK UID 901 Home query is required; no write was attempted.")
+    try:
+        current = status["home"]
+        if current["operation"] != home.OPERATION or set(current["settings"]) != set(home.SETTINGS):
+            raise home.HomeError("Required native Home settings are unavailable.")
+        values = [(current["main_operation"], "string")]
+        values += [(current["settings"][key], kind) for key, kind in home.SETTINGS.items()]
+        for item, kind in values:
+            home._value(item, kind)
+            if item["status"] != "ok" or (kind == "string" and not item["value"].strip()):
+                raise home.HomeError("Required native Home values are unavailable or empty.")
+        if current["settings"]["db/menu/smart_hub/ontvsetting/auto_start"]["value"] not in (0, 1):
+            raise home.HomeError("Native Home needs autostart to be 0 or 1.")
+    except (KeyError, TypeError) as exc:
+        raise home.HomeError("Required typed native Home settings are unavailable.") from exc
+
+
 def change(session, info, action, *, backup=None, state_dir=None, boot=False):
     if action not in ("apply", "restore"):
         raise home.HomeError("Unknown Home action.")
@@ -224,8 +254,7 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False):
             raise home.HomeError(
                 "Device or firmware differs from the original backup; no write was attempted."
             )
-    if (device["model"], device["firmware_build"]) != SUPPORTED_DEVICE:
-        raise home.HomeError("Home writes are not enabled for this model and firmware.")
+    _check_compatibility(status)
     installed = status.get("launcher", {}).get("installed")
     if type(installed) is not bool:
         raise home.HomeError("Cannot confirm whether AeroTizen is installed; no write was attempted.")

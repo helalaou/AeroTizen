@@ -13,6 +13,32 @@ spinner. New applies preserve the original Art target. The same restore command
 still accepts backups and recovery records from that version. See the
 [profile comparison](home-profile-isolation-tv-20261026.json).
 
+## Compatibility and testing on another TV
+
+There is no model or firmware allowlist. Apply and restore require a successful SDK UID 901
+query, a 32-bit ARM Tizen runtime, complete typed Home/startup values and the required native
+libraries/functions. The writer resolves getter and setter symbols before watcher handoff
+or native writes, without calling setters as a probe. Apply also needs an eligible installed
+launcher and its persistent control service. Restore does not need the apply-only eligibility
+function, including after uninstall.
+
+The backup must still match the connected TV, model, firmware, OS version and architecture.
+Checksums, original-state checks, durable PC receipts, per-write readback and rollback remain
+in force. A compatible API does not prove write permission or physical Home/boot behaviour.
+A setter failure attempts rollback; preserve the backup and inspect status after any failure.
+Only the recorded Tizen 9 Frame has physical results for this flow.
+
+For PR testing, use the CLI and signed launcher from the same checkout. Install the CLI with
+`python -m pip install -e .`, then build both helpers with `python tools/build_home_query.py`
+and `python tools/build_home_control.py` (requires the .NET 6 SDK). Install the signed launcher
+from the same checkout; a released CLI or launcher may lack the new control protocol.
+
+Start with `home apply --yes`, restart fully, test Home from video apps and Samsung menus,
+then restore and confirm Samsung Home works again. Test `--boot` separately after restore.
+Report the CLI commit, model, firmware and observed results, with private device IDs and paths
+removed. Passing local tests or preflight does not establish support for another TV. Restore
+after uninstall is still awaiting a controlled physical test; restore before normal uninstall.
+
 ## Setup
 
 After installing and opening the compatible launcher:
@@ -20,8 +46,8 @@ After installing and opening the compatible launcher:
 ```sh
 aerotizen --tv TV_IP home status
 aerotizen --tv TV_IP home backup
-aerotizen home apply --boot                              # offline preview
-aerotizen --tv TV_IP home apply --boot --yes
+aerotizen home apply                                     # offline preview
+aerotizen --tv TV_IP home apply --yes
 ```
 
 The original is saved once in the PC's

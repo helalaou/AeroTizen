@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using AeroTizen.Home;
@@ -11,6 +12,14 @@ sealed class Fake : IPlatform
     public bool Eligible = true, SideEffects, AutoSideEffects, AutoBadScreen, FailAll, SilentMain, LostCommit, ChangeDuringHold;
     public bool Installed = true, WatcherUnavailable, InstallationUnavailable, ReinstallOnWrite;
     public int FailWrite, FailFrom, Writes;
+    public string MissingLibrary, MissingSymbol;
+    public int PointerSize = 4;
+    public Architecture ProcessArchitecture = Architecture.Arm;
+    public uint Uid = 901;
+    public Dictionary<string, string> Os = new Dictionary<string, string> {
+        ["ID"] = "tizen", ["BUILD_ID"] = "TEST-1", ["VERSION_ID"] = "7.0.0"
+    };
+    public bool CompatibilityChecked;
     public readonly List<string> Events = new List<string>();
     public Snapshot Current = Original();
     public Watcher Control = new Watcher { Protocol = 1, AppId = Policy.Target, Persistent = true, Mode = "watcher" };
@@ -19,6 +28,15 @@ sealed class Fake : IPlatform
         var strings = new Dictionary<string, string>();
         foreach (string key in Policy.Keys) strings[key] = key == Policy.HomeKey || key == "db/first_screen/type" ? "Samsung.Home" : "TV.Viewer";
         return new Snapshot { Main = "Samsung.Home", Strings = strings, AutoStart = 0 };
+    }
+    public void CheckCompatibility(bool applying)
+    {
+        Compatibility.RequireRuntime(PointerSize, ProcessArchitecture, Uid, Os);
+        Compatibility.RequireApis(applying, (library, symbols) => {
+            if (library == MissingLibrary || Array.IndexOf(symbols, MissingSymbol) >= 0)
+                throw new Exception("required native API unavailable");
+        });
+        CompatibilityChecked = true;
     }
     public bool LauncherEligible() => Eligible;
     public bool LauncherInstalled()
@@ -29,6 +47,7 @@ sealed class Fake : IPlatform
     public Snapshot Read() => Current.Copy();
     private void Write(string kind)
     {
+        Program.Check(CompatibilityChecked, "compatibility must precede every native write");
         Events.Add("write:" + kind); Writes++;
         if (FailAll || Writes == FailWrite || (FailFrom > 0 && Writes >= FailFrom)) throw new Exception("simulated write failure");
         if (ReinstallOnWrite) Installed = true;
@@ -59,6 +78,7 @@ sealed class Fake : IPlatform
     }
     public Watcher ChangeWatcher(Watcher expected, string mode, string transaction, string hash)
     {
+        Program.Check(CompatibilityChecked, "compatibility must precede watcher handoff");
         Program.Check(expected == Control, "CAS must use current control state");
         Events.Add("mode:" + mode);
         Control = new Watcher { Protocol = 1, AppId = Policy.Target, Persistent = true, Mode = mode, Transaction = transaction, BaselineHash = hash };
@@ -86,7 +106,7 @@ static class Program
         fake.Current.Main = Policy.Target; fake.Current.Strings[Policy.HomeKey] = Policy.Target;
         fake.Control = new Watcher { Protocol = 1, AppId = Policy.Target, Persistent = true, Mode = "native", Transaction = new string('c', 32), BaselineHash = new string('b', 64) };
     }
-    static Request RecoveryRequest(Action<Dictionary<string, object>> alter = null)
+    static Request RecoveryRequest(Action<Dictionary<string, object>> alter = null, string model = "QE65LS03DAUXXU", string firmware = "TEST-1")
     {
         var original = Fake.Original();
         var settings = new Dictionary<string, object>();
@@ -94,7 +114,7 @@ static class Program
         settings["db/menu/smart_hub/ontvsetting/auto_start"] = new { type = "int", value = original.AutoStart };
         byte[] raw = JsonSerializer.SerializeToUtf8Bytes(new {
             schema_version = 1, kind = "aerotizen.home-baseline",
-            device = new { model = "QE65LS03DAUXXU", firmware_build = "TEST-1" },
+            device = new { model = model, firmware_build = firmware },
             home = new { operation = "http://tizen.org/appcontrol/operation/main", default_app = original.Main, settings = settings }
         });
         string hash;
@@ -352,6 +372,70 @@ static class Program
         });
         Test("native PC proof cannot bypass an installed watcher", () => {
             BadRecovery(root => root["launcher_absent"] = false);
+        });
+        foreach (string action in new[] { "apply", "restore" }) {
+            string selected = action;
+            foreach (string symbol in new[] { "vconf_get_str", "vconf_get_int", "vconf_set_str", "vconf_set_int",
+                "app_operation_get_current_app", "app_operation_set_current_app", "app_manager_get_app_info", "app_info_destroy" }) {
+                string missing = symbol;
+                Test(selected + " missing " + missing + " refuses before handoff or native writes", () => {
+                    Refused(new Fake { MissingSymbol = missing }, Request(selected));
+                });
+            }
+            Test(selected + " missing native library refuses before handoff or writes", () => {
+                Refused(new Fake { MissingLibrary = Compatibility.Vconf }, Request(selected));
+            });
+        }
+        Test("apply missing eligibility API refuses before handoff", () => {
+            Refused(new Fake { MissingSymbol = "util_is_appbooting_supported_webapp_byappid" }, Request());
+        });
+        Test("installed and absent restore do not require the apply eligibility API", () => {
+            foreach (bool installed in new[] { true, false }) {
+                var fake = new Fake { MissingLibrary = Compatibility.AppContext, Installed = installed, Eligible = false };
+                Applied(fake);
+                var request = Request("restore"); request.LauncherAbsent = !installed;
+                Check(Policy.Execute(fake, request).Success && Policy.Same(fake.Current, Fake.Original()));
+            }
+        });
+        Test("64-bit process refuses before writes", () => { Refused(new Fake { PointerSize = 8 }, Request()); });
+        Test("non-ARM process refuses before writes", () => { Refused(new Fake { ProcessArchitecture = Architecture.X86 }, Request()); });
+        Test("root cannot substitute for SDK UID 901", () => { Refused(new Fake { Uid = 0 }, Request()); });
+        Test("non-Tizen runtime refuses before writes", () => {
+            var fake = new Fake(); fake.Os["ID"] = "linux"; Refused(fake, Request());
+        });
+        Test("missing firmware metadata refuses before writes", () => {
+            var fake = new Fake(); fake.Os.Remove("BUILD_ID"); Refused(fake, Request());
+        });
+        Test("empty OS metadata refuses before writes", () => {
+            var fake = new Fake(); fake.Os["VERSION_ID"] = ""; Refused(fake, Request());
+        });
+        Test("unavailable current typed setting refuses before writes", () => {
+            var fake = new Fake(); fake.Current.Strings.Remove(Policy.HomeKey); Refused(fake, Request("restore"));
+        });
+        Test("incomplete original refuses before compatibility and writes", () => {
+            var fake = new Fake(); var request = Request(); request.Original.AutoStart = 2;
+            Refused(fake, request); Check(!fake.CompatibilityChecked);
+        });
+        Test("different model firmware and original values can apply and restore", () => {
+            var parsed = RecoveryRequest(model: "QE65S90CATXZT", firmware: "OTHER-FIRMWARE");
+            var fake = new Fake { Firmware = parsed.Firmware };
+            var original = Fake.Original(); original.Main = "Other.StockHome";
+            original.Strings[Policy.HomeKey] = original.Main;
+            original.Strings["db/appfw/startup_appid"] = "Other.Startup";
+            original.Strings["db/first_screen/type"] = "Other.ArtReturn";
+            fake.Current = original.Copy();
+            var apply = Request(); apply.Firmware = parsed.Firmware; apply.Original = original;
+            Check(Policy.Execute(fake, apply).Success);
+            var restore = Request("restore"); restore.Firmware = parsed.Firmware; restore.Original = original;
+            Check(Policy.Execute(fake, restore).Success && Policy.Same(fake.Current, original));
+        });
+        Test("native parser still rejects empty model or firmware metadata", () => {
+            foreach (string field in new[] { "model", "firmware" }) {
+                bool failed = false;
+                try { RecoveryRequest(model: field == "model" ? "" : "Other.TV", firmware: field == "firmware" ? "" : "TEST-1"); }
+                catch { failed = true; }
+                Check(failed);
+            }
         });
         Console.WriteLine("POLICY_TESTS_PASSED=" + count); return 0;
     }

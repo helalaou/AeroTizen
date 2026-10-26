@@ -41,6 +41,7 @@ namespace AeroTizen.Home
     }
     public interface IPlatform
     {
+        void CheckCompatibility(bool applying);
         string Firmware { get; }
         bool LauncherEligible();
         bool LauncherInstalled();
@@ -64,14 +65,21 @@ namespace AeroTizen.Home
             foreach (string key in Keys) if (left.Strings[key] != right.Strings[key]) return false;
             return true;
         }
+        private static void ValidateValues(Snapshot snapshot)
+        {
+            if (snapshot == null || string.IsNullOrWhiteSpace(snapshot.Main) || snapshot.Strings == null ||
+                snapshot.Strings.Count != Keys.Length || (snapshot.AutoStart != 0 && snapshot.AutoStart != 1))
+                throw new Exception("Incomplete native Home values or unsupported autostart type/value.");
+            foreach (string key in Keys)
+                if (!snapshot.Strings.ContainsKey(key) || string.IsNullOrWhiteSpace(snapshot.Strings[key]))
+                    throw new Exception("Required native Home setting is unavailable: " + key);
+        }
         public static void Validate(Snapshot original)
         {
-            if (original == null || string.IsNullOrWhiteSpace(original.Main) || original.Main == Target ||
-                original.Strings == null || original.Strings.Count != Keys.Length ||
-                (original.AutoStart != 0 && original.AutoStart != 1)) throw new Exception("Invalid original Home baseline.");
+            ValidateValues(original);
+            if (original.Main == Target) throw new Exception("Invalid original Home baseline.");
             foreach (string key in Keys)
-                if (!original.Strings.ContainsKey(key) || string.IsNullOrWhiteSpace(original.Strings[key]) ||
-                    original.Strings[key] == Target) throw new Exception("Invalid original setting: " + key);
+                if (original.Strings[key] == Target) throw new Exception("Invalid original setting: " + key);
             if (original.Main != original.Strings[HomeKey]) throw new Exception("Original Home assignments disagree.");
         }
         private static void Compatible(Snapshot current, Snapshot original, bool restoreBoot)
@@ -159,8 +167,10 @@ namespace AeroTizen.Home
                 (request.LauncherAbsent && (request.Action != "restore" || request.RestoreBootTransaction != null)) ||
                 (request.RecoveryBoot && !request.LauncherAbsent))
                 throw new Exception("Invalid boot request.");
+            platform.CheckCompatibility(request.Action == "apply");
             if (platform.Firmware != request.Firmware) throw new Exception("Firmware differs from the saved baseline.");
             var before = platform.Read();
+            ValidateValues(before);
             if (request.Action == "restore")
             {
                 bool installed = platform.LauncherInstalled();
