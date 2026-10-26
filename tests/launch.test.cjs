@@ -106,14 +106,17 @@ test('watcher inventory includes an installed HbbTV host without adding a host t
   const installed = [
     { id: host, packageId: 'ug-hbbtv-efl', name: 'hbbtv', show: false },
     { id: 'normal.app', packageId: 'abcdefghij', name: 'Normal', show: true },
-    { id: 'org.tizen.netflix-app', packageId: 'org.tizen.netflix-app', name: 'Netflix', show: true }
+    { id: 'org.tizen.netflix-app', packageId: 'org.tizen.netflix-app', name: 'Netflix', show: true },
+    { id: 'com.samsung.tv.aria-video', packageId: 'com.samsung.tv.aria-video', name: 'Apple TV', show: true }
   ];
   const { A } = appHarness([], { installed });
   let loaded = false;
   A.apps.load(() => { loaded = true; });
   assert.equal(loaded, true);
-  assert.deepEqual(plain(A.apps.realIds), [host, 'normal.app', '3201907018807']);
-  assert.deepEqual(plain(A.apps.all).map(app => app.id), ['org.tizen.netflix-app', 'normal.app']);
+  assert.deepEqual(plain(A.apps.realIds), [host, 'normal.app', '3201907018807', '3201807016597']);
+  assert.deepEqual(plain(A.apps.all).map(app => app.id), [
+    'com.samsung.tv.aria-video', 'org.tizen.netflix-app', 'normal.app'
+  ]);
   const absent = appHarness([], { installed: [installed[1]] });
   absent.A.apps.load(() => {});
   assert.deepEqual(plain(absent.A.apps.realIds), ['normal.app']);

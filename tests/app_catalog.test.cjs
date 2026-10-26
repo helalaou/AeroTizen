@@ -114,6 +114,7 @@ test('unknown IDs remain unknown and preloaded mappings do not use name aliases'
   }
   assert.equal(A.catalog.preloadedStoreId('org.tizen.netflix-app'), '3201907018807');
   assert.equal(A.catalog.preloadedStoreId('org.tizen.primevideo'), '3201910019365');
+  assert.equal(A.catalog.preloadedStoreId('com.samsung.tv.aria-video'), '3201807016597');
   assert.equal(A.catalog.preloadedStoreId('netflix'), null);
   assert.equal(A.catalog.preloadedStoreId('9Ur5IzDKqV.TizenYouTube'), null);
 });
@@ -133,10 +134,12 @@ test('watcher requests keep the preloaded store IDs from the shared catalogue', 
   }
   A.homewatch.watch('org.tizen.netflix-app');
   A.homewatch.watch('org.tizen.primevideo');
+  A.homewatch.watch('com.samsung.tv.aria-video');
   A.homewatch.watch('normal.app');
   assert.deepEqual(requests, [
     { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=3201907018807' },
     { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=3201910019365' },
+    { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=3201807016597' },
     { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=normal.app' }
   ]);
 });

@@ -187,7 +187,13 @@ window.AeroTizen.catalog = {
     {
       "key": "apple-tv",
       "name": "Apple TV",
-      "variants": [],
+      "variants": [
+        {
+          "appId": "com.samsung.tv.aria-video",
+          "storeId": "3201807016597",
+          "preloaded": true
+        }
+      ],
       "legacy": {
         "brandPrefixes": [
           "apple tv"
