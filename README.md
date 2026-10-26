@@ -9,16 +9,19 @@ A simple home screen for Samsung TVs, and a command-line tool to clean the TV up
 
 Built with help from these contributors. [Join them](CONTRIBUTING.md): testing on your TV counts too.
 
+<!-- contributors:start -->
 <table>
   <tr>
     <td align="center"><a href="https://github.com/helalaou"><img src="https://github.com/helalaou.png?size=100" width="64" height="64" alt="helalaou"><br><sub>helalaou</sub></a></td>
     <td align="center"><a href="https://github.com/metacurb"><img src="https://github.com/metacurb.png?size=100" width="64" height="64" alt="metacurb"><br><sub>metacurb</sub></a></td>
     <td align="center"><a href="https://github.com/oflarcade"><img src="https://github.com/oflarcade.png?size=100" width="64" height="64" alt="oflarcade"><br><sub>oflarcade</sub></a></td>
     <td align="center"><a href="https://github.com/motorgrid-ita"><img src="https://github.com/motorgrid-ita.png?size=100" width="64" height="64" alt="motorgrid-ita"><br><sub>motorgrid-ita</sub></a></td>
+    <td align="center"><a href="https://github.com/cvvspb"><img src="https://github.com/cvvspb.png?size=100" width="64" height="64" alt="cvvspb"><br><sub>cvvspb</sub></a></td>
   </tr>
 </table>
+<!-- contributors:end -->
 
-![AeroTizen home screen on a Samsung TV](docs/screenshots/app-cards-samsung-tv.png)
+![AeroTizen home screen on a Samsung TV](docs/screenshots/home.png)
 
 ## Motivation
 
@@ -74,21 +77,25 @@ From your computer (`aerotizen`):
 There's also a short [guide to the settings worth turning off](docs/settings.md) (ads, viewing
 data, autorun) and [DNS blocklists](dns/) if you run Pi-hole, AdGuard Home or NextDNS.
 
-| Settings | Moving a tile |
+| All apps | Hold OK on a tile |
 |---|---|
-| ![Settings](docs/screenshots/settings.png) | ![Moving a tile](docs/screenshots/move.png) |
+| ![All apps](docs/screenshots/all-apps.png) | ![Tile menu](docs/screenshots/tile-menu.png) |
 
-The device names and weather in these screenshots are placeholders.
+| Settings | More settings |
+|---|---|
+| ![Settings](docs/screenshots/settings.png) | ![Weather, temperature and date settings](docs/screenshots/settings-more.png) |
 
 ## Tested on
 
-| TV | Year | Firmware |
-|---|---|---|
-| Samsung 65" Crystal UHD DU7200 (UN65DU7200FXZA) | 2024 | Tizen 9.0 |
-| Samsung 65" The Frame LS03D (QE65LS03DAUXXU) | 2024 | Tizen 9.0 |
-| Samsung 65" OLED S90C (QE65S90CATXZT) | 2023 | Tizen 7.0 |
-| Samsung 75" QLED Q60B (QE75Q60BAUXXC) | 2022 | Tizen 6.5 |
-| Samsung 55" OLED S95B (QE55S95BATXXC) | 2022 | Tizen 6.5 |
+| TV | Year | Firmware | Notes |
+|---|---|---|---|
+| Samsung 65" Crystal UHD DU7200 (UN65DU7200FXZA) | 2024 | Tizen 9.0 | |
+| Samsung 65" The Frame LS03D (QE65LS03DAUXXU) | 2024 | Tizen 9.0 | |
+| Samsung 70" Crystal UHD CU7000 (UN70CU7000DXZA) | 2023 | Tizen 9.0 | |
+| Samsung 65" OLED S90C (QE65S90CATXZT) | 2023 | Tizen 7.0 | |
+| Samsung 75" QLED Q60B (QE75Q60BAUXXC) | 2022 | Tizen 6.5 | |
+| Samsung 55" OLED S95B (QE55S95BATXXC) | 2022 | Tizen 6.5 | Live TV and cold boot issues ([#46](../../issues/46), [#47](../../issues/47)) |
+| Samsung 65" The Frame LS03A (QN65LS03AAFXZC) | 2021 | | Runs, but doesn't return on Home or start at power-on yet |
 
 Other Samsung TVs from 2020 on should work, but these are the only models tested so far. If you try it
 on yours, please [open a model report](../../issues/new?template=model_report.yml).
@@ -120,7 +127,9 @@ You need a computer on the same network as the TV.
 
 2. Turn on Developer Mode on the TV. Open **Apps**, type `12345` on the remote (or with the
    on-screen number pad), switch Developer mode on, and set Host PC IP to your computer's IP.
-   Then unplug the TV for a minute. Turning it off with the remote isn't enough for the change to
+   On some newer firmware `12345` only works from **Apps → App Settings** (at the bottom of the
+   Apps tab). Check all four numbers of the IP before pressing OK: the first one doesn't always
+   change. Then unplug the TV for a minute. Turning it off with the remote isn't enough for the change to
    apply. `./aerotizen status` should now show `developerMode=1`.
 
 3. Create the certificates. This opens Samsung's sign-in page in your browser:
@@ -166,7 +175,8 @@ a restart.
 
 For accurate weather, open **Settings → Weather** and search for your town or postcode.
 
-To look at or remove installed apps, run `./aerotizen apps` and `./aerotizen debloat`.
+To look at or remove installed apps, run `./aerotizen apps` and `./aerotizen debloat`. To remove AeroTizen itself, run
+`./aerotizen uninstall launcher`.
 
 ## Choose how Home works
 
@@ -202,6 +212,7 @@ Restore uses your saved values, not hardcoded Samsung defaults. If AeroTizen is 
 it coordinates with the control service and re-enables the watcher. After uninstall, the
 CLI restores directly through the developer connection; no reinstall or root is needed.
 **After apply or restore, disconnect TV/One Connect power for 60 seconds, then restart.**
+Before `uninstall launcher`, restore native Home; uninstall stops while Home or startup still points to AeroTizen.
 Samsung Home remains available from AeroTizen Settings; Samsung's Art Mode sleep and
 Night Mode settings stay unchanged. See [setup and recovery](docs/home-pc-flow.md) for
 backup transfer and recovery steps.
@@ -210,6 +221,8 @@ backup transfer and recovery steps.
 
 Samsung doesn't support any of this officially, so some parts are workarounds:
 
+- At power-on, Samsung's **Autorun Samsung TV Plus** and **Autorun Last App** settings can open
+  something before AeroTizen does. Turn them off (see the [settings guide](docs/settings.md)).
 - **Watcher:** Pressing Home brings AeroTizen back after a second or two. That works from Samsung's home
   screen and inside Netflix, but not inside YouTube, Prime Video, Stremio, Spotify or HbbTV apps. Those apps
   don't report whether they're on screen, so there's no way to tell. Back still works everywhere.
@@ -219,9 +232,10 @@ Samsung doesn't support any of this officially, so some parts are workarounds:
   on. If the TV doesn't report its power or Art Mode state, AeroTizen waits rather than guess.
   Tested on a 2024 Frame (QE65LS03DAUXXU, Tizen 9.0); starting from a cold boot isn't verified yet.
 - **Native Home:** Cold startup took about 30–33 seconds in the latest Frame tests. Home from
-  YouTube and Art Mode worked after a full restart. From Samsung's own menus, Home still leaves
-  AeroTizen hidden; open it manually from Samsung's app list. Restore after uninstall has local
-  test coverage; its TV test is pending.
+  YouTube, Prime Video and Art Mode worked after a full restart. Visiting Samsung Home and
+  manually reopening AeroTizen can break later Home presses in other apps; this is under
+  investigation. Home inside Samsung's menus is also unreliable. Restore after uninstall
+  has local test coverage; its TV test is pending.
 - On Tizen 6 and newer, store and preinstalled apps can't be removed over the developer
   connection. You can delete them on the TV under Apps → Settings. Samsung's system apps (TV Plus,
   Gaming Hub) can only be disabled.

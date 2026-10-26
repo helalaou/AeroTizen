@@ -384,8 +384,9 @@ class Sdb:
     def applist(self):
         return self.shell("0 vd_applist")
 
-    def uninstall(self, pkgid):
-        return self.shell(f"0 vd_appuninstall {pkgid}")
+    def uninstall(self, app_id):
+        """Remove the package that owns app_id. The TV expects the app ID, not the package ID."""
+        return self.shell(f"0 vd_appuninstall {app_id}")
 
     def launch(self, appid):
         return self.shell(f"0 was_execute {appid}")

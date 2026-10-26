@@ -6,8 +6,9 @@ launcher does not change these native settings from its UI. The TV then operates
 without a running PC or watcher polling.
 
 Samsung Home remains available from AeroTizen Settings. On the recorded Frame,
-pressing Home inside Samsung's own menus does not return to AeroTizen. Open
-AeroTizen manually from Samsung's app list after using this escape.
+Home does not return from Samsung's menus. Manually reopening AeroTizen after this
+escape can also break later Home presses in other apps. This is under investigation;
+a full TV restart restored Home in earlier tests.
 
 ## Setup
 

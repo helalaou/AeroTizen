@@ -80,7 +80,8 @@ export interface SettingsActions {
   saveInputName(port: string, value: string): void; toggleApp(id: string): void;
   openStore(): void; useSamsungHome(): void; preview(): void;
 }
-export interface ViewState { open: boolean; previewing: boolean; mounted: boolean; openedAt: number }
+// adjusting: OK was pressed on the speed slider, so Left/Right change the speed instead of moving focus.
+export interface ViewState { open: boolean; previewing: boolean; mounted: boolean; openedAt: number; adjusting: boolean }
 export interface NavigationHandlers {
   focus(): void; blur(): void; keydown(code: number, event: Pick<KeyboardEvent, 'preventDefault'>): void;
 }

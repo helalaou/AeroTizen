@@ -6,12 +6,13 @@ import pytest
 
 from aerotizen import cli, inspect_app, releases
 from aerotizen.device import DeviceSessionError
+from aerotizen.sdb import SdbError
 
 
 @pytest.fixture
 def inspector(monkeypatch):
     events = []
-    failures = {"stop": None, "forward": KeyboardInterrupt()}
+    failures = {"stop": None, "forward": KeyboardInterrupt(), "debug": []}
 
     def stop(request, timeout):
         events.append(("stop", request.full_url, request.method, timeout))
@@ -35,6 +36,8 @@ def inspector(monkeypatch):
 
         def debug_launch(self, app_id):
             events.append(("debug", app_id))
+            if failures["debug"]:
+                raise failures["debug"].pop(0)
             return 7011
 
         def forward(self, local_port, tv_port):
@@ -72,7 +75,6 @@ def test_inspect_restarts_and_forwards_the_selected_app(
     assert events == [
         ("connect", host, 60),
         ("stop", f"http://{host}:8001/api/v2/applications/{app_id}", "DELETE", 5),
-        ("wait", 2),
         ("debug", app_id),
         ("forward", port, 7011),
         ("close",),
@@ -87,7 +89,6 @@ def test_inspect_can_start_when_the_stop_request_fails(monkeypatch, inspector):
     failures["stop"] = OSError("app was not running")
     monkeypatch.setattr("sys.argv", ["aerotizen", "--tv", "tv", "inspect", "launcher"])
     cli.main()
-    assert ("wait", 2) not in events
     assert ("debug", releases.APP_ID) in events
     assert events[-1] == ("close",)
 
@@ -130,3 +131,30 @@ def test_inspect_rejects_invalid_arguments_before_discovery(monkeypatch, argumen
     monkeypatch.setattr("sys.argv", ["aerotizen", *arguments])
     with pytest.raises(SystemExit, match=message):
         cli.main()
+
+
+def test_inspect_retries_when_the_watcher_reopens_the_app_first(monkeypatch, inspector):
+    events, failures = inspector
+    failures["debug"] = [SdbError("debug launch failed: app is running")]
+    monkeypatch.setattr("sys.argv", ["aerotizen", "--tv", "tv", "inspect", "launcher"])
+    cli.main()
+    stop = ("stop", f"http://tv:8001/api/v2/applications/{releases.APP_ID}", "DELETE", 5)
+    assert events[:6] == [
+        ("connect", "tv", 60),
+        stop,
+        ("debug", releases.APP_ID),
+        ("wait", 0.5),
+        stop,
+        ("debug", releases.APP_ID),
+    ]
+    assert ("forward", 9222, 7011) in events
+
+
+def test_inspect_gives_up_after_repeated_failures(monkeypatch, inspector):
+    events, failures = inspector
+    failures["debug"] = [SdbError("debug launch failed") for _ in range(inspect_app.ATTEMPTS)]
+    monkeypatch.setattr("sys.argv", ["aerotizen", "--tv", "tv", "inspect", "launcher"])
+    with pytest.raises(SystemExit, match="Inspect failed: debug launch failed"):
+        cli.main()
+    assert events.count(("debug", releases.APP_ID)) == inspect_app.ATTEMPTS
+    assert events[-1] == ("close",)

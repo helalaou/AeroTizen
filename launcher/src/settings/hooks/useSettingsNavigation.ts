@@ -36,11 +36,17 @@ export const useSettingsNavigation = (active: boolean, previewing: boolean, { ap
           flushSync(() => view.set({ ...view.getSnapshot(), previewing: false }));
           return;
         }
-        if (code === K.BACK || code === K.ESC) { event.preventDefault(); bridge.close(); return; }
         const current = navigation.current();
-        if (current?.dataset.key === 'speed' && (code === K.LEFT || code === K.RIGHT)) {
-          event.preventDefault(); actions.setSpeed(code === K.LEFT ? -1 : 1); return;
+        if (view.getSnapshot().adjusting) {
+          const setAdjusting = (adjusting: boolean) => flushSync(() => view.set({ ...view.getSnapshot(), adjusting }));
+          if (current?.dataset.key === 'speed' && (code === K.LEFT || code === K.RIGHT)) {
+            event.preventDefault(); actions.setSpeed(code === K.LEFT ? -1 : 1); return;
+          }
+          setAdjusting(false);
+          // OK and Back only leave the slider; Up and Down leave it and move on.
+          if (code === K.ENTER || code === K.BACK || code === K.ESC) { event.preventDefault(); return; }
         }
+        if (code === K.BACK || code === K.ESC) { event.preventDefault(); bridge.close(); return; }
         if (code === K.ENTER || (code === SPACE_KEY && current?.getAttribute('role') === 'button')) {
           event.preventDefault(); current?.click(); return;
         }

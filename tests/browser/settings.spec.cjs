@@ -121,6 +121,7 @@ test('an unrelated preference does not remeasure navigation; removed controls re
   expect(await page.evaluate(() => window.layoutReads)).toBe(0);
   await page.evaluate(() => { AeroTizen.settings.background = 'aurora'; AeroTizen.settings.save(); });
   await page.locator('[data-key="speed"]').focus();
+  await page.keyboard.press('Enter');
   await page.keyboard.press('ArrowRight');
   expect(await page.evaluate(() => AeroTizen.settings.speed)).toBe(1.25);
   await page.evaluate(() => { AeroTizen.settings.background = 'black'; AeroTizen.settings.save(); });

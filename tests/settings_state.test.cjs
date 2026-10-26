@@ -25,7 +25,7 @@ const harness = () => {
     'openStore', 'useSamsungHome', 'showPreviewMessage', 'hidePreviewMessage', 'clearHomeFocus', 'finishEditing']) {
     services[name] = (...args) => calls.push([name, ...args]);
   }
-  const view = createStore({ open: false, previewing: false, mounted: false, openedAt: 0 });
+  const view = createStore({ open: false, previewing: false, mounted: false, openedAt: 0, adjusting: false });
   const transaction = action => action();
   const actions = createSettingsActions(settings, services, view, transaction);
   let now = 1000;
@@ -105,7 +105,7 @@ test('key-router bridge delegates to current handlers and releases them on clean
   h.bridge.open();
   assert.equal(h.settings.getSnapshot().background, 'aurora');
   assert.equal(h.bridge.isOpen(), true);
-  assert.deepEqual(h.view.getSnapshot(), { open: true, previewing: false, mounted: true, openedAt: 1000 });
+  assert.deepEqual(h.view.getSnapshot(), { open: true, previewing: false, mounted: true, adjusting: false, openedAt: 1000 });
   h.bridge.open();
   assert.equal(h.view.getSnapshot().openedAt, 1000, 'repeated open preserves the preview timestamp');
   const events = [];
@@ -116,7 +116,7 @@ test('key-router bridge delegates to current handlers and releases them on clean
   h.actions.preview(); assert.equal(h.view.getSnapshot().previewing, true);
   h.bridge.close();
   assert.deepEqual(events, ['focus', 40, 'blur']);
-  assert.deepEqual(h.view.getSnapshot(), { open: false, previewing: false, mounted: true, openedAt: 1000 });
+  assert.deepEqual(h.view.getSnapshot(), { open: false, previewing: false, mounted: true, adjusting: false, openedAt: 1000 });
   current(); h.bridge.focus(); h.bridge.keydown(13, { preventDefault() {} });
   assert.equal(events.length, 3);
   assert.equal(h.calls.filter(([name]) => name === 'finishEditing').length, 1);

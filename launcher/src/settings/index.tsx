@@ -16,7 +16,7 @@ const runtime = window.AeroTizen;
 const mount = document.getElementById('settings-root');
 if (!mount) { throw new Error('Settings mount point is missing.'); }
 const settings = createSettingsStore(runtime.settings, { ...runtime.config.DEFAULTS, home: [], tempUnit: 'C', timeFormat: '12' });
-const view = createStore<ViewState>({ open: false, previewing: false, mounted: false, openedAt: 0 });
+const view = createStore<ViewState>({ open: false, previewing: false, mounted: false, openedAt: 0, adjusting: false });
 const inventory = createSettingsInventory(runtime);
 const services = createSettingsServices(runtime);
 const actions = createSettingsActions(settings, services, view, flushSync);

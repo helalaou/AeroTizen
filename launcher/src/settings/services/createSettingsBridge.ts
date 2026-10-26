@@ -14,14 +14,14 @@ export const createSettingsBridge = (
         settings.refresh();
         const current = view.getSnapshot();
         if (!current.open) { services.clearHomeFocus(); }
-        view.set({ open: true, previewing: false, mounted: true,
+        view.set({ open: true, previewing: false, mounted: true, adjusting: false,
           openedAt: current.open ? current.openedAt : now() });
       });
     },
     close() {
       transaction(() => {
         handlers?.blur();
-        view.set({ ...view.getSnapshot(), open: false, previewing: false });
+        view.set({ ...view.getSnapshot(), open: false, previewing: false, adjusting: false });
         services.finishEditing();
         settings.refresh();
       });
