@@ -15,7 +15,12 @@
     "continue_watching_data_restored": false,
     "full_restart_confirmed": true,
     "debugger_opened_after_restart": false,
-    "root_used": false
+    "root_used": false,
+    "native_profile": {
+      "home": true,
+      "boot": true,
+      "art_return": true
+    }
   },
   "physical_results": [
     {
@@ -84,5 +89,6 @@
     },
     "scope": "Selected extra-data keys sent from SDK UID 901; not a reproduction of the full Samsung caller context or physical Home event",
     "inference": "These two extra-data values alone did not reproduce the physical Home failure."
-  }
+  },
+  "follow_up": "home-profile-isolation-tv-20261026.json"
 }

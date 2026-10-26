@@ -185,7 +185,7 @@ Both options run on the TV; your computer can be switched off after setup. Neith
 | Option | How it works |
 |---|---|
 | **Watcher (default)** | A background service detects a return to Samsung Home and reopens AeroTizen. Some apps cannot be detected (see [Limits](#limits)). |
-| **Native Home (opt-in)** | The TV routes Home from other apps, power-on and Home from Art Mode to AeroTizen. The watcher is disabled. |
+| **Native Home (opt-in)** | The TV routes Home from other apps to AeroTizen, with optional automatic startup. The watcher is disabled. |
 
 Native Home is experimental and currently limited to the Frame QE65LS03DAUXXU and its recorded
 Tizen 9 firmware. Install and open the compatible launcher, then run from your computer
@@ -194,8 +194,13 @@ Tizen 9 firmware. Install and open the compatible launcher, then run from your c
 ```sh
 ./aerotizen --tv TV_IP home status
 ./aerotizen --tv TV_IP home backup
-./aerotizen --tv TV_IP home apply --boot --art-return --yes
+./aerotizen --tv TV_IP home apply --boot --yes
 ```
+
+`--boot` adds automatic startup. For Home only, run apply without `--boot`.
+Restore an existing native assignment before changing its options.
+Leave `--art-return` off: it reproduced the Home loading spinner on this Frame.
+See the [controlled TV tests](docs/home-profile-isolation-tv-20261026.json).
 
 The TV's original Home and startup values are saved once on the PC in
 `~/.config/aerotizen/backups/<TV identity>/`. Later backups preserve that original.
@@ -231,11 +236,11 @@ Samsung doesn't support any of this officially, so some parts are workarounds:
 - **Watcher on The Frame:** AeroTizen checks Art Mode before every return and stays out of the way while it's
   on. If the TV doesn't report its power or Art Mode state, AeroTizen waits rather than guess.
   Tested on a 2024 Frame (QE65LS03DAUXXU, Tizen 9.0); starting from a cold boot isn't verified yet.
-- **Native Home (experimental):** Automatic startup works, but Home from YouTube and Prime Video
-  can get stuck on Samsung's loading spinner, including after a clean install and full restart.
-  Visiting Samsung Home can also break Home return. These faults are unresolved. Previous timed
-  Frame tests took about 30–33 seconds to start. Restore after uninstall has local test coverage;
-  its TV test is pending.
+- **Native Home (experimental):** Home with boot enabled passed YouTube, Prime Video and Samsung Home
+  return on the recorded Frame with `--art-return` off. Samsung Home checks allowed a 10-second wait.
+  Startup still shows a black screen for about 30 seconds. Home from Art Mode opens Samsung's Art
+  page; a second Home press opens AeroTizen.
+  Restore after uninstall has local test coverage; its TV test is pending.
 - On Tizen 6 and newer, store and preinstalled apps can't be removed over the developer
   connection. You can delete them on the TV under Apps → Settings. Samsung's system apps (TV Plus,
   Gaming Hub) can only be disabled.

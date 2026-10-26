@@ -5,11 +5,11 @@ Home backup and transaction receipts. Apply and restore run from the CLI; the
 launcher does not change these native settings from its UI. The TV then operates
 without a running PC or watcher polling.
 
-Native Home return is experimental. On the recorded Frame, Home from YouTube and
-Prime Video can stay on Samsung's loading spinner even after a clean install and
-full restart. Samsung Home remains available from AeroTizen Settings, but returning
-from Samsung's menus is also unreliable. These faults remain unresolved; see the
-[clean-install results](home-foreground-retest-tv-20261026.json).
+Native Home is experimental. The latest controlled Frame tests passed Home from
+YouTube, Prime Video and Samsung Home with the original Art return target.
+Samsung Home checks waited 10 seconds after opening the page.
+Adding `--art-return` reproduced Samsung's loading spinner; removing it restored
+Home. Leave that flag off. See the [profile comparison](home-profile-isolation-tv-20261026.json).
 
 ## Setup
 
@@ -18,29 +18,26 @@ After installing and opening the compatible launcher:
 ```sh
 aerotizen --tv TV_IP home status
 aerotizen --tv TV_IP home backup
-aerotizen home apply --boot --art-return                 # offline preview
-aerotizen --tv TV_IP home apply --boot --art-return --yes
+aerotizen home apply --boot                              # offline preview
+aerotizen --tv TV_IP home apply --boot --yes
 ```
 
 The original is saved once in the PC's
 `~/.config/aerotizen/backups/<TV identity>/original-home.json`.
 Before the native writer runs, its request and baseline bytes are durably saved
 under the adjacent `transactions/` directory. Apply needs no TV backup endpoint.
-Restart the TV fully after applying Art return, then test Home, boot and Art Mode.
-This reloads the Art process's cached return target. It does not guarantee Home
-from other apps will work: the clean-install retest still failed after a full
-restart.
-The latest cold tests took about 30–33 seconds to show AeroTizen, by user estimate
-(45 seconds in an earlier test). Startup performance remains an open issue; early
-browser render marks do not measure the panel's power-to-screen delay. See the
+`--boot` enables automatic startup. For Home only, use apply without that flag.
+Restore an existing native assignment before applying different options.
+After apply or restore, disconnect TV/One Connect power for 60 seconds, then restart.
+The latest Home-plus-boot test showed a black screen for about 30 seconds before
+AeroTizen opened automatically. Startup performance remains an open issue; browser
+render marks do not measure the panel's power-to-screen delay. See the
 [startup investigation](home-startup-art-return.md#foreground-investigation-on-25-october).
 
-Art Mode keeps Samsung's existing sleep and sensor settings. In the current
-test, Night Mode was on and the panel entered standby while Art remained active
-and AeroTizen was hidden. With Night Mode temporarily off, artwork stayed for
-two minutes and one Home press opened AeroTizen. See the
-[device results](home-pc-roundtrip-tv-20261025.json) for the full test sequence.
-Night Mode was restored to its original on setting after this comparison.
+Art Mode keeps Samsung's original return target, sleep and sensor settings.
+One Home press from Art opens Samsung's Art page; a second opens AeroTizen.
+Night Mode was left on. The latest short return test does not repeat the earlier
+[two-minute Night Mode comparison](home-pc-roundtrip-tv-20261025.json).
 
 Running `home backup` after apply keeps the validated original file unchanged.
 It reports that the current native settings differ from the original; it does

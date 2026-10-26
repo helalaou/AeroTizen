@@ -1,12 +1,18 @@
 # Startup and Frame Art return
 
+**Current recommendation (26 October): leave `--art-return` off.** The controlled
+[profile comparison](home-profile-isolation-tv-20261026.json) reproduced the Home
+spinner with this override and restored Home by removing it. Home plus boot passed
+with Samsung's original Art target; startup still took about 30 seconds and Art
+return required two Home presses. The earlier results below are historical tests.
+
 This option is restricted to the recorded QE65LS03DAUXXU firmware, like the other
 Home writes. It uses UID 901, native value setters and the immutable original
 backup. It does not require root or enable the watcher.
 
 ```sh
-aerotizen home apply --boot --art-return           # offline preview
-aerotizen --tv TV_IP home apply --boot --art-return --yes
+aerotizen home apply --boot                       # offline preview
+aerotizen --tv TV_IP home apply --boot --yes
 aerotizen --tv TV_IP home restore --yes
 ```
 
