@@ -238,23 +238,37 @@ static class Program
             var fake = new Fake { AutoBadScreen = true }; var request = Request(); request.Boot = true;
             Check(Policy.Execute(fake, request).RolledBack && Policy.Same(fake.Current, Fake.Original()));
         });
-        Test("Art return explicitly changes first screen and boot validates it", () => {
-            var fake = new Fake { AutoSideEffects = true }; var request = Request(); request.Boot = true; request.ArtReturn = true;
-            Check(Policy.Execute(fake, request).Success && Policy.BootReady(fake.Current, request.Original, true));
-            Check(fake.Current.Strings["db/first_screen/type"] == Policy.Target);
-            var restore = Request("restore"); restore.RestoreBootTransaction = request.Transaction;
-            Check(Policy.Execute(fake, restore).Success && Policy.Same(fake.Current, Fake.Original()));
+        Test("removed Art apply requests are rejected by the native parser", () => {
+            BadRecovery(root => {
+                root["action"] = "apply"; root["launcher_absent"] = false;
+                root.Remove("recovery_apply"); root["art_return"] = true;
+            });
         });
-        Test("Art target write failure rolls back exact original before watcher", () => {
-            var fake = new Fake { FailWrite = 3 }; var request = Request(); request.ArtReturn = true;
-            Check(Policy.Execute(fake, request).RolledBack && Policy.Same(fake.Current, Fake.Original()));
+        Test("removed Art flag cannot be placed on a restore request", () => {
+            BadRecovery(root => root["art_return"] = true);
         });
-        Test("Art return flag is invalid on restore", () => {
-            var request = Request("restore"); request.ArtReturn = true; Refused(new Fake(), request);
+        Test("installed restore still recovers legacy first-screen overrides", () => {
+            foreach (bool boot in new[] { false, true }) {
+                var fake = new Fake(); Applied(fake);
+                fake.Current.Strings["db/first_screen/type"] = Policy.Target;
+                var restore = Request("restore");
+                if (boot) {
+                    fake.Current.AutoStart = 1;
+                    fake.Current.Strings["db/appfw/startup_appid"] = Policy.Target;
+                    fake.Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
+                    restore.RestoreBootTransaction = fake.Control.Transaction;
+                }
+                Check(Policy.Execute(fake, restore).Success && Policy.Same(fake.Current, Fake.Original()));
+                Check(fake.Control.Mode == "watcher");
+            }
         });
-        Test("unrelated first screen during Art boot rolls back", () => {
-            var fake = new Fake { AutoBadScreen = true }; var request = Request(); request.ArtReturn = true; request.Boot = true;
-            Check(Policy.Execute(fake, request).RolledBack && Policy.Same(fake.Current, Fake.Original()));
+        Test("uninstalled restore accepts a legacy Art boot receipt", () => {
+            var request = RecoveryRequest(root => ((Dictionary<string, object>)root["recovery_apply"])["art_return"] = true);
+            var fake = new Fake { Installed = false, WatcherUnavailable = true };
+            fake.Current.Main = Policy.Target; fake.Current.AutoStart = 1;
+            foreach (string key in Policy.Keys) fake.Current.Strings[key] = Policy.Target;
+            Check(Policy.Execute(fake, request).Success && Policy.Same(fake.Current, Fake.Original()));
+            Check(fake.Events.TrueForAll(e => e.StartsWith("write:")));
         });
         Test("uninstalled Home restore does not contact a watcher", () => {
             var fake = new Fake(); Applied(fake); fake.Installed = false; fake.WatcherUnavailable = true;

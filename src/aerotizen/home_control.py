@@ -31,11 +31,9 @@ def load_helper():
         ) from exc
 
 
-def preview(action, backup=None, *, boot=False, art_return=False):
+def preview(action, backup=None, *, boot=False):
     if boot and action != "apply":
         raise home.HomeError("--boot applies only to Home apply.")
-    if art_return and action != "apply":
-        raise home.HomeError("--art-return applies only to Home apply.")
     result = {
         "action": action,
         "will_write": False,
@@ -52,11 +50,6 @@ def preview(action, backup=None, *, boot=False, art_return=False):
     elif action == "restore":
         result["startup"] = (
             "Restore all saved startup values, including autostart; recover boot using its matching receipt."
-        )
-    if art_return:
-        result["art_return"] = True
-        result["startup"] += (
-            " Set Frame first-screen target to AeroTizen; restart is needed to refresh Art's cached target."
         )
     if backup is not None:
         try:
@@ -141,6 +134,7 @@ def _receipt_request(path, token, raw, digest):
 def _uninstalled_boot_request(backup, raw, digest):
     # Uninstall removes the service's active token. A matching, durable PC boot
     # apply request still proves which baseline authorised the autostart change.
+    # Older receipts can include art_return; keep accepting that recovery metadata.
     paths = list(islice((backup.parent / "transactions").glob("*.json"), MAX_RECOVERY_RECEIPTS + 1))
     if len(paths) > MAX_RECOVERY_RECEIPTS:
         raise home.HomeError("Too many recovery receipts; preserve the folder and review it before restore.")
@@ -207,13 +201,11 @@ def _boot_restore_transaction(status, backup, raw, digest):
     return None
 
 
-def change(session, info, action, *, backup=None, state_dir=None, boot=False, art_return=False):
+def change(session, info, action, *, backup=None, state_dir=None, boot=False):
     if action not in ("apply", "restore"):
         raise home.HomeError("Unknown Home action.")
     if type(boot) is not bool or (boot and action != "apply"):
         raise home.HomeError("--boot applies only to Home apply.")
-    if type(art_return) is not bool or (art_return and action != "apply"):
-        raise home.HomeError("--art-return applies only to Home apply.")
     files = load_helper()
     status = home.read_status(session, None, info)
     identity = status["device"]["identity_sha256"]
@@ -258,8 +250,6 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False, ar
     }
     if boot:
         request["boot"] = True
-    if art_return:
-        request["art_return"] = True
     if action == "restore":
         if not installed:
             request["launcher_absent"] = True
@@ -312,8 +302,6 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False, ar
         expected_settings = {key: dict(value) for key, value in original["home"]["settings"].items()}
         if action == "apply":
             expected_settings[home.HOME_KEY]["value"] = home.releases.APP_ID
-        if art_return:
-            expected_settings["db/first_screen/type"]["value"] = home.releases.APP_ID
         observed = {
             key: {"type": value["type"], "value": value["value"]}
             for key, value in final["home"]["settings"].items()

@@ -111,9 +111,11 @@ internal static class HomeControl
             if (root.GetProperty("schema_version").GetInt32() != 1) throw new Exception("Invalid request schema.");
             string hash = root.GetProperty("baseline_sha256").GetString();
             string transaction = root.GetProperty("transaction").GetString();
-            JsonElement bootValue, restoreBootValue, artReturnValue, absentValue, recovery;
+            JsonElement bootValue, restoreBootValue, legacyArtValue, absentValue, recovery;
             bool boot = root.TryGetProperty("boot", out bootValue) && bootValue.GetBoolean();
-            bool artReturn = root.TryGetProperty("art_return", out artReturnValue) && artReturnValue.GetBoolean();
+            // Reject old apply requests rather than silently ignoring a removed override.
+            if (root.TryGetProperty("art_return", out legacyArtValue) && legacyArtValue.GetBoolean())
+                throw new Exception("Art return overrides are no longer supported.");
             string restoreBoot = root.TryGetProperty("restore_boot_transaction", out restoreBootValue) ? restoreBootValue.GetString() : null;
             bool absent = root.TryGetProperty("launcher_absent", out absentValue) && absentValue.GetBoolean();
             if (!Regex.IsMatch(hash, "^[a-f0-9]{64}$") || !Regex.IsMatch(transaction, "^[a-f0-9]{32}$"))
@@ -155,7 +157,7 @@ internal static class HomeControl
                 if (auto.GetProperty("type").GetString() != "int") throw new Exception("Invalid autostart type.");
                 return new Request {
                     Action = root.GetProperty("action").GetString(), Transaction = transaction, BaselineHash = hash,
-                    Boot = boot, ArtReturn = artReturn, RestoreBootTransaction = restoreBoot,
+                    Boot = boot, RestoreBootTransaction = restoreBoot,
                     LauncherAbsent = absent, RecoveryBoot = recoveryBoot,
                     Firmware = saved.GetProperty("device").GetProperty("firmware_build").GetString(),
                     Original = new Snapshot { Main = home.GetProperty("default_app").GetString(), Strings = strings, AutoStart = auto.GetProperty("value").GetInt32() }

@@ -199,7 +199,6 @@ Tizen 9 firmware. Install and open the compatible launcher, then run from your c
 
 `--boot` adds automatic startup. For Home only, run apply without `--boot`.
 Restore an existing native assignment before changing its options.
-Leave `--art-return` off: it reproduced the Home loading spinner on this Frame.
 See the [controlled TV tests](docs/home-profile-isolation-tv-20261026.json).
 
 The TV's original Home and startup values are saved once on the PC in
@@ -237,7 +236,8 @@ Samsung doesn't support any of this officially, so some parts are workarounds:
   on. If the TV doesn't report its power or Art Mode state, AeroTizen waits rather than guess.
   Tested on a 2024 Frame (QE65LS03DAUXXU, Tizen 9.0); starting from a cold boot isn't verified yet.
 - **Native Home (experimental):** Home with boot enabled passed YouTube, Prime Video and Samsung Home
-  return on the recorded Frame with `--art-return` off. Samsung Home checks allowed a 10-second wait.
+  return on the recorded Frame with Samsung's original Art target. Samsung Home checks allowed a
+  10-second wait.
   Startup still shows a black screen for about 30 seconds. Home from Art Mode opens Samsung's Art
   page; a second Home press opens AeroTizen.
   Restore after uninstall has local test coverage; its TV test is pending.

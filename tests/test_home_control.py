@@ -202,16 +202,13 @@ def test_boot_preview_has_no_device_contact(monkeypatch, capsys):
 
 
 @pytest.mark.parametrize("derived", [False, True])
-@pytest.mark.parametrize("art_return", [False, True])
-def test_boot_apply_and_receipt_bound_restore(monkeypatch, tmp_path, status, derived, art_return):
+def test_boot_apply_and_receipt_bound_restore(monkeypatch, tmp_path, status, derived):
     saved = home.save_backup(status, state_dir=tmp_path)
     raw = Path(saved["path"]).read_bytes()
     native = copy.deepcopy(status)
     native["home"]["main_operation"]["value"] = home.releases.APP_ID
     native["home"]["settings"][home.HOME_KEY]["value"] = home.releases.APP_ID
     native["home"]["settings"]["db/menu/smart_hub/ontvsetting/auto_start"]["value"] = 1
-    if art_return:
-        native["home"]["settings"]["db/first_screen/type"]["value"] = home.releases.APP_ID
     if derived:
         for key in ("db/appfw/startup_appid", "db/appfw/booting_appid_backup"):
             native["home"]["settings"][key]["value"] = home.releases.APP_ID
@@ -225,7 +222,7 @@ def test_boot_apply_and_receipt_bound_restore(monkeypatch, tmp_path, status, der
         request = json.loads(files["request.json"])
         if request["action"] == "apply":
             assert request["boot"] is True
-            assert request.get("art_return", False) is art_return
+            assert "art_return" not in request
             token = request["transaction"]
             native["watcher"]["control"]["transaction"] = token
         else:
@@ -233,9 +230,7 @@ def test_boot_apply_and_receipt_bound_restore(monkeypatch, tmp_path, status, der
         return native_result(request["action"])
 
     monkeypatch.setattr(sdk, "run", run)
-    assert home_control.change(object(), {}, "apply", boot=True, art_return=art_return, state_dir=tmp_path)[
-        "success"
-    ]
+    assert home_control.change(object(), {}, "apply", boot=True, state_dir=tmp_path)["success"]
     assert home_control.change(object(), {}, "restore", state_dir=tmp_path)["success"]
     assert Path(saved["path"]).read_bytes() == raw
 
@@ -277,13 +272,83 @@ def test_boot_restore_refuses_missing_or_unrelated_receipts(monkeypatch, tmp_pat
         home_control.change(object(), {}, "restore", state_dir=tmp_path)
 
 
-def test_art_return_preview_is_offline(monkeypatch, capsys):
+@pytest.mark.parametrize("yes", [False, True])
+def test_removed_art_return_option_refuses_before_tv_contact(monkeypatch, capsys, yes):
     monkeypatch.setattr(cli, "pick_tv", lambda *args: pytest.fail("No TV contact allowed"))
-    monkeypatch.setattr("sys.argv", ["aerotizen", "home", "apply", "--boot", "--art-return", "--json"])
-    cli.main()
-    result = json.loads(capsys.readouterr().out)
-    assert result["art_return"] is True and result["will_write"] is False
-    assert "restart" in result["startup"]
+    argv = ["aerotizen", "home", "apply", "--boot", "--art-return", "--json"]
+    if yes:
+        argv.append("--yes")
+    monkeypatch.setattr("sys.argv", argv)
+    with pytest.raises(SystemExit) as error:
+        cli.main()
+    assert error.value.code == 2
+    assert "unrecognized arguments: --art-return" in capsys.readouterr().err
+
+
+def test_apply_help_does_not_offer_art_return(monkeypatch, capsys):
+    monkeypatch.setattr("sys.argv", ["aerotizen", "home", "apply", "--help"])
+    with pytest.raises(SystemExit) as error:
+        cli.main()
+    assert error.value.code == 0
+    output = capsys.readouterr().out
+    assert "--boot" in output and "--art-return" not in output
+
+
+@pytest.mark.parametrize("installed", [False, True])
+@pytest.mark.parametrize("boot", [False, True])
+def test_legacy_art_receipts_restore_from_copied_folder(monkeypatch, tmp_path, status, installed, boot):
+    saved = home.save_backup(status, state_dir=tmp_path / "old-pc")
+    source = Path(saved["path"])
+    raw = source.read_bytes()
+    token = "b" * 32
+    legacy = {
+        "schema_version": 1,
+        "action": "apply",
+        "transaction": token,
+        "art_return": True,
+        "baseline_sha256": saved["sha256"],
+        "baseline_base64": base64.b64encode(raw).decode(),
+    }
+    if boot:
+        legacy["boot"] = True
+    home_control._write_receipt(
+        source.parent / "transactions" / f"{token}.json", {"request": legacy}, create=True
+    )
+    copied = tmp_path / "copied-backup"
+    shutil.copytree(source.parent, copied)
+    backup = copied / source.name
+    current = copy.deepcopy(status)
+    current["home"]["main_operation"]["value"] = home.releases.APP_ID
+    for key in (home.HOME_KEY, "db/first_screen/type"):
+        current["home"]["settings"][key]["value"] = home.releases.APP_ID
+    if boot:
+        current["home"]["settings"]["db/menu/smart_hub/ontvsetting/auto_start"]["value"] = 1
+        for key in ("db/appfw/startup_appid", "db/appfw/booting_appid_backup"):
+            current["home"]["settings"][key]["value"] = home.releases.APP_ID
+    current["watcher"]["control"].update(mode="native", transaction=token, baseline_sha256=saved["sha256"])
+    final = copy.deepcopy(status)
+    if not installed:
+        current, final = absent_status(current), absent_status(final)
+    reads = iter([current, final])
+    monkeypatch.setattr(home, "read_status", lambda *args: next(reads))
+
+    def run(session, files, entrypoint, args):
+        request = json.loads(files["request.json"])
+        assert request["action"] == "restore" and "art_return" not in request
+        assert base64.b64decode(request["baseline_base64"]) == raw
+        if boot and installed:
+            assert request["restore_boot_transaction"] == token
+        elif boot:
+            assert request["recovery_apply"]["transaction"] == token
+            assert "art_return" not in request["recovery_apply"]
+        else:
+            assert "restore_boot_transaction" not in request and "recovery_apply" not in request
+        return native_result("restore")
+
+    monkeypatch.setattr(sdk, "run", run)
+    result = home_control.change(object(), {}, "restore", backup=backup, state_dir=tmp_path / "new-pc")
+    assert result["success"] and result["status"]["launcher"]["installed"] is installed
+    assert backup.read_bytes() == raw and not (tmp_path / "new-pc").exists()
 
 
 @pytest.fixture

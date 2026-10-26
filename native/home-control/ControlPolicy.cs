@@ -27,7 +27,6 @@ namespace AeroTizen.Home
         public string Transaction { get; set; }
         public Snapshot Original { get; set; }
         public bool Boot { get; set; }
-        public bool ArtReturn { get; set; }
         public string RestoreBootTransaction { get; set; }
         public bool LauncherAbsent { get; set; }
         public bool RecoveryBoot { get; set; }
@@ -84,10 +83,10 @@ namespace AeroTizen.Home
             if (current.AutoStart != original.AutoStart && !(restoreBoot && current.AutoStart == 1))
                 throw new Exception("Autostart changed; a matching boot transaction is required for restore.");
         }
-        public static bool BootReady(Snapshot current, Snapshot original, bool artReturn = false)
+        public static bool BootReady(Snapshot current, Snapshot original)
         {
             if (current.Main != Target || current.Strings[HomeKey] != Target || current.AutoStart != 1 ||
-                current.Strings["db/first_screen/type"] != (artReturn ? Target : original.Strings["db/first_screen/type"])) return false;
+                current.Strings["db/first_screen/type"] != original.Strings["db/first_screen/type"]) return false;
             foreach (string key in Keys)
                 if (current.Strings[key] != original.Strings[key] && current.Strings[key] != Target) return false;
             return true;
@@ -156,7 +155,6 @@ namespace AeroTizen.Home
             Validate(request.Original);
             if (request.Action != "apply" && request.Action != "restore") throw new Exception("Unknown Home action.");
             if ((request.Boot && request.Action != "apply") ||
-                (request.ArtReturn && request.Action != "apply") ||
                 (request.RestoreBootTransaction != null && request.Action != "restore") ||
                 (request.LauncherAbsent && (request.Action != "restore" || request.RestoreBootTransaction != null)) ||
                 (request.RecoveryBoot && !request.LauncherAbsent))
@@ -196,12 +194,11 @@ namespace AeroTizen.Home
                 if (!Same(platform.Read(), before)) throw new Exception("Home changed during the watcher handoff; no native write attempted.");
                 var desired = request.Original.Copy();
                 if (request.Action == "apply") { desired.Main = Target; desired.Strings[HomeKey] = Target; }
-                if (request.ArtReturn) desired.Strings["db/first_screen/type"] = Target;
                 nativeStarted = true;
                 Write(platform, desired);
                 if (request.Boot && platform.Read().AutoStart != 1) platform.SetAutoStart(1);
                 var after = platform.Read();
-                if (request.Boot && !BootReady(after, request.Original, request.ArtReturn)) throw new Exception("Native boot readback failed.");
+                if (request.Boot && !BootReady(after, request.Original)) throw new Exception("Native boot readback failed.");
                 watcher = Change(platform, watcher, request.Action == "apply" ? "native" : "watcher",
                     request.Action == "apply" ? request.Transaction : null,
                     request.Action == "apply" ? request.BaselineHash : null);

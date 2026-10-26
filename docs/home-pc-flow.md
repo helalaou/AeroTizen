@@ -8,8 +8,10 @@ without a running PC or watcher polling.
 Native Home is experimental. The latest controlled Frame tests passed Home from
 YouTube, Prime Video and Samsung Home with the original Art return target.
 Samsung Home checks waited 10 seconds after opening the page.
-Adding `--art-return` reproduced Samsung's loading spinner; removing it restored
-Home. Leave that flag off. See the [profile comparison](home-profile-isolation-tv-20261026.json).
+The earlier Art return override was removed after it reproduced Samsung's loading
+spinner. New applies preserve the original Art target. The same restore command
+still accepts backups and recovery records from that version. See the
+[profile comparison](home-profile-isolation-tv-20261026.json).
 
 ## Setup
 

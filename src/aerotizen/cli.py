@@ -396,7 +396,6 @@ def cmd_home(args):
                 args.home_command,
                 args.backup,
                 boot=getattr(args, "boot", False),
-                art_return=getattr(args, "art_return", False),
             )
             if args.json:
                 print(json.dumps(plan, indent=2))
@@ -427,7 +426,6 @@ def cmd_home(args):
                     backup=args.backup,
                     state_dir=STATE_DIR,
                     boot=getattr(args, "boot", False),
-                    art_return=getattr(args, "art_return", False),
                 )
             else:
                 status = home.read_status(session, provider, info)
@@ -525,11 +523,6 @@ def main():
             )
         if name == "apply":
             command.add_argument("--boot", action="store_true", help="also enable native Smart Hub autostart")
-            command.add_argument(
-                "--art-return",
-                action="store_true",
-                help="set Frame Art exit's first-screen target (restart required)",
-            )
         command.set_defaults(fn=cmd_home)
     args = parser.parse_args()
     args.fn(args)

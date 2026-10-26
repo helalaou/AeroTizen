@@ -1,14 +1,14 @@
 # Startup and Frame Art return
 
-**Current recommendation (26 October): leave `--art-return` off.** The controlled
+**The Art return override was removed on 26 October.** The controlled
 [profile comparison](home-profile-isolation-tv-20261026.json) reproduced the Home
 spinner with this override and restored Home by removing it. Home plus boot passed
 with Samsung's original Art target; startup still took about 30 seconds and Art
-return required two Home presses. The earlier results below are historical tests.
+return required two Home presses. Earlier experiments below describe removed code.
 
-This option is restricted to the recorded QE65LS03DAUXXU firmware, like the other
-Home writes. It uses UID 901, native value setters and the immutable original
-backup. It does not require root or enable the watcher.
+Home writes are restricted to the recorded QE65LS03DAUXXU firmware. They use
+UID 901, native value setters and the immutable original backup. They do not
+require root or enable the watcher.
 
 ```sh
 aerotizen home apply --boot                       # offline preview
@@ -18,9 +18,10 @@ aerotizen --tv TV_IP home restore --yes
 
 Apply still requires the original baseline. Restore an existing assignment before
 using apply again; do not replace the original backup with the applied state.
-`--art-return` explicitly sets `db/first_screen/type` to `DclHome001.Home`.
-Without this flag, apply preserves the original first-screen value. Restore puts
-back the original first-screen value as well as Home and startup settings.
+The removed `--art-return` option set `db/first_screen/type` to `DclHome001.Home`.
+Current apply commands preserve the original first-screen value. Restore still
+recovers that value from older Art-enabled setups, as well as Home and startup
+settings; the PC backup and recovery records remain valid.
 
 The Art process caches its first-screen target. A full restart is required before
 checking the new return route, and after restoring it. A native write/readback
