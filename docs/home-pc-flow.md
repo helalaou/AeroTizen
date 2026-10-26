@@ -5,10 +5,11 @@ Home backup and transaction receipts. Apply and restore run from the CLI; the
 launcher does not change these native settings from its UI. The TV then operates
 without a running PC or watcher polling.
 
-Samsung Home remains available from AeroTizen Settings. On the recorded Frame,
-Home does not return from Samsung's menus. Manually reopening AeroTizen after this
-escape can also break later Home presses in other apps. This is under investigation;
-a full TV restart restored Home in earlier tests.
+Native Home return is experimental. On the recorded Frame, Home from YouTube and
+Prime Video can stay on Samsung's loading spinner even after a clean install and
+full restart. Samsung Home remains available from AeroTizen Settings, but returning
+from Samsung's menus is also unreliable. These faults remain unresolved; see the
+[clean-install results](home-foreground-retest-tv-20261026.json).
 
 ## Setup
 
@@ -26,9 +27,9 @@ The original is saved once in the PC's
 Before the native writer runs, its request and baseline bytes are durably saved
 under the adjacent `transactions/` directory. Apply needs no TV backup endpoint.
 Restart the TV fully after applying Art return, then test Home, boot and Art Mode.
-Complete this restart before testing Home from other apps. On the recorded Frame,
-Home from YouTube did nothing after an in-place update and restore/apply cycle;
-one Home press returned to AeroTizen after a full power restart.
+This reloads the Art process's cached return target. It does not guarantee Home
+from other apps will work: the clean-install retest still failed after a full
+restart.
 The latest cold tests took about 30–33 seconds to show AeroTizen, by user estimate
 (45 seconds in an earlier test). Startup performance remains an open issue; early
 browser render marks do not measure the panel's power-to-screen delay. See the

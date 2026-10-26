@@ -187,7 +187,7 @@ Both options run on the TV; your computer can be switched off after setup. Neith
 | **Watcher (default)** | A background service detects a return to Samsung Home and reopens AeroTizen. Some apps cannot be detected (see [Limits](#limits)). |
 | **Native Home (opt-in)** | The TV routes Home from other apps, power-on and Home from Art Mode to AeroTizen. The watcher is disabled. |
 
-Native writes are currently limited to the tested Frame QE65LS03DAUXXU and its recorded
+Native Home is experimental and currently limited to the Frame QE65LS03DAUXXU and its recorded
 Tizen 9 firmware. Install and open the compatible launcher, then run from your computer
 (replace `TV_IP` with your TV's address):
 
@@ -231,11 +231,11 @@ Samsung doesn't support any of this officially, so some parts are workarounds:
 - **Watcher on The Frame:** AeroTizen checks Art Mode before every return and stays out of the way while it's
   on. If the TV doesn't report its power or Art Mode state, AeroTizen waits rather than guess.
   Tested on a 2024 Frame (QE65LS03DAUXXU, Tizen 9.0); starting from a cold boot isn't verified yet.
-- **Native Home:** Cold startup took about 30–33 seconds in the latest Frame tests. Home from
-  YouTube, Prime Video and Art Mode worked after a full restart. Visiting Samsung Home and
-  manually reopening AeroTizen can break later Home presses in other apps; this is under
-  investigation. Home inside Samsung's menus is also unreliable. Restore after uninstall
-  has local test coverage; its TV test is pending.
+- **Native Home (experimental):** Automatic startup works, but Home from YouTube and Prime Video
+  can get stuck on Samsung's loading spinner, including after a clean install and full restart.
+  Visiting Samsung Home can also break Home return. These faults are unresolved. Previous timed
+  Frame tests took about 30–33 seconds to start. Restore after uninstall has local test coverage;
+  its TV test is pending.
 - On Tizen 6 and newer, store and preinstalled apps can't be removed over the developer
   connection. You can delete them on the TV under Apps → Settings. Samsung's system apps (TV Plus,
   Gaming Hub) can only be disabled.

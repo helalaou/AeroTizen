@@ -178,6 +178,29 @@ settings verified. Startup remains unresolved; these user estimates and browser
 marks do not identify the remaining firmware or display wait. Watcher activity
 remained zero. No foreground relaunch, relay or system patch was added.
 
+### Clean reinstall on 26 October
+
+The PR #49 branch included upstream `e23b6c6` and was clean installed without
+Continue Watching data. All 33 runtime files were verified before a full power restart.
+The user confirmed automatic startup, but Home from both YouTube and Prime Video
+stalled on Samsung's loading spinner. During the captured failure, AeroTizen was
+running but hidden. Native settings, kernel boot and persistent control mode
+were unchanged; watcher heartbeats and launch calls remained zero. No debugger
+was opened after this restart, and no Samsung-menu escape had been requested.
+
+One ordinary SDK launch brought AeroTizen forward; the user confirmed the screen.
+A manifest-only trial removed `reload="disable"` from the main app-control source.
+It did not fix the YouTube return and was reverted to the exact original signed
+PR package. A bounded native warning capture provided no matching launch logs.
+Direct default-operation requests from SDK UID 901 brought the hidden launcher
+forward both with and without `entry_point=smarthub_key` and `SkipReload=Yes`.
+These selected flags did not reproduce the failure by themselves; this does not
+recreate Samsung's caller context or establish its internal failure. The user
+then repeated physical Home from YouTube and again saw the persistent spinner.
+A normal launch recovered the UI; the TV API finally reported AeroTizen visible.
+The cause remains unresolved, and a full restart is not a reliable fix. This run
+supplied no new startup time. See [device results](home-foreground-retest-tv-20261026.json).
+
 ## Recovery when Samsung's HTTP API is unavailable
 
 Native Home can be usable before port 8001 starts. Home commands now connect over
