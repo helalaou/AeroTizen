@@ -51,6 +51,7 @@
   startup.mark('home-rendered');
   function discover() {
     startup.captureLaunch();
+    A.continueWatching.start();
     A.network.start();
     window.Weather.start(function () { return A.settings; });
     A.inputs.load();

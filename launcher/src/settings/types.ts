@@ -14,10 +14,12 @@ export interface SettingsValues {
   showWeather: boolean; showTime: boolean; showNetwork: boolean; tempUnit: TemperatureUnit;
   weatherLocation: WeatherLocation | null; weatherShowLocation: boolean;
   dateFormat: DateFormat | 'auto' | 'weekday' | 'dmy' | 'mdy'; timeFormat: TimeFormat;
+  continueWatching: boolean; continueWatchingApps: string[];
   showLiveTv: boolean; hideDisconnectedHdmi: boolean; inputNames: Record<string, string>;
 }
-export type SettingsSnapshot = Readonly<Omit<SettingsValues, 'home' | 'inputNames' | 'weatherLocation'>> & {
+export type SettingsSnapshot = Readonly<Omit<SettingsValues, 'home' | 'inputNames' | 'weatherLocation' | 'continueWatchingApps'>> & {
   readonly home: readonly string[];
+  readonly continueWatchingApps: readonly string[];
   readonly inputNames: Readonly<Record<string, string>>;
   readonly weatherLocation: Readonly<WeatherLocation> | null;
 };
@@ -32,8 +34,11 @@ export interface SettingsStore extends Store<SettingsSnapshot> {
 }
 export interface InstalledApp { id: string; name: string; icon?: string; storeId?: string }
 export interface InputOption { readonly port: string; readonly placeholder?: string }
+export interface ContinueSource { readonly icon?: string; readonly id: string; readonly name: string; readonly storeId: string; readonly status: string }
 export interface SettingsInventorySnapshot {
   readonly apps: readonly Readonly<InstalledApp>[];
+  readonly continueSources: readonly ContinueSource[];
+  readonly continueMessage: string;
   readonly inputs: readonly InputOption[];
 }
 export interface SettingsInventory extends Store<SettingsInventorySnapshot> { dispose(): void }
@@ -71,6 +76,7 @@ export interface SettingsServices {
   showPreviewMessage(): void; hidePreviewMessage(): void;
 }
 export interface SettingsActions {
+  setContinueWatching(enabled: boolean): void; toggleContinueApp(id: string): void;
   setBackground(background: string): void; setWeatherVisible(visible: boolean): void;
   setLocationVisible(visible: boolean): void; setTempUnit(unit: TemperatureUnit): void;
   setDateFormat(format: DateFormat): void; setNetworkVisible(visible: boolean): void;

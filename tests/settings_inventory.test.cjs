@@ -40,3 +40,24 @@ test('inventory publishes immutable app and input snapshots and disposes both su
   assert.equal(appListeners.size, 0);
   assert.equal(inputListeners.size, 0);
 });
+
+
+test('feed status updates reach Settings and release their subscription', () => {
+  const listeners = new Set();
+  const runtime = {
+    apps: { all: [], subscribe: () => () => {} },
+    inputs: { sources: [], subscribe: () => () => {} },
+    continueWatching: { sources: [{ id: 'app', name: 'Video', storeId: '123', status: 'Not selected' }], message: '',
+      subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); } }
+  };
+  const inventory = createSettingsInventory(runtime);
+  const first = inventory.getSnapshot();
+  runtime.continueWatching.sources[0].status = 'No items available';
+  [...listeners].forEach(fn => fn());
+  const next = inventory.getSnapshot();
+  assert.equal(first.continueSources[0].status, 'Not selected');
+  assert.equal(next.continueSources[0].status, 'No items available');
+  assert.equal(Object.isFrozen(next.continueSources[0]), true);
+  assert.equal(first.apps, next.apps);
+  inventory.dispose(); assert.equal(listeners.size, 0);
+});

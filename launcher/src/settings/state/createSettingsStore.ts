@@ -9,10 +9,13 @@ export const createSettingsStore = (source: SettingsSource, defaults: SettingsVa
       if (source[key] !== undefined) { Object.assign(values, { [key]: source[key] }); }
     });
     const home = values.home || [];
+    const continueApps = values.continueWatchingApps || [];
     const inputNames = values.inputNames || {};
     const weatherLocation = values.weatherLocation;
     const next = Object.freeze({
       ...values,
+      continueWatchingApps: previous && equalRecord(previous.continueWatchingApps, continueApps) ?
+        previous.continueWatchingApps : Object.freeze([...continueApps]),
       home: previous && equalRecord(previous.home, home) ? previous.home : Object.freeze([...home]),
       inputNames: previous && equalRecord(previous.inputNames, inputNames) ? previous.inputNames : Object.freeze({ ...inputNames }),
       weatherLocation: weatherLocation ? previous?.weatherLocation && equalRecord(previous.weatherLocation, weatherLocation) ?

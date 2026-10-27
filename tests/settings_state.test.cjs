@@ -12,6 +12,7 @@ const harness = () => {
   const defaults = { background: 'black', home: ['one'], inputNames: {}, speed: 1,
     cardSize: 'big', showWeather: true, showTime: true, showNetwork: true, tempUnit: 'C',
     weatherLocation: null, weatherShowLocation: true, dateFormat: 'short', timeFormat: '24',
+    continueWatching: false, continueWatchingApps: [],
     showLiveTv: true, hideDisconnectedHdmi: false };
   const source = { ...defaults,
     save() { saves++; [...listeners].forEach(listener => listener()); },
@@ -122,4 +123,20 @@ test('key-router bridge delegates to current handlers and releases them on clean
   assert.equal(h.calls.filter(([name]) => name === 'finishEditing').length, 1);
   h.bridge.open();
   assert.equal(h.view.getSnapshot().openedAt, 1001, 'a new opening captures a fresh preview timestamp');
+});
+
+
+test('Continue Watching selection is persisted with immutable snapshots', () => {
+  const h = harness();
+  const before = h.settings.getSnapshot();
+  h.actions.setContinueWatching(true);
+  h.actions.toggleContinueApp('video.app');
+  const selected = h.settings.getSnapshot();
+  assert.deepEqual(selected.continueWatchingApps, ['video.app']);
+  assert.deepEqual(before.continueWatchingApps, []);
+  assert.equal(Object.isFrozen(selected.continueWatchingApps), true);
+  h.actions.setContinueWatching(false);
+  assert.deepEqual(h.source.continueWatchingApps, ['video.app'], 'off retains the chosen apps');
+  h.actions.toggleContinueApp('video.app');
+  assert.deepEqual(h.source.continueWatchingApps, []);
 });

@@ -1,4 +1,4 @@
-import type { AppPresentation, Background, Clock, InstalledApp, LauncherConfig, SettingsBridge, SettingsSource, WeatherLocation } from '../types';
+import type { ContinueSource, AppPresentation, Background, Clock, InstalledApp, LauncherConfig, SettingsBridge, SettingsSource, WeatherLocation } from '../types';
 
 export interface InputSource { type: string; number?: number; editName?: string }
 
@@ -8,6 +8,7 @@ export interface LauncherRuntime {
   clock: Clock;
   network: { updateVisibility(): void };
   inputs: { sources: InputSource[]; portName(source: InputSource): string; render(): void; subscribe(listener: () => void): () => void };
+  continueWatching?: { sources: ContinueSource[]; message: string; subscribe(listener: () => void): () => void };
   homeScreen: { render(): void };
   apps: { all: InstalledApp[]; openStore(): void; subscribe(listener: () => void): () => void };
   homewatch: { useSamsungHome(): void; openSamsungHome?(): void };

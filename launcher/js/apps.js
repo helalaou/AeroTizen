@@ -3,7 +3,7 @@
   'use strict';
 
   var cfg = A.config, tz = A.tizen;
-  var apps = A.apps = { all: [], realIds: [], ready: false };
+  var apps = A.apps = { all: [], inventory: [], realIds: [], ready: false };
   var listeners = [];
 
   apps.subscribe = function (listener) {
@@ -69,6 +69,7 @@
     try { tz.application.getAppsInfo(function (list) {
       if (settled) { return; }
       settled = true;
+      apps.inventory = list;
       // HbbTV content runs in a shared host; include it in the watcher's inventory.
       apps.realIds = list.filter(function (a) { return (isRealApp(a) || a.id === cfg.HBBTV_APP_ID) && !/service|DclHome001/i.test(a.id); })
         .map(function (a) { return A.catalog.preloadedStoreId(a.id) || a.id; });

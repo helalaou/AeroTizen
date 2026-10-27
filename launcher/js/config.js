@@ -44,6 +44,8 @@ AeroTizen.config = {
     weatherShowLocation: true,
     dateFormat: 'short',
     timeFormat: null,  // Detect 12/24-hour format when first loaded.
+    continueWatching: false,
+    continueWatchingApps: [],
     showLiveTv: true,
     hideDisconnectedHdmi: false,
     inputNames: {}

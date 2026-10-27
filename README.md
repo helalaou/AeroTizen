@@ -181,6 +181,41 @@ For accurate weather, open **Settings → Weather** and search for your town or 
 To look at or remove installed apps, run `./aerotizen apps` and `./aerotizen debloat`. To remove AeroTizen itself, run
 `./aerotizen uninstall launcher`.
 
+## Continue Watching (experimental)
+
+In **Settings → Continue Watching**, select **On**, then choose the apps to include.
+A combined row appears below your Home apps, sorted by the activity time each app supplies.
+The feature is off by default. Switching it off stops feed reads and hides the row;
+your app choices stay saved.
+
+Discovery uses installed apps' Samsung Continue Watching declarations, including their
+background services. It does not open the apps. An empty source stays selectable and
+adds no cards. Missing app-ID mappings remain disabled. Settings uses smaller versions
+of the TV app icons, with a check mark for selected apps.
+
+Everything runs on the TV. This reader needs no root, PC connection or separate
+login. YouTube and Prime Video populated automatically in a clean cold-boot test
+on a 2024 Frame running Tizen 9.0. BBC iPlayer's installed version did not expose
+a shared feed. Stremio support is a separate follow-up.
+
+The row refreshes at startup, when you return to AeroTizen and when you change source
+choices. Empty lists get two short retries on ordinary refreshes. During startup,
+empty or unavailable feeds are checked for up to five minutes. Checks stop when data
+arrives, when you leave AeroTizen or when the feature is switched off. There is no
+continuous polling.
+Cards show full 16:9 artwork with a TV app icon in the top-right corner. Progress and
+programme details sit below the image. Unchanged cards keep their loaded artwork.
+Viewing records stay in memory; only your choices are saved. Providers can return old
+records or approximate activity times. Unknown times sort last. Distinct episodes stay
+separate. Selecting a card sends its original launch data to the source app; correct
+programme opening still needs physical confirmation for each provider.
+
+Known limits on the tested Frame: ITVX returns five saved records while its own row
+shows only S38 E12 of The Only Way Is Essex. Its background service only reads that
+saved store; it does not refresh it from the current in-app list. Channel 4 returns
+an empty shared list even with root, despite showing Continue Watching in its app.
+Neither source is confirmed as an accurate mirror of its in-app row.
+
 ## Choose how Home works
 
 Both options run on the TV; your computer can be switched off after setup. Neither needs root.
