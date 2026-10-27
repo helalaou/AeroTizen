@@ -134,3 +134,22 @@ build checks. Browser tests include list shrinkage in both focus states and cloc
 correction after both feeds have settled. The earlier cold-boot pass above used
 the previous build; these review fixes have not been installed on the TV. Stremio
 remains outside this change.
+
+
+## PR build: TV rendering check, 27 October 2026
+
+The Samsung-only PR build was installed in place on the same 2024 Frame / Tizen 9.
+The installed Continue Watching, carousel, Home navigation and clock scripts
+matched the compiled package byte for byte. Two YouTube cards and one Prime Video
+card rendered with their programme images and app icons. The Home screenshot is
+saved as `screenshots/continue-watching-tv.png`.
+
+Saved launcher preferences, native Home settings, the persisted watcher control
+and installed-app inventory were preserved. Stremio modules and its Settings
+option were absent. The debugger was closed and AeroTizen was left running and
+visible in normal operation. No root or provider app launch was used.
+
+This was a warm-start rendering check. A new cold boot, physical clock-correction
+and list-shrinkage regression tests, and selected-programme launch were not part
+of this check. Channel 4 was still retrying its empty shared feed; ITVX was not
+selected.
