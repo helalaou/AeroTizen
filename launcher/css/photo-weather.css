@@ -1,4 +1,4 @@
-/* Optional static weather photography. Full HD assets are bundled, so scene
+/* Optional static AI-generated weather scenes. Full HD assets are bundled, so scene
    changes never cause a network image request or animated background repaint. */
 #weather-photo.weather-photo {
   display: none; position: fixed; top: 0; left: 0;
@@ -22,7 +22,3 @@ body.tv #weather-photo { display: none !important; }
 #weather-photo[hidden] { display: none !important; }
 #weather-photo.weather-photo.active { transition: none; }
 #weather-photo.weather-photo ~ .content-viewport { background: transparent; }
-/* Match the original UI's rounded, single-ring Settings focus controls. */
-#weather-photo-choice .pill.unit {
-  border-radius: 17px; min-width: 160px; text-align: center;
-}

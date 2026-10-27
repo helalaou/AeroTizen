@@ -111,8 +111,8 @@ window.Weather = (function () {
       var b = String(daily.sunset[i] || '');
       // The API request uses timezone=UTC; convert timestamps to epochs
       // before checking sunset, independent of the TV's own time zone.
-      var sunrise = Date.parse(a + (/[zZ]|[+-]\\d\\d:\\d\\d$/.test(a) ? '' : 'Z'));
-      var sunset = Date.parse(b + (/[zZ]|[+-]\\d\\d:\\d\\d$/.test(b) ? '' : 'Z'));
+      var sunrise = Date.parse(a + (/[zZ]|[+-]\d\d:\d\d$/.test(a) ? '' : 'Z'));
+      var sunset = Date.parse(b + (/[zZ]|[+-]\d\d:\d\d$/.test(b) ? '' : 'Z'));
       if (isFinite(sunrise) && isFinite(sunset) && sunset > sunrise) {
         result.push({ sunrise: sunrise, sunset: sunset });
       }

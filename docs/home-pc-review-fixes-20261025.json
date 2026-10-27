@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-25",
+  "flow": "PC-managed Home backup, apply and restore",
+  "fixes": [
+    "interrupted boot restores validate the saved receipt chain",
+    "TV backup upload/download feature and apply dependency removed",
+    "receipts are read and written beside the selected original backup",
+    "backup reuses a validated original after native Home apply"
+  ],
+  "validation": {
+    "python_tests": 254,
+    "node_tests": 107,
+    "native_policy_scenarios": 36,
+    "watcher_integration_cases": 39,
+    "ruff": "passed",
+    "eslint": "passed",
+    "diff_check": "passed",
+    "standalone": "macOS arm64 build and offline smoke checks passed",
+    "existing_private_baseline_and_recorded_boot_receipt": "validated read-only",
+    "launcher_source_files_matching_last_tv_test_package": 31
+  },
+  "hardware": {
+    "changed": false,
+    "combined_fresh_setup_apply_boot_art_restore": "pending; user requested TV tests later"
+  },
+  "standalone_sha256": "afd563d8738314defddfc41ffad5d8c106fe1ef4dbac6c78ec2a7dea78b488bc"
+}

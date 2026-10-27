@@ -1,13 +1,11 @@
-// Static photographic weather wallpapers adapted from the verified V992.56
-// reference. All nine photos are local; the existing Open-Meteo weather cache
-// supplies the conditions. No additional network request or animation loop.
+// Optional AI-generated weather scenes. Reuses Weather; images stay local.
 (function (A) {
   'use strict';
 
   var SCENES = { sun: 1, partly: 1, cloud: 1, rain: 1, storm: 1,
     snow: 1, fog: 1, night: 1, sunset: 1 };
   var layer = document.getElementById('weather-photo');
-  var scene = '', timer = null;
+  var scene = '', pending = '', failed = '', image = null, timer = null, generation = 0, started = false;
 
   function localPhoto(code, isDay) {
     // The is_day field applies to every WMO code, including rain and snow.
@@ -18,8 +16,8 @@
     if (c === 3) { return 'cloud'; }
     if (c === 45 || c === 48) { return 'fog'; }
     if ((c >= 71 && c <= 77) || c === 85 || c === 86) { return 'snow'; }
-    if (c >= 95) { return 'storm'; }
-    if (c >= 51) { return 'rain'; }
+    if (c === 95 || c === 96 || c === 99) { return 'storm'; }
+    if ((c >= 51 && c <= 67) || (c >= 80 && c <= 82)) { return 'rain'; }
     return 'cloud';
   }
 
@@ -62,54 +60,81 @@
     return localPhoto(reading.code, phase === 'day' || phase === 'sunset' ? 1 : reading.day);
   }
 
+  function cancelImage() {
+    generation++;
+    if (image) { image.onload = image.onerror = null; }
+    image = null;
+    pending = '';
+  }
+
+  function stopTimer() {
+    if (timer !== null) { clearInterval(timer); timer = null; }
+  }
+
   function hide() {
+    cancelImage();
+    scene = ''; failed = '';
     if (!layer) { return; }
-    scene = '';
     layer.style.backgroundImage = '';
     layer.className = 'weather-photo';
     layer.hidden = true;
   }
 
   function update() {
-    if (!layer || !A.settings || !A.settings.weatherPhoto ||
-        (document.body.classList && document.body.classList.contains('tv'))) {
+    var enabled = Boolean(layer && A.settings && A.settings.weatherPhoto === true);
+    if (!enabled || document.hidden) { stopTimer(); }
+    else if (started && timer === null) { timer = setInterval(update, 60000); }
+    if (!enabled || (document.body.classList && document.body.classList.contains('tv'))) {
       hide(); return false;
     }
-    var reading = window.Weather && window.Weather.currentReading &&
-      window.Weather.currentReading();
-    var next = sceneFor(reading, Date.now()) || scene;
-    if (!next || !SCENES[next]) { return false; }
-    if (next !== scene) {
-      layer.style.backgroundImage = 'url("assets/weather/' + next + '.jpg")';
-      scene = next;
+    if (document.hidden) { return Boolean(scene); }
+    var reading = window.Weather && window.Weather.currentReading && window.Weather.currentReading();
+    var next = sceneFor(reading, Date.now());
+    if (!next || !SCENES[next]) {
+      var wasActive = Boolean(scene);
+      hide();
+      // A location change or expired reading must not leave the old city's scene visible.
+      if (wasActive && A.applyBackground) { A.applyBackground(); }
+      return false;
     }
-    layer.hidden = false;
-    layer.className = 'weather-photo active scene-' + scene;
-    if (window.Backgrounds && window.Backgrounds.suspend) { window.Backgrounds.suspend(); }
-    return true;
+    if (next === scene || next === pending || next === failed) { return Boolean(scene); }
+    cancelImage();
+    var token = generation, requested = new Image();
+    pending = next;
+    image = requested;
+    requested.onload = function () {
+      if (token !== generation || A.settings.weatherPhoto !== true || document.hidden) { return; }
+      image = null; pending = ''; failed = '';
+      scene = next;
+      layer.style.backgroundImage = 'url("assets/weather/' + next + '.jpg")';
+      layer.className = 'weather-photo active scene-' + next;
+      layer.hidden = false;
+      // Suspend only after decode succeeds: missing assets retain the chosen background.
+      if (window.Backgrounds && window.Backgrounds.suspend) { window.Backgrounds.suspend(); }
+    };
+    requested.onerror = function () {
+      if (token !== generation) { return; }
+      hide();
+      failed = next;
+      if (A.applyBackground) { A.applyBackground(); }
+    };
+    requested.src = 'assets/weather/' + next + '.jpg';
+    return Boolean(scene);
   }
 
   function start() {
-    if (timer !== null) { return; }
-    // Only one low-frequency time check, needed when the solar phase changes
-    // without a new Open-Meteo result (e.g. sunset or after midnight).
-    timer = setInterval(function () {
-      if (!document.hidden && A.settings.weatherPhoto) { update(); }
-    }, 60000);
-  }
-
-  function select(enabled) {
-    A.settings.weatherPhoto = enabled === true;
-    if (!A.settings.weatherPhoto) { hide(); }
-    A.settings.save();
-    if (A.applyBackground) { A.applyBackground(); }
-    if (window.Weather && window.Weather.updateVisibility) {
-      window.Weather.updateVisibility();
-    }
+    if (started) { return; }
+    started = true;
+    document.addEventListener('visibilitychange', function () {
+      // Discard in-flight callbacks while hidden; refresh solar phase on return.
+      if (document.hidden) { cancelImage(); stopTimer(); }
+      else { update(); }
+    });
+    update();
   }
 
   A.photoWeather = {
-    update: update, hide: hide, start: start, select: select,
+    update: update, hide: hide, start: start,
     sceneFor: sceneFor, solarPhase: solarPhase
   };
 })(window.AeroTizen);

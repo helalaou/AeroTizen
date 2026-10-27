@@ -34,7 +34,7 @@ version = { attr = "aerotizen.__version__" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-aerotizen = ["ca/*"]
+aerotizen = ["ca/*", "helpers/*.json"]
 
 [tool.ruff]
 line-length = 110

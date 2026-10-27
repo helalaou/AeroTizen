@@ -33,30 +33,6 @@
     });
   }
 
-  function renderPhotoWeather() {
-    var panel = A.$('weather-photo-choice');
-    if (!panel || !A.photoWeather) { return; }
-    panel.textContent = '';
-    panel.setAttribute('aria-label',
-      A.i18n && A.i18n.t ? A.i18n.t('Weather wallpaper') : 'Weather wallpaper');
-    [['off', 'Off'], ['auto', 'Automatic (weather)']].forEach(function (choice) {
-      var key = 'photo-weather:' + choice[0];
-      var selected = (S.weatherPhoto === true) === (choice[0] === 'auto');
-      var label = A.i18n && A.i18n.label ? A.i18n.label(key, choice[1]) : choice[1];
-      var control = pill(key, label, selected, function () {
-        S.weatherPhoto = choice[0] === 'auto';
-        focusKey = key;
-        changed(function () {
-          A.applyBackground();
-          window.Weather.updateVisibility();
-        });
-      });
-      control.setAttribute('role', 'button');
-      control.setAttribute('aria-pressed', String(selected));
-      panel.appendChild(control);
-    });
-  }
-
   function renderBackgrounds() {
     var anim = A.$('bg-anim'), still = A.$('bg-still'), selected = null;
     anim.textContent = ''; still.textContent = '';
@@ -246,9 +222,10 @@
       } else {
         tile = A.tiles.app(app);
       }
-      tile.classList.toggle('on', S.home.indexOf(app.id) >= 0);
+      tile.classList.toggle('on', (S.home || [cfg.FIREPLACE_ID]).indexOf(app.id) >= 0);
       tile.dataset.key = 'app:' + app.id;
       tile.onclick = function () {
+        if (S.home === null) { S.home = [cfg.FIREPLACE_ID]; }
         var i = S.home.indexOf(app.id);
         if (i >= 0) { S.home.splice(i, 1); } else { S.home.push(app.id); }
         tile.classList.toggle('on', i < 0);
@@ -259,7 +236,7 @@
   }
 
   function render() {
-    renderPhotoWeather(); renderBackgrounds(); renderWeather(); renderUnits(); renderDateTime();
+    renderBackgrounds(); renderWeather(); renderUnits(); renderDateTime();
     renderVisibility('network-visibility', 'showNetwork', ['Show', 'Hide'], A.network.updateVisibility);
     renderCardSizes(); renderInputVisibility(); renderInputNames(); renderAppMenu();
     focus();
@@ -278,7 +255,7 @@
     var r = A.chunk(kids('bg-anim'), 8);
     if (!A.$('speed-row').hidden) { r.push(kids('speed-row')); }
     var results = kids('weather-results').map(function (el) { return [el]; });
-    return [kids('weather-photo-choice')].concat(r, A.chunk(kids('bg-still'), 8), [kids('weather-display')],
+    return r.concat(A.chunk(kids('bg-still'), 8), [kids('weather-display')],
       [kids('weather-location')], results, [kids('weather-visibility')],
       [kids('units')], [kids('time-formats')], dateRows, [kids('network-visibility')],
       [kids('live-tv-visibility')], [kids('card-sizes')], [kids('input-visibility')],

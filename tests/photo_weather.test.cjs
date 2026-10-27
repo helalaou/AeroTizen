@@ -3,208 +3,98 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
-
-const read = filename => fs.readFileSync(path.join(__dirname, '..', filename), 'utf8');
-const sceneSource = read('launcher/js/photo-weather.js');
-
-function setup(setting, reading) {
-  let suspended = 0, saved = 0, visible = 0;
-  const timers = [];
-  const layer = {
-    hidden: true,
-    style: { backgroundImage: '' },
-    className: 'weather-photo'
-  };
-  const settings = { weatherPhoto: setting, save() { saved++; } };
-  const A = {
-    settings,
-    applyBackground() { visible++; },
-    photoWeather: null
-  };
-  const doc = {
-    hidden: false,
-    body: { classList: { contains() { return false; } } },
-    getElementById(name) {
-      return name === 'weather-photo' ? layer : null;
-    }
-  };
-  const context = {
-    window: {
-      AeroTizen: A,
-      Backgrounds: { suspend() { suspended++; } },
-      Weather: { currentReading() { return reading; }, updateVisibility() { visible++; } }
-    },
-    document: doc,
-    setInterval(fn, ms) { timers.push({ fn, ms }); return timers.length; },
-    Date, isFinite
-  };
-  vm.runInNewContext(sceneSource, context);
-  return { A, layer, doc, timers, context,
-    get suspended() { return suspended; },
-    get saved() { return saved; },
-    get visible() { return visible; }
-  };
+const crypto = require('node:crypto');
+const root = path.join(__dirname, '..');
+const source = fs.readFileSync(path.join(root, 'launcher/js/photo-weather.js'), 'utf8');
+const day = (code, at = Date.now(), extra = {}) => ({ code, day: 1, at, solar: [], ...extra });
+function setup(enabled = true, reading = day(0)) {
+  const images = [], timers = new Map(), events = {};
+  let suspended = 0, restored = 0, id = 0, tv = false;
+  const layer = { hidden: true, style: {}, className: '' };
+  const settings = { weatherPhoto: enabled };
+  const A = { settings, applyBackground() { restored++; } };
+  const doc = { hidden: false, body: { classList: { contains() { return tv; } } },
+    getElementById() { return layer; }, addEventListener(name, fn) { events[name] = fn; } };
+  const context = { window: { AeroTizen: A, Backgrounds: { suspend() { suspended++; } },
+    Weather: { currentReading() { return reading; } } }, document: doc, Date, isFinite,
+    Image: function () { images.push(this); },
+    setInterval(fn, ms) { timers.set(++id, { fn, ms }); return id; }, clearInterval(key) { timers.delete(key); } };
+  vm.runInNewContext(source, context);
+  return { A, doc, events, timers, images, layer,
+    setReading(value) { reading = value; }, setTv(value) { tv = value; },
+    get suspended() { return suspended; }, get restored() { return restored; } };
 }
-function day(code, at, opts = {}) {
-  return { code, day: 1, at, solar: [], ...opts };
-}
-
-test('disabled by default and does not change the original background', () => {
-  const h = setup(false, day(0, Date.now()));
-  assert.equal(h.A.photoWeather.update(), false);
-  assert.equal(h.layer.hidden, true);
-  assert.equal(h.suspended, 0);
+test('off starts no timer and requests no image', () => {
+  const h = setup(false); h.A.photoWeather.start();
+  assert.equal(h.images.length, 0); assert.equal(h.timers.size, 0); assert.equal(h.layer.hidden, true);
 });
-
-test('nine built-in scene types match the original reference', () => {
-  const h = setup(true, null);
-  const fn = h.A.photoWeather.sceneFor;
-  const now = Date.now();
-  const expected = [[0,'sun'],[2,'partly'],[3,'cloud'],
-    [45,'fog'],[61,'rain'],[73,'snow'],[95,'storm']];
-  expected.forEach(([code, scene]) => {
-    assert.equal(fn(day(code,now),now),scene);
-  });
-  assert.equal(fn(day(95,now,{day:0}),now),'night');
+test('WMO scenes, night priority and invalid readings', () => {
+  const fn = setup().A.photoWeather.sceneFor, now = Date.now();
+  for (const [code, scene] of [[0,'sun'],[1,'sun'],[2,'partly'],[3,'cloud'],[45,'fog'],[48,'fog'],
+    [51,'rain'],[67,'rain'],[80,'rain'],[82,'rain'],[71,'snow'],[77,'snow'],[85,'snow'],[86,'snow'],[95,'storm'],[96,'storm'],[99,'storm'],[999,'cloud']]) {
+    assert.equal(fn(day(code, now), now), scene);
+    assert.equal(fn(day(code, now, {day: 0}), now), 'night');
+  }
+  assert.equal(fn(null, now), ''); assert.equal(fn(day(NaN), now), '');
 });
-
-test('sunset and solar phases use UTC milliseconds independent of TV time zone', () => {
-  const h = setup(true, null);
-  const at = Date.parse('2026-10-24T10:00:00Z');
-  const rise = Date.parse('2026-10-24T06:00:00Z');
-  const set = Date.parse('2026-10-24T17:00:00Z');
-  const data = day(0, at, { solar: [{ sunrise:rise, sunset:set }] });
-  assert.equal(h.A.photoWeather.sceneFor(data, Date.parse('2026-10-24T16:30:00Z')), 'sunset');
-  assert.equal(h.A.photoWeather.sceneFor(data, Date.parse('2026-10-24T17:30:00Z')), 'night');
-  assert.equal(h.A.photoWeather.sceneFor(data, Date.parse('2026-10-24T12:00:00Z')), 'sun');
+test('solar epochs override stale is_day and preserve weather at sunset', () => {
+  const fn = setup().A.photoWeather.sceneFor;
+  const at = Date.parse('2026-10-24T10:00:00Z'), rise = at - 4*3600000, set = at + 7*3600000;
+  const reading = day(0, at, {day: 0, solar: [{sunrise: rise, sunset: set}]});
+  assert.equal(fn(reading, at), 'sun');
+  assert.equal(fn(reading, set - 45*60000), 'sunset');
+  assert.equal(fn(reading, set + 20*60000), 'night');
+  assert.equal(fn({...reading, code: 95}, set), 'storm');
+  assert.equal(fn({...reading, at: at - 40*3600000}, at), 'night');
 });
-
-test('bad weather codes are not changed to sunset behind a storm', () => {
-  const h = setup(true, null);
-  const at = Date.parse('2026-10-24T10:00:00Z');
-  const w = day(95, at, { solar: [{ sunrise:at-14400000, sunset:at+3600000 }] });
-  assert.equal(h.A.photoWeather.sceneFor(w,at+3000000),'storm');
+test('one selected image decodes before animation is suspended; repeated readings do not reload', () => {
+  const h = setup(); assert.equal(h.A.photoWeather.update(), false);
+  assert.equal(h.images.length, 1); assert.equal(h.suspended, 0);
+  h.images[0].onload();
+  assert.equal(h.suspended, 1); assert.equal(h.layer.hidden, false);
+  assert.equal(h.A.photoWeather.update(), true); assert.equal(h.images.length, 1); assert.equal(h.suspended, 1);
 });
-
-test('a static scene suspends the original background renderer', () => {
-  const h = setup(true, day(61,Date.now()));
-  assert.equal(h.A.photoWeather.update(),true);
-  assert.equal(h.layer.hidden,false);
-  assert.equal(h.suspended,1);
-  assert.match(h.layer.style.backgroundImage,/assets\/weather\/rain\.jpg/);
-  h.A.photoWeather.update();
-  assert.equal(h.layer.style.backgroundImage,'url("assets/weather/rain.jpg")');
+test('changed scenes ignore stale callbacks and show only the latest image', () => {
+  const h = setup(); h.A.photoWeather.update(); const stale = h.images[0].onload;
+  h.setReading(day(61)); h.A.photoWeather.update(); stale();
+  assert.equal(h.layer.hidden, true); h.images[1].onload();
+  assert.match(h.layer.style.backgroundImage, /rain.jpg/);
 });
-
-test('no cached forecast shows the previous user-selected background', () => {
-  const h = setup(true,null);
-  assert.equal(h.A.photoWeather.update(),false);
-  assert.equal(h.layer.hidden,true);
-  assert.equal(h.suspended,0);
+test('disable cancels pending image and timer; late callback cannot cover the fallback', () => {
+  const h = setup(); h.A.photoWeather.start(); const late = h.images[0].onload;
+  h.A.settings.weatherPhoto = false; h.A.photoWeather.update(); late();
+  assert.equal(h.timers.size, 0); assert.equal(h.layer.hidden, true); assert.equal(h.suspended, 0);
 });
-
-test('switching photo off removes the old photo and triggers original background', () => {
-  const h = setup(true,day(2,Date.now()));
-  h.A.photoWeather.update();
-  h.A.photoWeather.select(false);
-  assert.equal(h.A.settings.weatherPhoto,false);
-  assert.equal(h.saved,1);
-  assert.equal(h.layer.hidden,true);
-  assert.equal(h.visible,2); // background refresh + weather subscription
+test('missing image restores fallback and does not suspend its animation', () => {
+  const h = setup(); h.A.photoWeather.update(); h.images[0].onerror();
+  assert.equal(h.layer.hidden, true); assert.equal(h.suspended, 0); assert.equal(h.restored, 1);
 });
-
-test('periodic scene check is one timer and only runs when visible', () => {
-  const h = setup(true,day(0,Date.now()));
-  h.A.photoWeather.start();
-  h.A.photoWeather.start();
-  assert.equal(h.timers.length,1);
-  assert.equal(h.timers[0].ms,60000);
-  h.doc.hidden=true;
-  h.timers[0].fn();
-  assert.equal(h.suspended,0);
-  h.doc.hidden=false;
-  h.timers[0].fn();
-  assert.equal(h.suspended,1);
+test('expired or changed-location reading removes previous scene', () => {
+  const h = setup(); h.A.photoWeather.update(); h.images[0].onload();
+  h.setReading(null); assert.equal(h.A.photoWeather.update(), false);
+  assert.equal(h.layer.hidden, true); assert.equal(h.restored, 1);
 });
-
-test('weather provider keeps polling when widget is hidden but photo is enabled', () => {
-  const weather=read('launcher/js/weather.js');
-  assert.match(weather,/fetch: s\.showWeather !== false \|\| s\.weatherPhoto === true/);
-  assert.match(weather,/if \(!opt\.fetch\)/);
-  assert.match(weather,/now\.fetch && version === requestVersion/);
-  assert.match(weather,/current=temperature_2m,weather_code,is_day&daily=sunrise,sunset/);
-  assert.match(weather,/currentReading: function/);
+test('only one visible enabled timer; hidden pending loads are discarded and resumed', () => {
+  const h = setup(); h.A.photoWeather.start(); h.A.photoWeather.start();
+  assert.equal(h.timers.size, 1); assert.equal([...h.timers.values()][0].ms, 60000);
+  const late = h.images[0].onload; h.doc.hidden = true; h.events.visibilitychange(); late();
+  assert.equal(h.timers.size, 0); assert.equal(h.layer.hidden, true);
+  h.doc.hidden = false; h.events.visibilitychange();
+  assert.equal(h.timers.size, 1); assert.equal(h.images.length, 2); h.images[1].onload();
+  h.setTv(true); assert.equal(h.A.photoWeather.update(), false); assert.equal(h.layer.hidden, true);
 });
-
-test('all nine original photo assets and page wiring are present', () => {
-  ['sun','partly','cloud','rain','storm','snow','fog','night','sunset'].forEach(name => {
-    assert.ok(fs.existsSync(path.join(__dirname,'../launcher/assets/weather',name+'.jpg')));
-  });
-  const html=read('launcher/index.html');
-  assert.match(html,/id="weather-photo"/);
-  assert.match(html,/id="weather-photo-choice"/);
-  assert.match(html,/src="js\/photo-weather\.js"/);
-  assert.match(html,/href="css\/photo-weather\.css"/);
-  const css=read('launcher/css/photo-weather.css');
-  assert.match(css,/#weather-photo\.weather-photo/);
-  assert.doesNotMatch(css,/(?:-webkit-)?backdrop-filter:/);
-});
-
-test('photo-weather Settings render without PR #27 and preserve selection', () => {
-  const source = read('launcher/js/settings-ui.js');
-  const start = source.indexOf('  function renderPhotoWeather() {');
-  const end = source.indexOf('\n\n  function renderBackgrounds()', start);
-  assert.ok(start >= 0 && end > start);
-  const panel = {
-    children: [], attributes: {},
-    appendChild(child) { this.children.push(child); },
-    setAttribute(key, value) { this.attributes[key] = value; }
-  };
-  const S = { weatherPhoto: false };
-  let saved = 0, refreshed = 0;
-  const A = {
-    $: () => panel, photoWeather: {},
-    applyBackground() { refreshed++; }
-  };
-  const pill = (key, label, selected, onSelect) =>
-    ({ key, label, selected, onSelect, setAttribute() {} });
-  const render = vm.runInNewContext('(' + source.slice(start, end).trim() + ')',
-    { A, S, pill, changed: after => { saved++; after(); }, window: {
-      Weather: { updateVisibility() { refreshed++; } }
-    } });
-  render();
-  assert.deepEqual(panel.children.map(p => p.label), ['Off', 'Automatic (weather)']);
-  assert.equal(panel.attributes['aria-label'], 'Weather wallpaper');
-  panel.children[1].onSelect();
-  assert.equal(S.weatherPhoto, true);
-  assert.equal(saved, 1);
-  assert.equal(refreshed, 2);
-});
-
-test('photo-weather Settings use the shared i18n labels when available', () => {
-  const source = read('launcher/js/settings-ui.js');
-  const start = source.indexOf('  function renderPhotoWeather() {');
-  const end = source.indexOf('\n\n  function renderBackgrounds()', start);
-  const panel = {
-    children: [], attributes: {},
-    appendChild(child) { this.children.push(child); },
-    setAttribute(key, value) { this.attributes[key] = value; }
-  };
-  const dict = { Off: 'Disattivato', 'Automatic (weather)': 'Automatico (meteo)',
-    'Weather wallpaper': 'Sfondo meteo' };
-  const A = {
-    $: () => panel, photoWeather: {},
-    i18n: { t: value => dict[value] || value,
-      label: (key, english) => dict[english] || english }
-  };
-  const pill = (key, label, selected, onSelect) =>
-    ({ key, label, selected, onSelect, setAttribute() {} });
-  const render = vm.runInNewContext('(' + source.slice(start, end).trim() + ')',
-    { A, S: { weatherPhoto: true }, pill, changed() {},
-      window: { Weather: { updateVisibility() {} } } });
-  render();
-  assert.deepEqual(panel.children.map(p => p.label),
-    ['Disattivato', 'Automatico (meteo)']);
-  assert.equal(panel.attributes['aria-label'], 'Sfondo meteo');
-  assert.match(read('launcher/index.html'), /data-i18n="Weather wallpaper"/);
+test('all nine optimized images match the provenance manifest and Full HD JPEG size budget', () => {
+  const dir = path.join(root, 'launcher/assets/weather');
+  const manifest = JSON.parse(fs.readFileSync(path.join(dir,'MANIFEST.json')));
+  assert.equal(manifest.assets.length, 9);
+  let total = 0;
+  for (const item of manifest.assets) {
+    const bytes = fs.readFileSync(path.join(dir,item.file)); total += bytes.length;
+    assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), item.sha256);
+    assert.equal(bytes.length, item.bytes); assert(bytes.length < 400000);
+    assert.equal(bytes.readUInt16BE(0), 0xffd8);
+    const sof = bytes.indexOf(Buffer.from([0xff, 0xc0])); assert(sof > 0, 'baseline JPEG');
+    assert.equal(bytes.readUInt16BE(sof+5), 1080); assert.equal(bytes.readUInt16BE(sof+7), 1920);
+  }
+  assert(total < 2600000);
 });

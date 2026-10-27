@@ -162,10 +162,16 @@ def _check_package(data, version):
                 raise ReleaseError("The launcher package is too large when unpacked.")
             names = set()
             for entry in entries:
+                # ZipInfo normalises backslashes on Windows. Validate the stored
+                # name as well as the lookup name before any extraction/signing.
                 name = entry.filename
+                original_name = entry.orig_filename
                 path = PurePosixPath(name)
                 if (
-                    path.is_absolute()
+                    original_name != name
+                    or "\\" in original_name
+                    or "\0" in original_name
+                    or path.is_absolute()
                     or ".." in path.parts
                     or "\\" in name
                     or ":" in name
@@ -180,6 +186,11 @@ def _check_package(data, version):
                     raise ReleaseError("Expected an unsigned launcher package.")
                 names.add(name)
             required = {"config.xml", "index.html", "service/index.js", "service/artmode.js"}
+            if "service/index.js" in names:
+                watcher_source = package.read("service/index.js")
+                for module in ("home-mode", "home-store"):
+                    if ("./" + module).encode() in watcher_source:
+                        required.add("service/" + module + ".js")
             if not required <= names:
                 raise ReleaseError("The launcher package is missing required application files.")
             config = package.read("config.xml")

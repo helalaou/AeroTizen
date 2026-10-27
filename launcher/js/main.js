@@ -6,10 +6,7 @@
   var KEY = A.config.KEY;
 
   A.applyBackground = function () {
-    if (A.settings.weatherPhoto && A.photoWeather && A.photoWeather.update()) {
-      return; // The static photo module stops the original canvas animation.
-    }
-    if (A.photoWeather) { A.photoWeather.hide(); }
+    if (A.photoWeather && A.photoWeather.update()) { return; }
     window.Backgrounds.setSpeed(A.settings.speed);
     window.Backgrounds.apply(A.settings.background);
   };
@@ -45,17 +42,36 @@
   });
 
   // ---- boot ----------------------------------------------------------------------
+  var startup = window.AeroStartup;
   A.settings.load();
+  startup.mark('settings-loaded');
   A.applyBackground();
   A.clock.start();
-  A.network.start();
-  window.Weather.start(function () { return A.settings; });
   if (A.photoWeather) { A.photoWeather.start(); }
-  A.apps.load(function () {
-    if (A.settings.home === null) { A.settings.home = A.apps.defaultHome(); A.settings.save(); }
-    A.homeScreen.render();
+  A.apps.restore();
+  A.homeScreen.render();
+  startup.mark('home-rendered');
+  function discover() {
+    startup.captureLaunch();
+    A.network.start();
+    window.Weather.start(function () { return A.settings; });
     A.inputs.load();
     A.homewatch.start();
-    setTimeout(function () { A.homewatch.reportApps(A.apps.realIds); }, 1500);
+    setTimeout(function () { A.homewatch.reportStartup(startup.trace); }, 1500);
+    startup.mark('apps-requested');
+    A.apps.load(function (success) {
+      startup.mark(success ? 'apps-loaded' : 'apps-unavailable');
+      if (success) {
+        if (A.settings.home === null) { A.settings.home = A.apps.defaultHome(); A.settings.save(); }
+        A.homeScreen.refreshApps();
+        setTimeout(function () { A.homewatch.reportApps(A.apps.realIds); }, 1500);
+      }
+      A.homewatch.reportStartup(startup.trace);
+    });
+    startup.mark('apps-call-returned');
+  }
+  // Allow a frame to draw before crossing into the TV's package APIs.
+  window.requestAnimationFrame(function () {
+    window.requestAnimationFrame(function () { startup.mark('frame-ready'); startup.afterLoad(discover); });
   });
 })(window.AeroTizen);

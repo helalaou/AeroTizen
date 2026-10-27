@@ -110,6 +110,7 @@ h2 { font-size: 39px; font-weight: 500; margin: 0 0 18px; }
 .tile.fire svg.flame { width: 140px; height: 140px; }
 
 /* ---- settings sheet ---- */
+#settings-root [data-key] { outline: none; }
 .sheet { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.62); padding: 64px 64px 120px; overflow: hidden; }
 .sheet h2 { font-size: 52px; font-weight: 700; margin-bottom: 28px; }
 .sheet h3 { font-size: 34px; font-weight: 500; margin: 0 0 18px; }
@@ -202,10 +203,12 @@ body.editing .topbar, body.editing main { visibility: hidden; }
 .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background: var(--focus); }
 .thumb { position: absolute; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.5); }
 .slider-value { font-size: 28px; font-weight: 700; min-width: 80px; }
-.slider-hint { font-size: 20px; color: var(--muted); opacity: 0; }
+.slider-hint { font-size: 20px; color: var(--muted); opacity: 0; min-width: 130px; }
 .slider.focused { box-shadow: 0 0 0 4px #000, 0 0 0 8px #fff; transform: none; }
 .slider.focused .slider-hint { opacity: 1; }
 .slider.focused .thumb { transform: scale(1.2); }
+.slider.adjusting { box-shadow: 0 0 0 4px #000, 0 0 0 8px var(--focus); }
+.slider.adjusting .thumb { transform: scale(1.35); }
 /* input names */
 .name-pill { display: flex; align-items: center; gap: 14px; padding: 12px 22px; }
 .name-pill .port { color: var(--muted); font-size: 22px; }

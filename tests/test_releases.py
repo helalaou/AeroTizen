@@ -211,7 +211,20 @@ def test_valid_checksum_is_not_enough_for_wrong_package(github, tmp_path, data):
 @pytest.mark.parametrize("name", ["../outside", "/outside", "C:/outside", "dir\\outside"])
 def test_archive_paths_cannot_escape_package(name):
     with pytest.raises(releases.ReleaseError, match="paths"):
-        releases._check_package(widget(extra=[(name, "bad")]), "2.2.0")
+        # Construct the raw filename in both ZIP headers. Passing a backslash
+        # string to ZipInfo on Windows would silently produce a safe '/' name.
+        safe_name = "x" * len(name)
+        data = widget(extra=[(safe_name, "bad")]).replace(safe_name.encode(), name.encode())
+        releases._check_package(data, "2.2.0")
+
+
+@pytest.mark.parametrize("name", ["dir\\outside", "config.xml\0bad"])
+def test_archive_rejects_original_names_after_windows_normalization(monkeypatch, name):
+    placeholder = "x" * len(name)
+    data = widget(extra=[(placeholder, "bad")]).replace(placeholder.encode(), name.encode())
+    monkeypatch.setattr(zipfile.os, "sep", "\\")
+    with pytest.raises(releases.ReleaseError, match="paths"):
+        releases._check_package(data, "2.2.0")
 
 
 def test_archive_cannot_contain_symlinks_or_signatures():
