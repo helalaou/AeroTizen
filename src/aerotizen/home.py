@@ -134,6 +134,22 @@ def parse_query(stdout, *, expected_uid=0, cleanup_marker=CLEANUP_MARKER):
         _value(query["main_operation"], "string")
         for key, kind in SETTINGS.items():
             _value(query["settings"][key], kind)
+        diagnostic = query["watcher"].get("error")
+        if diagnostic is not None and (
+            not isinstance(diagnostic, dict)
+            or diagnostic.get("code")
+            not in ("timeout", "connection_error", "http_error", "invalid_response", "query_error")
+            or not isinstance(diagnostic.get("message"), str)
+            or not diagnostic["message"]
+            or (
+                "http_status" in diagnostic
+                and (
+                    type(diagnostic["http_status"]) is not int or not 100 <= diagnostic["http_status"] <= 599
+                )
+            )
+            or ("socket_error" in diagnostic and not isinstance(diagnostic["socket_error"], str))
+        ):
+            raise ValueError("Invalid Home service diagnostic")
         boot = query.get("boot")
         launcher = query["launcher"]
         if not isinstance(launcher, dict) or (

@@ -95,7 +95,7 @@ static class Program
         Action = action, Firmware = "TEST-1", Original = Fake.Original(),
         BaselineHash = new string('b', 64), Transaction = new string('a', 32)
     };
-    static void Test(string name, Action test) { test(); count++; Console.WriteLine("PASS " + name); }
+    internal static void Test(string name, Action test) { test(); count++; Console.WriteLine("PASS " + name); }
     static void Refused(Fake fake, Request request)
     {
         bool failed = false; try { Policy.Execute(fake, request); } catch { failed = true; }
@@ -437,6 +437,7 @@ static class Program
                 Check(failed);
             }
         });
+        ServiceDiagnosticsTests.Run();
         Console.WriteLine("POLICY_TESTS_PASSED=" + count); return 0;
     }
 }

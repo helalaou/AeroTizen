@@ -2,8 +2,10 @@
 
 Use the existing immutable Home backup. Other models and firmware can test after
 [compatibility checks](home-pc-flow.md#compatibility-and-testing-on-another-tv).
-Physical boot results here cover only the recorded Frame and firmware. Test Home
-and restore before adding boot.
+The original boot results below cover the recorded Frame and firmware. A later
+[contributor S90C report](home-s90c-tv-20261027.json) also passed native boot and
+installed-app restore; its startup duration was not measured. Test Home and restore
+before adding boot.
 
 ```sh
 aerotizen home apply --boot                 # offline preview

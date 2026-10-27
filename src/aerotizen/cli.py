@@ -451,6 +451,11 @@ def cmd_home(args):
                 value = item["value"] if item["status"] == "ok" else f"unavailable ({item['error']})"
                 print(f"{key}: {value}")
             print(f"watcher: {status['watcher']['state']}")
+            diagnostic = status["watcher"].get("error")
+            if diagnostic:
+                detail = diagnostic.get("socket_error") or diagnostic.get("http_status")
+                suffix = f" ({detail})" if detail else ""
+                print(f"service query: {diagnostic['code']}{suffix}: {diagnostic['message']}")
         if not writing and not status["complete"]:
             sys.exit("Some native Home values are unavailable; a complete backup cannot be made.")
     except (OSError, SdbError, ValueError, KeyError) as exc:

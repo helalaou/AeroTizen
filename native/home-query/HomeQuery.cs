@@ -4,12 +4,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Globalization;
 using System.Net.Http;
+using System.Net.Sockets;
+using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using AeroTizen.Home;
 
 internal static class HomeQuery
 {
+    private const int ServiceTimeoutMs = 1500;
     private const string MainOperation = "http://tizen.org/appcontrol/operation/main";
     private static readonly string[] StringKeys = {
         "db/appfw/home_appid", "db/appfw/startup_appid",
@@ -78,31 +81,68 @@ internal static class HomeQuery
         return result;
     }
 
+    private static Dictionary<string, object> WatcherFailure(string code, string message, bool reachable = false,
+        int? httpStatus = null, string socketError = null)
+    {
+        var error = new Dictionary<string, object> { ["code"] = code, ["message"] = message };
+        if (httpStatus.HasValue) error["http_status"] = httpStatus.Value;
+        if (socketError != null) error["socket_error"] = socketError;
+        return new Dictionary<string, object> { ["state"] = "unknown", ["reachable"] = reachable, ["error"] = error };
+    }
+
+    // Exposed to the host harness with a fake HTTP handler; this never launches a service.
+    internal static object ReadWatcher(HttpClient client)
+    {
+        bool responded = false;
+        try
+        {
+            using (var response = client.GetAsync("http://127.0.0.1:47790/").GetAwaiter().GetResult())
+            {
+                responded = true;
+                if (!response.IsSuccessStatusCode)
+                    return WatcherFailure("http_error", "Home control service returned an HTTP error.", true, (int)response.StatusCode);
+                using (var document = JsonDocument.Parse(response.Content.ReadAsStringAsync().GetAwaiter().GetResult()))
+                {
+                    JsonElement leaving;
+                    if (!document.RootElement.TryGetProperty("leaving", out leaving) ||
+                        (leaving.ValueKind != JsonValueKind.True && leaving.ValueKind != JsonValueKind.False))
+                        return WatcherFailure("invalid_response", "Home control service returned an invalid response.", true);
+                    JsonElement control;
+                    if (document.RootElement.TryGetProperty("homeControl", out control))
+                    {
+                        string mode = control.GetProperty("mode").GetString();
+                        return new { state = mode == "watcher" ? (leaving.GetBoolean() ? "paused" : "active") :
+                            mode == "native" ? "native" : mode == "hold" ? "handoff" : "blocked",
+                            reachable = true, control = control.Clone(), error = (object)null };
+                    }
+                    return new { state = leaving.GetBoolean() ? "paused" : "active", reachable = true, error = (object)null };
+                }
+            }
+        }
+        catch (TaskCanceledException) { return WatcherFailure("timeout", "Home control service query timed out after " + ServiceTimeoutMs + " ms."); }
+        catch (HttpRequestException error)
+        {
+            var socket = error.InnerException as SocketException;
+            return WatcherFailure("connection_error", "Could not complete the Home control service connection.",
+                socketError: socket == null ? null : socket.SocketErrorCode.ToString());
+        }
+        catch (Exception error) when (error is JsonException || error is InvalidOperationException || error is KeyNotFoundException)
+        { return responded
+            ? WatcherFailure("invalid_response", "Home control service returned an invalid response.", true)
+            : WatcherFailure("query_error", "Home control service query failed."); }
+        // Do not export exception text: it can include host-specific paths or response content.
+        catch (Exception) { return WatcherFailure("query_error", "Home control service query failed."); }
+    }
+
     private static object Watcher()
     {
         try
         {
-            using (var handler = new HttpClientHandler { UseProxy = false })
-            using (var client = new HttpClient(handler) { Timeout = TimeSpan.FromMilliseconds(1500) })
-            using (var document = JsonDocument.Parse(
-                client.GetStringAsync("http://127.0.0.1:47790/").GetAwaiter().GetResult()))
-            {
-                JsonElement leaving;
-                if (!document.RootElement.TryGetProperty("leaving", out leaving) ||
-                    (leaving.ValueKind != JsonValueKind.True && leaving.ValueKind != JsonValueKind.False))
-                    return new { state = "unknown", reachable = true };
-                JsonElement control;
-                if (document.RootElement.TryGetProperty("homeControl", out control))
-                {
-                    string mode = control.GetProperty("mode").GetString();
-                    return new { state = mode == "watcher" ? (leaving.GetBoolean() ? "paused" : "active") :
-                        mode == "native" ? "native" : mode == "hold" ? "handoff" : "blocked",
-                        reachable = true, control = control.Clone() };
-                }
-                return new { state = leaving.GetBoolean() ? "paused" : "active", reachable = true };
-            }
+            using (var handler = new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false })
+            using (var client = new HttpClient(handler) { Timeout = TimeSpan.FromMilliseconds(ServiceTimeoutMs) })
+                return ReadWatcher(client);
         }
-        catch (Exception) { return new { state = "unknown", reachable = false }; }
+        catch (Exception) { return WatcherFailure("query_error", "Home control service client could not be created."); }
     }
 
     private static object Boot()

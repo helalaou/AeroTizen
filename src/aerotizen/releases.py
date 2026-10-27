@@ -162,10 +162,16 @@ def _check_package(data, version):
                 raise ReleaseError("The launcher package is too large when unpacked.")
             names = set()
             for entry in entries:
+                # ZipInfo normalises backslashes on Windows. Validate the stored
+                # name as well as the lookup name before any extraction/signing.
                 name = entry.filename
+                original_name = entry.orig_filename
                 path = PurePosixPath(name)
                 if (
-                    path.is_absolute()
+                    original_name != name
+                    or "\\" in original_name
+                    or "\0" in original_name
+                    or path.is_absolute()
                     or ".." in path.parts
                     or "\\" in name
                     or ":" in name

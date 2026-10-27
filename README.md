@@ -92,7 +92,7 @@ data, autorun) and [DNS blocklists](dns/) if you run Pi-hole, AdGuard Home or Ne
 | Samsung 65" Crystal UHD DU7200 (UN65DU7200FXZA) | 2024 | Tizen 9.0 | |
 | Samsung 65" The Frame LS03D (QE65LS03DAUXXU) | 2024 | Tizen 9.0 | |
 | Samsung 70" Crystal UHD CU7000 (UN70CU7000DXZA) | 2023 | Tizen 9.0 | |
-| Samsung 65" OLED S90C (QE65S90CATXZT) | 2023 | Tizen 7.0 | |
+| Samsung 65" OLED S90C (QE65S90CATXZT) | 2023 | Tizen 7.0 / 9.0 | |
 | Samsung 75" QLED Q60B (QE75Q60BAUXXC) | 2022 | Tizen 6.5 | |
 | Samsung 55" OLED S95B (QE55S95BATXXC) | 2022 | Tizen 6.5 | Live TV and cold boot issues ([#46](../../issues/46), [#47](../../issues/47)) |
 | Samsung 65" The Frame LS03A (QN65LS03AAFXZC) | 2021 | | Runs, but doesn't return on Home or start at power-on yet |
@@ -190,8 +190,10 @@ Both options run on the TV; your computer can be switched off after setup. Neith
 Native Home is experimental. Other models and firmware can now test if compatibility checks
 pass: a 32-bit ARM Tizen runtime, developer access, required native functions and complete
 settings reads. Apply also checks the installed launcher's eligibility and control service.
-Only the 2024 Frame on Tizen 9 has physical test results for this flow; passing preflight does
-not prove Home or boot behaviour on another TV.
+Physical tests cover a 2024 Frame and a contributor's S90C, both on Tizen 9. The S90C passed
+Home-only, automatic startup, Home from YouTube/Prime and restore with the app installed.
+Passing preflight does not prove behaviour on another TV. See the
+[S90C report](docs/home-s90c-tv-20261027.json).
 
 Use matching updated builds of the CLI and signed launcher, then open the launcher. Start
 with Home only (replace `TV_IP` with your TV's address):
@@ -207,7 +209,8 @@ check that Samsung Home returns. To test automatic startup separately, restore f
 run `./aerotizen --tv TV_IP home apply --boot --yes`. Restore before changing options.
 If compatibility checks fail, the command stops before changing settings or pausing the watcher.
 Native function availability does not prove write permission; failed writes attempt rollback.
-Keep the backup folder and inspect `home status` if a change fails.
+Keep the backup folder and inspect `home status` if a change fails. Status reports service
+query errors; a timeout does not mean the launcher was uninstalled.
 See the [controlled TV tests](docs/home-profile-isolation-tv-20261026.json).
 
 The TV's original Home and startup values are saved once on the PC in

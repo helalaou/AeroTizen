@@ -63,3 +63,25 @@ jobs:
           name: settings-browser-failures
           path: test-results/
           retention-days: 7
+
+  windows-home:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.428
+      - run: python tools/build_home_query.py
+      - run: python tools/build_home_control.py
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest tests/test_releases.py tests/test_home.py tests/test_home_control.py
+      - run: node --test tests/home_store.test.cjs

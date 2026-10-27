@@ -26,7 +26,9 @@ The backup must still match the connected TV, model, firmware, OS version and ar
 Checksums, original-state checks, durable PC receipts, per-write readback and rollback remain
 in force. A compatible API does not prove write permission or physical Home/boot behaviour.
 A setter failure attempts rollback; preserve the backup and inspect status after any failure.
-Only the recorded Tizen 9 Frame has physical results for this flow.
+Physical results cover the Tizen 9 Frame and a contributor's Tizen 9 S90C. The
+[S90C report](home-s90c-tv-20261027.json) confirms Home-only, boot, YouTube/Prime returns
+and installed-app restore. It does not cover absent-app restore or PR37 integration.
 
 For PR testing, use the CLI and signed launcher from the same checkout. Install the CLI with
 `python -m pip install -e .`, then build both helpers with `python tools/build_home_query.py`
@@ -120,3 +122,22 @@ or backing up this folder.
 The small persistent handoff state on the TV is still needed to keep the watcher
 disabled across restarts. It is separate from the PC's recovery backup. There is
 no app-private backup upload or download command in this flow.
+
+
+## Service query diagnostics
+
+`home status` reports a service error in both text and JSON output. JSON stores it under
+`watcher.error`, with a `code` and `message`, plus `http_status` or `socket_error` when known.
+Codes distinguish `timeout`, `connection_error`, `http_error`, `invalid_response` and
+`query_error`. The query remains read-only, uses one bounded 1500 ms request, and does not
+start the service, retry a write or change Home settings.
+
+`watcher.reachable: false` means a service response was not confirmed. It does not establish
+that AeroTizen was removed. A service returning an HTTP error or malformed response is
+reported as reachable with an error. Installation is still checked separately, and native
+changes still require the compatible control protocol. Do not bypass these guards.
+
+The S90C contributor found the service unreachable at about 107 seconds of uptime and
+reachable in persistent native mode with the matching transaction at about 197 seconds.
+The cause is unresolved. These diagnostics help a future capture distinguish failure types;
+they do not claim to fix that observation or measure startup time. Live TV remains for PR37.

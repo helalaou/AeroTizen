@@ -415,3 +415,61 @@ def test_metadata_fallback_does_not_swallow_other_exit_reasons(monkeypatch):
     monkeypatch.setattr(cli.remote, "info", failed)
     with pytest.raises(SystemExit, match="configuration error"):
         home.device_info(object(), "192.0.2.10")
+
+
+@pytest.mark.parametrize(
+    "diagnostic",
+    [
+        {"code": "timeout", "message": "Service query timed out."},
+        {"code": "connection_error", "message": "Connection failed.", "socket_error": "ConnectionRefused"},
+        {"code": "http_error", "message": "Service returned an HTTP error.", "http_status": 503},
+        {"code": "invalid_response", "message": "Invalid service response."},
+    ],
+)
+@pytest.mark.parametrize("json_output", [False, True])
+def test_service_diagnostic_survives_query_and_is_visible_in_cli(
+    monkeypatch, status, capsys, diagnostic, json_output
+):
+    from contextlib import nullcontext
+
+    value = query()
+    value["watcher"] = {"state": "unknown", "reachable": False, "error": diagnostic}
+    assert home.parse_query(output(value))["watcher"]["error"] == diagnostic
+    status["watcher"] = value["watcher"]
+    monkeypatch.setattr(cli, "require_sdb", lambda host: nullcontext(object()))
+    monkeypatch.setattr(home, "device_info", lambda *args, **kwargs: {})
+    monkeypatch.setattr(home, "read_status", lambda *args: status)
+    argv = ["aerotizen", "--tv", "192.0.2.10", "home", "status"]
+    if json_output:
+        argv.append("--json")
+    monkeypatch.setattr("sys.argv", argv)
+    cli.main()
+    text = capsys.readouterr().out
+    if json_output:
+        assert json.loads(text)["watcher"]["error"] == diagnostic
+    else:
+        assert "watcher: unknown" in text
+        assert "service query: " + diagnostic["code"] in text
+        assert diagnostic["message"] in text
+        for key in ("socket_error", "http_status"):
+            if key in diagnostic:
+                assert str(diagnostic[key]) in text
+
+
+@pytest.mark.parametrize(
+    "diagnostic",
+    [
+        "timeout",
+        {},
+        {"code": "timeout", "message": 3},
+        {"code": "timeout", "message": ""},
+        {"code": "http_error", "message": "bad", "http_status": True},
+        {"code": "http_error", "message": "bad", "http_status": 999},
+        {"code": "connection_error", "message": "bad", "socket_error": 3},
+    ],
+)
+def test_malformed_service_diagnostic_is_refused(diagnostic):
+    value = query()
+    value["watcher"]["error"] = diagnostic
+    with pytest.raises(home.HomeError):
+        home.parse_query(output(value))
