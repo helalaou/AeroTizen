@@ -234,14 +234,25 @@ Home-only, automatic startup, Home from YouTube/Prime and restore with the app i
 Passing preflight does not prove behaviour on another TV. See the
 [S90C report](docs/home-s90c-tv-20261027.json).
 
-Use matching updated builds of the CLI and signed launcher, then open the launcher. Start
-with Home only (replace `TV_IP` with your TV's address):
+Use matching updated builds of the CLI and signed launcher. Save the original Home
+backup before opening AeroTizen (replace `TV_IP` with your TV's address):
 
 ```sh
 ./aerotizen --tv TV_IP home status
 ./aerotizen --tv TV_IP home backup
+```
+
+Then open AeroTizen on the TV to start its control service, and apply Home only:
+
+```sh
 ./aerotizen --tv TV_IP home apply --yes
 ```
+
+If you already have a valid original backup, keep it. Some TVs change
+`booting_appid_backup` to `DclHome001.Home` when AeroTizen opens. Apply permits
+only this difference; all other values must match. It restores the saved startup
+values before completing Home-only apply. A new backup still needs original
+values and will refuse an AeroTizen assignment. See [backup guidance](docs/home-read-only.md#backup-behavior).
 
 Restart fully, then test Home from YouTube, Prime Video and Samsung Home. Run restore and
 check that Samsung Home returns. To test automatic startup separately, restore first, then
