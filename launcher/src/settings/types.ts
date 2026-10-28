@@ -48,6 +48,7 @@ export interface Clock {
   tick(): void;
   dateStyle(format: SettingsValues['dateFormat']): DateFormat;
   formatTime(date: Date, format: TimeFormat): string;
+  formatTimeParts?(date: Date, format: TimeFormat): { hour: string; minute: string; dayPeriod: string } | null;
   formatDate(date: Date, format: SettingsValues['dateFormat']): string;
   subscribe(listener: () => void): () => void;
   DATE_FORMATS: ReadonlyArray<{ id: DateFormat; format(date: Date): string }>;

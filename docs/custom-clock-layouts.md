@@ -13,3 +13,9 @@ styles, visibility, saved date/time choices and reload persistence, with screens
 Existing formatter/locale and weather unit tests remain applicable. The modernized
 build has not been physically tested on the S90C; reference-version testing does
 not establish acceptance of this adaptation or performance on older TVs.
+
+Parity review follow-up: changing clock layout invalidates Settings navigation
+geometry immediately. CustomClock reads optional structured hour/minute/day-period
+fields from the existing formatter, preserving Finnish separators, Korean leading
+periods and Arabic digits; older Intl retains the formatted-string fallback.
+Compiled D-pad and locale regressions cover these cases without an extra timer.

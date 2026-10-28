@@ -274,3 +274,18 @@ test('clock tick listeners are notified once and can unsubscribe', () => {
   A.clock.tick(); assert.equal(ticks, 1);
   unsubscribe(); A.clock.tick(); assert.equal(ticks, 1);
 });
+
+test('custom clock fields preserve locale digits, separators and leading day periods', () => {
+  for (const [locale, format, hour, minute, period] of [
+    ['fi-FI','24','17','04',''], ['ko-KR','12','5','04','오후'], ['ar-EG','12','٥','٠٤','م']
+  ]) {
+    const { A } = runtime({locale});
+    const fields = A.clock.formatTimeParts(sample, format);
+    assert.equal(fields.hour, hour);
+    assert.equal(fields.minute, minute);
+    assert.equal(fields.dayPeriod, period);
+  }
+  const { A } = runtime({intl:{}});
+  assert.equal(A.clock.formatTimeParts(sample,'24'), null);
+  assert.equal(A.clock.formatTime(sample,'24'), '17:04');
+});

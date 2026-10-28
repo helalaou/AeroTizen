@@ -29,12 +29,16 @@ export const CustomClock = ({ settings: store, clock }: { settings: SettingsStor
     return () => document.body.classList.remove('s90c-clock-classic');
   }, [settings.clockLayout]);
   const text = clock.formatTime(now, settings.timeFormat), date = clock.formatDate(now, settings.dateFormat);
-  const parts = /^([^:：]+)[:：]([^\s]+)(.*)$/.exec(text);
+  const fields = clock.formatTimeParts?.(now, settings.timeFormat);
+  const parts = /^([^:：.]+)[:：.]([^\s]+)(.*)$/.exec(text);
+  const hour = fields ? fields.hour : parts ? parts[1] : text;
+  const minute = fields ? fields.minute : parts ? parts[2] : '';
+  const period = fields ? fields.dayPeriod ? ' ' + fields.dayPeriod : '' : parts?.[3];
   return <div id="aero-v991-widget" class={settings.aeroClockStyle === 'vertical' ? '' : 'style-' + settings.aeroClockStyle}
     hidden={settings.clockLayout !== 'custom' || !settings.showTime && settings.dateFormat === 'none' && !settings.showWeather}>
     <div class="aero-v991-digits" aria-label={text} hidden={!settings.showTime}>
-      <span id="aero-v991-hours" class="aero-v991-digit">{parts ? parts[1] : text}</span>
-      <span id="aero-v991-minutes" class="aero-v991-digit">{parts ? parts[2] : ''}<small style={{ fontSize: '.2em', letterSpacing: 0 }}>{parts?.[3]}</small></span>
+      <span id="aero-v991-hours" class="aero-v991-digit">{hour}</span>
+      <span id="aero-v991-minutes" class="aero-v991-digit">{minute}<small style={{ fontSize: '.2em', letterSpacing: 0 }}>{period}</small></span>
     </div>
     <div id="aero-v991-date" class="aero-v991-date" hidden={settings.dateFormat === 'none'}>{date}</div>
     <div class="aero-v991-weather" hidden={!settings.showWeather}>
