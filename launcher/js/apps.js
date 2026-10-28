@@ -98,6 +98,7 @@
   };
 
   apps.launch = function (app) {
+    if (window.AeroDiagnostics) { window.AeroDiagnostics.record('app.launch_requested', { app_id: app.id }); }
     var label = A.tiles.shortName(app.name);
     if (!tz || !tz.application) { return A.toast('Would open ' + label); }
     var link = hbbtvLink(app.id);

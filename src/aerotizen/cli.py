@@ -35,7 +35,7 @@ from collections import OrderedDict
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from aerotizen import __version__, catalog, discover, remote
+from aerotizen import __version__, catalog, diagnostics, discover, remote
 from aerotizen.device import DeviceSession
 from aerotizen.sdb import SdbError
 
@@ -462,6 +462,19 @@ def cmd_home(args):
         sys.exit(f"Home {args.home_command} failed: {exc}")
 
 
+def cmd_logs(args):
+    try:
+        if args.logs_command == "open":
+            diagnostics.open_logs(STATE_DIR)
+            return
+        output = args.output or Path(f"aerotizen-diagnostics-{datetime.datetime.now():%Y%m%d-%H%M%S}.zip")
+        path, tv_state = diagnostics.export_logs(STATE_DIR, output, args.tv)
+        print(f"Diagnostic report: {path}")
+        print(f"TV logs: {tv_state}. Recovery backups and credentials are excluded.")
+    except (OSError, ValueError) as error:
+        sys.exit(f"Diagnostic logs failed: {error}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="aerotizen", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -529,8 +542,14 @@ def main():
         if name == "apply":
             command.add_argument("--boot", action="store_true", help="also enable native Smart Hub autostart")
         command.set_defaults(fn=cmd_home)
+    p = sub.add_parser("logs", help="open local logs or export a redacted diagnostic report")
+    commands = p.add_subparsers(dest="logs_command", required=True)
+    commands.add_parser("open", help="open the local log folder").set_defaults(fn=cmd_logs)
+    p = commands.add_parser("export", help="export PC logs; add --tv IP to also fetch TV logs")
+    p.add_argument("--output", type=Path, help="new ZIP path; existing files are never overwritten")
+    p.set_defaults(fn=cmd_logs)
     args = parser.parse_args()
-    args.fn(args)
+    diagnostics.run_logged(args, args.fn, STATE_DIR)
 
 
 if __name__ == "__main__":

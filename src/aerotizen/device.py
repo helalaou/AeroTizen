@@ -3,10 +3,11 @@
 import hashlib
 import os
 import threading
+import time
 from pathlib import Path
 from typing import Protocol
 
-from aerotizen import remote
+from aerotizen import diagnostics, remote
 from aerotizen.sdb import PORT, Sdb, SdbError
 
 
@@ -108,7 +109,21 @@ class DeviceSession:
 
     def _call(self, method, *args):
         with self._mutex:
-            return getattr(self._require_connection(), method)(*args)
+            started = time.monotonic()
+            try:
+                result = getattr(self._require_connection(), method)(*args)
+            except BaseException as error:
+                diagnostics.event(
+                    "device.operation",
+                    method=method,
+                    error_type=type(error).__name__,
+                    duration_ms=round((time.monotonic() - started) * 1000),
+                )
+                raise
+            diagnostics.event(
+                "device.operation", method=method, duration_ms=round((time.monotonic() - started) * 1000)
+            )
+            return result
 
     def capability(self):
         return self._call("capability")
@@ -142,6 +157,9 @@ class DeviceSession:
 
     def debug_launch(self, app_id):
         return self._call("debug_launch", app_id)
+
+    def tcp_request(self, port, request, timeout=5, max_output=262144):
+        return self._call("tcp_request", port, request, timeout, max_output)
 
     def forward(self, local_port, remote_port):
         return self._call("forward", local_port, remote_port)

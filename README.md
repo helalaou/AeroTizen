@@ -273,6 +273,27 @@ Night Mode settings stay unchanged. See [setup and recovery](docs/home-pc-flow.m
 backup transfer and recovery steps. Test reports should include the CLI commit, TV model,
 firmware, and Home/restore/boot results; remove device IDs and private paths before sharing.
 
+## Diagnostic logs
+
+The CLI saves a local log for each command. To find the files or create a report:
+
+```sh
+./aerotizen logs open
+./aerotizen logs export
+./aerotizen --tv TV_IP logs export
+```
+
+Export creates a ZIP in the current folder. Adding `--tv` also fetches recent launcher
+and background-service events through the developer connection. It does not launch
+apps or change Home settings. If the TV is unavailable, the ZIP still contains PC logs.
+TV logs need a launcher build with this feature and a running background service.
+
+Logs are bounded and redacted. Exports exclude certificates, login tokens and recovery
+backup files; they include Home result summaries and failed readbacks before rollback.
+Check the report before sharing it. Nothing is uploaded automatically. Keep your original
+Home backup folder separately for restore. See [diagnostics](docs/diagnostics.md) for
+file locations, limits and troubleshooting.
+
 ## Limits
 
 Samsung doesn't support any of this officially, so some parts are workarounds:

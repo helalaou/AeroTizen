@@ -31,8 +31,34 @@ namespace AeroTizen.Home
         public bool LauncherAbsent { get; set; }
         public bool RecoveryBoot { get; set; }
     }
+    public sealed class ValueDifference
+    {
+        public object Expected { get; set; }
+        public object Observed { get; set; }
+    }
+    public sealed class VerificationFailure
+    {
+        public string Phase { get; set; }
+        public Snapshot Expected { get; set; }
+        public Snapshot Observed { get; set; }
+        public Dictionary<string, ValueDifference> Differences { get; set; }
+    }
+    internal sealed class ReadbackException : Exception
+    {
+        internal VerificationFailure Failure { get; }
+        internal ReadbackException(string message, string phase, Snapshot expected, Snapshot observed) : base(message)
+        {
+            var differences = new Dictionary<string, ValueDifference>();
+            if (expected.Main != observed.Main) differences["operation/main"] = new ValueDifference { Expected = expected.Main, Observed = observed.Main };
+            foreach (string key in Policy.Keys)
+                if (expected.Strings[key] != observed.Strings[key]) differences[key] = new ValueDifference { Expected = expected.Strings[key], Observed = observed.Strings[key] };
+            if (expected.AutoStart != observed.AutoStart) differences["db/menu/smart_hub/ontvsetting/auto_start"] = new ValueDifference { Expected = expected.AutoStart, Observed = observed.AutoStart };
+            Failure = new VerificationFailure { Phase = phase, Expected = expected.Copy(), Observed = observed.Copy(), Differences = differences };
+        }
+    }
     public sealed class Result
     {
+        public VerificationFailure Failure { get; set; }
         public bool Success { get; set; }
         public bool RolledBack { get; set; }
         public string Error { get; set; }
@@ -123,7 +149,8 @@ namespace AeroTizen.Home
             {
                 if (requireAbsent) RequireAbsent(platform);
                 platform.SetMain(desired.Main);
-                if (platform.Read().Main != desired.Main) throw new Exception("Home operation readback failed.");
+                var actual = platform.Read();
+                if (actual.Main != desired.Main) throw new ReadbackException("Home operation readback failed.", "home_operation", desired, actual);
             }
             // The Home operation can have derived startup side effects. Put every
             // unrelated saved value back. Boot is enabled separately below.
@@ -132,15 +159,18 @@ namespace AeroTizen.Home
                 if (platform.Read().Strings[key] == desired.Strings[key]) continue;
                 if (requireAbsent) RequireAbsent(platform);
                 platform.SetString(key, desired.Strings[key]);
-                if (platform.Read().Strings[key] != desired.Strings[key]) throw new Exception("Setting readback failed: " + key);
+                var actual = platform.Read();
+                if (actual.Strings[key] != desired.Strings[key]) throw new ReadbackException("Setting readback failed: " + key, key, desired, actual);
             }
             if (platform.Read().AutoStart != desired.AutoStart)
             {
                 if (requireAbsent) RequireAbsent(platform);
                 platform.SetAutoStart(desired.AutoStart);
-                if (platform.Read().AutoStart != desired.AutoStart) throw new Exception("Autostart readback failed.");
+                var actual = platform.Read();
+                if (actual.AutoStart != desired.AutoStart) throw new ReadbackException("Autostart readback failed.", "autostart", desired, actual);
             }
-            if (!Same(platform.Read(), desired)) throw new Exception("Final Home readback failed.");
+            var final = platform.Read();
+            if (!Same(final, desired)) throw new ReadbackException("Final Home readback failed.", "final", desired, final);
             if (requireAbsent) RequireAbsent(platform);
         }
         private static Result RestoreAbsent(IPlatform platform, Request request, Snapshot before)
@@ -155,7 +185,7 @@ namespace AeroTizen.Home
             }
             catch (Exception error)
             {
-                return new Result { Error = "Restore incomplete; preserve the PC backup and receipts, inspect status and retry: " + error.Message };
+                return new Result { Failure = (error as ReadbackException)?.Failure, Error = "Restore incomplete; preserve the PC backup and receipts, inspect status and retry: " + error.Message };
             }
         }
         public static Result Execute(IPlatform platform, Request request)
@@ -208,7 +238,13 @@ namespace AeroTizen.Home
                 Write(platform, desired);
                 if (request.Boot && platform.Read().AutoStart != 1) platform.SetAutoStart(1);
                 var after = platform.Read();
-                if (request.Boot && !BootReady(after, request.Original)) throw new Exception("Native boot readback failed.");
+                if (request.Boot && !BootReady(after, request.Original))
+                {
+                    var expected = desired.Copy(); expected.AutoStart = 1;
+                    foreach (string key in new[] { "db/appfw/startup_appid", "db/appfw/booting_appid_backup" })
+                        if (after.Strings[key] == Target) expected.Strings[key] = Target;
+                    throw new ReadbackException("Native boot readback failed.", "boot", expected, after);
+                }
                 watcher = Change(platform, watcher, request.Action == "apply" ? "native" : "watcher",
                     request.Action == "apply" ? request.Transaction : null,
                     request.Action == "apply" ? request.BaselineHash : null);
@@ -216,9 +252,10 @@ namespace AeroTizen.Home
             }
             catch (Exception error)
             {
-                if (!nativeStarted) return new Result { Error = error.Message + " Watcher remains disabled for review." };
+                var failure = (error as ReadbackException)?.Failure;
+                if (!nativeStarted) return new Result { Failure = failure, Error = error.Message + " Watcher remains disabled for review." };
                 if (request.Action == "restore")
-                    return new Result { Error = "Restore confirmation incomplete; inspect Home and watcher status before retrying: " + error.Message };
+                    return new Result { Failure = failure, Error = "Restore confirmation incomplete; inspect Home and watcher status before retrying: " + error.Message };
                 try
                 {
                     var actual = CheckWatcher(platform.ReadWatcher());
@@ -229,11 +266,11 @@ namespace AeroTizen.Home
                     Write(platform, request.Original);
                     var restored = platform.Read();
                     watcher = Change(platform, actual, "watcher", null, null);
-                    return new Result { RolledBack = true, Error = error.Message, After = restored, Watcher = watcher };
+                    return new Result { Failure = failure, RolledBack = true, Error = error.Message, After = restored, Watcher = watcher };
                 }
                 catch (Exception recovery)
                 {
-                    return new Result { Error = "Apply failed: " + error.Message + "; rollback incomplete; keep the watcher disabled and run restore: " + recovery.Message };
+                    return new Result { Failure = failure, Error = "Apply failed: " + error.Message + "; rollback incomplete; keep the watcher disabled and run restore: " + recovery.Message };
                 }
             }
         }

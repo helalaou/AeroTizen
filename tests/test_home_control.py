@@ -305,7 +305,7 @@ def test_native_policy_failure_boundaries_run_on_host_without_tizen():
         timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "POLICY_TESTS_PASSED=100" in result.stdout
+    assert "POLICY_TESTS_PASSED=102" in result.stdout
 
 
 def test_boot_preview_has_no_device_contact(monkeypatch, capsys):

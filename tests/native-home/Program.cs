@@ -10,6 +10,7 @@ sealed class Fake : IPlatform
 {
     public string Firmware { get; set; } = "TEST-1";
     public bool Eligible = true, SideEffects, AutoSideEffects, AutoBadScreen, FailAll, SilentMain, LostCommit, ChangeDuringHold;
+    public bool ResetHomeOnStartupWrite;
     public bool Installed = true, WatcherUnavailable, InstallationUnavailable, ReinstallOnWrite;
     public int FailWrite, FailFrom, Writes;
     public string MissingLibrary, MissingSymbol;
@@ -62,7 +63,13 @@ sealed class Fake : IPlatform
             Current.AutoStart = 1;
         }
     }
-    public void SetString(string key, string value) { Write(key); Current.Strings[key] = value; }
+    public void SetString(string key, string value) {
+        Write(key); Current.Strings[key] = value;
+        if (ResetHomeOnStartupWrite && key == "db/appfw/startup_appid") {
+            Current.Main = "Firmware.Home"; Current.Strings[Policy.HomeKey] = "Firmware.Home";
+            ResetHomeOnStartupWrite = false;
+        }
+    }
     public void SetAutoStart(int value) {
         Write("auto"); Current.AutoStart = value;
         if (AutoSideEffects && value == 1) {
@@ -436,6 +443,22 @@ static class Program
                 catch { failed = true; }
                 Check(failed);
             }
+        });
+        Test("final mismatch evidence survives a successful automatic rollback", () => {
+            var fake = new Fake { SideEffects = true, ResetHomeOnStartupWrite = true };
+            var result = Policy.Execute(fake, Request());
+            Check(result.RolledBack && Policy.Same(result.After, Fake.Original()));
+            Check(result.Failure != null && result.Failure.Phase == "final");
+            Check(result.Failure.Expected.Main == Policy.Target && result.Failure.Observed.Main == "Firmware.Home");
+            Check((string)result.Failure.Differences[Policy.HomeKey].Observed == "Firmware.Home");
+            Check(result.Failure.Observed.Main != result.After.Main);
+        });
+        Test("uninstalled recovery keeps readback evidence without inventing success", () => {
+            var fake = new Fake { Installed = false, WatcherUnavailable = true, SilentMain = true }; Applied(fake);
+            var request = Request("restore"); request.LauncherAbsent = true;
+            var result = Policy.Execute(fake, request);
+            Check(!result.Success && !result.RolledBack && result.Failure != null);
+            Check(result.Failure.Observed.Main == Policy.Target && result.Failure.Expected.Main == "Samsung.Home");
         });
         ServiceDiagnosticsTests.Run();
         Console.WriteLine("POLICY_TESTS_PASSED=" + count); return 0;

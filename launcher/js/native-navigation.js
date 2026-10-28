@@ -51,6 +51,7 @@
   // avoids changes to the Frame Art Mode or physical-HOME watcher code.
 
   function openSamsungHome() {
+    if (window.AeroDiagnostics) { window.AeroDiagnostics.record('handoff.request', { action: 'samsung_home' }); }
     if (homePending) { return; }
     if (!tz || !tz.application || !tz.ApplicationControl) {
       A.toast('Samsung Home is unavailable on this device');
@@ -59,11 +60,13 @@
     homePending = true;
     function failed(reason) {
       homePending = false;
+      if (window.AeroDiagnostics) { window.AeroDiagnostics.record('handoff.failed', { action: 'samsung_home', reason: reason }); }
       rearmWatcher();
       A.toast('Could not open Samsung Home: ' + reason);
     }
     function succeeded() {
       homePending = false;
+      if (window.AeroDiagnostics) { window.AeroDiagnostics.record('handoff.accepted', { action: 'samsung_home' }); }
       // Leave HomeWatcher paused while native Samsung Home is visible.
     }
     function controlFallback() {
@@ -89,6 +92,7 @@
   // Unlike tvwindow's embedded TV picture, the native viewer owns
   // channel selection and remote-control interactions.
   function openNativeLiveTV(videoSource) {
+    if (window.AeroDiagnostics) { window.AeroDiagnostics.record('handoff.request', { action: 'live_tv' }); }
     if (livePending) { return true; }
     if (!tz || !tz.application || typeof tz.application.launch !== 'function') {
       // Older devices keep the upstream embedded TVWindow behaviour.

@@ -102,6 +102,8 @@ function harness(options = {}) {
     module: { exports: {} },
     require(name) {
       if (name === 'http') return http;
+      if (name === '../js/diagnostics') return require('../launcher/js/diagnostics');
+      if (name === './diagnostics-store') return (tz, ready) => ready(null);
       if (name === './artmode') return config => { artOptions = config; return art; };
       if (name === './home-mode') return require('../launcher/service/home-mode');
       if (name === './home-store') return (tz, ready) => ready(preference, !!options.storageReadFailed);
@@ -613,6 +615,34 @@ test('startup diagnostics cannot restart native polling or launch an app', () =>
   h.control('/startup?data={broken');
   h.advance(60000);
   assert.deepEqual(JSON.parse(JSON.stringify(h.state().startup)), trace);
+  assert.equal(h.requests.length, before); assert.equal(h.launches.length, 0);
+  assert.equal(h.art.starts, 0); assert.equal(h.state().homeControl.mode, 'native');
+});
+
+test('diagnostics enforce read access and batch limits without changing native Home mode', () => {
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(0);
+  h.handoff('hold'); h.handoff('native');
+  function request(method, url, headers, data) {
+    const req = new EventEmitter(); Object.assign(req, { method, url, headers });
+    let code, body;
+    h.servers[0].handler(req, { writeHead(value) { code = value; }, end(value) { body = JSON.parse(value); } });
+    if (data !== undefined) req.emit('data', typeof data === 'string' ? data : JSON.stringify(data));
+    req.emit('end'); return { code, body };
+  }
+  const event = { id: 'ui-event-1', at: 12, source: 'ui', event: 'ui.appcontrol', data: { password: 'PRIVATE', action: 'home' } };
+  const before = h.requests.length;
+  assert.equal(request('GET', '/diagnostics/logs', {}).code, 403);
+  assert.equal(request('GET', '/diagnostics/logs', { origin: 'https://evil.test', 'x-aerotizen-diagnostics': '1' }).code, 403);
+  assert.equal(request('POST', '/diagnostics/events', { origin: 'https://evil.test' }, [event]).code, 403);
+  assert.equal(request('POST', '/diagnostics/events', { origin: 'null' }, [event]).code, 200);
+  assert.equal(request('POST', '/diagnostics/events', {}, [Object.assign({}, event, { source: 'service' })]).code, 400);
+  assert.equal(request('POST', '/diagnostics/events', {}, Array(25).fill(event)).code, 400);
+  assert.equal(request('POST', '/diagnostics/events', {}, 'x'.repeat(16385)).code, 413);
+  const logs = request('GET', '/diagnostics/logs', { 'x-aerotizen-diagnostics': '1' });
+  assert.equal(logs.code, 200); assert.equal(logs.body.schema_version, 1);
+  assert.ok(logs.body.records.some(item => item.id === event.id));
+  assert.ok(!JSON.stringify(logs.body).includes('PRIVATE'));
+  h.advance(60000);
   assert.equal(h.requests.length, before); assert.equal(h.launches.length, 0);
   assert.equal(h.art.starts, 0); assert.equal(h.state().homeControl.mode, 'native');
 });
