@@ -31,3 +31,9 @@ PR #72 remains independent: its shared Weather API and solar selection files are
 changed by this migration. The integration branch will include its exact fix commit
 for compatibility testing while it remains unmerged. Native HOME, Live TV, YouTube,
 Prime Video, Continue Watching and weather service policy tests must remain green.
+
+Parity review follow-up: movement uses installed visible IDs, disappearing move/menu
+targets are cancelled safely, and visibility loss clears pending OK/menu state.
+The renderer honours optional active/recognised/manually pinned source capabilities
+without equating a pin with a live HDMI signal. Compiled lifecycle regressions cover
+these interruptions and stale inventory cases.

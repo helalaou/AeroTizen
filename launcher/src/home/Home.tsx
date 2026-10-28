@@ -48,7 +48,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
         {inputs.map(source => {
           const label = env.runtime.inputs.label(source), port = env.runtime.inputs.portName(source);
           const kind = source.type === 'TV' ? 'tv' : /xbox|playstation|ps\d|switch|nintendo|game|console/i.test(label) ? 'game' : /pc|computer|mac|laptop/i.test(label) ? 'pc' : /cable|box|roku|fire|apple|shield|chromecast|blu|dvd|satellite/i.test(label) ? 'box' : 'hdmi';
-          return <HomeControl key={port} env={env} controlKey={'input:' + source.type + ':' + source.number} className={'tile' + (!source.connected ? ' off' : '')} title={label}>
+          return <HomeControl key={port} env={env} controlKey={'input:' + source.type + ':' + source.number} className={'tile' + (source.connected === false && !source.active && !env.runtime.inputs.hasRecognizedDevice?.(source) && !env.runtime.inputs.alwaysVisible?.(source) ? ' off' : '')} title={label}>
             <span dangerouslySetInnerHTML={{ __html: (env.runtime.tiles as unknown as { ICONS: Record<string, string> }).ICONS[kind] }} />
             <div class="name">{label}{label !== port && source.type !== 'TV' ? <div class="sub">{port}</div> : null}</div>
           </HomeControl>;

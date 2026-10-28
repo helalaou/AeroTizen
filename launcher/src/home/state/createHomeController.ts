@@ -9,11 +9,19 @@ export const createHomeController = (env: Omit<HomeEnvironment, 'bridge' | 'stat
   const { runtime: A, settings, inventory, nodes } = env;
   const state = createStore<HomeState>({ page: 'home', selected: '', active: true, moving: null, draft: null, menu: null });
   let timer: number | undefined, enterDown = false, scroll = 0, started = false;
+  const cancelPress = () => {
+    if (timer !== undefined) { window.clearTimeout(timer); }
+    timer = undefined; enterDown = false;
+  };
   const update = (patch: Partial<HomeState>) => transaction(() => {
     const before = state.getSnapshot();
     if (Object.keys(patch).some(key => before[key as keyof HomeState] !== patch[key as keyof HomeState])) { state.set({ ...before, ...patch }); }
   });
-  const homeIds = () => state.getSnapshot().draft || (settings.getSnapshot().home.length || A.settings.home !== null ? settings.getSnapshot().home : [A.config.FIREPLACE_ID]);
+  const homeIds = () => {
+    const saved = state.getSnapshot().draft || (settings.getSnapshot().home.length || A.settings.home !== null ? settings.getSnapshot().home : [A.config.FIREPLACE_ID]);
+    // Movement must address the same visible IDs as the grid, not stale saved apps.
+    return saved.filter(id => id === A.config.FIREPLACE_ID || !inventory.getSnapshot().ready || A.apps.byId(id));
+  };
   const ids = () => state.getSnapshot().page === 'home' ? homeIds().filter(id => id === A.config.FIREPLACE_ID || !inventory.getSnapshot().ready || A.apps.byId(id)) : inventory.getSnapshot().apps.map(app => app.id);
   const sourceKey = (source: { type: string; number?: number }) => 'input:' + source.type + ':' + source.number;
   const rows = (): string[][] => {
@@ -27,10 +35,16 @@ export const createHomeController = (env: Omit<HomeEnvironment, 'bridge' | 'stat
     return result;
   };
   const focus = () => {
-    if (A.settingsUi?.isOpen()) { update({ active: false }); return; }
+    if (document.hidden || A.settingsUi?.isOpen()) { update({ active: false }); return; }
+    const pending = state.getSnapshot();
+    if (pending.moving && !ids().includes(pending.moving)) {
+      update({ moving: null, draft: null }); A.hideToast(); cancelPress();
+    }
+    if (pending.menu && !ids().includes(pending.menu.id)) { update({ menu: null }); cancelPress(); }
     const list = rows(), old = state.getSnapshot().selected;
     const selected = !started && list[1]?.[0] ? list[1][0] : list.some(row => row.includes(old)) ? old : list[1]?.[0] || 'home-tab';
     if (list[1]?.length) { started = true; }
+    if (old !== selected) { cancelPress(); }
     update({ selected, active: true });
     const node = nodes.get(selected), main = env.rows.current;
     if (!node || !main || A.settingsUi?.isOpen()) {return;}
@@ -53,16 +67,18 @@ export const createHomeController = (env: Omit<HomeEnvironment, 'bridge' | 'stat
     else if (y - scroll < 140) {scroll = Math.max(0, y - 140);}
     main.style.transform = 'translate3d(0,' + (-scroll) + 'px,0)';
   };
-  const select = (selected: string) => { update({ selected }); focus(); };
+  const select = (selected: string) => {
+    if (state.getSnapshot().selected !== selected) { cancelPress(); }
+    update({ selected }); focus();
+  };
   const endMove = () => {
     const draft = state.getSnapshot().draft;
-    if (draft) { settings.update({ home: [...draft] }); }
+    if (draft) { settings.update({ home: [...homeIds()] }); }
     update({ moving: null, draft: null }); A.hideToast();
   };
   const dismiss = () => { update({ menu: null }); focus(); };
   const showPage = (page: Page) => {
-    if (timer !== undefined) {window.clearTimeout(timer);}
-    timer = undefined;
+    cancelPress();
     endMove(); scroll = 0;
     update({ page, menu: null, selected: page === 'home' ? 'home-tab' : 'apps-tab' }); focus();
   };
@@ -160,6 +176,6 @@ export const createHomeController = (env: Omit<HomeEnvironment, 'bridge' | 'stat
     if (!state.getSnapshot().menu && !state.getSnapshot().moving) {activate(state.getSnapshot().selected);}
   };
   const bridge = { render: focus, buildRows: focus, refreshApps: focus, focus,
-    blur() { if (timer !== undefined) {window.clearTimeout(timer);} timer = undefined; enterDown = false; update({ active: false, menu: null }); }, keydown, keyup };
+    blur() { cancelPress(); update({ active: false, menu: null }); }, keydown, keyup };
   return { ...env, state, bridge, select, activate, showPage, choose, dismiss, menuChoices };
 };
