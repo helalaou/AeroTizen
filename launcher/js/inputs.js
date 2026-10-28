@@ -45,12 +45,15 @@
     return true;
   };
 
+  inputs.alwaysVisible = function (s) {
+    return !!(s && s.type === 'HDMI' && (A.settings.hdmiKeepVisible || {})[String(s.number)] === true);
+  };
+
   inputs.isVisible = function (s) {
     if (s.type === 'TV') { return A.settings.showLiveTv !== false; }
     if (s.type !== 'HDMI' || A.settings.hideDisconnectedHdmi !== true) { return true; }
-    var manual = A.settings.hdmiKeepVisible || {};
     return s.connected === true || s.active === true ||
-      inputs.hasRecognizedDevice(s) || manual[String(s.number)] === true;
+      inputs.hasRecognizedDevice(s) || inputs.alwaysVisible(s);
   };
 
   inputs.render = function () {
@@ -64,7 +67,7 @@
       var tile = A.tiles.card(label, iconFor(s, label), function () { inputs.show(s); });
       if (label !== port && s.type !== 'TV') { tile.querySelector('.name').appendChild(A.el('div', 'sub', port)); }
       // A sleeping, recognised device is reachable: do not label it as empty.
-      if (s.connected === false && !s.active && !inputs.hasRecognizedDevice(s)) { tile.classList.add('off'); }
+      if (s.connected === false && !s.active && !inputs.hasRecognizedDevice(s) && !inputs.alwaysVisible(s)) { tile.classList.add('off'); }
       row.appendChild(tile);
     });
     A.homeScreen.buildRows();

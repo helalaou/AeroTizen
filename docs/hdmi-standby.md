@@ -15,3 +15,8 @@ and settings persistence. The browser regression exercises compiled controls, cu
 labels, standby filtering and reload persistence. The adapted build still requires
 physical S90C validation, especially firmware-specific VIDEOSOURCE names and hot-plug.
 No TV has been contacted by the development/test suite.
+
+Manual visibility is reachability rather than evidence of a live signal. A pinned
+port remains undimmed as in the reference, while its native disconnected state is
+unchanged. The Preact dock may label it PINNED; a configured Samsung label is
+RECOGNISED, not proof that a device is physically connected or actually asleep.

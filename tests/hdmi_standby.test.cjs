@@ -152,7 +152,9 @@ test('manual per-port exception preserves an unidentified but explicitly selecte
   });
   h.A.inputs.load();
   assert.deepEqual(h.tiles.map(x => x.name), ['HDMI 2']);
-  assert.equal(h.tiles[0].classes.has('off'), true, 'override must not claim a signal');
+  assert.equal(h.tiles[0].classes.has('off'), false, 'a pinned port remains reachable');
+  assert.equal(h.A.inputs.sources[1].connected, false, 'pinning must not invent a signal');
+  assert.equal(h.A.inputs.alwaysVisible(h.A.inputs.sources[1]), true);
   h.A.settings.hdmiKeepVisible = {};
   h.A.inputs.render();
   assert.equal(h.tiles.length, 0);
