@@ -154,13 +154,16 @@ function watcherHarness() {
     // Art Mode is never queried on a non-Frame TV, so its client is a stub here.
     require: name => name === 'http' ? http
       : name === './artmode' ? () => ({ start() {}, stop() {}, fresh() {}, getState: () => ({}) })
+      : name === './home-mode' ? require('../launcher/service/home-mode')
+      : name === './home-store' ? (tz, ready) => ready(null, false)
       : require(name),
     module: { exports: {} },
     tizen: { application: { launch: id => launches.push(id) } },
     Date: { now: () => now },
     setInterval: fn => { tick = fn; },
     setTimeout() {},
-    clearTimeout() {}
+    clearTimeout() {},
+    clearInterval() {}
   });
   vm.runInContext(fs.readFileSync(path.join(launcher, 'service', 'index.js'), 'utf8'), context);
   context.module.exports.onStart();

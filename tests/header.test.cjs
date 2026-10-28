@@ -112,5 +112,5 @@ test('delayed network responses and change listeners cannot reveal a hidden indi
   h.A.settings.showNetwork = true;
   h.A.network.updateVisibility();
   assert.equal(indicator.hasAttribute('hidden'), false);
-  assert.equal(indicator.getAttribute('aria-label'), 'Wi-Fi');
+  assert.equal(indicator.getAttribute('aria-label'), 'Network status unavailable');
 });

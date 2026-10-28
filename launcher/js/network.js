@@ -2,9 +2,10 @@
 (function (A) {
   'use strict';
 
-  var tz = A.tizen;
+  var tz = A.tizen, started = false, serial = 0;
   var ICONS = {
     ethernet: '<path fill="currentColor" d="M8 3h8v4h3v6h-3v3h-2v5h-4v-5H8v-3H5V7h3zm2 2v4H7v2h10V9h-3V5z"/>',
+    unknown: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 12h18M12 3v18" fill="none" stroke="currentColor" stroke-width="1.5"/>',
     offline: '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M3 3l18 18M8.5 16.5a5 5 0 0 1 7 0M5 12.6a10 10 0 0 1 3.6-2.2M12 7.5a14 14 0 0 1 9 3.6M2 9.1a14 14 0 0 1 3-1.9"/>'
   };
 
@@ -21,8 +22,12 @@
 
   function show(kind, strength) {
     var el = A.$('network');
-    el.innerHTML = kind === 'ethernet' ? ICONS.ethernet : kind === 'offline' ? ICONS.offline : wifi(strength);
-    el.setAttribute('aria-label', kind === 'ethernet' ? 'Ethernet' : kind === 'offline' ? 'Offline' : 'Wi-Fi');
+    el.innerHTML = kind === 'wifi' ? wifi(strength) : (ICONS[kind] || ICONS.unknown);
+    el.setAttribute('data-net-kind', kind);
+    el.setAttribute('data-net-level', strength === undefined ? 'unknown' : String(strength));
+    var label = kind === 'ethernet' ? 'Ethernet' : kind === 'offline' ? 'Offline' :
+      kind === 'wifi' ? (strength === undefined ? 'Wi-Fi (signal unavailable)' : 'Wi-Fi') : 'Network status unavailable';
+    el.setAttribute('aria-label', A.i18n ? A.i18n.t(label) : label);
     el.classList.toggle('offline', kind === 'offline');
   }
 
@@ -34,21 +39,44 @@
   }
 
   function refresh() {
-    if (!tz || !tz.systeminfo) { return show(navigator.onLine === false ? 'offline' : 'wifi'); }
+    var request = ++serial;
+    function unknown() {
+      if (request === serial) { show(navigator.onLine === false ? 'offline' : 'unknown'); }
+    }
+    if (!tz || !tz.systeminfo) { return unknown(); }
     try {
       tz.systeminfo.getPropertyValue('NETWORK', function (net) {
+        if (request !== serial) { return; }
         var type = net && net.networkType;
         if (type === 'ETHERNET') { return show('ethernet'); }
-        if (type === 'NONE' || !type) { return show('offline'); }
-        tz.systeminfo.getPropertyValue('WIFI_NETWORK', function (w) { show('wifi', w && w.signalStrength); },
-          function () { show('wifi'); });
-      }, function () { show('wifi'); });
-    } catch (e) { show('wifi'); }
+        if (type === 'NONE') { return show('offline'); }
+        if (type !== 'WIFI') { return unknown(); }
+        // Samsung exposes discrete levels 1..5 on supported televisions.
+        // Keep the standard 0..1 Tizen signal as a capability fallback.
+        try {
+          var network = window.webapis && window.webapis.network;
+          var level = network && network.getWiFiSignalStrengthLevel && network.getWiFiSignalStrengthLevel();
+          if (typeof level === 'number' && isFinite(level) && Math.floor(level) === level && level >= 1 && level <= 5) {
+            return show('wifi', level >= 4 ? 1 : level >= 2 ? 0.5 : 0.2);
+          }
+        } catch (ignored) { /* Unsupported or denied: try the standard API. */ }
+        try {
+          tz.systeminfo.getPropertyValue('WIFI_NETWORK', function (w) {
+            if (request !== serial) { return; }
+            var strength = w && w.signalStrength;
+            show('wifi', typeof strength === 'number' && isFinite(strength) && strength >= 0 && strength <= 1 ? strength : undefined);
+          }, function () { if (request === serial) { show('wifi'); } });
+        } catch (ignored) { if (request === serial) { show('wifi'); } }
+      }, unknown);
+    } catch (e) { unknown(); }
   }
 
   A.network = {
     updateVisibility: updateVisibility,
+    refresh: refresh,
     start: function () {
+      if (started) { return; }
+      started = true;
       updateVisibility();
       refresh();
       if (tz && tz.systeminfo) {

@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-24",
+  "state": "completed",
+  "device": {
+    "model": "QE65LS03DAUXXU",
+    "os_version": "9.0.0",
+    "firmware_build": "T-PTMDDEUC-0090-REL-202605141701",
+    "cpu_arch": "armv7"
+  },
+  "root_used": false,
+  "local_validation": {
+    "python_tests": 225,
+    "native_policy_scenarios": 31,
+    "packaging_tests": 17,
+    "standalone_cli_build_and_smoke": "passed",
+    "standalone_cli_device_query": "passed"
+  },
+  "boot_configuration": {
+    "success": true,
+    "writer_uid": 901,
+    "auto_start": 1,
+    "first_screen_preserved": true,
+    "startup_ids_derived_by_tv": true,
+    "watcher_mode": "native"
+  },
+  "restore_rehearsal": {
+    "success": true,
+    "exact_original_snapshot": true,
+    "original_backup_sha256": "b7f679e71da57f86361a94e78454a0020a9cd979a54e94a6f536ef07bddf89f7"
+  },
+  "art_before_cold_boot": {
+    "physical_observation_seconds": 60,
+    "user_result": "Artwork stays visible",
+    "api_result": "on",
+    "watcher_polls_added": 0,
+    "watcher_art_queries_added": 0,
+    "watcher_launches_added": 0,
+    "api_samples": 7,
+    "api_span_seconds": 60.03,
+    "api_observer": "Read-only Mac client; native-mode service itself sends no Art queries",
+    "return_home": {
+      "first_home_press": "Samsung Home",
+      "second_home_press": "AeroTizen",
+      "evidence": "Direct user confirmations",
+      "native_assignments_unchanged": true
+    }
+  },
+  "cold_boot": {
+    "state": "passed",
+    "before_boot_id_sha256": "6af56aeb26d3ba0a34c4fd654c99f99422157b09597fbe9a4d20c9e2b3e23789",
+    "before_uptime_seconds": 12723.61,
+    "after_boot_id_sha256": "62fb5c319be8bd28facbe500eda086870b2d0c3a694a883add724d21930837ec",
+    "kernel_boot_id_changed": true,
+    "native_settings_persisted": true,
+    "watcher_state_persisted": true,
+    "watcher_polls": 0,
+    "watcher_art_queries": 0,
+    "watcher_launch_calls": 0,
+    "user_screen_result": "AeroTizen appeared by itself after an initial black screen and a long delay",
+    "startup_duration_seconds": null,
+    "initial_service_readiness": "Unavailable at the first query, available on the next check; no manual service launch",
+    "initial_http_readiness": "Connection refused at first, then recovered without intervention"
+  },
+  "after_cold_boot_art": {
+    "state": "passed",
+    "user_result": "Artwork stays visible",
+    "physical_observation_seconds": 60,
+    "api_samples": 7,
+    "monitor_duration_seconds": 60.05,
+    "api_observation_span_seconds": 59.54,
+    "api_result": "All samples on",
+    "watcher_polls": 0,
+    "watcher_art_queries": 0,
+    "watcher_launch_calls": 0
+  },
+  "final_configuration": {
+    "user_choice": "Leave native Home and boot enabled",
+    "home_mode": "native",
+    "auto_start": 1,
+    "watcher_mode": "native",
+    "art_mode": "on, confirmed by user and read-only API",
+    "original_backup_unchanged": true
+  },
+  "limits": [
+    "Startup had an initial black screen and a long unmeasured delay",
+    "Art exit first opens Samsung Home; a second Home press opens AeroTizen",
+    "Only the recorded Frame and firmware were tested"
+  ]
+}

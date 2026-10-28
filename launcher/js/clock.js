@@ -6,7 +6,7 @@
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
                 'September', 'October', 'November', 'December'];
 
-  var timeWidths = {};
+  var timeWidths = {}, listeners = [];
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
@@ -172,9 +172,14 @@
     timeEl.setAttribute('data-format', A.settings.timeFormat === '24' ? '24' : '12');
     timeEl.textContent = formatTime(d, A.settings.timeFormat);
     sizeTime(timeEl, A.settings.timeFormat);
+    listeners.slice().forEach(function (listener) { listener(); });
   }
 
   A.clock = {
+    subscribe: function (listener) {
+      listeners.push(listener);
+      return function () { var index = listeners.indexOf(listener); if (index >= 0) { listeners.splice(index, 1); } };
+    },
     DATE_FORMATS: DATE_FORMATS,
     dateStyle: dateStyle,
     defaultTimeFormat: defaultTimeFormat,

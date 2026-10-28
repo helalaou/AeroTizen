@@ -118,6 +118,44 @@ test('unknown IDs remain unknown and preloaded mappings do not use name aliases'
   assert.equal(A.catalog.preloadedStoreId('9Ur5IzDKqV.TizenYouTube'), null);
 });
 
+test('preloaded Apple TV resolves its store ID and branding by ID', () => {
+  const { A } = runtime();
+  assert.equal(A.catalog.preloadedStoreId('com.samsung.tv.aria-video'), '3201807016597');
+  for (const id of ['com.samsung.tv.aria-video', '3201807016597']) {
+    const app = { id, name: 'YouTube' };
+    assert.equal(A.catalog.artworkStoreId(app), '3201807016597');
+    assert.equal(A.catalog.brand(app).logo.slug, 'appletv');
+  }
+});
+
+test('preloaded Apple TV passes discovery and uses its store ID in the watcher inventory', () => {
+  const { A } = runtime();
+  const appleTV = {
+    id: 'com.samsung.tv.aria-video', packageId: 'com.samsung.tv.aria-video',
+    name: 'Apple TV', iconPath: 'apple-tv.png', show: true
+  };
+  const installed = [appleTV, { id: 'unrelated.native', packageId: 'unrelated.native', name: 'Apple TV', show: true }];
+  A.tizen = { application: {
+    getAppsInfo(done) { done(installed); }
+  } };
+  const context = vm.createContext({ window: { AeroTizen: A }, AeroTizen: A });
+  vm.runInContext(script('config.js'), context);
+  vm.runInContext(script('apps.js'), context);
+  assert.equal(A.config.STORE_PACKAGE.test(appleTV.packageId), false);
+  let loaded = false;
+  A.apps.load(() => { loaded = true; });
+  assert.equal(loaded, true);
+  assert.deepEqual(Array.from(A.apps.all, app => ({ ...app })), [
+    { id: appleTV.id, name: 'Apple TV', icon: 'apple-tv.png' }
+  ]);
+  assert.deepEqual(Array.from(A.apps.realIds), ['3201807016597']);
+
+  appleTV.show = false;
+  A.apps.load(() => {});
+  assert.equal(A.apps.all.length, 0);
+  assert.equal(A.apps.realIds.length, 0);
+});
+
 test('watcher requests keep the preloaded store IDs from the shared catalogue', () => {
   const requests = [], A = { tizen: {} };
   class Request {
@@ -133,10 +171,12 @@ test('watcher requests keep the preloaded store IDs from the shared catalogue', 
   }
   A.homewatch.watch('org.tizen.netflix-app');
   A.homewatch.watch('org.tizen.primevideo');
+  A.homewatch.watch('com.samsung.tv.aria-video');
   A.homewatch.watch('normal.app');
   assert.deepEqual(requests, [
     { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=3201907018807' },
     { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=3201910019365' },
+    { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=3201807016597' },
     { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=normal.app' }
   ]);
 });

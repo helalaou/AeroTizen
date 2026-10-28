@@ -5,6 +5,20 @@
 
   var tz = A.tizen, ICONS = A.tiles.ICONS;
   var inputs = A.inputs = { sources: [], watching: false };
+  var listeners = [];
+
+  inputs.subscribe = function (listener) {
+    listeners.push(listener);
+    return function () {
+      var index = listeners.indexOf(listener);
+      if (index >= 0) { listeners.splice(index, 1); }
+    };
+  };
+
+  function publish() {
+    listeners.slice().forEach(function (listener) { listener(); });
+    inputs.render();
+  }
 
   inputs.portName = function (s) { return s.type === 'TV' ? 'Live TV' : s.type + ' ' + s.number; };
 
@@ -63,7 +77,7 @@
         { type: 'HDMI', number: 1, editName: 'Xbox', connected: true }, { type: 'HDMI', number: 2, connected: false },
         { type: 'HDMI', number: 3, editName: 'PC', connected: false }, { type: 'TV', number: 1, connected: true }
       ];
-      return inputs.render();
+      return publish();
     }
     try {
       tz.systeminfo.getPropertyValue('VIDEOSOURCE', function (info) {
@@ -98,12 +112,17 @@
           return (a.type === 'TV') - (b.type === 'TV') ||
             (Number(b.connected) - Number(a.connected)) || a.number - b.number;
         });
-        inputs.render();
+        publish();
       }, inputs.render);
     } catch (e) { inputs.render(); }
   };
 
   inputs.show = function (s) {
+    // Native Live TV owns channel selection and remote control, unlike the
+    // upstream embedded TVWindow. If unsupported, preserve TVWindow fallback.
+    if (s && s.type === 'TV' && A.homewatch &&
+        typeof A.homewatch.openNativeLiveTV === 'function' &&
+        A.homewatch.openNativeLiveTV(s.raw || s) !== false) { return; }
     if (!tz || !tz.tvwindow) { return A.toast('Would switch to ' + inputs.label(s)); }
     try {
       tz.tvwindow.setSource(s.raw || s, function () {

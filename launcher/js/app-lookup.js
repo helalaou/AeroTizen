@@ -36,5 +36,6 @@
     var match = find(app, 'brand');
     return match ? match.entry.fallback || null : null;
   };
+  catalog.storeId = function (appId) { return byId[appId] ? byId[appId].storeId : null; };
   catalog.preloadedStoreId = function (appId) { return preloaded[appId] || null; };
 })(window.AeroTizen);

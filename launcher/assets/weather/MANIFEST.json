@@ -1,0 +1,73 @@
+{
+  "reference_commit": "c9c34bf0b8478bf1c156b41c0568f475f008d272",
+  "dimensions": [
+    1920,
+    1080
+  ],
+  "encoding": "baseline JPEG, quality 82, optimize, subsampling 2",
+  "assets": [
+    {
+      "file": "cloud.jpg",
+      "reference_sha256": "c9532825d193ded22e45acbd9e39a2f2d94d2fe03cd77225b2c2c34893d12688",
+      "sha256": "c1d73ecb6d6396a8761571d3ae08207ed44a06bc4e7bc3afb1235548af4421af",
+      "reference_bytes": 569765,
+      "bytes": 344604
+    },
+    {
+      "file": "fog.jpg",
+      "reference_sha256": "d8abe8455d139c7594772a3d0a8f543faeea3cd815b3b4eaf7cd90c58cfc768a",
+      "sha256": "d27d16387a1ded4cfbd39c3f8d478a93560e955afd4eccc6f6ee8e34549e06ca",
+      "reference_bytes": 177519,
+      "bytes": 166956
+    },
+    {
+      "file": "night.jpg",
+      "reference_sha256": "c1159fef85d426ac058063b1c37ddc15a4bc76cea6f21123b3aad3c9f4deae56",
+      "sha256": "4fec1d5849da7dd97a27a657d0428ab8be20a1a1b8b0d72eb5734b218d88c6b8",
+      "reference_bytes": 482696,
+      "bytes": 281661
+    },
+    {
+      "file": "partly.jpg",
+      "reference_sha256": "e842d351b69820b1f8f1617c9498fe9e6a7a45cf7f0f594c865ab41fcd0eda4c",
+      "sha256": "b369912fc798696185b7e25c3f32a2bbbca9ad6de9bdc25b031208515e272398",
+      "reference_bytes": 603793,
+      "bytes": 367193
+    },
+    {
+      "file": "rain.jpg",
+      "reference_sha256": "be44bf3f86ee212f7b8bae1c3c64bb5001edae80a0db838365ff6a29d7c33286",
+      "sha256": "a1ed59e7d85347790f8789b732cf4afeabc1a7f94a8d896e438dbe9f16cd1908",
+      "reference_bytes": 525983,
+      "bytes": 311244
+    },
+    {
+      "file": "snow.jpg",
+      "reference_sha256": "a3aad5da437c8ea123389e9d27f579de5664034eb086cf93f61881612cf0588b",
+      "sha256": "71d51afb5a3ba0dbaf12c7b4f9fc75bec312d64ba1141af1c9f7ee9db558b1c9",
+      "reference_bytes": 238527,
+      "bytes": 222628
+    },
+    {
+      "file": "storm.jpg",
+      "reference_sha256": "ac83df3346eeb9220c46021117b33da5efb7c8347ace7e5368edf6568767218f",
+      "sha256": "d6ade23980d1af57d59f2d4a012c02685b5337bcc3b2b153bfbc29251f8656dd",
+      "reference_bytes": 145893,
+      "bytes": 133194
+    },
+    {
+      "file": "sun.jpg",
+      "reference_sha256": "e5cb0e7e3af2609dfe444365209c903614b90febd2dc4c5862c9569134149844",
+      "sha256": "7e3563ae982d918c38d5575393adafe02cddc2dfa6c39249e09d721533a64863",
+      "reference_bytes": 605766,
+      "bytes": 365741
+    },
+    {
+      "file": "sunset.jpg",
+      "reference_sha256": "af7494e69fa5e711b297e03749bb4bf2a6d7b18647ec12828dd4510d0cda1775",
+      "sha256": "8739e737041ecff691ffb8261ddcf67bf63aced6205272d42b21dd2ff365149a",
+      "reference_bytes": 739135,
+      "bytes": 392437
+    }
+  ]
+}

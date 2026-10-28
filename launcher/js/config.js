@@ -35,6 +35,7 @@ AeroTizen.config = {
     home: null,  // null selects defaults on first launch; [] keeps an empty Home.
     cardSize: 'big',
     background: 'aurora',
+    weatherPhoto: false,  // Opt-in AI-generated scenes using the existing forecast.
     speed: 1,
     showWeather: true,
     showTime: true,
@@ -44,6 +45,8 @@ AeroTizen.config = {
     weatherShowLocation: true,
     dateFormat: 'short',
     timeFormat: null,  // Detect 12/24-hour format when first loaded.
+    continueWatching: false,
+    continueWatchingApps: [],
     showLiveTv: true,
     hideDisconnectedHdmi: false,
     hdmiKeepVisible: {},  // Optional per-port exception for an unidentified device.

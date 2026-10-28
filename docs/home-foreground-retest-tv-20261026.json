@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "tested_on": "2026-10-26",
+  "source_head": "70662156d4f607196dbe17696671ca360dd869db",
+  "upstream_main": "e23b6c669031bcc8763d31d6d841b3ff7f30b03f",
+  "tv": {
+    "model": "QE65LS03DAUXXU",
+    "tizen": "9.0.0",
+    "firmware": "T-PTMDDEUC-0090-REL-202605141701"
+  },
+  "setup": {
+    "clean_uninstall_reinstall": true,
+    "runtime_files_verified_before_restart": 33,
+    "supported_preferences_restored": true,
+    "continue_watching_data_restored": false,
+    "full_restart_confirmed": true,
+    "debugger_opened_after_restart": false,
+    "root_used": false,
+    "native_profile": {
+      "home": true,
+      "boot": true,
+      "art_return": true
+    }
+  },
+  "physical_results": [
+    {
+      "test": "Automatic startup after full restart",
+      "result": "pass; user saw AeroTizen open by itself",
+      "startup_seconds": "not measured in this run"
+    },
+    {
+      "test": "YouTube; wait 30 seconds; Home once",
+      "result": "fail; persistent loading spinner",
+      "retry": "Back and retry opened AeroTizen"
+    },
+    {
+      "test": "Repeat YouTube Home; leave spinner for capture",
+      "result": "fail; spinner remained after 30 seconds"
+    },
+    {
+      "test": "One ordinary SDK launcher request during spinner",
+      "result": "pass; user confirmed AeroTizen visible"
+    },
+    {
+      "test": "Prime Video; wait 30 seconds; Home once",
+      "result": "fail; persistent loading spinner"
+    },
+    {
+      "test": "Manifest-only trial: remove reload=disable; YouTube Home",
+      "result": "fail; spinner remained",
+      "rollback": "Exact original signed PR49 package reinstalled and normally launched"
+    },
+    {
+      "test": "Original package restored; plain and Home-flagged direct launches completed; then YouTube, wait 30 seconds, physical Home once",
+      "result": "fail; spinner stays"
+    }
+  ],
+  "failed_state": {
+    "launcher_running": true,
+    "launcher_visible": false,
+    "same_device_and_kernel_boot": true,
+    "native_settings_unchanged": true,
+    "persistent_native_control_unchanged": true,
+    "watcher_heartbeats": 0,
+    "watcher_launch_calls": 0,
+    "samsung_menu_escape_requested_before_failure": false
+  },
+  "capture_limits": [
+    "The service startup snapshot is not a live feed of every app-control event.",
+    "The native warning capture returned no matching launch diagnostics.",
+    "Reading the installed manifest through SDB was unavailable; the trial installer confirmed success and version.",
+    "No fresh power-to-screen timing was supplied."
+  ],
+  "recovery": {
+    "pc_original_and_transaction_receipts_preserved": true,
+    "failed_manifest_trial_reverted": true,
+    "original_package_sha256": "686faa719e7076642826d69bd13e99e967bb980eb291be31578bf950c73e57cc",
+    "temporary_probe_staging_cleaned": true,
+    "final_launcher_visible_by_tv_api": true,
+    "native_settings_and_recovery_transaction_unchanged_at_end": true
+  },
+  "conclusion": "Native Home return remains unreliable on the clean merged build. Samsung-menu escape is not the only observed trigger. The underlying foreground-resume failure is not yet resolved.",
+  "sdk_launch_comparison": {
+    "plain_request_foregrounded": true,
+    "home_flagged_request_foregrounded": true,
+    "selected_flags": {
+      "entry_point": "smarthub_key",
+      "SkipReload": "Yes"
+    },
+    "scope": "Selected extra-data keys sent from SDK UID 901; not a reproduction of the full Samsung caller context or physical Home event",
+    "inference": "These two extra-data values alone did not reproduce the physical Home failure."
+  },
+  "follow_up": "home-profile-isolation-tv-20261026.json"
+}
