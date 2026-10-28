@@ -177,6 +177,10 @@ def build_cli(root, output, tag=None):
             'import os\nimport certifi\nos.environ.setdefault("SSL_CERT_FILE", certifi.where())\n',
             encoding="utf-8",
         )
+        from aerotizen.build_info import describe
+
+        build_info = work / "_build.json"
+        build_info.write_text(json.dumps(describe(root, version)), encoding="utf-8")
         binaries = []
         for name, module in ENTRYPOINTS.items():
             # Do not name the entry script aerotizen.py: it would shadow the package.
@@ -200,6 +204,8 @@ def build_cli(root, output, tag=None):
                     "aerotizen",
                     "--collect-data",
                     "certifi",
+                    "--add-data",
+                    str(build_info) + os.pathsep + "aerotizen",
                     "--runtime-hook",
                     str(tls_hook),
                     "--distpath",

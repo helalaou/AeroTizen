@@ -13,6 +13,7 @@ const appsSource = get('js/apps.js');
 function harness(options = {}) {
   const requests = [], launches = [], inputs = [], embedded = [], toasts = [], timers = [];
   const listeners = {}, watch = [], resume = [];
+  const log = require('../launcher/js/diagnostics')('ui', { later: (fn, ms) => { timers.push({ fn, ms }); } });
   function Request() {
     this.status = 0;
     this.open = (method, url) => { this.method = method; this.url = url; };
@@ -82,7 +83,7 @@ function harness(options = {}) {
     applyBackground() {}
   };
   const window = {
-    AeroTizen: A,
+    AeroTizen: A, AeroDiagnostics: log,
     addEventListener(name, handler) { listeners[name] = handler; },
     setTimeout(fn, ms) { timers.push({ fn, ms }); },
     Backgrounds: { hide() {} }
@@ -92,7 +93,7 @@ function harness(options = {}) {
   vm.runInNewContext(inputSource, context, { filename: 'inputs.js' });
   vm.runInNewContext(appsSource, context, { filename: 'apps.js' });
   return { A, tz, requests, launches, inputs, embedded, watch, resume, toasts, timers, listeners,
-    document };
+    document, log };
 }
 
 test('YouTube/Cobalt waits for a confirmed /leave before starting', () => {
@@ -236,4 +237,26 @@ test('port does not replace the upstream Frame-aware watcher service', () => {
   assert.match(service, /FRAME_HIDDEN_GRACE/);
   assert.match(service, /createArtMode/);
   assert.doesNotMatch(nativeSource, /app_operation_set_current_app|vconf_set_str/);
+});
+
+
+test('launch outcomes correlate with requests and preserve failure handoffs', () => {
+  const h = harness(); h.A.apps.launch({ id: 'prime.app', name: 'Prime Video' });
+  const records = h.log.snapshot().records;
+  assert.deepEqual(records.map(item => item.event), ['app.launch_requested', 'app.launch_accepted']);
+  assert.equal(records[1].data.operation_id, records[0].id);
+  const failed = harness({ launchFails: 'youtube.app' });
+  failed.A.apps.launch({ id: 'youtube.app', name: 'YouTube' }); failed.requests[0].resolve(200);
+  // Deferred error processing must not prevent /home rearm.
+  assert.equal(failed.requests[1].url, 'http://127.0.0.1:47790/home');
+  failed.timers.filter(timer => timer.ms === 0).forEach(timer => timer.fn());
+  const error = failed.log.snapshot().records.at(-1);
+  assert.equal(error.event, 'app.launch_failed'); assert.equal(error.data.error, 'Denied');
+  assert.equal(error.data.operation_id, failed.log.snapshot().records[0].id);
+});
+
+test('Live TV acceptance remains separate from unconfirmed visibility', () => {
+  const h = harness({ visible: true }); h.A.homewatch.openNativeLiveTV(); h.requests[0].resolve(200);
+  h.timers.find(timer => timer.ms === 2100).fn();
+  assert.deepEqual(h.log.snapshot().records.map(item => item.event), ['handoff.request', 'handoff.accepted', 'handoff.visibility_unconfirmed']);
 });

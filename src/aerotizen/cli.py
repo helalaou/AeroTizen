@@ -342,6 +342,7 @@ def wait_on_screen(host, app_id, seconds=12.0):
 
 def cmd_launch(args):
     host = pick_tv(args)
+    diagnostics.event("app.launch_requested", app_id=args.appid)
     accepted, reply = remote.rest_launch(host, args.appid)
     print(f"REST launch: {reply}")
     if not accepted:
@@ -353,7 +354,13 @@ def cmd_launch(args):
             accepted = answer in (200, "200")  # TVs that reply send 200 on success, an error code otherwise
         except Exception as e:
             print(f"remote-channel launch failed: {e}")
+    diagnostics.event("app.launch_result", app_id=args.appid, accepted=accepted)
     status = wait_on_screen(host, args.appid)
+    diagnostics.event(
+        "app.visibility",
+        app_id=args.appid,
+        status="confirmed" if status and status.get("visible") else "unconfirmed",
+    )
     if status is None:
         print(f"{args.appid}: the TV doesn't report this app's state. Check the screen.")
         if not accepted:
@@ -468,7 +475,11 @@ def cmd_logs(args):
             diagnostics.open_logs(STATE_DIR)
             return
         output = args.output or Path(f"aerotizen-diagnostics-{datetime.datetime.now():%Y%m%d-%H%M%S}.zip")
-        path, tv_state = diagnostics.export_logs(STATE_DIR, output, args.tv)
+        if getattr(args, "include_home", False) and not args.tv:
+            sys.exit("Use --tv TV_IP with --include-home.")
+        path, tv_state = diagnostics.export_logs(
+            STATE_DIR, output, args.tv, include_home=getattr(args, "include_home", False)
+        )
         print(f"Diagnostic report: {path}")
         print(f"TV logs: {tv_state}. Recovery backups and credentials are excluded.")
     except (OSError, ValueError) as error:
@@ -547,6 +558,11 @@ def main():
     commands.add_parser("open", help="open the local log folder").set_defaults(fn=cmd_logs)
     p = commands.add_parser("export", help="export PC logs; add --tv IP to also fetch TV logs")
     p.add_argument("--output", type=Path, help="new ZIP path; existing files are never overwritten")
+    p.add_argument(
+        "--include-home",
+        action="store_true",
+        help="also collect a read-only SDK Home snapshot (may take up to 35 seconds)",
+    )
     p.set_defaults(fn=cmd_logs)
     args = parser.parse_args()
     diagnostics.run_logged(args, args.fn, STATE_DIR)

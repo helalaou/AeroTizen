@@ -13,6 +13,8 @@ var http = require('http');
 var createArtMode = require('./artmode');
 var diagnostics = { record: function () {}, flushStorage: function () {}, attach: function () {}, ingest: function () { return false; }, snapshot: function () { return { schema_version: 1, records: [] }; } };
 try { diagnostics = require('../js/diagnostics')('service'); } catch (e) { /* optional diagnostics */ }
+var diagnosticContext = { start: function () {}, accept: function () {}, enrich: function (value) { return value; } };
+try { diagnosticContext = require('./diagnostics-context')(); } catch (e) { /* optional metadata */ }
 var SELF = 'DclHome001.Home';
 var HIDDEN_GRACE = 250;         // non-Frame: Samsung Home appears almost at once
 var FRAME_HIDDEN_GRACE = 1500;  // Frame: give Art Mode time to report before reclaiming
@@ -418,7 +420,7 @@ function diagnosticRequest(req, res, pathname) {
   }
   if (pathname === '/diagnostics/logs') {
     if (req.method !== 'GET' || headers.origin || headers['x-aerotizen-diagnostics'] !== '1') { reply(403, { error: 'Developer connection required' }); return; }
-    reply(200, diagnostics.snapshot()); return;
+    reply(200, diagnosticContext.enrich(diagnostics.snapshot(), homeMode.read(), state)); return;
   }
   if (req.method !== 'POST' || (headers.origin && headers.origin !== 'null' && headers.origin !== 'file://')) {
     reply(403, { error: 'Local launcher events required' }); return;
@@ -434,10 +436,12 @@ function diagnosticRequest(req, res, pathname) {
   req.on('end', function () {
     if (finished) { return; } finished = true;
     try {
-      var events = JSON.parse(body);
+      var packet = JSON.parse(body);
+      var events = Array.isArray(packet) ? packet : packet && packet.schema_version === 1 ? packet.records : null;
       if (!Array.isArray(events) || events.length > 24 || events.some(function (item) { return !item || item.source !== 'ui'; }) || !diagnostics.ingest(events)) {
         reply(400, { error: 'Invalid event batch' }); return;
       }
+      diagnosticContext.accept(packet);
       reply(200, { schema_version: 1, accepted: events.length });
     } catch (e) { reply(400, { error: 'Invalid event batch' }); }
   });
@@ -446,6 +450,7 @@ module.exports.onStart = function () {
   if (started) { return; }
   started = true;
   diagnostics.record('service.start');
+  setTimeout(function () { diagnosticContext.start(); }, 0);
   try { require('./diagnostics-store')(typeof tizen !== 'undefined' ? tizen : null, function (storage) { if (storage) { diagnostics.attach(storage); } }); } catch (e) { /* optional log storage */ }
   server = http.createServer(function (req, res) {
     var url = require('url').parse(req.url, true), query = url.query;

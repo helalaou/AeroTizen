@@ -53,5 +53,10 @@
     "browser": 26,
     "build_lint_packaging": "pass"
   },
-  "retry_package_sha256": "cf24137c1920be12c77671a8bc09fda276b7442852146cf34425d2fc6a5d10ee"
+  "retry_package_sha256": "cf24137c1920be12c77671a8bc09fda276b7442852146cf34425d2fc6a5d10ee",
+  "support_report_followup": {
+    "scope": "Build identity, environment, error context, action outcomes, ordering and health fields added after this hardware run.",
+    "validation": "Local automated tests only; not installed on the TV.",
+    "unchanged_limit": "Newest cold-start UI records may require an app roundtrip before export."
+  }
 }

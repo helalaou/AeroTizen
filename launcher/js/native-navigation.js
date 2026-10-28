@@ -7,6 +7,16 @@
   var tz = A.tizen, cfg = A.config;
   var homePending = false, livePending = false;
 
+  function report(name, action, operation, reason) {
+    var log = window.AeroDiagnostics;
+    if (!log) { return null; }
+    var data = { action: action, operation_id: operation };
+    if (reason) { data.reason = reason; }
+    var id = log.record('handoff.' + name, data);
+    if (name !== 'request' && log.flush) { log.flush(); }
+    return id;
+  }
+
   function rearmWatcher() {
     if (!tz) { return; }
     try {
@@ -51,22 +61,22 @@
   // avoids changes to the Frame Art Mode or physical-HOME watcher code.
 
   function openSamsungHome() {
-    if (window.AeroDiagnostics) { window.AeroDiagnostics.record('handoff.request', { action: 'samsung_home' }); }
     if (homePending) { return; }
     if (!tz || !tz.application || !tz.ApplicationControl) {
       A.toast('Samsung Home is unavailable on this device');
       return;
     }
+    var operation = report('request', 'samsung_home');
     homePending = true;
     function failed(reason) {
       homePending = false;
-      if (window.AeroDiagnostics) { window.AeroDiagnostics.record('handoff.failed', { action: 'samsung_home', reason: reason }); }
+      report('failed', 'samsung_home', operation, reason);
       rearmWatcher();
       A.toast('Could not open Samsung Home: ' + reason);
     }
     function succeeded() {
       homePending = false;
-      if (window.AeroDiagnostics) { window.AeroDiagnostics.record('handoff.accepted', { action: 'samsung_home' }); }
+      report('accepted', 'samsung_home', operation);
       // Leave HomeWatcher paused while native Samsung Home is visible.
     }
     function controlFallback() {
@@ -92,18 +102,19 @@
   // Unlike tvwindow's embedded TV picture, the native viewer owns
   // channel selection and remote-control interactions.
   function openNativeLiveTV(videoSource) {
-    if (window.AeroDiagnostics) { window.AeroDiagnostics.record('handoff.request', { action: 'live_tv' }); }
     if (livePending) { return true; }
     if (!tz || !tz.application || typeof tz.application.launch !== 'function') {
       // Older devices keep the upstream embedded TVWindow behaviour.
       return false;
     }
+    var operation = report('request', 'live_tv');
     livePending = true;
     var finished = false;
     function failed(reason) {
       if (finished) { return; }
       finished = true;
       livePending = false;
+      report('failed', 'live_tv', operation, reason);
       rearmWatcher();
       A.toast('Could not open Live TV: ' + reason);
     }
@@ -111,10 +122,12 @@
       if (finished) { return; }
       finished = true;
       livePending = false;
+      report('accepted', 'live_tv', operation);
       // A Tizen launch success callback only confirms that launch was
       // accepted. It does not guarantee the native viewer took focus.
       window.setTimeout(function () {
         if (!document.hidden) {
+          report('visibility_unconfirmed', 'live_tv', operation);
           rearmWatcher();
           A.toast('Live TV did not take focus');
         }

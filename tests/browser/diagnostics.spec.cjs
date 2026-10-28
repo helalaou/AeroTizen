@@ -50,7 +50,7 @@ test('cold-start UI events reach a late service without leaving the launcher', a
     if (route.request().method() !== 'POST') return route.fulfill({ body: '{}' });
     if (!readyAt) readyAt = Date.now() + 1800;
     if (Date.now() < readyAt) return route.fulfill({ status: 503, body: '{}' });
-    const batch = route.request().postDataJSON(); delivered.push(...batch);
+    const batch = route.request().postDataJSON().records; delivered.push(...batch);
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ schema_version: 1, accepted: batch.length }) });
   });
   await page.addInitScript(() => {
@@ -95,7 +95,7 @@ for (const unavailable of [false, true]) {
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.route('https://**/*', route => route.fulfill({ body: '{}' }));
     await page.route('http://127.0.0.1:47790/**', route => {
-      const batch = route.request().method() === 'POST' ? route.request().postDataJSON() : [];
+      const batch = route.request().method() === 'POST' ? route.request().postDataJSON().records : [];
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ schema_version: 1, accepted: batch.length }) });
     });
     await page.addInitScript(unavailable => {

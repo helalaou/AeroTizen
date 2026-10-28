@@ -290,8 +290,15 @@ TV logs need a launcher build with this feature and a running background service
 On the tested Frame, return from another app before exporting after a cold start
 to include queued UI startup events.
 
+The report includes TV/firmware details when available, exact CLI/launcher build IDs,
+launch results, sanitized error locations and logging health. For Home or startup bugs,
+add `--include-home` to read the native routing settings (up to 35 seconds; no setting
+changes). Missing information is marked in the report.
+
 TV events are buffered in memory and saved in asynchronous batches, outside remote
-action handlers. A sudden power cut can lose the unsaved batch.
+action handlers. Error formatting is deferred too. Session, sequence and elapsed time
+keep events ordered even if the TV clock is wrong. A sudden power cut can lose the
+unsaved batch. Attach the ZIP and reproduction steps using the GitHub bug report form.
 
 Logs are bounded and redacted. Exports exclude certificates, login tokens and recovery
 backup files; they include Home result summaries and failed readbacks before rollback.

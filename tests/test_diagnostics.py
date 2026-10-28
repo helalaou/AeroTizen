@@ -4,14 +4,17 @@ import zipfile
 
 import pytest
 
-from aerotizen import cli, diagnostics
+from aerotizen import build_info, cli, diagnostics
 from aerotizen.sdb import CLSE, OKAY, WRTE, Sdb, SdbError
+
+_read_metadata = diagnostics._metadata
 
 
 @pytest.fixture(autouse=True)
 def log_folder(monkeypatch, tmp_path):
     path = tmp_path / "logs"
     monkeypatch.setenv("AEROTIZEN_LOG_DIR", str(path))
+    monkeypatch.setattr(diagnostics, "_metadata", lambda host: {"state": "unavailable", "model": None})
     return path
 
 
@@ -298,3 +301,211 @@ def test_rapid_commands_keep_the_current_log(tmp_path, monkeypatch):
         session = diagnostics.LogSession(tmp_path, argparse.Namespace(cmd="status"))
         session.close()
         assert session.path.is_file()
+
+
+def test_export_preserves_all_tv_events_and_public_environment(tmp_path, monkeypatch):
+    from aerotizen import device
+
+    class Session:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def connect(self):
+            return self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def tcp_request(self, *args, **kwargs):
+            body = json.dumps(
+                {
+                    "schema_version": 1,
+                    "records": [
+                        {
+                            "source": "ui",
+                            "event": "ui.start",
+                            "session": "s",
+                            "sequence": i + 1,
+                            "elapsed_ms": i,
+                            "data": {"build_id": "a" * 64, "payload": "PRIVATE"},
+                        }
+                        for i in range(200)
+                    ],
+                    "environment": {
+                        "tizen": "9.0.0",
+                        "firmware": "test-firmware",
+                        "arch": "arm",
+                        "secret": "PRIVATE",
+                    },
+                    "build": {"version": "2.4.0", "build_id": "a" * 64},
+                    "ui": {"build": {"version": "2.4.0", "build_id": "a" * 64}, "queued": 7},
+                    "health": {"discarded": 5, "storage": "failed", "private": "PRIVATE"},
+                }
+            ).encode()
+            return b"HTTP/1.0 200 OK\r\n\r\n" + body
+
+    monkeypatch.setattr(device, "DeviceSession", Session)
+    monkeypatch.setattr(diagnostics, "_metadata", lambda host: {"state": "collected", "model": "TEST-TV"})
+    monkeypatch.setattr(diagnostics, "_native_snapshot", lambda session: pytest.fail("Snapshot is opt-in"))
+    target, state = diagnostics.export_logs(tmp_path, tmp_path / "support.zip", "192.0.2.1")
+    with zipfile.ZipFile(target) as archive:
+        raw = archive.read("report.json").decode()
+        report = json.loads(raw)
+    assert state == "collected" and "PRIVATE" not in raw
+    assert len(report["tv"]["logs"]["records"]) == 200
+    assert report["tv"]["logs"]["records"][-1]["sequence"] == 200
+    assert report["environment"]["launcher"]["build_id"] == "a" * 64
+    assert report["environment"]["state"] == "collected"
+    assert report["native_home"]["state"] == "not_requested"
+    assert report["tv"]["logs"]["health"]["discarded"] == 5
+
+
+def test_native_snapshot_uses_only_read_status_and_filters_identity(monkeypatch):
+    from aerotizen import home
+
+    def status(session, provider, info):
+        assert session == "session" and provider is None
+        return {
+            "queried_at": "now",
+            "complete": True,
+            "home": {"mode": "native"},
+            "device": {"identity_sha256": "PRIVATE", "firmware_build": "test", "os_version": "9"},
+            "watcher": {"state": "native", "control": "PRIVATE"},
+            "evidence": {
+                "access": "sdk_uid_901",
+                "uid": 901,
+                "sdk_staging_cleaned": True,
+                "query_staging_cleaned": True,
+            },
+        }
+
+    monkeypatch.setattr(home, "read_status", status)
+    result = diagnostics._native_snapshot("session")
+    assert result["state"] == "collected" and "PRIVATE" not in json.dumps(result)
+
+
+def test_include_home_requires_explicit_tv_without_discovery(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "STATE_DIR", tmp_path)
+    monkeypatch.setattr(cli, "pick_tv", lambda args: pytest.fail("No discovery"))
+    monkeypatch.setattr("sys.argv", ["aerotizen", "logs", "export", "--include-home"])
+    with pytest.raises(SystemExit, match="--tv"):
+        cli.main()
+
+
+def test_cli_sequence_error_context_and_health_survive_clock_jumps(tmp_path, monkeypatch, log_folder):
+    ticks = iter([10, 10, 10, 11, 12, 12])
+    monkeypatch.setattr(diagnostics.time, "monotonic", lambda: next(ticks, 12))
+
+    def command(args):
+        diagnostics.event("step", build_id="a" * 64)
+        raise ValueError("token=SECRET")
+
+    with pytest.raises(ValueError):
+        diagnostics.run_logged(argparse.Namespace(cmd="status"), command, tmp_path)
+    records = [json.loads(line) for line in next(log_folder.glob("*.log")).read_text().splitlines()]
+    assert [item["sequence"] for item in records] == [1, 2, 3]
+    assert records[-1]["data"]["health"]["storage"] == "ready"
+    assert records[-1]["data"]["stack"] and all("/" not in frame for frame in records[-1]["data"]["stack"])
+    assert "SECRET" not in json.dumps(records)
+
+
+def test_cli_content_identity_changes_with_source_and_reads_embedded_stamp(tmp_path, monkeypatch):
+    source = tmp_path / "src/aerotizen"
+    source.mkdir(parents=True)
+    (source / "main.py").write_text("value=1")
+    first = build_info.describe(tmp_path, "2.4.0")
+    (source / "main.py").write_text("value=2")
+    second = build_info.describe(tmp_path, "2.4.0")
+    assert first["build_id"] != second["build_id"]
+    (source / "_build.json").write_text(json.dumps(second))
+    assert build_info.describe(tmp_path)["build_id"] == second["build_id"]
+    monkeypatch.setattr(build_info, "__file__", str(source / "build_info.py"))
+    build_info.current.cache_clear()
+    try:
+        assert build_info.current() == second
+    finally:
+        build_info.current.cache_clear()
+
+
+def test_metadata_fetch_is_bounded_and_excludes_tv_identity(monkeypatch):
+    # Use the original helper because the common fixture disables all network metadata.
+    from unittest.mock import patch
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def read(self, count):
+            assert count == 65537
+            return json.dumps(
+                {
+                    "device": {
+                        "modelName": "TEST-TV",
+                        "model": "platform",
+                        "duid": "PRIVATE",
+                        "name": "PRIVATE",
+                    }
+                }
+            ).encode()
+
+    def request(url, timeout):
+        assert url == "http://192.0.2.1:8001/api/v2/" and timeout == 2
+        return Response()
+
+    with patch.object(diagnostics.urllib.request, "urlopen", request):
+        result = _read_metadata("192.0.2.1")
+    assert result["model"] == "TEST-TV" and "PRIVATE" not in json.dumps(result)
+
+
+def test_redaction_removes_quoted_spaced_credentials_and_nonfinite_numbers():
+    assert "PRIVATE" not in diagnostics.redact('authkey="PRIVATE FIRST SECOND"')
+    assert "SECOND" not in diagnostics.redact('authkey="PRIVATE FIRST SECOND"')
+    assert diagnostics.redact(float("nan")) is None
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_optional_home_snapshot_never_prevents_partial_zip(tmp_path, monkeypatch, fails):
+    from aerotizen import device
+
+    class Session:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def connect(self):
+            return self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+    monkeypatch.setattr(device, "DeviceSession", Session)
+    monkeypatch.setattr(diagnostics, "fetch_tv", lambda session: {"records": []})
+
+    def snapshot(session):
+        if fails:
+            raise SdbError("query unavailable")
+        return {"state": "collected", "home": {"mode": "native"}}
+
+    monkeypatch.setattr(diagnostics, "_native_snapshot", snapshot)
+    target, _ = diagnostics.export_logs(tmp_path, tmp_path / "report.zip", "192.0.2.1", include_home=True)
+    with zipfile.ZipFile(target) as archive:
+        report = json.loads(archive.read("report.json"))
+    assert report["native_home"]["state"] == ("unavailable" if fails else "collected")
+
+
+def test_report_retains_safe_error_locations_and_known_home_operations():
+    assert diagnostics.redact("Authorization: Bearer PRIVATE") == "Authorization=[redacted] [redacted]"
+    assert diagnostics.redact("http://tizen.org/appcontrol/operation/main", "operation").endswith("/main")
+    assert (
+        diagnostics.redact("TypeError: payload PRIVATE\n at f (file:///opt/apps.js:12:4)", "stack")
+        == "apps.js:12:4"
+    )
+    assert diagnostics.redact("apps.js:12:4", "stack") == "apps.js:12:4"

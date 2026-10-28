@@ -31,10 +31,24 @@ write permission for that firmware. Native compatibility and recovery checks sta
 
 ## TV logs
 
-The launcher records startup, app launch requests, visibility changes, Home app-control
-operations, script error names and Samsung Home handoffs. Its background service records
-startup, routing mode, watcher decisions and requests. Content payloads, programme titles,
-account data, raw errors and stack traces are not recorded.
+The launcher records startup/load, app launch requests and callback results, visibility
+changes, Home app-control operations, and Samsung Home/Live TV handoffs. Its background
+service records startup, routing mode, watcher decisions and requests. Related request
+and result events share an operation ID. A launch accepted by Tizen does not prove it
+was visible. Existing visibility checks can report an unconfirmed result; no extra
+screen polling is added.
+
+Script errors, rejected promises and handled app-launch failures include a bounded,
+redacted message, error name, source basename, line/column when supplied, and up to eight
+stack locations. Error formatting runs in a later task. Stack messages, full paths,
+content payloads, programme titles and account data are excluded. Secret-like error
+messages are omitted. Filtering is best effort; review the ZIP before sharing.
+
+Each new event has a session ID, sequence number and elapsed milliseconds from a
+monotonic clock when supported. Use session and sequence to order events from that
+process; wall timestamps can be wrong during TV startup. UI and service sessions are
+separate. Correlated operation IDs and visibility events help compare them. Older
+saved events can lack the new fields; no ordering data is invented for them.
 
 Recording an event updates a bounded memory buffer. Remote handlers do not save logs or
 prepare network batches. Upload preparation runs in a later task; delivery uses async HTTP.
@@ -61,8 +75,9 @@ launcher is visible. Retries stop when it is hidden. There is no continuous poll
 diagnostic delivery never starts the service. Each log keeps at most 200 recent events
 within a size limit. Old events are discarded. Uninstall removes TV logs.
 
-`--tv TV_IP logs export` makes one bounded, read-only request to the running local service
-through SDB. No root, inspector, service launch or Home setting change is needed. A stopped
+`--tv TV_IP logs export` reads the running local service through SDB and makes a bounded
+TV metadata request. No root, inspector, service launch or Home setting change is needed.
+The service reads its OS metadata once, asynchronously, outside request handlers. A stopped
 service, an older launcher or an unavailable TV produces a PC-only report with the reason.
 On the tested Frame, cold-start UI events stayed queued until opening another app and
 returning Home. A normal launch request did not flush them. Bounded delivery retries did
@@ -76,6 +91,39 @@ exporting if you need the newest UI events. See the [TV test record](diagnostics
 CLI/OS/Python versions, and summaries of up to 20 Home recovery records in the default PC
 backup folder. The TV form also includes the latest service/UI events if available.
 A separately copied backup folder is not searched automatically.
+
+`report.json` contains:
+
+- PC OS, architecture, Python and CLI version; TV model, firmware, Tizen and architecture
+  when available. Unavailable fields remain null with collection status/reasons.
+- CLI and launcher content build IDs, Git commit and dirty flag when available. These
+  distinguish development builds that share a version. Packaged CLIs embed the build
+  identity; compiled launchers share one identity between the UI and service.
+- Service routing mode, persistence, watcher heartbeats and launch count. This is the
+  service's state, not proof of the TV's native Home assignment.
+- Logging health: retained, discarded and invalid events; pending errors; storage state
+  and failed reads/writes; the UI's last reported upload queue and delivery attempt status.
+  Counts describe the current process and are not lifetime totals. Queue/delivery fields
+  are a snapshot before the last acknowledged batch, not a live UI query. A missing UI
+  report means its newest records may still be queued or the build is older.
+- Bundle file counts and skipped files. The export command's own log may not yet contain
+  its finish event because export happens while that command is running.
+
+For Home or startup problems, use:
+
+```sh
+./aerotizen --tv TV_IP logs export --include-home --output aerotizen-home-report.zip
+```
+
+This optional check stages the existing read-only SDK query helper and cleans it up.
+It can take up to 35 seconds. It reads native Home/boot assignments and reports read
+and cleanup evidence. It does not apply/restore settings or use root. A failed query
+is recorded as unavailable and does not prevent the ZIP from being created. The normal
+export skips this helper. An offline report explicitly marks TV context as not requested.
+
+Attach the ZIP to the GitHub bug report form with reproduction steps, expected/actual
+behaviour and what was visible on the TV. Logs are evidence of requests and callbacks;
+they cannot by themselves prove what the user saw.
 
 The ZIP excludes raw recovery requests, original backup files, certificates and token
 files. It cannot restore Home. Keep the **whole original Home backup folder** for restore;

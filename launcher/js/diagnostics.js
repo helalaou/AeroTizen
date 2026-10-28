@@ -1,14 +1,20 @@
-/* global module */
+/* global module, process */
 // Bounded diagnostics shared by the UI and service. No console interception or app payloads.
 (function (root) {
   'use strict';
   var LIMIT = 200, MAX_CHARACTERS = 60000, BATCH_SIZE = 24, MAX_BATCH_CHARACTERS = 4000;
-  var fields = ['action', 'mode', 'operation', 'app_id', 'error', 'reason', 'status', 'phase', 'line', 'component', 'transaction', 'version', 'hidden'];
+  var fields = ['action', 'mode', 'operation', 'app_id', 'error', 'reason', 'status', 'phase', 'line', 'component', 'transaction', 'version', 'hidden', 'operation_id', 'message', 'file', 'column', 'stack', 'code', 'build_id', 'commit', 'dirty'];
   function clean(value, key) {
     if (typeof value === 'boolean' || typeof value === 'number' && isFinite(value)) { return value; }
+    if ((key === 'build_id' || key === 'commit') && /^[a-f0-9]{12,64}$/.test(value)) { return value; }
+    if (key === 'message' && /payload|history|programme|episode|movie|account|password|token|cookie|authorization/i.test(value)) { return '[sensitive error detail omitted]'; }
+    if (key === 'file') { var file = String(value).split(/[?#]/)[0].match(/(?:^|[\\/])([a-zA-Z0-9_-]+\.(?:js|html))(?::\d+(?::\d+)?)?$/); return file ? file[1] : '[unknown source]'; }
+    if (key === 'stack') { return String(value).slice(0, 4096).split('\n').map(function (line) { var match = line.match(/(?:^|[\\/])([a-zA-Z0-9_-]+\.(?:js|html):\d+(?::\d+)?)/); return match ? match[1] : ''; }).filter(Boolean).slice(0, 8).join('\n').slice(0, 1024); }
     if (key === 'operation') { return /^http:\/\/tizen.org\/appcontrol\/operation\/(main|default|view|service)$/.test(value) ? value : '[other operation]'; }
     return String(value).slice(0, 512)
-      .replace(/(password|authkey|secret|token|cookie|duid)\s*[:=]\s*[^\s,]+/gi, '$1=[redacted]')
+      .replace(/bearer\s+\S+/gi, 'Bearer [redacted]')
+      .replace(/(password|authorization|authkey|secret|token|cookie|duid)[\s"']*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,}]+)/gi, '$1=[redacted]')
+      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
       .replace(/(?:https?|wss?):\/\/[^\s]+/g, '[url]')
       .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[address]')
       .replace(/[A-Za-z]:[\\/][^\n]+|\/(?:Users|home|opt|private|tmp|var)\/[^\n]+/g, '[path]')
@@ -29,6 +35,10 @@
     options = options || {};
     var later = options.later || function (fn, ms) { return typeof root.setTimeout === 'function' ? root.setTimeout(fn, ms) : setTimeout(fn, ms); };
     var records = [], total = 0, store = null, serial = 0;
+    var discarded = 0, invalid = 0, writeFailures = 0, readFailures = 0, writes = 0, storageState = 'unavailable', pendingErrors = 0;
+    var mono = options.now || (root.performance && root.performance.now ? function () { return root.performance.now(); } :
+      typeof process !== 'undefined' && process.hrtime ? function () { var time = process.hrtime(); return time[0] * 1000 + time[1] / 1000000; } : Date.now);
+    var origin = mono(), elapsed = 0;
     var revision = 0, saved = 0, loading = false, saving = false, saveTimer = null;
     var session = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
     function scheduleSave(delay) {
@@ -41,11 +51,11 @@
       saveTimer = null;
       if (!store || loading || saving || revision === saved) { return; }
       var target = store, writing = revision, complete = false;
-      saving = true;
+      saving = true; storageState = 'saving';
       function done(error) {
         if (complete) { return; } complete = true; saving = false;
-        if (error) { store = null; return; }
-        saved = writing; scheduleSave();
+        if (error) { store = null; storageState = 'failed'; writeFailures += 1; return; }
+        storageState = 'ready'; writes += 1; saved = writing; scheduleSave();
       }
       try { target.save(JSON.stringify(records), done); } catch (e) { done(e); }
     }
@@ -56,34 +66,64 @@
         if (!item || (item.source !== 'ui' && item.source !== 'service') ||
             typeof item.id !== 'string' || !/^[a-z0-9-]{1,64}$/.test(item.id) ||
             typeof item.at !== 'number' || !isFinite(item.at) ||
-            typeof item.event !== 'string' || !/^[a-zA-Z0-9_.-]{1,64}$/.test(item.event)) { return; }
+            typeof item.event !== 'string' || !/^[a-zA-Z0-9_.-]{1,64}$/.test(item.event)) { invalid += 1; return; }
         if (records.some(function (entry) { return entry.id === item.id; })) { return; }
         var entry = { id: item.id, at: item.at, source: item.source, event: item.event, data: details(item.data) };
+        if (typeof item.session === 'string' && /^[a-z0-9-]{1,64}$/.test(item.session)) { entry.session = item.session; }
+        if (typeof item.sequence === 'number' && isFinite(item.sequence) && item.sequence > 0 && Math.floor(item.sequence) === item.sequence) { entry.sequence = item.sequence; }
+        if (typeof item.elapsed_ms === 'number' && isFinite(item.elapsed_ms) && item.elapsed_ms >= 0) { entry.elapsed_ms = item.elapsed_ms; }
         records.push(entry); total += JSON.stringify(entry).length; changed = true;
-        while (records.length > LIMIT || total > MAX_CHARACTERS) { total -= JSON.stringify(records.shift()).length; }
+        while (records.length > LIMIT || total > MAX_CHARACTERS) { total -= JSON.stringify(records.shift()).length; discarded += 1; }
       });
       if (changed) { revision += 1; scheduleSave(); }
       return true;
     }
+    function stamp(name, data) {
+      elapsed = Math.max(elapsed, Math.round(mono() - origin));
+      return { id: session + '-' + (++serial), session: session, sequence: serial,
+        at: Date.now(), elapsed_ms: elapsed, source: source, event: name, data: data };
+    }
+    function record(name, data) {
+      try { var entry = stamp(name, data); ingest([entry]); return entry.id; } catch (e) { return null; }
+    }
+    function health() {
+      return { session: session, buffered: records.length, discarded: discarded, invalid: invalid,
+        pending_errors: pendingErrors, storage: storageState, unsaved: revision !== saved,
+        saving: saving, writes: writes, write_failures: writeFailures, read_failures: readFailures,
+        clock: mono === Date.now ? 'wall_fallback' : 'monotonic' };
+    }
     return {
-      record: function (name, data) {
-        try { ingest([{ id: session + '-' + (++serial), at: Date.now(), source: source, event: name, data: data }]); } catch (e) { /* best effort */ }
+      record: record,
+      captureError: function (name, error, context) {
+        if (pendingErrors >= 16) { discarded += 1; return; }
+        var entry = stamp(name, details(context)); pendingErrors += 1;
+        later(function () {
+          pendingErrors -= 1;
+          try {
+            var data = entry.data;
+            data.error = error && typeof error.name === 'string' ? error.name : 'Error';
+            data.message = error && typeof error.message === 'string' ? error.message : typeof error === 'string' ? error : 'Error details unavailable';
+            data.stack = error && typeof error.stack === 'string' ? error.stack : '';
+            entry.data = data; ingest([entry]);
+          } catch (e) { invalid += 1; }
+        }, 0);
       },
+      health: health,
       ingest: ingest,
-      snapshot: function () { return { schema_version: 1, records: JSON.parse(JSON.stringify(records)) }; },
+      snapshot: function () { return { schema_version: 1, health: health(), records: JSON.parse(JSON.stringify(records)) }; },
       flushStorage: function () { scheduleSave(0); },
       attach: function (storage, ready) {
         if (!storage || loading || saving) { return; }
-        store = storage; loading = true;
+        store = storage; loading = true; storageState = 'loading';
         function loaded(error, value) {
           if (!loading || store !== storage) { return; }
-          if (error) { loading = false; store = null; if (ready) { ready(); } return; }
+          if (error) { loading = false; store = null; storageState = 'failed'; readFailures += 1; if (ready) { ready(); } return; }
           var recent = records;
           try {
             var previous = value ? JSON.parse(value) : [];
-            records = []; total = 0; ingest(previous); ingest(recent);
-          } catch (e) { records = recent; total = records.reduce(function (sum, item) { return sum + JSON.stringify(item).length; }, 0); }
-          loading = false; revision += 1; scheduleSave();
+            records = []; total = 0; if (!ingest(previous)) { invalid += 1; } ingest(recent);
+          } catch (e) { invalid += 1; records = recent; total = records.reduce(function (sum, item) { return sum + JSON.stringify(item).length; }, 0); }
+          loading = false; storageState = 'ready'; revision += 1; scheduleSave();
           if (ready) { ready(); }
         }
         try { storage.load(loaded); } catch (e) { loaded(e); }
@@ -94,6 +134,7 @@
   var logger = root.AeroDiagnostics = create('ui'), busy = false, sent = {};
   var sendTimer = null;
   var retryTimer = null, retries = 0, retryDelays = [1000, 3000, 10000];
+  var delivery = { state: 'idle', last_status: null };
   function cancelRetry() {
     if (retryTimer !== null) { root.clearTimeout(retryTimer); retryTimer = null; }
   }
@@ -123,33 +164,34 @@
       var request = new root.XMLHttpRequest();
       request.open('POST', 'http://127.0.0.1:47790/diagnostics/events', true);
       request.setRequestHeader('Content-Type', 'text/plain'); request.timeout = 1500;
-      request.onerror = request.ontimeout = function () { busy = false; retry(); };
+      request.onerror = request.ontimeout = function () { busy = false; delivery.state = 'unavailable'; delivery.last_status = null; retry(); };
       request.onload = function () {
-        busy = false;
+        busy = false; delivery.last_status = request.status; delivery.state = 'rejected';
         if (request.status !== 200) { if (request.status >= 500 || request.status === 408) { retry(); } return; }
         // An older service returns 200 for unknown paths. Keep the events queued
         // unless the diagnostics endpoint acknowledges this exact batch.
         var acknowledgement;
         try { acknowledgement = JSON.parse(request.responseText); } catch (e) { return; }
         if (!acknowledgement || acknowledgement.schema_version !== 1 || acknowledgement.accepted !== batch.length) { return; }
-        cancelRetry(); retries = 0;
+        delivery.state = 'acknowledged'; cancelRetry(); retries = 0;
         batch.forEach(function (item) { sent[item.id] = true; });
         var keep = {}; logger.snapshot().records.forEach(function (item) { if (sent[item.id]) { keep[item.id] = true; } }); sent = keep;
         flush();
       };
-      request.send(JSON.stringify(batch));
-    } catch (e) { busy = false; retry(); }
+      request.send(JSON.stringify({ schema_version: 1, records: batch, health: logger.health(),
+        build: root.AeroBuildInfo || {}, version: version, delivery: { state: delivery.state, retries: retries, last_status: delivery.last_status }, queued: logger.snapshot().records.filter(function (item) { return !sent[item.id]; }).length }));
+    } catch (e) { busy = false; delivery.state = 'unavailable'; retry(); }
   }
   logger.flush = flush;
   root.addEventListener('pagehide', function () { logger.flushStorage(); });
   var version = 'unknown';
   try { version = root.tizen.application.getAppInfo().version; } catch (e) { /* desktop or older API */ }
-  logger.record('ui.start', { component: 'launcher', version: version });
+  logger.record('ui.start', { component: 'launcher', version: version, build_id: root.AeroBuildInfo && root.AeroBuildInfo.build_id, commit: root.AeroBuildInfo && root.AeroBuildInfo.commit });
   root.addEventListener('error', function (event) {
-    logger.record('ui.error', { error: event.error && event.error.name || 'ScriptError', line: event.lineno || 0 }); flush();
+    logger.captureError('ui.error', event.error || { name: 'ScriptError', message: event.message }, { file: event.filename, line: event.lineno || 0, column: event.colno || 0 }); flush();
   });
   root.addEventListener('unhandledrejection', function (event) {
-    logger.record('ui.rejection', { error: event.reason && event.reason.name || 'UnhandledRejection' }); flush();
+    logger.captureError('ui.rejection', event.reason || { name: 'UnhandledRejection' }); flush();
   });
   root.addEventListener('load', function () { logger.record('ui.loaded'); flush(); });
   root.addEventListener('appcontrol', function () {

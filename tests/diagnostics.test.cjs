@@ -107,7 +107,7 @@ function browser(options = {}) {
         if (options.fail) this.onerror();
         else {
           request.status = options.status || 200;
-          request.responseText = options.badAck ? '{}' : JSON.stringify({ schema_version: 1, accepted: JSON.parse(value).length });
+          request.responseText = options.badAck ? '{}' : JSON.stringify({ schema_version: 1, accepted: JSON.parse(value).records.length });
           request.onload();
         }
       };
@@ -128,17 +128,17 @@ test('desktop preview logs lifecycle locally without service requests', () => {
   assert.ok(h.stored.get('snapshot'));
 });
 
-test('UI sends bounded event batches and logs error names only', () => {
+test('UI sends bounded event batches with sanitized error context', () => {
   const h = browser({ tv: true });
   for (let i = 0; i < 100; i++) h.window.AeroDiagnostics.record('ui.test', { reason: '界'.repeat(150) });
   h.listeners.load(); h.listeners.appcontrol();
-  h.listeners.error({ error: { name: 'TypeError', message: 'PRIVATE-MESSAGE' }, lineno: 7 });
-  h.listeners.unhandledrejection({ reason: { name: 'NetworkError', message: 'PRIVATE-REASON' } });
+  h.listeners.error({ error: { name: 'TypeError', message: 'payload PRIVATE-MESSAGE' }, lineno: 7 });
+  h.listeners.unhandledrejection({ reason: { name: 'NetworkError', message: 'account PRIVATE-REASON' } });
   assert.equal(h.requests.length, 0); assert.equal(h.writes(), 0); h.advance(0);
   assert.ok(h.requests.length > 1);
   for (const request of h.requests) {
     assert.equal(request.method, 'POST'); assert.equal(request.url, 'http://127.0.0.1:47790/diagnostics/events');
-    assert.ok(JSON.parse(request.body).length <= 24); assert.ok(Buffer.byteLength(request.body) < 16384);
+    assert.ok(JSON.parse(request.body).records.length <= 24); assert.ok(Buffer.byteLength(request.body) < 16384);
   }
   const raw = JSON.stringify(h.window.AeroDiagnostics.snapshot());
   assert.ok(!raw.includes('PRIVATE-')); assert.ok(raw.includes('TypeError'));
@@ -154,9 +154,9 @@ test('older queued UI events are delivered when async storage loads, without a r
     { id: 'old-ui-record', at: 1, source: 'ui', event: 'ui.previous', data: {} }
   ] });
   h.listeners.load(); h.advance(0);
-  assert.ok(!h.requests.some(request => JSON.parse(request.body).some(item => item.id === 'old-ui-record')));
+  assert.ok(!h.requests.some(request => JSON.parse(request.body).records.some(item => item.id === 'old-ui-record')));
   h.advance(1000);
-  assert.ok(h.requests.some(request => JSON.parse(request.body).some(item => item.id === 'old-ui-record')));
+  assert.ok(h.requests.some(request => JSON.parse(request.body).records.some(item => item.id === 'old-ui-record')));
 });
 
 test('cold-start delivery succeeds when the existing service becomes ready', () => {
@@ -165,7 +165,7 @@ test('cold-start delivery succeeds when the existing service becomes ready', () 
   h.advance(1000); assert.equal(h.requests.length, 2);
   h.options.fail = false; h.advance(3000);
   assert.equal(h.requests.length, 3); assert.equal(h.timers.size, 0);
-  const delivered = JSON.parse(h.requests.at(-1).body);
+  const delivered = JSON.parse(h.requests.at(-1).body).records;
   assert.ok(delivered.some(item => item.event === 'ui.start'));
   assert.ok(delivered.some(item => item.event === 'ui.loaded'));
   h.advance(60000); assert.equal(h.requests.length, 3);
@@ -194,7 +194,7 @@ test('legacy 200 responses do not discard queued events or start retry loops', (
   assert.equal(h.requests.length, 1); assert.equal(h.timers.size, 0);
   h.options.badAck = false; h.window.AeroDiagnostics.flush(); h.advance(0);
   assert.equal(h.requests.length, 2);
-  assert.ok(JSON.parse(h.requests[1].body).some(item => item.event === 'ui.start'));
+  assert.ok(JSON.parse(h.requests[1].body).records.some(item => item.event === 'ui.start'));
   const rejected = browser({ tv: true, status: 403 }); rejected.listeners.load(); rejected.advance(500);
   assert.equal(rejected.timers.size, 0);
   const busy = browser({ tv: true, status: 503 }); busy.listeners.load(); busy.advance(60000);
@@ -249,4 +249,72 @@ test('blocked or absent IndexedDB keeps UI logs in memory without a synchronous 
   request.onblocked(); request.onerror(); assert.equal(calls, 2); assert.equal(result, null);
   let closed = false; request.result = { close: () => { closed = true; } }; request.onsuccess();
   assert.equal(closed, true); assert.equal(calls, 2);
+});
+
+
+test('events use session sequence and monotonic elapsed time despite wall clock changes', () => {
+  let now = 100;
+  const logger = create('ui', { now: () => now });
+  const first = logger.record('request'); now = 150; logger.record('accepted'); now = 90; logger.record('next');
+  const records = logger.snapshot().records;
+  assert.equal(records[0].id, first);
+  assert.deepEqual(records.map(item => item.sequence), [1, 2, 3]);
+  assert.deepEqual(records.map(item => item.elapsed_ms), [0, 50, 50]);
+  assert.ok(records.every(item => item.session === records[0].session));
+  logger.ingest([{ id: 'legacy', at: 1, source: 'ui', event: 'legacy', data: {} }]);
+  assert.equal(logger.snapshot().records.at(-1).sequence, undefined);
+});
+
+test('error formatting is deferred, bounded and contains source locations without paths or payloads', () => {
+  const c = clock(), logger = create('ui', { later: c.later }); let reads = 0;
+  const error = { name: 'TypeError', message: 'Cannot read value user@example.com',
+    get stack() { reads++; return 'TypeError: token=SECRET\n at f (file:///Users/person/apps.js:42:9)\n at /opt/usr/native-navigation.js:55:3'; } };
+  logger.captureError('app.launch_failed', error, { file: 'file:///opt/usr/apps.js?token=PRIVATE', line: 42, column: 9, payload: 'PRIVATE' });
+  assert.equal(reads, 0); assert.equal(logger.snapshot().records.length, 0);
+  c.advance(0);
+  const data = logger.snapshot().records[0].data;
+  assert.equal(data.file, 'apps.js'); assert.equal(data.line, 42); assert.equal(data.column, 9);
+  assert.equal(data.stack, 'apps.js:42:9\nnative-navigation.js:55:3');
+  assert.match(data.message, /Cannot read value/);
+  assert.doesNotMatch(JSON.stringify(data), /SECRET|PRIVATE|Users|opt|user@example/);
+  for (let i = 0; i < 20; i++) logger.captureError('ui.error', error);
+  assert.equal(logger.health().pending_errors, 16); assert.equal(logger.health().discarded, 4);
+  c.advance(0); assert.equal(logger.health().pending_errors, 0);
+});
+
+test('health reports retention loss and failed storage without blocking new events', () => {
+  const c = clock(), logger = create('service', { later: c.later });
+  for (let i = 0; i < 205; i++) logger.record('event');
+  assert.equal(logger.health().discarded, 5); assert.equal(logger.health().storage, 'unavailable');
+  logger.attach({ load: done => done(null, null), save: (value, done) => done(new Error('disk full')) });
+  c.advance(500); assert.equal(logger.health().storage, 'failed'); assert.equal(logger.health().write_failures, 1);
+  logger.record('after.failure'); assert.equal(logger.snapshot().records.at(-1).event, 'after.failure');
+});
+
+test('service metadata is cached once and UI health and build fields are allowlisted', () => {
+  const createContext = require('../launcher/service/diagnostics-context');
+  let calls = 0, finish;
+  const context = createContext({ read: done => { calls++; finish = done; } });
+  const snapshot = () => context.enrich({}, { mode: 'native', persistent: true, protocol: 1 }, { heartbeats: 0, guard: { launchCalls: 0 } });
+  context.start(); context.start(); assert.equal(calls, 1); assert.equal(snapshot().environment.state, 'loading');
+  finish(null, 'VERSION_ID="9.0.0"\nBUILD_ID="firmware-build"\nSECRET="PRIVATE"');
+  context.accept({ version: '2.4.0', build: { version: '2.4.0', build_id: 'a'.repeat(64), commit: 'b'.repeat(40), dirty: true, path: 'PRIVATE' },
+    health: { session: 'ui-session', storage: 'failed', discarded: 7, token: 'PRIVATE' }, queued: 3,
+    delivery: { state: 'acknowledged', retries: 1, last_status: 200 }, payload: 'PRIVATE' });
+  const info = snapshot();
+  assert.equal(info.environment.tizen, '9.0.0'); assert.equal(info.environment.firmware, 'firmware-build');
+  assert.equal(info.ui.build.build_id, 'a'.repeat(64)); assert.equal(info.ui.health.discarded, 7);
+  assert.equal(info.ui.health.session, 'ui-session'); assert.equal(info.ui.queued, 3);
+  assert.equal(info.context.native_settings, 'not_queried'); assert.doesNotMatch(JSON.stringify(info), /PRIVATE/);
+});
+
+
+test('sanitization remains stable after service delivery and persistence reload', () => {
+  const c = clock(), ui = create('ui', { later: c.later });
+  ui.captureError('ui.error', { name: 'TypeError', message: 'Cannot read value', stack: 'TypeError: Cannot read value\n at f (file:///opt/apps.js:12:4)\n at file:///opt/main.js:90:2' });
+  c.advance(0);
+  const service = create('service'); service.ingest(ui.snapshot().records);
+  assert.equal(service.snapshot().records[0].data.stack, ui.snapshot().records[0].data.stack);
+  ui.record('safe', { reason: 'authkey="PRIVATE FIRST SECOND" Authorization: Bearer HIDDEN' });
+  assert.doesNotMatch(JSON.stringify(ui.snapshot()), /PRIVATE|FIRST|SECOND|HIDDEN/);
 });

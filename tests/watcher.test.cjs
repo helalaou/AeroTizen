@@ -103,6 +103,7 @@ function harness(options = {}) {
     require(name) {
       if (name === 'http') return http;
       if (name === '../js/diagnostics') return kind => require('../launcher/js/diagnostics')(kind, { later: (fn, ms) => timer(fn, ms, 0) });
+      if (name === './diagnostics-context') return () => require('../launcher/service/diagnostics-context')({ read: done => done(null, 'VERSION_ID=9.0.0\nBUILD_ID=test') });
       if (name === './diagnostics-store') return (tz, ready) => ready(options.diagnosticsStorage || null);
       if (name === './artmode') return config => { artOptions = config; return art; };
       if (name === './home-mode') return require('../launcher/service/home-mode');
@@ -638,8 +639,10 @@ test('diagnostics enforce read access and batch limits without changing native H
   assert.equal(request('POST', '/diagnostics/events', {}, [Object.assign({}, event, { source: 'service' })]).code, 400);
   assert.equal(request('POST', '/diagnostics/events', {}, Array(25).fill(event)).code, 400);
   assert.equal(request('POST', '/diagnostics/events', {}, 'x'.repeat(16385)).code, 413);
+  assert.equal(request('POST', '/diagnostics/events', {}, { schema_version: 1, records: [event], version: '2.4.0', build: { build_id: 'a'.repeat(64) }, health: { storage: 'failed', discarded: 2 }, queued: 1 }).code, 200);
   const logs = request('GET', '/diagnostics/logs', { 'x-aerotizen-diagnostics': '1' });
   assert.equal(logs.code, 200); assert.equal(logs.body.schema_version, 1);
+  assert.equal(logs.body.ui.health.discarded, 2); assert.equal(logs.body.environment.tizen, '9.0.0');
   assert.ok(logs.body.records.some(item => item.id === event.id));
   assert.ok(!JSON.stringify(logs.body).includes('PRIVATE'));
   h.advance(60000);
