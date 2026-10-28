@@ -276,14 +276,19 @@ test('clock tick listeners are notified once and can unsubscribe', () => {
 });
 
 test('custom clock fields preserve locale digits, separators and leading day periods', () => {
-  for (const [locale, format, hour, minute, period] of [
-    ['fi-FI','24','17','04',''], ['ko-KR','12','5','04','오후'], ['ar-EG','12','٥','٠٤','م']
+  for (const [locale, format, hour, minute, prefix] of [
+    ['fi-FI','24','17','04',false], ['ko-KR','12','5','04',true], ['ar-EG-u-nu-arab','12','٥','٠٤',false]
   ]) {
     const { A } = runtime({locale});
     const fields = A.clock.formatTimeParts(sample, format);
     assert.equal(fields.hour, hour);
     assert.equal(fields.minute, minute);
-    assert.equal(fields.dayPeriod, period);
+    if (format === '12') { assert.ok(fields.dayPeriod); }
+    else { assert.equal(fields.dayPeriod, ''); }
+    // ICU editions may spell a period differently; preserve what the shared
+    // formatter actually supplied, including its locale-specific ordering.
+    const compact = A.clock.formatTime(sample, format).replace(/[\s.:：\u200e\u200f\u061c]/g, '');
+    assert.equal(compact, prefix ? fields.dayPeriod + hour + minute : hour + minute + fields.dayPeriod);
   }
   const { A } = runtime({intl:{}});
   assert.equal(A.clock.formatTimeParts(sample,'24'), null);
