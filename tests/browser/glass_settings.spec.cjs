@@ -5,6 +5,11 @@ test('Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   await page.route('http://127.0.0.1:47790/**', route => route.fulfill({ body: '{}' }));
   await page.addInitScript(() => { if (!localStorage.getItem('aerotizen.settings.v1')) localStorage.setItem('aerotizen.settings.v1', JSON.stringify({glassSettings:true,background:'black',showWeather:false,home:['demo0','demo1','demo2']})); });
   await page.goto('/'); await page.waitForFunction(() => AeroTizen.apps.ready);
+  const checkTabPlate = async () => expect.poll(()=>page.locator('#aero-tab-glider').evaluate(plate=>{
+    const target=document.querySelector('#home-tab'), a=plate.getBoundingClientRect(),b=target.getBoundingClientRect();
+    return Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y),Math.abs(a.width-b.width),Math.abs(a.height-b.height));
+  })).toBeLessThan(2);
+  await checkTabPlate();
   await page.locator('#gear').click();
   await expect(page.locator('#editor')).toHaveClass(/aero-settings-collapsed/);
   await expect(page.locator('[data-key="section:appearance"]')).toHaveClass(/focused/);
@@ -34,5 +39,6 @@ test('Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
   await expect(page.locator('#editor')).toBeHidden();
   await page.reload(); expect(await page.evaluate(()=>AeroTizen.settings.glassSettings)).toBe(true);
+  await checkTabPlate();
   expect(errors).toEqual([]);
 });
