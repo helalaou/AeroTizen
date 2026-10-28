@@ -169,6 +169,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ inputs.tag }}
           EXPECTED_SHA: ${{ needs.prepare.outputs.sha }}
+          # The CLI is what people download first (it fetches the launcher), so its
+          # releases get GitHub's "Latest" badge. Launcher releases never take it.
+          LATEST: ${{ inputs.component == 'cli' }}
         run: |
           # Retry uploads only while the release is still a draft.
           gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft | grep -qx true
@@ -176,4 +179,4 @@ jobs:
           # Do not publish these assets if the tag moved during the build.
           current_sha=$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq .sha)
           [[ "$current_sha" == "$EXPECTED_SHA" ]]
-          gh release edit "$RELEASE_TAG" --draft=false --latest=false
+          gh release edit "$RELEASE_TAG" --draft=false --latest="$LATEST"
