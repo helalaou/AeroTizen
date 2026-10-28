@@ -287,6 +287,8 @@ Export creates a ZIP in the current folder. Adding `--tv` also fetches recent la
 and background-service events through the developer connection. It does not launch
 apps or change Home settings. If the TV is unavailable, the ZIP still contains PC logs.
 TV logs need a launcher build with this feature and a running background service.
+On the tested Frame, return from another app before exporting after a cold start
+to include queued UI startup events.
 
 Logs are bounded and redacted. Exports exclude certificates, login tokens and recovery
 backup files; they include Home result summaries and failed readbacks before rollback.

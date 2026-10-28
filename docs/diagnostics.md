@@ -47,7 +47,11 @@ leave logging in memory; they do not block the launcher. Uninstall removes TV lo
 `--tv TV_IP logs export` makes one bounded, read-only request to the running local service
 through SDB. No root, inspector, service launch or Home setting change is needed. A stopped
 service, an older launcher or an unavailable TV produces a PC-only report with the reason.
-To collect UI events that have not reached the service, open AeroTizen normally first.
+On the tested Frame, cold-start UI events stayed queued until opening another app and
+returning Home. A normal launch request did not flush them. Bounded delivery retries did
+not resolve this case. Existing UI/service logs survived restart, and the new service
+startup was available immediately. After a cold start, make an app roundtrip before
+exporting if you need the newest UI events. See the [TV test record](diagnostics-frame-tv-20261028.json).
 
 ## Export and recovery
 
