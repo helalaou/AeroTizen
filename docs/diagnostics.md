@@ -99,7 +99,9 @@ On the tested Frame, cold-start UI events stayed queued until opening another ap
 returning Home. A normal launch request did not flush them. Bounded delivery retries did
 not resolve this case. Existing UI/service logs survived restart, and the new service
 startup was available immediately. After a cold start, make an app roundtrip before
-exporting if you need the newest UI events. See the [TV test record](diagnostics-frame-tv-20261028.json).
+exporting if you need the newest UI events. This also occurred on the privacy build: see the
+[privacy build TV test](diagnostics-frame-tv-privacy-20261028.json) and the
+[earlier TV test](diagnostics-frame-tv-20261028.json).
 
 ## Export and recovery
 
