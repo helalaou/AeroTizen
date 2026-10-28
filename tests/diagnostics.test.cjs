@@ -52,10 +52,22 @@ test('TV log reload merges current startup, with corrupt or failed storage kept 
 });
 
 function browser(options = {}) {
-  const listeners = {}, stored = new Map(), requests = [];
+  const listeners = {}, stored = new Map(), requests = [], timers = new Map();
+  let now = 0, timerId = 0;
+  function advance(ms) {
+    const end = now + ms;
+    for (;;) {
+      const pending = [...timers].sort((a, b) => a[1].at - b[1].at)[0];
+      if (!pending || pending[1].at > end) break;
+      now = pending[1].at; timers.delete(pending[0]); pending[1].fn();
+    }
+    now = end;
+  }
   const window = {
     document: { hidden: false, addEventListener: (name, fn) => { listeners[name] = fn; } },
     addEventListener: (name, fn) => { listeners[name] = fn; },
+    setTimeout: (fn, ms) => { const id = ++timerId; timers.set(id, { at: now + ms, fn }); return id; },
+    clearTimeout: id => timers.delete(id),
     localStorage: { getItem: name => stored.get(name), setItem: (name, value) => stored.set(name, value) },
     XMLHttpRequest: function () {
       const request = this;
@@ -65,7 +77,11 @@ function browser(options = {}) {
       this.send = value => {
         this.body = value;
         if (options.fail) this.onerror();
-        else { request.status = 200; request.onload(); }
+        else {
+          request.status = options.status || 200;
+          request.responseText = options.badAck ? '{}' : JSON.stringify({ schema_version: 1, accepted: JSON.parse(value).length });
+          request.onload();
+        }
       };
     }
   };
@@ -73,7 +89,7 @@ function browser(options = {}) {
     appControl: { operation: 'http://tizen.org/appcontrol/operation/main', data: [{ value: 'PRIVATE-PAYLOAD' }] }
   }) }) } };
   vm.runInNewContext(source, { window }, { filename: 'diagnostics.js' });
-  return { window, listeners, requests, stored };
+  return { window, listeners, requests, stored, timers, advance, options };
 }
 
 test('desktop preview logs lifecycle locally without service requests', () => {
@@ -83,7 +99,7 @@ test('desktop preview logs lifecycle locally without service requests', () => {
   assert.ok(h.stored.get('aerotizen.diagnostics.v1'));
 });
 
-test('UI sends bounded event batches, logs error names only, and never retries on a timer', () => {
+test('UI sends bounded event batches and logs error names only', () => {
   const h = browser({ tv: true });
   for (let i = 0; i < 100; i++) h.window.AeroDiagnostics.record('ui.test', { reason: '界'.repeat(150) });
   h.listeners.load(); h.listeners.appcontrol();
@@ -97,8 +113,52 @@ test('UI sends bounded event batches, logs error names only, and never retries o
   const raw = JSON.stringify(h.window.AeroDiagnostics.snapshot());
   assert.ok(!raw.includes('PRIVATE-')); assert.ok(raw.includes('TypeError'));
   const failed = browser({ tv: true, fail: true }); failed.listeners.load();
-  assert.equal(failed.requests.length, 1); // No retry timer or app launch API is present in this harness.
-  failed.listeners.visibilitychange(); assert.equal(failed.requests.length, 2);
+  assert.equal(failed.requests.length, 1);
+  failed.advance(60000); assert.equal(failed.requests.length, 4);
+  assert.equal(failed.timers.size, 0); // Three retries, with no service or app launch API in the harness.
+  failed.listeners.visibilitychange(); assert.equal(failed.requests.length, 5);
+});
+
+test('cold-start delivery succeeds when the existing service becomes ready', () => {
+  const h = browser({ tv: true, fail: true }); h.listeners.load();
+  assert.equal(h.requests.length, 1); assert.equal(h.timers.size, 1);
+  h.advance(1000); assert.equal(h.requests.length, 2);
+  h.options.fail = false; h.advance(3000);
+  assert.equal(h.requests.length, 3); assert.equal(h.timers.size, 0);
+  const delivered = JSON.parse(h.requests.at(-1).body);
+  assert.ok(delivered.some(item => item.event === 'ui.start'));
+  assert.ok(delivered.some(item => item.event === 'ui.loaded'));
+  h.advance(60000); assert.equal(h.requests.length, 3);
+});
+
+test('startup notifications share one retry schedule instead of exhausting it early', () => {
+  const h = browser({ tv: true, fail: true }); h.listeners.load();
+  for (let i = 0; i < 20; i++) h.window.AeroDiagnostics.flush();
+  assert.equal(h.requests.length, 1); assert.equal(h.timers.size, 1);
+  h.advance(1000); assert.equal(h.requests.length, 2);
+  h.options.fail = false; h.advance(3000);
+  assert.equal(h.requests.length, 3); assert.equal(h.timers.size, 0);
+});
+
+test('hiding the launcher cancels delivery retries; returning starts a fresh bounded attempt', () => {
+  const h = browser({ tv: true, fail: true }); h.listeners.load();
+  h.window.document.hidden = true; h.listeners.visibilitychange();
+  assert.equal(h.timers.size, 0); h.advance(60000); assert.equal(h.requests.length, 1);
+  h.window.AeroDiagnostics.flush(); assert.equal(h.requests.length, 1);
+  h.window.document.hidden = false; h.listeners.visibilitychange();
+  assert.equal(h.requests.length, 2); assert.equal(h.timers.size, 1);
+});
+
+test('legacy 200 responses do not discard queued events or start retry loops', () => {
+  const h = browser({ tv: true, badAck: true }); h.listeners.load();
+  assert.equal(h.requests.length, 1); assert.equal(h.timers.size, 0);
+  h.options.badAck = false; h.window.AeroDiagnostics.flush();
+  assert.equal(h.requests.length, 2);
+  assert.ok(JSON.parse(h.requests[1].body).some(item => item.event === 'ui.start'));
+  const rejected = browser({ tv: true, status: 403 }); rejected.listeners.load();
+  assert.equal(rejected.timers.size, 0);
+  const busy = browser({ tv: true, status: 503 }); busy.listeners.load(); busy.advance(60000);
+  assert.equal(busy.requests.length, 4); assert.equal(busy.timers.size, 0);
 });
 
 test('service log storage uses a separate file and reloads on Windows and POSIX hosts', () => {

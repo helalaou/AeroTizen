@@ -37,9 +37,11 @@ startup, routing mode, watcher decisions and requests. Content payloads, program
 account data, raw errors and stack traces are not recorded.
 
 UI logs use local storage. They are sent to the existing local service on load, return to
-the launcher, an error, or a successful service request. There is no diagnostic polling or
-retry timer. The service keeps a separate log file in private app storage. Each log keeps
-at most 200 recent events within a size limit. Old events are discarded. Storage failures
+the launcher, an error, or a successful service request. If the existing service is not
+ready, delivery gets up to three short retries while the launcher is visible. Retries
+stop when it is hidden. There is no continuous polling, and diagnostic delivery never
+starts the service. The service keeps a separate log file in private app storage. Each
+log keeps at most 200 recent events within a size limit. Old events are discarded. Storage failures
 leave logging in memory; they do not block the launcher. Uninstall removes TV logs.
 
 `--tv TV_IP logs export` makes one bounded, read-only request to the running local service

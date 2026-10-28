@@ -64,12 +64,20 @@
   }
   if (typeof module !== 'undefined' && module.exports) { module.exports = create; return; }
   var logger = root.AeroDiagnostics = create('ui'), busy = false, sent = {};
+  var retryTimer = null, retries = 0, retryDelays = [1000, 3000, 10000];
+  function cancelRetry() {
+    if (retryTimer !== null) { root.clearTimeout(retryTimer); retryTimer = null; }
+  }
+  function retry() {
+    if (root.document.hidden || retryTimer !== null || retries >= retryDelays.length) { return; }
+    retryTimer = root.setTimeout(function () { retryTimer = null; flush(); }, retryDelays[retries++]);
+  }
   try {
     logger.attach({ load: function () { return root.localStorage.getItem('aerotizen.diagnostics.v1'); },
       save: function (value) { root.localStorage.setItem('aerotizen.diagnostics.v1', value); } });
   } catch (e) { /* missing storage keeps an in-memory log */ }
   function flush() {
-    if (busy || !root.tizen || !root.XMLHttpRequest) { return; }
+    if (busy || retryTimer !== null || !root.tizen || !root.XMLHttpRequest || root.document.hidden) { return; }
     var batch = [];
     logger.snapshot().records.filter(function (item) { return !sent[item.id]; }).slice(0, BATCH_SIZE).forEach(function (item) {
       if (JSON.stringify(batch.concat([item])).length <= MAX_BATCH_CHARACTERS) { batch.push(item); }
@@ -80,16 +88,22 @@
       var request = new root.XMLHttpRequest();
       request.open('POST', 'http://127.0.0.1:47790/diagnostics/events', true);
       request.setRequestHeader('Content-Type', 'text/plain'); request.timeout = 1500;
-      request.onerror = request.ontimeout = function () { busy = false; };
+      request.onerror = request.ontimeout = function () { busy = false; retry(); };
       request.onload = function () {
         busy = false;
-        if (request.status !== 200) { return; }
+        if (request.status !== 200) { if (request.status >= 500 || request.status === 408) { retry(); } return; }
+        // An older service returns 200 for unknown paths. Keep the events queued
+        // unless the diagnostics endpoint acknowledges this exact batch.
+        var acknowledgement;
+        try { acknowledgement = JSON.parse(request.responseText); } catch (e) { return; }
+        if (!acknowledgement || acknowledgement.schema_version !== 1 || acknowledgement.accepted !== batch.length) { return; }
+        cancelRetry(); retries = 0;
         batch.forEach(function (item) { sent[item.id] = true; });
         var keep = {}; logger.snapshot().records.forEach(function (item) { if (sent[item.id]) { keep[item.id] = true; } }); sent = keep;
         flush();
       };
       request.send(JSON.stringify(batch));
-    } catch (e) { busy = false; }
+    } catch (e) { busy = false; retry(); }
   }
   logger.flush = flush;
   var version = 'unknown';
@@ -108,6 +122,8 @@
     logger.record('ui.appcontrol', { operation: operation }); flush();
   });
   root.document.addEventListener('visibilitychange', function () {
-    logger.record('ui.visibility', { hidden: root.document.hidden }); if (!root.document.hidden) { flush(); }
+    logger.record('ui.visibility', { hidden: root.document.hidden });
+    cancelRetry(); retries = 0;
+    if (!root.document.hidden) { flush(); }
   });
 })(typeof window !== 'undefined' ? window : this);
