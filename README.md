@@ -290,6 +290,9 @@ TV logs need a launcher build with this feature and a running background service
 On the tested Frame, return from another app before exporting after a cold start
 to include queued UI startup events.
 
+TV events are buffered in memory and saved in asynchronous batches, outside remote
+action handlers. A sudden power cut can lose the unsaved batch.
+
 Logs are bounded and redacted. Exports exclude certificates, login tokens and recovery
 backup files; they include Home result summaries and failed readbacks before rollback.
 Check the report before sharing it. Nothing is uploaded automatically. Keep your original

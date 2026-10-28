@@ -36,13 +36,30 @@ operations, script error names and Samsung Home handoffs. Its background service
 startup, routing mode, watcher decisions and requests. Content payloads, programme titles,
 account data, raw errors and stack traces are not recorded.
 
-UI logs use local storage. They are sent to the existing local service on load, return to
-the launcher, an error, or a successful service request. If the existing service is not
-ready, delivery gets up to three short retries while the launcher is visible. Retries
-stop when it is hidden. There is no continuous polling, and diagnostic delivery never
-starts the service. The service keeps a separate log file in private app storage. Each
-log keeps at most 200 recent events within a size limit. Old events are discarded. Storage failures
-leave logging in memory; they do not block the launcher. Uninstall removes TV logs.
+Recording an event updates a bounded memory buffer. Remote handlers do not save logs or
+prepare network batches. Upload preparation runs in a later task; delivery uses async HTTP.
+The existing background service accepts the batch into memory and returns without waiting
+for disk storage. A separate Web Worker is not used for this small, bounded workload.
+
+Dirty buffers are saved in batches after a 500 ms delay. UI logs use asynchronous
+IndexedDB transactions; the service uses asynchronous file writes followed by an atomic
+rename. Only one save can run at a time. Events received during a save go into the next
+batch. There are no synchronous log writes or synchronous fallback writes. Existing UI
+logs in localStorage are read once in an idle task for migration; that old key is not
+rewritten. If IndexedDB is unavailable, the UI keeps its memory buffer and can still send
+records to the service. Storage failure never makes a remote action wait.
+
+Batching is best effort: a power cut, process termination or UI suspension before a save
+completes can lose the unsaved events. The normal delay is 500 ms plus storage time;
+suspension can make it longer. Records already saved survive restart. Exports read the
+service's current memory buffer, including events not yet saved. Home backup and recovery
+receipts keep their existing durable writes; they are separate from diagnostic logs.
+
+UI delivery is requested on load, return to the launcher, an error, or a successful service
+request. If the service is not ready, delivery gets up to three short retries while the
+launcher is visible. Retries stop when it is hidden. There is no continuous polling, and
+diagnostic delivery never starts the service. Each log keeps at most 200 recent events
+within a size limit. Old events are discarded. Uninstall removes TV logs.
 
 `--tv TV_IP logs export` makes one bounded, read-only request to the running local service
 through SDB. No root, inspector, service launch or Home setting change is needed. A stopped

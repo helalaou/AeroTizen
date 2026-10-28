@@ -102,8 +102,8 @@ function harness(options = {}) {
     module: { exports: {} },
     require(name) {
       if (name === 'http') return http;
-      if (name === '../js/diagnostics') return require('../launcher/js/diagnostics');
-      if (name === './diagnostics-store') return (tz, ready) => ready(null);
+      if (name === '../js/diagnostics') return kind => require('../launcher/js/diagnostics')(kind, { later: (fn, ms) => timer(fn, ms, 0) });
+      if (name === './diagnostics-store') return (tz, ready) => ready(options.diagnosticsStorage || null);
       if (name === './artmode') return config => { artOptions = config; return art; };
       if (name === './home-mode') return require('../launcher/service/home-mode');
       if (name === './home-store') return (tz, ready) => ready(preference, !!options.storageReadFailed);
@@ -645,6 +645,28 @@ test('diagnostics enforce read access and batch limits without changing native H
   h.advance(60000);
   assert.equal(h.requests.length, before); assert.equal(h.launches.length, 0);
   assert.equal(h.art.starts, 0); assert.equal(h.state().homeControl.mode, 'native');
+});
+
+test('pending diagnostic storage does not delay Home requests or native mode control', () => {
+  const saves = [], completions = [];
+  const h = harness({ capability: false, diagnosticsStorage: {
+    load: done => done(null, null), save: (value, done) => { saves.push(value); completions.push(done); }
+  } });
+  h.api.onStart(); h.advance(0); h.handoff('hold'); h.handoff('native');
+  assert.equal(saves.length, 0); h.advance(500); assert.equal(saves.length, 1);
+  const before = h.requests.length;
+  assert.equal(h.control('/home').homeControl.mode, 'native');
+  assert.equal(h.handoff('hold', 'c'.repeat(32)).code, 200);
+  assert.equal(h.handoff('native', 'c'.repeat(32)).code, 200);
+  h.advance(60000); assert.equal(saves.length, 1);
+  assert.equal(h.requests.length, before); assert.equal(h.launches.length, 0);
+  assert.equal(h.state().heartbeats, 0);
+  let logs;
+  h.servers[0].handler({ method: 'GET', url: '/diagnostics/logs', headers: { 'x-aerotizen-diagnostics': '1' } }, {
+    writeHead(status) { assert.equal(status, 200); }, end(data) { logs = JSON.parse(data); }
+  });
+  assert.ok(logs.records.some(item => item.event === 'service.request' && item.data.action === 'home'));
+  completions.shift()(null); h.advance(500); assert.equal(saves.length, 2);
 });
 
 let failed = 0;

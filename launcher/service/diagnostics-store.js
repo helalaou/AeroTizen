@@ -1,5 +1,5 @@
 'use strict';
-// Optional log storage, deliberately separate from the durable Home routing receipt.
+// Optional async log storage, separate from the durable Home routing receipt.
 var fs = require('fs');
 var MAX_BYTES = 256 * 1024;
 module.exports = function (tz, ready) {
@@ -11,18 +11,24 @@ module.exports = function (tz, ready) {
         if (uri.indexOf('file:///') !== 0) { ready(null); return; }
         var file = decodeURIComponent(uri.slice(7)).replace(/\/$/, '') + '/aerotizen-diagnostics-v1.json';
         ready({
-          load: function () {
-            try { if (fs.statSync(file).size > MAX_BYTES) { return null; } return fs.readFileSync(file, 'utf8'); }
-            catch (e) { return null; }
+          load: function (done) {
+            fs.stat(file, function (error, stat) {
+              if (error || stat.size > MAX_BYTES) { done(null, null); return; }
+              fs.readFile(file, 'utf8', function (failure, value) {
+                done(failure, !failure && Buffer.byteLength(value, 'utf8') <= MAX_BYTES ? value : null);
+              });
+            });
           },
-          save: function (value) {
-            if (Buffer.byteLength(value, 'utf8') > MAX_BYTES) { return; }
-            var temporary = file + '.tmp', descriptor;
-            try {
-              descriptor = fs.openSync(temporary, 'w', 384);
-              try { fs.writeFileSync(descriptor, value, 'utf8'); } finally { fs.closeSync(descriptor); }
-              fs.renameSync(temporary, file);
-            } finally { try { fs.unlinkSync(temporary); } catch (e) { /* absent */ } }
+          save: function (value, done) {
+            if (Buffer.byteLength(value, 'utf8') > MAX_BYTES) { done(new Error('Log size limit')); return; }
+            var temporary = file + '.tmp';
+            function failed(error) { fs.unlink(temporary, function () { done(error); }); }
+            fs.writeFile(temporary, value, { encoding: 'utf8', mode: 384 }, function (error) {
+              if (error) { failed(error); return; }
+              fs.rename(temporary, file, function (failure) {
+                if (failure) { failed(failure); } else { done(null); }
+              });
+            });
           }
         });
       } catch (e) { ready(null); }

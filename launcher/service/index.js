@@ -11,7 +11,7 @@
 // http://127.0.0.1:47790.
 var http = require('http');
 var createArtMode = require('./artmode');
-var diagnostics = { record: function () {}, attach: function () {}, ingest: function () { return false; }, snapshot: function () { return { schema_version: 1, records: [] }; } };
+var diagnostics = { record: function () {}, flushStorage: function () {}, attach: function () {}, ingest: function () { return false; }, snapshot: function () { return { schema_version: 1, records: [] }; } };
 try { diagnostics = require('../js/diagnostics')('service'); } catch (e) { /* optional diagnostics */ }
 var SELF = 'DclHome001.Home';
 var HIDDEN_GRACE = 250;         // non-Frame: Samsung Home appears almost at once
@@ -485,6 +485,7 @@ module.exports.onStart = function () {
 module.exports.onRequest = function () {};
 module.exports.onExit = function () {
   diagnostics.record('service.exit');
+  diagnostics.flushStorage();
   stopped = true; invalidate('service exit'); scanNumber += 1;
   clearInterval(interval); clearTimeout(capabilityRetry); clearTimeout(bootFallback); clearTimeout(bootTimer);
   art.stop();

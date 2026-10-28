@@ -37,37 +37,65 @@ test('TV logs allowlist fields, redact private values and deduplicate events', (
   for (const value of ['SECRET', 'PRIVATE-CONTENT', hidden, '192.0.2.1', '/Users/person', 'a'.repeat(32)]) assert.ok(!raw.includes(value), value);
 });
 
-test('TV log reload merges current startup, with corrupt or failed storage kept optional', () => {
-  let saved;
-  const storage = { load: () => saved, save: value => { saved = value; } };
-  const first = create('service'); first.attach(storage); first.record('first.start');
-  const next = create('service'); next.record('second.start'); next.attach(storage);
+function clock() {
+  const timers = new Map(); let now = 0, serial = 0;
+  return {
+    timers,
+    later(fn, ms) { const id = ++serial; timers.set(id, { at: now + ms, fn }); return id; },
+    cancel(id) { timers.delete(id); },
+    advance(ms) {
+      const end = now + ms;
+      for (;;) {
+        const next = [...timers].sort((a, b) => a[1].at - b[1].at)[0];
+        if (!next || next[1].at > end) break;
+        now = next[1].at; timers.delete(next[0]); next[1].fn();
+      }
+      now = end;
+    }
+  };
+}
+
+test('records and ingestion only update memory; burst writes are batched and serialized', () => {
+  const c = clock(), writes = [], finish = [];
+  let loaded;
+  const logger = create('service', { later: c.later });
+  logger.attach({ load: done => { loaded = done; }, save: (value, done) => { writes.push(JSON.parse(value)); finish.push(done); } });
+  for (let i = 0; i < 100; i++) logger.record('event.' + i);
+  assert.equal(writes.length, 0); assert.equal(logger.snapshot().records.length, 100);
+  loaded(null, null); c.advance(499); assert.equal(writes.length, 0);
+  c.advance(1); assert.equal(writes.length, 1); assert.equal(writes[0].length, 100);
+  logger.record('during.write'); c.advance(5000); assert.equal(writes.length, 1);
+  finish.shift()(null); c.advance(500); assert.equal(writes.length, 2);
+  assert.equal(writes[1].at(-1).event, 'during.write');
+  finish.shift()(null); c.advance(60000); assert.equal(writes.length, 2);
+  logger.ingest(logger.snapshot().records); c.advance(60000); assert.equal(writes.length, 2);
+});
+
+test('async reload merges previous events with new actions; storage failures stay optional', () => {
+  const c = clock(); let saved;
+  const storage = { load: done => done(null, saved), save: (value, done) => { saved = value; done(null); } };
+  const first = create('service', { later: c.later }); first.attach(storage); first.record('first.start');
+  assert.equal(saved, undefined); c.advance(500);
+  const next = create('service', { later: c.later }); next.record('second.start'); next.attach(storage);
   assert.deepEqual(next.snapshot().records.map(r => r.event), ['first.start', 'second.start']);
-  const broken = create('service'); broken.record('current.start');
-  broken.attach({ load: () => '{bad json', save: () => assert.fail('must not save corrupt input') });
-  broken.record('still.works');
-  broken.attach({ load: () => null, save: () => { throw new Error('disk full'); } });
-  broken.record('after.failure');
+  const broken = create('service', { later: c.later }); broken.record('current.start');
+  broken.attach({ load: done => done(null, '{bad json'), save: (value, done) => done(new Error('disk full')) });
+  broken.record('still.works'); c.advance(500); broken.record('after.failure');
   assert.equal(broken.snapshot().records.at(-1).event, 'after.failure');
+  assert.equal(c.timers.size, 0);
 });
 
 function browser(options = {}) {
-  const listeners = {}, stored = new Map(), requests = [], timers = new Map();
-  let now = 0, timerId = 0;
-  function advance(ms) {
-    const end = now + ms;
-    for (;;) {
-      const pending = [...timers].sort((a, b) => a[1].at - b[1].at)[0];
-      if (!pending || pending[1].at > end) break;
-      now = pending[1].at; timers.delete(pending[0]); pending[1].fn();
-    }
-    now = end;
-  }
+  const listeners = {}, stored = new Map(options.saved ? [['snapshot', JSON.stringify(options.saved)]] : []), requests = [], c = clock();
+  let writes = 0;
   const window = {
     document: { hidden: false, addEventListener: (name, fn) => { listeners[name] = fn; } },
     addEventListener: (name, fn) => { listeners[name] = fn; },
-    setTimeout: (fn, ms) => { const id = ++timerId; timers.set(id, { at: now + ms, fn }); return id; },
-    clearTimeout: id => timers.delete(id),
+    setTimeout: c.later, clearTimeout: c.cancel,
+    AeroDiagnosticsStorage: ready => ready({
+      load: done => c.later(() => done(null, stored.get('snapshot')), options.loadDelay || 0),
+      save: (value, done) => { writes++; c.later(() => { stored.set('snapshot', value); done(null); }, 0); }
+    }),
     localStorage: { getItem: name => stored.get(name), setItem: (name, value) => stored.set(name, value) },
     XMLHttpRequest: function () {
       const request = this;
@@ -89,14 +117,15 @@ function browser(options = {}) {
     appControl: { operation: 'http://tizen.org/appcontrol/operation/main', data: [{ value: 'PRIVATE-PAYLOAD' }] }
   }) }) } };
   vm.runInNewContext(source, { window }, { filename: 'diagnostics.js' });
-  return { window, listeners, requests, stored, timers, advance, options };
+  return { window, listeners, requests, stored, timers: c.timers, advance: c.advance, options, writes: () => writes };
 }
 
 test('desktop preview logs lifecycle locally without service requests', () => {
   const h = browser(); h.listeners.load(); h.listeners.visibilitychange();
+  assert.equal(h.writes(), 0); h.advance(500);
   assert.equal(h.requests.length, 0);
   assert.equal(h.window.AeroDiagnostics.snapshot().records.at(-1).event, 'ui.visibility');
-  assert.ok(h.stored.get('aerotizen.diagnostics.v1'));
+  assert.ok(h.stored.get('snapshot'));
 });
 
 test('UI sends bounded event batches and logs error names only', () => {
@@ -105,6 +134,7 @@ test('UI sends bounded event batches and logs error names only', () => {
   h.listeners.load(); h.listeners.appcontrol();
   h.listeners.error({ error: { name: 'TypeError', message: 'PRIVATE-MESSAGE' }, lineno: 7 });
   h.listeners.unhandledrejection({ reason: { name: 'NetworkError', message: 'PRIVATE-REASON' } });
+  assert.equal(h.requests.length, 0); assert.equal(h.writes(), 0); h.advance(0);
   assert.ok(h.requests.length > 1);
   for (const request of h.requests) {
     assert.equal(request.method, 'POST'); assert.equal(request.url, 'http://127.0.0.1:47790/diagnostics/events');
@@ -112,16 +142,26 @@ test('UI sends bounded event batches and logs error names only', () => {
   }
   const raw = JSON.stringify(h.window.AeroDiagnostics.snapshot());
   assert.ok(!raw.includes('PRIVATE-')); assert.ok(raw.includes('TypeError'));
-  const failed = browser({ tv: true, fail: true }); failed.listeners.load();
+  const failed = browser({ tv: true, fail: true }); failed.listeners.load(); failed.advance(0);
   assert.equal(failed.requests.length, 1);
   failed.advance(60000); assert.equal(failed.requests.length, 4);
   assert.equal(failed.timers.size, 0); // Three retries, with no service or app launch API in the harness.
-  failed.listeners.visibilitychange(); assert.equal(failed.requests.length, 5);
+  failed.listeners.visibilitychange(); failed.advance(0); assert.equal(failed.requests.length, 5);
+});
+
+test('older queued UI events are delivered when async storage loads, without a remote action', () => {
+  const h = browser({ tv: true, loadDelay: 1000, saved: [
+    { id: 'old-ui-record', at: 1, source: 'ui', event: 'ui.previous', data: {} }
+  ] });
+  h.listeners.load(); h.advance(0);
+  assert.ok(!h.requests.some(request => JSON.parse(request.body).some(item => item.id === 'old-ui-record')));
+  h.advance(1000);
+  assert.ok(h.requests.some(request => JSON.parse(request.body).some(item => item.id === 'old-ui-record')));
 });
 
 test('cold-start delivery succeeds when the existing service becomes ready', () => {
-  const h = browser({ tv: true, fail: true }); h.listeners.load();
-  assert.equal(h.requests.length, 1); assert.equal(h.timers.size, 1);
+  const h = browser({ tv: true, fail: true }); h.listeners.load(); h.advance(0);
+  assert.equal(h.requests.length, 1);
   h.advance(1000); assert.equal(h.requests.length, 2);
   h.options.fail = false; h.advance(3000);
   assert.equal(h.requests.length, 3); assert.equal(h.timers.size, 0);
@@ -132,44 +172,45 @@ test('cold-start delivery succeeds when the existing service becomes ready', () 
 });
 
 test('startup notifications share one retry schedule instead of exhausting it early', () => {
-  const h = browser({ tv: true, fail: true }); h.listeners.load();
+  const h = browser({ tv: true, fail: true }); h.listeners.load(); h.advance(0);
   for (let i = 0; i < 20; i++) h.window.AeroDiagnostics.flush();
-  assert.equal(h.requests.length, 1); assert.equal(h.timers.size, 1);
+  assert.equal(h.requests.length, 1);
   h.advance(1000); assert.equal(h.requests.length, 2);
   h.options.fail = false; h.advance(3000);
   assert.equal(h.requests.length, 3); assert.equal(h.timers.size, 0);
 });
 
 test('hiding the launcher cancels delivery retries; returning starts a fresh bounded attempt', () => {
-  const h = browser({ tv: true, fail: true }); h.listeners.load();
+  const h = browser({ tv: true, fail: true }); h.listeners.load(); h.advance(0);
   h.window.document.hidden = true; h.listeners.visibilitychange();
-  assert.equal(h.timers.size, 0); h.advance(60000); assert.equal(h.requests.length, 1);
+  h.advance(60000); assert.equal(h.requests.length, 1);
   h.window.AeroDiagnostics.flush(); assert.equal(h.requests.length, 1);
-  h.window.document.hidden = false; h.listeners.visibilitychange();
-  assert.equal(h.requests.length, 2); assert.equal(h.timers.size, 1);
+  h.window.document.hidden = false; h.listeners.visibilitychange(); h.advance(0);
+  assert.equal(h.requests.length, 2);
 });
 
 test('legacy 200 responses do not discard queued events or start retry loops', () => {
-  const h = browser({ tv: true, badAck: true }); h.listeners.load();
+  const h = browser({ tv: true, badAck: true }); h.listeners.load(); h.advance(500);
   assert.equal(h.requests.length, 1); assert.equal(h.timers.size, 0);
-  h.options.badAck = false; h.window.AeroDiagnostics.flush();
+  h.options.badAck = false; h.window.AeroDiagnostics.flush(); h.advance(0);
   assert.equal(h.requests.length, 2);
   assert.ok(JSON.parse(h.requests[1].body).some(item => item.event === 'ui.start'));
-  const rejected = browser({ tv: true, status: 403 }); rejected.listeners.load();
+  const rejected = browser({ tv: true, status: 403 }); rejected.listeners.load(); rejected.advance(500);
   assert.equal(rejected.timers.size, 0);
   const busy = browser({ tv: true, status: 503 }); busy.listeners.load(); busy.advance(60000);
   assert.equal(busy.requests.length, 4); assert.equal(busy.timers.size, 0);
 });
 
-test('service log storage uses a separate file and reloads on Windows and POSIX hosts', () => {
+test('service log storage uses only async file APIs and preserves Home recovery on any host', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'aerotizen-logs-'));
   const prefix = '/virtual/private';
   const local = name => path.join(directory, name.slice(prefix.length + 1));
   const adapter = {
-    statSync: name => fs.statSync(local(name)), readFileSync: (name, encoding) => fs.readFileSync(local(name), encoding),
-    openSync: (name, flags, mode) => fs.openSync(local(name), flags, mode),
-    writeFileSync: (...args) => fs.writeFileSync(...args), closeSync: fd => fs.closeSync(fd),
-    renameSync: (from, to) => fs.renameSync(local(from), local(to)), unlinkSync: name => fs.unlinkSync(local(name))
+    stat: (name, done) => fs.stat(local(name), done),
+    readFile: (name, encoding, done) => fs.readFile(local(name), encoding, done),
+    writeFile: (name, value, options, done) => fs.writeFile(local(name), value, options, done),
+    rename: (from, to, done) => fs.rename(local(from), local(to), done),
+    unlink: (name, done) => fs.unlink(local(name), done)
   };
   const module = { exports: {} };
   vm.runInNewContext(fs.readFileSync(require.resolve('../launcher/service/diagnostics-store'), 'utf8'), {
@@ -181,16 +222,31 @@ test('service log storage uses a separate file and reloads on Windows and POSIX 
       assert.equal(name, 'wgt-private'); done({ toURI: () => 'file:///virtual/private' });
     } } }, value => { store = value; });
     const home = path.join(directory, 'aerotizen-home-routing-v1.json'); fs.writeFileSync(home, 'RECOVERY');
-    const logger = create('service'); logger.attach(store); logger.record('service.start');
+    const save = value => new Promise((resolve, reject) => store.save(value, error => error ? reject(error) : resolve()));
+    const load = () => new Promise((resolve, reject) => store.load((error, value) => error ? reject(error) : resolve(value)));
+    const logger = create('service'); logger.record('service.start');
     for (let i = 0; i < 100; i++) logger.record('unicode.test', { reason: '界'.repeat(190), component: '界'.repeat(190) });
-    const restarted = create('service'); restarted.attach(store);
-    assert.ok(restarted.snapshot().records.length > 0);
-    assert.equal(restarted.snapshot().records.at(-1).event, 'unicode.test');
+    let finished = false;
+    const pending = save(JSON.stringify(logger.snapshot().records)).then(() => { finished = true; });
+    assert.equal(finished, false); await pending;
+    assert.equal(JSON.parse(await load()).at(-1).event, 'unicode.test');
     assert.equal(fs.readFileSync(home, 'utf8'), 'RECOVERY');
     assert.equal(fs.readdirSync(directory).filter(name => name.endsWith('.tmp')).length, 0);
-    adapter.renameSync = () => { throw new Error('disk failed'); };
-    logger.record('service.failure');
-    assert.equal(logger.snapshot().records.at(-1).event, 'service.failure');
+    adapter.rename = (from, to, done) => done(new Error('disk failed'));
+    await assert.rejects(save('[]'), /disk failed/);
+    assert.equal(JSON.parse(await load()).at(-1).event, 'unicode.test');
     assert.equal(fs.readdirSync(directory).filter(name => name.endsWith('.tmp')).length, 0);
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+
+test('blocked or absent IndexedDB keeps UI logs in memory without a synchronous fallback', () => {
+  const open = require('../launcher/js/diagnostics-storage');
+  let calls = 0, result;
+  open({}, value => { calls++; result = value; }); assert.equal(result, null);
+  const request = {};
+  open({ indexedDB: { open: () => request } }, value => { calls++; result = value; });
+  request.onblocked(); request.onerror(); assert.equal(calls, 2); assert.equal(result, null);
+  let closed = false; request.result = { close: () => { closed = true; } }; request.onsuccess();
+  assert.equal(closed, true); assert.equal(calls, 2);
 });

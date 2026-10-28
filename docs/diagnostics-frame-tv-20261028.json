@@ -45,7 +45,8 @@
     "The reason for delayed UI delivery is unresolved. Do not claim the retries fixed it.",
     "Full preference backup was unavailable because the inspector timed out twice. The user confirmed saved Home tiles were unchanged.",
     "No native apply/restore failure was forced on the TV. Failure-before-rollback evidence remains covered by local native-policy tests.",
-    "No Windows device test or hosted CI run was performed during this test."
+    "No Windows device test or hosted CI run was performed during this test.",
+    "This hardware record predates asynchronous batching and IndexedDB UI storage. Those changes require separate TV validation."
   ],
   "local_checks_after_retry": {
     "launcher_service": 191,
