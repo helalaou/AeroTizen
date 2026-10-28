@@ -267,3 +267,10 @@ test('older Intl keeps a stable fitting clock without repeated layout measuremen
   assert.equal(elements.time.style.width, width);
   assert.equal(measurements, measured, 'normal clock updates reuse the reserved width');
 });
+
+test('clock tick listeners are notified once and can unsubscribe', () => {
+  const { A } = runtime(); let ticks = 0;
+  const unsubscribe = A.clock.subscribe(() => ticks++);
+  A.clock.tick(); assert.equal(ticks, 1);
+  unsubscribe(); A.clock.tick(); assert.equal(ticks, 1);
+});

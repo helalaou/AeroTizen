@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-25",
+  "state": "completed_with_limits",
+  "device": {
+    "model": "QE65LS03DAUXXU",
+    "os_version": "9.0.0",
+    "firmware_build": "T-PTMDDEUC-0090-REL-202605141701"
+  },
+  "base": "029b2a9",
+  "launcher": {
+    "version": "2.3.0",
+    "signed_package_sha256": "0e5d8aa851c1b156a2f0db2ade91a4e85c975eb0e9b55881b6a5a4c4db35787d",
+    "installed_runtime_files_verified": 33,
+    "saved_settings_unchanged": true
+  },
+  "pc_backup": {
+    "original_sha256": "b7f679e71da57f86361a94e78454a0020a9cd979a54e94a6f536ef07bddf89f7",
+    "backup_after_native_apply_kept_original": true,
+    "restore_from_copied_folder": true,
+    "all_saved_native_values_restored_exactly": true,
+    "receipts_written_beside_selected_backup": true,
+    "new_receipts_copied_to_durable_pc_folder": true,
+    "watcher_resumed_after_restore": true,
+    "physical_home_after_restore": "Samsung Home; direct user confirmation"
+  },
+  "fresh_native_apply": {
+    "success": true,
+    "uid": 901,
+    "root_used": false,
+    "boot": true,
+    "art_return": true,
+    "readback_passed": true,
+    "watcher_polls_added": 0,
+    "watcher_art_queries_added": 0,
+    "watcher_launch_calls_added": 0
+  },
+  "physical_checks": {
+    "youtube_before_full_restart": "YouTube stayed open; physical Home did not return to AeroTizen",
+    "cold_boot": {
+      "new_kernel_boot_id": true,
+      "opened_without_host_launch_or_home_press": "AeroTizen; direct user confirmation",
+      "power_to_screen_seconds_approx": 45,
+      "timing_method": "User estimate from one cold boot, not a controlled benchmark",
+      "native_settings_persisted": true,
+      "watcher_mode_persisted": "native",
+      "watcher_polls": 0,
+      "watcher_art_queries": 0,
+      "watcher_launch_calls": 0,
+      "control_service_reachable": true,
+      "saved_trace": {
+        "home_rendered_ms_after_first_script": 1281,
+        "frame_ready_ms_after_first_script": 1296,
+        "apps_requested_ms_after_first_script": 1529,
+        "apps_loaded_ms_after_first_script": 20984,
+        "physical_panel_readiness_measured": false,
+        "crc32c_validated_records": 53,
+        "access": "temporary root, read-only file copy",
+        "staging_cleaned": true,
+        "selected_system_files_unchanged": true
+      }
+    },
+    "youtube_after_full_restart": "YouTube stayed open; one physical Home press opened AeroTizen; direct user confirmation",
+    "samsung_home_escape": "Samsung Home opened from AeroTizen Settings; direct user confirmation",
+    "art_mode_and_single_home_return": {
+      "first_trial": "Artwork stayed for about a minute, then the screen went black. User toggled Power back into Art; one Home press then opened AeroTizen.",
+      "repeat_without_host_activity": "Screen went black again within the two-minute test; direct user confirmation",
+      "state_while_black": {
+        "art_mode": "on",
+        "power": "standby",
+        "aerotizen_running": true,
+        "aerotizen_visible": false
+      },
+      "watcher_polls": 0,
+      "watcher_art_queries": 0,
+      "watcher_launch_calls": 0,
+      "read_only_art_settings": {
+        "motion_timer_minutes": 30,
+        "brightness_sensor_setting": "on",
+        "settings_changed": false
+      },
+      "night_mode_comparison": {
+        "original": "on; direct user confirmation",
+        "temporary_off_test": "Artwork stayed for two minutes and one Home press opened AeroTizen; direct user confirmation",
+        "original_restored_after_test": "on; direct user confirmation, AeroTizen visible"
+      }
+    }
+  },
+  "validation": {
+    "python_tests": 259,
+    "launcher_tests": 129,
+    "native_policy_scenarios": 36,
+    "browser_tests": 8,
+    "typecheck": "passed",
+    "eslint": "passed",
+    "ruff": "passed",
+    "workflow_lint": "passed",
+    "standalone_macos_arm64_build_and_offline_smoke": "passed",
+    "standalone_live_read_only_home_status": "passed"
+  },
+  "limits": [
+    "Only this exact Frame model and firmware are enabled for writes.",
+    "Interrupted-setter recovery has automated coverage; live fault injection was not performed.",
+    "The first control-service read was unavailable; an explicit service start restored the endpoint.",
+    "The reported 45-second cold-start screen delay remains an open issue; it is not explained by the internal render mark alone.",
+    "Night Mode on produced a black panel with Art active and AeroTizen hidden; artwork remained visible for two minutes with Night Mode off. The original on setting was restored.",
+    "Home inside Samsung's own menus does not return to AeroTizen; open AeroTizen manually after using the Samsung Home escape.",
+    "A full restart was needed after the update/restore/apply sequence before physical Home returned from YouTube."
+  ],
+  "final_state": {
+    "native_home": true,
+    "native_boot": true,
+    "native_art_return": true,
+    "night_mode": "on; original setting restored by user",
+    "aerotizen_visible": "direct user confirmation",
+    "watcher_polls": 0,
+    "watcher_art_queries": 0,
+    "watcher_launch_calls": 0,
+    "original_backup_unchanged": true,
+    "current_standalone_backup_after_apply": "kept existing original"
+  }
+}

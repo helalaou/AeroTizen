@@ -53,7 +53,7 @@ window.Backgrounds = (function () {
     { id: 'rose', name: 'Rose', base: 'radial-gradient(1400px 900px at 80% -10%, #4a1430 0%, rgba(74,20,48,0) 60%), #0b0508' }
   ];
 
-  var layer = null, canvasTimer = null, speed = 1, current = null;
+  var layer = null, canvasTimer = null, speed = 1, current = null, suspended = false;
   var BLOB_SECONDS = [11, 14, 16, 12], SLOW_SECONDS = 22, WAVE_SECONDS = [28, 18];
 
   // Small static rendering used for the Settings swatches.
@@ -200,6 +200,7 @@ window.Backgrounds = (function () {
   }
 
   function apply(id) {
+    suspended = false;
     var b = LIST.filter(function (x) { return x.id === id; })[0] || LIST[0];
     current = b.id;
     layer = layer || document.getElementById('bg');
@@ -215,8 +216,16 @@ window.Backgrounds = (function () {
 
   function hide() { if (layer) { layer.hidden = true; } }
 
-  // One multiplier for every animated background (0.5 = half speed, 2 = double).
-  function setSpeed(m) { speed = m || 1; if (current) { apply(current); } }
+  // Unlike hide(), suspend also stops any canvas animation. A static
+  // photographic background should not burn GPU cycles behind the photo.
+  function suspend() {
+    suspended = true;
+    clear();
+    if (layer) { layer.hidden = true; }
+  }
 
-  return { list: LIST, preview: preview, apply: apply, hide: hide, setSpeed: setSpeed };
+  // One multiplier for every animated background (0.5 = half speed, 2 = double).
+  function setSpeed(m) { speed = m || 1; if (current && !suspended) { apply(current); } }
+
+  return { list: LIST, preview: preview, apply: apply, hide: hide, suspend: suspend, setSpeed: setSpeed };
 })();

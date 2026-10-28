@@ -140,49 +140,10 @@
     });
   }
 
-  function renderClockLayouts() {
-    var layoutBox = A.$('clock-layouts'), styleBox = A.$('clock-styles');
-    layoutBox.textContent = ''; styleBox.textContent = '';
-    [
-      ['classic', 'Classic AeroTizen', 'Weather, date and time on one line'],
-      ['custom', 'Custom', 'Large clock, with weather below']
-    ].forEach(function (option) {
-      var key = 'clock-layout:' + option[0];
-      var control = pill(key, '', (S.clockLayout || 'classic') === option[0], function () {
-        S.clockLayout = option[0];
-        focusKey = key;
-        changed(A.clockLayouts.apply);
-      });
-      control.classList.add('clock-layout-choice');
-      control.appendChild(A.el('strong', '', A.i18n ? A.i18n.t(option[1]) : option[1]));
-      control.appendChild(A.el('small', '', A.i18n ? A.i18n.t(option[2]) : option[2]));
-      layoutBox.appendChild(control);
-    });
-    A.$('clock-style-section').hidden = S.clockLayout !== 'custom';
-    [
-      ['vertical', 'Large vertical', '16\n32'],
-      ['horizontal', 'Horizontal', '16:32'],
-      ['minimal', 'Thin', '16\n32'],
-      ['bold', 'Bold', '16\n32']
-    ].forEach(function (option) {
-      var key = 'clock-style:' + option[0];
-      var control = pill(key, '', (S.aeroClockStyle || 'vertical') === option[0], function () {
-        S.aeroClockStyle = option[0];
-        focusKey = key;
-        changed(A.clockLayouts.apply);
-      });
-      control.classList.add('clock-style-choice');
-      control.appendChild(A.el('span', 'clock-preview', option[2]));
-      control.appendChild(A.el('small', '', A.i18n ? A.i18n.t(option[1]) : option[1]));
-      styleBox.appendChild(control);
-    });
-  }
-
   function renderDateTime() {
     var now = new Date(), times = A.$('time-formats'), dates = A.$('date-formats');
     var dateStyle = A.clock.dateStyle(S.dateFormat);
     times.textContent = ''; dates.textContent = '';
-    renderClockLayouts();
     [['12', '(12-hour)'], ['24', '(24-hour)']].forEach(function (t) {
       times.appendChild(pill('time:' + t[0], A.clock.formatTime(now, t[0]) + '  ' + t[1], S.showTime !== false && S.timeFormat === t[0],
         function () { S.showTime = true; S.timeFormat = t[0]; focusKey = 'time:' + t[0]; changed(A.clock.tick); }));
@@ -261,9 +222,10 @@
       } else {
         tile = A.tiles.app(app);
       }
-      tile.classList.toggle('on', S.home.indexOf(app.id) >= 0);
+      tile.classList.toggle('on', (S.home || [cfg.FIREPLACE_ID]).indexOf(app.id) >= 0);
       tile.dataset.key = 'app:' + app.id;
       tile.onclick = function () {
+        if (S.home === null) { S.home = [cfg.FIREPLACE_ID]; }
         var i = S.home.indexOf(app.id);
         if (i >= 0) { S.home.splice(i, 1); } else { S.home.push(app.id); }
         tile.classList.toggle('on', i < 0);
@@ -295,9 +257,7 @@
     var results = kids('weather-results').map(function (el) { return [el]; });
     return r.concat(A.chunk(kids('bg-still'), 8), [kids('weather-display')],
       [kids('weather-location')], results, [kids('weather-visibility')],
-      [kids('units')], [kids('clock-layouts')],
-      A.$('clock-style-section').hidden ? [] : [kids('clock-styles')],
-      [kids('time-formats')], dateRows, [kids('network-visibility')],
+      [kids('units')], [kids('time-formats')], dateRows, [kids('network-visibility')],
       [kids('live-tv-visibility')], [kids('card-sizes')], [kids('input-visibility')],
       [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]).filter(function (row) { return row.length; });
   }

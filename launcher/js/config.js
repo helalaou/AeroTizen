@@ -35,6 +35,7 @@ AeroTizen.config = {
     home: null,  // null selects defaults on first launch; [] keeps an empty Home.
     cardSize: 'big',
     background: 'aurora',
+    weatherPhoto: false,  // Opt-in AI-generated scenes using the existing forecast.
     speed: 1,
     showWeather: true,
     showTime: true,
@@ -47,6 +48,8 @@ AeroTizen.config = {
     clockLayout: 'classic',
     aeroClockStyle: 'vertical',
     timeFormat: null,  // Detect 12/24-hour format when first loaded.
+    continueWatching: false,
+    continueWatchingApps: [],
     showLiveTv: true,
     hideDisconnectedHdmi: false,
     inputNames: {}

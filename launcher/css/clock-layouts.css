@@ -1,6 +1,6 @@
 /* Clock appearance rules ported from the independently tested AeroTizen
    vertical-clock and four-style CSS. The default classic header is unchanged. */
-body:not(.s90c-clock-classic) > header.topbar {
+body:not(.s90c-clock-classic) header.topbar {
   height: 325px;
   align-items: flex-start;
   padding-top: 26px;
@@ -164,3 +164,6 @@ body.s90c-clock-classic #aero-v991-widget,
   -webkit-text-stroke:.6px currentColor;
 }
 #clock-styles .pill small { font-size:18px; line-height:1.1; }
+#aero-v991-widget [hidden] { display: none !important; }
+#custom-clock-root:empty { display: none; }
+body.s90c-clock-classic #custom-clock-root { display: none; }

@@ -4,6 +4,17 @@
 
   var cfg = A.config;
   var settings = A.settings = {};
+  var listeners = [];
+
+  function notify() { listeners.slice().forEach(function (listener) { listener(); }); }
+
+  settings.subscribe = function (listener) {
+    listeners.push(listener);
+    return function () {
+      var index = listeners.indexOf(listener);
+      if (index >= 0) { listeners.splice(index, 1); }
+    };
+  };
 
   function defaults() { return JSON.parse(JSON.stringify(cfg.DEFAULTS)); }
 
@@ -49,18 +60,23 @@
       if (saved.favorites && !saved.home) { saved.home = saved.favorites; }  // earlier field name
       Object.keys(data).forEach(function (k) { if (saved[k] !== undefined) { data[k] = saved[k]; } });
     } catch (e) { /* corrupt or unavailable storage: keep defaults */ }
+    data.continueWatching = data.continueWatching === true;
+    data.continueWatchingApps = Array.isArray(data.continueWatchingApps) ? data.continueWatchingApps.filter(function (id, index, all) {
+      return typeof id === 'string' && /^[A-Za-z0-9_.-]{1,200}$/.test(id) && all.indexOf(id) === index;
+    }).slice(0, 100) : [];
     var detectTimeFormat = data.timeFormat !== '12' && data.timeFormat !== '24';
     var detectTempUnit = data.tempUnit !== 'C' && data.tempUnit !== 'F';
     if (detectTimeFormat) { data.timeFormat = A.clock.defaultTimeFormat(); }
     if (detectTempUnit) { data.tempUnit = defaultTempUnit(); }
     Object.keys(data).forEach(function (k) { settings[k] = data[k]; });
     // Resolve older Automatic settings once, then retain the selected option.
-    if (detectTimeFormat || detectTempUnit) { settings.save(); }
+    if (detectTimeFormat || detectTempUnit) { settings.save(); } else { notify(); }
   };
 
   settings.save = function () {
     var out = {};
     Object.keys(cfg.DEFAULTS).forEach(function (k) { out[k] = settings[k]; });
     try { localStorage.setItem(cfg.STORAGE_KEY, JSON.stringify(out)); } catch (e) { /* storage full or blocked */ }
+    notify();
   };
 })(window.AeroTizen);
