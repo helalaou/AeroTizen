@@ -133,6 +133,7 @@ export const createHomeController = (env: Omit<HomeEnvironment, 'bridge' | 'stat
     else {
       const target = row + delta;
       if (target < 0 || target >= all.length) {return;}
+      if (row === 0) { column = 0; }
       if (target === 0) {column = current.page === 'home' ? 1 : 2;}
       else if (current.selected.startsWith('continue:') || all[target][0]?.startsWith('continue:')) {
         const from = nodes.get(current.selected)?.getBoundingClientRect();

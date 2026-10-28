@@ -27,6 +27,8 @@ test('Home and All apps retain keyed artwork nodes and Back returns to Home', as
   await page.evaluate(() => { window.originalHome = document.querySelector('#grid > .tile'); });
   await page.locator('#apps-tab').click();
   await expect(page.locator('#grid > .tile')).toHaveCount(25);
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('#grid > .tile').first()).toHaveClass(/focused/);
   await page.keyboard.press('Escape');
   await expect(page.locator('#grid > .tile')).toHaveCount(4);
   expect(await page.evaluate(() => originalHome === document.querySelector('#grid > .tile'))).toBe(true);
