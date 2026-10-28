@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "reported_at": "2026-10-27",
+  "reporter": "motorgrid-ita",
+  "source": "https://github.com/helalaou/AeroTizen/pull/49#issuecomment-6440307089",
+  "evidence_kind": "contributor-reported physical tests; not rerun by this agent",
+  "tested_commit": "3c2320052b68a0f23b8966059e3771e25b3a1a90",
+  "device": {
+    "model": "QE65S90CATXZT",
+    "cpu_arch": "armv7",
+    "os_version": "9.0.0",
+    "software": "T-PTMCDEUC-0090-2220.4",
+    "firmware_build": "T-PTMCDEUC-0090-REL-202603190158"
+  },
+  "setup": {
+    "own_original_baseline_captured": true,
+    "previous_custom_launcher_removed": true,
+    "matching_pr49_cli_and_signed_launcher": true,
+    "pr37_included": false,
+    "power_disconnect_seconds": 60
+  },
+  "passed": [
+    "Home-only apply and physical Home after full power disconnect",
+    "Persistent native mode and transaction survive restart",
+    "Home returns from YouTube and Prime Video without a reported spinner",
+    "Home-only restore with launcher installed returns to Samsung Home after restart",
+    "Native boot opens AeroTizen automatically after full power disconnect",
+    "Home returns from YouTube and Prime Video after native boot",
+    "Home-plus-boot restore with launcher installed restores all original values",
+    "After boot restore/restart, AeroTizen does not start automatically and Home opens Samsung Home"
+  ],
+  "restored_values": {
+    "home": "com.samsung.tv.csfs",
+    "startup_appid": "org.tizen.tv-viewer",
+    "booting_appid_backup": "org.tizen.tv-viewer",
+    "auto_start": 0
+  },
+  "service_observation": {
+    "first_read_uptime_seconds_approx": 107,
+    "first_read_reachable": false,
+    "later_read_uptime_seconds_approx": 197,
+    "later_read_native_mode": true,
+    "later_read_original_transaction_matches": true,
+    "cause": "not established"
+  },
+  "not_tested": [
+    "restore with launcher absent",
+    "immediate Samsung-menu Home/manual reopen",
+    "PR37 integration"
+  ],
+  "startup_duration_measured": false,
+  "live_tv": {
+    "path": "embedded TVWindow",
+    "reported_limitations": [
+      "channel changes",
+      "Home does not leave viewer; Back does"
+    ],
+    "native_tv_app_launch_confirmed": false,
+    "follow_up": "PR37; outside PR49 native Home changes"
+  },
+  "final_state": "Samsung originals restored; PR49 launcher still installed; complete PC backup and receipts retained",
+  "windows_report": {
+    "lint_typecheck_build": "passed",
+    "browser_tests": "8 passed using py -3 and one worker",
+    "reported_failures": [
+      "private-storage JavaScript host test",
+      "ZIP backslash-path fixture"
+    ],
+    "entire_windows_suite_green": false
+  }
+}

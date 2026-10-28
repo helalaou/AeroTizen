@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-24",
+  "state": "completed",
+  "device": {
+    "model": "QE65LS03DAUXXU",
+    "cpu_arch": "armv7",
+    "os_version": "9.0.0",
+    "firmware_build": "T-PTMDDEUC-0090-REL-202605141701"
+  },
+  "root_used": false,
+  "launcher_install": {
+    "source_files_verified": 27,
+    "visible": true,
+    "ready": "complete",
+    "settings_preserved": true,
+    "home_loaded": true,
+    "settings_check_scope": "Verified after first update; final independent read after repeated update unavailable because inspector timed out"
+  },
+  "launcher_backup": {
+    "version": "2.2.0",
+    "settings_keys": 2,
+    "home_favourites": 5,
+    "author_matches": true,
+    "recovery_package_created": true
+  },
+  "no_op_restore": {
+    "success": true,
+    "native_settings_unchanged": true
+  },
+  "apply": {
+    "success": true,
+    "uid": 901,
+    "sdk_staging_cleaned": true,
+    "original_backup_sha256": "b7f679e71da57f86361a94e78454a0020a9cd979a54e94a6f536ef07bddf89f7",
+    "main_operation": "DclHome001.Home",
+    "home_appid": "DclHome001.Home",
+    "startup_and_autostart_unchanged": true,
+    "writer_uid": 901,
+    "helper_files_cleaned": true
+  },
+  "native_idle": {
+    "polls_added": 0,
+    "art_queries_added": 0,
+    "launches_added": 0,
+    "ordinary_home_did_not_reenable_watcher": true,
+    "observation_seconds": 73.1
+  },
+  "physical_home": {
+    "from_app": "YouTube",
+    "result": "AeroTizen",
+    "source": "Direct user confirmation"
+  },
+  "samsung_escape": {
+    "launcher_hidden": true,
+    "leaving": true,
+    "launch_error": false,
+    "native_assignment_preserved": true,
+    "user_screen_confirmation": "Samsung Home; direct user confirmation after selecting Settings \u2192 Samsung Home",
+    "first_user_reply": "AeroTizen visible after the test had relaunched the app; ambiguous",
+    "repeat_check": "passed"
+  },
+  "service_restart": {
+    "method": "Repeated the same signed package installation in place, then launched the app",
+    "persistent_native_mode": true,
+    "new_process_counters": {
+      "heartbeats": 0,
+      "art_queries": 0,
+      "launch_calls": 0
+    },
+    "ui_stop_attempt": "TV rejected tizen.application.kill with WebAPIException",
+    "reboot_tested": false,
+    "native_home_assignment_preserved": true
+  },
+  "restore": {
+    "state": "restored_verified",
+    "writer_uid": 901,
+    "helper_files_cleaned": true,
+    "success": true,
+    "exact_baseline_restored": true,
+    "startup_and_autostart_unchanged": true,
+    "original_backup_unchanged": true,
+    "watcher_resumed": true,
+    "watcher_polls_added": 7,
+    "final_watcher_mode": "watcher",
+    "final_watcher_pause": "Samsung Home escape selected by user",
+    "final_home_owner": "com.samsung.tv.csfs"
+  },
+  "limits": [
+    "Art Mode API was unresponsive before installation; physical Art Mode behavior not tested",
+    "Native power-on behavior is a later phase"
+  ],
+  "packages": {
+    "updated_signed_sha256": "4844d43d411507ca0c35502ec0d87a5d5d1f522a40e0138c9a551fd602fd3101",
+    "recovery_signed_sha256": "157461b36974680ee99a8479e78af1add8e345bf1d1db5d2494232dd93fed341",
+    "recovery_package_resigned_with_same_author": true
+  }
+}

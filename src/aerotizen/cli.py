@@ -8,10 +8,15 @@
   aerotizen certs               sign in to Samsung, create signing certs for this TV
   aerotizen install launcher    download, sign, and install the latest launcher
   aerotizen install PATH        sign + install a local app folder or .wgt
+  aerotizen uninstall launcher  remove the launcher (or: uninstall APPID for another app you installed)
   aerotizen key KEY_VOLUP [n]   press a remote button
   aerotizen launch APPID        open an app and check that it came up
   aerotizen inspect launcher    restart the launcher with Chrome DevTools
   aerotizen inspect APPID       inspect another app (--port defaults to 9222)
+  aerotizen home status         read native Home state as the SDK user
+  aerotizen home backup         save an immutable local Home baseline
+  aerotizen home apply          preview native Home assignment (--yes writes)
+  aerotizen home restore        preview baseline restore (--yes writes)
 
 Add --tv IP to target a specific TV (otherwise the first one found is used).
 """
@@ -21,6 +26,7 @@ import datetime
 import json
 import os
 import re
+import shutil
 import sys
 import time
 import xml.etree.ElementTree as ET
@@ -30,7 +36,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from aerotizen import __version__, catalog, discover, remote
-from aerotizen.sdb import Sdb, SdbError
+from aerotizen.device import DeviceSession
+from aerotizen.sdb import SdbError
 
 STATE_DIR = remote.CONFIG_DIR
 
@@ -70,7 +77,7 @@ def packages(applist_text):
 
 def require_sdb(host):
     try:
-        return Sdb(host).connect()
+        return DeviceSession(host).connect()
     except SdbError as e:
         d = remote.info(host)
         sys.exit(
@@ -121,7 +128,11 @@ def cmd_apps(args):
 
 def cmd_debloat(args):
     host = pick_tv(args)
-    s = require_sdb(host)
+    with require_sdb(host) as s:
+        _debloat(args, host, s)
+
+
+def _debloat(args, host, s):
     before = s.applist()
     print("snapshot:", snapshot(host, before))
     pkgs = packages(before)
@@ -156,7 +167,7 @@ def cmd_debloat(args):
 
     current, refused = before, []
     for pkgid in chosen:
-        out = s.uninstall(pkgid).strip()
+        out = s.uninstall(pkgs[pkgid]["apps"][0]["appid"]).strip()
         after = s.applist()
         gone = pkgid not in packages(after)
         print(f"{'removed' if gone else 'STILL PRESENT'}  {pkgs[pkgid]['name']} ({pkgid})")
@@ -166,7 +177,6 @@ def cmd_debloat(args):
             refused.append(pkgs[pkgid]["name"])
         current = after
     print("snapshot:", snapshot(host, current))
-    s.close()
     if refused:
         # Tizen 6+ retail firmware only lets sdb remove developer-installed apps.
         print(
@@ -275,6 +285,46 @@ def cmd_install(args):
         sys.exit(f"Install failed: {exc}")
 
 
+def cmd_uninstall(args):
+    from aerotizen import releases
+
+    app_id = releases.APP_ID if args.appid == "launcher" else args.appid
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", app_id):
+        sys.exit("Expected 'launcher' or an application ID (letters, digits, _, . or -).")
+    with require_sdb(pick_tv(args)) as s:
+        installed = {a["appid"]: a for a in catalog.parse_applist(s.applist())}
+        if app_id not in installed:
+            sys.exit(f"{app_id} is not installed.")
+        name = installed[app_id]["name"]
+        launcher_package = installed[app_id]["pkgid"] == releases.PACKAGE_ID
+        note = " Its settings on the TV are removed too." if launcher_package else ""
+        if not args.yes and input(f"Uninstall {name} ({app_id})?{note} [y/N] ").strip().lower() != "y":
+            return
+        if launcher_package:
+            from aerotizen import home
+
+            try:
+                status = home.read_status(s, None, {})
+            except (OSError, SdbError, ValueError) as exc:
+                sys.exit(f"Cannot verify native Home assignments; uninstall stopped: {exc}")
+            if not status["complete"]:
+                sys.exit("Cannot verify all native Home assignments; uninstall stopped.")
+            values = [status["home"]["main_operation"], *status["home"]["settings"].values()]
+            if any(
+                item["type"] == "string" and item["value"].split(".", 1)[0] == releases.PACKAGE_ID
+                for item in values
+            ):
+                sys.exit(
+                    "AeroTizen is still assigned to native Home or startup. "
+                    "Run 'aerotizen home restore --yes', fully restart the TV, then retry uninstall."
+                )
+        out = s.uninstall(app_id).strip()
+        if app_id in {a["appid"] for a in catalog.parse_applist(s.applist())}:
+            reason = next((ln for ln in out.splitlines() if "fail" in ln or "can not" in ln), out[-120:])
+            sys.exit(f"{name} is still installed. TV said: {reason or '(nothing)'}")
+        print(f"Uninstalled {name} ({app_id}).")
+
+
 def cmd_key(args):
     with remote.Remote(pick_tv(args)) as r:
         r.key(args.key, args.times)
@@ -335,6 +385,83 @@ def cmd_inspect(args):
         sys.exit(f"Inspect failed: {exc}")
 
 
+def cmd_home(args):
+    from aerotizen import home, home_control
+    from aerotizen.root import SamsungTvRoot
+
+    try:
+        writing = args.home_command in ("apply", "restore")
+        if writing and not args.yes:
+            plan = home_control.preview(
+                args.home_command,
+                args.backup,
+                boot=getattr(args, "boot", False),
+            )
+            if args.json:
+                print(json.dumps(plan, indent=2))
+            else:
+                print(f"Home {args.home_command}: preview only. No TV connection or changes.")
+                print(f"Target: {plan['target']}; watcher: {plan['watcher_after']}.")
+                print(plan["startup"])
+                print("Use --yes only when ready to change Home on the TV.")
+            return
+        provider = None
+        if not writing and getattr(args, "root", False):
+            executable = args.root_tool or shutil.which("samsung-tv-root")
+            sdb = args.sdb or os.environ.get("SDB") or shutil.which("sdb")
+            if not executable or not sdb:
+                sys.exit("Pass --root-tool PATH and --sdb PATH, or put the verified tools on PATH.")
+            provider = SamsungTvRoot(executable, sdb)
+        if writing:
+            home_control.load_helper()
+        home.load_helper()
+        host = pick_tv(args)
+        with require_sdb(host) as session:
+            info = home.device_info(session, host, backup=getattr(args, "backup", None), state_dir=STATE_DIR)
+            if writing:
+                status = home_control.change(
+                    session,
+                    info,
+                    args.home_command,
+                    backup=args.backup,
+                    state_dir=STATE_DIR,
+                    boot=getattr(args, "boot", False),
+                )
+            else:
+                status = home.read_status(session, provider, info)
+                if args.home_command == "backup":
+                    status["backup"] = home.save_backup(status, output=args.output, state_dir=STATE_DIR)
+        if args.json:
+            print(json.dumps(status, indent=2))
+        elif writing:
+            print(f"Home {args.home_command} completed and read back.")
+            print(f"Original backup: {status['backup']}")
+            print(f"Transaction receipt: {status['receipt']}")
+            print("Home-button behavior and boot behavior still need separate physical tests.")
+        elif args.home_command == "backup":
+            backup = status["backup"]
+            print(f"{'Saved' if backup['created'] else 'Kept existing'} Home baseline: {backup['path']}")
+            print(
+                f"matches current={backup['matches_current']} firmware matches={backup['firmware_matches']}"
+            )
+        else:
+            print(f"{status['device']['model']}  native Home mode={status['home']['mode']}")
+            values = {"main operation": status["home"]["main_operation"], **status["home"]["settings"]}
+            for key, item in values.items():
+                value = item["value"] if item["status"] == "ok" else f"unavailable ({item['error']})"
+                print(f"{key}: {value}")
+            print(f"watcher: {status['watcher']['state']}")
+            diagnostic = status["watcher"].get("error")
+            if diagnostic:
+                detail = diagnostic.get("socket_error") or diagnostic.get("http_status")
+                suffix = f" ({detail})" if detail else ""
+                print(f"service query: {diagnostic['code']}{suffix}: {diagnostic['message']}")
+        if not writing and not status["complete"]:
+            sys.exit("Some native Home values are unavailable; a complete backup cannot be made.")
+    except (OSError, SdbError, ValueError, KeyError) as exc:
+        sys.exit(f"Home {args.home_command} failed: {exc}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="aerotizen", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -362,6 +489,10 @@ def main():
         "--release-repo", metavar="OWNER/REPO", help="download launcher releases from this repository"
     )
     p.set_defaults(fn=cmd_install)
+    p = sub.add_parser("uninstall", help="remove the launcher or another app you installed")
+    p.add_argument("appid", help="'launcher' or an application ID")
+    p.add_argument("--yes", action="store_true", help="don't ask for confirmation")
+    p.set_defaults(fn=cmd_uninstall)
     p = sub.add_parser("key")
     p.add_argument("key")
     p.add_argument("times", nargs="?", type=int, default=1)
@@ -373,6 +504,31 @@ def main():
     p.add_argument("appid", help="'launcher' or an application ID")
     p.add_argument("--port", type=int, default=9222, help="local inspector port (default: 9222)")
     p.set_defaults(fn=cmd_inspect)
+    p = sub.add_parser("home", help="inspect, back up, assign or restore native Home")
+    commands = p.add_subparsers(dest="home_command", required=True)
+    for name in ("status", "backup", "apply", "restore"):
+        command = commands.add_parser(name)
+        if name in ("status", "backup"):
+            command.add_argument(
+                "--root", action="store_true", help="use temporary root instead of the default SDK user"
+            )
+            command.add_argument("--root-tool", type=Path, help="verified samsung-tv-root v0.0.12 executable")
+            command.add_argument("--sdb", type=Path, help="Samsung SDB executable for --root")
+        elif name in ("apply", "restore"):
+            command.add_argument(
+                "--yes", action="store_true", help="allow Home writes; default is an offline preview"
+            )
+            command.add_argument(
+                "--backup", type=Path, help="original Home backup (default: this TV's immutable baseline)"
+            )
+        command.add_argument("--json", action="store_true", help="print machine-readable state")
+        if name == "backup":
+            command.add_argument(
+                "--output", type=Path, help="new backup path; existing files are never replaced"
+            )
+        if name == "apply":
+            command.add_argument("--boot", action="store_true", help="also enable native Smart Hub autostart")
+        command.set_defaults(fn=cmd_home)
     args = parser.parse_args()
     args.fn(args)
 

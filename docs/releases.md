@@ -150,7 +150,9 @@ Use Python 3.10 or newer, or 3.12 to match the native build jobs:
 
 ```sh
 python -m pip install -e '.[dev]'
-python tools/build_release.py launcher --output dist/launcher
+npm ci
+npm run build
+python tools/build_release.py launcher --output dist/releases/launcher
 python -m pip install 'pyinstaller>=6,<7' certifi
 python tools/build_release.py cli --output dist/cli
 ```
@@ -158,6 +160,12 @@ python tools/build_release.py cli --output dist/cli
 `--tag launcher-vX.Y.Z` or `--tag cli-vX.Y.Z` also checks that a tag matches the source
 version. CLI builds target the host OS and CPU. Each built executable is copied outside
 the checkout and run with `--help` and `--version`, with Python paths removed.
+
+Launcher release jobs install the locked Node dependencies and compile Settings on the
+exact release commit. The unsigned WGT uses `dist/launcher/`, including the Preact license;
+TypeScript sources, development tools and the legacy Settings renderer are excluded.
+The packager rejects missing builds, stale manifests and missing Settings runtime files.
+Node is needed to build the launcher, but is not needed to download or install a release.
 
 ## Failed release builds
 
@@ -170,5 +178,5 @@ All builds use the tagged source; editing `main` does not change that release.
 
 Do not move a published tag or replace published assets. If the tagged code itself is
 broken, fix the component on `main` and make a new version. Do not publish the incomplete
-draft manually. Built files stay in release assets rather than the repository, so a
-future frontend compiler can run in CI without adding Node to the user's install steps.
+draft manually. Built files stay in release assets rather than the repository. The
+frontend compiler runs in CI without adding Node to the user's install steps.

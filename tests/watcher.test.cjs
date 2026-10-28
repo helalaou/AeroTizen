@@ -22,6 +22,15 @@ function harness(options = {}) {
   let powerState = 'on';
   let artOptions;
   let artValue = 'unknown';
+  const stored = options.stored || new Map();
+  const preference = options.noPreference ? null : {
+    exists: key => stored.has(key),
+    getValue: key => stored.get(key),
+    setValue(key, value) {
+      if (options.failStorage) throw new Error('storage failed');
+      stored.set(key, value);
+    }
+  };
   const art = {
     starts: 0, stops: 0,
     start() { this.starts += 1; },
@@ -94,6 +103,8 @@ function harness(options = {}) {
     require(name) {
       if (name === 'http') return http;
       if (name === './artmode') return config => { artOptions = config; return art; };
+      if (name === './home-mode') return require('../launcher/service/home-mode');
+      if (name === './home-store') return (tz, ready) => ready(preference, !!options.storageReadFailed);
       if (name === 'url') return url;
       throw new Error('Unexpected require: ' + name);
     },
@@ -102,7 +113,7 @@ function harness(options = {}) {
     clearTimeout: id => timers.delete(id),
     setInterval: (fn, ms) => timer(fn, ms, ms),
     clearInterval: id => timers.delete(id),
-    tizen: { application: { launch(id, success) {
+    tizen: { preference, application: { launch(id, success) {
       launches.push({ at: clock, id });
       statuses.set(SELF, { running: true, visible: true });
       if (success) success();
@@ -114,9 +125,24 @@ function harness(options = {}) {
     servers[0].handler({ method: 'GET', url: path }, { writeHead() {}, end(value) { body = JSON.parse(value); } });
     return body;
   }
+  function post(body, overrides = {}) {
+    const req = new EventEmitter();
+    Object.assign(req, { method: 'POST', url: '/control/home',
+      headers: { 'content-type': 'application/json', 'x-aerotizen-home': '1' } }, overrides);
+    let code, value;
+    servers[0].handler(req, { writeHead(status) { code = status; }, end(data) { value = JSON.parse(data); } });
+    req.emit('data', typeof body === 'string' ? body : JSON.stringify(body)); req.emit('end');
+    return { code, value };
+  }
+  function handoff(mode, token = 'a'.repeat(32)) {
+    const current = control().homeControl;
+    return post({ expected_mode: current.mode, expected_transaction: current.transaction,
+      expected_baseline_sha256: current.baseline_sha256, mode,
+      transaction: mode === 'watcher' ? null : token, baseline_sha256: mode === 'watcher' ? null : 'b'.repeat(64) });
+  }
   return {
     api: context.module.exports, art, artReplies, requests, servers, launches, statuses,
-    advance, control, state: () => control(),
+    advance, control, post, handoff, stored, state: () => control(),
     setArt(value) { artValue = value; artOptions.onChange(value, 'mock reply'); },
     answerArt(value) {
       assert.ok(artReplies.length, 'a fresh Art query must exist');
@@ -511,6 +537,84 @@ test('Frame TVs keep the Art guard after a watched app closes', () => {
   h.advance(4500);
   assert.equal(h.launches.length, 0, 'no launch without fresh Art replies');
   assert.equal(h.artReplies.length, 1);
+});
+
+test('native mode survives restart with no API polling, Art client or boot launch', () => {
+  const h = ready();
+  assert.equal(h.handoff('hold').code, 200);
+  assert.equal(h.handoff('native').code, 200);
+  h.control('/watch?id=AppB'); h.control('/home');
+  const requests = h.requests.length;
+  h.advance(60000);
+  assert.equal(h.launches.length, 0); assert.equal(h.requests.length, requests);
+  const restarted = harness({ stored: h.stored, capability: false });
+  restarted.api.onStart(); restarted.advance(60000);
+  assert.equal(restarted.state().homeControl.mode, 'native');
+  assert.equal(restarted.requests.length, 0); assert.equal(restarted.launches.length, 0);
+  assert.equal(restarted.art.starts, 0);
+});
+
+test('a pending handoff survives restart with the watcher suppressed', () => {
+  const h = ready(); h.handoff('hold');
+  const restarted = harness({ stored: h.stored, capability: false });
+  restarted.api.onStart(); restarted.control('/home'); restarted.control('/watch?id=AppB');
+  restarted.advance(60000);
+  assert.equal(restarted.state().homeControl.mode, 'hold');
+  assert.equal(restarted.requests.length, 0); assert.equal(restarted.launches.length, 0);
+});
+
+test('handoff invalidates late Art replies and pending non-Frame boot timers', () => {
+  const h = ready(); candidate(h); passFirst(h); h.handoff('hold');
+  h.answerArt('off'); h.advance(60000); assert.equal(h.launches.length, 0);
+  const plain = harness({ capability: false }); plain.api.onStart(); plain.advance(0);
+  plain.handoff('hold'); plain.advance(60000); assert.equal(plain.launches.length, 0);
+});
+
+test('restore reenables normal watching only after a committed hold-to-watcher transition', () => {
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(0);
+  h.handoff('hold'); h.handoff('native');
+  assert.equal(h.handoff('watcher').code, 409, 'native cannot skip the restore hold');
+  h.handoff('hold', 'c'.repeat(32)); h.handoff('watcher'); h.advance(3000);
+  assert.equal(h.state().homeControl.mode, 'watcher'); assert.equal(h.launches.length, 1);
+});
+
+test('mode control rejects browser requests, stale transactions and oversized bodies', () => {
+  const h = ready();
+  for (const overrides of [{ method: 'GET' }, { headers: {} },
+    { headers: { origin: 'https://example.com', 'x-aerotizen-home': '1', 'content-type': 'application/json' } }]) {
+    assert.notEqual(h.post({}, overrides).code, 200);
+  }
+  assert.equal(h.post('x'.repeat(4097)).code, 413);
+  assert.equal(h.post({ expected_mode: 'native', mode: 'hold' }).code, 409);
+  assert.equal(h.state().homeControl.mode, 'watcher');
+});
+
+test('missing persistence refuses the handoff; failed persistence blocks all launches', () => {
+  const old = harness({ noPreference: true, capability: false }); old.api.onStart(); old.advance(0);
+  assert.equal(old.handoff('hold').code, 409); assert.equal(old.state().homeControl.persistent, false);
+  const h = harness({ failStorage: true, capability: false }); h.api.onStart(); h.advance(0);
+  assert.equal(h.handoff('hold').code, 409); assert.equal(h.state().homeControl.mode, 'blocked');
+  h.advance(60000); assert.equal(h.launches.length, 0);
+});
+
+test('corrupt saved mode fails closed at service startup', () => {
+  const stored = new Map([['aerotizen.home-routing.v1', '{bad json']]);
+  const h = harness({ stored, capability: false }); h.api.onStart(); h.advance(60000);
+  assert.equal(h.state().homeControl.mode, 'blocked'); assert.equal(h.launches.length, 0);
+  assert.equal(h.requests.length, 0);
+});
+
+test('startup diagnostics cannot restart native polling or launch an app', () => {
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(0);
+  h.handoff('hold'); h.handoff('native');
+  const trace = { script_at: 123, marks: [{ name: 'home-rendered', ms: 9 }] };
+  const before = h.requests.length;
+  h.control('/startup?data=' + encodeURIComponent(JSON.stringify(trace)));
+  h.control('/startup?data={broken');
+  h.advance(60000);
+  assert.deepEqual(JSON.parse(JSON.stringify(h.state().startup)), trace);
+  assert.equal(h.requests.length, before); assert.equal(h.launches.length, 0);
+  assert.equal(h.art.starts, 0); assert.equal(h.state().homeControl.mode, 'native');
 });
 
 let failed = 0;

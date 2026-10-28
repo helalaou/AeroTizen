@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AssemblyName>AeroTizenHomeQuery</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <UseAppHost>false</UseAppHost>
+    <RollForward>Major</RollForward>
+    <Deterministic>true</Deterministic>
+    <DebugType>none</DebugType>
+    <PathMap>$(MSBuildProjectDirectory)=/_/home-query</PathMap>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../home-common/Installation.cs" Link="Installation.cs"/>
+  </ItemGroup>
+</Project>

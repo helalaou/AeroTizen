@@ -3,9 +3,9 @@
    No backdrop-filter or per-control geometry animation. */
 
 /* Header: two small round shortcuts; Home / All Apps are centred glass tabs. */
-.topbar { position: relative; z-index: 4; }
-.topbar-left { position: relative; gap: 18px; }
-.topbar-left > #aero-header-focus {
+body.glass-ui .topbar { position: relative; z-index: 4; }
+body.glass-ui .topbar-left { position: relative; gap: 18px; }
+body.glass-ui .topbar-left > #aero-header-focus {
   position: absolute; top: 0; left: 0; z-index: 0;
   pointer-events: none; opacity: 0; box-sizing: border-box;
   border: 2px solid rgba(255,255,255,.90);
@@ -14,17 +14,17 @@
   transform: translate3d(0,0,0);
   transition: transform .15s ease-out, opacity .10s linear;
 }
-.topbar-left > #aero-header-focus.is-visible { opacity: 1; }
-.topbar-left > #gear, .topbar-left > #samsung-home-shortcut {
+body.glass-ui .topbar-left > #aero-header-focus.is-visible { opacity: 1; }
+body.glass-ui .topbar-left > #gear, .topbar-left > #samsung-home-shortcut {
   position: relative; z-index: 1; flex: 0 0 64px;
   border: 2px solid transparent; border-radius: 50%;
   background: transparent; transition: color .10s linear;
 }
-.topbar-left > #gear.focused, .topbar-left > #samsung-home-shortcut.focused {
+body.glass-ui .topbar-left > #gear.focused, .topbar-left > #samsung-home-shortcut.focused {
   border-color: transparent !important; box-shadow: none !important;
   outline: none !important; transform: none !important; color: #fff;
 }
-.topbar > .view-tabs {
+body.glass-ui .topbar > .view-tabs {
   position: absolute; left: 50%; top: 24px;
   transform: translate3d(-50%,0,0);
   display: flex; align-items: stretch; gap: 0; padding: 7px;
@@ -34,7 +34,7 @@
   background: linear-gradient(165deg,rgba(255,255,255,.19) 0%,rgba(60,68,78,.43) 22%,rgba(20,25,35,.62) 63%,rgba(15,20,28,.72) 100%);
   box-shadow: inset 0 1px rgba(255,255,255,.24), 0 13px 32px rgba(0,0,0,.27);
 }
-.topbar > .view-tabs .view-tab {
+body.glass-ui .topbar > .view-tabs .view-tab {
   position: relative; z-index: 1; display: flex; align-items: center;
   justify-content: center; gap: 12px; min-width: 155px;
   height: 60px; box-sizing: border-box; padding: 0 25px;
@@ -44,36 +44,36 @@
   background: transparent; box-shadow: none !important;
   transform: none !important; transition: color .10s linear;
 }
-.topbar > .view-tabs .view-tab:last-child { min-width: 205px; }
-.topbar > .view-tabs .view-tab.active {
+body.glass-ui .topbar > .view-tabs .view-tab:last-child { min-width: 205px; }
+body.glass-ui .topbar > .view-tabs .view-tab.active {
   color: #fff; background: transparent; box-shadow: none !important;
 }
-.topbar > .view-tabs .view-tab.focused { color: #fff; outline: none; box-shadow: none !important; }
-.view-tab .aero-tab-icon { width: 26px; height: 26px; flex: 0 0 26px; stroke: currentColor; }
-.topbar > .view-tabs > #aero-tab-glider,
-.topbar > .view-tabs > #aero-tab-focus {
+body.glass-ui .topbar > .view-tabs .view-tab.focused { color: #fff; outline: none; box-shadow: none !important; }
+body.glass-ui .view-tab .aero-tab-icon { width: 26px; height: 26px; flex: 0 0 26px; stroke: currentColor; }
+body.glass-ui .topbar > .view-tabs > #aero-tab-glider,
+body.glass-ui .topbar > .view-tabs > #aero-tab-focus {
   position: absolute; top: 7px; left: 7px; z-index: 0;
   height: 60px; width: 1px; box-sizing: border-box;
   border-radius: 19px; pointer-events: none;
   transform: translate3d(0,0,0); transition: transform .15s ease-out, opacity .10s linear;
 }
-.topbar > .view-tabs > #aero-tab-glider {
+body.glass-ui .topbar > .view-tabs > #aero-tab-glider {
   background: rgba(236,242,255,.16);
   border: 1px solid rgba(255,255,255,.24);
   box-shadow: inset 0 1px rgba(255,255,255,.20);
 }
-.topbar > .view-tabs > #aero-tab-focus {
+body.glass-ui .topbar > .view-tabs > #aero-tab-focus {
   border: 2px solid rgba(255,255,255,.90);
   background: rgba(236,242,255,.12); opacity: 0;
   z-index: 1;
 }
-.topbar > .view-tabs > #aero-tab-focus.is-visible { opacity: 1; }
-.topbar > .view-tabs > .view-tab { z-index: 2; }
+body.glass-ui .topbar > .view-tabs > #aero-tab-focus.is-visible { opacity: 1; }
+body.glass-ui .topbar > .view-tabs > .view-tab { z-index: 2; }
 /* Keep the native app artwork, Home grid and TV source dock untouched. */
 
 /* Compact glass settings sheet with the live launcher dimmed behind it. */
-body.editing:not(.previewing) .topbar,
-body.editing:not(.previewing) main {
+body.glass-ui.editing:not(.previewing) .topbar,
+body.glass-ui.editing:not(.previewing) main {
   visibility: visible !important; opacity: .48;
   pointer-events: none;
 }
@@ -270,3 +270,20 @@ body.editing:not(.previewing) main {
 #editor.aero-settings-collapsed .aero-settings-frame { width: 390px; }
 #editor.aero-settings-collapsed .aero-settings-sidebar { flex: 1 1 auto; border-right: 0; }
 #editor.aero-settings-collapsed .aero-settings-main { display: none; }
+/* The class is optional; Classic keeps upstream header/grid geometry. */
+.glass-shortcut-hidden { display: none !important; }
+body.glass-ui .topbar-left > #gear.focused,
+body.glass-ui .topbar-left > #samsung-home-shortcut.focused {
+  border-color: rgba(255,255,255,.9) !important;
+  background: rgba(236,242,255,.18);
+}
+body.glass-ui .view-tab.focused { border: 2px solid rgba(255,255,255,.9) !important; background: rgba(236,242,255,.18) !important; }
+#editor .aero-settings-close.focused { outline: 2px solid #fff; box-shadow: none; transform: none; }
+#editor .aero-settings-menu > .aero-settings-glider { left: 0; }
+#editor .aero-settings-scroll > .aero-content-glider { border-radius: 17px; }
+body.glass-ui .aero-source-icon svg > rect:first-child { fill: transparent; }
+/* One ref-measured plate moves between controls; controls add no second ring. */
+body.glass-ui .topbar-left > #gear.focused,
+body.glass-ui .topbar-left > #samsung-home-shortcut.focused,
+body.glass-ui .topbar > .view-tabs .view-tab.focused { border-color: transparent !important; background: transparent !important; }
+body.glass-ui .topbar > .view-tabs > #aero-tab-glider.is-focused { border: 2px solid rgba(255,255,255,.9); }

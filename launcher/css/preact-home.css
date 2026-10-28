@@ -1,0 +1,3 @@
+/* Preact renders focus state; native focus must not add a second outline. */
+#home-root [role="button"]:focus { outline: none; }
+#custom-clock-root:empty { display: none; }

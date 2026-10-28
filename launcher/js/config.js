@@ -34,7 +34,9 @@ AeroTizen.config = {
   DEFAULTS: {
     home: null,  // null selects defaults on first launch; [] keeps an empty Home.
     cardSize: 'big',
+    glassSettings: false,  // Optional Preact Glass categories and source dock.
     background: 'aurora',
+    weatherPhoto: false,  // Opt-in AI-generated scenes using the existing forecast.
     speed: 1,
     showWeather: true,
     showTime: true,
@@ -44,6 +46,8 @@ AeroTizen.config = {
     weatherShowLocation: true,
     dateFormat: 'short',
     timeFormat: null,  // Detect 12/24-hour format when first loaded.
+    continueWatching: false,
+    continueWatchingApps: [],
     showLiveTv: true,
     hideDisconnectedHdmi: false,
     inputNames: {}
