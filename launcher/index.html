@@ -4,12 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=1920, height=1080">
   <title>AeroTizen</title>
+  <script src="js/startup.js"></script>
   <link rel="icon" href="icon.png">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/card-modes.css">
+  <link rel="stylesheet" href="css/tile-actions.css">
+  <link rel="stylesheet" href="css/photo-weather.css">
 </head>
 <body>
   <div id="bg" class="bg"></div>
+  <div id="weather-photo" class="weather-photo" aria-hidden="true" hidden></div>
   <!-- Layout inspired by LTvLauncher (github.com/leanbitlab-org/LtvLauncher); no code shared. -->
   <header class="topbar">
     <div class="topbar-left">
@@ -33,6 +37,10 @@
     <main id="rows">
       <div id="grid" class="app-grid" aria-label="Home apps"></div>
       <p id="apps-empty" class="apps-empty" hidden>No apps found.</p>
+      <section id="continue-section" class="row-wrap" hidden>
+        <h2>Continue Watching</h2>
+        <div class="continue-viewport"><div id="continue-items" class="row" aria-label="Continue Watching"></div></div>
+      </section>
       <section id="inputs-section" class="row-wrap inputs-wrap" hidden>
         <h2>Inputs</h2>
         <div id="inputs" class="row small"></div>
@@ -66,10 +74,6 @@
     <div id="live-tv-visibility" class="units"></div>
     <h3>App cards</h3>
     <div id="card-sizes" class="units"></div>
-    <h3 data-i18n="Home tile layout">Home tile layout</h3>
-    <div id="home-card-modes" class="units" role="group" aria-label="Home tile layout"></div>
-    <h3 data-i18n="Apps per row">Apps per row</h3>
-    <div id="home-card-columns" class="units" role="group" aria-label="Apps per row"></div>
     <h3>HDMI ports</h3>
     <p class="hint">Choose whether to show HDMI ports that the TV reports as disconnected.</p>
     <div id="input-visibility" class="units"></div>
@@ -102,10 +106,14 @@
   <script src="js/artwork.js"></script>
   <script src="js/brands.js"></script>
   <script src="js/homewatch.js"></script>
+  <script src="js/native-navigation.js"></script>
   <script src="js/apps.js"></script>
   <script src="js/inputs.js"></script>
+  <script src="js/continue-watching.js"></script>
+  <script src="js/continue-row.js"></script>
   <script src="js/home-screen.js"></script>
   <script src="js/settings-ui.js"></script>
+  <script src="js/photo-weather.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

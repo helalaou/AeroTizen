@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-24",
+  "device": {
+    "model": "QE65LS03DAUXXU",
+    "platform": "24_PTM_FTV_T09",
+    "os_version": "9.0.0",
+    "firmware_build": "T-PTMDDEUC-0090-REL-202605141701",
+    "cpu_arch": "armv7"
+  },
+  "checks": {
+    "source_status_passed": true,
+    "backup_created": true,
+    "repeated_backup_preserved": true,
+    "packaged_cli_status_passed": true,
+    "same_device_all_reads": true,
+    "home_values_unchanged": true,
+    "watcher_unchanged": true,
+    "all_temporary_staging_cleaned": true
+  },
+  "home": {
+    "operation": "http://tizen.org/appcontrol/operation/main",
+    "main_operation": {
+      "type": "string",
+      "status": "ok",
+      "value": "com.samsung.tv.csfs"
+    },
+    "settings": {
+      "db/appfw/home_appid": {
+        "type": "string",
+        "status": "ok",
+        "value": "com.samsung.tv.csfs"
+      },
+      "db/appfw/startup_appid": {
+        "type": "string",
+        "status": "ok",
+        "value": "org.tizen.tv-viewer"
+      },
+      "db/appfw/booting_appid_backup": {
+        "type": "string",
+        "status": "ok",
+        "value": "org.tizen.tv-viewer"
+      },
+      "db/first_screen/type": {
+        "type": "string",
+        "status": "ok",
+        "value": "com.samsung.tv.csfs"
+      },
+      "db/menu/smart_hub/ontvsetting/auto_start": {
+        "type": "int",
+        "status": "ok",
+        "value": 0
+      }
+    },
+    "mode": "stock"
+  },
+  "watcher": {
+    "state": "active",
+    "reachable": true
+  },
+  "backup": {
+    "sha256": "b7f679e71da57f86361a94e78454a0020a9cd979a54e94a6f536ef07bddf89f7",
+    "mode": "0600",
+    "device_bound": true,
+    "matches_current": true,
+    "firmware_matches": true
+  },
+  "query_evidence": {
+    "access": "temporary_root",
+    "root_tool_version": "0.0.12",
+    "helper_sha256": "f6cc3fa62997ab311d39ea76e07fd2e82723be88100fe12fb171aef18072c533",
+    "authenticated": true,
+    "uid": 0,
+    "upstream_staging_cleaned": true,
+    "system_files_unchanged": true,
+    "query_staging_cleaned": true
+  },
+  "validation": {
+    "python_tests_passed": 188,
+    "ruff": true,
+    "actionlint": true,
+    "standalone_smoke_checks": true
+  },
+  "scope": "Read-only Home inspection and a local backup. No Home/startup writes, boot service, or watcher pause."
+}

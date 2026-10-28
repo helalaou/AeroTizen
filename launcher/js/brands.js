@@ -34,79 +34,6 @@
     return d ? svg('<path fill="' + fill + '" d="' + d + '"/>', 'logo') : '';
   }
 
-  // Verified, locally bundled horizontal PNGs from reference/v99256.
-  // Used only in Rectangle mode; Square mode retains Samsung artwork.
-  var originalBanners = [
-    ['netflix', 'netflix-custom.png', '#000000'],
-    ['disney', 'disney-plus-official.png', '#052e43'],
-    ['xbox', 'xbox-official.png', '#057013'],
-    ['amazon luna', 'luna-official.png', '#7431e6'],
-    ['luna', 'luna-official.png', '#7431e6'],
-    ['amazon alexa', 'alexa-official.png', '#ffffff'],
-    ['alexa', 'alexa-official.png', '#ffffff'],
-    ['now', 'now-official.png', '#006d6f'],
-    ['rakuten tv', 'rakuten-tv-official.png', '#bb0000'],
-    ['rakuten', 'rakuten-tv-official.png', '#bb0000'],
-    ['qvc', 'qvc-plus-official.png', '#29364f'],
-    ['raiplay', 'raiplay-official.png', '#05061e']
-  ];
-  function originalBanner(name) {
-    var normalized = String(name || '').toLowerCase();
-    for (var i = 0; i < originalBanners.length; i++) {
-      if (normalized.indexOf(originalBanners[i][0]) === 0) {
-        return { file: originalBanners[i][1], background: originalBanners[i][2] };
-      }
-    }
-    return null;
-  }
-
-  // V992.56 artwork optimisation: discover each Samsung-cache candidate list
-  // once per launcher session. Share both successful and negative resolutions
-  // across Home, All Apps and Settings; each tile still owns its DOM image.
-  var artworkJobs = {};
-  function discoverArtwork(sources, callback) {
-    if (!sources || !sources.length) { callback(null); return; }
-    var key = JSON.stringify(sources);
-    var job = artworkJobs[key];
-    if (job) {
-      if (job.done) { callback(job.src); }
-      else { job.waiters.push(callback); }
-      return;
-    }
-    job = { done: false, src: null, waiters: [callback] };
-    artworkJobs[key] = job;
-    var at = 0;
-    function finish(src, loadedImage) {
-      if (job.done) { return; }
-      job.done = true;
-      job.src = src;
-      var waiters = job.waiters;
-      job.waiters = [];
-      // The first tile reuses the decoded probe image, matching original
-      // onload timing; subsequent tiles create their own DOM-owned image.
-      waiters.forEach(function (notify, i) {
-        notify(src, i === 0 ? loadedImage : null);
-      });
-    }
-    function next() {
-      if (at >= sources.length) { finish(null); return; }
-      var image = new Image(), src = sources[at++], timer = null, settled = false;
-      function clear() { clearTimeout(timer); image.onload = image.onerror = null; }
-      function fail() {
-        if (settled) { return; }
-        settled = true; clear(); next();
-      }
-      image.onload = function () {
-        if (settled) { return; }
-        settled = true; clear(); finish(src, image);
-      };
-      image.onerror = fail;
-      timer = setTimeout(fail, 2000);
-      image.src = src;
-    }
-    next();
-  }
-
   function appTile(app, extraClass, onSelect) {
     var b = brandFor(app), tile = A.el('div');
     tile.className = 'tile app-tile' + (extraClass ? ' ' + extraClass : '');
@@ -119,14 +46,11 @@
     if (b.largeLogo) { fallback.classList.add('logo-big'); }
     if (mark) {
       fallback.innerHTML = mark;
-    } else if (b.useAppIcon && app.icon &&
-               !(extraClass === 'home-display' && A.settings.homeCardMode === 'rectangle')) {
-      // Rectangle uses the original brand-banner text fallback. Native Tizen
-      // square icons are reserved for Square mode and Settings app pickers.
+    } else if (b.useAppIcon && app.icon) {
       var img = new Image();
       img.className = 'logo'; img.alt = '';
       img.onerror = function () { fallback.removeChild(img); };
-      img.src = app.icon;
+      window.AeroStartup.afterLoad(function () { img.src = app.icon; });
       fallback.appendChild(img);
     }
     if (b.label || !mark) {
@@ -137,55 +61,27 @@
     tile.appendChild(fallback);
     tile.onclick = onSelect;
 
-    // Rectangular brand banners use the project's existing verified brand
-    // metadata, rather than loading square Samsung artwork into wide cards.
-    // Restrict this to the Home / All Apps grid: Settings keeps normal tiles.
-    if (extraClass === 'home-display' && A.settings.homeCardMode === 'rectangle') {
-      tile.classList.add('brand-rectangle');
-      var banner = originalBanner(app.name);
-      if (banner) {
-        tile.style.background = banner.background;
-        tile.classList.add('brand-original-banner');
-        if (banner.file === 'raiplay-official.png') {
-          tile.classList.add('brand-raiplay');
-        }
-        var photo = new Image();
-        photo.className = 'brand-custom-art';
-        photo.alt = '';
-        photo.onload = function () {
-          fallback.hidden = true;
-        };
-        photo.onerror = function () {
-          // If a PNG is unavailable on a given TV, keep the same
-          // clickable tile, original fallback title and focus geometry.
-          if (photo.parentNode) { photo.parentNode.removeChild(photo); }
-          fallback.hidden = false;
-        };
-        tile.appendChild(photo);
-        photo.src = 'assets/brands/' + banner.file;
-      }
-      return tile;
-    }
-
-    discoverArtwork(A.artwork.sources(app), function (src, loadedImage) {
-      if (!src) { return; } // Original brand fallback remains visible.
-      var image = loadedImage || new Image();
+    var sources = A.artwork.sources(app), at = 0;
+    function next() {
+      if (at >= sources.length) { return; }
+      var image = new Image(), src = sources[at++], timer;
+      function clear() { clearTimeout(timer); image.onload = image.onerror = null; }
+      function failed() { clear(); next(); }
       image.className = 'app-artwork'; image.alt = '';
-      function display() {
-        image.onload = image.onerror = null;
+      image.onload = function () {
+        clear();
         fallback.hidden = true;
+        // Do not let the fallback colour show through antialiased image corners.
         tile.style.background = 'transparent';
         tile.classList.add('has-artwork');
         tile.appendChild(image);
-      }
-      if (loadedImage) { display(); return; }
-      image.onload = display;
-      image.onerror = function () {
-        image.onload = image.onerror = null;
-        // Keep native app/brand fallback if the cached image disappears.
       };
+      image.onerror = failed;
+      // Keep the fallback visible if a local file lookup stalls on older firmware.
+      timer = setTimeout(failed, 2000);
       image.src = src;
-    });
+    }
+    window.AeroStartup.afterLoad(next);
     return tile;
   }
 
@@ -198,5 +94,13 @@
     return tile;
   }
 
-  A.tiles = { ICONS: ICONS, app: appTile, card: card, shortName: shortName };
+  // Data-only access for Preact Settings. Legacy screen rendering stays unchanged.
+  function describe(app) {
+    var brand = brandFor(app), logo = brand.logo && window.LOGOS && window.LOGOS[brand.logo.slug];
+    return { title: shortName(app.name), background: brand.background, label: brand.label,
+      textColour: brand.textColour, logoPath: logo || null, logoColour: brand.logoColour || '#fff',
+      largeLogo: !!brand.largeLogo, useAppIcon: !!brand.useAppIcon, artwork: A.artwork.sources(app) };
+  }
+
+  A.tiles = { ICONS: ICONS, app: appTile, card: card, shortName: shortName, describe: describe };
 })(window.AeroTizen);

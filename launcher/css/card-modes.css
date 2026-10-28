@@ -140,42 +140,6 @@
   .app-grid.cards-rectangle .tile { transition: none; }
 }
 
-/* Preserve original reference brand PNGs without cropping in Square mode.
-   These horizontal assets are intentionally excluded from Square/Home picker. */
-.app-grid.cards-rectangle .tile.brand-original-banner {
-  position: relative; padding: 0 !important; gap: 0 !important;
-  align-items: center; justify-content: center;
-}
-.app-grid.cards-rectangle .tile.brand-original-banner > .brand-custom-art {
-  position: absolute; inset: 0; display: block;
-  width: 100% !important; height: 100% !important;
-  object-fit: cover; flex: 0 0 100%;
-  border-radius: inherit; pointer-events: none;
-  transform: none !important; box-shadow: none !important;
-}
-.app-grid.cards-rectangle .tile.brand-original-banner .app-fallback {
-  padding: 0 18px; text-align: center;
-}
-.app-grid.cards-rectangle .tile.brand-original-banner .app-fallback[hidden] {
-  display: none !important;
-}
-.app-grid.cards-rectangle .tile.brand-original-banner.moving > .brand-custom-art {
-  border-radius: inherit; overflow: hidden;
-}
-.app-grid.cards-rectangle .tile.brand-original-banner.focused > .brand-custom-art {
-  border-radius: inherit;
-}
 
-/* RaiPlay's original 432x202 user-provided image is a contained logo,
-   not the full-card 1152x600 banner used by the other eight brands. */
-.app-grid.cards-rectangle .tile.brand-raiplay {
-  background: #05061e !important; padding: 0 12px !important;
-}
-.app-grid.cards-rectangle .tile.brand-raiplay > .brand-custom-art {
-  position: relative; width: 90% !important;
-  height: 76% !important; flex: 0 1 auto !important;
-  object-fit: contain; border-radius: 0 !important;
-}
-.app-grid.cards-rectangle .tile.brand-raiplay.moving > .brand-custom-art {
-  border-radius: 0 !important;
-}
+/* Native Samsung artwork stays at its original source resolution in both layouts. */
+.app-grid.cards-rectangle .app-artwork { object-fit: contain; background: #111; }

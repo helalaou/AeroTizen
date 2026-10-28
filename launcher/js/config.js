@@ -37,6 +37,7 @@ AeroTizen.config = {
     homeCardMode: 'square',   // Square Samsung artwork remains the default.
     homeCardColumns: null,    // null preserves the existing Big/Small column count.
     background: 'aurora',
+    weatherPhoto: false,  // Opt-in AI-generated scenes using the existing forecast.
     speed: 1,
     showWeather: true,
     showTime: true,
@@ -46,6 +47,8 @@ AeroTizen.config = {
     weatherShowLocation: true,
     dateFormat: 'short',
     timeFormat: null,  // Detect 12/24-hour format when first loaded.
+    continueWatching: false,
+    continueWatchingApps: [],
     showLiveTv: true,
     hideDisconnectedHdmi: false,
     inputNames: {}

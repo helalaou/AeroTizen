@@ -166,37 +166,6 @@
     });
   }
 
-  function renderHomeCardModes() {
-    var modes = A.$('home-card-modes'), cols = A.$('home-card-columns');
-    if (!modes || !cols) { return; }
-    // Optional i18n bridge: this feature also works before the locale PR is merged.
-    function label(key, english) {
-      return A.i18n && A.i18n.label ? A.i18n.label(key, english) : english;
-    }
-    modes.textContent = ''; cols.textContent = '';
-    modes.setAttribute('aria-label', label('home-cards:heading', 'Home tile layout'));
-    cols.setAttribute('aria-label', label('home-columns:heading', 'Apps per row'));
-    [['square', 'Square'], ['rectangle', 'Rectangle']].forEach(function (item) {
-      var key = 'home-cards:' + item[0];
-      modes.appendChild(pill(key, label(key, item[1]),
-        (S.homeCardMode || 'square') === item[0], function () {
-          S.homeCardMode = item[0]; focusKey = key;
-          changed(A.homeScreen.render);
-        }));
-    });
-    var chosen = Number(S.homeCardColumns);
-    if (chosen !== 3 && chosen !== 4 && chosen !== 5) {
-      chosen = cfg.CARD_COLUMNS[S.cardSize === 'small' ? 'small' : 'big'];
-    }
-    [3, 4, 5].forEach(function (value) {
-      var key = 'home-columns:' + value, english = value + ' per row';
-      cols.appendChild(pill(key, label(key, english), chosen === value, function () {
-        S.homeCardColumns = value; focusKey = key;
-        changed(A.homeScreen.render);
-      }));
-    });
-  }
-
   function renderInputVisibility() {
     var liveTv = A.$('live-tv-visibility'), box = A.$('input-visibility');
     liveTv.textContent = '';
@@ -253,9 +222,10 @@
       } else {
         tile = A.tiles.app(app);
       }
-      tile.classList.toggle('on', S.home.indexOf(app.id) >= 0);
+      tile.classList.toggle('on', (S.home || [cfg.FIREPLACE_ID]).indexOf(app.id) >= 0);
       tile.dataset.key = 'app:' + app.id;
       tile.onclick = function () {
+        if (S.home === null) { S.home = [cfg.FIREPLACE_ID]; }
         var i = S.home.indexOf(app.id);
         if (i >= 0) { S.home.splice(i, 1); } else { S.home.push(app.id); }
         tile.classList.toggle('on', i < 0);
@@ -268,7 +238,7 @@
   function render() {
     renderBackgrounds(); renderWeather(); renderUnits(); renderDateTime();
     renderVisibility('network-visibility', 'showNetwork', ['Show', 'Hide'], A.network.updateVisibility);
-    renderCardSizes(); renderHomeCardModes(); renderInputVisibility(); renderInputNames(); renderAppMenu();
+    renderCardSizes(); renderInputVisibility(); renderInputNames(); renderAppMenu();
     focus();
   }
 
@@ -288,8 +258,7 @@
     return r.concat(A.chunk(kids('bg-still'), 8), [kids('weather-display')],
       [kids('weather-location')], results, [kids('weather-visibility')],
       [kids('units')], [kids('time-formats')], dateRows, [kids('network-visibility')],
-      [kids('live-tv-visibility')], [kids('card-sizes')],
-      [kids('home-card-modes')], [kids('home-card-columns')], [kids('input-visibility')],
+      [kids('live-tv-visibility')], [kids('card-sizes')], [kids('input-visibility')],
       [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]).filter(function (row) { return row.length; });
   }
 

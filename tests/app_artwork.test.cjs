@@ -6,8 +6,8 @@ const vm = require('node:vm');
 
 const root = path.join(__dirname, '../launcher');
 
-function runtime(tv = false) {
-  const images = [], timers = new Map();
+function runtime(tv = false, loading = false) {
+  const images = [], timers = new Map(), pending = [];
   let nextTimer = 0;
   class Element {
     constructor() {
@@ -28,14 +28,14 @@ function runtime(tv = false) {
     el: (tag, className, text) => Object.assign(new Element(), { className: className || '', textContent: text })
   };
   const context = vm.createContext({
-    window: { AeroTizen: A, LOGOS: { netflix: 'M0 0', youtube: 'M0 0' } }, AeroTizen: A, Image,
+    window: { AeroStartup: { afterLoad(fn) { if (loading) pending.push(fn); else fn(); } }, AeroTizen: A, LOGOS: { netflix: 'M0 0', youtube: 'M0 0' } }, AeroTizen: A, Image,
     setTimeout: (fn) => { timers.set(++nextTimer, fn); return nextTimer; },
     clearTimeout: (id) => timers.delete(id)
   });
   for (const file of ['config.js', 'app-catalog.js', 'app-lookup.js', 'artwork.js', 'brands.js']) {
     vm.runInContext(fs.readFileSync(path.join(root, 'js', file), 'utf8'), context);
   }
-  return { A, images, timers };
+  return { A, images, timers, load() { pending.splice(0).forEach(fn => fn()); } };
 }
 
 test('browser previews keep the previous icons without requesting artwork', () => {
@@ -125,4 +125,31 @@ test('unknown apps retain their original icon and readable label if all images f
   images[0].onerror();
   assert.equal(fallback.children.length, 1);
   assert.equal(fallback.children[0].textContent, 'Unknown app');
+});
+
+test('Settings can read brand and artwork data without creating DOM nodes or image timers', () => {
+  const { A, images, timers } = runtime(true);
+  const known = A.tiles.describe({ id: '111299001912', name: 'YouTube' });
+  assert.equal(known.title, 'YouTube');
+  assert.equal(known.logoPath, 'M0 0');
+  assert.equal(known.artwork.length, 2);
+  const unknown = A.tiles.describe({ id: 'unknown', name: 'Unknown app - example', icon: 'local/icon.png' });
+  assert.equal(unknown.title, 'Unknown app');
+  assert.equal(unknown.label, 'Unknown app');
+  assert.equal(unknown.useAppIcon, true);
+  assert.equal(unknown.logoPath, null);
+  assert.equal(images.length, 0);
+  assert.equal(timers.size, 0);
+});
+
+test('app artwork and unknown icons cannot hold the initial page load', () => {
+  const { A, images, load } = runtime(true, true);
+  let selected = false;
+  const tile = A.tiles.app({ id: 'unknown', name: 'Unknown app', icon: '/icon.png', storeId: '123456' }, '', () => { selected = true; });
+  assert.equal(images.length, 1);
+  assert.equal(images[0].src, undefined);
+  assert.equal(tile.children[0].children[1].textContent, 'Unknown app');
+  tile.onclick(); assert.equal(selected, true);
+  load(); assert.equal(images[0].src, '/icon.png');
+  assert.equal(images[1].src, '/opt/share/webappservice/apps_icon/all/123456/304x304.png');
 });

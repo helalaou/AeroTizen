@@ -1,14 +1,35 @@
 {
   "name": "aerotizen-launcher",
   "private": true,
-  "description": "Dev tooling for the AeroTizen launcher (the launcher itself has no dependencies).",
+  "description": "AeroTizen launcher tooling and Preact Settings build.",
   "scripts": {
-    "lint": "eslint launcher",
-    "test": "node --test tests/*.test.cjs"
+    "lint": "eslint launcher vite.config.mts tools/build-launcher.mjs",
+    "build": "npm run typecheck && node tools/build-launcher.mjs",
+    "dev": "vite",
+    "test": "node --test tests/*.test.cjs",
+    "test:browser": "npm run build && playwright test",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
+    "@playwright/test": "1.64.1",
+    "@preact/preset-vite": "2.10.6",
+    "@types/babel__core": "7.20.5",
+    "@types/node": "20.19.43",
+    "@typescript-eslint/eslint-plugin": "8.72.0",
+    "@typescript-eslint/parser": "8.72.0",
+    "acorn": "8.19.0",
     "eslint": "^9.39.0",
-    "globals": "^16.5.0"
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "^16.5.0",
+    "typescript": "6.0.3",
+    "vite": "8.3.5"
+  },
+  "dependencies": {
+    "preact": "10.29.8"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

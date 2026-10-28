@@ -1,0 +1,24 @@
+/* Optional static AI-generated weather scenes. Full HD assets are bundled, so scene
+   changes never cause a network image request or animated background repaint. */
+#weather-photo.weather-photo {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 1920px; height: 1080px;
+  z-index: 0; pointer-events: none;
+  background: #080d16 no-repeat center center;
+  background-size: cover;
+}
+#weather-photo.weather-photo.active:not([hidden]) { display: block; }
+#weather-photo.weather-photo::before {
+  content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg,rgba(0,0,0,.12),transparent 42%,rgba(0,0,0,.17)),
+              linear-gradient(0deg,rgba(0,0,0,.23),transparent 38%);
+}
+body > .topbar, body > .content-viewport {
+  position: relative; z-index: 1;
+}
+#editor.sheet, #fireplace, #toast { z-index: 100; }
+body.tv #weather-photo { display: none !important; }
+#weather-photo[hidden] { display: none !important; }
+#weather-photo.weather-photo.active { transition: none; }
+#weather-photo.weather-photo ~ .content-viewport { background: transparent; }

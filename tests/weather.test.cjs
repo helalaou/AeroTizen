@@ -558,3 +558,24 @@ test('zero is a valid temperature and null cannot appear as zero', () => {
   h.weather.refresh(); h.requests[1].respond(conditions(0));
   assert.equal(h.el.nodes.b.textContent, '0°');
 });
+
+test('wallpaper is a weather consumer even when the widget is hidden; turning both off aborts polling', () => {
+  const h = harness({ settings: { showWeather: false, weatherPhoto: true, weatherLocation: london } });
+  h.start(); assert.equal(h.requests.length, 1); assert.equal(h.el.hidden, true);
+  const url = new URL(h.requests[0].url);
+  assert.equal(url.searchParams.get('daily'), 'sunrise,sunset');
+  assert.equal(url.searchParams.get('timezone'), 'UTC');
+  h.preferences.weatherPhoto = false; h.weather.updateVisibility();
+  assert.equal(h.requests[0].aborted, true); assert.equal(h.intervals.size, 0);
+});
+test('solar timestamps are UTC epochs, including explicit offsets, and old caches need no migration', () => {
+  const h = harness({ settings: { weatherLocation: london } }); h.start();
+  h.requests[0].respond({ ...conditions(), current: { temperature_2m: 12, weather_code: 0, is_day: 1 },
+    daily: { sunrise: ['2026-10-24T06:00','2026-10-25T06:00+02:00'], sunset: ['2026-10-24T17:00','2026-10-25T17:00+02:00'] } });
+  const reading = h.weather.currentReading();
+  assert.equal(reading.solar[0].sunrise, Date.parse('2026-10-24T06:00Z'));
+  assert.equal(reading.solar[1].sunset, Date.parse('2026-10-25T15:00Z'));
+  const old = harness({ saved: cached() }); old.start();
+  assert.equal(old.weather.currentReading().code, 3);
+  old.advance(2*3600000+1); assert.equal(old.weather.currentReading(), null);
+});
