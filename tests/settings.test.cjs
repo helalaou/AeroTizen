@@ -113,3 +113,15 @@ test('settings publish saves and reloads, and unsubscribe is safe to repeat', ()
   settings.background = 'lava'; settings.save();
   assert.deepEqual(values, ['snow', 'snow']);
 });
+
+
+test('Continue Watching requires explicit opt-in and validates saved source choices', () => {
+  const { settings } = loadSettings({});
+  assert.equal(settings.continueWatching, false);
+  assert.deepEqual(Array.from(settings.continueWatchingApps), []);
+  const key = 'aerotizen.settings.v1';
+  const restored = loadSettings({ [key]: JSON.stringify({ continueWatching: 'true',
+    continueWatchingApps: ['video.app', 'video.app', null, {}, 'bad id', 'other-app'] }) }).settings;
+  assert.equal(restored.continueWatching, false);
+  assert.deepEqual(Array.from(restored.continueWatchingApps), ['video.app', 'other-app']);
+});

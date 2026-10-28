@@ -226,3 +226,31 @@ body.editing .topbar, body.editing main { visibility: hidden; }
 .grid .tile:not(.on):not(.addapps) { opacity: .5; }
 .grid .tile:not(.on):not(.addapps).focused { opacity: .85; }
 .status-icon.offline { color: #ff6b6b; }
+
+/* Optional personal feed; the app grid keeps its existing layout. */
+#continue-section[hidden] { display: none; }
+.continue-viewport { overflow: hidden; margin: -16px; padding: 16px; }
+#continue-items { position: relative; gap: 24px; }
+.continue-card { position: relative; flex: 0 0 414px; width: 414px; height: 345px; border-radius: 10px; overflow: hidden; background: #1c1c1e; cursor: pointer; }
+.continue-image-wrap { position: relative; width: 414px; height: 233px; background: #101014; }
+.continue-image { display: block; width: 100%; height: 100%; object-fit: contain; }
+.continue-image[hidden] { display: none; }
+.continue-label { display: flex; align-items: flex-start; height: 107px; padding: 12px 16px 16px; }
+.continue-details { flex: 1; min-width: 0; }
+.continue-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: 26px; font-weight: 500; line-height: 1.15; max-height: 60px; overflow: hidden; overflow-wrap: break-word; }
+.continue-card.episodic .continue-title { display: block; white-space: nowrap; text-overflow: ellipsis; }
+.continue-episode { margin-top: 5px; color: #ccc; font-size: 22px; }
+.continue-app-icon.tile { position: absolute; top: 12px; right: 12px; width: 56px; height: 56px; border-radius: 7px; box-shadow: 0 2px 8px #0008; pointer-events: none; }
+.continue-app-icon .app-fallback { padding: 4px; gap: 0; }
+.continue-app-icon .app-fallback .logo { width: 46px; height: 46px; }
+.continue-app-icon .app-fallback .name { display: none; }
+.continue-progress { height: 5px; background: #555; }
+.continue-progress.empty { visibility: hidden; }
+.continue-progress-fill { height: 100%; background: var(--focus); }
+.continue-apps { gap: 22px; margin-bottom: 32px; }
+.continue-apps .tile { width: 176px; height: 176px; }
+.continue-apps .app-fallback { padding: 14px; gap: 12px; }
+.continue-apps .app-fallback .logo { width: 100px; height: 100px; }
+.continue-apps .app-fallback .name { font-size: 22px; }
+.continue-apps .tile.on::after { top: 8px; right: 8px; width: 30px; height: 30px; background-size: 20px; }
+.continue-apps .tile[aria-disabled="true"] { opacity: .35; }

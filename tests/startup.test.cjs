@@ -14,6 +14,7 @@ function harness(mode = 'deferred', saved = ['youtube.id']) {
     if (mode === 'fail') fail();
   } } }, catalog: { preloadedStoreId: () => null },
   settings: { home: saved, load() {}, save() { calls.push('save'); } },
+  continueWatching: { start() {} },
   clock: { start() {}, tick() {} }, network: { start() {} },
   inputs: { load() {} }, settingsUi: { isOpen: () => false },
   homewatch: { start() {}, reportApps() {}, reportStartup() {} },

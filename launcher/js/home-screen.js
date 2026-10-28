@@ -63,6 +63,8 @@
 
   function buildRows() {
     rows = [[A.$('gear'), A.$('home-tab'), A.$('apps-tab')]].concat(A.chunk(gridTiles(), COLS));
+    var continueTiles = A.continueRow ? A.continueRow.render(page === 'home') : [];
+    if (continueTiles.length) { rows.push(continueTiles); }
     var inputTiles = [].slice.call(A.$('inputs').children);
     A.$('inputs-section').hidden = page !== 'home' || inputTiles.length === 0;
     if (!A.$('inputs-section').hidden) { rows.push(inputTiles); }
@@ -78,6 +80,7 @@
     col[row] = Math.max(0, Math.min(col[row] || 0, rows[row].length - 1));
     var el = rows[row][col[row]];
     el.classList.add('focused');
+    if (A.continueRow) { A.continueRow.focus(el); }
     // Keep the focused row on screen (only matters with more than 6 apps). Measured on screen,
     // since offsetTop is relative to the nearest positioned parent.
     var main = A.$('rows'), rect = el.getBoundingClientRect(), mainTop = main.getBoundingClientRect().top;
@@ -88,11 +91,30 @@
     A.$('rows').style.transform = 'translate3d(0,' + (-scrollY) + 'px,0)';
   }
 
+  function isContinueCard(el) { return el && el.parentNode === A.$('continue-items'); }
+
+  function nearestColumn(items, from) {
+    var origin = from.getBoundingClientRect(), x = (origin.left + origin.right) / 2;
+    var clip = isContinueCard(items[0]) ? A.$('continue-items').parentNode.getBoundingClientRect() : null;
+    var best = 0, distance = Infinity;
+    items.forEach(function (item, index) {
+      var rect = item.getBoundingClientRect();
+      if (clip && (rect.right <= clip.left || rect.left >= clip.right)) { return; }
+      var next = Math.abs((rect.left + rect.right) / 2 - x);
+      if (next < distance) { best = index; distance = next; }
+    });
+    return best;
+  }
+
   function moveFocus(dRow, dCol) {
     if (dCol) { col[row] += dCol; return focus(); }
     var c = row === 0 ? 0 : col[row] || 0, r = row + dRow;
     while (r > 0 && r < rows.length && !rows[r].length) { r += dRow; }
     if (r < 0 || r >= rows.length) { return; }
+    // The carousel's visible cards do not share the app grid's column numbers.
+    // Cross its boundary by screen position, without resetting its scroll.
+    var from = current();
+    if (r > 0 && from && (isContinueCard(from) || isContinueCard(rows[r][0]))) { c = nearestColumn(rows[r], from); }
     // Returning to the header selects the current page, regardless of the app column.
     row = r; col[row] = row === 0 ? (page === 'home' ? 1 : 2) : c; focus();
   }
@@ -391,6 +413,17 @@
 
   A.homeScreen = { render: render, buildRows: buildRows, focus: focus, keydown: keydown, keyup: keyup,
     refreshApps: function () { if (moving) { refreshPending = true; } else { render(); } } };
+  if (A.continueWatching) { A.continueWatching.subscribe(function () {
+    var selected = current(), key = selected && selected.dataset.key;
+    buildRows();
+    rows.some(function (items, r) {
+      for (var c = 0; c < items.length; c++) {
+        if (items[c] === selected || (key && items[c].dataset.key === key)) { row = r; col[r] = c; return true; }
+      }
+      return false;
+    });
+    focus();
+  }); }
   A.$('gear').onclick = function () {
     if (moving) { endMove(); }
     A.settingsUi.open();

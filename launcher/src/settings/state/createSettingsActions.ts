@@ -15,6 +15,11 @@ export const createSettingsActions = (
       services.applyWeatherVisibility();
       services.applyBackground();
     }),
+    setContinueWatching: continueWatching => commit({ continueWatching }),
+    toggleContinueApp(id) {
+      const selected = settings.getSnapshot().continueWatchingApps;
+      commit({ continueWatchingApps: selected.includes(id) ? selected.filter(app => app !== id) : [...selected, id] });
+    },
     setBackground: background => commit({ background }, services.applyBackground),
     setWeatherVisible: showWeather => commit({ showWeather }, services.applyWeatherVisibility),
     setLocationVisible: weatherShowLocation => commit({ weatherShowLocation }, services.applyLocationVisibility),
