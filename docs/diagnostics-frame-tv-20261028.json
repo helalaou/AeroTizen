@@ -58,5 +58,10 @@
     "scope": "Build identity, environment, error context, action outcomes, ordering and health fields added after this hardware run.",
     "validation": "Local automated tests only; not installed on the TV.",
     "unchanged_limit": "Newest cold-start UI records may require an app roundtrip before export."
+  },
+  "privacy_followup": {
+    "policy_version": 2,
+    "scope": "Structured fields, fixed error codes, temporary third-party app aliases and filtered legacy exports; covered by local privacy tests.",
+    "hardware": "This privacy update was not installed or tested on the TV."
   }
 }

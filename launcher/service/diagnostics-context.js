@@ -1,5 +1,6 @@
 'use strict';
 var fs = require('fs');
+var privacy = require('../js/diagnostics-privacy')();
 function build(value) {
   value = value || {};
   return {
@@ -17,7 +18,7 @@ function health(value) {
   ['unsaved', 'saving'].forEach(function (key) { if (typeof value[key] === 'boolean') result[key] = value[key]; });
   if (['unavailable', 'loading', 'ready', 'saving', 'failed'].indexOf(value.storage) >= 0) result.storage = value.storage;
   if (['monotonic', 'wall_fallback'].indexOf(value.clock) >= 0) result.clock = value.clock;
-  if (typeof value.session === 'string' && /^[a-z0-9-]{1,64}$/.test(value.session)) result.session = value.session;
+  if (typeof value.session === 'string' && /^[a-z0-9-]{1,64}$/.test(value.session)) result.session = privacy.value(value.session, 'session');
   return result;
 }
 module.exports = function (options) {
@@ -40,7 +41,7 @@ module.exports = function (options) {
         if (error) { environment.reason = 'os_release_unavailable'; return; }
         String(text).slice(0, 16384).split('\n').forEach(function (line) {
           var match = line.match(/^(VERSION_ID|BUILD_ID)=(.*)$/);
-          if (match) environment[match[1] === 'VERSION_ID' ? 'tizen' : 'firmware'] = match[2].replace(/^['"]|['"]$/g, '').slice(0, 128);
+          if (match) environment[match[1] === 'VERSION_ID' ? 'tizen' : 'firmware'] = privacy.value(match[2].replace(/^['"]|['"]$/g, ''), match[1] === 'VERSION_ID' ? 'tizen' : 'firmware');
         });
         if (!environment.tizen || !environment.firmware) { environment.state = 'partial'; environment.reason = 'os_release_fields_missing'; }
       });

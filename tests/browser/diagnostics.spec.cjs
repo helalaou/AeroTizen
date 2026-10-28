@@ -76,7 +76,7 @@ test('legacy UI logs migrate asynchronously without writing the old localStorage
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await page.route('https://**/*', route => route.fulfill({ body: '{}' }));
   await page.addInitScript(() => {
-    localStorage.setItem('aerotizen.diagnostics.v1', JSON.stringify([{ id: 'legacy-1', at: 1, source: 'ui', event: 'ui.legacy', data: {} }]));
+    localStorage.setItem('aerotizen.diagnostics.v1', JSON.stringify([{ id: 'legacy-1', at: 1, source: 'ui', event: 'ui.loaded', data: {} }]));
     window.legacyWrites = 0;
     const write = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {
@@ -86,7 +86,8 @@ test('legacy UI logs migrate asynchronously without writing the old localStorage
   });
   await page.goto('/');
   await expect(page.locator('#grid > .tile').first()).toBeVisible();
-  await expect.poll(async () => (await persistedEvents(page)).some(item => item.event === 'ui.legacy')).toBe(true);
+  await expect.poll(async () => (await persistedEvents(page)).some(item => item.event === 'ui.loaded')).toBe(true);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('aerotizen.diagnostics.v1'))).toBe(null);
   expect(await page.evaluate(() => window.legacyWrites)).toBe(0); expect(errors).toEqual([]);
 });
 
@@ -141,3 +142,41 @@ for (const unavailable of [false, true]) {
     await expect(page.locator('vite-error-overlay')).toHaveCount(0); expect(errors).toEqual([]);
   });
 }
+
+
+test('personal text is excluded before IndexedDB persistence and loopback delivery', async ({ page }) => {
+  const delivered = [];
+  const poison = 'Alex Example alex@example.invalid 2001:db8::7 My Private Film PRIVATE-CREDENTIAL';
+  await page.route('https://**/*', route => route.fulfill({ body: '{}' }));
+  await page.route('http://127.0.0.1:47790/**', route => {
+    if (route.request().method() !== 'POST') return route.fulfill({ body: '{}' });
+    const packet = route.request().postDataJSON(); delivered.push(packet);
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ schema_version: 1, accepted: packet.records.length }) });
+  });
+  await page.addInitScript(poison => {
+    localStorage.setItem('aerotizen.diagnostics.v1', JSON.stringify([{ id: 'private-person', at: 1, source: 'ui', event: 'ui.error', data: { message: poison, app_id: poison } }]));
+    window.tizen = {
+      ApplicationControl: function (operation) { this.operation = operation; },
+      application: { getAppsInfo: done => done([{ id: 'test.app', name: 'Test app', packageId: '1234567890' }]),
+        getAppInfo: () => ({ version: '2.4.0' }), launchAppControl() {} },
+      systeminfo: { getPropertyValue(name, done, fail) { fail?.(); }, addPropertyValueChangeListener() {} }
+    };
+  }, poison);
+  await page.goto('/');
+  await expect(page.locator('#grid > .tile').first()).toBeVisible();
+  await page.evaluate(poison => {
+    AeroBuildInfo.owner = poison;
+    AeroDiagnostics.record('app.launch_requested', { app_id: poison, message: poison, payload: poison });
+    window.dispatchEvent(new ErrorEvent('error', { error: new Error(poison), filename: 'file:///opt/' + poison + '.js', lineno: 9 }));
+    AeroDiagnostics.flush();
+  }, poison);
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('#grid > .tile.focused')).toHaveCount(1);
+  await expect.poll(async () => (await persistedEvents(page)).some(item => item.event === 'app.launch_requested')).toBe(true);
+  await expect.poll(() => delivered.some(packet => packet.records.some(item => item.event === 'app.launch_requested'))).toBe(true);
+  const raw = JSON.stringify({ saved: await persistedEvents(page), uploads: delivered,
+    memory: await page.evaluate(() => AeroDiagnostics.snapshot()) });
+  for (const value of poison.split(' ').concat(['private-person'])) expect(raw).not.toContain(value);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('aerotizen.diagnostics.v1'))).toBe(null);
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0);
+});

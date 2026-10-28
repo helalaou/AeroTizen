@@ -643,7 +643,7 @@ test('diagnostics enforce read access and batch limits without changing native H
   const logs = request('GET', '/diagnostics/logs', { 'x-aerotizen-diagnostics': '1' });
   assert.equal(logs.code, 200); assert.equal(logs.body.schema_version, 1);
   assert.equal(logs.body.ui.health.discarded, 2); assert.equal(logs.body.environment.tizen, '9.0.0');
-  assert.ok(logs.body.records.some(item => item.id === event.id));
+  assert.ok(logs.body.records.some(item => item.event === event.event));
   assert.ok(!JSON.stringify(logs.body).includes('PRIVATE'));
   h.advance(60000);
   assert.equal(h.requests.length, before); assert.equal(h.launches.length, 0);

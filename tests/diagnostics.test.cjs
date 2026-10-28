@@ -10,10 +10,10 @@ const source = fs.readFileSync(require.resolve('../launcher/js/diagnostics'), 'u
 
 test('TV logs retain recent events within both count and encoded response limits', () => {
   const logger = create('service');
-  for (let i = 0; i < 500; i++) logger.record('event.' + i, { reason: '😀'.repeat(200), component: '界'.repeat(200) });
+  for (let i = 0; i < 500; i++) logger.record('ui.visibility', { reason: '😀'.repeat(200), component: '界'.repeat(200) });
   const snapshot = logger.snapshot();
   assert.ok(snapshot.records.length > 0 && snapshot.records.length <= 200);
-  assert.equal(snapshot.records.at(-1).event, 'event.499');
+  assert.equal(snapshot.records.at(-1).event, 'ui.visibility');
   assert.ok(Buffer.byteLength(JSON.stringify(snapshot)) < 256 * 1024);
   snapshot.records[0].data.reason = 'mutated';
   assert.notEqual(logger.snapshot().records[0].data.reason, 'mutated');
@@ -60,13 +60,13 @@ test('records and ingestion only update memory; burst writes are batched and ser
   let loaded;
   const logger = create('service', { later: c.later });
   logger.attach({ load: done => { loaded = done; }, save: (value, done) => { writes.push(JSON.parse(value)); finish.push(done); } });
-  for (let i = 0; i < 100; i++) logger.record('event.' + i);
+  for (let i = 0; i < 100; i++) logger.record('ui.visibility');
   assert.equal(writes.length, 0); assert.equal(logger.snapshot().records.length, 100);
   loaded(null, null); c.advance(499); assert.equal(writes.length, 0);
   c.advance(1); assert.equal(writes.length, 1); assert.equal(writes[0].length, 100);
-  logger.record('during.write'); c.advance(5000); assert.equal(writes.length, 1);
+  logger.record('ui.loaded'); c.advance(5000); assert.equal(writes.length, 1);
   finish.shift()(null); c.advance(500); assert.equal(writes.length, 2);
-  assert.equal(writes[1].at(-1).event, 'during.write');
+  assert.equal(writes[1].at(-1).event, 'ui.loaded');
   finish.shift()(null); c.advance(60000); assert.equal(writes.length, 2);
   logger.ingest(logger.snapshot().records); c.advance(60000); assert.equal(writes.length, 2);
 });
@@ -74,14 +74,14 @@ test('records and ingestion only update memory; burst writes are batched and ser
 test('async reload merges previous events with new actions; storage failures stay optional', () => {
   const c = clock(); let saved;
   const storage = { load: done => done(null, saved), save: (value, done) => { saved = value; done(null); } };
-  const first = create('service', { later: c.later }); first.attach(storage); first.record('first.start');
+  const first = create('service', { later: c.later }); first.attach(storage); first.record('service.start');
   assert.equal(saved, undefined); c.advance(500);
-  const next = create('service', { later: c.later }); next.record('second.start'); next.attach(storage);
-  assert.deepEqual(next.snapshot().records.map(r => r.event), ['first.start', 'second.start']);
-  const broken = create('service', { later: c.later }); broken.record('current.start');
+  const next = create('service', { later: c.later }); next.record('ui.start'); next.attach(storage);
+  assert.deepEqual(next.snapshot().records.map(r => r.event), ['service.start', 'ui.start']);
+  const broken = create('service', { later: c.later }); broken.record('ui.start');
   broken.attach({ load: done => done(null, '{bad json'), save: (value, done) => done(new Error('disk full')) });
-  broken.record('still.works'); c.advance(500); broken.record('after.failure');
-  assert.equal(broken.snapshot().records.at(-1).event, 'after.failure');
+  broken.record('ui.loaded'); c.advance(500); broken.record('ui.loaded');
+  assert.equal(broken.snapshot().records.at(-1).event, 'ui.loaded');
   assert.equal(c.timers.size, 0);
 });
 
@@ -89,6 +89,7 @@ function browser(options = {}) {
   const listeners = {}, stored = new Map(options.saved ? [['snapshot', JSON.stringify(options.saved)]] : []), requests = [], c = clock();
   let writes = 0;
   const window = {
+    AeroDiagnosticsPrivacy: require('../launcher/js/diagnostics-privacy'),
     document: { hidden: false, addEventListener: (name, fn) => { listeners[name] = fn; } },
     addEventListener: (name, fn) => { listeners[name] = fn; },
     setTimeout: c.later, clearTimeout: c.cancel,
@@ -151,12 +152,12 @@ test('UI sends bounded event batches with sanitized error context', () => {
 
 test('older queued UI events are delivered when async storage loads, without a remote action', () => {
   const h = browser({ tv: true, loadDelay: 1000, saved: [
-    { id: 'old-ui-record', at: 1, source: 'ui', event: 'ui.previous', data: {} }
+    { id: 'old-ui-record', at: 1, source: 'ui', event: 'ui.loaded', data: {} }
   ] });
   h.listeners.load(); h.advance(0);
-  assert.ok(!h.requests.some(request => JSON.parse(request.body).records.some(item => item.id === 'old-ui-record')));
+  assert.ok(!h.requests.some(request => JSON.parse(request.body).records.some(item => item.at === 1)));
   h.advance(1000);
-  assert.ok(h.requests.some(request => JSON.parse(request.body).records.some(item => item.id === 'old-ui-record')));
+  assert.ok(h.requests.some(request => JSON.parse(request.body).records.some(item => item.at === 1)));
 });
 
 test('cold-start delivery succeeds when the existing service becomes ready', () => {
@@ -225,16 +226,16 @@ test('service log storage uses only async file APIs and preserves Home recovery 
     const save = value => new Promise((resolve, reject) => store.save(value, error => error ? reject(error) : resolve()));
     const load = () => new Promise((resolve, reject) => store.load((error, value) => error ? reject(error) : resolve(value)));
     const logger = create('service'); logger.record('service.start');
-    for (let i = 0; i < 100; i++) logger.record('unicode.test', { reason: '界'.repeat(190), component: '界'.repeat(190) });
+    for (let i = 0; i < 100; i++) logger.record('ui.visibility', { reason: '界'.repeat(190), component: '界'.repeat(190) });
     let finished = false;
     const pending = save(JSON.stringify(logger.snapshot().records)).then(() => { finished = true; });
     assert.equal(finished, false); await pending;
-    assert.equal(JSON.parse(await load()).at(-1).event, 'unicode.test');
+    assert.equal(JSON.parse(await load()).at(-1).event, 'ui.visibility');
     assert.equal(fs.readFileSync(home, 'utf8'), 'RECOVERY');
     assert.equal(fs.readdirSync(directory).filter(name => name.endsWith('.tmp')).length, 0);
     adapter.rename = (from, to, done) => done(new Error('disk failed'));
     await assert.rejects(save('[]'), /disk failed/);
-    assert.equal(JSON.parse(await load()).at(-1).event, 'unicode.test');
+    assert.equal(JSON.parse(await load()).at(-1).event, 'ui.visibility');
     assert.equal(fs.readdirSync(directory).filter(name => name.endsWith('.tmp')).length, 0);
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
@@ -261,7 +262,7 @@ test('events use session sequence and monotonic elapsed time despite wall clock 
   assert.deepEqual(records.map(item => item.sequence), [1, 2, 3]);
   assert.deepEqual(records.map(item => item.elapsed_ms), [0, 50, 50]);
   assert.ok(records.every(item => item.session === records[0].session));
-  logger.ingest([{ id: 'legacy', at: 1, source: 'ui', event: 'legacy', data: {} }]);
+  logger.ingest([{ id: 'legacy-event', at: 1, source: 'ui', event: 'diagnostic.unknown', data: {} }]);
   assert.equal(logger.snapshot().records.at(-1).sequence, undefined);
 });
 
@@ -275,7 +276,7 @@ test('error formatting is deferred, bounded and contains source locations withou
   const data = logger.snapshot().records[0].data;
   assert.equal(data.file, 'apps.js'); assert.equal(data.line, 42); assert.equal(data.column, 9);
   assert.equal(data.stack, 'apps.js:42:9\nnative-navigation.js:55:3');
-  assert.match(data.message, /Cannot read value/);
+  assert.equal(data.message, 'property_access_failed');
   assert.doesNotMatch(JSON.stringify(data), /SECRET|PRIVATE|Users|opt|user@example/);
   for (let i = 0; i < 20; i++) logger.captureError('ui.error', error);
   assert.equal(logger.health().pending_errors, 16); assert.equal(logger.health().discarded, 4);
@@ -284,11 +285,11 @@ test('error formatting is deferred, bounded and contains source locations withou
 
 test('health reports retention loss and failed storage without blocking new events', () => {
   const c = clock(), logger = create('service', { later: c.later });
-  for (let i = 0; i < 205; i++) logger.record('event');
+  for (let i = 0; i < 205; i++) logger.record('ui.visibility');
   assert.equal(logger.health().discarded, 5); assert.equal(logger.health().storage, 'unavailable');
   logger.attach({ load: done => done(null, null), save: (value, done) => done(new Error('disk full')) });
   c.advance(500); assert.equal(logger.health().storage, 'failed'); assert.equal(logger.health().write_failures, 1);
-  logger.record('after.failure'); assert.equal(logger.snapshot().records.at(-1).event, 'after.failure');
+  logger.record('ui.loaded'); assert.equal(logger.snapshot().records.at(-1).event, 'ui.loaded');
 });
 
 test('service metadata is cached once and UI health and build fields are allowlisted', () => {
@@ -297,14 +298,14 @@ test('service metadata is cached once and UI health and build fields are allowli
   const context = createContext({ read: done => { calls++; finish = done; } });
   const snapshot = () => context.enrich({}, { mode: 'native', persistent: true, protocol: 1 }, { heartbeats: 0, guard: { launchCalls: 0 } });
   context.start(); context.start(); assert.equal(calls, 1); assert.equal(snapshot().environment.state, 'loading');
-  finish(null, 'VERSION_ID="9.0.0"\nBUILD_ID="firmware-build"\nSECRET="PRIVATE"');
+  finish(null, 'VERSION_ID="9.0.0"\nBUILD_ID="T-TEST-0090"\nSECRET="PRIVATE"');
   context.accept({ version: '2.4.0', build: { version: '2.4.0', build_id: 'a'.repeat(64), commit: 'b'.repeat(40), dirty: true, path: 'PRIVATE' },
     health: { session: 'ui-session', storage: 'failed', discarded: 7, token: 'PRIVATE' }, queued: 3,
     delivery: { state: 'acknowledged', retries: 1, last_status: 200 }, payload: 'PRIVATE' });
   const info = snapshot();
-  assert.equal(info.environment.tizen, '9.0.0'); assert.equal(info.environment.firmware, 'firmware-build');
+  assert.equal(info.environment.tizen, '9.0.0'); assert.equal(info.environment.firmware, 'T-TEST-0090');
   assert.equal(info.ui.build.build_id, 'a'.repeat(64)); assert.equal(info.ui.health.discarded, 7);
-  assert.equal(info.ui.health.session, 'ui-session'); assert.equal(info.ui.queued, 3);
+  assert.match(info.ui.health.session, /^d-[a-f0-9]{8}-[0-9]+$/); assert.equal(info.ui.queued, 3);
   assert.equal(info.context.native_settings, 'not_queried'); assert.doesNotMatch(JSON.stringify(info), /PRIVATE/);
 });
 
@@ -315,6 +316,44 @@ test('sanitization remains stable after service delivery and persistence reload'
   c.advance(0);
   const service = create('service'); service.ingest(ui.snapshot().records);
   assert.equal(service.snapshot().records[0].data.stack, ui.snapshot().records[0].data.stack);
+  ui.record('watcher.launch', { reason: 'home pressed in private.person.app' });
+  service.ingest(ui.snapshot().records);
+  assert.equal(service.snapshot().records.at(-1).data.reason, 'home_pressed_in_app');
   ui.record('safe', { reason: 'authkey="PRIVATE FIRST SECOND" Authorization: Bearer HIDDEN' });
   assert.doesNotMatch(JSON.stringify(ui.snapshot()), /PRIVATE|FIRST|SECOND|HIDDEN/);
+});
+
+
+test('no personal strings reach memory, async saves or uploads, including legacy events', () => {
+  const values = ['Alex Example', 'alex@example.invalid', '2001:db8::7', 'aa:bb:cc:dd:ee:ff',
+    'My Very Private Film', 'Bedroom Television', '\\\\server\\alex\\work', 'PRIVATE-CREDENTIAL'];
+  const h = browser({ tv: true });
+  for (const value of values) {
+    h.window.AeroDiagnostics.record('app.launch_requested', {
+      app_id: value, action: value, mode: value, error: value, reason: value,
+      message: value, file: value + '.js', stack: value, payload: value,
+      operation_id: value, transaction: value, unknown: { [value]: value }
+    });
+    h.listeners.error({ message: value, filename: '/mnt/' + value + '.js', lineno: 9, colno: 3 });
+  }
+  h.window.AeroDiagnostics.ingest([{ id: 'alex-example', session: 'bedroom-tv', at: 1, source: 'ui', event: 'ui.error',
+    data: { error: 'Alex Example', message: 'My Very Private Film', app_id: 'alex@example.invalid', token: 'PRIVATE-CREDENTIAL' } }]);
+  h.listeners.load(); h.advance(500);
+  const raw = JSON.stringify({ memory: h.window.AeroDiagnostics.snapshot(), saves: [...h.stored], uploads: h.requests.map(request => request.body) });
+  for (const value of values.concat(['alex-example', 'bedroom-tv'])) assert.ok(!raw.includes(value), value);
+  const request = h.window.AeroDiagnostics.snapshot().records.find(item => item.event === 'app.launch_requested');
+  assert.match(request.data.app_id, /^app-[0-9]+$/);
+});
+
+test('app aliases remain consistent within a session and known Home IDs remain useful', () => {
+  const logger = create('ui');
+  logger.record('app.launch_requested', { app_id: 'third.party.private' });
+  logger.record('app.launch_accepted', { app_id: 'third.party.private' });
+  logger.record('app.launch_requested', { app_id: 'another.private.app' });
+  logger.record('app.launch_requested', { app_id: 'com.samsung.tv.csfs' });
+  const records = logger.snapshot().records;
+  assert.equal(records[0].data.app_id, records[1].data.app_id);
+  assert.notEqual(records[0].data.app_id, records[2].data.app_id);
+  assert.equal(records[3].data.app_id, 'com.samsung.tv.csfs');
+  assert.doesNotMatch(JSON.stringify(records), /third.party.private|another.private.app/);
 });

@@ -1,38 +1,12 @@
-/* global module, process */
+/* global module, process, require */
 // Bounded diagnostics shared by the UI and service. No console interception or app payloads.
 (function (root) {
   'use strict';
   var LIMIT = 200, MAX_CHARACTERS = 60000, BATCH_SIZE = 24, MAX_BATCH_CHARACTERS = 4000;
-  var fields = ['action', 'mode', 'operation', 'app_id', 'error', 'reason', 'status', 'phase', 'line', 'component', 'transaction', 'version', 'hidden', 'operation_id', 'message', 'file', 'column', 'stack', 'code', 'build_id', 'commit', 'dirty'];
-  function clean(value, key) {
-    if (typeof value === 'boolean' || typeof value === 'number' && isFinite(value)) { return value; }
-    if ((key === 'build_id' || key === 'commit') && /^[a-f0-9]{12,64}$/.test(value)) { return value; }
-    if (key === 'message' && /payload|history|programme|episode|movie|account|password|token|cookie|authorization/i.test(value)) { return '[sensitive error detail omitted]'; }
-    if (key === 'file') { var file = String(value).split(/[?#]/)[0].match(/(?:^|[\\/])([a-zA-Z0-9_-]+\.(?:js|html))(?::\d+(?::\d+)?)?$/); return file ? file[1] : '[unknown source]'; }
-    if (key === 'stack') { return String(value).slice(0, 4096).split('\n').map(function (line) { var match = line.match(/(?:^|[\\/])([a-zA-Z0-9_-]+\.(?:js|html):\d+(?::\d+)?)/); return match ? match[1] : ''; }).filter(Boolean).slice(0, 8).join('\n').slice(0, 1024); }
-    if (key === 'operation') { return /^http:\/\/tizen.org\/appcontrol\/operation\/(main|default|view|service)$/.test(value) ? value : '[other operation]'; }
-    return String(value).slice(0, 512)
-      .replace(/bearer\s+\S+/gi, 'Bearer [redacted]')
-      .replace(/(password|authorization|authkey|secret|token|cookie|duid)[\s"']*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,}]+)/gi, '$1=[redacted]')
-      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
-      .replace(/(?:https?|wss?):\/\/[^\s]+/g, '[url]')
-      .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[address]')
-      .replace(/[A-Za-z]:[\\/][^\n]+|\/(?:Users|home|opt|private|tmp|var)\/[^\n]+/g, '[path]')
-      .replace(/\b[a-f0-9]{32,}\b/gi, '[identifier]').slice(0, 192);
-  }
-  function details(value) {
-    var result = {};
-    if (value && typeof value === 'object') {
-      fields.forEach(function (key) {
-        if (Object.prototype.hasOwnProperty.call(value, key) && ['string', 'number', 'boolean'].indexOf(typeof value[key]) >= 0) {
-          result[key] = clean(value[key], key);
-        }
-      });
-    }
-    return result;
-  }
+  var createPrivacy = typeof module !== 'undefined' && module.exports ? require('./diagnostics-privacy') : root.AeroDiagnosticsPrivacy;
   function create(source, options) {
     options = options || {};
+    var privacy = createPrivacy();
     var later = options.later || function (fn, ms) { return typeof root.setTimeout === 'function' ? root.setTimeout(fn, ms) : setTimeout(fn, ms); };
     var records = [], total = 0, store = null, serial = 0;
     var discarded = 0, invalid = 0, writeFailures = 0, readFailures = 0, writes = 0, storageState = 'unavailable', pendingErrors = 0;
@@ -40,7 +14,7 @@
       typeof process !== 'undefined' && process.hrtime ? function () { var time = process.hrtime(); return time[0] * 1000 + time[1] / 1000000; } : Date.now);
     var origin = mono(), elapsed = 0;
     var revision = 0, saved = 0, loading = false, saving = false, saveTimer = null;
-    var session = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    var session = privacy.session;
     function scheduleSave(delay) {
       if (!store || loading || saving || saveTimer !== null || revision === saved) { return; }
       saveTimer = later(persist, typeof delay === 'number' ? delay : 500);
@@ -67,9 +41,10 @@
             typeof item.id !== 'string' || !/^[a-z0-9-]{1,64}$/.test(item.id) ||
             typeof item.at !== 'number' || !isFinite(item.at) ||
             typeof item.event !== 'string' || !/^[a-zA-Z0-9_.-]{1,64}$/.test(item.event)) { invalid += 1; return; }
-        if (records.some(function (entry) { return entry.id === item.id; })) { return; }
-        var entry = { id: item.id, at: item.at, source: item.source, event: item.event, data: details(item.data) };
-        if (typeof item.session === 'string' && /^[a-z0-9-]{1,64}$/.test(item.session)) { entry.session = item.session; }
+        var id = privacy.value(item.id, 'id'), name = privacy.event(item.event);
+        if (records.some(function (entry) { return entry.id === id; })) { return; }
+        var entry = { id: id, at: item.at, source: item.source, event: name, data: name === 'diagnostic.unknown' ? {} : privacy.details(item.data) };
+        if (typeof item.session === 'string' && /^[a-z0-9-]{1,64}$/.test(item.session)) { entry.session = privacy.value(item.session, 'session'); }
         if (typeof item.sequence === 'number' && isFinite(item.sequence) && item.sequence > 0 && Math.floor(item.sequence) === item.sequence) { entry.sequence = item.sequence; }
         if (typeof item.elapsed_ms === 'number' && isFinite(item.elapsed_ms) && item.elapsed_ms >= 0) { entry.elapsed_ms = item.elapsed_ms; }
         records.push(entry); total += JSON.stringify(entry).length; changed = true;
@@ -81,7 +56,7 @@
     function stamp(name, data) {
       elapsed = Math.max(elapsed, Math.round(mono() - origin));
       return { id: session + '-' + (++serial), session: session, sequence: serial,
-        at: Date.now(), elapsed_ms: elapsed, source: source, event: name, data: data };
+        at: Date.now(), elapsed_ms: elapsed, source: source, event: privacy.event(name), data: data };
     }
     function record(name, data) {
       try { var entry = stamp(name, data); ingest([entry]); return entry.id; } catch (e) { return null; }
@@ -96,7 +71,7 @@
       record: record,
       captureError: function (name, error, context) {
         if (pendingErrors >= 16) { discarded += 1; return; }
-        var entry = stamp(name, details(context)); pendingErrors += 1;
+        var entry = stamp(name, privacy.details(context)); pendingErrors += 1;
         later(function () {
           pendingErrors -= 1;
           try {
@@ -131,7 +106,7 @@
     };
   }
   if (typeof module !== 'undefined' && module.exports) { module.exports = create; return; }
-  var logger = root.AeroDiagnostics = create('ui'), busy = false, sent = {};
+  var logger = root.AeroDiagnostics = create('ui'), packetPrivacy = createPrivacy(), busy = false, sent = {};
   var sendTimer = null;
   var retryTimer = null, retries = 0, retryDelays = [1000, 3000, 10000];
   var delivery = { state: 'idle', last_status: null };
@@ -178,8 +153,10 @@
         var keep = {}; logger.snapshot().records.forEach(function (item) { if (sent[item.id]) { keep[item.id] = true; } }); sent = keep;
         flush();
       };
+      var build = {};
+      ['version', 'build_id', 'commit', 'dirty'].forEach(function (key) { build[key] = packetPrivacy.value((root.AeroBuildInfo || {})[key], key); });
       request.send(JSON.stringify({ schema_version: 1, records: batch, health: logger.health(),
-        build: root.AeroBuildInfo || {}, version: version, delivery: { state: delivery.state, retries: retries, last_status: delivery.last_status }, queued: logger.snapshot().records.filter(function (item) { return !sent[item.id]; }).length }));
+        build: build, version: packetPrivacy.value(version, 'version'), delivery: { state: delivery.state, retries: retries, last_status: delivery.last_status }, queued: logger.snapshot().records.filter(function (item) { return !sent[item.id]; }).length }));
     } catch (e) { busy = false; delivery.state = 'unavailable'; retry(); }
   }
   logger.flush = flush;

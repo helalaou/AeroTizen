@@ -291,7 +291,7 @@ On the tested Frame, return from another app before exporting after a cold start
 to include queued UI startup events.
 
 The report includes TV/firmware details when available, exact CLI/launcher build IDs,
-launch results, sanitized error locations and logging health. For Home or startup bugs,
+launch results, error codes and source locations, and logging health. For Home or startup bugs,
 add `--include-home` to read the native routing settings (up to 35 seconds; no setting
 changes). Missing information is marked in the report.
 
@@ -300,8 +300,10 @@ action handlers. Error formatting is deferred too. Session, sequence and elapsed
 keep events ordered even if the TV clock is wrong. A sudden power cut can lose the
 unsaved batch. Attach the ZIP and reproduction steps using the GitHub bug report form.
 
-Logs are bounded and redacted. Exports exclude certificates, login tokens and recovery
-backup files; they include Home result summaries and failed readbacks before rollback.
+Logs use approved technical fields. Console output, raw error messages, names, accounts,
+network addresses and content titles are excluded. Third-party app IDs use temporary
+aliases. Reports retain model/firmware, build details, event times and Home readback
+results. Exports also exclude certificates, login tokens and recovery backup files.
 Check the report before sharing it. Nothing is uploaded automatically. Keep your original
 Home backup folder separately for restore. See [diagnostics](docs/diagnostics.md) for
 file locations, limits and troubleshooting.

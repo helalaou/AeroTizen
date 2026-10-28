@@ -5,6 +5,7 @@ import zipfile
 import pytest
 
 from aerotizen import build_info, cli, diagnostics
+from aerotizen import diagnostic_privacy as privacy
 from aerotizen.sdb import CLSE, OKAY, WRTE, Sdb, SdbError
 
 _read_metadata = diagnostics._metadata
@@ -82,7 +83,7 @@ def test_export_is_offline_by_default_and_omits_recovery_credentials(tmp_path, m
             {
                 "request": {"baseline_base64": "PRIVATE-BASELINE"},
                 "state": "rolled_back",
-                "native_result": {"Failure": {"Phase": "final", "Observed": {"Main": "Firmware.Home"}}},
+                "native_result": {"Failure": {"Phase": "final", "Observed": {"Main": "com.samsung.tv.csfs"}}},
             }
         )
     )
@@ -93,7 +94,7 @@ def test_export_is_offline_by_default_and_omits_recovery_credentials(tmp_path, m
     with zipfile.ZipFile(target) as archive:
         text = "".join(archive.read(name).decode() for name in archive.namelist())
         assert "TOPSECRET" not in text and "PRIVATE-BASELINE" not in text and "CERTIFICATE" not in text
-        assert "Firmware.Home" in text and "last-event" in text
+        assert "com.samsung.tv.csfs" in text and "last-event" not in text
     with pytest.raises(FileExistsError):
         diagnostics.export_logs(tmp_path, target)
 
@@ -284,15 +285,30 @@ def test_tcp_request_deadline_closes_stalled_connection():
         peer.close()
 
 
-def test_export_keeps_large_structured_events_valid(tmp_path, log_folder):
+def test_export_filters_unknown_nested_fields_but_keeps_failure_evidence(tmp_path, log_folder):
     log_folder.mkdir()
-    record = {"event": "home.native_result", "data": {f"field{i}": "x" * 500 for i in range(30)}}
-    record["data"]["token"] = "PRIVATE"
+    result = {
+        "Failure": {
+            "Phase": "final",
+            "Observed": {"Main": "com.samsung.tv.csfs"},
+            "Differences": {
+                "operation/main": {"Expected": "DclHome001.Home", "Observed": "com.samsung.tv.csfs"}
+            },
+        }
+    }
+    record = {
+        "event": "home.native_result",
+        "data": {"result": result, **{f"field{i}": "private name" * 500 for i in range(30)}},
+    }
     (log_folder / "cli-large.log").write_text(json.dumps(record))
     target, _ = diagnostics.export_logs(tmp_path, tmp_path / "report.zip")
     with zipfile.ZipFile(target) as archive:
         exported = json.loads(archive.read("cli/session-1.log"))
-        assert len(exported["data"]) == 31 and exported["data"]["token"] == "[redacted]"
+    assert list(exported["data"]) == ["result"]
+    assert (
+        exported["data"]["result"]["Failure"]["Differences"]["operation/main"]["Observed"]
+        == "com.samsung.tv.csfs"
+    )
 
 
 def test_rapid_commands_keep_the_current_log(tmp_path, monkeypatch):
@@ -336,7 +352,7 @@ def test_export_preserves_all_tv_events_and_public_environment(tmp_path, monkeyp
                     ],
                     "environment": {
                         "tizen": "9.0.0",
-                        "firmware": "test-firmware",
+                        "firmware": "T-TEST-0090",
                         "arch": "arm",
                         "secret": "PRIVATE",
                     },
@@ -348,8 +364,12 @@ def test_export_preserves_all_tv_events_and_public_environment(tmp_path, monkeyp
             return b"HTTP/1.0 200 OK\r\n\r\n" + body
 
     monkeypatch.setattr(device, "DeviceSession", Session)
-    monkeypatch.setattr(diagnostics, "_metadata", lambda host: {"state": "collected", "model": "TEST-TV"})
-    monkeypatch.setattr(diagnostics, "_native_snapshot", lambda session: pytest.fail("Snapshot is opt-in"))
+    monkeypatch.setattr(
+        diagnostics, "_metadata", lambda host: {"state": "collected", "model": "UE55U8092FUXXH"}
+    )
+    monkeypatch.setattr(
+        diagnostics, "_native_snapshot", lambda session, **kwargs: pytest.fail("Snapshot is opt-in")
+    )
     target, state = diagnostics.export_logs(tmp_path, tmp_path / "support.zip", "192.0.2.1")
     with zipfile.ZipFile(target) as archive:
         raw = archive.read("report.json").decode()
@@ -400,7 +420,7 @@ def test_cli_sequence_error_context_and_health_survive_clock_jumps(tmp_path, mon
     monkeypatch.setattr(diagnostics.time, "monotonic", lambda: next(ticks, 12))
 
     def command(args):
-        diagnostics.event("step", build_id="a" * 64)
+        diagnostics.event("device.operation", method="capability")
         raise ValueError("token=SECRET")
 
     with pytest.raises(ValueError):
@@ -446,7 +466,7 @@ def test_metadata_fetch_is_bounded_and_excludes_tv_identity(monkeypatch):
             return json.dumps(
                 {
                     "device": {
-                        "modelName": "TEST-TV",
+                        "modelName": "UE55U8092FUXXH",
                         "model": "platform",
                         "duid": "PRIVATE",
                         "name": "PRIVATE",
@@ -460,13 +480,12 @@ def test_metadata_fetch_is_bounded_and_excludes_tv_identity(monkeypatch):
 
     with patch.object(diagnostics.urllib.request, "urlopen", request):
         result = _read_metadata("192.0.2.1")
-    assert result["model"] == "TEST-TV" and "PRIVATE" not in json.dumps(result)
+    assert result["model"] == "UE55U8092FUXXH" and "PRIVATE" not in json.dumps(result)
 
 
-def test_redaction_removes_quoted_spaced_credentials_and_nonfinite_numbers():
-    assert "PRIVATE" not in diagnostics.redact('authkey="PRIVATE FIRST SECOND"')
-    assert "SECOND" not in diagnostics.redact('authkey="PRIVATE FIRST SECOND"')
-    assert diagnostics.redact(float("nan")) is None
+def test_errors_omit_arbitrary_messages_and_nonfinite_numbers():
+    assert privacy.error_code('authkey="PRIVATE FIRST SECOND"') == "detail_omitted"
+    assert privacy.number(float("nan")) is None
 
 
 @pytest.mark.parametrize("fails", [False, True])
@@ -487,9 +506,9 @@ def test_optional_home_snapshot_never_prevents_partial_zip(tmp_path, monkeypatch
             pass
 
     monkeypatch.setattr(device, "DeviceSession", Session)
-    monkeypatch.setattr(diagnostics, "fetch_tv", lambda session: {"records": []})
+    monkeypatch.setattr(diagnostics, "fetch_tv", lambda session, **kwargs: {"records": []})
 
-    def snapshot(session):
+    def snapshot(session, **kwargs):
         if fails:
             raise SdbError("query unavailable")
         return {"state": "collected", "home": {"mode": "native"}}
@@ -501,11 +520,226 @@ def test_optional_home_snapshot_never_prevents_partial_zip(tmp_path, monkeypatch
     assert report["native_home"]["state"] == ("unavailable" if fails else "collected")
 
 
-def test_report_retains_safe_error_locations_and_known_home_operations():
-    assert diagnostics.redact("Authorization: Bearer PRIVATE") == "Authorization=[redacted] [redacted]"
-    assert diagnostics.redact("http://tizen.org/appcontrol/operation/main", "operation").endswith("/main")
+def test_report_retains_known_error_locations_and_home_operations():
+    policy = privacy.Policy()
+    assert policy.value("http://tizen.org/appcontrol/operation/main", "operation").endswith("/main")
     assert (
-        diagnostics.redact("TypeError: payload PRIVATE\n at f (file:///opt/apps.js:12:4)", "stack")
+        policy.value("TypeError: personal details\n at f (file:///opt/apps.js:12:4)", "stack")
         == "apps.js:12:4"
     )
-    assert diagnostics.redact("apps.js:12:4", "stack") == "apps.js:12:4"
+    assert policy.value("apps.js:12:4", "stack") == "apps.js:12:4"
+
+
+def test_new_cli_logs_do_not_record_console_names_titles_addresses_or_raw_errors(
+    tmp_path, log_folder, capsys
+):
+    values = [
+        "Alex Example",
+        "alex@example.invalid",
+        "2001:db8::7",
+        "aa:bb:cc:dd:ee:ff",
+        "My Very Private Film",
+        "Bedroom Television",
+        r"\\server\alex\work",
+        "PRIVATE-CREDENTIAL",
+    ]
+
+    def command(args):
+        print(" | ".join(values))
+        diagnostics.event(
+            "app.launch_requested", app_id="third.party.private", message=values[0], payload=values
+        )
+        diagnostics.event("device.operation", method="shell", command=" | ".join(values))
+        raise ValueError(" | ".join(values))
+
+    with pytest.raises(ValueError):
+        diagnostics.run_logged(argparse.Namespace(cmd="home"), command, tmp_path)
+    output = capsys.readouterr()
+    assert all(value in output.out for value in values)  # Normal CLI output is unchanged.
+    raw = next(log_folder.glob("*.log")).read_text()
+    assert all(value not in raw for value in [*values, "third.party.private"])
+    records = [json.loads(line) for line in raw.splitlines()]
+    assert records[-1]["data"]["error"] == "detail_omitted"
+    assert records[-1]["data"]["error_type"] == "ValueError"
+    assert records[1]["data"]["app_id"].startswith("app-")
+
+
+def test_legacy_zip_filters_every_text_and_nested_receipt_path_without_changing_recovery(
+    tmp_path, log_folder
+):
+    poison = "Alex Example alex@example.invalid 2001:db8::7 My Very Private Film PRIVATE-CREDENTIAL"
+    log_folder.mkdir()
+    legacy = [
+        poison,
+        json.dumps({"event": "stdout", "data": {"message": poison}}),
+        json.dumps(
+            {
+                "event": "command.finish",
+                "session": poison,
+                "data": {"failed": True, "error": poison, "error_type": poison, "stack": [poison]},
+            }
+        ),
+    ]
+    (log_folder / "cli-legacy.log").write_text("\n".join(legacy))
+    receipt = tmp_path / "backups" / "private-device" / "transactions" / "private-receipt.json"
+    receipt.parent.mkdir(parents=True)
+    raw_receipt = json.dumps(
+        {
+            "state": "rolled_back",
+            "backup_path": poison,
+            "request": {"baseline_base64": poison, "transaction": poison, "firmware": poison},
+            "native_result": {
+                "Success": False,
+                "RolledBack": True,
+                "Error": "Final Home readback failed. " + poison,
+                "After": {"Main": poison, "Strings": {poison: poison}, "extra": poison},
+                "Watcher": {"AppId": poison, "Transaction": poison, "BaselineHash": poison, "Mode": "hold"},
+                "Failure": {
+                    "Phase": "final",
+                    "Observed": {"Main": "com.samsung.tv.csfs", poison: poison},
+                    "Expected": {"Main": "DclHome001.Home"},
+                    "Differences": {
+                        "operation/main": {
+                            "Expected": "DclHome001.Home",
+                            "Observed": "com.samsung.tv.csfs",
+                            "private": poison,
+                        },
+                        poison: poison,
+                    },
+                },
+            },
+        }
+    )
+    receipt.write_text(raw_receipt)
+    target, _ = diagnostics.export_logs(tmp_path, tmp_path / "report.zip")
+    assert receipt.read_text() == raw_receipt
+    with zipfile.ZipFile(target) as archive:
+        raw = "\n".join(archive.read(name).decode() for name in archive.namelist())
+        result = json.loads(archive.read("home/receipt-1.json"))["native_result"]
+        report = json.loads(archive.read("report.json"))
+    for value in poison.split():
+        assert value not in raw
+    assert result["Error"] == "final_home_readback_failed"
+    assert result["RolledBack"] is True
+    assert result["Failure"]["Differences"]["operation/main"]["Observed"] == "com.samsung.tv.csfs"
+    assert report["bundle_health"]["omitted_legacy_records"] == 2
+
+
+def test_optional_native_snapshot_filters_query_error_text_identifiers_and_extra_keys(monkeypatch):
+    from aerotizen import home
+
+    poison = "Alex Example alex@example.invalid PRIVATE-CREDENTIAL"
+
+    def read(*args):
+        return {
+            "queried_at": "2026-10-28T00:00:00+00:00",
+            "complete": True,
+            "home": {
+                "operation": "http://tizen.org/appcontrol/operation/main",
+                "mode": "stock",
+                "main_operation": {
+                    "type": "string",
+                    "status": "ok",
+                    "value": "com.samsung.tv.csfs",
+                    "extra": poison,
+                },
+                "settings": {
+                    "db/appfw/home_appid": {
+                        "type": "string",
+                        "status": "unavailable",
+                        "value": None,
+                        "error": poison,
+                    },
+                    poison: poison,
+                },
+            },
+            "device": {
+                "identity_sha256": poison,
+                "firmware_build": "T-TEST-0090",
+                "os_version": "9.0",
+                "cpu_arch": "armv7",
+            },
+            "watcher": {
+                "state": "paused",
+                "reachable": True,
+                "control": poison,
+                "error": {"code": "connection_error", "message": poison, "socket_error": poison},
+            },
+            "evidence": {
+                "access": "sdk_uid_901",
+                "uid": 901,
+                "sdk_staging_cleaned": True,
+                "query_staging_cleaned": True,
+                poison: poison,
+            },
+        }
+
+    monkeypatch.setattr(home, "read_status", read)
+    result = diagnostics._native_snapshot("session")
+    assert result["home"]["main_operation"]["value"] == "com.samsung.tv.csfs"
+    assert result["watcher"]["error"]["code"] == "connection_error"
+    assert all(value not in json.dumps(result) for value in poison.split())
+
+
+def test_tv_export_rechecks_older_service_fields_and_preserves_correlations():
+    poison = "Alex Example alex@example.invalid 2001:db8::7 My Private Film"
+
+    class Session:
+        def tcp_request(self, *args, **kwargs):
+            data = {
+                "schema_version": 1,
+                "records": [
+                    {
+                        "id": "alex-example-1",
+                        "session": "bedroom-tv",
+                        "at": 1,
+                        "source": "ui",
+                        "event": "app.launch_requested",
+                        "data": {"app_id": poison},
+                    },
+                    {
+                        "id": "alex-example-2",
+                        "session": "bedroom-tv",
+                        "at": 2,
+                        "source": "ui",
+                        "event": "app.launch_failed",
+                        "data": {
+                            "app_id": poison,
+                            "operation_id": "alex-example-1",
+                            "message": poison,
+                            "error": poison,
+                            "transaction": poison,
+                        },
+                    },
+                    {"source": "service", "event": "Alex Example", "data": {"message": poison}},
+                ],
+                "health": {"session": poison, "storage": poison, "extra": poison},
+                "environment": {"firmware": poison, "tizen": poison, "reason": poison, "arch": poison},
+                "context": {"mode": poison, "transaction": poison},
+                "ui": {
+                    "build": {"version": poison, "extra": poison},
+                    "health": {"session": poison},
+                    "extra": poison,
+                },
+            }
+            return b"HTTP/1.0 200 OK\r\n\r\n" + json.dumps(data).encode()
+
+    result = diagnostics.fetch_tv(Session())
+    raw = json.dumps(result)
+    for value in [*poison.split(), "alex-example", "bedroom-tv"]:
+        assert value not in raw
+    first, second = result["records"][:2]
+    assert first["session"] == second["session"]
+    assert first["id"] == second["data"]["operation_id"]
+    assert first["data"]["app_id"] == second["data"]["app_id"]
+    assert result["records"][2]["event"] == "diagnostic.unknown"
+
+
+def test_ui_and_cli_share_the_privacy_field_types_and_allowed_values():
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "launcher/js/diagnostics-privacy.js").read_text()
+    schema = json.loads(source.split("var schema = ", 1)[1].split(";\n  function has", 1)[0])
+    for key in ("APP_IDS", "EVENTS", "ERRORS", "REASONS", "NUMBERS", "BOOLS", "SOURCE_FILES"):
+        assert set(schema[key.lower()]) == getattr(privacy, key), key
+    assert {key: set(value) for key, value in schema["enums"].items()} == privacy.ENUMS

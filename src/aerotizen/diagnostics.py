@@ -1,14 +1,11 @@
 """Bounded local diagnostics. Recovery receipts are deliberately outside log retention."""
 
 import contextvars
-import hashlib
 import http.client
 import io
 import json
-import math
 import os
 import platform
-import re
 import subprocess
 import sys
 import time
@@ -21,91 +18,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from aerotizen import __version__, build_info
+from aerotizen import diagnostic_privacy as privacy
 
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_FILES = 10
 MAX_TV_BYTES = 256 * 1024
 _CURRENT = contextvars.ContextVar("aerotizen_diagnostics", default=None)
-_PRIVATE = re.compile(
-    r"password|secret|authorization|authkey|access.?token|refresh.?token|cookie|credential|private.?key|baseline_base64|duid|identity|serial|certificate",
-    re.I,
-)
 
 
-def redact(value, key="", depth=0):
-    if key == "operation" and isinstance(value, str):
-        return (
-            value
-            if re.fullmatch(r"http://tizen.org/appcontrol/operation/(main|default|view|service)", value)
-            else "[other operation]"
-        )
-    if key == "stack" and isinstance(value, str):
-        return "\n".join(
-            re.findall(r"(?:^|[/\\])([a-zA-Z0-9_-]+\.(?:js|html):\d+(?::\d+)?)", value[:4096], re.M)[:8]
-        )
-    if key == "file" and isinstance(value, str):
-        match = re.search(r"(?:^|[/\\])([a-zA-Z0-9_-]+\.(?:js|html))$", value.split("?")[0].split("#")[0])
-        return match[1] if match else "[unknown source]"
-    if (
-        key in ("build_id", "commit", "source_commit", "helper_sha256")
-        and isinstance(value, str)
-        and re.fullmatch(r"[a-f0-9]{12,64}", value)
-    ):
-        return value
-    if (
-        key == "message"
-        and isinstance(value, str)
-        and re.search(r"payload|history|programme|episode|movie|account", value, re.I)
-    ):
-        return "[sensitive error detail omitted]"
-    if depth > 8:
-        return "[depth limit]"
-    if _PRIVATE.search(key) or key.lower() in ("token", "deviceid", "device_id"):
-        return "[redacted]"
-    if isinstance(value, dict):
-        return {str(k)[:96]: redact(v, str(k), depth + 1) for k, v in list(value.items())[:64]}
-    if isinstance(value, (list, tuple)):
-        return [redact(item, depth=depth + 1) for item in value[:128]]
-    if value is None or type(value) in (bool, int):
-        return value
-    if type(value) is float:
-        return value if math.isfinite(value) else None
-    text = str(value)[:8192]
-    text = re.sub(r"(?i)bearer\s+\S+", "Bearer [redacted]", text)
-    text = re.sub(
-        r"(?i)(password|secret|authorization|authkey|token|cookie|duid|serial|device.?id|identity)"
-        r"[\s\"']*[:=]\s*(?:\"[^\"]*\"|'[^']*'|[^\s,}]+)",
-        r"\1=[redacted]",
-        text,
-    )
-    text = re.sub(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", "[email]", text, flags=re.I)
-    text = re.sub(r"(?:https?|wss?)://[^\s\"'<>]+", "[url]", text)
-    text = re.sub(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", "[address]", text)
-    text = re.sub(r"\b(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}\b", "[address]", text)
-    text = re.sub(
-        r"(?i)\b[0-9a-f]{32,}\b", lambda m: "id:" + hashlib.sha256(m[0].encode()).hexdigest()[:12], text
-    )
-    text = re.sub(r"[A-Za-z]:[\\/][^\n\"'<>]+|/(?:Users|home|private|tmp|var)/[^\n\"'<>]+", "[path]", text)
-    return text
+def _native_summary(result, policy=None):
+    return (policy or privacy.Policy()).native(result)
 
 
-def _native_summary(result):
-    if not isinstance(result, dict):
-        return None
-    return redact(
-        {
-            key: result[key]
-            for key in ("Success", "RolledBack", "Error", "After", "Watcher", "Failure")
-            if key in result
-        }
-    )
-
-
-def _log_line(line):
+def _log_line(line, policy):
     try:
-        return json.dumps(redact(json.loads(line)), ensure_ascii=True)
-    except (ValueError, RecursionError):
-        return redact(line)
+        record = policy.cli_record(json.loads(line))
+        return json.dumps(record, ensure_ascii=True) if record else None
+    except (ValueError, RecursionError, TypeError):
+        return None
 
 
 def log_directory(state_dir):
@@ -118,37 +48,10 @@ def event(name, **fields):
         session.record(name, fields)
 
 
-class _Tee:
-    def __init__(self, original, session, channel):
-        self.original, self.session, self.channel, self.pending = original, session, channel, ""
-
-    def write(self, text):
-        result = self.original.write(text)
-        # Auth/signing commands deliberately do not capture console content.
-        if self.session.capture:
-            self.pending = (self.pending + text)[:16384]
-            while "\n" in self.pending:
-                line, self.pending = self.pending.split("\n", 1)
-                if line:
-                    self.session.record(self.channel, {"message": line})
-        return result
-
-    def flush(self):
-        return self.original.flush()
-
-    def finish(self):
-        if self.pending:
-            self.session.record(self.channel, {"message": self.pending})
-            self.pending = ""
-
-    def __getattr__(self, name):
-        return getattr(self.original, name)
-
-
 class LogSession:
     def __init__(self, state_dir, args):
         self.path, self.stream, self.bytes, self.full = None, None, 0, False
-        self.capture = args.cmd not in ("certs", "inspect")
+        self.policy = privacy.Policy()
         self.run_id = uuid.uuid4().hex
         self.sequence, self.started = 0, time.monotonic()
         self.discarded, self.write_errors = 0, 0
@@ -190,8 +93,13 @@ class LogSession:
                 "at": datetime.now(timezone.utc).isoformat(),
                 "session": self.run_id,
                 "event": name,
-                "data": redact(fields),
+                "data": fields,
             }
+            record = self.policy.cli_record(record)
+            if record is None:
+                self.discarded += 1
+                return
+            record["session"] = self.run_id  # Fresh random command ID, never derived from a device/user.
             raw = json.dumps(record, ensure_ascii=True) + "\n"
             size = len(raw.encode())
             # Leave room for the final error and exit result after noisy output.
@@ -225,20 +133,15 @@ class LogSession:
 def run_logged(args, callback, state_dir):
     session = LogSession(state_dir, args)
     token = _CURRENT.set(session)
-    original_out, original_err = sys.stdout, sys.stderr
-    out, err = _Tee(original_out, session, "stdout"), _Tee(original_err, session, "stderr")
+    original_err = sys.stderr
     started = time.monotonic()
     failure = None
-    sys.stdout, sys.stderr = out, err
     try:
         callback(args)
     except BaseException as error:
         failure = error
         raise
     finally:
-        out.finish()
-        err.finish()
-        sys.stdout, sys.stderr = original_out, original_err
         code = failure.code if isinstance(failure, SystemExit) else (1 if failure else 0)
         failed = code not in (None, 0)
         session.record(
@@ -274,7 +177,8 @@ class _SocketBody:
         return io.BytesIO(self.raw)
 
 
-def fetch_tv(session):
+def fetch_tv(session, *, policy=None):
+    policy = policy or privacy.Policy()
     raw = session.tcp_request(
         47790,
         b"GET /diagnostics/logs HTTP/1.0\r\nHost: localhost\r\n"
@@ -305,36 +209,21 @@ def fetch_tv(session):
                 raise ValueError("Invalid TV diagnostic record")
         safe = []
         for record in records:
-            safe.append(
-                redact(
-                    {
-                        key: record[key]
-                        for key in (
-                            "id",
-                            "at",
-                            "source",
-                            "event",
-                            "session",
-                            "sequence",
-                            "elapsed_ms",
-                        )
-                        if key in record
-                    }
-                )
+            name = record.get("event")
+            name = name if isinstance(name, str) and name in privacy.EVENTS else "diagnostic.unknown"
+            entry = {
+                "event": name,
+                "source": record["source"],
+                **policy.fields(record, ("id", "at", "session", "sequence", "elapsed_ms")),
+            }
+            entry["data"] = (
+                policy.fields(record.get("data"), _EVENT_FIELDS) if name != "diagnostic.unknown" else {}
             )
-            safe[-1]["data"] = (
-                {
-                    key: redact(value, key)
-                    for key, value in (record.get("data") or {}).items()
-                    if key in _EVENT_FIELDS and (value is None or type(value) in (str, bool, int, float))
-                }
-                if isinstance(record.get("data"), dict)
-                else {}
-            )
+            safe.append(entry)
         result = {"schema_version": 1, "records": safe}
         for key in ("build", "health", "environment", "context", "ui"):
             if isinstance(data.get(key), dict):
-                result[key] = _public_section(data[key], key)
+                result[key] = _public_section(data[key], key, policy)
         return result
     finally:
         response.close()
@@ -367,7 +256,6 @@ _EVENT_FIELDS = set(
         "phase",
         "line",
         "component",
-        "transaction",
         "version",
         "hidden",
         "operation_id",
@@ -411,14 +299,14 @@ _SECTION_KEYS = {
 }
 
 
-def _public_section(value, section):
+def _public_section(value, section, policy):
     result = {}
     for key in _SECTION_KEYS[section]:
         item = value.get(key)
         if key in ("build", "health", "delivery") and isinstance(item, dict):
-            result[key] = _public_section(item, key)
+            result[key] = _public_section(item, key, policy)
         elif item is None or type(item) in (str, bool, int, float):
-            result[key] = redact(item, key)
+            result[key] = "not_queried" if key == "native_settings" else policy.value(item, key)
     return result
 
 
@@ -431,33 +319,71 @@ def _metadata(host):
         device = json.loads(raw)["device"]
         if not isinstance(device, dict):
             raise ValueError("Invalid metadata")
+        policy = privacy.Policy()
         return {
             "state": "collected",
-            "model": redact(device.get("modelName")) if isinstance(device.get("modelName"), str) else None,
-            "platform": redact(device.get("model")) if isinstance(device.get("model"), str) else None,
+            "model": policy.value(device.get("modelName"), "model"),
+            "platform": policy.value(device.get("model"), "platform"),
         }
     except (OSError, ValueError, KeyError, TypeError, RecursionError, http.client.HTTPException) as error:
-        return {"state": "unavailable", "model": None, "platform": None, "reason": type(error).__name__}
+        return {
+            "state": "unavailable",
+            "model": None,
+            "platform": None,
+            "reason": privacy.error_type(type(error).__name__),
+        }
 
 
-def _native_snapshot(session):
+def _native_snapshot(session, *, policy=None):
     from aerotizen import home
 
+    policy = policy or privacy.Policy()
     status = home.read_status(session, None, {})
+
+    def setting(item, integer=False):
+        item = item if isinstance(item, dict) else {}
+        return {
+            "status": policy.value(item.get("status"), "status"),
+            "type": "int" if integer else "string",
+            "value": privacy.number(item.get("value")) if integer else policy.app(item.get("value")),
+            "error": privacy.error_code(item.get("error")) if item.get("error") else None,
+        }
+
+    current = status["home"]
+    watcher = status["watcher"]
+    diagnostic = watcher.get("error")
     return {
         "state": "collected",
-        "queried_at": status["queried_at"],
-        "complete": status["complete"],
-        "home": redact(status["home"]),
+        "queried_at": policy.value(status["queried_at"], "queried_at"),
+        "complete": policy.value(status["complete"], "complete"),
+        "home": {
+            "operation": policy.value(current.get("operation"), "operation"),
+            "mode": policy.value(current.get("mode"), "mode"),
+            "main_operation": setting(current.get("main_operation")),
+            "settings": {
+                key: setting((current.get("settings") or {}).get(key), key == privacy.HOME_KEYS[-1])
+                for key in privacy.HOME_KEYS
+            },
+        },
         "platform": {
-            key: redact(status["device"].get(key), key)
+            key: policy.value(status["device"].get(key), "arch" if key == "cpu_arch" else key)
             for key in ("firmware_build", "os_version", "cpu_arch")
         },
-        "watcher": {key: status["watcher"].get(key) for key in ("state", "reachable", "error")},
-        "evidence": {
-            key: status["evidence"].get(key)
-            for key in ("access", "uid", "sdk_staging_cleaned", "query_staging_cleaned")
+        "watcher": {
+            **policy.fields(watcher, ("state", "reachable")),
+            "error": {
+                "code": diagnostic.get("code")
+                if diagnostic.get("code")
+                in {"timeout", "connection_error", "http_error", "invalid_response", "query_error"}
+                else "query_error",
+                "http_status": privacy.number(diagnostic.get("http_status")),
+            }
+            if isinstance(diagnostic, dict)
+            else None,
         },
+        "evidence": policy.fields(
+            status["evidence"], ("access", "uid", "sdk_staging_cleaned", "query_staging_cleaned")
+        ),
     }
 
 
@@ -466,15 +392,23 @@ def export_logs(state_dir, output, host=None, *, include_home=False):
     from aerotizen.device import DeviceSession
     from aerotizen.sdb import SdbError
 
+    policy = privacy.Policy()
     report = {
         "schema_version": 1,
+        "privacy": {
+            "policy_version": 2,
+            "console_output": False,
+            "error_messages": "codes_only",
+            "third_party_app_ids": "temporary_aliases",
+            "legacy_console_records": "omitted",
+        },
         "cli_version": __version__,
-        "cli_build": build_info.current(),
+        "cli_build": policy.build(build_info.current()),
         "created_at": datetime.now(timezone.utc).isoformat(),
         "system": {
-            "os": platform.system(),
+            "os": platform.system() if platform.system() in {"Windows", "Linux", "Darwin"} else "unknown",
             "python": platform.python_version(),
-            "architecture": platform.machine(),
+            "architecture": policy.value(platform.machine(), "arch"),
         },
         "tv": {"state": "not_requested"},
         "environment": {
@@ -493,6 +427,7 @@ def export_logs(state_dir, output, host=None, *, include_home=False):
             "cli_files": 0,
             "receipt_summaries": 0,
             "skipped_files": 0,
+            "omitted_legacy_records": 0,
             "active_command_log": "export_may_precede_command_finish",
         },
     }
@@ -501,7 +436,7 @@ def export_logs(state_dir, output, host=None, *, include_home=False):
         try:
             with DeviceSession(host, timeout=3).connect() as session:
                 try:
-                    logs = fetch_tv(session)
+                    logs = fetch_tv(session, policy=policy)
                     report["tv"] = {"state": "collected", "logs": logs}
                     report["environment"].update(
                         {key: logs.get("environment", {}).get(key) for key in ("firmware", "tizen", "arch")}
@@ -520,18 +455,26 @@ def export_logs(state_dir, output, host=None, *, include_home=False):
                         "version": launcher.get("version") or ui.get("version"),
                     }
                 except (OSError, SdbError, ValueError, RecursionError, http.client.HTTPException) as error:
-                    report["tv"] = {"state": "unavailable", "error": redact(str(error))}
+                    report["tv"] = {
+                        "state": "unavailable",
+                        "error_type": privacy.error_type(type(error).__name__),
+                        "reason": "tv_diagnostics_unavailable",
+                    }
                 if include_home:
                     try:
-                        report["native_home"] = _native_snapshot(session)
+                        report["native_home"] = _native_snapshot(session, policy=policy)
                     except (OSError, SdbError, ValueError, KeyError) as error:
                         report["native_home"] = {
                             "state": "unavailable",
-                            "reason": redact(str(error)),
-                            "error_type": type(error).__name__,
+                            "reason": privacy.error_code(str(error)),
+                            "error_type": privacy.error_type(type(error).__name__),
                         }
         except (OSError, SdbError, ValueError, RecursionError, http.client.HTTPException) as error:
-            report["tv"] = {"state": "unavailable", "error": redact(str(error))}
+            report["tv"] = {
+                "state": "unavailable",
+                "error_type": privacy.error_type(type(error).__name__),
+                "reason": "tv_diagnostics_unavailable",
+            }
             if include_home:
                 report["native_home"] = {"state": "unavailable", "reason": "Developer connection unavailable"}
     output = Path(output).expanduser()
@@ -550,9 +493,14 @@ def export_logs(state_dir, output, host=None, *, include_home=False):
                     report["bundle_health"]["skipped_files"] += 1
                     continue
                 report["bundle_health"]["cli_files"] += 1
-                archive.writestr(
-                    f"cli/session-{index + 1}.log", "\n".join(_log_line(line) for line in text.splitlines())
-                )
+                lines = []
+                for line in text.splitlines():
+                    clean = _log_line(line, policy)
+                    if clean is None:
+                        report["bundle_health"]["omitted_legacy_records"] += 1
+                    else:
+                        lines.append(clean)
+                archive.writestr(f"cli/session-{index + 1}.log", "\n".join(lines))
             receipts = []
             for path in (Path(state_dir) / "backups").glob("*/transactions/*.json"):
                 try:
@@ -567,14 +515,14 @@ def export_logs(state_dir, output, host=None, *, include_home=False):
                         continue
                     request = receipt.get("request") or {}
                     summary = {
-                        "created_at": receipt.get("created_at"),
-                        "state": receipt.get("state"),
-                        "command": {key: request.get(key) for key in ("action", "boot", "firmware")}
+                        "created_at": policy.value(receipt.get("created_at"), "created_at"),
+                        "state": policy.value(receipt.get("state"), "state"),
+                        "command": policy.fields(request, ("action", "boot", "firmware"))
                         if isinstance(request, dict)
                         else {},
-                        "native_result": _native_summary(receipt.get("native_result")),
+                        "native_result": _native_summary(receipt.get("native_result"), policy),
                     }
-                    archive.writestr(f"home/receipt-{index + 1}.json", json.dumps(redact(summary), indent=2))
+                    archive.writestr(f"home/receipt-{index + 1}.json", json.dumps(summary, indent=2))
                     report["bundle_health"]["receipt_summaries"] += 1
                 except (OSError, ValueError, RecursionError):
                     continue

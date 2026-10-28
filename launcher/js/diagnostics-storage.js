@@ -3,7 +3,7 @@
 (function (root) {
   'use strict';
   function open(host, ready) {
-    var request, settled = false;
+    var request, settled = false, legacyRemoved = false;
     function finish(value) { if (!settled) { settled = true; ready(value); } }
     try {
       if (!host.indexedDB) { finish(null); return; }
@@ -37,7 +37,15 @@
             try {
               var transaction = database.transaction('logs', 'readwrite');
               transaction.objectStore('logs').put(value, 'current');
-              transaction.oncomplete = function () { done(null); };
+              transaction.oncomplete = function () {
+                done(null);
+                if (!legacyRemoved) {
+                  legacyRemoved = true;
+                  var remove = function () { try { host.localStorage.removeItem('aerotizen.diagnostics.v1'); } catch (e) { /* optional old log cleanup */ } };
+                  if (host.requestIdleCallback) { host.requestIdleCallback(remove, { timeout: 1000 }); }
+                  else { host.setTimeout(remove, 0); }
+                }
+              };
               transaction.onabort = function () { done(transaction.error || new Error('Log write failed')); };
             } catch (e) { done(e); }
           }

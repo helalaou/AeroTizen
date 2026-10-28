@@ -18,10 +18,12 @@ another folder. The CLI keeps the last 10 files, at most 256 KiB each. A failed 
 prints its log path. If log storage fails, the command keeps its normal behaviour.
 Help, version output and parser errors do not create logs.
 
-Logs include the CLI version, command, duration, device operation names, normal command
-output and failures. Certificate/login and inspector command output is excluded.
-Credentials, device identifiers, network addresses, URLs and private paths are filtered.
-Redaction is best effort: read the report before sharing it.
+Logs include the CLI version, command, duration, device operation names, error types
+and fixed error codes. Console output is never copied into logs. Arbitrary error text
+is omitted. The terminal keeps its normal output, so inspect terminal text separately
+before sharing it. The ZIP re-filters older structured logs and skips legacy console
+records; its health section counts omissions. Existing PC log files from earlier test
+builds are not rewritten and may still contain their original text.
 
 Home apply/restore records include the requested action and model/firmware. When a native
 readback fails, the helper saves the phase, expected and observed settings, and differing
@@ -38,11 +40,23 @@ and result events share an operation ID. A launch accepted by Tizen does not pro
 was visible. Existing visibility checks can report an unconfirmed result; no extra
 screen polling is added.
 
-Script errors, rejected promises and handled app-launch failures include a bounded,
-redacted message, error name, source basename, line/column when supplied, and up to eight
-stack locations. Error formatting runs in a later task. Stack messages, full paths,
-content payloads, programme titles and account data are excluded. Secret-like error
-messages are omitted. Filtering is best effort; review the ZIP before sharing.
+Script errors, rejected promises and handled app-launch failures include an approved
+error name and fixed error code, known source basename, line/column when supplied, and
+up to eight known stack locations. Error formatting runs in a later task. Raw messages,
+function names, private filenames and full paths are omitted. Unknown fields and nested
+payloads are dropped rather than copied with pattern filtering.
+
+Names, email addresses, TV friendly names, account data, credentials, network addresses,
+content titles and persistent TV/backup identifiers are outside the logging schema.
+Third-party app IDs become temporary aliases such as `app-1`; matching aliases within
+one session identify the same app. The alias map stays in memory and is bounded. Native
+Samsung Home, TV viewer, HbbTV and AeroTizen IDs remain visible for routing diagnosis.
+Report exports also relabel session/event references. These references do not identify
+a TV or user. Include the affected app's name in your reproduction steps if relevant.
+
+Reports still contain technical metadata, event times and action outcomes. They are
+user-shared diagnostic records, not anonymous telemetry. Review them before posting.
+No report is uploaded automatically.
 
 Each new event has a session ID, sequence number and elapsed milliseconds from a
 monotonic clock when supported. Use session and sequence to order events from that
@@ -59,8 +73,10 @@ Dirty buffers are saved in batches after a 500 ms delay. UI logs use asynchronou
 IndexedDB transactions; the service uses asynchronous file writes followed by an atomic
 rename. Only one save can run at a time. Events received during a save go into the next
 batch. There are no synchronous log writes or synchronous fallback writes. Existing UI
-logs in localStorage are read once in an idle task for migration; that old key is not
-rewritten. If IndexedDB is unavailable, the UI keeps its memory buffer and can still send
+logs in localStorage are read once in an idle task for migration. Loaded records pass
+through the current policy before use. After the first successful IndexedDB save, an
+idle task removes only the old diagnostic key. If storage is unavailable or a save
+fails, that older local copy can remain; it is never uploaded unfiltered. If IndexedDB is unavailable, the UI keeps its memory buffer and can still send
 records to the service. Storage failure never makes a remote action wait.
 
 Batching is best effort: a power cut, process termination or UI suspension before a save
@@ -106,7 +122,7 @@ A separately copied backup folder is not searched automatically.
   Counts describe the current process and are not lifetime totals. Queue/delivery fields
   are a snapshot before the last acknowledged batch, not a live UI query. A missing UI
   report means its newest records may still be queued or the build is older.
-- Bundle file counts and skipped files. The export command's own log may not yet contain
+- Privacy policy version, omitted legacy console records, bundle file counts and skipped files. The export command's own log may not yet contain
   its finish event because export happens while that command is running.
 
 For Home or startup problems, use:
@@ -126,6 +142,8 @@ behaviour and what was visible on the TV. Logs are evidence of requests and call
 they cannot by themselves prove what the user saw.
 
 The ZIP excludes raw recovery requests, original backup files, certificates and token
-files. It cannot restore Home. Keep the **whole original Home backup folder** for restore;
+files. Receipt summaries keep only approved setting keys, readback differences and
+rollback outcomes; watcher transactions, baseline hashes and unknown nested fields are
+omitted. Unknown Home assignment IDs use aliases while comparisons remain available. It cannot restore Home. Keep the **whole original Home backup folder** for restore;
 log rotation and export do not modify that folder. TV logs and PC logs are diagnostic
 history, not a replacement for recovery records.
