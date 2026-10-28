@@ -11,7 +11,7 @@ export interface ContinueItem {
 export interface HomeRuntime extends Omit<LauncherRuntime, 'apps' | 'inputs' | 'continueWatching' | 'homeScreen' | 'config'> {
   config: LauncherRuntime['config'] & { CARD_COLUMNS: Record<string, number>; LONG_PRESS_MS: number };
   apps: LauncherRuntime['apps'] & { ready: boolean; byId(id: string): InstalledApp | null; launch(app: InstalledApp): void; playFireplace(): void };
-  inputs: Omit<LauncherRuntime['inputs'], 'sources'> & { sources: Source[]; label(source: Source): string; show(source: Source): void; isVisible?(source: Source): boolean; hasRecognizedDevice?(source: Source): boolean };
+  inputs: Omit<LauncherRuntime['inputs'], 'sources'> & { sources: Source[]; label(source: Source): string; show(source: Source): void; isVisible?(source: Source): boolean; hasRecognizedDevice?(source: Source): boolean; alwaysVisible?(source: Source): boolean };
   continueWatching: NonNullable<LauncherRuntime['continueWatching']> & { items: ContinueItem[]; open(item: ContinueItem): void };
   homeScreen: HomeBridge;
   i18n?: { t(value: string): string };

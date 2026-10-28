@@ -35,6 +35,11 @@ runtime.homeScreen = { ...environment.bridge,
 };
 const unsubscribers = [runtime.apps.subscribe(refresh), runtime.inputs.subscribe(refresh), runtime.continueWatching.subscribe(refresh), settings.subscribe(refresh)];
 render(<Home env={environment} />, mount);
+// Native app handoffs may consume OK's release. Never carry a held press/menu
+// into the next visible session; return focus through the existing bridge.
+const visibility = () => document.hidden ? environment.bridge.blur() : environment.bridge.focus();
+document.addEventListener('visibilitychange', visibility);
 if (import.meta.hot) {import.meta.hot.dispose(() => {
+  document.removeEventListener('visibilitychange', visibility);
   document.body.classList.remove('glass-ui'); environment.bridge.blur(); render(null, mount); settings.dispose(); unsubscribers.forEach(unsubscribe => unsubscribe()); runtime.inputs.render = originalRender;
 });}

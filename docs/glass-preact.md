@@ -33,3 +33,8 @@ still runs in Classic mode; additional integration checks exercise Glass with cl
 HDMI, cards and solar-cache fixes. Screenshots are generated at 1920x1080. Physical
 S90C performance, animation/remote latency, standby devices and reboot acceptance remain
 pending until the owner tests the exact signed integration build.
+
+Parity review follow-up: dock badges distinguish RECOGNISED and PINNED evidence
+from ON/ACTIVE signal state. Optional per-port pins retain reference reachability
+without inventing a connection. Core hidden-session and stale-move fixes remain
+part of the #73 dependency; clock-navigation fixes belong to #28.

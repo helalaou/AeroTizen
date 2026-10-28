@@ -155,3 +155,7 @@ body.glass-ui #inputs .tile.aero-source-card.focused .aero-source-status {
 @media (prefers-reduced-motion: reduce) {
   #inputs .tile.aero-source-card { transition: none !important; }
 }
+
+/* Manual visibility is reachability, not evidence of a connected HDMI signal. */
+body.glass-ui #inputs .tile.aero-source-forced:not(.focused) { border-color: rgba(180,200,230,.45); }
+body.glass-ui #inputs .tile.aero-source-forced .aero-source-status { color: #dce9ff; }
