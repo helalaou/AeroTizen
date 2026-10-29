@@ -6,8 +6,10 @@ for(const glassSettings of [false,true]) {
     await page.addInitScript(glassSettings=>localStorage.setItem('aerotizen.settings.v1',JSON.stringify({glassSettings,home:['demo0','demo1','demo2','demo3'],background:'black',showWeather:false})),glassSettings);
     await page.goto('/');await page.waitForFunction(()=>AeroTizen.apps.ready);
     await page.evaluate(()=>{window.savedHomeCard=document.querySelector('#grid > .tile');});
+    expect(await page.locator('#aero-tab-glider').evaluate(n=>getComputedStyle(n).transitionProperty)).toBe('none');
     await page.locator('#apps-tab').click();
     await expect(page.locator('.home-page-surface')).toHaveCSS('animation-name','aero-page-apps');
+    expect(await page.locator('#aero-tab-glider').evaluate(n=>getComputedStyle(n).transitionProperty)).toContain('transform');
     await page.keyboard.press('ArrowDown');
     await expect(page.locator('#grid > .tile').first()).toHaveClass(/focused/);
     await page.keyboard.press('Escape');

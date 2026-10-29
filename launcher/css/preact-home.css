@@ -52,6 +52,7 @@
   border: 2px solid var(--focus); background: rgba(124,92,255,.16);
   transition: transform .18s cubic-bezier(.2,.72,.25,1), opacity .15s ease-out;
 }
+#home-root #aero-header-focus.no-motion, #home-root #aero-tab-glider.no-motion { transition: none; }
 #home-root #aero-header-focus { opacity: 0; border-radius: 50%; }
 #home-root #aero-header-focus.is-visible { opacity: 1; }
 #home-root #aero-tab-glider { border-color: transparent; border-radius: 19px; }
