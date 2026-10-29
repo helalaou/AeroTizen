@@ -65,7 +65,7 @@ function harness(options = {}) {
       HIDDEN_APPS: /service/i,
       HBBTV_APP_ID: 'org.tizen.hbbtv',
       HBBTV_LINK_METADATA: 'hbbtv.link',
-      DEFAULT_HOME_APPS: [], FIREPLACE_ID: '__fire', STORE_APP_IDS: []
+      DEFAULT_HOME_APPS: [], FIREPLACE_ID: '__fire', STORE_APP_IDS: options.storeIds || []
     },
     homewatch: {
       watch(id) { watch.push(id); },
@@ -236,4 +236,24 @@ test('port does not replace the upstream Frame-aware watcher service', () => {
   assert.match(service, /FRAME_HIDDEN_GRACE/);
   assert.match(service, /createArtMode/);
   assert.doesNotMatch(nativeSource, /app_operation_set_current_app|vconf_set_str/);
+});
+
+test('app store opens com.samsung.tv.store before the org.volt.apps alias', () => {
+  const config = { window: { AeroTizen: {} } };
+  config.AeroTizen = config.window.AeroTizen;
+  vm.runInNewContext(get('js/config.js'), config, { filename: 'config.js' });
+  const storeIds = Array.from(config.AeroTizen.config.STORE_APP_IDS);
+  assert.deepEqual(storeIds, ['com.samsung.tv.store', 'org.volt.apps']);
+
+  const h = harness({ storeIds });
+  h.A.apps.openStore();
+  assert.deepEqual(h.launches.map(r => r.id), ['com.samsung.tv.store'],
+    'a successful launch does not also open the alias');
+});
+
+test('app store falls back to org.volt.apps where com.samsung.tv.store is missing', () => {
+  const h = harness({ storeIds: ['com.samsung.tv.store', 'org.volt.apps'], launchFails: 'com.samsung.tv.store' });
+  h.A.apps.openStore();
+  assert.deepEqual(h.launches.map(r => r.id), ['com.samsung.tv.store', 'org.volt.apps']);
+  assert.deepEqual(h.toasts, []);
 });
