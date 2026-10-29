@@ -17,3 +17,8 @@ The compiled browser test checks all six mode/column combinations, vertical remo
 navigation and reload persistence, recording screenshots. Existing artwork tests
 cover native candidate selection and failure recovery. Physical TV artwork quality,
 focus animation smoothness and performance remain pending on the S90C and older TVs.
+
+Home layout options apply only to the Home/All apps grid. Settings app pickers
+remain standard square icons, with stable DOM/artwork nodes when card mode or
+column count changes. Focus uses the shared theme accent rather than a fixed
+white border. Artwork sources and their original resolution are unchanged.
