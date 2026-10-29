@@ -365,18 +365,13 @@ Check the report before sharing it. Nothing is uploaded automatically. Keep your
 Home backup folder separately for restore. See [diagnostics](docs/diagnostics.md) for
 file locations, limits and troubleshooting.
 
-## Optional automatic root
+## Optional untethered root
 
 `root setup`, `root status` and `root remove` manage a separate background helper.
 Root is opt-in and is not needed for either Home option or Samsung Continue Watching.
 Home and Art Mode settings stay unchanged.
 
-This is experimental. On a 2024 Frame running Tizen 9, CLI setup, live authenticated
-status and direct-SDB recovery removal passed. A cold boot with the Mac offline
-also proved automatic root and bridged SDK access. Paired removal stopped the bridge
-and removed credentials. A boot-result framing fix still needs a hardware retest,
-followed by repeat boots and final PC recovery/uninstall. Other models/firmware are unverified;
-setup requires the checked ARM Tizen/.NET 6 runtime and archive-root payload.
+Requires compatible ARM Tizen firmware and .NET 6.
 
 With Developer Mode still pointing at your computer, create signing certificates
 if needed, then run:
@@ -398,14 +393,14 @@ keep Developer Mode On, and fully restart the TV. Then finish verification:
 ./aerotizen --tv TV_IP root status
 ```
 
-After setup, the helper attempts root once per kernel boot. Standby and Art Mode
-wakes in the same boot do not repeat it. Startup waits up to three minutes for
-local SDB; failures stop for that boot. The computer can be switched off. Paired
-CLI commands use the authenticated TLS bridge automatically while localhost is
-enabled. Existing `home ... --root` commands use an external root tool and still
+The TV attempts root once per full boot, without a PC. Standby and Art Mode wakes
+do not repeat it.
+
+Paired CLI commands use the authenticated TLS bridge while localhost is enabled.
+Existing `home ... --root` commands use an external root tool and still
 require normal PC-authorised SDB; ordinary Home commands work through the bridge.
 
-To remove automatic root:
+To remove untethered root:
 
 ```sh
 ./aerotizen --tv TV_IP root remove --yes

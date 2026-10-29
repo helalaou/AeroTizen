@@ -101,7 +101,7 @@ recovery removal passed on preceding test builds. Home values and other app
 registrations stayed unchanged.
 Testing found and fixed SDB/SDK file-owner mismatch, an inherited callback descriptor,
 and missing optional first-boot status handling. A cold boot with the Mac offline
-then proved automatic root and SDK access through the bridge. The supervisor's
+then proved untethered root and SDK access through the bridge. The supervisor's
 success output omitted its service-result marker, so the app correctly left
 setup pending. That framing fix passes a native producer/consumer regression test
 but needs a hardware retest. Authenticated removal stopped the bridge and deleted
