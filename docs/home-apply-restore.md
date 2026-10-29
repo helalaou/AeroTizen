@@ -84,7 +84,13 @@ lock file remains in the SDK temporary directory so concurrent runs share an ino
 ## Order and failure behavior
 
 Apply first requires the complete original Home/startup snapshot and a compatible
-service in watcher mode. The service atomically saves `hold` in its private file,
+service in watcher mode. The only permitted difference is
+`db/appfw/booting_appid_backup` changing to `DclHome001.Home` after the launcher
+opens. Every other setting and the main-operation owner must match the backup.
+The original file remains unchanged; Home-only apply restores its saved startup
+values. The exact live snapshot is checked again after watcher handoff, so even
+a change to the boot backup during handoff stops native writes.
+The service atomically saves `hold` in its private file,
 flushes the file and parent directory, verifies readback, and cancels every pending
 relaunch. Hold and native modes start no polling, Art client or boot-launch timer.
 They survive service restarts. Ordinary `/home` and `/watch` messages cannot enable
