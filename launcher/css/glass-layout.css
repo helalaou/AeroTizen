@@ -72,8 +72,8 @@ body.glass-ui .topbar > .view-tabs > .view-tab { z-index: 2; }
 /* Keep the native app artwork, Home grid and TV source dock untouched. */
 
 /* Compact glass settings sheet with the live launcher dimmed behind it. */
-body.glass-ui.editing:not(.previewing) .topbar,
-body.glass-ui.editing:not(.previewing) main {
+body.editing:not(.previewing) #home-root .topbar,
+body.editing:not(.previewing) #home-root main {
   visibility: visible !important; opacity: .48;
   pointer-events: none;
 }
@@ -287,3 +287,20 @@ body.glass-ui .topbar-left > #gear.focused,
 body.glass-ui .topbar-left > #samsung-home-shortcut.focused,
 body.glass-ui .topbar > .view-tabs .view-tab.focused { border-color: transparent !important; background: transparent !important; }
 body.glass-ui .topbar > .view-tabs > #aero-tab-glider.is-focused { border: 2px solid rgba(255,255,255,.9); }
+
+/* The category drawer is functional in both themes; appearance changes only paint. */
+#editor.aero-settings-classic .aero-settings-frame {
+  background: #1c1c1e;
+  border-color: #444448;
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.4);
+}
+#editor.aero-settings-classic .aero-settings-main { background: #141416; }
+#editor.aero-settings-classic .aero-settings-glider,
+#editor.aero-settings-classic .aero-content-glider {
+  border-color: var(--focus); background: rgba(124,92,255,.12); box-shadow: none;
+}
+#editor.aero-settings-classic .aero-section-pane .pill.unit.on { background: #fff !important; color: #000 !important; }
+#editor.aero-settings-classic .aero-section-pane .pill.unit.focused { background: rgba(124,92,255,.25) !important; color: #fff !important; }
+
+#editor .swatch[hidden] { display: none; }

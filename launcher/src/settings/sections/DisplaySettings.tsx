@@ -28,8 +28,8 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt, section }:
       </div>
       </> : null}
       {!section || section === 'appearance' ? <>
-      <h3>Settings appearance</h3>
-      <Choice id="settings-appearance" label="Settings appearance" value={settings.glassSettings === true}
+      <h3>Interface appearance</h3>
+      <Choice id="settings-appearance" label="Interface appearance" value={settings.glassSettings === true}
         options={[[false, 'Classic'], [true, 'Glass']]} onSelect={actions.setGlassSettings} />
       <h3>Network indicator</h3>
       <Choice id="network-visibility" label="Network indicator visibility" value={settings.showNetwork !== false}

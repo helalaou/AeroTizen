@@ -1,3 +1,13 @@
 /* Preact renders focus state; native focus must not add a second outline. */
 #home-root [role="button"]:focus { outline: none; }
 #custom-clock-root:empty { display: none; }
+
+/* Keep the content below the actual header, including tall clocks and local fonts. */
+#home-root { height: 1080px; display: flex; flex-direction: column; }
+#home-root > .topbar { flex: 0 0 auto; position: relative; z-index: 4; }
+#home-root > .content-viewport { flex: 1 1 auto; min-height: 0; height: auto; }
+/* Fade the moving content at the fixed viewport edge, never the header itself. */
+#home-root > .content-viewport.is-scrolled {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.24) 20px, rgba(0,0,0,.63) 44px, #000 72px);
+  mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.24) 20px, rgba(0,0,0,.63) 44px, #000 72px);
+}

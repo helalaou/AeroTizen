@@ -12,21 +12,20 @@ export const useSettingsNavigation = (active: boolean, previewing: boolean, { ap
   const { navigation, bridge, services, actions, settings, view, root, glass, glassMenu, glassContent } = useSettingsEnvironment();
   const wasOpen = useRef(false);
   const previousScope = useRef('');
-  const values = useStore(settings), category = useStore(glass);
-  const enabled = values.glassSettings === true;
+  const category = useStore(glass);
   useLayoutEffect(() => {
-    if (active && !wasOpen.current && enabled && category.expanded) { glass.set({ ...category, expanded: false }); }
+    if (active && !wasOpen.current && category.expanded) { glass.set({ ...category, expanded: false }); }
     navigation.invalidate();
-    navigation.setScope?.(enabled ? category.expanded ? glassContent.current : glassMenu.current : null);
-    const scope = enabled + ':' + category.category + ':' + category.expanded;
-    if (enabled && (!wasOpen.current || previousScope.current !== scope)) {
+    navigation.setScope?.(category.expanded ? glassContent.current : glassMenu.current);
+    const scope = category.category + ':' + category.expanded;
+    if (!wasOpen.current || previousScope.current !== scope) {
       const key = category.expanded ? glassContent.current?.querySelector('.aero-section-pane:not([hidden]) [data-key]')?.getAttribute('data-key') || 'settings-close' : 'section:' + category.category;
       navigation.reset(key);
-    } else if (active && !wasOpen.current) { navigation.reset('bg:' + settings.getSnapshot().background); }
+    }
     previousScope.current = scope;
     wasOpen.current = active;
     if (active && !previewing) { navigation.focus(); } else { navigation.clear(); }
-  }, [active, previewing, apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel, navigation, settings, enabled, category, glass, glassContent, glassMenu]);
+  }, [active, previewing, apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel, navigation, settings, category, glass, glassContent, glassMenu]);
   useLayoutEffect(() => {
     if (!active) { return; }
     const resize = () => {
@@ -49,7 +48,7 @@ export const useSettingsNavigation = (active: boolean, previewing: boolean, { ap
           return;
         }
         const current = navigation.current();
-        if (enabled && !category.expanded) {
+        if (!category.expanded) {
           event.preventDefault();
           if (code === K.BACK || code === K.ESC) { bridge.close(); }
           else if (code === K.RIGHT || code === K.ENTER || code === SPACE_KEY) { flushSync(() => glass.set({ ...category, expanded: true })); }
@@ -60,7 +59,7 @@ export const useSettingsNavigation = (active: boolean, previewing: boolean, { ap
           }
           return;
         }
-        if (enabled && (code === K.BACK || code === K.ESC || code === K.LEFT && current &&
+        if ((code === K.BACK || code === K.ESC || code === K.LEFT && current &&
           current.getBoundingClientRect().left <= (glassContent.current?.getBoundingClientRect().left || 0) + 64) && !view.getSnapshot().adjusting) {
           event.preventDefault(); flushSync(() => glass.set({ ...category, expanded: false })); return;
         }
@@ -83,5 +82,5 @@ export const useSettingsNavigation = (active: boolean, previewing: boolean, { ap
       }
     });
     return () => { unregister(); window.removeEventListener('resize', resize); navigation.clear(); };
-  }, [active, actions, bridge, navigation, root, services, view, enabled, category, glass, glassContent]);
+  }, [active, actions, bridge, navigation, root, services, view, category, glass, glassContent]);
 };

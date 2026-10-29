@@ -16,13 +16,14 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
   const { view, navigation } = useSettingsEnvironment();
   const { adjusting } = useStore(view);
   const [filter, setFilter] = useState(settings.weatherPhoto ? 'photo' : animated ? 'animated' : settings.background === 'black' ? 'solid' : 'gradient');
-  const show = (category: string) => !settings.glassSettings || filter === category;
+  const show = (category: string) => filter === category;
   // OK toggles adjusting, so Left/Right can still reach Preview from the slider.
   const toggleAdjusting = () => flushSync(() => view.set({ ...view.getSnapshot(), adjusting: !view.getSnapshot().adjusting }));
 
   const swatches = (isAnimated: boolean) => {
-    return list.filter(background => Boolean(background.anim) === isAnimated && (!settings.glassSettings || isAnimated || (filter === 'solid' ? background.id === 'black' : background.id !== 'black'))).map(background => (
+    return list.filter(background => Boolean(background.anim) === isAnimated).map(background => (
       <RemoteControl key={background.id} class={'swatch' + (background.id === settings.background ? ' on' : '')}
+        hidden={!isAnimated && (filter === 'solid' ? background.id !== 'black' : background.id === 'black')}
         focusKey={'bg:' + background.id} role="button" aria-pressed={background.id === settings.background}
         style={{ background: background.preview }}
         onClick={() => actions.setBackground(background.id)}>
@@ -33,9 +34,9 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
 
   return (
     <>
-      {settings.glassSettings ? <Choice id="wallpaper-categories" label="Background type" value={filter}
+      {<Choice id="wallpaper-categories" label="Background type" value={filter}
         options={[['photo', 'Weather photos'], ['solid', 'Solid colour'], ['gradient', 'Gradients'], ['animated', 'Animated backgrounds']]}
-        onSelect={category => { flushSync(() => setFilter(category)); navigation.invalidate(); }} /> : null}
+        onSelect={category => { flushSync(() => setFilter(category)); navigation.invalidate(); }} />}
       <div hidden={!show('photo')}>
       <h3>Dynamic weather wallpapers</h3>
       <Choice id="weather-photo-choice" value={settings.weatherPhoto} label="Dynamic weather wallpapers"
@@ -62,7 +63,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
         </> : null}
       </div>
       </div>
-      <div hidden={settings.glassSettings && filter !== 'solid' && filter !== 'gradient'}>
+      <div hidden={filter !== 'solid' && filter !== 'gradient'}>
       <h3>Still backgrounds</h3>
       <div id="bg-still" class="swatches">{swatches(false)}</div>
       </div>

@@ -23,12 +23,30 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
         const event = new Event(type, { bubbles: true, cancelable: true });
         Object.defineProperty(event, 'keyCode', { value: code }); document.dispatchEvent(event);
       }
+      function reveal(element) {
+        if (variant !== 'preact') return element;
+        const pane = element.closest('[data-section-pane]');
+        if (pane && (pane.hidden || document.querySelector('#editor').classList.contains('aero-settings-collapsed'))) {
+          const entry = document.querySelector('[data-key="section:' + pane.dataset.sectionPane + '"]');
+          // Category clicks use the same public controls as the physical drawer.
+          entry.click(); entry.focus();
+        }
+        if (pane?.dataset.sectionPane === 'wallpaper') {
+          const group = element.closest('#bg-anim') ? 'animated' : element.closest('#bg-still') ? element.dataset.key === 'bg:black' ? 'solid' : 'gradient' :
+            element.closest('#speed-row') ? 'animated' : element.closest('#weather-photo-choice') ? 'photo' : null;
+          if (group) {
+            const filter = document.querySelector('[data-key="wallpaper-categories:' + group + '"]');
+            filter.click(); filter.focus();
+          }
+        }
+        return element;
+      }
       function find(value) {
         const element = document.querySelector('#editor [data-key="' + value + '"]');
         assert(element, 'missing control: ' + value);
-        return element;
+        return reveal(element);
       }
-      function input(field, value) { field.value = value; field.dispatchEvent(new Event('input', { bubbles: true })); }
+      function input(field, value) { reveal(field); field.value = value; field.dispatchEvent(new Event('input', { bubbles: true })); }
       // Allow the initial commit and passive store subscriptions to complete.
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const before = JSON.stringify(A.settings.home);
@@ -36,7 +54,8 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       key(K.UP); key(K.LEFT); key(K.ENTER); key(K.ENTER, 'keyup');
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       assert(A.settingsUi.isOpen(), 'remote opens Settings');
-      assert(document.querySelector('#editor .focused').dataset.key === 'bg:aurora', 'initial focus');
+      assert(document.querySelector('#editor .focused').dataset.key === (variant === 'preact' ? 'section:appearance' : 'bg:aurora'), 'initial focus');
+      find('bg:aurora').click();
       if (variant === 'preact') {
         assert(document.activeElement === document.querySelector('#editor .focused'), 'remote state and browser focus agree');
         assert(document.querySelectorAll('#editor [data-key][tabindex="0"]').length === 1, 'one remote control is in the tab order');
@@ -111,9 +130,11 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       find('bg:black').click(); assert(document.querySelector('#speed-row').hidden, 'static background hides speed');
       find('bg:aurora').click();
       A.settingsUi.close(); A.settingsUi.open();
+      find('bg:aurora').click();
       // Move from the first swatch row to the speed slider using only remote arrows.
-      for (let i = 0; i < 9; i++) key(K.LEFT);
-      key(K.DOWN); key(K.DOWN);
+      if (variant === 'preact') {
+        for (let i = 0; i < 20 && document.querySelector('#editor .focused')?.dataset.key !== 'speed'; i++) key(K.DOWN);
+      } else { for (let i = 0; i < 9; i++) key(K.LEFT); key(K.DOWN); key(K.DOWN); }
       assert(document.querySelector('#editor .focused').dataset.key === 'speed', 'remote reaches speed');
       if (variant === 'preact') {
         // Without OK, Right moves on to Preview; Left comes back to the slider.
@@ -135,10 +156,11 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
         key(K.ESC);
         assert(A.settingsUi.isOpen() && !document.querySelector('#editor .adjusting'), 'Back leaves the slider, not Settings');
       }
+      if (variant === 'preact') find('app:' + A.apps.all[0].id).click();
       for (let i = 0; i < 60; i++) key(K.DOWN);
       assert(document.querySelector('#editor .focused').textContent.includes('Samsung Home'), 'bottom row reachable');
-      assert(document.querySelector('#editor').scrollTop > 0, 'focus scrolls into view');
-      key(K.ESC); assert(!A.settingsUi.isOpen(), 'Back closes Settings');
+      assert((variant === 'preact' ? document.querySelector('.aero-settings-scroll') : document.querySelector('#editor')).scrollTop > 0, 'focus scrolls into view');
+      key(K.ESC); if (variant === 'preact') key(K.ESC); assert(!A.settingsUi.isOpen(), 'Back closes Settings');
       A.settings.home = []; A.settings.save(); A.homeScreen.render(); A.settingsUi.open(); A.settingsUi.close();
       assert(A.settings.home.length === 0 && !document.querySelector('#grid').children.length, 'empty Home stays empty');
       A.settings.home = JSON.parse(before); A.settings.background = 'black'; A.settings.speed = 1; A.settings.save();
@@ -159,13 +181,15 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     contentType: 'image/svg+xml', body: route.request().url().endsWith('/bad') ? 'invalid image' :
       '<svg xmlns="http://www.w3.org/2000/svg" width="304" height="304"><rect width="304" height="304" fill="purple"/></svg>'
   }));
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     const A = AeroTizen;
     const original = A.tiles.app;
     window.settingsArtworkConstructions = 0;
     A.tiles.app = app => { window.settingsArtworkConstructions++; return original(app); };
     A.artwork.sources = () => ['https://artwork.test/bad', 'https://artwork.test/good'];
     A.settingsUi.open();
+    document.querySelector('[data-key="section:apps"]').click();
+    await new Promise(resolve => requestAnimationFrame(resolve));
     document.querySelector('#all-apps .app-tile').click();
   });
   await page.waitForFunction(() => document.querySelectorAll('#all-apps .has-artwork').length === AeroTizen.apps.all.length);
@@ -192,6 +216,8 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     const A = AeroTizen;
     const find = key => document.querySelector('#editor [data-key="' + key + '"]');
     const field = find('name:HDMI 1').querySelector('input');
+    document.querySelector('[data-key="section:sources"]').click();
+    await new Promise(resolve => requestAnimationFrame(resolve));
     field.focus(); field.value = 'Local draft'; field.dispatchEvent(new Event('input', { bubbles: true }));
     A.settings.inputNames = { 'HDMI 1': 'Concurrent value' }; A.settings.save();
     await new Promise(resolve => requestAnimationFrame(resolve));
@@ -212,13 +238,15 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     if (document.querySelector('#weather-results').textContent.includes('Outdated result')) throw new Error('Reopen accepted an old reply');
     const original = A.settings.speed;
     for (let i = 0; i < 10; i++) { A.settingsUi.close(); A.settingsUi.open(); }
+    document.querySelector('[data-key="section:wallpaper"]').click();
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    document.querySelector('[data-key="wallpaper-categories:animated"]').click();
+    await new Promise(resolve => requestAnimationFrame(resolve));
     find('bg:aurora').click();
-    for (let i = 0; i < 9; i++) A.settingsUi.keydown(A.config.KEY.LEFT, { preventDefault() {} });
-    A.settingsUi.keydown(A.config.KEY.DOWN, { preventDefault() {} });
-    A.settingsUi.keydown(A.config.KEY.DOWN, { preventDefault() {} });
+    find('speed').focus();
     A.settingsUi.keydown(A.config.KEY.ENTER, { preventDefault() {} });
     A.settingsUi.keydown(A.config.KEY.RIGHT, { preventDefault() {} });
-    if (A.settings.speed !== original + A.config.SPEED.STEP) throw new Error('Repeated opens duplicated key handlers');
+    if (A.settings.speed !== original + A.config.SPEED.STEP) throw new Error('Repeated-open slider: ' + JSON.stringify({before:original,after:A.settings.speed,key:document.querySelector('#editor .focused')?.dataset.key,adjusting:document.querySelector('#editor .adjusting')?.dataset.key}));
     return { externalUpdates: true, draftPreserved: true, closeCommitsDraft: true, staleAfterReopen: true, repeatedOpen: true };
   });
   if (errors.length) throw new Error(JSON.stringify(errors));

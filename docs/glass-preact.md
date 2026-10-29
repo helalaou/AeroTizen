@@ -5,8 +5,9 @@ this branch preserves the earlier contribution's history and includes that depen
 The other feature PRs (#28 clocks, #29 HDMI, #34 cards) remain independently reviewable.
 The integration branch records their combined conflict resolutions and includes #72.
 
-Classic stays the default. Settings > Settings appearance > Glass enables the satin
-header, Samsung Home shortcut, source dock and compact Settings category menu. The
+Classic stays the default. Settings > Home appearance > Interface appearance > Glass enables the satin
+header, Samsung Home shortcut and source dock. The compact Settings category drawer
+is shared by Classic and Glass; the appearance preference changes paint, not navigation. The
 preference persists. Categories are Home appearance, Applications, Backgrounds,
 Weather and clock, and Inputs. Continue Watching remains available under Applications.
 The actual Preact controls are composed into panes, with no DOM reparenting or cloned
@@ -28,8 +29,8 @@ Existing runtime translations remain available through the service adapter; untr
 new labels fall back to English. This does not replace the independent locale PR #27.
 
 Compiled-browser regression checks cover categories, Back/Left, focus bounds and one
-outline, background browsing, persistence and Samsung Home escape. The original suite
-still runs in Classic mode; additional integration checks exercise Glass with clock,
+outline, background browsing, persistence and Samsung Home escape. The existing behavioural suite
+uses the shared category controls in Classic mode; additional integration checks exercise Glass with clock,
 HDMI, cards and solar-cache fixes. Screenshots are generated at 1920x1080. Physical
 S90C performance, animation/remote latency, standby devices and reboot acceptance remain
 pending until the owner tests the exact signed integration build.
@@ -38,3 +39,7 @@ Parity review follow-up: dock badges distinguish RECOGNISED and PINNED evidence
 from ON/ACTIVE signal state. Optional per-port pins retain reference reachability
 without inventing a connection. Core hidden-session and stale-move fixes remain
 part of the #73 dependency; clock-navigation fixes belong to #28.
+
+S90C acceptance correction: category navigation no longer depends on Glass. Classic
+uses opaque neutral surfaces and violet focus; Glass retains satin surfaces and its
+light focus plate. Changing appearance preserves the open category and focused control.

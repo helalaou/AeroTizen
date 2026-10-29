@@ -27,7 +27,7 @@ const glassMenu = createRef<HTMLDivElement>(), glassContent = createRef<HTMLDivE
 const navigation = createNavigation(element => {
   // A command can restore browser focus without changing the selected key (IME Done).
   focusControl(element);
-  if (settings.getSnapshot().glassSettings && glassScroll.current?.contains(element)) {
+  if (glassScroll.current?.contains(element)) {
     const item = element.getBoundingClientRect(), clip = glassScroll.current.getBoundingClientRect();
     if (item.bottom > clip.bottom - 30) { glassScroll.current.scrollTop += item.bottom - clip.bottom + 30; }
     else if (item.top < clip.top + 10) { glassScroll.current.scrollTop += item.top - clip.top - 10; }

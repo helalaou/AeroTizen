@@ -6,7 +6,8 @@ import { FocusPlate } from './FocusPlate';
 import { categories } from './categories';
 import type { Category } from './categories';
 
-export const GlassSettings = ({ panes }: { panes: Record<Category, ComponentChildren> }) => {
+// Categories and remote behaviour are shared by both appearance themes.
+export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChildren> }) => {
   const { glass, glassMenu, glassContent, glassScroll, bridge, services } = useSettingsEnvironment();
   const state = useStore(glass);
   const text = services.translate;
