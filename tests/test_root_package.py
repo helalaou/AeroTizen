@@ -130,10 +130,11 @@ def test_native_per_boot_archive_factory_matches_its_validator(native_root, tmp_
     assert framed.returncode == 0, framed.stderr
 
 
-def test_detached_setup_child_cannot_keep_the_sdk_callback_open(native_root, tmp_path):
-    shell = shutil.which("sh")
+@pytest.mark.parametrize("shell_name", ["sh", "bash", "dash"])
+def test_detached_setup_child_cannot_keep_the_sdk_callback_open(native_root, tmp_path, shell_name):
+    shell = shutil.which(shell_name)
     if not shell:
-        pytest.skip("POSIX shell required")
+        pytest.skip(shell_name + " required")
     result = subprocess.run(
         [*native_root, "--setup-launch", uuid.uuid4().hex, uuid.uuid4().hex],
         capture_output=True,
@@ -143,8 +144,9 @@ def test_detached_setup_child_cannot_keep_the_sdk_callback_open(native_root, tmp
     )
     marker = tmp_path / "detached"
     stub = tmp_path / "dotnet"
+    # Isolate the closed-descriptor probe: dash treats its redirection error as fatal.
     stub.write_text(
-        "#!/bin/sh\nif { : >&3; } 2>/dev/null; then exit 70; fi\n"
+        f"#!{shell}\nif ( : >&3 ) 2>/dev/null; then exit 70; fi\n"
         + "printf detached > "
         + shlex.quote(str(marker))
         + "\n"
