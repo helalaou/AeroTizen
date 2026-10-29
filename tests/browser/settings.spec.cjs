@@ -223,10 +223,12 @@ test('late TV inventory and hot-plug updates reach Settings without a preference
 });
 
 test('weather wallpapers are opt-in, use hidden-header weather, persist and restore the selected background', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-28T12:00Z'));
   const images = [];
   page.on('request', request => { if (request.url().includes('/assets/weather/') && request.url().endsWith('.jpg')) images.push(request.url()); });
   await page.route('https://api.open-meteo.com/**', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({
-    current: { temperature_2m: 20, weather_code: 0, is_day: 1 }
+    current: { temperature_2m: 20, weather_code: 0, is_day: 1 },
+    daily: { sunrise: ['2026-10-28T06:00'], sunset: ['2026-10-28T18:00'] }
   }) }));
   await openSettings(page);
   const control = page.getByRole('group', { name: 'Dynamic weather wallpapers', exact: true });
@@ -258,12 +260,13 @@ test('weather wallpapers are opt-in, use hidden-header weather, persist and rest
 });
 
 test('turning weather wallpaper off while its image is pending cannot hide the fallback', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-28T12:00Z'));
   let release;
   await page.route('**/assets/weather/sun.jpg', route => new Promise(resolve => {
     release = async () => { await route.continue(); resolve(); };
   }));
   await openSettings(page);
-  await page.evaluate(() => { Weather.currentReading = () => ({ code: 0, day: 1, at: Date.now(), solar: [] }); });
+  await page.evaluate(() => { Weather.currentReading = () => ({ code: 0, day: 1, at: Date.now(), solar: [{sunrise: Date.parse('2026-10-28T06:00Z'), sunset: Date.parse('2026-10-28T18:00Z')}] }); });
   const control = page.getByRole('group', { name: 'Dynamic weather wallpapers', exact: true });
   await control.getByRole('button', { name: 'Automatic (weather)', exact: true }).click();
   await expect.poll(() => typeof release).toBe('function');
@@ -271,4 +274,46 @@ test('turning weather wallpaper off while its image is pending cannot hide the f
   await release();
   await expect(page.locator('#weather-photo')).toBeHidden();
   await expect(page.locator('#bg')).toBeVisible();
+});
+
+test('enabling compiled Settings at 23:00 repairs legacy solar cache once and never requests a daytime image', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-28T23:00Z'));
+  await page.addInitScript(() => {
+    localStorage.setItem('aerotizen.weather.v2', JSON.stringify({temp:12, code:0, day:1,
+      at:Date.parse('2026-10-28T22:55Z'), unit:'C', source:'auto', city:'Fixture city'}));
+    localStorage.setItem('aerotizen.settings.v1', JSON.stringify({showWeather:true, weatherPhoto:false, tempUnit:'C'}));
+  });
+  let release, forecasts = 0, locations = 0;
+  const images = [];
+  page.on('request', request => { if (/\/assets\/weather\/.*\.jpg$/.test(request.url())) images.push(request.url()); });
+  await page.route('https://ipapi.co/**', route => {
+    locations++;
+    return route.fulfill({contentType:'application/json',body:JSON.stringify({city:'Fixture city', latitude:1, longitude:2})});
+  });
+  await page.route('https://api.open-meteo.com/**', route => new Promise(resolve => {
+    forecasts++;
+    release = async () => {
+      await route.fulfill({contentType:'application/json',body:JSON.stringify({
+        current:{temperature_2m:15,weather_code:0,is_day:0},
+        daily:{sunrise:['2026-10-28T06:00'],sunset:['2026-10-28T18:00']}
+      })});resolve();
+    };
+  }));
+  await openSettings(page);
+  expect(forecasts).toBe(0);expect(locations).toBe(0);
+  const group = page.getByRole('group',{name:'Dynamic weather wallpapers',exact:true});
+  await group.getByRole('button',{name:'Automatic (weather)',exact:true}).click();
+  await expect.poll(() => typeof release).toBe('function');
+  await expect(page.locator('#weather-photo')).toBeHidden();
+  await expect(page.locator('#bg')).toBeVisible();
+  expect(images).toEqual([]);
+  for(let i=0;i<3;i++) {
+    await group.getByRole('button',{name:'Off',exact:true}).click();
+    await group.getByRole('button',{name:'Automatic (weather)',exact:true}).click();
+  }
+  expect(forecasts).toBe(1);expect(locations).toBe(1);
+  await release();
+  await expect(page.locator('#weather-photo')).toHaveClass(/scene-night/);
+  expect(images).toHaveLength(1);expect(images[0]).toContain('/night.jpg');
+  await expect(page.locator('#weather b')).toHaveText('15°');
 });

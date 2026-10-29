@@ -65,6 +65,13 @@ def build_launcher(root, output, tag=None):
     files = [launcher / name for name in ("config.xml", "index.html", "icon.png", "licenses/preact.txt")]
     for directory, suffix in (("css", ".css"), ("js", ".js"), ("service", ".js")):
         files.extend((launcher / directory).rglob(f"*{suffix}"))
+    if (launcher / "js/photo-weather.js").is_file():
+        # PhotoWeather loads these local scenes at runtime. Keep their provenance
+        # with them, and fail packaging rather than silently publishing a broken WGT.
+        scenes = ("sun", "partly", "cloud", "rain", "storm", "snow", "fog", "night", "sunset")
+        weather = launcher / "assets/weather"
+        files.extend(weather / f"{scene}.jpg" for scene in scenes)
+        files.extend(weather / name for name in ("CREDITS.md", "MANIFEST.json"))
     for name in (
         "js/settings-ui.js",
         "service/index.js",

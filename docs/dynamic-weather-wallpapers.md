@@ -26,9 +26,23 @@ The usual approximate IP-location lookup is used only if no city is saved.
 Sunrise/sunset are requested with UTC timestamps and converted to epoch milliseconds,
 so the saved city's solar phase does not depend on the TV's timezone. Clear or
 partly cloudy conditions use sunset from 45 minutes before sunset until 20 minutes
-after. Night takes precedence for all weather codes. Without valid solar data,
-`is_day` supplies day/night. Invalid, expired or location-mismatched readings use
+after. Night takes precedence for all weather codes. When the cached reading lacks usable solar data for the current solar day,
+enabling wallpapers promptly requests a forecast through the existing weather
+client. A matching in-flight request is reused; unsuccessful or incomplete
+responses do not trigger repeated requests on every toggle. Without valid solar
+data the chosen background stays visible: an old or absent `is_day` value is not
+used to guess the current phase. The temperature widget remains usable. Invalid, expired or location-mismatched readings use
 the original background; images failing to load also fall back safely.
+
+Solar fields must contain finite numeric sunrise/sunset epochs with a positive
+interval shorter than 24 hours, and the reading must satisfy the existing two-hour
+age limit. Each pair covers the solar day centered on its sunrise/sunset midpoint
+(12 hours on either side), rather than assuming the TV's local calendar day.
+Yesterday's or tomorrow's solar pairs are not extrapolated into the current day.
+Locations without usable sunrise/sunset (including some polar conditions) retain
+the chosen background until trustworthy solar data is available.
+
+See the [S90C solar-cache test and rollback procedure](s90c-weather-solar-validation.md).
 
 ## Runtime cost
 
