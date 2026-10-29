@@ -229,8 +229,8 @@ body.editing:not(.previewing) #home-root main {
 }
 #editor .aero-section-pane #all-apps { width: 100% !important; gap: 18px; }
 #editor .aero-section-pane #all-apps .tile {
-  width: calc(25% - 14px) !important;
-  height: 132px !important; min-width: 0; border-radius: 17px !important;
+  width: 160px !important;
+  height: 160px !important; min-width: 160px; border-radius: 17px !important;
 }
 #editor .aero-section-pane #all-apps .tile .name { font-size: 19px !important; }
 #editor .aero-section-pane .name-pill input { width: 210px; max-width: 100%; }
@@ -300,7 +300,65 @@ body.glass-ui .topbar > .view-tabs > #aero-tab-glider.is-focused { border: 2px s
 #editor.aero-settings-classic .aero-content-glider {
   border-color: var(--focus); background: rgba(124,92,255,.12); box-shadow: none;
 }
-#editor.aero-settings-classic .aero-section-pane .pill.unit.on { background: #fff !important; color: #000 !important; }
+#editor.aero-settings-classic .aero-section-pane .pill.unit.on { background: var(--focus) !important; color: #fff !important; }
 #editor.aero-settings-classic .aero-section-pane .pill.unit.focused { background: rgba(124,92,255,.25) !important; color: #fff !important; }
 
 #editor .swatch[hidden] { display: none; }
+
+/* Appearance tokens apply to every focus surface, not just the Settings drawer. */
+body { --focus-glow: rgba(124,92,255,.23); }
+body.glass-ui { --focus: #edf2ff; --focus-glow: rgba(237,242,255,.23); }
+body.glass-ui .grid .tile.on::after,
+body.glass-ui .swatch.on::after { background-color: #475269; }
+body.glass-ui .continue-card {
+  background: linear-gradient(160deg,rgba(86,97,116,.84),rgba(22,29,42,.94));
+  box-shadow: inset 0 1px rgba(255,255,255,.24), 0 10px 24px rgba(0,0,0,.28);
+}
+body.glass-ui .continue-card.focused {
+  box-shadow: 0 0 0 4px var(--bg), 0 0 0 9px var(--focus), 0 18px 40px rgba(0,0,0,.6);
+}
+body.glass-ui .continue-label { background: rgba(18,25,38,.38); }
+body.glass-ui .continue-episode { color: #d5deec; }
+body.glass-ui .continue-progress { background: rgba(217,227,242,.24); }
+
+/* One control scale for choices; previews and text-entry fields keep their roles. */
+#editor.aero-settings-ready .aero-section-pane .pill.unit {
+  display: flex; align-items: center; justify-content: center;
+  flex: 0 1 200px; min-width: 160px; max-width: 100%; min-height: 64px;
+  padding: 10px 16px; margin-left: 0;
+  font-size: 20px; line-height: 24px; white-space: normal; text-align: center;
+}
+#editor.aero-settings-ready .aero-section-pane .units { align-items: stretch; }
+#editor.aero-settings-ready .aero-section-pane .name-pill {
+  min-height: 64px; font-size: 20px; border-radius: 17px;
+}
+#editor.aero-settings-ready .aero-section-pane .name-pill input { font-size: 20px; }
+#editor.aero-settings-ready .aero-section-pane .speed-row { gap: 12px; flex-wrap: wrap; }
+#editor.aero-settings-ready .aero-section-pane .slider { min-height: 64px; padding: 10px 16px; border-radius: 17px; gap: 16px; }
+#editor.aero-settings-ready .aero-section-pane .slider-label,
+#editor.aero-settings-ready .aero-section-pane .slider-value { font-size: 20px; }
+#editor.aero-settings-ready .aero-section-pane .track { width: 260px; }
+
+/* Settings always uses standard square icons, independently of Home card layout. */
+#editor.aero-settings-ready .aero-section-pane .grid .tile {
+  flex: 0 0 160px; width: 160px !important; height: 160px !important;
+  min-width: 160px; border-radius: 17px !important;
+}
+#editor.aero-settings-ready .aero-section-pane .grid .tile .app-fallback {
+  padding: 12px; gap: 8px;
+}
+#editor.aero-settings-ready .aero-section-pane .grid .tile .logo { width: 92px; height: 92px; }
+#editor.aero-settings-ready .aero-section-pane .grid .tile .app-fallback.logo-only .logo { width: 136px; height: 112px; }
+#editor.aero-settings-ready .aero-section-pane .grid .tile .name {
+  font-size: 18px !important; line-height: 21px; max-width: 100%; text-align: center;
+}
+#editor.aero-settings-ready .aero-section-pane .grid .tile .app-artwork { object-fit: contain; }
+#editor.aero-settings-ready .aero-section-pane .grid .tile.addapps,
+#editor.aero-settings-ready .aero-section-pane .grid .tile.fire { flex-direction: column; gap: 8px; padding: 12px; }
+#editor.aero-settings-ready .aero-section-pane .grid .tile > svg { width: 76px; height: 76px; flex: 0 0 76px; }
+#editor.aero-settings-ready .aero-section-pane .grid .tile .sub { font-size: 13px; }
+
+#home-root .tile.moving { box-shadow: 0 0 0 4px var(--bg), 0 0 0 9px var(--focus), 0 28px 50px rgba(0,0,0,.7); }
+#home-root .tile-actions-glider { border-color: var(--focus); }
+body:not(.glass-ui) #home-root .tile-actions-menu { background: #1c1c1e; border-color: #444448; box-shadow: 0 12px 28px rgba(0,0,0,.4); }
+body:not(.glass-ui) #home-root .tile-actions-glider { background: rgba(124,92,255,.18); }

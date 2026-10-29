@@ -43,3 +43,17 @@ part of the #73 dependency; clock-navigation fixes belong to #28.
 S90C acceptance correction: category navigation no longer depends on Glass. Classic
 uses opaque neutral surfaces and violet focus; Glass retains satin surfaces and its
 light focus plate. Changing appearance preserves the open category and focused control.
+
+## Consistent appearance and Settings scale
+
+Classic uses the original violet focus accent throughout Home, source selection,
+Continue Watching and the category drawer. Glass uses a light focus accent and
+adds a satin surface to Continue Watching, without changing feed data, progress
+geometry or artwork sources. Selected icon badges retain a dark background in
+Glass so their white check marks remain legible.
+
+Ordinary Settings choices share a 20px font, 24px line height and 64px minimum
+height. Long labels may wrap; image previews and text-entry fields keep their
+semantic roles. App-selection grids use fixed 160px square icons regardless of
+Home card mode or column count. Home layout preferences do not rebuild those
+Settings icon nodes or change their artwork source selection.

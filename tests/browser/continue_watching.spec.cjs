@@ -56,7 +56,8 @@ test('opt-in discovery, selection, merged row, remote navigation, launch and res
   for (const id of [prime, itv, channel4]) await page.locator('[data-key="continue-app:' + id + '"]').click();
   await expect.poll(() => page.evaluate(() => AeroTizen.continueWatching.sources.find(s => s.name === 'Channel 4').status)).toBe('No items available');
   await expect(page.locator('.continue-option')).not.toContainText(['5 items']);
-  await expect(page.locator('.continue-option').first()).toHaveCSS('width', '176px');
+  await expect(page.locator('.continue-option').first()).toHaveCSS('width', '160px');
+  await expect(page.locator('.continue-option').first()).toHaveCSS('height', '160px');
   await expect(page.locator('.continue-option.has-artwork')).toHaveCount(3);
   await page.screenshot({ path: info.outputPath('continue-watching-selection.png') });
   await closeSettings(page);
