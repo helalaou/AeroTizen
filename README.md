@@ -348,7 +348,8 @@ if needed, then run:
 
 The CLI saves a private recovery record, installs the signed helper, and enables
 only its own startup entry. It downloads checksum-pinned TV payloads from
-`samsung-tv-root` v0.0.12; the host executable is not run or installed on the TV.
+[samsung-tv-root](https://github.com/chris-ritsen/samsung-tv-root) v0.0.12;
+the host executable is not run or installed on the TV.
 Follow the printed instructions: set Developer Mode **Host PC IP to `127.0.0.1`**,
 keep Developer Mode On, and fully restart the TV. Then finish verification:
 
