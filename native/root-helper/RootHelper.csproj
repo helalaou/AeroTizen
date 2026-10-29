@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework><OutputType>Exe</OutputType><UseAppHost>false</UseAppHost>
+    <AssemblyName>AeroTizenRootHelper</AssemblyName><DebugType>none</DebugType><Deterministic>true</Deterministic>
+    <TvFrameworkDir>$(TV_FRAMEWORK_DIR)</TvFrameworkDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../root-common/*.cs" Link="Common/%(Filename)%(Extension)" />
+    <Compile Include="../untethered-probe/Bundle.cs" Link="Bundle.cs" />
+    <Compile Include="../untethered-probe/ServiceLaunch.cs" Link="ServiceLaunch.cs" />
+    <Compile Include="../untethered-probe/SdbProtocol.cs" Link="SdbProtocol.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TvFrameworkDir)' != ''">
+    <Reference Include="Tizen"><HintPath>$(TvFrameworkDir)/Tizen.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Tizen.Applications.Common"><HintPath>$(TvFrameworkDir)/Tizen.Applications.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Tizen.Applications.Service"><HintPath>$(TvFrameworkDir)/Tizen.Applications.Service.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TvFrameworkDir)' == ''">
+    <PackageReference Include="Tizen.NET" Version="6.0.0.14995" ExcludeAssets="runtime" />
+  </ItemGroup>
+</Project>

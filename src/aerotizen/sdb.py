@@ -28,8 +28,9 @@ class SdbError(Exception):
 
 
 class Sdb:
-    def __init__(self, host, port=PORT, timeout=15):
+    def __init__(self, host, port=PORT, timeout=15, *, source_address=None):
         self.host, self.port, self.timeout = host, port, timeout
+        self.source_address = source_address
         self.sock = None
         self.banner = ""
         self.max_data = 4096
@@ -74,7 +75,8 @@ class Sdb:
 
     def _connect_once(self):
         try:
-            self.sock = socket.create_connection((self.host, self.port), timeout=self.timeout)
+            options = {"source_address": (self.source_address, 0)} if self.source_address else {}
+            self.sock = socket.create_connection((self.host, self.port), timeout=self.timeout, **options)
         except OSError as e:
             raise SdbError(
                 f"cannot reach {self.host}:{self.port} ({e}). "
@@ -369,6 +371,14 @@ class Sdb:
         remote = f"{tool_path}/{app_id.split('.')[0]}.wgt"
         self.push(wgt_bytes, remote)
         return self.shell(f"0 vd_appinstall {app_id} {remote}")
+
+    def install_native(self, data, name):
+        import re
+
+        if not re.fullmatch(r"aerotizen-root-[a-f0-9]{32}\.tpk", name):
+            raise ValueError("Invalid native helper upload name")
+        self.push(data, "/home/owner/share/tmp/sdk_tools/" + name)
+        return self.shell_bounded("0 appinstall tpk " + name, timeout=30)
 
     def shell(self, command):
         return self.service(f"shell:{command}")

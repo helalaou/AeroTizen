@@ -325,6 +325,63 @@ Night Mode settings stay unchanged. See [setup and recovery](docs/home-pc-flow.m
 backup transfer and recovery steps. Test reports should include the CLI commit, TV model,
 firmware, and Home/restore/boot results; remove device IDs and private paths before sharing.
 
+## Optional automatic root
+
+`root setup`, `root status` and `root remove` manage a separate background helper.
+Root is opt-in and is not needed for either Home option or Samsung Continue Watching.
+Home and Art Mode settings stay unchanged.
+
+This is experimental. On a 2024 Frame running Tizen 9, CLI setup, live authenticated
+status and direct-SDB recovery removal passed. A cold boot with the Mac offline
+also proved automatic root and bridged SDK access. Paired removal stopped the bridge
+and removed credentials. A boot-result framing fix still needs a hardware retest,
+followed by repeat boots and final PC recovery/uninstall. Other models/firmware are unverified;
+setup requires the checked ARM Tizen/.NET 6 runtime and archive-root payload.
+
+With Developer Mode still pointing at your computer, create signing certificates
+if needed, then run:
+
+```sh
+./aerotizen --tv TV_IP root setup              # preview; no TV writes
+./aerotizen --tv TV_IP root setup --yes
+```
+
+The CLI saves a private recovery record, installs the signed helper, and enables
+only its own startup entry. It downloads checksum-pinned TV payloads from
+`samsung-tv-root` v0.0.12; the host executable is not run or installed on the TV.
+Follow the printed instructions: set Developer Mode **Host PC IP to `127.0.0.1`**,
+keep Developer Mode On, and fully restart the TV. Then finish verification:
+
+```sh
+./aerotizen --tv TV_IP root setup --yes --wait 240
+./aerotizen --tv TV_IP root status
+```
+
+After setup, the helper attempts root once per kernel boot. Standby and Art Mode
+wakes in the same boot do not repeat it. Startup waits up to three minutes for
+local SDB; failures stop for that boot. The computer can be switched off. Paired
+CLI commands use the authenticated TLS bridge automatically while localhost is
+enabled. Existing `home ... --root` commands use an external root tool and still
+require normal PC-authorised SDB; ordinary Home commands work through the bridge.
+
+To remove automatic root:
+
+```sh
+./aerotizen --tv TV_IP root remove --yes
+```
+
+Follow the printed recovery steps to restore the saved PC host address and restart,
+then run the same command again. It disables future attempts, removes private TV
+pairing files, and uninstalls only the helper. If the bridge is unavailable, first
+restore normal PC access; the command can clean up through that connection too,
+including after the helper was uninstalled manually.
+
+Keep the **whole private folder** at `~/.config/aerotizen/root/<TV-address hash>/`.
+It contains the original PC address, device checks and pairing credentials; do not
+post it in issues or screenshots. A moved/copied receipt can be selected with
+`--receipt /path/to/receipt.json`. `root status --json` omits pairing secrets.
+See [root setup and recovery](docs/root-cli.md) for the command states and developer build.
+
 ## Limits
 
 Samsung doesn't support any of this officially, so some parts are workarounds:
