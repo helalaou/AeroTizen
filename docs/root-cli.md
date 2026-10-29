@@ -108,4 +108,3 @@ but needs a hardware retest. Authenticated removal stopped the bridge and delete
 credentials. A new recovery boot confirmed that the helper stayed disabled,
 normal PC access returned, and SDK uninstall completed. Repeat boots on the
 corrected build and its final removal remain pending.
-See [the hardware test record](root-cli-tv-20261029.json) for completed and pending checks.
