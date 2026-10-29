@@ -209,6 +209,37 @@ def test_backup_preserves_original_when_values_or_firmware_change(tmp_path, stat
     assert path.read_bytes() == original
 
 
+@pytest.mark.parametrize("custom_output", [False, True])
+@pytest.mark.parametrize("profile", ["New User", "Bénédicte 名"])
+def test_backup_creates_missing_parent_directories(tmp_path, status, custom_output, profile):
+    state_dir = tmp_path / profile / ".config" / "aerotizen"
+    output = tmp_path / profile / "chosen" / "tv" / "original-home.json" if custom_output else None
+    expected = output or state_dir / "backups" / status["device"]["identity_sha256"] / "original-home.json"
+    assert not expected.parent.exists()
+    result = home.save_backup(status, output=output, state_dir=state_dir)
+    assert result["created"] and Path(result["path"]) == expected
+    assert result["matches_current"] and result["firmware_matches"]
+    assert json.loads(expected.read_bytes()) == home.baseline_from_status(status)
+
+
+def test_launcher_boot_backup_drift_keeps_the_existing_original(tmp_path, status):
+    saved = home.save_backup(status, state_dir=tmp_path)
+    path = Path(saved["path"])
+    raw = path.read_bytes()
+    status["home"]["settings"]["db/appfw/booting_appid_backup"]["value"] = home.releases.APP_ID
+    result = home.save_backup(status, state_dir=tmp_path)
+    assert not result["created"] and not result["matches_current"]
+    assert result["sha256"] == saved["sha256"] and path.read_bytes() == raw
+
+
+def test_launcher_boot_backup_drift_cannot_be_saved_as_an_original(tmp_path, status):
+    status["home"]["settings"]["db/appfw/booting_appid_backup"]["value"] = home.releases.APP_ID
+    with pytest.raises(home.HomeError, match="before opening"):
+        home.save_backup(status, state_dir=tmp_path)
+    assert not list(tmp_path.rglob("original-home.json"))
+    assert not (tmp_path / "backups").exists()
+
+
 @pytest.mark.parametrize("complete", [True, False])
 def test_existing_original_is_preserved_after_native_apply(tmp_path, status, complete):
     saved = home.save_backup(status, state_dir=tmp_path)
@@ -260,9 +291,42 @@ def test_backup_creation_failure_leaves_no_partial_original(tmp_path, status, mo
         raise OSError("filesystem failed")
 
     monkeypatch.setattr(home.os, "link", failed_link)
-    with pytest.raises(OSError, match="filesystem failed"):
+    with pytest.raises(home.HomeError, match=r"atomic hard link failed.*filesystem failed"):
         home.save_backup(status, output=tmp_path / "original.json")
     assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    ("stage", "message"),
+    [
+        ("directory", "Cannot create Home backup directory"),
+        ("temporary", "Cannot create temporary Home backup"),
+        ("link", "Cannot publish original Home backup"),
+    ],
+)
+def test_backup_path_failure_identifies_the_operation(tmp_path, status, monkeypatch, stage, message):
+    path = tmp_path / "new" / "tv" / "original-home.json"
+    error = FileNotFoundError(2, "The system cannot find the path specified", str(path))
+    error.winerror = 3
+
+    def fail(*args, **kwargs):
+        raise error
+
+    if stage == "directory":
+        monkeypatch.setattr(Path, "mkdir", fail)
+    elif stage == "temporary":
+        monkeypatch.setattr(home.tempfile, "mkstemp", fail)
+    else:
+        monkeypatch.setattr(home.os, "link", fail)
+    with pytest.raises(home.HomeError, match=message) as raised:
+        home.save_backup(status, output=path)
+    assert raised.value.__cause__ is error
+    assert str(error) in str(raised.value)
+    assert not path.exists() and not list(tmp_path.rglob(".home-backup-*"))
+    assert path.parent.exists() is (stage != "directory")
+    if stage == "link":
+        assert "Parent directory creation completed" in str(raised.value)
+        assert f"path length {len(str(path))}" in str(raised.value)
 
 
 def test_concurrent_original_wins_without_replacement(tmp_path, status, monkeypatch):
