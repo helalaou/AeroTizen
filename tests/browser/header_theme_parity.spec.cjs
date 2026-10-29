@@ -6,6 +6,7 @@ for(const clockLayout of ['classic','custom']){
   await page.addInitScript(clockLayout=>localStorage.setItem('aerotizen.settings.v1',JSON.stringify({clockLayout,home:['demo0'],background:'black',showWeather:false})),clockLayout);
   await page.goto('/');await page.waitForFunction(()=>AeroTizen.apps.ready);
   const geometry=()=>page.evaluate(()=>['.view-tabs','#home-tab','#apps-tab','#gear','#samsung-home-shortcut','#network'].map(s=>{const r=document.querySelector(s).getBoundingClientRect();return [s,...[r.x,r.y,r.width,r.height].map(Math.round)];}));
+  await page.locator('#apps-tab').click();await page.locator('#home-tab').click();
   const before=await geometry();
   const tabs=await page.locator('.view-tabs').boundingBox();expect(tabs.x+tabs.width/2).toBeCloseTo(960,0);
   await expect(page.locator('#samsung-home-shortcut')).toBeVisible();
