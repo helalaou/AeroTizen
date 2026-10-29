@@ -362,3 +362,14 @@ body.glass-ui .continue-progress { background: rgba(217,227,242,.24); }
 #home-root .tile-actions-glider { border-color: var(--focus); }
 body:not(.glass-ui) #home-root .tile-actions-menu { background: #1c1c1e; border-color: #444448; box-shadow: 0 12px 28px rgba(0,0,0,.4); }
 body:not(.glass-ui) #home-root .tile-actions-glider { background: rgba(124,92,255,.18); }
+
+/* Text-entry controls reserve space for both the port label and editable value. */
+#editor.aero-settings-ready .aero-section-pane #input-names .name-pill {
+  flex: 0 1 360px; min-width: 0; justify-content: flex-start; text-align: left;
+}
+#editor.aero-settings-ready .aero-section-pane #input-names .port {
+  flex: 0 0 auto; font-size: 20px; white-space: nowrap;
+}
+#editor.aero-settings-ready .aero-section-pane #input-names input {
+  flex: 1 1 0; min-width: 0; width: 0; max-width: 100%;
+}

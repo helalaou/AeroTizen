@@ -57,3 +57,8 @@ height. Long labels may wrap; image previews and text-entry fields keep their
 semantic roles. App-selection grids use fixed 160px square icons regardless of
 Home card mode or column count. Home layout preferences do not rebuild those
 Settings icon nodes or change their artwork source selection.
+
+HDMI name controls reserve a flexible text-entry area beside a non-shrinking port
+label. This keeps long names inside the control in both appearances without
+changing input-name persistence or remote text-entry behavior. Physical S90C
+acceptance of this correction remains pending.
