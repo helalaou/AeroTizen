@@ -37,3 +37,9 @@ targets are cancelled safely, and visibility loss clears pending OK/menu state.
 The renderer honours optional active/recognised/manually pinned source capabilities
 without equating a pin with a live HDMI signal. Compiled lifecycle regressions cover
 these interruptions and stale inventory cases.
+
+The fixed content viewport uses a static alpha fade at the bottom and a softer top
+fade while scrolled; the header remains outside the mask. Continue Watching cards
+use a short transform-only focus transition with reduced-motion support. Their
+feed, launch behavior, artwork and progress data are unchanged. These refinements
+require physical S90C acceptance.

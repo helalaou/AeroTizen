@@ -6,8 +6,23 @@
 #home-root { height: 1080px; display: flex; flex-direction: column; }
 #home-root > .topbar { flex: 0 0 auto; position: relative; z-index: 4; }
 #home-root > .content-viewport { flex: 1 1 auto; min-height: 0; height: auto; }
-/* Fade the moving content at the fixed viewport edge, never the header itself. */
+/* Static alpha masks reveal any background without animating a blur layer.
+   Keep the focused row above the 40 px bottom fade and below the 80 px top fade. */
+#home-root > .content-viewport {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 40px), rgba(0,0,0,.9) calc(100% - 30px), rgba(0,0,0,.5) calc(100% - 16px), rgba(0,0,0,.1) calc(100% - 5px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 40px), rgba(0,0,0,.9) calc(100% - 30px), rgba(0,0,0,.5) calc(100% - 16px), rgba(0,0,0,.1) calc(100% - 5px), transparent 100%);
+}
 #home-root > .content-viewport.is-scrolled {
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.24) 20px, rgba(0,0,0,.63) 44px, #000 72px);
-  mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.24) 20px, rgba(0,0,0,.63) 44px, #000 72px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.06) 12px, rgba(0,0,0,.22) 28px, rgba(0,0,0,.5) 44px, rgba(0,0,0,.78) 60px, rgba(0,0,0,.94) 72px, #000 80px, #000 calc(100% - 40px), rgba(0,0,0,.9) calc(100% - 30px), rgba(0,0,0,.5) calc(100% - 16px), rgba(0,0,0,.1) calc(100% - 5px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.06) 12px, rgba(0,0,0,.22) 28px, rgba(0,0,0,.5) 44px, rgba(0,0,0,.78) 60px, rgba(0,0,0,.94) 72px, #000 80px, #000 calc(100% - 40px), rgba(0,0,0,.9) calc(100% - 30px), rgba(0,0,0,.5) calc(100% - 16px), rgba(0,0,0,.1) calc(100% - 5px), transparent 100%);
+}
+/* Continue Watching follows the same short composited focus movement as app tiles. */
+#home-root .continue-card {
+  transform: translateZ(0) scale(.98);
+  transform-origin: center;
+  transition: transform .17s cubic-bezier(.20,.72,.25,1);
+}
+#home-root .continue-card.focused { transform: translate3d(0,-4px,0) scale(1.035); }
+@media (prefers-reduced-motion: reduce) {
+  #home-root .continue-card { transition: none; }
 }
