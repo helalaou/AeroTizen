@@ -43,3 +43,21 @@ fade while scrolled; the header remains outside the mask. Continue Watching card
 use a short transform-only focus transition with reduced-motion support. Their
 feed, launch behavior, artwork and progress data are unchanged. These refinements
 require physical S90C acceptance.
+
+### Theme-independent motion and navigation
+
+The tested custom reference's `launcher/js/home-screen.js` and
+`launcher/css/s90c-v99246-cleanup.css` use cached artwork and a one-shot page reveal,
+without delaying remote transactions. The Preact renderer now follows that model
+with a 240 ms opacity/short horizontal reveal on the existing page surface.
+Home/All apps switch synchronously, including rapid reversals and Back; no screenshot
+snapshot, duplicated live page, network reload or animation-completion timer is used.
+
+A fixed outer bottom mask and an inner top mask keep the header untouched. The top
+fade interpolates mask position over 320 ms instead of switching gradient images.
+Scrolling uses the same duration/easing, with focus clearance outside both fades.
+Reduced-motion preferences disable movement and page reveals. Both appearances
+share centred tab geometry, Samsung Home access and moving focus plates; Glass
+changes their paint rather than adding/removing navigation. Existing Samsung Home
+services still own the escape action and native HOME policy remains unchanged.
+Physical S90C smoothness and firmware rendering acceptance remain pending.
