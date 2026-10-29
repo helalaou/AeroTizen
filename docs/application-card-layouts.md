@@ -22,3 +22,8 @@ Home layout options apply only to the Home/All apps grid. Settings app pickers
 remain standard square icons, with stable DOM/artwork nodes when card mode or
 column count changes. Focus uses the shared theme accent rather than a fixed
 white border. Artwork sources and their original resolution are unchanged.
+
+Big/Small controls are available only in Follow card size. Choosing an explicit
+3/4/5-column count hides those controls without discarding the saved size; returning
+to Follow card size restores the preference. Home and Settings icon scopes remain
+independent. Physical acceptance of this follow-up is pending.

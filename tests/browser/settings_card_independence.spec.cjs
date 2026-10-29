@@ -9,6 +9,18 @@ test('Home card shape and columns never change standard Settings icons or artwor
   const before=await page.locator('#all-apps > .tile').evaluateAll(nodes=>nodes.map(n=>[n.offsetWidth,n.offsetHeight]));
   for(const size of before)expect(size[0]).toBe(size[1]);
   await page.evaluate(()=>{window.settingsIconNodes=Array.from(document.querySelectorAll('#all-apps > .tile'));});
+  await category('appearance');
+  await expect(page.locator('#card-sizes')).toBeVisible();
+  await page.locator('[data-key="card-sizes:small"]').click();
+  for(const columns of ['3','4','5']) {
+    await page.locator(`[data-key="home-card-columns:${columns}"]`).click();
+    await expect(page.locator('#card-sizes')).toHaveCount(0);
+  }
+  await page.locator('[data-key="home-card-columns:auto"]').click();
+  await expect(page.locator('#card-sizes')).toBeVisible();
+  expect(await page.evaluate(()=>AeroTizen.settings.cardSize)).toBe('small');
+  await page.locator('[data-key="card-sizes:big"]').click();
+  expect(await page.evaluate(()=>AeroTizen.settings.cardSize)).toBe('big');
   for(const mode of ['rectangle','square']){
     await category('appearance');
     await page.locator(`[data-key="home-card-mode:${mode}"]`).click();
