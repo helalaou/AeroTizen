@@ -26,7 +26,7 @@ body:not(.s90c-clock-classic) header.topbar > .view-tabs {
   position: absolute; left: 50%; top: 24px;
   transform: translate3d(-50%,0,0);
 }
-body:not(.s90c-clock-classic) .content-viewport > main { padding-top: 24px; }
+body:not(.s90c-clock-classic) .content-viewport main#rows { padding-top: 24px; }
 body.s90c-clock-classic #aero-v991-widget,
 #aero-v991-widget[hidden] { display: none !important; }
 #aero-v991-widget {

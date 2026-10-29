@@ -19,3 +19,7 @@ geometry immediately. CustomClock reads optional structured hour/minute/day-peri
 fields from the existing formatter, preserving Finnish separators, Korean leading
 periods and Arabic digits; older Intl retains the formatted-string fallback.
 Compiled D-pad and locale regressions cover these cases without an extra timer.
+
+The custom-clock content padding targets `main#rows` within the viewport, including
+the core renderer's nested animated mask. This preserves the existing 24 px
+clearance without changing clock layout or persisted formatting preferences.

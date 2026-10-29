@@ -11,6 +11,7 @@ for (const glassSettings of [false]) {
       await page.clock.setFixedTime(new Date('2026-10-29T10:20:00Z'));
       await page.goto('/');await page.waitForFunction(()=>AeroTizen.apps.ready);
       await expect(page.locator('#aero-v991-city')).toBeVisible();
+      await expect(page.locator('#rows')).toHaveCSS('padding-top','24px');
       const measure=()=>page.evaluate(()=>{
         const city=document.querySelector('#aero-v991-widget').getBoundingClientRect();
         const card=document.querySelector('#grid .tile.focused').getBoundingClientRect();
