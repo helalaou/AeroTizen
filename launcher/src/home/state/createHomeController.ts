@@ -64,7 +64,8 @@ export const createHomeController = (env: Omit<HomeEnvironment, 'bridge' | 'stat
     const y = rect.top - top + origin, bottom = rect.bottom - top + origin;
     if (list[0].includes(selected) || list[1]?.includes(selected)) {scroll = 0;}
     else if (bottom - scroll > 1040) {scroll = bottom - 1040;}
-    else if (y - scroll < 140) {scroll = Math.max(0, y - 140);}
+    else if (y - scroll < origin + 80) {scroll = Math.max(0, y - origin - 80);}
+    main.parentElement?.classList.toggle('is-scrolled', scroll > 0);
     main.style.transform = 'translate3d(0,' + (-scroll) + 'px,0)';
   };
   const select = (selected: string) => {
