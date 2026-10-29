@@ -14,7 +14,11 @@ const settingsHtml = (html: string): string => {
   if (!editor.test(html)) {
     throw new Error('Cannot find the Settings mount point.');
   }
-  return html.replace(editor, '<div id="settings-root"></div>\n\n');
+  return html.replace(editor, '<div id="settings-root"></div>\n\n')
+    .replace(/ {2}<!-- Layout inspired[\s\S]*?(?= {2}<div id="settings-root")/, '  <div id="home-root"></div>\n\n')
+    .replace('  <script src="js/home-screen.js"></script>\n', '')
+    .replace('</head>', '  <link rel="stylesheet" href="css/preact-home.css">\n</head>')
+    .replace('  <script src="js/continue-row.js"></script>\n', '');
 };
 
 // Keep the existing widget files and script order. Vite owns the Settings bundle.
@@ -55,7 +59,7 @@ export default defineConfig({
     emptyOutDir: false,
     minify: true,
     lib: {
-      entry: path.join(source, 'src/settings/index.tsx'),
+      entry: path.join(source, 'src/index.ts'),
       name: 'AeroTizenSettings',
       formats: ['iife'],
       fileName: () => 'settings-ui.js'

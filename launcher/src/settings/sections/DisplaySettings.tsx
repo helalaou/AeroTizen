@@ -11,7 +11,7 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt }: Props) =
     <>
       <h3>Clock layout</h3>
       <Choice id="clock-layouts" label="Clock layout" value={settings.clockLayout}
-        options={[['classic', 'Classic AeroTizen'], ['custom', 'Custom clock']]} onSelect={actions.setClockLayout} />
+        options={[['classic', 'Compact clock'], ['custom', 'Custom clock']]} onSelect={actions.setClockLayout} />
       <div hidden={settings.clockLayout !== 'custom'}>
         <h3>Clock style</h3>
         <Choice id="clock-styles" label="Clock style" value={settings.aeroClockStyle}

@@ -1,7 +1,9 @@
 /* Clock appearance rules ported from the independently tested AeroTizen
    vertical-clock and four-style CSS. The default classic header is unchanged. */
 body:not(.s90c-clock-classic) header.topbar {
-  height: 325px;
+  height: auto;
+  min-height: 325px;
+  padding-bottom: 40px;
   align-items: flex-start;
   padding-top: 26px;
 }
@@ -19,10 +21,12 @@ body:not(.s90c-clock-classic) .topbar-right > #time {
   margin: 0 !important;
   padding: 0 !important;
 }
-/* The upstream content viewport starts below the original 112px header. */
-body:not(.s90c-clock-classic) .content-viewport {
-  height: 755px;
+/* Centre navigation independently of the wider custom clock and status content. */
+body:not(.s90c-clock-classic) header.topbar > .view-tabs {
+  position: absolute; left: 50%; top: 24px;
+  transform: translate3d(-50%,0,0);
 }
+body:not(.s90c-clock-classic) .content-viewport > main { padding-top: 24px; }
 body.s90c-clock-classic #aero-v991-widget,
 #aero-v991-widget[hidden] { display: none !important; }
 #aero-v991-widget {
