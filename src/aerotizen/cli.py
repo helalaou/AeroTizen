@@ -21,7 +21,7 @@
   aerotizen home backup         save an immutable local Home baseline
   aerotizen home apply          preview native Home assignment (--yes writes)
   aerotizen home restore        preview baseline restore (--yes writes)
-  aerotizen root setup          preview automatic root setup (--yes installs)
+  aerotizen root setup          preview untethered root setup (--yes installs)
   aerotizen root status         check the paired root helper
   aerotizen root remove         preview root helper removal (--yes removes)
 
@@ -603,7 +603,7 @@ def cmd_root(args):
                 f"root available: {result.get('root_available', False)}"
             )
             if result.get("setup_complete"):
-                print("Automatic root verified for this boot. The computer can be switched off.")
+                print("Untethered root verified for this boot. The computer can be switched off.")
             if result.get("removed"):
                 print("Root helper and its startup registration are removed.")
             if result.get("next_step"):
@@ -706,7 +706,7 @@ def main():
             command.add_argument("--boot", action="store_true", help="also enable native Smart Hub autostart")
         command.set_defaults(fn=cmd_home)
     p = sub.add_parser(
-        "root", help="set up, check or remove automatic root without changing Home or Art settings"
+        "root", help="set up, check or remove untethered root without changing Home or Art settings"
     )
     commands = p.add_subparsers(dest="root_command", required=True)
     for name in ("setup", "status", "remove"):
