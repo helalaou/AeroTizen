@@ -62,3 +62,10 @@ HDMI name controls reserve a flexible text-entry area beside a non-shrinking por
 label. This keeps long names inside the control in both appearances without
 changing input-name persistence or remote text-entry behavior. Physical S90C
 acceptance of this correction remains pending.
+
+Header controls and motion are shared with the core renderer: Classic/Glass retain
+identical tab positions, the Samsung Home shortcut, remote order and focus
+transitions. Theme changes do not remove the shortcut or rebuild artwork. The core
+uses cached one-shot page reveals and an interpolated viewport mask; this replaces
+the former theme-dependent geometry and abrupt page show/hide behavior. Physical
+S90C acceptance of this follow-up remains pending.

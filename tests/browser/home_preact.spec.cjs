@@ -42,10 +42,12 @@ test('compiled Home preserves legacy geometry and artwork source selection at 10
   await baseline.addInitScript(seed);
   await baseline.goto('http://127.0.0.1:8170/'); await page.goto('/');
   for (const tab of [baseline,page]) await tab.waitForFunction(() => AeroTizen.apps.ready && document.querySelector('#grid > .tile.focused'));
-  const geometry = tab => tab.evaluate(() => ['.topbar','#gear','.view-tabs','#grid','#inputs'].map(selector => {
+  const geometry = tab => tab.evaluate(() => ['.topbar','#gear','#grid','#inputs'].map(selector => {
     const element = document.querySelector(selector), rect = element.getBoundingClientRect();
     return [selector, ...[rect.x,rect.y,rect.width,rect.height].map(n=>Math.round(n))];
   }));
+  // Header tabs are now centred in both themes; app/source geometry remains upstream-compatible.
+  await page.waitForFunction(()=>document.querySelector('.home-page-surface').getAnimations().every(a=>a.playState==='finished'));
   expect(await geometry(page)).toEqual(await geometry(baseline));
   await baseline.screenshot({ path: info.outputPath('legacy-home.png') });
   await page.screenshot({ path: info.outputPath('preact-home.png') });

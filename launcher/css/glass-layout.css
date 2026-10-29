@@ -270,8 +270,6 @@ body.editing:not(.previewing) #home-root main {
 #editor.aero-settings-collapsed .aero-settings-frame { width: 390px; }
 #editor.aero-settings-collapsed .aero-settings-sidebar { flex: 1 1 auto; border-right: 0; }
 #editor.aero-settings-collapsed .aero-settings-main { display: none; }
-/* The class is optional; Classic keeps upstream header/grid geometry. */
-.glass-shortcut-hidden { display: none !important; }
 body.glass-ui .topbar-left > #gear.focused,
 body.glass-ui .topbar-left > #samsung-home-shortcut.focused {
   border-color: rgba(255,255,255,.9) !important;

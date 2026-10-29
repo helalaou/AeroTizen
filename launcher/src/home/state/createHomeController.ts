@@ -25,7 +25,7 @@ export const createHomeController = (env: Omit<HomeEnvironment, 'bridge' | 'stat
   const ids = () => state.getSnapshot().page === 'home' ? homeIds().filter(id => id === A.config.FIREPLACE_ID || !inventory.getSnapshot().ready || A.apps.byId(id)) : inventory.getSnapshot().apps.map(app => app.id);
   const sourceKey = (source: { type: string; number?: number }) => 'input:' + source.type + ':' + source.number;
   const rows = (): string[][] => {
-    const columns = env.columns(settings.getSnapshot()), all = ids(), result = [settings.getSnapshot().glassSettings ? ['gear', 'samsung-home-shortcut', 'home-tab', 'apps-tab'] : ['gear', 'home-tab', 'apps-tab']];
+    const columns = env.columns(settings.getSnapshot()), all = ids(), result = [['gear', 'samsung-home-shortcut', 'home-tab', 'apps-tab']];
     for (let i = 0; i < all.length; i += columns) {result.push(all.slice(i, i + columns).map(id => 'app:' + id));}
     if (state.getSnapshot().page === 'home') {
       if (settings.getSnapshot().continueWatching && inventory.getSnapshot().items.length) {result.push(inventory.getSnapshot().items.map(item => 'continue:' + item.key));}
@@ -63,9 +63,9 @@ export const createHomeController = (env: Omit<HomeEnvironment, 'bridge' | 'stat
     const origin = main.parentElement?.getBoundingClientRect().top || 0;
     const y = rect.top - top + origin, bottom = rect.bottom - top + origin;
     if (list[0].includes(selected) || list[1]?.includes(selected)) {scroll = 0;}
-    else if (bottom - scroll > 1040) {scroll = bottom - 1040;}
-    else if (y - scroll < origin + 80) {scroll = Math.max(0, y - origin - 80);}
-    main.parentElement?.classList.toggle('is-scrolled', scroll > 0);
+    else if (bottom - scroll > 1000) {scroll = bottom - 1000;}
+    else if (y - scroll < origin + 128) {scroll = Math.max(0, y - origin - 128);}
+    main.closest('.content-viewport')?.classList.toggle('is-scrolled', scroll > 0);
     main.style.transform = 'translate3d(0,' + (-scroll) + 'px,0)';
   };
   const select = (selected: string) => {
