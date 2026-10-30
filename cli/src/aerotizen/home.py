@@ -55,7 +55,7 @@ def load_helper(*, path=None, names=HELPER_FILES):
         return files
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise HomeError(
-            "Read-only Home helper is missing or invalid. Build it with python tools/build_home_query.py."
+            "Read-only Home helper is missing or invalid. Build it with python cli/tools/build_home_query.py."
         ) from exc
 
 

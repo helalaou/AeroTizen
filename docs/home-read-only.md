@@ -8,7 +8,7 @@ watcher settings. [Apply and restore](home-apply-restore.md) use a separate writ
 
 - Working Developer Mode and an SDB connection from the current allowed host IP.
 - The read-only query payload, included in standalone CLI builds. Source users
-  build it with `python tools/build_home_query.py` and the .NET 6 SDK.
+  build it with `python cli/tools/build_home_query.py` and the .NET 6 SDK.
 
 The default transport runs as SDK UID 901 through the direct Python SDB session.
 It stages the helper in the standard SDK temporary folder and uses the published

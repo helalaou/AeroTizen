@@ -2,7 +2,7 @@
 
 This acquires root and stages temporary files. It does not change Home settings,
 install applications, disable UEP, or install a persistent service.
-Run from the checkout with PYTHONPATH=src. Evidence excludes account data and DUID.
+Run from the checkout with PYTHONPATH=cli/src. Evidence excludes account data and DUID.
 """
 
 import argparse

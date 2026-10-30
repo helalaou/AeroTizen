@@ -45,7 +45,7 @@ exact TV firmware and runtime.
 From a checkout installed with `pip install -e '.[dev]'`:
 
 ```sh
-python tools/probe_device_session.py \
+python cli/tools/probe_device_session.py \
   --tv TV_IP \
   --root-tool /absolute/path/to/samsung-tv-root \
   --sdb /absolute/path/to/sdb \

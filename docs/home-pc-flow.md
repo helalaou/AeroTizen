@@ -31,8 +31,8 @@ Physical results cover the Tizen 9 Frame and a contributor's Tizen 9 S90C. The
 and installed-app restore. It does not cover absent-app restore or PR37 integration.
 
 For PR testing, use the CLI and signed launcher from the same checkout. Install the CLI with
-`python -m pip install -e .`, then build both helpers with `python tools/build_home_query.py`
-and `python tools/build_home_control.py` (requires the .NET 6 SDK). Install the signed launcher
+`python -m pip install -e .`, then build both helpers with `python cli/tools/build_home_query.py`
+and `python cli/tools/build_home_control.py` (requires the .NET 6 SDK). Install the signed launcher
 from the same checkout; a released CLI or launcher may lack the new control protocol.
 
 Start with `home apply --yes`, restart fully, test Home from video apps and Samsung menus,

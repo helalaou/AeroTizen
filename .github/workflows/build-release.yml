@@ -92,14 +92,14 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 6.0.428
-      - run: python tools/build_home_query.py
-      - run: python tools/build_home_control.py
+      - run: python cli/tools/build_home_query.py
+      - run: python cli/tools/build_home_control.py
       - run: python -m pip install -e ".[dev]" "pyinstaller>=6,<7" certifi
       - name: Build and smoke-test standalone executables
         env:
           RELEASE_TAG: ${{ inputs.tag }}
         shell: bash
-        run: python tools/build_release.py cli --output dist/cli --tag "$RELEASE_TAG"
+        run: python cli/tools/build_release.py --output dist/cli --tag "$RELEASE_TAG"
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ inputs.tag }}-${{ matrix.platform }}

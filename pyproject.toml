@@ -1,45 +1,12 @@
 [build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "aerotizen"
-dynamic = ["version"]
-description = "Debloat a Samsung Tizen TV, block ads, and install a clean, fast home screen, from your computer."
-readme = "README.md"
-license = "MIT"
-license-files = ["LICENSE"]
-authors = [{ name = "Hamza El Alaoui" }]
-requires-python = ">=3.10"
-dependencies = ["websocket-client>=1.6", "cryptography>=41"]
-keywords = ["samsung", "tizen", "smart-tv", "launcher", "debloat", "sdb"]
-classifiers = [
-  "Environment :: Console",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3",
-  "Topic :: Home Automation",
-  "Topic :: Utilities",
-]
-
-[project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6", "lxml>=5"]
-
-[project.scripts]
-aerotizen = "aerotizen.cli:main"
-
-[tool.setuptools.dynamic]
-version = { attr = "aerotizen.__version__" }
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-aerotizen = ["ca/*", "helpers/*.json"]
+requires = ["setuptools>=77"]
+build-backend = "_root_build_backend"
+backend-path = ["cli"]
 
 [tool.ruff]
 line-length = 110
 target-version = "py310"
-src = ["src", "tests"]
+src = ["cli/src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
