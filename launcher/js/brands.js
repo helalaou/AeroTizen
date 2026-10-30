@@ -50,7 +50,7 @@
       var img = new Image();
       img.className = 'logo'; img.alt = '';
       img.onerror = function () { fallback.removeChild(img); };
-      img.src = app.icon;
+      window.AeroStartup.afterLoad(function () { img.src = app.icon; });
       fallback.appendChild(img);
     }
     if (b.label || !mark) {
@@ -81,7 +81,7 @@
       timer = setTimeout(failed, 2000);
       image.src = src;
     }
-    next();
+    window.AeroStartup.afterLoad(next);
     return tile;
   }
 
@@ -94,5 +94,13 @@
     return tile;
   }
 
-  A.tiles = { ICONS: ICONS, app: appTile, card: card, shortName: shortName };
+  // Data-only access for Preact Settings. Legacy screen rendering stays unchanged.
+  function describe(app) {
+    var brand = brandFor(app), logo = brand.logo && window.LOGOS && window.LOGOS[brand.logo.slug];
+    return { title: shortName(app.name), background: brand.background, label: brand.label,
+      textColour: brand.textColour, logoPath: logo || null, logoColour: brand.logoColour || '#fff',
+      largeLogo: !!brand.largeLogo, useAppIcon: !!brand.useAppIcon, artwork: A.artwork.sources(app) };
+  }
+
+  A.tiles = { ICONS: ICONS, app: appTile, card: card, shortName: shortName, describe: describe };
 })(window.AeroTizen);

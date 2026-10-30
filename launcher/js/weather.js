@@ -7,6 +7,7 @@ window.Weather = (function () {
   var REFRESH = 20 * 60 * 1000;
   var MAX_AGE = 2 * 60 * 60 * 1000;
   var reading = null, requestVersion = 0, timer = null, automaticRequests = [];
+  var lastRefresh = null, requestOptions = null;
   var settingsOf = function () { return {}; };
 
   // WMO weather codes -> simple icon shapes.
@@ -54,6 +55,8 @@ window.Weather = (function () {
   }
 
   function cancelRequests() {
+    // A cancelled attempt must not defer a later re-enable for twenty minutes.
+    if (automaticRequests.length) { lastRefresh = null; }
     requestVersion++;
     automaticRequests.slice().forEach(function (cancel) { cancel(); });
   }
@@ -77,6 +80,8 @@ window.Weather = (function () {
       geo: geo,
       source: geo ? JSON.stringify([geo.latitude, geo.longitude, geo.name, geo.country_code]) : 'auto',
       visible: s.showWeather !== false,
+      wallpaper: s.weatherPhoto === true,
+      fetch: s.showWeather !== false || s.weatherPhoto === true,
       showLocation: s.weatherShowLocation !== false
     };
   }
@@ -86,9 +91,29 @@ window.Weather = (function () {
       w.source === opt.source && Date.now() >= w.at && Date.now() - w.at <= MAX_AGE;
   }
 
+  // A solar pair describes the day centered on its solar noon, not an arbitrary
+  // TV timezone. Do not extrapolate yesterday's or tomorrow's daylight into today.
+  function solarPhase(w, now) {
+    if (!w || !number(w.at) || !number(now) || now < w.at || now - w.at > MAX_AGE ||
+        !Array.isArray(w.solar)) { return ''; }
+    for (var i = 0; i < w.solar.length; i++) {
+      var day = w.solar[i] || {}, rise = day.sunrise, set = day.sunset;
+      if (!number(rise) || !number(set) || rise <= 0 || set <= rise || set - rise >= 24 * 3600000) { continue; }
+      var noon = rise + (set - rise) / 2;
+      if (now < noon - 12 * 3600000 || now >= noon + 12 * 3600000) { continue; }
+      if (now >= set - 45 * 60000 && now < set + 20 * 60000) { return 'sunset'; }
+      if (now >= rise - 10 * 60000 && now < set - 45 * 60000) { return 'day'; }
+      return 'night';
+    }
+    return '';
+  }
+
   function render() {
     var w = reading, opt = options();
     var el = document.getElementById('weather');
+    if (window.AeroTizen && window.AeroTizen.photoWeather) {
+      window.AeroTizen.photoWeather.update();
+    }
     if (!el) { return; }
     if (!opt.visible || !validReading(w, opt)) { el.textContent = ''; el.hidden = true; return; }
     el.innerHTML = '<svg viewBox="0 0 24 24">' + icon(w.code) + '</svg><b></b>' + (opt.showLocation ? '<span></span>' : '');
@@ -99,23 +124,44 @@ window.Weather = (function () {
     el.hidden = false;
   }
 
+  function parseSolar(daily) {
+    var result = [];
+    if (!daily || !Array.isArray(daily.sunrise) || !Array.isArray(daily.sunset)) { return result; }
+    for (var i = 0; i < Math.min(daily.sunrise.length, daily.sunset.length); i++) {
+      var a = String(daily.sunrise[i] || '');
+      var b = String(daily.sunset[i] || '');
+      // The API request uses timezone=UTC; convert timestamps to epochs
+      // before checking sunset, independent of the TV's own time zone.
+      var sunrise = Date.parse(a + (/[zZ]|[+-]\d\d:\d\d$/.test(a) ? '' : 'Z'));
+      var sunset = Date.parse(b + (/[zZ]|[+-]\d\d:\d\d$/.test(b) ? '' : 'Z'));
+      if (isFinite(sunrise) && isFinite(sunset) && sunset > sunrise) {
+        result.push({ sunrise: sunrise, sunset: sunset });
+      }
+    }
+    return result;
+  }
+
   function refresh() {
     cancelRequests();
     var version = requestVersion, opt = options();
     render(); // Convert a matching cached reading while fetching the selected unit.
-    if (!opt.visible) { stopTimer(); return; }
+    if (!opt.fetch) { stopTimer(); return; }
+    requestOptions = opt;
+    lastRefresh = { source: opt.source, unit: opt.unit, at: Date.now() };
     function current() {
       var now = options();
-      return now.visible && version === requestVersion && now.source === opt.source && now.unit === opt.unit;
+      return now.fetch && version === requestVersion && now.source === opt.source && now.unit === opt.unit;
     }
     function forecast(geo) {
       if (!current() || !validLocation(geo)) { return; }
       var f = opt.unit === 'F';
       getJSON('https://api.open-meteo.com/v1/forecast?latitude=' + geo.latitude + '&longitude=' + geo.longitude +
-              '&current=temperature_2m,weather_code' + (f ? '&temperature_unit=fahrenheit' : ''), function (m) {
+              '&current=temperature_2m,weather_code,is_day&daily=sunrise,sunset&timezone=UTC&forecast_days=2' +
+              (f ? '&temperature_unit=fahrenheit' : ''), function (m) {
         if (!current() || !m || m.error || !m.current ||
             !number(m.current.temperature_2m) || !number(m.current.weather_code)) { return; }
         reading = { temp: m.current.temperature_2m, code: m.current.weather_code, city: geo.name || geo.city || '',
+          day: m.current.is_day, solar: parseSolar(m.daily),
           unit: opt.unit, source: opt.source, at: Date.now() };
         try { localStorage.setItem(CACHE, JSON.stringify(reading)); } catch (e) {}
         render();
@@ -145,14 +191,24 @@ window.Weather = (function () {
 
   function updateVisibility() {
     var opt = options();
-    if (!opt.visible) {
+    if (!opt.fetch) {
       stopTimer();
       cancelRequests();
     }
     render();
-    if (opt.visible && timer === null) {
-      if (!validReading(reading, opt) || reading.unit !== opt.unit || Date.now() - reading.at >= REFRESH) { refresh(); }
-      timer = setInterval(refresh, REFRESH);
+    if (opt.fetch) {
+      var now = Date.now();
+      var pending = automaticRequests.length && requestOptions &&
+        requestOptions.source === opt.source && requestOptions.unit === opt.unit;
+      var needsSolar = opt.wallpaper && (!validReading(reading, opt) || !solarPhase(reading, now));
+      // Reuse an in-flight forecast, and bound retries after failure or missing
+      // solar fields to the existing cadence rather than each settings render.
+      var retryDue = !lastRefresh || lastRefresh.source !== opt.source || lastRefresh.unit !== opt.unit ||
+        now < lastRefresh.at || now - lastRefresh.at >= REFRESH;
+      var stale = timer === null && (!validReading(reading, opt) ||
+        reading.unit !== opt.unit || now - reading.at >= REFRESH);
+      if (!pending && (stale || needsSolar) && (!opt.wallpaper || retryDue)) { refresh(); }
+      if (timer === null) { timer = setInterval(refresh, REFRESH); }
     }
   }
 
@@ -165,5 +221,6 @@ window.Weather = (function () {
   }
 
   return { start: start, refresh: refresh, updateDisplay: render, updateVisibility: updateVisibility,
-    searchLocations: searchLocations };
+    searchLocations: searchLocations, solarPhase: solarPhase,
+    currentReading: function () { return validReading(reading, options()) ? reading : null; } };
 })();

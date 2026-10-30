@@ -139,7 +139,7 @@
     '4 per row': '4 per riga',
     '5 per row': '5 per riga'
   };
-  var lang = 'en', locale = 'en-GB', onChange = null;
+  var lang = 'en', locale = 'en-GB', onChange = null, listeners = [];
 
   function normalize(raw) {
     raw = typeof raw === 'string' ? raw.toLowerCase().replace(/_/g, '-') : '';
@@ -197,7 +197,7 @@
     var changed = code !== lang || nextLocale !== locale;
     lang = code; locale = nextLocale;
     applyStatic();
-    if (changed && onChange) { onChange(); }
+    if (changed) { listeners.slice().forEach(function (listener) { listener(); }); if (onChange) { onChange(); } }
   }
 
   function refresh() {
@@ -217,7 +217,7 @@
     refresh();
   }
 
-  A.i18n = { start: start, refresh: refresh, t: t, label: label,
+  A.i18n = { subscribe: function (listener) { listeners.push(listener); return function () { var at = listeners.indexOf(listener); if (at >= 0) { listeners.splice(at, 1); } }; }, start: start, refresh: refresh, t: t, label: label,
     displayMessage: displayMessage, code: function () { return lang; },
     locale: function () { return locale; }, normalize: normalize };
 })(window.AeroTizen);

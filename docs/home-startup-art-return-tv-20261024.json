@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-24",
+  "model": "QE65LS03DAUXXU",
+  "firmware_build": "T-PTMDDEUC-0090-REL-202605141701",
+  "launcher": {
+    "version": "2.2.0",
+    "signed_wgt_sha256": "60637024702ef9d84499bb32577c5aeac9e0c3055843293d4640e117a2d8eed2",
+    "installed_source_files_verified": 31,
+    "saved_user_settings_preserved": true
+  },
+  "startup": {
+    "first_trial": {
+      "new_kernel_boot_id": true,
+      "user_report": "Black screen, then AeroTizen by itself",
+      "power_to_usable_seconds_approx": 32
+    },
+    "final_trial": {
+      "new_kernel_boot_id": true,
+      "user_report": "Art appeared immediately, then AeroTizen by itself after about 10 seconds",
+      "power_to_usable_seconds_approx": 10,
+      "trace_ms_after_first_script": {
+        "first-script": 1,
+        "settings-loaded": 3182,
+        "home-rendered": 3621,
+        "frame-ready": 3629,
+        "dom-ready": 3836,
+        "page-loaded": 3837,
+        "apps-requested": 4240,
+        "apps-call-returned": 4242,
+        "apps-loaded": 5445
+      }
+    },
+    "limits": "User timing estimates; initial screens differ. Not a controlled performance benchmark. Early TV wall clock was uninitialized.",
+    "trace_access": {
+      "method": "read-only temporary root copy, then offline complete WriteBatch decode",
+      "uid": 0,
+      "staging_cleaned": true,
+      "selected_system_files_unchanged": true,
+      "crc32c_validated": false,
+      "preflight": "First second-boot attempt refused timing probe; next attempt passed with original checks."
+    }
+  },
+  "final_art_test": {
+    "artwork_stayed_60_seconds": true,
+    "one_home_press_opened": "AeroTizen",
+    "evidence_source": "physical user confirmation after final cold boot"
+  },
+  "native": {
+    "main_operation": "DclHome001.Home",
+    "settings": {
+      "db/appfw/home_appid": "DclHome001.Home",
+      "db/appfw/startup_appid": "DclHome001.Home",
+      "db/appfw/booting_appid_backup": "DclHome001.Home",
+      "db/first_screen/type": "DclHome001.Home",
+      "db/menu/smart_hub/ontvsetting/auto_start": 1
+    },
+    "watcher_mode": "native",
+    "watcher_heartbeats": 0,
+    "watcher_launch_calls": 0,
+    "watcher_art_queries": 0,
+    "final_status_verified": true
+  },
+  "validation": {
+    "python_tests": 230,
+    "node_tests": 107,
+    "watcher_integration_cases": 39,
+    "native_policy_scenarios": 35,
+    "eslint": "passed",
+    "ruff": "passed",
+    "diff_check": "passed",
+    "browser": "1920x1080 preview, remote keys, delayed discovery, late reply, first-run Settings; no application errors",
+    "standalone": "macOS arm64 built; offline Art-return preview and live TV Home status passed",
+    "standalone_live_metadata_source": "live HTTP metadata"
+  },
+  "metadata_recovery": {
+    "read_only_cli_fallback_tested_on_tv": true,
+    "model_metadata_source": "identity-bound original backup; HTTP metadata unavailable",
+    "native_values_and_boot_read": "live SDK UID 901"
+  },
+  "not_tested": [
+    "other TV models or firmware",
+    "repeated cold-boot timing runs",
+    "Art-only startup without pressing Power after reconnect"
+  ]
+}

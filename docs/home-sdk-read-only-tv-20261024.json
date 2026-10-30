@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "queried_at": "2026-10-24T19:05:47.460860+00:00",
+  "device": {
+    "model": "QE65LS03DAUXXU",
+    "platform": "24_PTM_FTV_T09",
+    "os_version": "9.0.0",
+    "firmware_build": "T-PTMDDEUC-0090-REL-202605141701",
+    "cpu_arch": "armv7"
+  },
+  "checks": {
+    "passed": true,
+    "home_matches_previous": true,
+    "firmware_matches_previous": true,
+    "watcher_matches_previous": true,
+    "same_device": true,
+    "temporary_sdk_files_absent": true
+  },
+  "backup_unchanged": true,
+  "query": {
+    "schema_version": 1,
+    "read_only": true,
+    "uid": 901,
+    "architecture_bits": 32,
+    "os_release": {
+      "NAME": "Tizen",
+      "VERSION": "9.0.0 (Tizen9/TV)",
+      "ID": "tizen",
+      "VERSION_ID": "9.0.0",
+      "PRETTY_NAME": "Tizen 9.0.0 (Tizen9/TV)",
+      "ANSI_COLOR": "0;36",
+      "CPE_NAME": "cpe:/o:tizen:tizen:9.0.0",
+      "BUILD_ID": "T-PTMDDEUC-0090-REL-202605141701"
+    },
+    "main_operation": {
+      "type": "string",
+      "status": "ok",
+      "value": "com.samsung.tv.csfs"
+    },
+    "settings": {
+      "db/appfw/home_appid": {
+        "type": "string",
+        "status": "ok",
+        "value": "com.samsung.tv.csfs"
+      },
+      "db/appfw/startup_appid": {
+        "type": "string",
+        "status": "ok",
+        "value": "org.tizen.tv-viewer"
+      },
+      "db/appfw/booting_appid_backup": {
+        "type": "string",
+        "status": "ok",
+        "value": "org.tizen.tv-viewer"
+      },
+      "db/first_screen/type": {
+        "type": "string",
+        "status": "ok",
+        "value": "com.samsung.tv.csfs"
+      },
+      "db/menu/smart_hub/ontvsetting/auto_start": {
+        "type": "int",
+        "status": "ok",
+        "value": 0
+      }
+    },
+    "watcher": {
+      "state": "active",
+      "reachable": true
+    }
+  },
+  "evidence": {
+    "access": "sdk_uid_901",
+    "uid": 901,
+    "root_acquired": false,
+    "helper_sha256": "f6cc3fa62997ab311d39ea76e07fd2e82723be88100fe12fb171aef18072c533",
+    "helper_exit_code": 0,
+    "query_staging_cleaned": true,
+    "transport": "Existing direct SDB session, package-name command workaround, temporary getter-only .NET helper."
+  },
+  "attempts": [
+    "The initial SDK attempt could not load the helper from /tmp; it exited before any native query and confirmed cleanup.",
+    "The same helper read every value successfully from the standard SDK staging folder. A host-side missing-file check then failed; a directory read verified cleanup without re-running the helper."
+  ],
+  "limits": [
+    "The passive HTTP app-status query did not identify the visible app; uninterrupted film playback was not independently measured.",
+    "No app launch, remote key, playback control, Home/startup write, watcher pause or root acquisition was used.",
+    "This proves SDK-only native reads on this device and firmware. Native Home assignment, restore and boot remain untested.",
+    "The production home status and backup CLI still require explicit temporary root; SDK-only CLI integration is not part of this probe."
+  ]
+}

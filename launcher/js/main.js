@@ -6,6 +6,7 @@
   var KEY = A.config.KEY;
 
   A.applyBackground = function () {
+    if (A.photoWeather && A.photoWeather.update()) { return; }
     window.Backgrounds.setSpeed(A.settings.speed);
     window.Backgrounds.apply(A.settings.background);
   };
@@ -37,32 +38,47 @@
   });
 
   document.addEventListener('visibilitychange', function () {
-    if (!document.hidden) { A.i18n.refresh(); A.clock.tick(); A.inputs.load(); }
+    if (!document.hidden) { A.clock.tick(); A.inputs.load(); }
   });
 
   // ---- boot ----------------------------------------------------------------------
-  var launcherReady = false, settingsReady = false;
-  A.i18n.start(function () {
+  var startup = window.AeroStartup, settingsReady = false;
+  if (A.i18n) { A.i18n.start(function () {
     if (!settingsReady) { return; }
-    A.clock.tick();
-    if (!launcherReady) { return; }
-    if (A.settingsUi.isOpen()) { A.settingsUi.render(); }
-    A.homeScreen.render();
-    A.inputs.render();
+    A.clock.tick(); A.homeScreen.render(); A.inputs.render();
     window.Weather.updateDisplay();
-  });
+  }); }
   A.settings.load();
   settingsReady = true;
+  startup.mark('settings-loaded');
   A.applyBackground();
   A.clock.start();
-  A.network.start();
-  window.Weather.start(function () { return A.settings; });
-  A.apps.load(function () {
-    if (A.settings.home === null) { A.settings.home = A.apps.defaultHome(); A.settings.save(); }
-    A.homeScreen.render();
-    launcherReady = true;
+  if (A.photoWeather) { A.photoWeather.start(); }
+  A.apps.restore();
+  A.homeScreen.render();
+  startup.mark('home-rendered');
+  function discover() {
+    startup.captureLaunch();
+    A.continueWatching.start();
+    A.network.start();
+    window.Weather.start(function () { return A.settings; });
     A.inputs.load();
     A.homewatch.start();
-    setTimeout(function () { A.homewatch.reportApps(A.apps.realIds); }, 1500);
+    setTimeout(function () { A.homewatch.reportStartup(startup.trace); }, 1500);
+    startup.mark('apps-requested');
+    A.apps.load(function (success) {
+      startup.mark(success ? 'apps-loaded' : 'apps-unavailable');
+      if (success) {
+        if (A.settings.home === null) { A.settings.home = A.apps.defaultHome(); A.settings.save(); }
+        A.homeScreen.refreshApps();
+        setTimeout(function () { A.homewatch.reportApps(A.apps.realIds); }, 1500);
+      }
+      A.homewatch.reportStartup(startup.trace);
+    });
+    startup.mark('apps-call-returned');
+  }
+  // Allow a frame to draw before crossing into the TV's package APIs.
+  window.requestAnimationFrame(function () {
+    window.requestAnimationFrame(function () { startup.mark('frame-ready'); startup.afterLoad(discover); });
   });
 })(window.AeroTizen);

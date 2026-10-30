@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "tested_on": "2026-10-26",
+  "runtime_source_head": "70662156d4f607196dbe17696671ca360dd869db",
+  "baseline_signed_package_sha256": "686faa719e7076642826d69bd13e99e967bb980eb291be31578bf950c73e57cc",
+  "tv": {
+    "model": "QE65LS03DAUXXU",
+    "tizen": "9.0.0",
+    "firmware": "T-PTMDDEUC-0090-REL-202605141701"
+  },
+  "method": {
+    "native_changes": "Existing CLI restore/apply with immutable PC original and durable receipts",
+    "access": "SDK UID 901; no root",
+    "profile_restarts": "Kernel boot ID changed after each requested full restart",
+    "physical_results": "User observations; startup time is a user estimate",
+    "debugger_opened": false,
+    "watcher": "Persistent native mode; zero heartbeats and launch calls in test captures"
+  },
+  "profiles": [
+    {
+      "profile": "Home only",
+      "boot": false,
+      "art_return": false,
+      "package": "original",
+      "tests": {
+        "youtube_home": "pass",
+        "prime_home": "pass",
+        "samsung_home_manual_reopen_then_youtube_home": "pass"
+      },
+      "startup_observations": [
+        "First restart opened AeroTizen automatically",
+        "Confirmation restart opened Live TV; one Home opened AeroTizen"
+      ],
+      "confirmation_after_art_override_removed": {
+        "live_tv_home": "pass",
+        "youtube_home": "pass"
+      }
+    },
+    {
+      "profile": "Home plus Art return",
+      "boot": false,
+      "art_return": true,
+      "package": "original",
+      "startup": "Live TV, described as very quick",
+      "tests": {
+        "live_tv_home": "fail; persistent spinner",
+        "ordinary_sdk_launch_recovery": "AeroTizen visible",
+        "youtube_home_after_recovery": "fail; persistent spinner"
+      },
+      "failed_state": {
+        "aerotizen_running": true,
+        "aerotizen_visible": false,
+        "native_settings_unchanged": true
+      }
+    },
+    {
+      "profile": "Home plus boot",
+      "boot": true,
+      "art_return": false,
+      "package": "original",
+      "startup": {
+        "screen": "Black, then AeroTizen automatically",
+        "seconds_user_estimate": 30
+      },
+      "tests": {
+        "youtube_home": "pass",
+        "prime_home": "pass",
+        "art_power_then_15_seconds_then_home": "Samsung Art page",
+        "home_from_samsung_art_page_after_10_seconds": "AeroTizen",
+        "settings_samsung_home_then_home_after_10_seconds": "AeroTizen",
+        "samsung_home_manual_reopen_then_youtube_home": "pass"
+      }
+    }
+  ],
+  "art_override_isolation": {
+    "key": "db/first_screen/type",
+    "original_value": "com.samsung.tv.csfs",
+    "override_value": "DclHome001.Home",
+    "sequence": "Home only passed; Art override failed; removing Art override restored Home",
+    "boot_enabled_in_this_comparison": false,
+    "same_original_package": true,
+    "platform_failure_mechanism": "Not established"
+  },
+  "manifest_trials": [
+    {
+      "change": "Remove entire explicit main app-control declaration",
+      "background_support": "enable",
+      "boot": false,
+      "art_return": true,
+      "full_restart": true,
+      "test": "Live TV then one Home",
+      "result": "fail; persistent spinner"
+    },
+    {
+      "change": "Disable background support; retain original main declaration and reload setting",
+      "boot": false,
+      "art_return": true,
+      "full_restart": false,
+      "test": "Normal SDK launch; YouTube 30 seconds; one Home",
+      "result": "fail; persistent spinner"
+    }
+  ],
+  "final_setup": {
+    "original_signed_package_restored": true,
+    "home_enabled": true,
+    "boot_enabled": true,
+    "art_target_original": true,
+    "auto_start": 1,
+    "startup_appid": "DclHome001.Home",
+    "booting_appid_backup": "DclHome001.Home",
+    "watcher_mode": "native",
+    "watcher_heartbeats": 0,
+    "watcher_launch_calls": 0,
+    "aerotizen_running_and_visible": true,
+    "original_pc_backup_unchanged": true,
+    "complete_pc_recovery_folder_preserved": true,
+    "night_mode_changed": false
+  },
+  "limits": [
+    "Use without --art-return on this recorded Frame firmware.",
+    "Automatic startup still took about 30 seconds.",
+    "Original Art return requires two Home presses to reach AeroTizen.",
+    "The latest Art return check waited 15 seconds; it was not a long dwell test.",
+    "The two manifest differences did not fix the tested Art-override failure.",
+    "Restore after uninstall still needs its physical TV test.",
+    "Other TVs and firmware are not covered by these results.",
+    "Samsung menu checks waited 10 seconds; immediate Home was not retested."
+  ]
+}
