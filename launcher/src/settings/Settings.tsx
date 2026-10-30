@@ -1,3 +1,4 @@
+import { TranslatedText } from '../shared/TranslatedText';
 import { RemoteControl } from './components/RemoteControl';
 import { useMemo } from 'preact/hooks';
 import { useStore } from '../shared/hooks/useStore';
@@ -23,7 +24,7 @@ export const Settings = ({ active, previewing, openedAt }: { active: boolean; pr
   ), [settings.home, apps, actions, active, services]);
   return (
     <>
-      <h2>Settings</h2>
+      <h2><TranslatedText>Settings</TranslatedText></h2>
       <BackgroundSettings settings={settings} actions={actions} config={services.config} backgrounds={services.backgrounds} />
       <WeatherSettings settings={settings} actions={actions} active={active} />
       <DisplaySettings settings={settings} actions={actions} clock={services.clock} openedAt={openedAt} />

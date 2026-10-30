@@ -1,3 +1,4 @@
+import { useTranslation } from '../../shared/hooks/useTranslation';
 import { useCallback, useContext, useLayoutEffect, useRef } from 'preact/hooks';
 import { flushSync } from 'preact/compat';
 import type { JSX } from 'preact';
@@ -12,6 +13,8 @@ interface Props extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'class' | 'ref'
 
 // Focus is rendered from state. Refs supply nodes for measurement and browser focus.
 export const RemoteControl = ({ focusKey, class: className = '', onClick, onFocusCapture, ...props }: Props) => {
+  const translate = useTranslation();
+  const translated = typeof props.children === 'string' ? translate(props.children, focusKey) : props.children;
   const { navigation } = useSettingsEnvironment();
   const focused = useContext(FocusedControlContext) === focusKey;
   const ref = useRef<HTMLDivElement>(null);
@@ -23,7 +26,7 @@ export const RemoteControl = ({ focusKey, class: className = '', onClick, onFocu
     if (focused) { focusControl(ref.current); }
   }, [focused]);
   const select = () => flushSync(() => navigation.select(focusKey));
-  return <div {...props} ref={register} data-key={focusKey} tabIndex={focused ? 0 : -1}
+  return <div {...props} children={translated} ref={register} data-key={focusKey} tabIndex={focused ? 0 : -1}
     onClick={event => { select(); onClick?.(event); }}
     onFocusCapture={event => { select(); onFocusCapture?.(event); }}
     class={className + (focused ? ' focused' : '')} />;

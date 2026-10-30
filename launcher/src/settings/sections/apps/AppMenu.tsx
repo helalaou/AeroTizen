@@ -1,3 +1,4 @@
+import { TranslatedText } from '../../../shared/TranslatedText';
 import { AppTile } from './AppTile';
 import { AddAppsTile } from './AddAppsTile';
 import { FireplaceTile } from './FireplaceTile';
@@ -14,7 +15,7 @@ interface Props {
 
 export const AppMenu = ({ home, apps, actions, describeApp, fireplaceId, active }: Props) => (
   <>
-    <h3>Show in app menu</h3>
+    <h3><TranslatedText>Show in app menu</TranslatedText></h3>
     <p class="hint">Press OK to show or hide a tile on the home screen. On the home screen, hold OK on a tile to move it.</p>
     <div id="all-apps" class="grid">
       <AddAppsTile onSelect={actions.openStore} />

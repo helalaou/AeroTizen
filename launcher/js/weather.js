@@ -174,7 +174,7 @@ window.Weather = (function () {
     query = query.trim();
     if (query.length < 2) { cb([]); return; }
     getJSON('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(query) +
-      '&count=5&language=en&format=json', function (data) {
+      '&count=5&language=' + (window.AeroTizen && window.AeroTizen.i18n ? window.AeroTizen.i18n.code() : 'en') + '&format=json', function (data) {
       if (!data || data.error || (data.results && !Array.isArray(data.results))) { cb(null); return; }
       cb((data.results || []).filter(function (geo) {
         return validLocation(geo) && typeof geo.name === 'string' && geo.name.trim();

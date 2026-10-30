@@ -42,8 +42,14 @@
   });
 
   // ---- boot ----------------------------------------------------------------------
-  var startup = window.AeroStartup;
+  var startup = window.AeroStartup, settingsReady = false;
+  if (A.i18n) { A.i18n.start(function () {
+    if (!settingsReady) { return; }
+    A.clock.tick(); A.homeScreen.render(); A.inputs.render();
+    window.Weather.updateDisplay();
+  }); }
   A.settings.load();
+  settingsReady = true;
   startup.mark('settings-loaded');
   A.applyBackground();
   A.clock.start();

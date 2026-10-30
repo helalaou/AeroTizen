@@ -1,3 +1,4 @@
+import { TranslatedText } from '../../../shared/TranslatedText';
 import { RemoteControl } from '../../components/RemoteControl';
 import { Choice } from '../../components/Choice';
 import { Pill } from '../../components/Pill';
@@ -10,7 +11,7 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
   const search = useWeatherLocation(active, actions);
   return (
     <>
-      <h3>Weather</h3>
+      <h3><TranslatedText>Weather</TranslatedText></h3>
       <Choice id="weather-display" label="Weather visibility" value={settings.showWeather !== false}
         options={[[true, 'Show weather'], [false, 'Hide weather']]} onSelect={actions.setWeatherVisible} />
       <p id="weather-location-summary" class="hint">
@@ -34,7 +35,7 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
       </div>
       <Choice id="weather-visibility" label="Weather location visibility" value={settings.weatherShowLocation}
         options={[[true, 'Show location'], [false, 'Hide location']]} onSelect={actions.setLocationVisible} />
-      <h3>Temperature</h3>
+      <h3><TranslatedText>Temperature</TranslatedText></h3>
       <Choice id="units" label="Temperature unit" value={settings.tempUnit}
         options={[['F', '°F  Fahrenheit'], ['C', '°C  Celsius']]} onSelect={actions.setTempUnit} />
     </>

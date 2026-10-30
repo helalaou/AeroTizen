@@ -1,3 +1,4 @@
+import { TranslatedText } from '../../shared/TranslatedText';
 import { Choice } from '../components/Choice';
 import { Pill } from '../components/Pill';
 import type { Clock, SettingsSectionProps } from '../types';
@@ -9,7 +10,7 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt }: Props) =
   const dateStyle = clock.dateStyle(settings.dateFormat);
   return (
     <>
-      <h3>Date &amp; time</h3>
+      <h3><TranslatedText>Date &amp; time</TranslatedText></h3>
       <div id="time-formats" class="units">
         {(['12', '24'] as const).map(format => (
           <Pill key={format} id={'time:' + format} selected={settings.showTime !== false && settings.timeFormat === format}
@@ -25,14 +26,14 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt }: Props) =
             onSelect={() => actions.setDateFormat(format.id)}>{format.id === 'none' ? 'No date' : format.format(now)}</Pill>
         ))}
       </div>
-      <h3>Network indicator</h3>
+      <h3><TranslatedText>Network indicator</TranslatedText></h3>
       <Choice id="network-visibility" label="Network indicator visibility" value={settings.showNetwork !== false}
         options={[[true, 'Show'], [false, 'Hide']]} onSelect={actions.setNetworkVisible} />
-      <h3>Live TV</h3>
+      <h3><TranslatedText>Live TV</TranslatedText></h3>
       <p class="hint">Show the Live TV tile in Inputs.</p>
       <Choice id="live-tv-visibility" label="Live TV visibility" value={settings.showLiveTv}
         options={[[true, 'Show'], [false, 'Hide']]} onSelect={actions.setLiveTvVisible} />
-      <h3>App cards</h3>
+      <h3><TranslatedText>App cards</TranslatedText></h3>
       <Choice id="home-card-mode" label="Home tile layout" value={settings.homeCardMode}
         options={[['square', 'Square'], ['rectangle', 'Rectangle']]} onSelect={actions.setHomeCardMode} />
       <Choice id="home-card-columns" label="Apps per row" value={String(settings.homeCardColumns || 'auto')}

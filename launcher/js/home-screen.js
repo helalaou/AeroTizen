@@ -29,7 +29,7 @@
       home = A.apps.all.map(function (app) { return app.id; });
     }
     A.$('apps-empty').hidden = page === 'home' || home.length > 0;
-    grid.setAttribute('aria-label', page === 'home' ? 'Home apps' : 'All apps');
+    grid.setAttribute('aria-label', (A.i18n ? A.i18n.t(page === 'home' ? 'Home apps' : 'All apps') : (page === 'home' ? 'Home apps' : 'All apps')));
     ['home', 'apps'].forEach(function (name) {
       var tab = A.$(name + '-tab'), selected = (name === 'home') === (page === 'home');
       tab.classList.toggle('active', selected);
@@ -47,8 +47,8 @@
       if (id === cfg.FIREPLACE_ID) {
         tile = A.el('div', 'tile fire');
         tile.setAttribute('role', 'button');
-        tile.setAttribute('aria-label', 'Fireplace');
-        tile.title = 'Fireplace';
+        tile.setAttribute('aria-label', (A.i18n ? A.i18n.t('Fireplace') : 'Fireplace'));
+        tile.title = (A.i18n ? A.i18n.t('Fireplace') : 'Fireplace');
         tile.innerHTML = A.tiles.ICONS.flame;
         tile.onclick = A.apps.playFireplace;
       } else {

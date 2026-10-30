@@ -13,7 +13,7 @@
 
   A.toast = function (text) {
     var t = A.$('toast');
-    t.textContent = text; t.hidden = false;
+    t.textContent = A.i18n ? A.i18n.displayMessage(text) : text; t.hidden = false;
     clearTimeout(A.toast.timer);
     A.toast.timer = setTimeout(function () { t.hidden = true; }, 2500);
   };

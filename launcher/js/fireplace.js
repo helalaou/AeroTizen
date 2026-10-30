@@ -106,7 +106,7 @@ window.Fireplace = (function () {
     volume = Math.max(0, Math.min(1, v));
     if (audio) { audio.master.gain.value = volume; }
     var bar = document.getElementById('fire-volume');
-    bar.textContent = volume === 0 ? 'Muted' : 'Volume ' + Math.round(volume * 10);
+    bar.textContent = volume === 0 ? window.AeroTizen.i18n.t('Muted') : window.AeroTizen.i18n.t('Volume ') + Math.round(volume * 10);
     bar.classList.add('show'); clearTimeout(setVolume.t);
     setVolume.t = setTimeout(function () { bar.classList.remove('show'); }, 1500);
   }
