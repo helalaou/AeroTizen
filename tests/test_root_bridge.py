@@ -4,6 +4,9 @@ import json
 import os
 import queue
 import shutil
+import socket
+import ssl
+import struct
 import subprocess
 import threading
 import time
@@ -73,9 +76,12 @@ def bridge_server(native_root, tmp_path, fake_tv, request):
         "boot_id": str(uuid.uuid4()),
         "removed_file": str(tmp_path / "removed"),
         "sdb_port": tv.port,
-        "identity_fail_once": getattr(request, "param", False),
+        "identity_fail_once": getattr(request, "param", {}).get("identity_fail_once", False),
         "diagnostic_file": str(tmp_path / "diagnostic.json"),
     }
+    if getattr(request, "param", {}).get("pause_remove"):
+        fixture["remove_started_file"] = str(tmp_path / "remove-started")
+        fixture["remove_release_file"] = str(tmp_path / "remove-release")
     path = tmp_path / "fixture.json"
     path.write_text(json.dumps(fixture))
     process = subprocess.Popen(
@@ -130,7 +136,7 @@ def test_actual_native_tls_status_and_sdb_relay(bridge_server):
         assert session.duid() == "paired-tv"
 
 
-@pytest.mark.parametrize("bridge_server", [True], indirect=True)
+@pytest.mark.parametrize("bridge_server", [{"identity_fail_once": True}], indirect=True)
 def test_native_os_error_is_recorded_without_stopping_the_bridge(bridge_server):
     receipt, fixture, _ = bridge_server
     with pytest.raises(BridgeError, match="before an authenticated reply"):
@@ -161,6 +167,37 @@ def test_authenticated_removal_runs_once_and_closes_listener(bridge_server):
     assert Path(fixture["removed_file"]).read_text() == "removed"
     process.wait(timeout=10)
     assert process.returncode == 0, process.stderr.read()
+
+
+@pytest.mark.parametrize("bridge_server", [{"pause_remove": True}], indirect=True)
+def test_removal_stops_bridge_when_client_disconnects_before_reply(bridge_server):
+    receipt, fixture, process = bridge_server
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    with (
+        socket.create_connection(("127.0.0.1", receipt["bridge_port"]), timeout=5) as raw,
+        context.wrap_socket(raw, server_hostname=None) as peer,
+    ):
+        peer.sendall(
+            json.dumps(
+                {"protocol": 1, "operation": "remove", "token": receipt["token"], "nonce": uuid.uuid4().hex}
+            ).encode()
+            + b"\n"
+        )
+        deadline = time.monotonic() + 5
+        while not Path(fixture["remove_started_file"]).exists():
+            assert process.poll() is None and time.monotonic() < deadline, "removal did not start"
+            time.sleep(0.01)
+        peer.setsockopt(
+            socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("hh" if os.name == "nt" else "ii", 1, 0)
+        )
+    Path(fixture["remove_release_file"]).write_text("continue")
+    process.wait(timeout=5)
+    assert Path(fixture["removed_file"]).read_text() == "removed"
+    assert process.returncode == 0, process.stderr.read()
+    with pytest.raises(OSError):
+        socket.create_connection(("127.0.0.1", receipt["bridge_port"]), timeout=1)
 
 
 def test_replayed_or_non_root_status_is_rejected():

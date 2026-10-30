@@ -102,6 +102,7 @@ namespace AeroTizen.Root
                         result["installation_id"] = settings.Installation; result["device_identity_sha256"] = settings.Identity;
                         result["app_id"] = RootPaths.AppId; result["version"] = RootPaths.Version;
                         TcpClient sdb = null;
+                        bool removalCompleted = false;
                         try
                         {
                             if (operation == "sdb")
@@ -109,13 +110,16 @@ namespace AeroTizen.Root
                                 phase = "sdb";
                                 sdb = await connectSdb(deadline.Token);
                             }
-                            if (operation == "remove") { phase = "remove"; remove(); result["prepared_for_removal"] = true; }
+                            if (operation == "remove")
+                            {
+                                phase = "remove"; remove(); removalCompleted = true;
+                                result["prepared_for_removal"] = true;
+                            }
                             phase = "reply";
                             byte[] reply = JsonSerializer.SerializeToUtf8Bytes(result);
                             await tls.WriteAsync(reply.AsMemory(), deadline.Token);
                             await tls.WriteAsync(new byte[] { 10 }.AsMemory(), deadline.Token);
                             await tls.FlushAsync(deadline.Token);
-                            if (operation == "remove") { stopping.Cancel(); listener.Stop(); return; }
                             if (operation != "sdb") return;
                             // One authenticated stream, fixed loopback target, bounded idle/lifetime.
                             deadline.CancelAfter(TimeSpan.FromHours(1));
@@ -128,7 +132,12 @@ namespace AeroTizen.Root
                                 try { await Task.WhenAll(outgoing, incoming); } catch (OperationCanceledException) { }
                             }
                         }
-                        finally { sdb?.Dispose(); }
+                        finally
+                        {
+                            sdb?.Dispose();
+                            // Removal must stop access even when its acknowledgement cannot be delivered.
+                            if (removalCompleted) { stopping.Cancel(); listener.Stop(); }
+                        }
                     }
                 }
                 catch (Exception error)

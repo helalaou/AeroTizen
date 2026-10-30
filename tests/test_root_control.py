@@ -5,6 +5,8 @@ import copy
 import json
 import uuid
 from contextlib import contextmanager
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -227,6 +229,60 @@ def test_saved_receipt_does_not_claim_a_live_installation(rig):
     assert checked["root_available"] is False
 
 
+@pytest.mark.parametrize("recovers", [False, True])
+def test_status_wait_uses_latest_attempt_and_cli_exit(rig, tmp_path, monkeypatch, capsys, recovers):
+    state, _, setup, _ = rig
+    setup()
+    reply = {
+        "boot_id": str(uuid.uuid4()),
+        "automatic_startup_enabled": True,
+        "origin": "boot",
+        "bootstrap_completed": False,
+        "helper_installed": True,
+    }
+    replies = [{**reply, "startup_error": "cleanup pending"}, OSError("bridge stopped")]
+    if recovers:
+        replies.append({**reply, "bootstrap_completed": True})
+    request = Mock(side_effect=replies)
+    monkeypatch.setattr(control, "BridgeClient", lambda *a, **k: SimpleNamespace(request=request))
+    now = [0]
+
+    def sleep(seconds):
+        now[0] += seconds
+
+    monkeypatch.setattr(control, "time", SimpleNamespace(monotonic=lambda: now[0], sleep=sleep))
+    monkeypatch.setattr(cli, "STATE_DIR", str(tmp_path))
+    monkeypatch.setattr(
+        "sys.argv",
+        ["aerotizen", "--tv", state["host"], "root", "status", "--wait", "4" if recovers else "2", "--json"],
+    )
+    if recovers:
+        cli.main()
+    else:
+        with pytest.raises(SystemExit) as stopped:
+            cli.main()
+        assert stopped.value.code == 1
+    checked = json.loads(capsys.readouterr().out)
+    assert request.call_count == len(replies)
+    assert checked["root_available"] is recovers
+    assert "startup_error" not in checked
+    if recovers:
+        assert checked["bootstrap_completed"] is True
+        assert "error" not in checked
+    else:
+        assert checked["installed"] is None
+        assert checked["error"] == "bridge stopped"
+        assert (
+            not {
+                "current_boot_id",
+                "automatic_startup_enabled",
+                "automatic_boot_verified",
+                "bootstrap_completed",
+            }
+            & checked.keys()
+        )
+
+
 def test_lost_request_can_retry_with_a_fresh_nonce(rig):
     state, path, setup, _ = rig
     state["fail"] = "before"
@@ -258,6 +314,34 @@ def test_remove_disables_bridge_then_resumes_after_normal_pc_recovery(rig):
     assert state["removed_apps"] == [root_state.APP_ID]
     assert remove()["removed"] is True
     assert len(state["root_calls"]) == 1
+
+
+@pytest.mark.parametrize("private_removed", [False, True])
+def test_setup_cannot_interrupt_removal_and_can_start_after_it_finishes(rig, monkeypatch, private_removed):
+    state, path, setup, remove = rig
+    setup()
+    state["developer"] = "127.0.0.1"
+    state["live"] = private_removed
+    assert remove()["removed"] is False
+    before = path.read_bytes()
+    previous_state = copy.deepcopy(state)
+    with monkeypatch.context() as guard:
+        guard.setattr(
+            root_package, "runtime_files", lambda *a: pytest.fail("setup prepared files during removal")
+        )
+        with pytest.raises(DeviceSessionError, match="root remove --yes"):
+            setup()
+    assert path.read_bytes() == before
+    assert state == previous_state
+    state["developer"], state["boot"] = "192.0.2.10", str(uuid.uuid4())
+    assert remove()["removed"] is True
+    assert state["live"] is False and state["installed"] is False
+    removed = root_state.load(path)
+    assert setup()["phase"] == "waiting_boot"
+    fresh = root_state.load(path)
+    assert fresh["installation_id"] != removed["installation_id"]
+    assert not fresh.get("private_state_removed")
+    assert root_state.load(path.parent / "history" / (removed["installation_id"] + ".json")) == removed
 
 
 def test_stopped_bridge_cleanup_works_after_helper_was_uninstalled(rig):

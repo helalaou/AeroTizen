@@ -98,7 +98,19 @@ internal static class RootTests
                 return new Dictionary<string, object> {
                 ["boot_id"] = value.GetProperty("boot_id").GetString(), ["uid"] = 0, ["euid"] = 0, ["gid"] = 0,
                 ["automatic_startup_enabled"] = true, ["helper_installed"] = true, ["bootstrap_completed"] = true, ["origin"] = "boot",
-            }; }, () => File.WriteAllText(value.GetProperty("removed_file").GetString(), "removed"), IPAddress.Loopback, 0,
+            }; }, () => {
+                if (value.TryGetProperty("remove_started_file", out var started))
+                {
+                    File.WriteAllText(started.GetString(), "started");
+                    var wait = System.Diagnostics.Stopwatch.StartNew();
+                    while (!File.Exists(value.GetProperty("remove_release_file").GetString()))
+                    {
+                        if (wait.ElapsedMilliseconds >= 10000) throw new TimeoutException("Test removal was not released");
+                        System.Threading.Thread.Sleep(10);
+                    }
+                }
+                File.WriteAllText(value.GetProperty("removed_file").GetString(), "removed");
+            }, IPAddress.Loopback, 0,
             async cancel => {
                 var client = new TcpClient();
                 await client.ConnectAsync(IPAddress.Loopback, value.GetProperty("sdb_port").GetInt32(), cancel); return client;
