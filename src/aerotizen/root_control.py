@@ -181,16 +181,16 @@ def status(host, *, receipt_path=None, wait=0, state_dir=None):
                 reply = BridgeClient(
                     host, receipt, timeout=min(8, max(1, deadline - time.monotonic())) if wait else 8
                 ).request()
-                result.pop("error", None)
-                result.update(
-                    root_available=True,
-                    current_boot_id=reply["boot_id"],
-                    automatic_startup_enabled=reply["automatic_startup_enabled"],
-                    automatic_boot_verified=reply.get("origin") == "boot"
+                result = {
+                    **root_state.public_status(receipt),
+                    "root_available": True,
+                    "current_boot_id": reply["boot_id"],
+                    "automatic_startup_enabled": reply["automatic_startup_enabled"],
+                    "automatic_boot_verified": reply.get("origin") == "boot"
                     and reply["boot_id"] != receipt["baseline_boot_id"],
-                    bootstrap_completed=reply.get("bootstrap_completed") is True,
-                    installed=reply.get("helper_installed") is True,
-                )
+                    "bootstrap_completed": reply.get("bootstrap_completed") is True,
+                    "installed": reply.get("helper_installed") is True,
+                }
                 if reply.get("startup_error"):
                     result["startup_error"] = reply["startup_error"]
                 if (
@@ -202,7 +202,12 @@ def status(host, *, receipt_path=None, wait=0, state_dir=None):
                     continue
                 return result
             except (OSError, ValueError, BridgeError) as exc:
-                result["error"] = str(exc)
+                result = {
+                    **root_state.public_status(receipt),
+                    "root_available": False,
+                    "installed": None,
+                    "error": str(exc),
+                }
                 if time.monotonic() >= deadline:
                     return result
                 time.sleep(min(2, max(0, deadline - time.monotonic())))
@@ -210,8 +215,10 @@ def status(host, *, receipt_path=None, wait=0, state_dir=None):
 
 def setup(host, *, state_dir=None, receipt_path=None, runtime=None, release=None, wait=0):
     path = Path(receipt_path) if receipt_path else root_state.selected_path(host, state_dir)
-    managed, xml, icon = root_package.runtime_files(runtime)
     receipt = root_state.load(path) if path.exists() else None
+    if receipt and receipt["phase"] == "removing":
+        raise DeviceSessionError("Finish root remove --yes before starting root setup again")
+    managed, xml, icon = root_package.runtime_files(runtime)
     if receipt and receipt["phase"] == "removed":
         root_state.archive_removed(path, receipt)
         receipt = None
