@@ -307,9 +307,7 @@ def updating(installation, monkeypatch):
 
 
 def update_args(**overrides):
-    return argparse.Namespace(
-        **{"tv": "tv", "check": False, "force": False, "release_repo": None, **overrides}
-    )
+    return argparse.Namespace(**{"tv": "tv", "check": False, "release_repo": None, **overrides})
 
 
 def test_update_uses_one_session_and_the_saved_signing_profile(updating, capsys):
@@ -355,24 +353,10 @@ def test_update_skips_current_and_newer_versions_without_certificates(updating, 
     assert "No changes made" in capsys.readouterr().out
 
 
-def test_force_reinstalls_current_release(updating):
-    updating.tv.before_update = f"app_id={APP} app_version={VERSION}"
-    cli.cmd_update(update_args(force=True))
-    assert "install" in updating.events
-    assert updating.tv.closed
-
-
-def test_force_does_not_downgrade_a_known_newer_version(updating):
-    updating.tv.before_update = f"app_id={APP} app_version=2.10.0"
-    cli.cmd_update(update_args(force=True))
-    assert updating.events == ["resolve", "connect", "applist"]
-    assert updating.tv.closed
-
-
 @pytest.mark.parametrize("inventory", [APP, f"app_id={APP} app_version=invalid"])
-def test_unknown_version_requires_explicit_force(updating, inventory, capsys):
+def test_unknown_version_stops_and_directs_to_install(updating, inventory, capsys):
     updating.tv.before_update = inventory
-    with pytest.raises(SystemExit, match="Use --force"):
+    with pytest.raises(SystemExit, match="aerotizen install launcher"):
         cli.cmd_update(update_args())
     assert updating.events == ["resolve", "connect", "applist"]
     assert updating.tv.closed
@@ -390,18 +374,11 @@ def test_unknown_version_check_reports_uncertainty_without_installing(updating, 
     assert updating.tv.closed
 
 
-def test_force_can_update_when_firmware_omits_version(updating):
-    updating.tv.before_update = APP
-    cli.cmd_update(update_args(force=True))
-    assert "install" in updating.events
-    assert updating.tv.closed
-
-
 @pytest.mark.parametrize("inventory", ["DclHome001.Watcher", "", f"{APP}\n{APP}"])
 def test_update_requires_one_installed_launcher(updating, inventory):
     updating.tv.before_update = inventory
     with pytest.raises(SystemExit, match=r"not installed|unexpected launcher package"):
-        cli.cmd_update(update_args(force=True))
+        cli.cmd_update(update_args())
     assert updating.events == ["resolve", "connect", "applist"]
     assert updating.tv.closed
 
@@ -456,8 +433,9 @@ def test_update_download_error_releases_session_and_removes_partial_widget(updat
     assert "install" not in updating.events
 
 
-def test_update_check_and_force_cannot_be_combined(updating, monkeypatch):
-    monkeypatch.setattr("sys.argv", ["aerotizen", "update", "launcher", "--check", "--force"])
+@pytest.mark.parametrize("flags", [["--force"], ["--check", "--force"]])
+def test_update_rejects_force_before_any_device_or_release_access(updating, monkeypatch, flags):
+    monkeypatch.setattr("sys.argv", ["aerotizen", "update", "launcher", *flags])
     with pytest.raises(SystemExit) as exc:
         cli.main()
     assert exc.value.code == 2

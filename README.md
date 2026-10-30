@@ -172,11 +172,10 @@ You need a computer on the same network as the TV.
    uses your saved certificates and installs in place, keeping launcher settings.
    If the installed version is current or newer, it makes no changes.
 
-   Some TVs do not report an app version. The check states this; an update then
-   needs `./aerotizen update launcher --force`. This installs the latest stable
-   release without a version comparison, so it may replace a newer development
-   build. `--force` also reinstalls a current release, but never replaces a known
-   newer version.
+   Some TVs do not report an app version. The update reports that it cannot compare
+   versions and stops. Use `./aerotizen install launcher` to explicitly install the
+   latest stable release without a comparison, or to reinstall the current release.
+   This can replace a newer development build.
 
    To select a specific version, use `./aerotizen install launcher --version 2.2.0`
    (replace the number with a published launcher version). CLI and launcher versions

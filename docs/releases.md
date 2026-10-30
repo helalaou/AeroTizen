@@ -161,11 +161,10 @@ native Home assignments.
 
 If firmware omits the installed version or reports a version that cannot be compared,
 the command reports the limitation and stops before downloading the WGT. Use
-`aerotizen update launcher --force` to explicitly install without that comparison;
-the selected release may be older than an unversioned development build. `--force`
-also allows reinstalling the current release, but does not downgrade a known newer
-version. It cannot be combined with `--check`. A missing launcher still needs
-`aerotizen install launcher`. Intentional version selection remains available with
+`aerotizen install launcher` to explicitly install without that comparison, or to
+reinstall the current release. The selected release may be older than an unversioned
+development build. A missing launcher also needs `aerotizen install launcher`.
+Intentional version selection remains available with
 `aerotizen install launcher --version X.Y.Z`.
 
 These commands update the launcher, not the CLI executable. If the release requires

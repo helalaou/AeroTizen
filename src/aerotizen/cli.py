@@ -321,7 +321,7 @@ def cmd_update(args):
             if current_key is not None and current_key > latest_key:
                 print("The installed launcher is newer than this release. No changes made.")
                 return
-            if current_key == latest_key and not args.force:
+            if current_key == latest_key:
                 print("The launcher is up to date. No changes made.")
                 return
             if current_key is None:
@@ -330,8 +330,8 @@ def cmd_update(args):
                 print("A launcher update is available.")
             if args.check:
                 return
-            if current_key is None and not args.force:
-                sys.exit("Use --force to install this release without a version comparison. It may be older.")
+            if current_key is None:
+                sys.exit("To install without a version comparison, run: aerotizen install launcher")
             with TemporaryDirectory(prefix="aerotizen-update-") as temporary:
                 downloaded = release.download(Path(temporary))
                 print(f"Downloaded launcher {downloaded.version}.")
@@ -546,12 +546,8 @@ def main():
     p.set_defaults(fn=cmd_install)
     p = sub.add_parser("update", help="update the installed launcher without uninstalling it")
     p.add_argument("target", choices=["launcher"])
-    mode = p.add_mutually_exclusive_group()
-    mode.add_argument(
+    p.add_argument(
         "--check", action="store_true", help="compare versions without downloading or installing the app"
-    )
-    mode.add_argument(
-        "--force", action="store_true", help="reinstall if the version is unavailable or already current"
     )
     p.add_argument("--release-repo", metavar="OWNER/REPO", help="use launcher releases from this repository")
     p.set_defaults(fn=cmd_update)
