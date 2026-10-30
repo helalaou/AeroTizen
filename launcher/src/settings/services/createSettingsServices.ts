@@ -35,7 +35,7 @@ export const createSettingsServices = (runtime: LauncherRuntime): SettingsServic
     else { runtime.homewatch.useSamsungHome(); }
   },
   finishEditing() { runtime.settings.save(); runtime.homeScreen.render(); },
-  clearHomeFocus: () => runtime.clearFocus(),
+  clearHomeFocus: () => { runtime.homeScreen.blur?.(); runtime.clearFocus(); },
   showPreviewMessage: () => runtime.toast('Previewing. Press any key to return'),
   hidePreviewMessage: () => runtime.hideToast()
 });

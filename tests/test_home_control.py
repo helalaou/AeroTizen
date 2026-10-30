@@ -96,7 +96,10 @@ def native_result(action, *, success=True, rolled_back=False):
 
 
 @pytest.mark.parametrize("action", ["apply", "restore"])
-def test_change_journals_before_writer_and_preserves_original(monkeypatch, tmp_path, status, action):
+@pytest.mark.parametrize("launcher_boot_backup", [False, True])
+def test_change_journals_before_writer_and_preserves_original(
+    monkeypatch, tmp_path, status, action, launcher_boot_backup
+):
     saved = home.save_backup(status, state_dir=tmp_path)
     backup = Path(saved["path"])
     raw = backup.read_bytes()
@@ -105,6 +108,8 @@ def test_change_journals_before_writer_and_preserves_original(monkeypatch, tmp_p
         final["home"]["main_operation"]["value"] = home.releases.APP_ID
         final["home"]["settings"][home.HOME_KEY]["value"] = home.releases.APP_ID
         final["watcher"]["control"]["mode"] = "native"
+    if launcher_boot_backup:
+        status["home"]["settings"]["db/appfw/booting_appid_backup"]["value"] = home.releases.APP_ID
     reads = iter([status, final])
     monkeypatch.setattr(home, "read_status", lambda *args: next(reads))
 
@@ -305,7 +310,7 @@ def test_native_policy_failure_boundaries_run_on_host_without_tizen():
         timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "POLICY_TESTS_PASSED=100" in result.stdout
+    assert "POLICY_TESTS_PASSED=107" in result.stdout
 
 
 def test_boot_preview_has_no_device_contact(monkeypatch, capsys):

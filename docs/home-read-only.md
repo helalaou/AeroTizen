@@ -56,13 +56,51 @@ capture time, helper hash, and read/cleanup evidence. It contains no account
 credentials or viewing history.
 
 The first file is written through a flushed temporary file and an atomic
-create-if-absent link. Its file mode is 0600 on POSIX. Repeated backups preserve
+create-if-absent link. Missing parent folders are created automatically, including
+for a custom `--output` path. Its file mode is 0600 on POSIX. Repeated backups preserve
 the first file's bytes and report whether its configuration and firmware still
 match. Existing corrupt files or files for another TV are refused, not replaced.
 AeroTizen assignments cannot be captured as a new original baseline.
 
+Capture the first backup before opening AeroTizen. On the Q80B reported in
+[issue #76](https://github.com/helalaou/AeroTizen/issues/76), opening the launcher
+changes only `db/appfw/booting_appid_backup` to `DclHome001.Home`. If you already
+saved the original, keep that file; `matches current=False` is expected for this
+change, and apply accepts this specific difference. Without an original backup,
+return the TV to its stock state, confirm with `home status` that none of the
+saved values names AeroTizen, then capture the backup before opening it again.
+The CLI does not guess the previous value or replace an existing original.
+
+Validation runs before folder creation. If the first backup is refused because
+AeroTizen is already in the values, no backup directory is created. That explains
+an absent folder after that refusal, but does not explain the first `WinError 3`
+reported in issue #76.
+
 This is a local failsafe copy. No baseline is written onto the TV in this slice,
 and successful backup does not establish that restore or native Home routing works.
+
+### Windows path errors
+
+CLI 2.4.0 already creates missing backup directories before writing the file.
+Its release commit `1715a3b` also passed the
+[Windows Home test job](https://github.com/helalaou/AeroTizen/actions/runs/40574188485/job/122436086717),
+which includes creating a first backup with no existing per-TV directory. This
+does not reproduce the reporter's Windows environment or test the frozen EXE's
+backup command; release EXE smoke checks cover help and offline previews.
+
+A Windows "path not found" error alone does not identify directory creation as
+the failed step. The backup is first written to a temporary file in that folder,
+then published with an atomic hard link so an existing original cannot be
+replaced. Microsoft's [CreateHardLinkW documentation](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createhardlinkw)
+also lists `ERROR_PATH_NOT_FOUND` for paths beyond the Windows path limit. This
+is a possible cause, not a confirmed explanation for issue #76.
+
+Errors now distinguish directory creation, temporary-file creation and the final
+hard link. A hard-link error also reports the destination path length. Preserve
+the full error, Windows version and whether the path is local or redirected when
+reporting a failure. If needed, use `home backup --output PATH` with a short path
+on a local NTFS drive. Keep that original and pass `--backup PATH` to apply and
+restore. Do not delete or overwrite a valid original to test directory creation.
 
 ## Native query references
 

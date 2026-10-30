@@ -14,7 +14,9 @@
   background: linear-gradient(90deg,rgba(0,0,0,.12),transparent 42%,rgba(0,0,0,.17)),
               linear-gradient(0deg,rgba(0,0,0,.23),transparent 38%);
 }
-body > .topbar, body > .content-viewport {
+/* Support both the legacy body children and the Preact Home mount. */
+body > .topbar, body > .content-viewport,
+#home-root > .topbar, #home-root > .content-viewport {
   position: relative; z-index: 1;
 }
 #editor.sheet, #fireplace, #toast { z-index: 100; }

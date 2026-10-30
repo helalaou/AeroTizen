@@ -9,7 +9,7 @@ export interface LauncherRuntime {
   network: { updateVisibility(): void };
   inputs: { sources: InputSource[]; portName(source: InputSource): string; render(): void; subscribe(listener: () => void): () => void };
   continueWatching?: { sources: ContinueSource[]; message: string; subscribe(listener: () => void): () => void };
-  homeScreen: { render(): void };
+  homeScreen: { render(): void; blur?(): void; focus?(): void };
   apps: { all: InstalledApp[]; openStore(): void; subscribe(listener: () => void): () => void };
   homewatch: { useSamsungHome(): void; openSamsungHome?(): void };
   tiles: { describe(app: InstalledApp): AppPresentation };
