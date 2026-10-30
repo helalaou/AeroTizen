@@ -7,11 +7,12 @@
   <script src="js/startup.js"></script>
   <link rel="icon" href="icon.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/clock-layouts.css">
   <link rel="stylesheet" href="css/card-modes.css">
   <link rel="stylesheet" href="css/tile-actions.css">
   <link rel="stylesheet" href="css/photo-weather.css">
 </head>
-<body>
+<body class="s90c-clock-classic">
   <div id="bg" class="bg"></div>
   <div id="weather-photo" class="weather-photo" aria-hidden="true" hidden></div>
   <!-- Layout inspired by LTvLauncher (github.com/leanbitlab-org/LtvLauncher); no code shared. -->
@@ -31,6 +32,7 @@
       <span id="date" class="date"></span>
       <span id="time" class="time"></span>
     </div>
+    <div id="custom-clock-root"></div>
   </header>
 
   <div class="content-viewport">

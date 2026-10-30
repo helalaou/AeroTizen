@@ -1,3 +1,4 @@
+import { CustomClock } from "../clock/CustomClock";
 import { createRef, render } from 'preact';
 import { flushSync } from 'preact/compat';
 import { createStore } from '../shared/state/createStore';
@@ -32,5 +33,9 @@ runtime.settingsUi = bridge;
 render(<SettingsProvider environment={environment}><SettingsRoot /></SettingsProvider>, mount);
 
 if (import.meta.hot) {
-  import.meta.hot.dispose(() => { render(null, mount); settings.dispose(); inventory.dispose(); });
+  import.meta.hot.dispose(() => { render(null, mount); settings.dispose(); inventory.dispose(); if (clockMount) { render(null, clockMount); } });
 }
+
+// The clock is an optional presentation of existing shared status services.
+const clockMount = document.getElementById('custom-clock-root');
+if (clockMount) { render(<CustomClock settings={settings} clock={runtime.clock} />, clockMount); }
