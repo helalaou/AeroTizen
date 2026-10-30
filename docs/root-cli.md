@@ -95,16 +95,8 @@ same-boot/new-boot guards, guarded SQLite transactions, signed package isolation
 cross-language archive validation and interrupted CLI transactions. CI runs the
 archive contract checks with the pinned upstream payload.
 
-**Hardware boundary:** on the Frame/Tizen 9, the CLI test build passed setup,
-live authenticated status and wrong-token/certificate rejection. Direct-SDB
-recovery removal passed on preceding test builds. Home values and other app
-registrations stayed unchanged.
-Testing found and fixed SDB/SDK file-owner mismatch, an inherited callback descriptor,
-and missing optional first-boot status handling. A cold boot with the Mac offline
-then proved untethered root and SDK access through the bridge. The supervisor's
-success output omitted its service-result marker, so the app correctly left
-setup pending. That framing fix passes a native producer/consumer regression test
-but needs a hardware retest. Authenticated removal stopped the bridge and deleted
-credentials. A new recovery boot confirmed that the helper stayed disabled,
-normal PC access returned, and SDK uninstall completed. Repeat boots on the
-corrected build and its final removal remain pending.
+**Hardware boundary:** on a 2024 Frame running Tizen 9, the current build passed
+setup, pairing rejection, two cold boots with cleanup and bridged SDK access,
+authenticated removal, PC recovery and uninstall. Setup was blocked while removal
+was pending. Home values and other app startup entries stayed unchanged.
+A Mac-offline boot passed on a preceding build. Other models/firmware are unverified.
