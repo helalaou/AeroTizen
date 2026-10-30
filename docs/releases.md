@@ -167,9 +167,22 @@ development build. A missing launcher also needs `aerotizen install launcher`.
 Intentional version selection remains available with
 `aerotizen install launcher --version X.Y.Z`.
 
-These commands update the launcher, not the CLI executable. If the release requires
-a newer CLI, download and extract the matching CLI archive first. Update detection
-inside the TV app is separate work.
+Launcher updates do not replace the CLI executable. Update detection inside the TV
+app is separate work.
+
+### CLI version checks
+
+Run `aerotizen update cli --check` to compare the running CLI version with the highest
+stable `cli-vX.Y.Z` release. It reads release metadata only, ignores launcher releases,
+drafts and prereleases, and needs no TV connection or signing certificates. Use
+`--release-repo OWNER/REPO` to check a fork.
+
+If a newer CLI exists, the command shows the matching OS/CPU archive link and the
+release page. If no archive matches, it shows the release page and states that no
+matching archive is available. Current and newer CLI versions are reported without
+offering a reinstall or downgrade. The command does not download or replace the CLI;
+download and extract the archive to update it. `aerotizen update cli` without
+`--check` stops with a usage message.
 
 ## Local checks
 

@@ -49,6 +49,18 @@ def release(version="2.2.0", prefix="launcher-v", **fields):
     }
 
 
+def cli_release(version="2.2.0", target="macos-arm64", **fields):
+    suffix = "zip" if target.startswith("windows-") else "tar.gz"
+    name = f"aerotizen-{version}-{target}.{suffix}"
+    assets = [
+        {
+            "name": name,
+            "browser_download_url": f"https://github.com/{REPO}/releases/download/cli-v{version}/{name}",
+        }
+    ]
+    return release(version, prefix="cli-v", **{"assets": assets, **fields})
+
+
 def manifest(data, version="2.2.0", **fields):
     return {
         "schema_version": 1,
@@ -82,6 +94,96 @@ def github(monkeypatch):
     monkeypatch.setattr(releases, "__version__", "2.2.0")
     monkeypatch.setattr(releases, "_read_url", read)
     return responses, calls
+
+
+@pytest.fixture
+def cli_github(github, monkeypatch):
+    github[0][f"{API}?per_page=100&page=1"] = [release("99.0.0"), cli_release()]
+    monkeypatch.setattr(releases.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(releases.platform, "machine", lambda: "arm64")
+    return github
+
+
+@pytest.mark.parametrize(
+    "system,machine,target",
+    [
+        ("Darwin", "arm64", "macos-arm64"),
+        ("Darwin", "aarch64", "macos-arm64"),
+        ("Darwin", "x86_64", "macos-x86_64"),
+        ("Windows", "AMD64", "windows-x86_64"),
+        ("Linux", "x86_64", "linux-x86_64"),
+    ],
+)
+def test_cli_check_selects_the_platform_archive_using_only_release_metadata(
+    cli_github, monkeypatch, system, machine, target
+):
+    item = cli_release(target=target)
+    cli_github[0][f"{API}?per_page=100&page=1"] = [release("99.0.0"), item]
+    monkeypatch.setattr(releases.platform, "system", lambda: system)
+    monkeypatch.setattr(releases.platform, "machine", lambda: machine)
+    selected = releases.resolve_cli()
+    assert selected.version == "2.2.0"
+    assert selected.download_url == item["assets"][0]["browser_download_url"]
+    assert selected.release_url == f"https://github.com/{REPO}/releases/tag/cli-v2.2.0"
+    assert cli_github[1] == [f"{API}?per_page=100&page=1"]
+
+
+def test_cli_check_scans_pages_and_ignores_launcher_draft_and_prerelease_tags(cli_github):
+    cli_github[0][f"{API}?per_page=100&page=1"] = [release("99.0.0")] * 96 + [
+        cli_release("9.0.0", draft=True),
+        cli_release("8.0.0", prerelease=True),
+        cli_release("10.0.0-beta.1"),
+        cli_release("2.9.0"),
+    ]
+    cli_github[0][f"{API}?per_page=100&page=2"] = [cli_release("2.10.0"), cli_release("2.1.0")]
+    assert releases.resolve_cli().version == "2.10.0"
+    assert cli_github[1] == [f"{API}?per_page=100&page=1", f"{API}?per_page=100&page=2"]
+
+
+@pytest.mark.parametrize("system,machine", [("FreeBSD", "x86_64"), ("Darwin", "ppc64"), ("Windows", "arm64")])
+def test_cli_check_uses_release_page_when_no_platform_archive_exists(
+    cli_github, monkeypatch, system, machine
+):
+    monkeypatch.setattr(releases.platform, "system", lambda: system)
+    monkeypatch.setattr(releases.platform, "machine", lambda: machine)
+    selected = releases.resolve_cli()
+    assert selected.version == "2.2.0"
+    assert selected.download_url is None
+    assert selected.release_url == f"https://github.com/{REPO}/releases/tag/cli-v2.2.0"
+    assert len(cli_github[1]) == 1
+
+
+def test_cli_check_uses_an_explicit_fork_for_both_links_and_metadata(cli_github):
+    fork = "example/AeroTizen"
+    cli_github[0][f"{API.replace(REPO, fork)}?per_page=100&page=1"] = json.loads(
+        json.dumps([cli_release()]).replace(REPO, fork)
+    )
+    selected = releases.resolve_cli(repository=fork)
+    assert selected.download_url.startswith(f"https://github.com/{fork}/releases/download/cli-v")
+    assert selected.release_url.startswith(f"https://github.com/{fork}/releases/tag/cli-v")
+    assert cli_github[1] == [f"{API.replace(REPO, fork)}?per_page=100&page=1"]
+
+
+def test_cli_check_does_not_treat_a_launcher_release_as_a_cli_release(cli_github):
+    cli_github[0][f"{API}?per_page=100&page=1"] = [release()]
+    with pytest.raises(releases.ReleaseError, match="No stable CLI release"):
+        releases.resolve_cli()
+
+
+def test_cli_check_rejects_duplicate_matching_assets(cli_github):
+    item = cli_release()
+    item["assets"] *= 2
+    cli_github[0][f"{API}?per_page=100&page=1"] = [item]
+    with pytest.raises(releases.ReleaseError, match="exactly one"):
+        releases.resolve_cli()
+
+
+def test_cli_check_rejects_an_untrusted_archive_url(cli_github):
+    item = cli_release()
+    item["assets"][0]["browser_download_url"] = "https://example.com/aerotizen.tar.gz"
+    cli_github[0][f"{API}?per_page=100&page=1"] = [item]
+    with pytest.raises(releases.ReleaseError, match="Unexpected download URL"):
+        releases.resolve_cli()
 
 
 def test_download_verifies_and_writes_unsigned_release(github, tmp_path):

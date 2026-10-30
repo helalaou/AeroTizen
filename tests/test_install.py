@@ -307,7 +307,9 @@ def updating(installation, monkeypatch):
 
 
 def update_args(**overrides):
-    return argparse.Namespace(**{"tv": "tv", "check": False, "release_repo": None, **overrides})
+    return argparse.Namespace(
+        **{"target": "launcher", "tv": "tv", "check": False, "release_repo": None, **overrides}
+    )
 
 
 def test_update_uses_one_session_and_the_saved_signing_profile(updating, capsys):
@@ -434,8 +436,9 @@ def test_update_download_error_releases_session_and_removes_partial_widget(updat
 
 
 @pytest.mark.parametrize("flags", [["--force"], ["--check", "--force"]])
-def test_update_rejects_force_before_any_device_or_release_access(updating, monkeypatch, flags):
-    monkeypatch.setattr("sys.argv", ["aerotizen", "update", "launcher", *flags])
+@pytest.mark.parametrize("target", ["launcher", "cli"])
+def test_update_rejects_force_before_any_device_or_release_access(updating, monkeypatch, flags, target):
+    monkeypatch.setattr("sys.argv", ["aerotizen", "update", target, *flags])
     with pytest.raises(SystemExit) as exc:
         cli.main()
     assert exc.value.code == 2

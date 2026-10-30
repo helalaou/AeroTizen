@@ -10,6 +10,7 @@
   aerotizen install PATH        sign + install a local app folder or .wgt
   aerotizen update launcher     update the installed launcher to the latest stable release
   aerotizen update launcher --check  compare versions without installing
+  aerotizen update cli --check  compare CLI versions and show the release download link
   aerotizen uninstall launcher  remove the launcher (or: uninstall APPID for another app you installed)
   aerotizen key KEY_VOLUP [n]   press a remote button
   aerotizen launch APPID        open an app and check that it came up
@@ -295,9 +296,38 @@ def cmd_install(args):
         sys.exit(f"Install failed: {exc}")
 
 
+def cmd_check_cli(args):
+    from aerotizen import releases
+
+    try:
+        release = releases.resolve_cli(repository=args.release_repo or releases.DEFAULT_REPOSITORY)
+        print(f"Installed CLI: {__version__}")
+        print(f"Latest stable CLI: {release.version}")
+        current_key, latest_key = releases.version_key(__version__), releases.version_key(release.version)
+        if current_key == latest_key:
+            print("The CLI is up to date.")
+        elif current_key > latest_key:
+            print("The installed CLI is newer than the latest stable release.")
+        else:
+            print("A CLI update is available.")
+            if release.download_url:
+                print(f"Download: {release.download_url}")
+                print("Download and extract the archive to update the CLI.")
+            else:
+                print("No matching CLI archive is available for this platform.")
+            print(f"Release: {release.release_url}")
+    except (OSError, ValueError) as exc:
+        sys.exit(f"CLI update check failed: {exc}")
+
+
 def cmd_update(args):
     from aerotizen import releases
 
+    if args.target == "cli":
+        if not args.check:
+            sys.exit("CLI updates are check-only. Run: aerotizen update cli --check")
+        cmd_check_cli(args)
+        return
     try:
         release = releases.resolve_launcher(repository=args.release_repo or releases.DEFAULT_REPOSITORY)
         host = pick_tv(args)
@@ -544,12 +574,12 @@ def main():
         "--release-repo", metavar="OWNER/REPO", help="download launcher releases from this repository"
     )
     p.set_defaults(fn=cmd_install)
-    p = sub.add_parser("update", help="update the installed launcher without uninstalling it")
-    p.add_argument("target", choices=["launcher"])
+    p = sub.add_parser("update", help="update the launcher or check for a newer CLI")
+    p.add_argument("target", choices=["launcher", "cli"], help="CLI supports --check only")
     p.add_argument(
         "--check", action="store_true", help="compare versions without downloading or installing the app"
     )
-    p.add_argument("--release-repo", metavar="OWNER/REPO", help="use launcher releases from this repository")
+    p.add_argument("--release-repo", metavar="OWNER/REPO", help="use releases from this repository")
     p.set_defaults(fn=cmd_update)
     p = sub.add_parser("uninstall", help="remove the launcher or another app you installed")
     p.add_argument("appid", help="'launcher' or an application ID")
