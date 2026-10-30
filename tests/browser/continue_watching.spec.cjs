@@ -106,7 +106,8 @@ test('opt-in discovery, selection, merged row, remote navigation, launch and res
   await page.evaluate(() => AeroTizen.continueWatching.refresh());
   await expect.poll(() => video.locator('.continue-progress-fill').evaluate(n => n.clientWidth)).toBe(124);
   expect(await page.evaluate(() => savedCards.slice(0, -1).every((n, i) => n === document.querySelectorAll('.continue-card')[i] && savedIcons[i] === n.querySelector('.continue-app-icon .app-artwork')))).toBe(true);
-  expect(await page.evaluate(() => savedCards[6] !== document.querySelectorAll('.continue-card')[6])).toBe(true);
+  // Preact updates the changed keyed record in place; progress above verifies fresh data.
+  expect(await page.evaluate(() => savedCards[6] === document.querySelectorAll('.continue-card')[6])).toBe(true);
   await page.keyboard.press('ArrowDown'); // app row -> Continue Watching
   await expect(page.locator('.continue-card').nth(2)).toHaveClass(/focused/);
   await page.keyboard.press('ArrowLeft');

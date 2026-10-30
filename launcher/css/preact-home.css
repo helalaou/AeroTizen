@@ -1,0 +1,75 @@
+/* Preact renders focus state; native focus must not add a second outline. */
+#home-root [role="button"]:focus { outline: none; }
+#custom-clock-root:empty { display: none; }
+
+/* Keep the content below the actual header, including tall clocks and local fonts. */
+#home-root { height: 1080px; display: flex; flex-direction: column; }
+#home-root > .topbar { flex: 0 0 auto; position: relative; z-index: 4; }
+#home-root > .content-viewport { flex: 1 1 auto; min-height: 0; height: auto; }
+/* Animate top-mask position instead of switching gradient images.
+   The independent bottom mask remains anchored to the viewport. */
+#home-root > .content-viewport {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 80px), rgba(0,0,0,.9) calc(100% - 60px), rgba(0,0,0,.5) calc(100% - 32px), rgba(0,0,0,.1) calc(100% - 10px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 80px), rgba(0,0,0,.9) calc(100% - 60px), rgba(0,0,0,.5) calc(100% - 32px), rgba(0,0,0,.1) calc(100% - 10px), transparent 100%);
+}
+#home-root .content-mask {
+  width: 100%; height: 100%;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.06) 16px, rgba(0,0,0,.22) 36px, rgba(0,0,0,.5) 60px, rgba(0,0,0,.78) 84px, rgba(0,0,0,.94) 100px, #000 112px);
+  mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.06) 16px, rgba(0,0,0,.22) 36px, rgba(0,0,0,.5) 60px, rgba(0,0,0,.78) 84px, rgba(0,0,0,.94) 100px, #000 112px);
+  -webkit-mask-size: 100% calc(100% + 112px); mask-size: 100% calc(100% + 112px);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: 0 -112px; mask-position: 0 -112px;
+  transition: -webkit-mask-position .32s cubic-bezier(.2,.72,.25,1), mask-position .32s cubic-bezier(.2,.72,.25,1);
+}
+#home-root .is-scrolled > .content-mask { -webkit-mask-position: 0 0; mask-position: 0 0; }
+#home-root #rows { transition: transform .32s cubic-bezier(.2,.72,.25,1); }
+/* One-shot reveals keep cached artwork and remote transactions synchronous.
+   Separate names restart cleanly on rapid Home/All apps changes, without timers. */
+.home-page-surface[data-page="home"] { animation: aero-page-home .24s ease-out both; }
+.home-page-surface[data-page="apps"] { animation: aero-page-apps .24s ease-out both; }
+@keyframes aero-page-home { from { opacity: .70; transform: translate3d(-12px,0,0); } to { opacity: 1; transform: none; } }
+@keyframes aero-page-apps { from { opacity: .70; transform: translate3d(12px,0,0); } to { opacity: 1; transform: none; } }
+/* Shared header geometry and moving plates in both appearances; themes change paint. */
+#home-root .topbar-left { position: relative; gap: 18px; }
+#home-root .topbar > .view-tabs {
+  position: absolute; left: 50%; top: 24px; transform: translate3d(-50%,0,0);
+  align-items: stretch; gap: 0; padding: 7px; height: 76px; min-height: 76px;
+  border: 1px solid #444448; border-radius: 28px;
+}
+#home-root .topbar > .view-tabs .view-tab {
+  position: relative; z-index: 2; display: flex; align-items: center; justify-content: center;
+  min-width: 155px; height: 60px; padding: 0 25px;
+  font-family: "SamsungOne","Roboto",Arial,sans-serif; font-size: 25px; font-weight: 500;
+  border: 1px solid transparent; border-radius: 20px;
+  transform: none; box-shadow: none; background: transparent;
+  transition: color .15s ease-out;
+}
+#home-root .topbar > .view-tabs .view-tab:last-child { min-width: 205px; }
+#home-root .topbar-left > .icon-btn { position: relative; z-index: 1; flex: 0 0 64px; }
+#home-root .topbar-left > .icon-btn.focused { transform: none; background: transparent; box-shadow: none; }
+#home-root #aero-header-focus, #home-root #aero-tab-glider {
+  position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none;
+  border: 2px solid var(--focus); background: rgba(124,92,255,.16);
+  transition: transform .18s cubic-bezier(.2,.72,.25,1), opacity .15s ease-out;
+}
+#home-root #aero-header-focus.no-motion, #home-root #aero-tab-glider.no-motion { transition: none; }
+#home-root #aero-header-focus { opacity: 0; border-radius: 50%; }
+#home-root #aero-header-focus.is-visible { opacity: 1; }
+#home-root #aero-tab-glider { border-color: transparent; border-radius: 19px; }
+#home-root #aero-tab-glider.is-focused { border-color: var(--focus); }
+#home-root .view-tabs .view-tab:focus { outline: none; }
+#home-root .view-tabs .view-tab.focused { box-shadow: none; }
+body.glass-ui #home-root #aero-header-focus,
+body.glass-ui #home-root #aero-tab-glider { background: rgba(236,242,255,.16); }
+/* Continue Watching follows the same short composited focus movement as app tiles. */
+#home-root .continue-card {
+  transform: translateZ(0) scale(.98);
+  transform-origin: center;
+  transition: transform .17s cubic-bezier(.20,.72,.25,1);
+}
+#home-root .continue-card.focused { transform: translate3d(0,-4px,0) scale(1.035); }
+@media (prefers-reduced-motion: reduce) {
+  #home-root .continue-card, #home-root .content-mask, #home-root #rows,
+  #home-root #aero-header-focus, #home-root #aero-tab-glider { transition: none; }
+  #home-root .home-page-surface { animation: none; }
+}

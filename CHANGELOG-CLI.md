@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.5.0](https://github.com/helalaou/AeroTizen/compare/cli-v2.4.0...cli-v2.5.0) (2026-10-29)
+
+
+### Features
+
+* **launcher:** add opt-in Continue Watching ([#62](https://github.com/helalaou/AeroTizen/issues/62)) ([5314580](https://github.com/helalaou/AeroTizen/commit/5314580d943cc91a25ff41da287fbbd0646f4f00))
+* **launcher:** add optional dynamic weather wallpapers ([#35](https://github.com/helalaou/AeroTizen/issues/35)) ([c4b649b](https://github.com/helalaou/AeroTizen/commit/c4b649b4fa22a43e19842f0f6d52acdfa69cc1d3))
+
+
+### Bug Fixes
+
+* **cli:** allow launcher boot backup changes during Home apply ([#79](https://github.com/helalaou/AeroTizen/issues/79)) ([66ef53c](https://github.com/helalaou/AeroTizen/commit/66ef53c5298df353c43efcabf57fe3c23a6ec564))
+* **release:** include local weather wallpapers and provenance in WGT ([#74](https://github.com/helalaou/AeroTizen/issues/74)) ([d4ea6d2](https://github.com/helalaou/AeroTizen/commit/d4ea6d27357cc68fc22f7bfe77cb24285e6d3527))
+* **weather:** refresh cached forecasts missing current solar data ([#72](https://github.com/helalaou/AeroTizen/issues/72)) ([47a5911](https://github.com/helalaou/AeroTizen/commit/47a5911b15a785eee67bc886b2f6474f46aaaff4))
+
+
+### Documentation
+
+* add newly reported TVs to the tested list ([#86](https://github.com/helalaou/AeroTizen/issues/86)) ([b87cf6d](https://github.com/helalaou/AeroTizen/commit/b87cf6d9a4613c1a24b104b983955af24a674261))
+* update contributors ([#87](https://github.com/helalaou/AeroTizen/issues/87)) ([a2dae26](https://github.com/helalaou/AeroTizen/commit/a2dae26873cf823b9d4cbe1606b77f6de8f43e46))
+
 ## [2.4.0](https://github.com/helalaou/AeroTizen/compare/cli-v2.3.0...cli-v2.4.0) (2026-10-27)
 
 

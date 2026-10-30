@@ -33,7 +33,10 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const before = JSON.stringify(A.settings.home);
       // Use the real home -> gear -> OK -> Settings route.
-      key(K.UP); key(K.LEFT); key(K.ENTER); key(K.ENTER, 'keyup');
+      key(K.UP);
+      for (let step = 0; step < 4 && !document.getElementById('gear').classList.contains('focused'); step++) key(K.LEFT);
+      assert(document.getElementById('gear').classList.contains('focused'), 'gear is reachable through the header controls');
+      key(K.ENTER); key(K.ENTER, 'keyup');
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       assert(A.settingsUi.isOpen(), 'remote opens Settings');
       assert(document.querySelector('#editor .focused').dataset.key === 'bg:aurora', 'initial focus');

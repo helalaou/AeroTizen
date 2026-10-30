@@ -7,9 +7,7 @@
   var layer = document.getElementById('weather-photo');
   var scene = '', pending = '', failed = '', image = null, timer = null, generation = 0, started = false;
 
-  function localPhoto(code, isDay) {
-    // The is_day field applies to every WMO code, including rain and snow.
-    if (isDay === 0 || isDay === '0') { return 'night'; }
+  function localPhoto(code) {
     var c = Number(code);
     if (c === 0 || c === 1) { return 'sun'; }
     if (c === 2) { return 'partly'; }
@@ -22,27 +20,7 @@
   }
 
   function solarPhase(reading, now) {
-    if (!reading || !Array.isArray(reading.solar) || !reading.solar.length ||
-        typeof reading.at !== 'number' || now - reading.at > 36 * 3600000) {
-      return '';
-    }
-    var earliest = Infinity, latest = -Infinity;
-    for (var i = 0; i < reading.solar.length; i++) {
-      var day = reading.solar[i] || {};
-      var rise = Number(day.sunrise), set = Number(day.sunset);
-      if (!isFinite(rise) || !isFinite(set) || set <= rise) { continue; }
-      if (rise < earliest) { earliest = rise; }
-      if (set > latest) { latest = set; }
-      if (now >= set - 45 * 60000 && now < set + 20 * 60000) {
-        return 'sunset';
-      }
-      if (now >= rise - 10 * 60000 && now < set - 45 * 60000) {
-        return 'day';
-      }
-    }
-    if (earliest !== Infinity && now >= earliest - 18 * 3600000 &&
-        now <= latest + 18 * 3600000) { return 'night'; }
-    return '';
+    return window.Weather && window.Weather.solarPhase ? window.Weather.solarPhase(reading, now) : '';
   }
 
   function sceneFor(reading, now) {
@@ -50,6 +28,9 @@
       return '';
     }
     var phase = solarPhase(reading, now);
+    // Old is_day values (or a missing value) cannot reliably describe the current
+    // phase. Keep the selected background until the shared forecast supplies it.
+    if (!phase) { return ''; }
     if (phase === 'night') { return 'night'; }
     if (phase === 'sunset' &&
         (reading.code === 0 || reading.code === 1 || reading.code === 2)) {
@@ -57,7 +38,7 @@
     }
     // Solar timestamps supersede an old is_day reading, but only when
     // the forecast contains trustworthy data for the current location.
-    return localPhoto(reading.code, phase === 'day' || phase === 'sunset' ? 1 : reading.day);
+    return localPhoto(reading.code);
   }
 
   function cancelImage() {

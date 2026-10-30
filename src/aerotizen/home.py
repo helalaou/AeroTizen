@@ -326,7 +326,10 @@ def validate_backup(document, identity):
         if home["default_app"] == releases.APP_ID or any(
             item["value"] == releases.APP_ID for item in home["settings"].values()
         ):
-            raise ValueError("AeroTizen is already present in the Home/startup baseline")
+            raise ValueError(
+                "AeroTizen is already present in the Home/startup baseline. "
+                "Capture the original values before opening AeroTizen; keep any existing original backup."
+            )
         evidence = document["evidence"]
         required = ["authenticated", "query_staging_cleaned"]
         if evidence["access"] == "temporary_root":
@@ -374,8 +377,14 @@ def save_backup(status, *, output=None, state_dir=None):
     created = False
     if not path.exists():
         candidate = baseline_from_status(status)
-        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        descriptor, temporary = tempfile.mkstemp(prefix=".home-backup-", dir=path.parent)
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        except OSError as exc:
+            raise HomeError(f"Cannot create Home backup directory at {path.parent}: {exc}") from exc
+        try:
+            descriptor, temporary = tempfile.mkstemp(prefix=".home-backup-", dir=path.parent)
+        except OSError as exc:
+            raise HomeError(f"Cannot create temporary Home backup in {path.parent}: {exc}") from exc
         temporary = Path(temporary)
         try:
             with os.fdopen(descriptor, "wb") as stream:
@@ -384,6 +393,16 @@ def save_backup(status, *, output=None, state_dir=None):
                 os.fsync(stream.fileno())
             try:
                 os.link(temporary, path)  # Atomic create-if-absent, never replace an original.
+            except FileExistsError:
+                pass
+            except OSError as exc:
+                raise HomeError(
+                    f"Cannot publish original Home backup at {path} (path length {len(str(path))}). "
+                    "Parent directory creation completed, but the atomic hard link failed. "
+                    "On Windows, try --output with a short path on a local NTFS drive. "
+                    f"Keep any existing original backup. {exc}"
+                ) from exc
+            else:
                 created = True
                 if os.name != "nt":
                     folder = os.open(path.parent, os.O_RDONLY)
@@ -391,8 +410,6 @@ def save_backup(status, *, output=None, state_dir=None):
                         os.fsync(folder)
                     finally:
                         os.close(folder)
-            except FileExistsError:
-                pass
         finally:
             temporary.unlink(missing_ok=True)
     document, digest = _load_backup(path, identity)

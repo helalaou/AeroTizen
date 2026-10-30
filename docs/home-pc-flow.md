@@ -43,14 +43,25 @@ after uninstall is still awaiting a controlled physical test; restore before nor
 
 ## Setup
 
-After installing and opening the compatible launcher:
+Before opening the compatible launcher, save the original Home values:
 
 ```sh
 aerotizen --tv TV_IP home status
 aerotizen --tv TV_IP home backup
+```
+
+Then open AeroTizen on the TV to start its control service:
+
+```sh
 aerotizen home apply                                     # offline preview
 aerotizen --tv TV_IP home apply --yes
 ```
+
+Keep any existing valid original backup. On some TVs, opening AeroTizen changes
+only `db/appfw/booting_appid_backup` to `DclHome001.Home`. Apply accepts that
+specific difference and restores the saved startup values before completing
+Home-only apply. All other baseline checks remain exact. This exception does
+not allow an AeroTizen value in a new original backup.
 
 The original is saved once in the PC's
 `~/.config/aerotizen/backups/<TV identity>/original-home.json`.
