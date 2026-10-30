@@ -3,10 +3,10 @@ import { flushSync } from 'preact/compat';
 import { useSettingsEnvironment } from './useSettingsEnvironment';
 import type { SettingsInventorySnapshot } from '../types';
 
-interface Layout extends SettingsInventorySnapshot { continueEnabled: boolean; animated: boolean; locationLabel?: string }
+interface Layout extends SettingsInventorySnapshot { continueEnabled: boolean; animated: boolean; locationLabel?: string; clockLayout?: string }
 const SPACE_KEY = 32;
 
-export const useSettingsNavigation = (active: boolean, previewing: boolean, { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel }: Layout) => {
+export const useSettingsNavigation = (active: boolean, previewing: boolean, { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel, clockLayout }: Layout) => {
   const { navigation, bridge, services, actions, settings, view, root } = useSettingsEnvironment();
   const wasOpen = useRef(false);
   useLayoutEffect(() => {
@@ -14,7 +14,7 @@ export const useSettingsNavigation = (active: boolean, previewing: boolean, { ap
     if (active && !wasOpen.current) { navigation.reset('bg:' + settings.getSnapshot().background); }
     wasOpen.current = active;
     if (active && !previewing) { navigation.focus(); } else { navigation.clear(); }
-  }, [active, previewing, apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel, navigation, settings]);
+  }, [active, previewing, apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel, navigation, settings, clockLayout]);
   useLayoutEffect(() => {
     if (!active) { return; }
     const resize = () => {
