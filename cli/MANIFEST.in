@@ -1,3 +1,5 @@
 include requirements.txt
 recursive-include native *.cs *.csproj
+prune native/*/bin
+prune native/*/obj
 recursive-include tools *.py

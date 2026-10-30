@@ -64,6 +64,7 @@ def test_root_and_cli_build_the_same_wheel(distributions):
 @pytest.mark.parametrize("package", ["root", "cli"])
 def test_sdist_builds_without_the_repository(package, distributions, tmp_path):
     with tarfile.open(distributions[package]["sdist"]) as archive:
+        assert not any("/obj/" in name or "/bin/" in name for name in archive.getnames())
         archive.extractall(tmp_path, filter="data")
     source = tmp_path / f"aerotizen-{__version__}"
     assert 'build-backend = "setuptools.build_meta"' in (source / "pyproject.toml").read_text()
