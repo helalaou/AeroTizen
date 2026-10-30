@@ -147,10 +147,17 @@
   }
 
   function toLocale(raw) {
-    var code = normalize(raw), lower = typeof raw === 'string' ? raw.toLowerCase().replace(/_/g, '-') : '';
-    if (code === 'it') { return 'it-IT'; }
-    if (lower.indexOf('en-us') === 0) { return 'en-US'; }
-    return 'en-GB';
+    var tag = typeof raw === 'string' ? raw.replace(/_/g, '-') : '';
+    if (/^ita(-|$)/i.test(tag)) { return 'it-IT'; }
+    if (/^eng(-|$)/i.test(tag)) { return /-(us|usa)$/i.test(tag) ? 'en-US' : 'en-GB'; }
+    // UI translation fallback must not replace the clock's valid system locale.
+    if (!/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/i.test(tag)) { return 'en-GB'; }
+    try {
+      if (window.Intl && window.Intl.DateTimeFormat) {
+        return new window.Intl.DateTimeFormat(tag).resolvedOptions().locale;
+      }
+    } catch (e) { return 'en-GB'; }
+    return tag;
   }
 
   function t(english) {

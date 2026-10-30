@@ -150,3 +150,13 @@ test('manual HDMI exceptions from the independent input PR localise safely', () 
   const en = harness('en-GB', false);
   assert.equal(en.A.i18n.t('HDMI always visible'), 'HDMI always visible');
 });
+
+
+test('English UI fallback preserves non-English clock locales', () => {
+  for (const locale of ['ko-KR', 'fi-FI', 'ar-EG']) {
+    const h = harness(locale, false);
+    assert.equal(h.A.i18n.code(), 'en');
+    assert.equal(h.A.i18n.locale(), locale);
+  }
+  assert.equal(harness('not a locale', false).A.i18n.locale(), 'en-GB');
+});
