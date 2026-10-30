@@ -11,6 +11,7 @@ sealed class Fake : IPlatform
     public string Firmware { get; set; } = "TEST-1";
     public bool Eligible = true, SideEffects, AutoSideEffects, AutoBadScreen, FailAll, SilentMain, LostCommit, ChangeDuringHold;
     public bool Installed = true, WatcherUnavailable, InstallationUnavailable, ReinstallOnWrite;
+    public string BootBackupDuringHold;
     public int FailWrite, FailFrom, Writes;
     public string MissingLibrary, MissingSymbol;
     public int PointerSize = 4;
@@ -83,6 +84,7 @@ sealed class Fake : IPlatform
         Events.Add("mode:" + mode);
         Control = new Watcher { Protocol = 1, AppId = Policy.Target, Persistent = true, Mode = mode, Transaction = transaction, BaselineHash = hash };
         if (ChangeDuringHold && mode == "hold") Current.Main = "Other.Home";
+        if (BootBackupDuringHold != null && mode == "hold") Current.Strings["db/appfw/booting_appid_backup"] = BootBackupDuringHold;
         if (LostCommit && mode == "native") throw new Exception("commit response lost");
         return Control;
     }
@@ -149,6 +151,73 @@ static class Program
         Test("derived startup and autostart side effects are put back", () => {
             var fake = new Fake { SideEffects = true }; Check(Policy.Execute(fake, Request()).Success);
             Check(fake.Current.AutoStart == 0 && fake.Current.Strings["db/first_screen/type"] == "Samsung.Home");
+        });
+        Test("launcher boot backup drift permits Home-only and boot apply with the saved startup values", () => {
+            foreach (bool boot in new[] { false, true }) foreach (int autoStart in new[] { 0, 1 }) {
+                var request = Request(); request.Boot = boot; request.Original.AutoStart = autoStart;
+                request.Original.Main = "com.samsung.tv.csfs";
+                foreach (string key in Policy.Keys) request.Original.Strings[key] = request.Original.Main;
+                var original = request.Original.Copy();
+                var fake = new Fake { Current = original.Copy(), SideEffects = true };
+                fake.Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
+                var result = Policy.Execute(fake, request);
+                var desired = original.Copy(); desired.Main = Policy.Target; desired.Strings[Policy.HomeKey] = Policy.Target;
+                if (boot) desired.AutoStart = 1;
+                Check(result.Success && Policy.Same(fake.Current, desired));
+                Check(Policy.Same(request.Original, original), "original snapshot must not change");
+                Check(fake.Events[0] == "mode:hold" && fake.Control.Mode == "native");
+            }
+        });
+        Test("apply from launcher boot backup drift still restores the exact original", () => {
+            var fake = new Fake(); fake.Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
+            Check(Policy.Execute(fake, Request()).Success);
+            Check(Policy.Execute(fake, Request("restore")).Success && Policy.Same(fake.Current, Fake.Original()));
+            Check(fake.Control.Mode == "watcher");
+        });
+        Test("apply failure after launcher boot backup drift rolls back before watcher resumes", () => {
+            foreach (bool lostCommit in new[] { false, true }) {
+                var fake = new Fake { FailWrite = lostCommit ? 0 : 2, LostCommit = lostCommit };
+                fake.Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
+                var result = Policy.Execute(fake, Request());
+                Check(!result.Success && result.RolledBack && Policy.Same(fake.Current, Fake.Original()));
+                Check(fake.Events[fake.Events.Count - 1] == "mode:watcher");
+            }
+        });
+        Test("launcher boot backup drift does not permit any other native change", () => {
+            foreach (string key in Policy.Keys) foreach (string value in new[] { "Other.App", Policy.Target }) {
+                if (key == "db/appfw/booting_appid_backup" && value == Policy.Target) continue;
+                var fake = new Fake(); fake.Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
+                fake.Current.Strings[key] = value; Refused(fake, Request());
+            }
+            foreach (string value in new[] { "Other.Home", Policy.Target }) {
+                var fake = new Fake(); fake.Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
+                fake.Current.Main = value; Refused(fake, Request());
+            }
+            var auto = new Fake(); auto.Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
+            auto.Current.AutoStart = 1; Refused(auto, Request());
+        });
+        Test("launcher boot backup ID cannot become an original baseline", () => {
+            var request = Request(); request.Original.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
+            var fake = new Fake(); Refused(fake, request); Check(!fake.CompatibilityChecked);
+        });
+        Test("boot backup changes during watcher handoff still prevent native writes", () => {
+            foreach (string value in new[] { "Other.App", "TV.Viewer" }) {
+                var fake = new Fake { BootBackupDuringHold = value };
+                fake.Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
+                var result = Policy.Execute(fake, Request());
+                Check(!result.Success && fake.Writes == 0 && fake.Control.Mode == "hold");
+                Check(fake.Current.Strings["db/appfw/booting_appid_backup"] == value);
+            }
+        });
+        Test("launcher boot backup drift still requires eligible app and compatible watcher mode", () => {
+            foreach (string mode in new[] { "watcher", "native", "hold" }) {
+                var fake = new Fake { Eligible = mode != "watcher" };
+                fake.Control.Mode = mode; fake.Control.BaselineHash = new string('b', 64);
+                fake.Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
+                Refused(fake, Request());
+            }
+            var old = new Fake(); old.Control.Protocol = 0;
+            old.Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target; Refused(old, Request());
         });
         for (int index = 1; index <= 5; index++) {
             int failure = index;

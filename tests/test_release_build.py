@@ -223,3 +223,38 @@ def test_cli_release_requires_the_home_helper_before_freezing(tmp_path):
     with pytest.raises(ValueError, match="Home helper"):
         build.build_cli(tmp_path, tmp_path / "output")
     assert not (tmp_path / "output").exists()
+
+
+def add_weather_runtime(launcher):
+    runtime = launcher / "dist/launcher"
+    (runtime / "js/photo-weather.js").write_text("local weather scenes")
+    weather = runtime / "assets/weather"
+    weather.mkdir(parents=True)
+    names = [
+        f"{scene}.jpg"
+        for scene in ("sun", "partly", "cloud", "rain", "storm", "snow", "fog", "night", "sunset")
+    ]
+    for name in [*names, "CREDITS.md", "MANIFEST.json"]:
+        (weather / name).write_bytes(f"original asset: {name}".encode())
+    return weather
+
+
+def test_weather_release_includes_all_scenes_and_provenance_without_changing_bytes(launcher, tmp_path):
+    weather = add_weather_runtime(launcher)
+    first = build.build_launcher(launcher, tmp_path / "first")
+    second = build.build_launcher(launcher, tmp_path / "second")
+    assert first.read_bytes() == second.read_bytes()
+    with zipfile.ZipFile(first) as archive:
+        names = [name for name in archive.namelist() if name.startswith("assets/weather/")]
+        assert len(names) == 11
+        for path in weather.iterdir():
+            assert archive.read("assets/weather/" + path.name) == path.read_bytes()
+
+
+@pytest.mark.parametrize("missing", ["night.jpg", "CREDITS.md", "MANIFEST.json"])
+def test_weather_release_refuses_missing_runtime_asset_or_provenance(launcher, tmp_path, missing):
+    weather = add_weather_runtime(launcher)
+    (weather / missing).unlink()
+    with pytest.raises(ValueError, match="Runtime file"):
+        build.build_launcher(launcher, tmp_path / "output")
+    assert not (tmp_path / "output").exists()
