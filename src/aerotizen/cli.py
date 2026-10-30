@@ -11,6 +11,7 @@
   aerotizen update launcher     update the installed launcher to the latest stable release
   aerotizen update launcher --check  compare versions without installing
   aerotizen update cli --check  compare CLI versions and show the release download link
+  aerotizen update cli          replace the standalone CLI with a newer release
   aerotizen uninstall launcher  remove the launcher (or: uninstall APPID for another app you installed)
   aerotizen key KEY_VOLUP [n]   press a remote button
   aerotizen launch APPID        open an app and check that it came up
@@ -296,7 +297,7 @@ def cmd_install(args):
         sys.exit(f"Install failed: {exc}")
 
 
-def cmd_check_cli(args):
+def cmd_update_cli(args):
     from aerotizen import releases
 
     try:
@@ -312,21 +313,34 @@ def cmd_check_cli(args):
             print("A CLI update is available.")
             if release.download_url:
                 print(f"Download: {release.download_url}")
-                print("Download and extract the archive to update the CLI.")
+                if args.check:
+                    print("Run 'aerotizen update cli' to install this release.")
             else:
                 print("No matching CLI archive is available for this platform.")
             print(f"Release: {release.release_url}")
+            if not args.check:
+                from aerotizen import self_update
+
+                result = self_update.install(
+                    release, repository=args.release_repo or releases.DEFAULT_REPOSITORY
+                )
+                if result.receipt:
+                    print(
+                        "CLI update staged. It will finish after this process exits. "
+                        f"Result: {result.receipt}"
+                    )
+                else:
+                    print(f"Updated CLI to {release.version}. Previous executable: {result.backup}")
     except (OSError, ValueError) as exc:
-        sys.exit(f"CLI update check failed: {exc}")
+        action = "check " if args.check else ""
+        sys.exit(f"CLI update {action}failed: {exc}")
 
 
 def cmd_update(args):
     from aerotizen import releases
 
     if args.target == "cli":
-        if not args.check:
-            sys.exit("CLI updates are check-only. Run: aerotizen update cli --check")
-        cmd_check_cli(args)
+        cmd_update_cli(args)
         return
     try:
         release = releases.resolve_launcher(repository=args.release_repo or releases.DEFAULT_REPOSITORY)
@@ -574,8 +588,8 @@ def main():
         "--release-repo", metavar="OWNER/REPO", help="download launcher releases from this repository"
     )
     p.set_defaults(fn=cmd_install)
-    p = sub.add_parser("update", help="update the launcher or check for a newer CLI")
-    p.add_argument("target", choices=["launcher", "cli"], help="CLI supports --check only")
+    p = sub.add_parser("update", help="update the launcher or standalone CLI")
+    p.add_argument("target", choices=["launcher", "cli"])
     p.add_argument(
         "--check", action="store_true", help="compare versions without downloading or installing the app"
     )

@@ -180,12 +180,23 @@ You need a computer on the same network as the TV.
    To select a specific version, use `./aerotizen install launcher --version 2.2.0`
    (replace the number with a published launcher version). CLI and launcher versions
    are independent; these commands update the TV launcher, not the CLI executable.
-   A launcher release can require a newer CLI. Run `./aerotizen update cli --check`
-   to compare your CLI with the latest stable CLI release. This needs no TV
-   connection and shows the matching archive link when a newer version is available.
-   Download and extract that archive to update the CLI. If no archive matches your
-   OS and CPU, the check links to the release page. Use `./aerotizen --version` to
-   show your CLI version without a network request.
+   A launcher release can require a newer CLI. Check and update a downloaded
+   standalone copy with:
+
+   ```bash
+   ./aerotizen update cli --check
+   ./aerotizen update cli
+   ```
+
+   These commands need no TV connection. The update downloads the matching OS/CPU
+   archive, verifies its checksum and version, and replaces the running CLI's file.
+   It keeps the previous executable and prints its backup path. Current or newer
+   versions are left unchanged. Settings and TV certificates stay in place.
+
+   On Windows, replacement finishes after the original process exits. Wait for the
+   completion message; the command also prints a JSON result path for failures.
+   Python-installed copies show a package-installer command instead of replacing
+   the Python executable. Use `./aerotizen --version` to confirm the installed version.
 
    To install local development files or a downloaded package, use an explicit path:
    `./aerotizen install ./dist/launcher` (after `npm ci && npm run build`) or

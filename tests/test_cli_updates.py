@@ -2,7 +2,7 @@
 
 import pytest
 
-from aerotizen import cli, releases
+from aerotizen import cli, releases, self_update
 
 
 @pytest.fixture
@@ -76,11 +76,28 @@ def test_cli_check_passes_an_explicit_repository(cli_check, monkeypatch):
     assert cli_check[1] == ["example/AeroTizen"]
 
 
-def test_cli_update_requires_check_before_any_network_or_tv_access(cli_check, monkeypatch):
+def test_cli_update_calls_the_executable_updater(cli_check, monkeypatch, tmp_path, capsys):
+    calls = []
+
+    def install(release, *, repository):
+        calls.append((release, repository))
+        return self_update.UpdateResult(tmp_path / "previous-cli")
+
+    monkeypatch.setattr(self_update, "install", install)
     monkeypatch.setattr("sys.argv", ["aerotizen", "update", "cli"])
-    with pytest.raises(SystemExit, match="aerotizen update cli --check"):
-        cli.main()
-    assert not cli_check[1]
+    cli.main()
+    assert calls == [(cli_check[0], releases.DEFAULT_REPOSITORY)]
+    assert "Updated CLI to 2.2.0" in capsys.readouterr().out
+
+
+def test_cli_update_reports_windows_handoff_as_pending(cli_check, monkeypatch, tmp_path, capsys):
+    result = self_update.UpdateResult(tmp_path / "previous-cli", tmp_path / "result.json")
+    monkeypatch.setattr(self_update, "install", lambda *args, **kwargs: result)
+    monkeypatch.setattr("sys.argv", ["aerotizen", "update", "cli"])
+    cli.main()
+    output = capsys.readouterr().out
+    assert "CLI update staged" in output and str(result.receipt) in output
+    assert "Updated CLI to" not in output
 
 
 def test_cli_check_reports_release_lookup_failure(cli_check, monkeypatch):

@@ -186,6 +186,19 @@ def test_cli_check_rejects_an_untrusted_archive_url(cli_github):
         releases.resolve_cli()
 
 
+def test_cli_release_resolves_its_named_checksum_asset(cli_github):
+    item = cli_release()
+    archive = item["assets"][0]
+    checksum = {
+        "name": archive["name"] + ".sha256",
+        "browser_download_url": archive["browser_download_url"] + ".sha256",
+    }
+    item["assets"].append(checksum)
+    cli_github[0][f"{API}?per_page=100&page=1"] = [item]
+    assert releases.resolve_cli().checksum_url == checksum["browser_download_url"]
+    assert len(cli_github[1]) == 1
+
+
 def test_download_verifies_and_writes_unsigned_release(github, tmp_path):
     result = releases.download_launcher(tmp_path)
     assert result.version == "2.2.0"

@@ -170,19 +170,41 @@ Intentional version selection remains available with
 Launcher updates do not replace the CLI executable. Update detection inside the TV
 app is separate work.
 
-### CLI version checks
+### CLI updates
 
 Run `aerotizen update cli --check` to compare the running CLI version with the highest
 stable `cli-vX.Y.Z` release. It reads release metadata only, ignores launcher releases,
 drafts and prereleases, and needs no TV connection or signing certificates. Use
 `--release-repo OWNER/REPO` to check a fork.
 
-If a newer CLI exists, the command shows the matching OS/CPU archive link and the
-release page. If no archive matches, it shows the release page and states that no
-matching archive is available. Current and newer CLI versions are reported without
-offering a reinstall or downgrade. The command does not download or replace the CLI;
-download and extract the archive to update it. `aerotizen update cli` without
-`--check` stops with a usage message.
+If a newer CLI exists, the check shows the matching OS/CPU archive link and the
+release page. If no archive matches, it states that limitation and links to the
+release page. Current and newer versions are left unchanged.
+
+Run `aerotizen update cli` to replace a downloaded standalone executable. The updater
+requires the selected archive's `.sha256` asset, validates its named checksum, and
+accepts only the executable and LICENSE as regular archive files. It rejects paths,
+links, duplicate or unexpected files, oversized packages and incomplete archives.
+It stages the binary in the installation folder, runs its `--version`, and replaces
+the executable only after that version matches the selected release. An installation
+lock prevents simultaneous updates. A unique previous-executable backup is retained;
+failed final verification restores it. The user configuration and TV certificates
+are not moved or rewritten. Folder permission errors stop the update without elevation.
+
+macOS and Linux use an atomic rename, then verify the installed binary. On Windows,
+the running executable must first exit: a bundled PowerShell helper waits for that
+exit, acquires the installation lock, and uses `File.Replace` with a backup. It retries
+briefly while the onefile parent still holds the executable. The CLI reports this as
+staged; the helper prints completion and saves a JSON result beside the executable.
+`state: complete` confirms success; `restored` means verification failed and the old
+executable was restored. A `failed` result can require recovery from the printed
+backup path. The helper removes its staging folder after completion.
+
+Python-installed copies report the exact pinned `python -m pip install --upgrade`
+command for their interpreter and selected repository. The updater never replaces a
+Python interpreter or changes package-manager installations itself.
+
+See [CLI update validation](cli-updates.md) for the manual checks and native test matrix.
 
 ## Local checks
 
@@ -193,7 +215,7 @@ python -m pip install -e '.[dev]'
 npm ci
 npm run build
 python tools/build_release.py launcher --output dist/releases/launcher
-python -m pip install 'pyinstaller>=6,<7' certifi
+python -m pip install 'pyinstaller>=6.22.1,<7' certifi
 python tools/build_release.py cli --output dist/cli
 ```
 

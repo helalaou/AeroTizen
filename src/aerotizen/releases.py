@@ -42,6 +42,7 @@ class CLIRelease:
     version: str
     release_url: str
     download_url: str | None
+    checksum_url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -190,9 +191,9 @@ def _asset_url(release, repository, name):
     return actual
 
 
-def resolve_cli(*, repository=DEFAULT_REPOSITORY):
+def resolve_cli(*, repository=DEFAULT_REPOSITORY, version=None):
     """Find the latest stable CLI and a matching archive link without downloading it."""
-    release, version = _release(repository, None, component="cli")
+    release, version = _release(repository, version, component="cli")
     release_url = f"https://github.com/{repository}/releases/tag/cli-v{version}"
     assets = release.get("assets")
     if not isinstance(assets, list):
@@ -202,12 +203,15 @@ def resolve_cli(*, repository=DEFAULT_REPOSITORY):
     system = systems.get(platform.system())
     architecture = architectures.get(platform.machine().lower())
     download_url = None
+    checksum_url = None
     if system and architecture:
         suffix = "zip" if system == "windows" else "tar.gz"
         name = f"aerotizen-{version}-{system}-{architecture}.{suffix}"
         if any(isinstance(asset, dict) and asset.get("name") == name for asset in assets):
             download_url = _asset_url(release, repository, name)
-    return CLIRelease(version=version, release_url=release_url, download_url=download_url)
+            if any(isinstance(asset, dict) and asset.get("name") == name + ".sha256" for asset in assets):
+                checksum_url = _asset_url(release, repository, name + ".sha256")
+    return CLIRelease(version, release_url, download_url, checksum_url)
 
 
 def _check_package(data, version):
