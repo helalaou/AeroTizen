@@ -1,0 +1,145 @@
+/* Square / Rectangle appearance modes, adapted from the tested AeroTizen
+   brand-banner geometry. Square is unchanged by default.
+   Layout is sized explicitly for older TV WebKit versions (no aspect-ratio). */
+
+/* Square keeps its existing appearance unless a user chooses 4 columns or
+   overrides the previous Big/Small 3/5-column presets. */
+.app-grid.cards-square.cols-4,
+.app-grid.cards-square.cols-5.cards-big {
+  justify-content: flex-start;
+  gap: 30px 32px;
+}
+.app-grid.cards-square.cols-3.cards-small {
+  justify-content: center; gap: 36px 48px;
+}
+.app-grid.cards-square.cols-3.cards-small .tile,
+.app-grid.cards-square.cols-4 .tile,
+.app-grid.cards-square.cols-5.cards-big .tile {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.app-grid.cards-square.cols-3.cards-small .tile { width: 420px; height: 420px; }
+.app-grid.cards-square.cols-4 .tile { width: 424px; height: 424px; }
+.app-grid.cards-square.cols-5.cards-big .tile { width: 332px; height: 332px; }
+
+/* Reference rectangle geometry is 576 x 300 at three columns.
+   Smaller modes retain its aspect ratio exactly. */
+.app-grid.cards-rectangle {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-content: flex-start;
+  width: 100%;
+  gap: 30px 32px;
+  margin: 6px 0 40px;
+}
+.app-grid.cards-rectangle .tile {
+  box-sizing: border-box;
+  display: flex;
+  flex: 0 0 auto;
+  min-width: 0; min-height: 0;
+  align-items: center; justify-content: center;
+  padding: 0 14px;
+  gap: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform .17s ease-out, box-shadow .17s ease-out;
+}
+.app-grid.cards-rectangle.cols-3 .tile { width: 576px; height: 300px; }
+.app-grid.cards-rectangle.cols-4 .tile { width: 424px; height: 221px; gap: 16px; }
+.app-grid.cards-rectangle.cols-5 .tile { width: 332.8px; height: 173px; gap: 13px; }
+
+/* The fallback is built from the official AeroTizen brand metadata,
+   with its original wordmark/logo rather than square Samsung artwork. */
+.app-grid.cards-rectangle .tile.app-tile .app-fallback {
+  display: flex; flex-direction: row;
+  width: 100%; height: 100%;
+  padding: 0; gap: 20px;
+  align-items: center; justify-content: center;
+}
+.app-grid.cards-rectangle .tile.app-tile .logo {
+  display: block; flex: 0 0 auto;
+  width: 150px; height: 150px;
+  object-fit: contain; border-radius: 0;
+}
+.app-grid.cards-rectangle .tile.app-tile .app-fallback.logo-only .logo {
+  width: 380px; height: 190px; max-width: 90%;
+}
+.app-grid.cards-rectangle .tile.app-tile .app-fallback.logo-big .logo {
+  width: 90%; height: 280px; max-width: 90%;
+}
+.app-grid.cards-rectangle .tile.app-tile .name {
+  display: block; min-width: 0; flex: 0 1 auto;
+  width: auto; max-width: 65%;
+  font-size: 39px; line-height: 1.1;
+  font-weight: 600; text-align: left;
+  white-space: normal; overflow: hidden; text-overflow: ellipsis;
+}
+.app-grid.cards-rectangle.cols-4 .tile.app-tile .app-fallback { gap: 16px; }
+.app-grid.cards-rectangle.cols-5 .tile.app-tile .app-fallback { gap: 13px; }
+.app-grid.cards-rectangle.cols-4 .tile.app-tile .logo { width: 112px; height: 112px; }
+.app-grid.cards-rectangle.cols-5 .tile.app-tile .logo { width: 86px; height: 86px; }
+.app-grid.cards-rectangle.cols-4 .tile.app-tile .app-fallback.logo-only .logo { width: 280px; height: 140px; }
+.app-grid.cards-rectangle.cols-5 .tile.app-tile .app-fallback.logo-only .logo { width: 216px; height: 109px; }
+.app-grid.cards-rectangle.cols-4 .tile.app-tile .app-fallback.logo-big .logo { height: 208px; }
+.app-grid.cards-rectangle.cols-5 .tile.app-tile .app-fallback.logo-big .logo { height: 160px; }
+.app-grid.cards-rectangle.cols-4 .tile.app-tile .name { font-size: 30px; }
+.app-grid.cards-rectangle.cols-5 .tile.app-tile .name { font-size: 23px; }
+
+/* Fireplace is still a first-class item in both modes. */
+.app-grid.cards-rectangle .tile.fire {
+  background: radial-gradient(110% 120% at 50% 110%,
+    #ff8a1e 0%,#c2380d 35%,#3a0d04 70%,#120402 100%);
+}
+.app-grid.cards-rectangle .tile.fire svg.flame {
+  flex: 0 0 34%; width: 34%; height: 72%;
+}
+.app-grid.cards-rectangle .tile.fire .name {
+  max-width: 58%; font-size: 34px; line-height: 1.1;
+}
+.app-grid.cards-rectangle.cols-5 .tile.fire .name { font-size: 25px; }
+
+/* Reuse the project's existing focus behaviour rather than installing
+   another border: avoid double outlines when Glass UI is enabled. */
+/* Original optical 3D depth: composited 2D transform, static highlights
+   and shadows. No constantly animated blur or expensive perspective layer.
+   Mirrors the final reference rectangle card treatment. */
+.app-grid.cards-rectangle .tile {
+  transform: translateZ(0) scale(.955) !important;
+  transform-origin: center center;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.11),
+    0 11px 21px rgba(0,0,0,.30) !important;
+  transition: transform .17s cubic-bezier(.20,.72,.25,1) !important;
+}
+.app-grid.cards-rectangle .tile::before {
+  content: ''; position: absolute; inset: 0; display: block;
+  pointer-events: none; z-index: 2; border-radius: inherit;
+  background: linear-gradient(to bottom,
+    rgba(255,255,255,.075) 0%,transparent 34%,rgba(0,0,0,.07) 100%);
+}
+.app-grid.cards-rectangle .tile.focused {
+  transform: translate3d(0,-7px,0) scale(1.065) !important;
+  border-radius: 10px; z-index: 8;
+  box-shadow: 0 0 0 2px var(--focus),
+    0 0 13px 3px var(--focus-glow, rgba(124,92,255,.23)),
+    0 19px 30px rgba(0,0,0,.49),
+    0 37px 51px rgba(0,0,0,.32) !important;
+}
+.app-grid.cards-rectangle .tile.moving {
+  overflow: visible !important;
+  transform: translate3d(0,-7px,0) scale(1.065) !important;
+  z-index: 30 !important;
+}
+.app-grid.cards-rectangle .tile.moving > .move-arrow {
+  display: flex !important; z-index: 31;
+}
+.app-grid.cards-rectangle .tile.moving .app-fallback {
+  border-radius: inherit; overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-grid.cards-rectangle .tile { transition: none; }
+}
+
+
+/* Native Samsung artwork stays at its original source resolution in both layouts. */
+.app-grid.cards-rectangle .app-artwork { object-fit: contain; background: #111; }

@@ -16,8 +16,9 @@
     if (!fromTabSwitch) { tabCache.home = null; tabCache.apps = null; }
     if (tileMenu) { closeTileMenu(false); }
     var grid = A.$('grid'), home = A.settings.home || [cfg.FIREPLACE_ID], size = A.settings.cardSize === 'small' ? 'small' : 'big';
-    COLS = cfg.CARD_COLUMNS[size];
-    grid.className = 'app-grid cards-' + size;
+    var count = Number(A.settings.homeCardColumns);
+    COLS = count === 3 || count === 4 || count === 5 ? count : cfg.CARD_COLUMNS[size];
+    grid.className = 'app-grid cards-' + size + ' cards-' + (A.settings.homeCardMode === 'rectangle' ? 'rectangle' : 'square') + ' cols-' + COLS;
     grid.textContent = '';
     if (page === 'home') {
       if (A.apps.ready) {
