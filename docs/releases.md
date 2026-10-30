@@ -177,6 +177,10 @@ stable `cli-vX.Y.Z` release. It reads release metadata only, ignores launcher re
 drafts and prereleases, and needs no TV connection or signing certificates. Use
 `--release-repo OWNER/REPO` to check a fork.
 
+For GitHub API rate limits, an optional `GH_TOKEN` or `GITHUB_TOKEN` is sent only to
+the HTTPS GitHub API and is not forwarded to asset hosts. Temporary HTTP 500/502/503/504
+responses are retried twice; other failures are reported without replacing the CLI.
+
 If a newer CLI exists, the check shows the matching OS/CPU archive link and the
 release page. If no archive matches, it states that limitation and links to the
 release page. Current and newer versions are left unchanged.

@@ -434,6 +434,55 @@ def test_network_timeout_is_readable(monkeypatch):
         releases._read_url(API, 100)
 
 
+@pytest.mark.parametrize(
+    "url,authorized",
+    [
+        (API, True),
+        ("https://github.com/example/archive", False),
+        ("https://api.github.com.example/archive", False),
+        ("http://api.github.com/archive", False),
+    ],
+)
+def test_optional_api_token_stays_on_https_github_api_requests(monkeypatch, url, authorized):
+    monkeypatch.setenv("GH_TOKEN", "test-token")
+    requests = []
+
+    class Opener:
+        def open(self, request, timeout):
+            requests.append(request)
+            return io.BytesIO(b"data")
+
+    monkeypatch.setattr(urllib.request, "build_opener", lambda *args: Opener())
+    releases._read_url(url, 100)
+    assert requests[0].get_header("Authorization") == ("Bearer test-token" if authorized else None)
+
+
+def test_api_token_is_not_forwarded_to_redirected_hosts():
+    request = urllib.request.Request(API)
+    request.add_unredirected_header("Authorization", "Bearer test-token")
+    redirected = releases._HTTPSRedirect().redirect_request(
+        request, None, 302, "", {}, "https://release-assets.githubusercontent.com/archive"
+    )
+    assert redirected.get_header("Authorization") is None
+
+
+def test_transient_server_error_is_retried_without_changing_download_limits(monkeypatch):
+    calls, delays = [], []
+
+    class Opener:
+        def open(self, request, timeout):
+            calls.append((request.full_url, timeout))
+            if len(calls) == 1:
+                raise urllib.error.HTTPError(request.full_url, 500, "server error", {}, io.BytesIO())
+            return io.BytesIO(b"ok")
+
+    monkeypatch.setattr(urllib.request, "build_opener", lambda *args: Opener())
+    monkeypatch.setattr(releases.time, "sleep", delays.append)
+    assert releases._read_url(API, 100) == b"ok"
+    assert calls == [(API, 30), (API, 30)]
+    assert delays == [0.5]
+
+
 def test_response_read_is_bounded(monkeypatch):
     class Opener:
         def open(self, request, timeout):

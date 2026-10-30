@@ -4,9 +4,11 @@ import hashlib
 import http.client
 import io
 import json
+import os
 import platform
 import re
 import stat
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -88,20 +90,29 @@ def _read_url(url, limit):
     )
     if urllib.parse.urlsplit(url).netloc == "api.github.com":
         request.add_header("Accept", "application/vnd.github+json")
-    try:
-        with urllib.request.build_opener(_HTTPSRedirect()).open(request, timeout=30) as response:
-            data = response.read(limit + 1)
-    except urllib.error.HTTPError as exc:
-        with exc:
-            if exc.code == 404:
-                message = "Release or asset not found. Check the repository and requested version."
-            elif exc.code in (403, 429):
-                message = "GitHub refused the request or its rate limit was reached. Try again later."
-            else:
-                message = f"GitHub download failed (HTTP {exc.code}). Try again later."
-        raise ReleaseError(message) from exc
-    except (OSError, http.client.HTTPException) as exc:
-        raise ReleaseError(f"Could not download release data: {exc}. Check your connection.") from exc
+        token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+        if token and urllib.parse.urlsplit(url).scheme == "https":
+            # Never forward an API credential to an asset host after a redirect.
+            request.add_unredirected_header("Authorization", f"Bearer {token}")
+    for attempt in range(3):
+        try:
+            with urllib.request.build_opener(_HTTPSRedirect()).open(request, timeout=30) as response:
+                data = response.read(limit + 1)
+            break
+        except urllib.error.HTTPError as exc:
+            with exc:
+                if exc.code in (500, 502, 503, 504) and attempt < 2:
+                    time.sleep(0.5 * (attempt + 1))
+                    continue
+                if exc.code == 404:
+                    message = "Release or asset not found. Check the repository and requested version."
+                elif exc.code in (403, 429):
+                    message = "GitHub refused the request or its rate limit was reached. Try again later."
+                else:
+                    message = f"GitHub download failed (HTTP {exc.code}). Try again later."
+            raise ReleaseError(message) from exc
+        except (OSError, http.client.HTTPException) as exc:
+            raise ReleaseError(f"Could not download release data: {exc}. Check your connection.") from exc
     if len(data) > limit:
         raise ReleaseError("Release data exceeds the allowed download size.")
     return data
