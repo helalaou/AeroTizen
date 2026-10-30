@@ -8,7 +8,15 @@ $replaced = $false
 $result = @{state='failed'; version=$updatePlan.version; backup=$updatePlan.backup}
 
 function FileHash([string]$Path) {
-    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+    # Avoid optional script cmdlets from the caller's inherited PSModulePath.
+    $algorithm = [Security.Cryptography.SHA256]::Create()
+    $stream = [IO.File]::OpenRead($Path)
+    try {
+        return ([BitConverter]::ToString($algorithm.ComputeHash($stream))).Replace('-', '').ToLowerInvariant()
+    } finally {
+        $stream.Dispose()
+        $algorithm.Dispose()
+    }
 }
 function CheckVersion([string]$Path, [string]$Version) {
     $start = New-Object Diagnostics.ProcessStartInfo
