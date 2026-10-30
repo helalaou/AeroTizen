@@ -127,3 +127,23 @@ check authored longhands, full-screen bounds, final source-category focus and
 Back at 1280x720 and 1920x1080 in both appearances.
 [Samsung engine table](https://developer.samsung.com/smarttv/develop/specifications/web-engine-specifications.html);
 [Google Chromium 87 shorthand announcement](https://web.dev/articles/logical-property-shorthands).
+
+## Follow-up to metacurb's first TV test
+
+Metacurb tested the preceding candidate and reported three visual issues in
+https://github.com/helalaou/AeroTizen/pull/30#issuecomment-6523169407:
+unequal header icon alignment/spacing, a clipped Continue Watching focus ring,
+and an overly wide single-source dock. This is evidence for that earlier build,
+not hardware acceptance of the correction.
+
+The follow-up uses equal 64px shortcut/status slots with explicit margins,
+reserves 32px around Continue Watching for the transformed 9px focus outline,
+and activates the existing 354px compact dock slots when fewer than five
+sources are visible. Five or more sources retain the responsive full-width dock.
+Classic source appearance, native launch handlers and HOME/startup policy are
+unchanged. Regression tests cover both appearances and one/two/four/five sources.
+
+Recheck vertical icon centres and equal horizontal spacing, the complete top
+and side focus ring while navigating Continue Watching, and dock sizing after
+source visibility changes. Physical visual acceptance of this correction remains
+pending; automated geometry checks cannot establish TV rendering quality.

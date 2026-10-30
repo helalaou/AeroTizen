@@ -46,7 +46,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
       <p id="apps-empty" class="apps-empty" hidden={page === 'home' || apps.length > 0}>{env.translate('No apps found.')}</p>
       <section id="continue-section" class="row-wrap" hidden={page !== 'home' || !settings.continueWatching || !items.length}><h2>{env.translate('Continue Watching')}</h2>
         <div class="continue-viewport"><div id="continue-items" class="row" aria-label="Continue Watching">{items.map(item => <ContinueCard key={item.key} env={env} item={item} />)}</div></div></section>
-      <section id="inputs-section" class="row-wrap inputs-wrap" hidden={page !== 'home' || !inputs.length}><h2>{env.translate('Inputs')}</h2><div id="inputs" class="row small">
+      <section id="inputs-section" class="row-wrap inputs-wrap" hidden={page !== 'home' || !inputs.length}><h2>{env.translate('Inputs')}</h2><div id="inputs" class={'row small' + (inputs.length < 5 ? ' aero-dock-compact' : '')}>
         {inputs.map(source => {
           const label = env.runtime.inputs.label(source), port = env.runtime.inputs.portName(source);
           const kind = source.type === 'TV' ? 'tv' : /xbox|playstation|ps\d|switch|nintendo|game|console/i.test(label) ? 'game' : /pc|computer|mac|laptop/i.test(label) ? 'pc' : /cable|box|roku|fire|apple|shield|chromecast|blu|dvd|satellite/i.test(label) ? 'box' : 'hdmi';
