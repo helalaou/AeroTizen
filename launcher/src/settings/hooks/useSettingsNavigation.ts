@@ -5,10 +5,10 @@ import { categories } from '../glass/categories';
 import { useSettingsEnvironment } from './useSettingsEnvironment';
 import type { SettingsInventorySnapshot } from '../types';
 
-interface Layout extends SettingsInventorySnapshot { continueEnabled: boolean; animated: boolean; locationLabel?: string }
+interface Layout extends SettingsInventorySnapshot { continueEnabled: boolean; animated: boolean; locationLabel?: string; clockLayout?: string }
 const SPACE_KEY = 32;
 
-export const useSettingsNavigation = (active: boolean, previewing: boolean, { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel }: Layout) => {
+export const useSettingsNavigation = (active: boolean, previewing: boolean, { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel, clockLayout }: Layout) => {
   const { navigation, bridge, services, actions, settings, view, root, glass, glassMenu, glassContent } = useSettingsEnvironment();
   const wasOpen = useRef(false);
   const previousScope = useRef('');
@@ -25,7 +25,7 @@ export const useSettingsNavigation = (active: boolean, previewing: boolean, { ap
     previousScope.current = scope;
     wasOpen.current = active;
     if (active && !previewing) { navigation.focus(); } else { navigation.clear(); }
-  }, [active, previewing, apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel, navigation, settings, category, glass, glassContent, glassMenu]);
+  }, [active, previewing, apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel, clockLayout, navigation, settings, category, glass, glassContent, glassMenu]);
   useLayoutEffect(() => {
     if (!active) { return; }
     const resize = () => {

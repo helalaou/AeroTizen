@@ -28,6 +28,8 @@ export const createSettingsActions = (
     setWeatherVisible: showWeather => commit({ showWeather }, services.applyWeatherVisibility),
     setLocationVisible: weatherShowLocation => commit({ weatherShowLocation }, services.applyLocationVisibility),
     setTempUnit: tempUnit => commit({ tempUnit }, services.refreshWeather),
+    setClockLayout: clockLayout => commit({ clockLayout }, services.applyClock),
+    setClockStyle: aeroClockStyle => commit({ aeroClockStyle }, services.applyClock),
     setDateFormat: dateFormat => commit({ dateFormat }, services.applyClock),
     setNetworkVisible: showNetwork => commit({ showNetwork }, services.applyNetworkVisibility),
     setLiveTvVisible: showLiveTv => commit({ showLiveTv }, services.applyInputs),
@@ -35,6 +37,7 @@ export const createSettingsActions = (
     setHomeCardMode: homeCardMode => commit({ homeCardMode }, services.applyCardSize),
     setHomeCardColumns: homeCardColumns => commit({ homeCardColumns }, services.applyCardSize),
     setHdmiVisibility: hideDisconnectedHdmi => commit({ hideDisconnectedHdmi }, services.applyInputs),
+    setHdmiKeepVisible: (port, keep) => commit({ hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } }, services.applyInputs),
     setTimeFormat: format => commit(format === 'none' ? { showTime: false } : { showTime: true, timeFormat: format }, services.applyClock),
     setLocation: weatherLocation => commit({ weatherLocation }, services.refreshWeather),
     setSpeed(direction) {

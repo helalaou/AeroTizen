@@ -8,6 +8,8 @@ export const createSettingsServices = (runtime: LauncherRuntime): SettingsServic
   translate: value => runtime.i18n?.t(value) || value,
   clock: {
     dateStyle: runtime.clock.dateStyle,
+    formatDate: runtime.clock.formatDate,
+    subscribe: runtime.clock.subscribe,
     formatTime: runtime.clock.formatTime,
     DATE_FORMATS: runtime.clock.DATE_FORMATS
   },

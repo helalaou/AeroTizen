@@ -3,8 +3,8 @@ import type { ContinueSource, AppPresentation, Background, Clock, InstalledApp, 
 export interface InputSource { type: string; number?: number; editName?: string }
 
 export interface LauncherRuntime {
-  config: LauncherConfig;
   i18n?: { t(value: string): string };
+  config: LauncherConfig;
   settings: SettingsSource;
   clock: Clock;
   network: { updateVisibility(): void };

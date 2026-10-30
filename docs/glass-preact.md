@@ -1,9 +1,18 @@
 # Optional Preact Glass interface
 
-PR #30 is rebuilt on the Preact Home core. Review/merge the core migration first;
-this branch preserves the earlier contribution's history and includes that dependency.
-The other feature PRs (#28 clocks, #29 HDMI, #34 cards) remain independently reviewable.
-The integration branch records their combined conflict resolutions and includes #72.
+PR #30 uses the Preact Home core already merged in #73. This branch includes
+upstream main `d577046d969e094cf90eb9bdcf88178febcfda0d`, including merged
+#28 clocks, #29 HDMI and #34 cards, without rewriting shared history. Clock
+controls belong to Weather and clock; standby overrides belong to Inputs;
+Square/Rectangle and column controls remain in Home appearance. Each uses the
+existing upstream settings/actions once, rather than a parallel implementation.
+
+The final synchronization resolves stylesheet order, clock-aware navigation,
+DisplaySettings composition and shared preference types. It removes a duplicate
+runtime i18n type declaration introduced by the automatic merge. Clock and HDMI
+browser tests use the visible category controls and two-level Back flow; clock
+clearance checks cover both Classic and Glass. Native Home services, app launch
+handlers, startup bindings and backup/recovery implementations match main.
 
 Classic stays the default. Settings > Home appearance > Interface appearance > Glass enables the satin
 header, Samsung Home shortcut and source dock. The compact Settings category drawer

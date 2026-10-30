@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from aerotizen import home, sdk
+from aerotizen.device import DeviceSessionError
 
 
 def test_sdk_transport_claims_a_script_once_and_remaps_helper_arguments():
@@ -26,7 +27,7 @@ def test_sdk_transport_claims_a_script_once_and_remaps_helper_arguments():
     assert "sha256sum -c" in script and "archive-root" not in script
 
 
-@pytest.mark.parametrize("exit_code", [0, 7])
+@pytest.mark.parametrize("exit_code", [0, 7, 127])
 def test_sdk_script_cleans_payloads_even_when_helper_fails(tmp_path, exit_code):
     if not shutil.which("bash"):
         pytest.skip("Requires the TV's POSIX shell")
@@ -47,6 +48,46 @@ def test_sdk_script_cleans_payloads_even_when_helper_fails(tmp_path, exit_code):
     output = capture.read_text()
     assert sdk.parse_output(output)["exit_code"] == exit_code
     assert not list(tmp_path.glob("ah-*"))
+
+
+@pytest.mark.parametrize("runtime_state", ["missing", "not_executable"])
+def test_sdk_script_rejects_unavailable_tv_runtime_and_cleans_staging(tmp_path, runtime_state):
+    if not shutil.which("bash"):
+        pytest.skip("Requires the TV's POSIX shell")
+    files = {"Query.dll": b"dll", "Query.runtimeconfig.json": b"{}"}
+    script, _, stage, paths = sdk.build_script(files, "Query.dll", (), "127.0.0.1", 5678, "a" * 12)
+    script = script.replace(sdk.DIRECTORY, str(tmp_path)).replace('test "$(id -u)" = 901', ":")
+    capture = tmp_path / "output.txt"
+    script = script.replace("exec 3<>/dev/tcp/127.0.0.1/5678", "exec 3>" + shlex.quote(str(capture)))
+    executable = tmp_path / "TV dotnet"
+    if runtime_state == "not_executable":
+        executable.write_text("#!/bin/sh\nprintf 'helper-ran\\n'\n")
+        executable.chmod(0o600)
+    script = script.replace("/usr/bin/dotnet", shlex.quote(str(executable)))
+    for staged_path in (stage, stage[:-1] + "r", *paths.values()):
+        (tmp_path / Path(staged_path).name).write_bytes(b"not a valid helper")
+    # The runtime check must work before checksum tools or managed code can run.
+    script = script.replace("sha256sum", "unexpected-checksum-command")
+    result = subprocess.run([shutil.which("bash")], input=script, text=True, capture_output=True, timeout=5)
+    output = capture.read_text()
+    assert result.returncode == 127 and not result.stderr
+    assert "helper-ran" not in output and "unexpected-checksum-command" not in output
+    assert output.splitlines() == [
+        sdk.DOTNET_UNAVAILABLE_MARKER,
+        "",
+        sdk.CLEANUP_MARKER,
+        sdk.EXIT_PREFIX + "127",
+    ]
+    assert not list(tmp_path.glob("ah-*"))
+    with pytest.raises(DeviceSessionError, match="/usr/bin/dotnet is missing or not executable on the TV"):
+        sdk.parse_output(output)
+
+
+@pytest.mark.parametrize("cleanup", ["", sdk.CLEANUP_MARKER + "\n" + sdk.CLEANUP_MARKER + "\n"])
+def test_runtime_error_requires_confirmed_cleanup(cleanup):
+    output = sdk.DOTNET_UNAVAILABLE_MARKER + "\n" + cleanup + sdk.EXIT_PREFIX + "127\n"
+    with pytest.raises(DeviceSessionError, match="cleanup was not confirmed"):
+        sdk.parse_output(output)
 
 
 @pytest.mark.parametrize(

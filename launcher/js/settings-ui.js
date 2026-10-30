@@ -182,6 +182,39 @@
     });
   }
 
+  // Optional exception for TV firmware that does not identify an HDMI device.
+  // This only changes tile visibility, never claims a live HDMI connection.
+  function renderHdmiOverrides() {
+    var box = A.$('hdmi-force-visibility');
+    if (!box) { return; }
+    box.textContent = '';
+    var keep = S.hdmiKeepVisible;
+    if (!keep || typeof keep !== 'object' || Array.isArray(keep)) { keep = {}; S.hdmiKeepVisible = keep; }
+    var ports = [];
+    A.inputs.sources.forEach(function (source) {
+      var port = Number(source.number);
+      if (source.type === 'HDMI' && isFinite(port) && port > 0 && Math.floor(port) === port &&
+          ports.indexOf(port) < 0) { ports.push(port); }
+    });
+    ports.sort(function (a, b) { return a - b; });
+    ports.forEach(function (port) {
+      var number = String(port), selected = keep[number] === true;
+      var key = 'hdmi-keep:' + number;
+      var status = selected ? 'Always visible' : 'Automatic';
+      if (A.i18n && A.i18n.t) { status = A.i18n.t(status); }
+      var control = pill(key, 'HDMI ' + number + '  ·  ' + status, selected, function () {
+        if (keep[number] === true) { delete keep[number]; }
+        else { keep[number] = true; }
+        focusKey = key;
+        changed(A.inputs.render);
+      });
+      control.setAttribute('role', 'button');
+      control.setAttribute('aria-pressed', String(selected));
+      control.setAttribute('aria-label', 'HDMI ' + number + ': ' + status);
+      box.appendChild(control);
+    });
+  }
+
   // OK opens the TV's on-screen keyboard; an empty name falls back to the TV's own name.
   function renderInputNames() {
     var box = A.$('input-names');
@@ -238,7 +271,7 @@
   function render() {
     renderBackgrounds(); renderWeather(); renderUnits(); renderDateTime();
     renderVisibility('network-visibility', 'showNetwork', ['Show', 'Hide'], A.network.updateVisibility);
-    renderCardSizes(); renderInputVisibility(); renderInputNames(); renderAppMenu();
+    renderCardSizes(); renderInputVisibility(); renderHdmiOverrides(); renderInputNames(); renderAppMenu();
     focus();
   }
 
@@ -259,7 +292,7 @@
       [kids('weather-location')], results, [kids('weather-visibility')],
       [kids('units')], [kids('time-formats')], dateRows, [kids('network-visibility')],
       [kids('live-tv-visibility')], [kids('card-sizes')], [kids('input-visibility')],
-      [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]).filter(function (row) { return row.length; });
+      [kids('hdmi-force-visibility')], [kids('input-names')], A.chunk(kids('all-apps'), 5), [[A.$('escape')]]).filter(function (row) { return row.length; });
   }
 
   function focus() {

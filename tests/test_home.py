@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from aerotizen import cli, home, root
+from aerotizen import cli, home, home_control, root, sdk
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -399,6 +399,61 @@ def test_cli_routes_read_only_home_commands_and_closes_session(monkeypatch, tmp_
     assert result["home"]["mode"] == "stock" and events == ["connect", "query", "close"]
     assert ("backup" in result) == (action == "backup")
     assert len(list(tmp_path.rglob("original-home.json"))) == (1 if action == "backup" else 0)
+
+
+@pytest.mark.parametrize("action", ["status", "backup", "apply", "restore"])
+@pytest.mark.parametrize("json_output", [False, True])
+def test_cli_reports_missing_tv_runtime_without_backup_or_writer(
+    monkeypatch, tmp_path, action, json_output, capsys
+):
+    events = []
+
+    class Session:
+        def duid(self):
+            return "test-device"
+
+        def capability(self):
+            return {"cpu_arch": "arm", "platform_version": "5.5"}
+
+    @contextmanager
+    def connect(host):
+        assert host == "192.0.2.10"
+        events.append("connect")
+        try:
+            yield Session()
+        finally:
+            events.append("close")
+
+    def run(session, files, entrypoint, args=()):
+        assert entrypoint == home.HELPER_FILES[0] and not args
+        events.append("runtime_check")
+        return sdk.parse_output(
+            sdk.DOTNET_UNAVAILABLE_MARKER + "\n" + sdk.CLEANUP_MARKER + "\n" + sdk.EXIT_PREFIX + "127\n"
+        )
+
+    monkeypatch.setattr(cli, "STATE_DIR", tmp_path)
+    monkeypatch.setattr(cli, "require_sdb", connect)
+    monkeypatch.setattr(home, "device_info", lambda *args, **kwargs: {})
+    monkeypatch.setattr(home, "load_helper", lambda: {name: b"dll" for name in home.HELPER_FILES})
+    monkeypatch.setattr(home_control, "load_helper", lambda: {})
+    monkeypatch.setattr(sdk, "run", run)
+    argv = ["aerotizen", "--tv", "192.0.2.10", "home", action]
+    if action in ("apply", "restore"):
+        argv.append("--yes")
+    if json_output:
+        argv.append("--json")
+    monkeypatch.setattr("sys.argv", argv)
+
+    with pytest.raises(SystemExit, match=f"Home {action} failed: Native Home is unavailable") as raised:
+        cli.main()
+
+    message = str(raised.value)
+    assert "/usr/bin/dotnet is missing or not executable on the TV" in message
+    assert "Installing .NET on your computer will not fix this" in message
+    assert "Use the default watcher setup instead" in message
+    assert sdk.DOTNET_UNAVAILABLE_MARKER not in message
+    assert events == ["connect", "runtime_check", "close"]
+    assert not list(tmp_path.iterdir()) and not capsys.readouterr().out
 
 
 def test_zero_autostart_is_preserved_as_an_integer(tmp_path, status):

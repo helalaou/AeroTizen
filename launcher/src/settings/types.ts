@@ -11,16 +11,17 @@ export interface WeatherLocation {
   name: string; label?: string; latitude: number; longitude: number; country_code?: string;
 }
 export interface SettingsValues {
-  home: string[]; homeCardMode: 'square' | 'rectangle'; homeCardColumns: number | null; glassSettings: boolean; cardSize: CardSize; background: string; speed: number;
+  home: string[]; homeCardMode: 'square' | 'rectangle'; homeCardColumns: number | null; clockLayout: 'classic' | 'custom'; aeroClockStyle: 'vertical' | 'horizontal' | 'minimal' | 'bold'; glassSettings: boolean; cardSize: CardSize; background: string; speed: number;
   weatherPhoto: boolean; showWeather: boolean; showTime: boolean; showNetwork: boolean; tempUnit: TemperatureUnit;
   weatherLocation: WeatherLocation | null; weatherShowLocation: boolean;
   dateFormat: DateFormat | 'auto' | 'weekday' | 'dmy' | 'mdy'; timeFormat: TimeFormat;
   continueWatching: boolean; continueWatchingApps: string[];
-  showLiveTv: boolean; hideDisconnectedHdmi: boolean; inputNames: Record<string, string>;
+  showLiveTv: boolean; hideDisconnectedHdmi: boolean; hdmiKeepVisible: Record<string, boolean>; inputNames: Record<string, string>;
 }
-export type SettingsSnapshot = Readonly<Omit<SettingsValues, 'home' | 'inputNames' | 'weatherLocation' | 'continueWatchingApps'>> & {
+export type SettingsSnapshot = Readonly<Omit<SettingsValues, 'home' | 'inputNames' | 'weatherLocation' | 'continueWatchingApps' | 'hdmiKeepVisible'>> & {
   readonly home: readonly string[];
   readonly continueWatchingApps: readonly string[];
+  readonly hdmiKeepVisible: Readonly<Record<string, boolean>>;
   readonly inputNames: Readonly<Record<string, string>>;
   readonly weatherLocation: Readonly<WeatherLocation> | null;
 };
@@ -49,6 +50,9 @@ export interface Clock {
   tick(): void;
   dateStyle(format: SettingsValues['dateFormat']): DateFormat;
   formatTime(date: Date, format: TimeFormat): string;
+  formatTimeParts?(date: Date, format: TimeFormat): { hour: string; minute: string; dayPeriod: string } | null;
+  formatDate(date: Date, format: SettingsValues['dateFormat']): string;
+  subscribe(listener: () => void): () => void;
   DATE_FORMATS: ReadonlyArray<{ id: DateFormat; format(date: Date): string }>;
 }
 export interface LauncherConfig {
@@ -83,9 +87,10 @@ export interface SettingsActions {
   setContinueWatching(enabled: boolean): void; toggleContinueApp(id: string): void;
   setBackground(background: string): void; setWeatherVisible(visible: boolean): void;
   setLocationVisible(visible: boolean): void; setTempUnit(unit: TemperatureUnit): void;
+  setClockLayout(layout: SettingsValues['clockLayout']): void; setClockStyle(style: SettingsValues['aeroClockStyle']): void;
   setDateFormat(format: DateFormat): void; setNetworkVisible(visible: boolean): void;
   setLiveTvVisible(visible: boolean): void; setCardSize(size: CardSize): void; setHomeCardMode(mode: SettingsValues['homeCardMode']): void; setHomeCardColumns(columns: number | null): void;
-  setHdmiVisibility(hide: boolean): void; setTimeFormat(format: TimeFormat | 'none'): void;
+  setHdmiVisibility(hide: boolean): void; setHdmiKeepVisible(port: string, keep: boolean): void; setTimeFormat(format: TimeFormat | 'none'): void;
   setLocation(location: WeatherLocation | null): void; setSpeed(direction: number): void;
   saveInputName(port: string, value: string): void; toggleApp(id: string): void;
   openStore(): void; useSamsungHome(): void; preview(): void;

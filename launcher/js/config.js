@@ -48,11 +48,15 @@ AeroTizen.config = {
     weatherLocation: null,
     weatherShowLocation: true,
     dateFormat: 'short',
+    // Existing installs continue using the unchanged compact header.
+    clockLayout: 'classic',
+    aeroClockStyle: 'vertical',
     timeFormat: null,  // Detect 12/24-hour format when first loaded.
     continueWatching: false,
     continueWatchingApps: [],
     showLiveTv: true,
     hideDisconnectedHdmi: false,
+    hdmiKeepVisible: {},  // Optional per-port exception for an unidentified device.
     inputNames: {}
   }
 };
