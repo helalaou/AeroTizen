@@ -20,7 +20,8 @@ AeroTizen.config = {
   // everything else is firmware plumbing.
   STORE_PACKAGE: /^[A-Za-z0-9]{10}$/,
   HIDDEN_APPS: /service|emanual|companion|dummy|widget|DclHome001/i,
-  STORE_APP_IDS: ['org.volt.apps', 'com.samsung.tv.store'],
+  // com.samsung.tv.store first: on a Tizen 9 CU7000, org.volt.apps launches to a blank screen.
+  STORE_APP_IDS: ['com.samsung.tv.store', 'org.volt.apps'],
   HBBTV_APP_ID: 'org.tizen.hbbtv',
   HBBTV_LINK_METADATA: 'http://samsung.com/tv/metadata/hbbtv.link',
 

@@ -65,6 +65,15 @@ namespace AeroTizen.Home
             foreach (string key in Keys) if (left.Strings[key] != right.Strings[key]) return false;
             return true;
         }
+        private static bool MatchesApplyBaseline(Snapshot current, Snapshot original)
+        {
+            // Opening the launcher can update this derived startup value before
+            // apply. Accept only its own ID here; keep the saved original exact.
+            const string bootBackup = "db/appfw/booting_appid_backup";
+            var expected = original.Copy();
+            if (current.Strings[bootBackup] == Target) expected.Strings[bootBackup] = Target;
+            return Same(current, expected);
+        }
         private static void ValidateValues(Snapshot snapshot)
         {
             if (snapshot == null || string.IsNullOrWhiteSpace(snapshot.Main) || snapshot.Strings == null ||
@@ -182,7 +191,7 @@ namespace AeroTizen.Home
                 throw new Exception("Watcher belongs to a different Home baseline.");
             if (request.Action == "apply")
             {
-                if (!Same(before, request.Original) || watcher.Mode != "watcher")
+                if (!MatchesApplyBaseline(before, request.Original) || watcher.Mode != "watcher")
                     throw new Exception("Home has changed since the baseline; apply refused.");
                 if (!platform.LauncherEligible()) throw new Exception("Installed AeroTizen is not eligible for native Home.");
             }
