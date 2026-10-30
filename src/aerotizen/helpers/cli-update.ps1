@@ -83,7 +83,8 @@ try {
             $deadline = [DateTime]::UtcNow.AddSeconds(30)
             while ($true) {
                 try {
-                    [IO.File]::Replace($updatePlan.backup, $updatePlan.target, $null)
+                    # Windows PowerShell converts a plain $null string argument to an empty path.
+                    [IO.File]::Replace($updatePlan.backup, $updatePlan.target, [System.Management.Automation.Language.NullString]::Value)
                     break
                 } catch [IO.IOException] {
                     if ([DateTime]::UtcNow -ge $deadline) { throw }
