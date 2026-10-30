@@ -14,6 +14,7 @@
   aerotizen inspect launcher    restart the launcher with Chrome DevTools
   aerotizen inspect APPID       inspect another app (--port defaults to 9222)
   aerotizen home status         read native Home state as the SDK user
+  aerotizen home probe          inventory runtime files without .NET or Home changes
   aerotizen home backup         save an immutable local Home baseline
   aerotizen home apply          preview native Home assignment (--yes writes)
   aerotizen home restore        preview baseline restore (--yes writes)
@@ -385,6 +386,28 @@ def cmd_inspect(args):
         sys.exit(f"Inspect failed: {exc}")
 
 
+def cmd_home_probe(args):
+    from aerotizen import home_probe
+
+    try:
+        output = args.output.expanduser()
+        if os.path.lexists(output):
+            raise ValueError("Report already exists; choose another --output path.")
+        if not output.parent.is_dir():
+            raise ValueError("The report's parent folder must already exist.")
+        host = pick_tv(args)
+        with require_sdb(host) as session:
+            report = home_probe.collect(session)
+        home_probe.save_report(report, output)
+        if args.json:
+            print(json.dumps(report, indent=2))
+        else:
+            print(f"Saved read-only Home probe: {output}")
+            print("Review the report before sharing it. File presence does not prove Native Home support.")
+    except (OSError, SdbError, ValueError) as error:
+        sys.exit(f"Home probe failed: {error}")
+
+
 def cmd_home(args):
     from aerotizen import home, home_control
     from aerotizen.root import SamsungTvRoot
@@ -504,8 +527,14 @@ def main():
     p.add_argument("appid", help="'launcher' or an application ID")
     p.add_argument("--port", type=int, default=9222, help="local inspector port (default: 9222)")
     p.set_defaults(fn=cmd_inspect)
-    p = sub.add_parser("home", help="inspect, back up, assign or restore native Home")
+    p = sub.add_parser("home", help="probe, inspect, back up, assign or restore native Home")
     commands = p.add_subparsers(dest="home_command", required=True)
+    command = commands.add_parser("probe", help="read-only runtime inventory; does not require .NET")
+    command.add_argument(
+        "--output", type=Path, default=Path("home-probe.json"), help="new local report; never overwritten"
+    )
+    command.add_argument("--json", action="store_true", help="also print the report as JSON")
+    command.set_defaults(fn=cmd_home_probe)
     for name in ("status", "backup", "apply", "restore"):
         command = commands.add_parser(name)
         if name in ("status", "backup"):

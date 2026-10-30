@@ -242,6 +242,9 @@ Home-only, automatic startup, Home from YouTube/Prime and restore with the app i
 Passing preflight does not prove behaviour on another TV. See the
 [S90C report](docs/home-s90c-tv-20261027.json).
 
+If the Home helper cannot start, use the [read-only runtime probe](docs/home-runtime-probe.md)
+to collect a limited file inventory without .NET on the TV. It does not enable Native Home.
+
 Use matching updated builds of the CLI and signed launcher. Save the original Home
 backup before opening AeroTizen (replace `TV_IP` with your TV's address):
 
