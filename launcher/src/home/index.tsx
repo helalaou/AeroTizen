@@ -15,7 +15,7 @@ const rows = createRef<HTMLElement>();
 const environment = createHomeController({ runtime, settings, inventory, rows, nodes: new Map(),
   translate: value => runtime.i18n?.t(value) || value,
   describe: app => runtime.tiles.describe(app),
-  columns: values => runtime.config.CARD_COLUMNS[values.cardSize === 'small' ? 'small' : 'big']
+  columns: values => [3,4,5].includes(Number(values.homeCardColumns)) ? Number(values.homeCardColumns) : runtime.config.CARD_COLUMNS[values.cardSize === 'small' ? 'small' : 'big']
 }, flushSync);
 const refresh = () => flushSync(() => {
   const inputs = runtime.inputs.sources.filter(source => runtime.inputs.isVisible ? runtime.inputs.isVisible(source) :

@@ -35,6 +35,8 @@ AeroTizen.config = {
   DEFAULTS: {
     home: null,  // null selects defaults on first launch; [] keeps an empty Home.
     cardSize: 'big',
+    homeCardMode: 'square',   // Square Samsung artwork remains the default.
+    homeCardColumns: null,    // null preserves the existing Big/Small column count.
     background: 'aurora',
     weatherPhoto: false,  // Opt-in AI-generated scenes using the existing forecast.
     speed: 1,
