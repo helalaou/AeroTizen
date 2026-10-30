@@ -42,3 +42,33 @@ test('Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   await checkTabPlate();
   expect(errors).toEqual([]);
 });
+
+for (const glass of [false, true]) for (const height of [720, 1080]) {
+  test(`${glass ? 'Glass' : 'Classic'} Settings bounds and remote focus at ${height}p`, async ({ page }) => {
+    await page.setViewportSize({ width: height === 720 ? 1280 : 1920, height });
+    await page.route('https://**/*', route => route.fulfill({ body: '{}' }));
+    await page.route('http://127.0.0.1:47790/**', route => route.fulfill({ body: '{}' }));
+    await page.addInitScript(glass => localStorage.setItem('aerotizen.settings.v1', JSON.stringify({ glassSettings: glass, background: 'black', showWeather: false })), glass);
+    await page.goto('/'); await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.locator('#gear').click();
+    // Check authored longhands as well as geometry: inset is unavailable on Chromium 69.
+    const bounds = await page.locator('#editor').evaluate(el => {
+      const rule = Array.from(document.styleSheets).flatMap(sheet => Array.from(sheet.cssRules)).find(rule => rule.selectorText === '#editor.sheet.aero-settings-ready');
+      const rect = el.getBoundingClientRect();
+      return { sides: ['top', 'right', 'bottom', 'left'].map(side => rule.style[side]), width: rect.width, height: rect.height };
+    });
+    expect(bounds.sides).toEqual(['0px', '0px', '0px', '0px']);
+    expect(bounds.width).toBe(height === 720 ? 1280 : 1920); expect(bounds.height).toBe(height);
+    for (let i = 0; i < 8; i++) await page.keyboard.press('ArrowDown');
+    await expect(page.locator('[data-key="section:sources"]')).toHaveClass(/focused/);
+    await page.keyboard.press('ArrowRight');
+    for (let i = 0; i < 20; i++) await page.keyboard.press('ArrowDown');
+    const visible = await page.locator('#editor .focused').evaluate(el => {
+      const r = el.getBoundingClientRect(), host = el.closest('.aero-settings-scroll') || el.closest('.aero-settings-main'), h = host.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && r.top >= h.top && r.bottom <= h.bottom && r.right <= innerWidth;
+    });
+    expect(visible).toBe(true);
+    await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
+    await expect(page.locator('#editor')).toBeHidden();
+  });
+}

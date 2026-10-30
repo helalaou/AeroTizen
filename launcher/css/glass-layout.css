@@ -78,7 +78,7 @@ body.editing:not(.previewing) #home-root main {
   pointer-events: none;
 }
 #editor.sheet.aero-settings-ready {
-  position: fixed; inset: 0; z-index: 100;
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 100;
   padding: 0 !important; margin: 0;
   background: rgba(0,0,13,.35); overflow: hidden;
 }
