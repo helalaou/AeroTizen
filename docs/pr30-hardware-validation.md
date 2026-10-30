@@ -147,3 +147,16 @@ Recheck vertical icon centres and equal horizontal spacing, the complete top
 and side focus ring while navigating Continue Watching, and dock sizing after
 source visibility changes. Physical visual acceptance of this correction remains
 pending; automated geometry checks cannot establish TV rendering quality.
+
+## Expanded automated feedback coverage
+
+The feedback regressions also run at 1280x720 and 1920x1080 in Classic and
+Glass, with zero through five visible HDMI sources. They verify equal header
+slots, the complete transformed focus ring inside the Continue Watching clip,
+empty-dock hiding and D-pad movement to/from sources. Width assertions retain
+the existing Classic sizing separately from the compact Glass dock.
+
+These viewport checks exercise the affected local geometry; Home retains the
+project's existing 1920x1080 logical canvas. They do not establish a new adaptive
+720p Home layout or replace a real TV's logical-viewport/engine test. No runtime
+change accompanies this test extension. The fixes remain in c3e90fd949c81e696bf95d2ef40f2c8fa39636b9.

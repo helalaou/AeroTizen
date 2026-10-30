@@ -1,7 +1,8 @@
 const { test, expect } = require('@playwright/test');
 
-for (const glass of [false, true]) {
-  test(`${glass ? 'Glass' : 'Classic'} header slots and complete Continue Watching focus ring`, async ({ page }, info) => {
+for (const height of [720, 1080]) for (const glass of [false, true]) {
+  test(`${glass ? 'Glass' : 'Classic'} header slots and complete Continue Watching focus ring at ${height}p`, async ({ page }, info) => {
+    await page.setViewportSize({ width: height === 720 ? 1280 : 1920, height });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.route('https://**/*', route => route.fulfill({ body: '{}' }));
@@ -47,27 +48,42 @@ for (const glass of [false, true]) {
   });
 }
 
-for (const count of [1, 2, 4, 5]) {
-  test(`Glass dock sizes ${count} source slots without stretching sparse inputs`, async ({ page }, info) => {
+for (const height of [720, 1080]) for (const glass of [false, true]) for (const count of [0, 1, 2, 3, 4, 5]) {
+  test(`${glass ? 'Glass' : 'Classic'} dock sizes ${count} source slots at ${height}p without stretching sparse inputs`, async ({ page }, info) => {
+    await page.setViewportSize({ width: height === 720 ? 1280 : 1920, height });
     await page.route('https://**/*', route => route.fulfill({ body: '{}' }));
     await page.route('http://127.0.0.1:47790/**', route => route.fulfill({ body: '{}' }));
-    await page.addInitScript(count => {
-      localStorage.setItem('aerotizen.settings.v1', JSON.stringify({ glassSettings: true, background: 'black', showWeather: false, home: ['demo0'] }));
+    await page.addInitScript(({ count, glass }) => {
+      localStorage.setItem('aerotizen.settings.v1', JSON.stringify({ glassSettings: glass, background: 'black', showWeather: false, home: ['demo0'] }));
       window.tizen = { systeminfo: { getPropertyValue: (name, done) => {
         if (name === 'VIDEOSOURCE') done({ connected: Array.from({ length: count }, (_, i) => ({ type: 'HDMI', number: i + 1 })), disconnected: [] });
       } } };
-    }, count);
+    }, { count, glass });
     await page.goto('/');
     const cards = page.locator('#inputs > .tile');
     await expect(cards).toHaveCount(count);
     const widths = await cards.evaluateAll(nodes => nodes.map(node => node.offsetWidth));
-    expect(widths.every(width => width <= 354)).toBe(true);
-    if (count < 5) {
+    expect(widths.every(width => width <= (glass ? 354 : 576))).toBe(true);
+    if (!count) {
+      await expect(page.locator('#inputs-section')).toBeHidden();
+      await page.keyboard.press('ArrowDown');
+      await expect(page.locator('#grid > .tile')).toHaveClass(/focused/);
+      return;
+    }
+    if (glass && count < 5) {
       expect(widths).toEqual(Array(count).fill(354));
       expect(await page.locator('#inputs').evaluate(node => node.offsetWidth)).toBeLessThan(1792);
     }
-    await cards.first().click();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('#inputs > .focused')).toHaveCount(1);
+    for (let i = 0; i < count; i++) await page.keyboard.press('ArrowLeft');
     await expect(cards.first()).toHaveClass(/focused/);
+    if (count > 1) {
+      await page.keyboard.press('ArrowRight');
+      await expect(cards.nth(1)).toHaveClass(/focused/);
+      await page.keyboard.press('ArrowLeft');
+      await expect(cards.first()).toHaveClass(/focused/);
+    }
     await page.screenshot({ path: info.outputPath('source-dock.png') });
   });
 }
