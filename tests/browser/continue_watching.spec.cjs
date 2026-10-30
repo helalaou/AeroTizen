@@ -53,6 +53,8 @@ test('opt-in discovery, selection, merged row, remote navigation, launch and res
   await expect(page.locator('.continue-option')).not.toContainText(['BBC iPlayer']);
   expect(reads).toEqual([]);
   for (const id of [prime, itv, channel4]) await page.locator('[data-key="continue-app:' + id + '"]').click();
+  // Exercise both bounded empty-feed retries using the installed browser clock.
+  await page.clock.runFor(4500);
   await expect.poll(() => page.evaluate(() => AeroTizen.continueWatching.sources.find(s => s.name === 'Channel 4').status)).toBe('No items available');
   await expect(page.locator('.continue-option')).not.toContainText(['5 items']);
   await expect(page.locator('.continue-option').first()).toHaveCSS('width', '176px');
@@ -66,8 +68,9 @@ test('opt-in discovery, selection, merged row, remote navigation, launch and res
   await expect(page.locator('.continue-app-icon .app-artwork')).toHaveCount(7);
   await expect(page.locator('.continue-label .continue-app-icon')).toHaveCount(0);
   expect(await page.locator('.continue-card').first().evaluate(n => {
-    const frame = n.querySelector('.continue-image-wrap').getBoundingClientRect(), icon = n.querySelector('.continue-app-icon').getBoundingClientRect();
-    return icon.top === frame.top + 12 && icon.right === frame.right - 12;
+    const frame = n.querySelector('.continue-image-wrap'), icon = n.querySelector('.continue-app-icon');
+    // Check layout coordinates independently of the parent card's focus transform.
+    return icon.offsetTop === frame.offsetTop + 12 && icon.offsetLeft + icon.offsetWidth === frame.offsetLeft + frame.offsetWidth - 12;
   })).toBe(true);
   expect(await page.locator('.continue-image-wrap').first().evaluate(n => n.clientWidth / n.clientHeight)).toBeCloseTo(16 / 9, 2);
   await expect(page.locator('.continue-image-wrap').first()).toHaveCSS('height', '233px');
@@ -92,6 +95,8 @@ test('opt-in discovery, selection, merged row, remote navigation, launch and res
     AeroTizen.continueWatching.refresh();
   });
   await expect(page.locator('.continue-card')).toHaveCount(7);
+  // Exercise both bounded empty-feed retries using the installed browser clock.
+  await page.clock.runFor(4500);
   await expect.poll(() => page.evaluate(() => AeroTizen.continueWatching.sources.find(s => s.name === 'Channel 4').status)).toBe('No items available');
   expect(await page.evaluate(() => savedCards.every((n, i) => n === document.querySelectorAll('.continue-card')[i] && savedIcons[i] === n.querySelector('.continue-app-icon .app-artwork')))).toBe(true);
   const settledReads = reads.length;
@@ -101,7 +106,8 @@ test('opt-in discovery, selection, merged row, remote navigation, launch and res
   await page.evaluate(() => AeroTizen.continueWatching.refresh());
   await expect.poll(() => video.locator('.continue-progress-fill').evaluate(n => n.clientWidth)).toBe(124);
   expect(await page.evaluate(() => savedCards.slice(0, -1).every((n, i) => n === document.querySelectorAll('.continue-card')[i] && savedIcons[i] === n.querySelector('.continue-app-icon .app-artwork')))).toBe(true);
-  expect(await page.evaluate(() => savedCards[6] !== document.querySelectorAll('.continue-card')[6])).toBe(true);
+  // Preact updates the changed keyed record in place; progress above verifies fresh data.
+  expect(await page.evaluate(() => savedCards[6] === document.querySelectorAll('.continue-card')[6])).toBe(true);
   await page.keyboard.press('ArrowDown'); // app row -> Continue Watching
   await expect(page.locator('.continue-card').nth(2)).toHaveClass(/focused/);
   await page.keyboard.press('ArrowLeft');

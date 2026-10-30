@@ -12,9 +12,9 @@ const london = { name: 'London', label: 'London, England, United Kingdom', latit
 const boston = { name: 'Boston', latitude: 42.3584, longitude: -71.0598, country_code: 'US' };
 const conditions = (temp = 12) => ({ current: { temperature_2m: temp, weather_code: 3 } });
 
-function harness({ saved, settings = {}, blockedStorage = false } = {}) {
+function harness({ saved, settings = {}, blockedStorage = false, now = NOW } = {}) {
   const requests = [], intervals = new Map(), storage = new Map();
-  let clock = NOW, timerId = 0;
+  let clock = now, timerId = 0;
   if (saved !== undefined) { storage.set(CACHE, typeof saved === 'string' ? saved : JSON.stringify(saved)); }
   const preferences = { tempUnit: 'C', weatherLocation: null, weatherShowLocation: true, ...settings };
   const el = {
@@ -50,7 +50,7 @@ function harness({ saved, settings = {}, blockedStorage = false } = {}) {
   vm.runInContext(source, context);
   const weather = context.window.Weather;
   return {
-    weather, preferences, requests, el, storage, intervals,
+    weather, preferences, requests, el, storage, intervals, context,
     start: () => weather.start(() => preferences),
     advance(ms) { clock += ms; },
     cached: () => JSON.parse(storage.get(CACHE))
@@ -578,4 +578,153 @@ test('solar timestamps are UTC epochs, including explicit offsets, and old cache
   const old = harness({ saved: cached() }); old.start();
   assert.equal(old.weather.currentReading().code, 3);
   old.advance(2*3600000+1); assert.equal(old.weather.currentReading(), null);
+});
+
+const ELEVEN_PM = Date.parse('2026-10-28T23:00:00Z');
+const solarDays = (now = ELEVEN_PM) => {
+  const midnight = Math.floor(now / 86400000) * 86400000;
+  return [0, 1].map(offset => ({ sunrise: midnight + offset*86400000 + 6*3600000,
+    sunset: midnight + offset*86400000 + 18*3600000 }));
+};
+const solarForecast = (code = 0, now = ELEVEN_PM) => ({
+  current: { temperature_2m: 15, weather_code: code, is_day: 1 },
+  daily: { sunrise: solarDays(now).map(day => new Date(day.sunrise).toISOString()),
+    sunset: solarDays(now).map(day => new Date(day.sunset).toISOString()) }
+});
+const wallpaperRuntime = h => {
+  const images = [], layer = {hidden: true, style: {}, className: ''};
+  let restored = 0;
+  const A = {settings: h.preferences, applyBackground() { restored++; }};
+  h.context.document.getElementById = id => id === 'weather-photo' ? layer : h.el;
+  h.context.document.body = {classList: {contains() {return false;}}};
+  h.context.window.AeroTizen = A;
+  h.context.Image = function () {images.push(this);};
+  vm.runInContext(fs.readFileSync(path.join(root,'launcher/js/photo-weather.js'),'utf8'),h.context);
+  return {images, layer, A, get restored() {return restored;}};
+};
+
+test('enabling wallpapers at 23:00 refreshes a fresh legacy cache immediately and never flashes daylight', () => {
+  for (const day of [undefined, 1]) {
+    const h = harness({ now: ELEVEN_PM, saved: cached({at: ELEVEN_PM-5*60000, code: 0, day}) });
+    const photo = wallpaperRuntime(h);
+    h.start(); assert.equal(h.requests.length, 0); assert.equal(h.el.nodes.b.textContent,'12°');
+    h.preferences.weatherPhoto = true; h.weather.updateVisibility();
+    assert.equal(h.requests.length, 1); assert.equal(h.intervals.size, 1);
+    assert.equal(photo.images.length, 0); assert.equal(photo.layer.hidden, true);
+    h.requests[0].respond(london); h.requests[1].respond(solarForecast());
+    assert.equal(photo.images.length, 1); assert.match(photo.images[0].src,/night.jpg$/);
+    photo.images[0].onload(); assert.match(photo.layer.className,/scene-night/);
+    assert.equal(h.el.nodes.b.textContent,'15°');
+  }
+});
+
+test('current solar cache does not refresh just because wallpapers are enabled, even with cached day=1 at night', () => {
+  const h = harness({now: ELEVEN_PM, saved: cached({at:ELEVEN_PM-60000, day:1, solar:solarDays()})});
+  h.start(); h.preferences.weatherPhoto=true;
+  for(let i=0;i<4;i++)h.weather.updateVisibility();
+  assert.equal(h.requests.length,0); assert.equal(h.intervals.size,1);
+  assert.equal(h.weather.solarPhase(h.weather.currentReading(),ELEVEN_PM),'night');
+});
+
+test('missing, empty, malformed, wrong-day and expired solar caches request one repair at startup', () => {
+  for(const solar of [undefined,null,[],{},[null],[{sunrise:NaN,sunset:ELEVEN_PM}],
+    [{sunrise:null,sunset:ELEVEN_PM}],[{sunrise:'1',sunset:'2'}],
+    [{sunrise:ELEVEN_PM,sunset:ELEVEN_PM}],
+    solarDays(ELEVEN_PM-3*86400000),solarDays(ELEVEN_PM+3*86400000)]) {
+    const h=harness({now:ELEVEN_PM,saved:cached({at:ELEVEN_PM,solar}),settings:{weatherPhoto:true}});
+    h.start();h.weather.updateVisibility();h.weather.updateVisibility();
+    assert.equal(h.requests.length,1);assert.equal(h.intervals.size,1);
+  }
+});
+
+test('failed solar repair keeps widget cache and fallback, and toggles cannot cause a retry loop', () => {
+  const saved=cached({at:ELEVEN_PM-60000,day:1});
+  const h=harness({now:ELEVEN_PM,saved,settings:{weatherPhoto:true}});
+  const photo=wallpaperRuntime(h);h.start();h.requests[0].ontimeout();
+  for(let i=0;i<5;i++){
+    h.preferences.weatherPhoto=false;h.weather.updateVisibility();
+    h.preferences.weatherPhoto=true;h.weather.updateVisibility();
+  }
+  assert.equal(h.requests.length,1);assert.equal(h.intervals.size,1);
+  assert.deepEqual(h.cached(),saved);assert.equal(h.el.nodes.b.textContent,'12°');
+  assert.equal(photo.images.length,0);
+  h.advance(20*60000);[...h.intervals.values()][0].fn();
+  assert.equal(h.requests.length,2,'existing twenty-minute timer retries');
+});
+
+test('malformed fresh forecast solar data updates temperature but neither picks daylight nor retries on every render', () => {
+  const h=harness({now:ELEVEN_PM,settings:{weatherLocation:london,weatherPhoto:true}});
+  const photo=wallpaperRuntime(h);h.start();h.requests[0].respond(conditions(21));
+  for(let i=0;i<5;i++)h.weather.updateVisibility();
+  assert.equal(h.requests.length,1);assert.equal(h.el.nodes.b.textContent,'21°');
+  assert.equal(h.weather.solarPhase(h.weather.currentReading(),ELEVEN_PM),'');
+  assert.equal(photo.images.length,0);
+});
+
+test('a solar repair reuses the matching in-flight widget forecast', () => {
+  const h=harness({now:ELEVEN_PM,settings:{weatherLocation:london}});h.start();
+  h.preferences.weatherPhoto=true;h.weather.updateVisibility();h.weather.updateVisibility();
+  assert.equal(h.requests.length,1);assert.equal(h.requests[0].aborted,undefined);
+  h.requests[0].respond(solarForecast());h.weather.updateVisibility();assert.equal(h.requests.length,1);
+});
+
+test('a location change cancels repair and a late old-city response cannot choose a wallpaper', () => {
+  const h=harness({now:ELEVEN_PM,settings:{weatherLocation:london,weatherPhoto:true}});
+  const photo=wallpaperRuntime(h);h.start();const old=h.requests[0];
+  h.preferences.weatherLocation=boston;h.weather.refresh();
+  assert.equal(old.aborted,true);old.respond(solarForecast(95));assert.equal(photo.images.length,0);
+  h.requests[1].respond(solarForecast());assert.match(photo.images[0].src,/night.jpg$/);
+  assert.equal(h.cached().source,JSON.stringify([boston.latitude,boston.longitude,boston.name,boston.country_code]));
+});
+
+test('turning both consumers off cancels repair; re-enable starts one usable request and one timer', () => {
+  const h=harness({now:ELEVEN_PM,saved:cached({at:ELEVEN_PM}),settings:{showWeather:false,weatherPhoto:true}});
+  h.start();const old=h.requests[0];h.preferences.weatherPhoto=false;h.weather.updateVisibility();
+  assert.equal(old.aborted,true);assert.equal(h.intervals.size,0);
+  h.preferences.weatherPhoto=true;h.weather.updateVisibility();h.weather.updateVisibility();
+  assert.equal(h.requests.length,2);assert.equal(h.intervals.size,1);
+  assert.equal(h.requests.filter(r=>!r.aborted).length,1);
+});
+
+test('offline solar cache stays usable until its weather expiry, then falls back without hiding the widget early', () => {
+  const h=harness({now:ELEVEN_PM,saved:cached({at:ELEVEN_PM-30*60000,solar:solarDays(),day:1}),settings:{weatherPhoto:true}});
+  const photo=wallpaperRuntime(h);h.start();photo.images[0].onload();h.requests[0].onerror();
+  assert.match(photo.layer.className,/scene-night/);assert.equal(h.el.hidden,false);
+  h.advance(2*3600000);h.weather.updateDisplay();
+  assert.equal(photo.layer.hidden,true);assert.equal(h.el.hidden,true);
+});
+
+test('fresh solar forecasts select sunset, daytime weather and night rather than stale is_day', () => {
+  for(const [time,code,scene] of [['12:00',61,'rain'],['17:30',0,'sunset'],['17:30',95,'storm'],['23:00',73,'night']]){
+    const now=Date.parse('2026-10-28T'+time+':00Z');
+    const h=harness({now,settings:{weatherPhoto:true,weatherLocation:london}});const photo=wallpaperRuntime(h);
+    h.start();h.requests[0].respond(solarForecast(code,now));assert.match(photo.images[0].src,new RegExp('/'+scene+'\\.jpg$'));
+  }
+});
+
+test('wallpapers disabled leave a fresh legacy widget cache usable without solar requests', () => {
+  const h=harness({now:ELEVEN_PM,saved:cached({at:ELEVEN_PM-60000,day:1})});h.start();
+  for(let i=0;i<4;i++)h.weather.updateVisibility();
+  assert.equal(h.requests.length,0);assert.equal(h.el.nodes.b.textContent,'12°');assert.equal(h.intervals.size,1);
+});
+
+test('failed stale-cache repair is also throttled across wallpaper-only off/on toggles', () => {
+  const h=harness({now:ELEVEN_PM,saved:cached({at:ELEVEN_PM-30*60000}),settings:{showWeather:false,weatherPhoto:true}});
+  h.start();h.requests[0].onerror();
+  for(let i=0;i<4;i++){
+    h.preferences.weatherPhoto=false;h.weather.updateVisibility();
+    h.preferences.weatherPhoto=true;h.weather.updateVisibility();
+  }
+  assert.equal(h.requests.length,1);assert.equal(h.intervals.size,1);
+});
+
+test('solar-day validation uses epochs across UTC midnight and does not depend on the TV timezone', () => {
+  const h=harness();
+  const sunrise=Date.parse('2026-10-27T22:00Z'),sunset=Date.parse('2026-10-28T10:00Z');
+  for(const [time,phase] of [['2026-10-28T02:00Z','day'],['2026-10-28T09:30Z','sunset'],['2026-10-28T14:00Z','night']]){
+    const now=Date.parse(time);
+    assert.equal(h.weather.solarPhase({at:now,solar:[{sunrise,sunset},null]},now),phase);
+  }
+  const now=Date.parse('2026-10-29T02:00Z');
+  assert.equal(h.weather.solarPhase({at:now,solar:[{sunrise,sunset}]},now),'');
 });

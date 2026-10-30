@@ -10,7 +10,7 @@ export interface WeatherLocation {
   name: string; label?: string; latitude: number; longitude: number; country_code?: string;
 }
 export interface SettingsValues {
-  home: string[]; cardSize: CardSize; background: string; speed: number;
+  home: string[]; homeCardMode: 'square' | 'rectangle'; homeCardColumns: number | null; cardSize: CardSize; background: string; speed: number;
   weatherPhoto: boolean; showWeather: boolean; showTime: boolean; showNetwork: boolean; tempUnit: TemperatureUnit;
   weatherLocation: WeatherLocation | null; weatherShowLocation: boolean;
   dateFormat: DateFormat | 'auto' | 'weekday' | 'dmy' | 'mdy'; timeFormat: TimeFormat;
@@ -81,7 +81,7 @@ export interface SettingsActions {
   setBackground(background: string): void; setWeatherVisible(visible: boolean): void;
   setLocationVisible(visible: boolean): void; setTempUnit(unit: TemperatureUnit): void;
   setDateFormat(format: DateFormat): void; setNetworkVisible(visible: boolean): void;
-  setLiveTvVisible(visible: boolean): void; setCardSize(size: CardSize): void;
+  setLiveTvVisible(visible: boolean): void; setCardSize(size: CardSize): void; setHomeCardMode(mode: SettingsValues['homeCardMode']): void; setHomeCardColumns(columns: number | null): void;
   setHdmiVisibility(hide: boolean): void; setTimeFormat(format: TimeFormat | 'none'): void;
   setLocation(location: WeatherLocation | null): void; setSpeed(direction: number): void;
   saveInputName(port: string, value: string): void; toggleApp(id: string): void;

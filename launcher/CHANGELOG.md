@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.5.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.4.0...launcher-v2.5.0) (2026-10-29)
+
+
+### Features
+
+* **launcher:** add opt-in Continue Watching ([#62](https://github.com/helalaou/AeroTizen/issues/62)) ([5314580](https://github.com/helalaou/AeroTizen/commit/5314580d943cc91a25ff41da287fbbd0646f4f00))
+* **launcher:** add optional dynamic weather wallpapers ([#35](https://github.com/helalaou/AeroTizen/issues/35)) ([c4b649b](https://github.com/helalaou/AeroTizen/commit/c4b649b4fa22a43e19842f0f6d52acdfa69cc1d3))
+
+
+### Bug Fixes
+
+* **launcher:** open com.samsung.tv.store before the org.volt.apps alias ([#81](https://github.com/helalaou/AeroTizen/issues/81)) ([c1ca91f](https://github.com/helalaou/AeroTizen/commit/c1ca91f3de14dc29f80ac548ab401c8b5beebd65))
+* **weather:** refresh cached forecasts missing current solar data ([#72](https://github.com/helalaou/AeroTizen/issues/72)) ([47a5911](https://github.com/helalaou/AeroTizen/commit/47a5911b15a785eee67bc886b2f6474f46aaaff4))
+
 ## [2.4.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.3.0...launcher-v2.4.0) (2026-10-27)
 
 

@@ -66,7 +66,7 @@ function harness(options = {}) {
       HIDDEN_APPS: /service/i,
       HBBTV_APP_ID: 'org.tizen.hbbtv',
       HBBTV_LINK_METADATA: 'hbbtv.link',
-      DEFAULT_HOME_APPS: [], FIREPLACE_ID: '__fire', STORE_APP_IDS: []
+      DEFAULT_HOME_APPS: [], FIREPLACE_ID: '__fire', STORE_APP_IDS: options.storeIds || []
     },
     homewatch: {
       watch(id) { watch.push(id); },
@@ -259,4 +259,24 @@ test('Live TV acceptance remains separate from unconfirmed visibility', () => {
   const h = harness({ visible: true }); h.A.homewatch.openNativeLiveTV(); h.requests[0].resolve(200);
   h.timers.find(timer => timer.ms === 2100).fn();
   assert.deepEqual(h.log.snapshot().records.map(item => item.event), ['handoff.request', 'handoff.accepted', 'handoff.visibility_unconfirmed']);
+});
+
+test('app store opens com.samsung.tv.store before the org.volt.apps alias', () => {
+  const config = { window: { AeroTizen: {} } };
+  config.AeroTizen = config.window.AeroTizen;
+  vm.runInNewContext(get('js/config.js'), config, { filename: 'config.js' });
+  const storeIds = Array.from(config.AeroTizen.config.STORE_APP_IDS);
+  assert.deepEqual(storeIds, ['com.samsung.tv.store', 'org.volt.apps']);
+
+  const h = harness({ storeIds });
+  h.A.apps.openStore();
+  assert.deepEqual(h.launches.map(r => r.id), ['com.samsung.tv.store'],
+    'a successful launch does not also open the alias');
+});
+
+test('app store falls back to org.volt.apps where com.samsung.tv.store is missing', () => {
+  const h = harness({ storeIds: ['com.samsung.tv.store', 'org.volt.apps'], launchFails: 'com.samsung.tv.store' });
+  h.A.apps.openStore();
+  assert.deepEqual(h.launches.map(r => r.id), ['com.samsung.tv.store', 'org.volt.apps']);
+  assert.deepEqual(h.toasts, []);
 });
