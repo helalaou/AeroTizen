@@ -20,8 +20,8 @@ jobs:
       issues: write
       pull-requests: write
     outputs:
-      cli_created: ${{ steps.release.outputs.release_created }}
-      cli_tag: ${{ steps.release.outputs.tag_name }}
+      cli_created: ${{ steps.release.outputs['cli--release_created'] }}
+      cli_tag: ${{ steps.release.outputs['cli--tag_name'] }}
       launcher_created: ${{ steps.release.outputs['launcher--release_created'] }}
       launcher_tag: ${{ steps.release.outputs['launcher--tag_name'] }}
     steps:

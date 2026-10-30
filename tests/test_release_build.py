@@ -18,6 +18,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("build_release", ROOT / "tools/build_release.py")
 build = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(build)
+CLI_ROOT = ROOT / "cli"
+CLI_SPEC = importlib.util.spec_from_file_location("build_cli_release", CLI_ROOT / "tools/build_release.py")
+cli_build = importlib.util.module_from_spec(CLI_SPEC)
+CLI_SPEC.loader.exec_module(cli_build)
 
 
 @pytest.fixture
@@ -188,8 +192,31 @@ def test_launcher_rejects_legacy_settings_markup(launcher, tmp_path):
 
 def test_cli_tag_must_match_before_build_starts(tmp_path):
     with pytest.raises(ValueError, match="does not match"):
-        build.build_cli(ROOT, tmp_path / "dist", "launcher-v0.0.0")
+        cli_build.build_cli(CLI_ROOT, tmp_path / "dist", "launcher-v0.0.0")
     assert not (tmp_path / "dist").exists()
+
+
+def test_legacy_cli_build_command_delegates_and_checks_the_tag(tmp_path):
+    output = tmp_path / "dist"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "tools/build_release.py"),
+            "cli",
+            "--tag",
+            "launcher-v0.0.0",
+            "--output",
+            str(output),
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 1
+    assert "does not match cli-v" in result.stderr
+    assert "Traceback" not in result.stderr
+    assert not output.exists()
 
 
 @pytest.mark.parametrize(
@@ -221,7 +248,7 @@ def test_cli_release_requires_the_home_helper_before_freezing(tmp_path):
     source.mkdir(parents=True)
     (source / "__init__.py").write_text('__version__ = "2.2.0"\n')
     with pytest.raises(ValueError, match="Home helper"):
-        build.build_cli(tmp_path, tmp_path / "output")
+        cli_build.build_cli(tmp_path, tmp_path / "output")
     assert not (tmp_path / "output").exists()
 
 

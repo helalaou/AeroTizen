@@ -6,10 +6,10 @@
     <StartupObject>Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../../native/home-query/HomeQuery.cs" Link="HomeQuery.cs"/>
-    <Compile Include="../../native/home-control/Compatibility.cs" Link="Compatibility.cs"/>
-    <Compile Include="../../native/home-control/ControlPolicy.cs" Link="ControlPolicy.cs"/>
-    <Compile Include="../../native/home-control/HomeControl.cs" Link="HomeControl.cs"/>
-    <Compile Include="../../native/home-common/Installation.cs" Link="Installation.cs"/>
+    <Compile Include="../../cli/native/home-query/HomeQuery.cs" Link="HomeQuery.cs"/>
+    <Compile Include="../../cli/native/home-control/Compatibility.cs" Link="Compatibility.cs"/>
+    <Compile Include="../../cli/native/home-control/ControlPolicy.cs" Link="ControlPolicy.cs"/>
+    <Compile Include="../../cli/native/home-control/HomeControl.cs" Link="HomeControl.cs"/>
+    <Compile Include="../../cli/native/home-common/Installation.cs" Link="Installation.cs"/>
   </ItemGroup>
 </Project>

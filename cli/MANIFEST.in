@@ -1,0 +1,3 @@
+include requirements.txt
+recursive-include native *.cs *.csproj
+recursive-include tools *.py
