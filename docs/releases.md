@@ -4,7 +4,7 @@ AeroTizen has two release streams in one repository:
 
 | Component | Tag | Version files | Release notes |
 |---|---|---|---|
-| CLI | `cli-vX.Y.Z` | `src/aerotizen/__init__.py` | `CHANGELOG-CLI.md` |
+| CLI | `cli-vX.Y.Z` | `cli/src/aerotizen/__init__.py` | `cli/CHANGELOG.md` |
 | Launcher and watcher | `launcher-vX.Y.Z` | `launcher/version.txt`, `launcher/config.xml` | `launcher/CHANGELOG.md` |
 
 Release Please manages both versions from `.release-please-manifest.json`. The existing
@@ -96,14 +96,19 @@ Release Please refreshes pending release PRs even when their release notes have 
 changed. This keeps the shared version manifest current after another component is
 released. Let CI pass again if that refresh changes the PR commit.
 
-Launcher source changes belong under `launcher/`. The CLI excludes `launcher/`,
-`tests/`, and `docs/` from its release calculation, so a launcher change with tests and
-documentation does not force a CLI release. A CLI source change with tests and
-documentation still releases the CLI. Changes only under the root `docs/` directory
-or `tests/` do not create releases for either component. Root tooling and files such
-as `README.md` can still affect the CLI; a change needed in both components must also
-change the relevant launcher source or metadata. A commit scope such as
-`fix(launcher):` is useful context, but paths determine component ownership.
+Release Please tracks `cli/` and `launcher/` as separate packages. CLI source,
+package metadata, native helpers, and CLI build tools belong under `cli/`. Launcher
+source and release metadata belong under `launcher/`. Root documentation, tests, and
+shared tooling do not trigger either release. A change needed in both components must
+also change the relevant source or metadata in both package directories. A commit
+scope such as `fix(launcher):` is useful context, but paths determine component ownership.
+
+The manifest key for the CLI is `cli`; existing `cli-vX.Y.Z` tags and version history
+continue to identify the same component. Its workflow outputs use the `cli--` prefix.
+The root `pyproject.toml` forwards build hooks to `cli/`, so both
+`pip install git+https://github.com/helalaou/AeroTizen` and `pip install -e '.[dev]'`
+keep working. `pip install ./cli` builds the same package directly. Package metadata
+and dependencies are defined in `cli/pyproject.toml`.
 
 The launcher builder checks that `version.txt` and `config.xml` agree. Keep the app ID
 `DclHome001.Home` and package ID `DclHome001` stable for upgrades. Release Please updates
@@ -221,7 +226,7 @@ npm ci
 npm run build
 python tools/build_release.py launcher --output dist/releases/launcher
 python -m pip install 'pyinstaller>=6.22.1,<7' certifi
-python tools/build_release.py cli --output dist/cli
+python cli/tools/build_release.py --output dist/cli
 ```
 
 `--tag launcher-vX.Y.Z` or `--tag cli-vX.Y.Z` also checks that a tag matches the source

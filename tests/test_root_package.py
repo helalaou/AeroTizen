@@ -36,7 +36,7 @@ def test_signed_helper_contains_no_pairing_secrets(tmp_path, monkeypatch):
         receipt,
         managed(),
         values,
-        (ROOT / "native/root-helper/tizen-manifest.xml").read_bytes(),
+        (ROOT / "cli/native/root-helper/tizen-manifest.xml").read_bytes(),
         b"icon",
         make_certificates(tmp_path),
     )
@@ -51,7 +51,7 @@ def test_signed_helper_contains_no_pairing_secrets(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("change", ["home", "restart", "identity", "privilege"])
 def test_helper_manifest_cannot_take_over_home_or_add_privileges(change):
-    xml = (ROOT / "native/root-helper/tizen-manifest.xml").read_text()
+    xml = (ROOT / "cli/native/root-helper/tizen-manifest.xml").read_text()
     if change == "home":
         xml = xml.replace("</service-application>", "<app-control/> </service-application>")
     elif change == "restart":

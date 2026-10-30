@@ -33,10 +33,13 @@ def describe(root=None, version=None):
         "dirty": None,
     }
     try:
-        if not (root / ".git").exists():
+        repository = root
+        if not (repository / ".git").exists() and repository.name == "cli":
+            repository = repository.parent
+        if not (repository / ".git").exists():
             return result
         commit = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            ["git", "-C", str(repository), "rev-parse", "HEAD"],
             capture_output=True,
             text=True,
             timeout=2,
@@ -46,7 +49,7 @@ def describe(root=None, version=None):
             result["commit"] = commit
             result["dirty"] = bool(
                 subprocess.run(
-                    ["git", "-C", str(root), "status", "--porcelain", "--untracked-files=normal"],
+                    ["git", "-C", str(repository), "status", "--porcelain", "--untracked-files=normal"],
                     capture_output=True,
                     text=True,
                     timeout=2,

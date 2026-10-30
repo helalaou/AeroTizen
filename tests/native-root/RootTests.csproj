@@ -4,12 +4,12 @@
     <StartupObject>RootTests</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../../native/root-bridge/*.cs" Link="Bridge/%(Filename)%(Extension)" />
-    <Compile Include="../../native/root-common/*.cs" Link="Common/%(Filename)%(Extension)" />
-    <Compile Include="../../native/untethered-probe/*.cs" Link="Probe/%(Filename)%(Extension)" />
-    <Compile Include="../../native/root-helper/PerBootGate.cs" Link="PerBootGate.cs" />
-    <Compile Include="../../native/root-helper/RuntimeBundle.cs" Link="RuntimeBundle.cs" />
-    <Compile Include="../../native/root-helper/RootProofController.cs" Link="RootProofController.cs" />
-    <Compile Include="../../native/root-helper/SdbReadiness.cs" Link="SdbReadiness.cs" />
+    <Compile Include="../../cli/native/root-bridge/*.cs" Link="Bridge/%(Filename)%(Extension)" />
+    <Compile Include="../../cli/native/root-common/*.cs" Link="Common/%(Filename)%(Extension)" />
+    <Compile Include="../../cli/native/untethered-probe/*.cs" Link="Probe/%(Filename)%(Extension)" />
+    <Compile Include="../../cli/native/root-helper/PerBootGate.cs" Link="PerBootGate.cs" />
+    <Compile Include="../../cli/native/root-helper/RuntimeBundle.cs" Link="RuntimeBundle.cs" />
+    <Compile Include="../../cli/native/root-helper/RootProofController.cs" Link="RootProofController.cs" />
+    <Compile Include="../../cli/native/root-helper/SdbReadiness.cs" Link="SdbReadiness.cs" />
   </ItemGroup>
 </Project>

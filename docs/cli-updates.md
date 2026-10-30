@@ -17,7 +17,7 @@ Install the development dependencies, PyInstaller 6.22.1 or newer, and certifi. 
 both native Home helpers as required by the existing standalone builder, then run:
 
 ```sh
-python tools/test_cli_self_update.py --output /absolute/path/to/new-temporary-folder
+python cli/tools/test_cli_self_update.py --output /absolute/path/to/new-temporary-folder
 ```
 
 The script downloads official CLI 2.4.0 and the latest stable CLI for the current

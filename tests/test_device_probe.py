@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-probe = runpy.run_path(str(Path(__file__).resolve().parents[1] / "tools" / "probe_device_session.py"))
+probe = runpy.run_path(str(Path(__file__).resolve().parents[1] / "cli" / "tools" / "probe_device_session.py"))
 
 
 def app(app_id="Example.App", package="Example", version="1.0", uses=1, size=100):

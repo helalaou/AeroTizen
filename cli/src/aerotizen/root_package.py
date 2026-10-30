@@ -54,7 +54,7 @@ def runtime_files(path=None):
         raw = resource.read_bytes()
     except FileNotFoundError as exc:
         raise ValueError(
-            "This CLI build lacks the root runtime. Build it with tools/build_root_runtime.py."
+            "This CLI build lacks the root runtime. Build it with cli/tools/build_root_runtime.py."
         ) from exc
     if len(raw) > 8 * 1024 * 1024:
         raise ValueError("Oversized root runtime")

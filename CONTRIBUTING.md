@@ -17,11 +17,12 @@ npm ci                      # launcher build and lint tools
 The separate native Home query and control helpers require the .NET 6 SDK:
 
 ```bash
-python tools/build_home_query.py
-python tools/build_home_control.py
+python cli/tools/build_home_query.py
+python cli/tools/build_home_control.py
+python cli/tools/build_root_runtime.py
 ```
 
-Build both before running the full Python suite or building a standalone CLI. CI
+Build these helpers before running the full Python suite or building a standalone CLI. CI
 uses SDK 6.0.428. Standalone CLI releases include both payloads; users do not need
 a .NET SDK. Home commands use the SDK user by default; temporary root is an
 explicit option for reads only. See [inspection](docs/home-read-only.md) and
@@ -50,7 +51,9 @@ relaunch cancellation and app visibility, without contacting a TV.
 
 | Path | What |
 |---|---|
-| `src/aerotizen/` | Python CLI: sdb client, certificates, package signing, debloat |
+| `cli/src/aerotizen/` | Python CLI: sdb client, certificates, package signing, debloat |
+| `cli/pyproject.toml` | CLI package metadata; root pip installs use this same definition |
+| `cli/native/`, `cli/tools/` | Native Home helpers and CLI build tools |
 | `launcher/` | TV runtime files and the legacy Settings baseline |
 | `launcher/src/settings/` | TypeScript/TSX Settings components, state, actions and service adapters |
 | `launcher/src/settings/sections/` | Settings sections with their own controls and hooks |

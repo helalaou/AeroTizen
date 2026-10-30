@@ -26,7 +26,8 @@ def load_helper():
         return home.load_helper(path=PAYLOAD_PATH, names=HELPER_FILES)
     except home.HomeError as exc:
         raise home.HomeError(
-            "Home control payload is missing or invalid. Build it with python tools/build_home_control.py."
+            "Home control payload is missing or invalid. "
+            "Build it with python cli/tools/build_home_control.py."
         ) from exc
 
 

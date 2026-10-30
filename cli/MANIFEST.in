@@ -1,0 +1,4 @@
+include requirements.txt
+recursive-include native *.cs *.csproj
+include native/root-helper/tizen-manifest.xml native/root-helper/icon.png
+recursive-include tools *.py
