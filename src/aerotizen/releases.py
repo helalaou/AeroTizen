@@ -36,7 +36,30 @@ class DownloadedLauncher:
     version: str
 
 
-def _version(value):
+@dataclass(frozen=True)
+class LauncherRelease:
+    version: str
+    min_cli_version: str
+    asset_url: str
+    sha256: str
+
+    def download(self, destination):
+        if version_key(__version__) < version_key(self.min_cli_version):
+            raise ReleaseError(
+                f"Launcher {self.version} needs AeroTizen CLI {self.min_cli_version} or newer. "
+                f"Your CLI is {__version__}; update it first."
+            )
+        data = _read_url(self.asset_url, MAX_PACKAGE_BYTES)
+        if hashlib.sha256(data).hexdigest() != self.sha256:
+            raise ReleaseError("Launcher checksum mismatch. The package was not installed; try again later.")
+        _check_package(data, self.version)
+        path = Path(destination) / f"aerotizen-launcher-{self.version}.wgt"
+        path.write_bytes(data)
+        return DownloadedLauncher(path=path, version=self.version)
+
+
+def version_key(value):
+    """Validate a stable version and return its numeric comparison key."""
     if not isinstance(value, str) or not VERSION.fullmatch(value):
         raise ReleaseError("Expected a stable version in X.Y.Z form.")
     return tuple(int(part) for part in value.split("."))
@@ -91,7 +114,7 @@ def _release(repository, version):
         raise ReleaseError("Release repository must be OWNER/REPO, for example helalaou/AeroTizen.")
     api = f"https://api.github.com/repos/{repository}/releases"
     if version is not None:
-        _version(version)
+        version_key(version)
         release = _json_url(f"{api}/tags/launcher-v{version}")
         if (
             not isinstance(release, dict)
@@ -121,7 +144,7 @@ def _release(repository, version):
             ):
                 continue
             found = tag.removeprefix("launcher-v")
-            candidates.append((_version(found), release, found))
+            candidates.append((version_key(found), release, found))
         if len(releases) < 100:
             break
     else:
@@ -220,8 +243,8 @@ def _check_package(data, version):
         raise ReleaseError("The launcher release is not a valid application package.") from exc
 
 
-def download_launcher(destination, *, version=None, repository=DEFAULT_REPOSITORY):
-    """Download a stable release, verify it, then write an unsigned widget to destination."""
+def resolve_launcher(*, version=None, repository=DEFAULT_REPOSITORY):
+    """Validate release metadata without downloading the widget or requiring a newer CLI."""
     release, version = _release(repository, version)
     manifest = _json_url(_asset_url(release, repository, "launcher-release.json"))
     name = f"aerotizen-launcher-{version}.wgt"
@@ -237,15 +260,15 @@ def download_launcher(destination, *, version=None, repository=DEFAULT_REPOSITOR
         or not re.fullmatch(r"[0-9a-f]{64}", manifest["sha256"])
     ):
         raise ReleaseError("The launcher release manifest is invalid or uses an unsupported format.")
-    if _version(__version__) < _version(manifest.get("min_cli_version")):
-        raise ReleaseError(
-            f"Launcher {version} needs AeroTizen CLI {manifest['min_cli_version']} or newer. "
-            f"Your CLI is {__version__}; update it first."
-        )
-    data = _read_url(_asset_url(release, repository, name), MAX_PACKAGE_BYTES)
-    if hashlib.sha256(data).hexdigest() != manifest["sha256"]:
-        raise ReleaseError("Launcher checksum mismatch. The package was not installed; try again later.")
-    _check_package(data, version)
-    path = Path(destination) / name
-    path.write_bytes(data)
-    return DownloadedLauncher(path=path, version=version)
+    version_key(manifest.get("min_cli_version"))
+    return LauncherRelease(
+        version=version,
+        min_cli_version=manifest["min_cli_version"],
+        asset_url=_asset_url(release, repository, name),
+        sha256=manifest["sha256"],
+    )
+
+
+def download_launcher(destination, *, version=None, repository=DEFAULT_REPOSITORY):
+    """Download a stable release, verify it, then write an unsigned widget to destination."""
+    return resolve_launcher(version=version, repository=repository).download(destination)

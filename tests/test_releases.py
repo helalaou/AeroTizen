@@ -92,6 +92,39 @@ def test_download_verifies_and_writes_unsigned_release(github, tmp_path):
     assert all("/latest" not in url for url in github[1])
 
 
+def test_resolve_reads_only_release_metadata(github):
+    selected = releases.resolve_launcher()
+    assert selected.version == "2.2.0"
+    assert selected.min_cli_version == "2.2.0"
+    assert selected.asset_url == release()["assets"][1]["browser_download_url"]
+    assert len(github[1]) == 2
+
+
+def test_resolve_can_report_a_release_that_requires_a_newer_cli(github, tmp_path):
+    github[0][release()["assets"][0]["browser_download_url"]]["min_cli_version"] = "99.0.0"
+    selected = releases.resolve_launcher()
+    assert selected.min_cli_version == "99.0.0"
+    with pytest.raises(releases.ReleaseError, match="update it first"):
+        selected.download(tmp_path)
+    assert len(github[1]) == 2
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_resolved_release_stays_pinned_if_a_newer_release_is_published(github, tmp_path):
+    selected = releases.resolve_launcher()
+    github[0][f"{API}?per_page=100&page=1"] = [release("3.0.0")]
+    assert selected.download(tmp_path).version == "2.2.0"
+    assert len(github[1]) == 3
+
+
+@pytest.mark.parametrize("minimum", [None, "latest", "2.2", True])
+def test_resolve_rejects_invalid_minimum_cli_version(github, minimum):
+    github[0][release()["assets"][0]["browser_download_url"]]["min_cli_version"] = minimum
+    with pytest.raises(releases.ReleaseError, match=r"X\.Y\.Z"):
+        releases.resolve_launcher()
+    assert len(github[1]) == 2
+
+
 def test_latest_scans_pages_and_orders_versions_not_dates(github, tmp_path):
     responses, calls = github
     responses[f"{API}?per_page=100&page=1"] = [release("99.0.0", prefix="cli-v")] * 96 + [

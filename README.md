@@ -160,10 +160,29 @@ You need a computer on the same network as the TV.
    compatibility, signs it with your TV certificates, and installs it. No source checkout
    or Node.js is needed. Keep your existing certificates for future app updates.
 
-   Run the same command to install a newer launcher. To select a version, use
-   `./aerotizen install launcher --version 2.2.0` (replace the number with a published
-   launcher version). CLI and launcher versions are independent; a launcher release
-   can require a newer CLI. Use `./aerotizen --version` to check your CLI version.
+   Check for a launcher update, then install it:
+
+   ```bash
+   ./aerotizen update launcher --check
+   ./aerotizen update launcher
+   ```
+
+   The check shows the installed version, latest stable release, and minimum CLI
+   version. It does not download the app or need signing certificates. The update
+   uses your saved certificates and installs in place, keeping launcher settings.
+   If the installed version is current or newer, it makes no changes.
+
+   Some TVs do not report an app version. The check states this; an update then
+   needs `./aerotizen update launcher --force`. This installs the latest stable
+   release without a version comparison, so it may replace a newer development
+   build. `--force` also reinstalls a current release, but never replaces a known
+   newer version.
+
+   To select a specific version, use `./aerotizen install launcher --version 2.2.0`
+   (replace the number with a published launcher version). CLI and launcher versions
+   are independent; these commands update the TV launcher, not the CLI executable.
+   A launcher release can require a newer CLI. Download a newer CLI archive when
+   needed; use `./aerotizen --version` to check your CLI version.
 
    To install local development files or a downloaded package, use an explicit path:
    `./aerotizen install ./dist/launcher` (after `npm ci && npm run build`) or

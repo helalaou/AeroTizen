@@ -144,6 +144,34 @@ Downloaded and signed temporary files are removed after the command. For offline
 installation, download the WGT first and pass its local path. The explicit local path
 uses the existing local signing route rather than release-manifest validation.
 
+### Launcher updates
+
+Run `aerotizen update launcher --check` to compare the TV's installed version with
+the highest stable launcher release. It validates release metadata and shows the
+minimum CLI version without downloading the WGT, reading certificates, or writing
+to the TV. Add `--release-repo OWNER/REPO` to check a fork.
+
+Run `aerotizen update launcher` to install a newer release. Current and newer
+installed versions are left in place. The selected release stays pinned through
+download and installation, even if another release is published during the command.
+One device session covers the inventory check, signing and installation. The update
+reuses the install command's checksum/package checks, saved certificates and TV
+completion/version checks. It never uninstalls the app, resets settings or changes
+native Home assignments.
+
+If firmware omits the installed version or reports a version that cannot be compared,
+the command reports the limitation and stops before downloading the WGT. Use
+`aerotizen update launcher --force` to explicitly install without that comparison;
+the selected release may be older than an unversioned development build. `--force`
+also allows reinstalling the current release, but does not downgrade a known newer
+version. It cannot be combined with `--check`. A missing launcher still needs
+`aerotizen install launcher`. Intentional version selection remains available with
+`aerotizen install launcher --version X.Y.Z`.
+
+These commands update the launcher, not the CLI executable. If the release requires
+a newer CLI, download and extract the matching CLI archive first. Update detection
+inside the TV app is separate work.
+
 ## Local checks
 
 Use Python 3.10 or newer, or 3.12 to match the native build jobs:

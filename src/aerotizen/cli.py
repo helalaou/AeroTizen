@@ -8,6 +8,8 @@
   aerotizen certs               sign in to Samsung, create signing certs for this TV
   aerotizen install launcher    download, sign, and install the latest launcher
   aerotizen install PATH        sign + install a local app folder or .wgt
+  aerotizen update launcher     update the installed launcher to the latest stable release
+  aerotizen update launcher --check  compare versions without installing
   aerotizen uninstall launcher  remove the launcher (or: uninstall APPID for another app you installed)
   aerotizen key KEY_VOLUP [n]   press a remote button
   aerotizen launch APPID        open an app and check that it came up
@@ -250,8 +252,27 @@ def verify_install(app_id, version, output, applist):
     print(f"\nTV confirmed installation: {app_id}. Installed version is unverified.")
 
 
+def _install_signed(session, src, temporary, host):
+    """Update in place with the saved signing profile and verify the TV's reply."""
+    from aerotizen import signer
+
+    app_id, version = app_metadata_of(src)
+    duid = session.duid()
+    tool_path = session.capability().get("sdk_toolpath", "/home/owner/share/tmp/sdk_tools")
+    cdir = cert_dir_for(duid)
+    if not os.path.exists(os.path.join(cdir, "distributor.p12")):
+        sys.exit(f"No certificates for this TV yet. Run: aerotizen --tv {host} certs")
+    signed = Path(temporary) / f"{app_id.split('.')[0]}-signed.wgt"
+    signer.sign_wgt(src, signed, cdir)
+    with open(os.path.join(cdir, "device-profile.xml"), "rb") as f:
+        session.push(f.read(), f"{tool_path}/device-profile.xml")
+    output = session.install(app_id, signed.read_bytes(), tool_path)
+    print(output.strip())
+    verify_install(app_id, version, output, session.applist())
+
+
 def cmd_install(args):
-    from aerotizen import releases, signer
+    from aerotizen import releases
 
     if args.src != "launcher" and (args.release_version is not None or args.release_repo is not None):
         sys.exit("--version and --release-repo apply only to 'install launcher'.")
@@ -266,23 +287,57 @@ def cmd_install(args):
                 )
                 src = downloaded.path
                 print(f"Downloaded launcher {downloaded.version}.")
-            app_id, version = app_metadata_of(src)
+            app_metadata_of(src)
             host = pick_tv(args)
             with require_sdb(host) as s:
-                duid = s.duid()
-                tool_path = s.capability().get("sdk_toolpath", "/home/owner/share/tmp/sdk_tools")
-                cdir = cert_dir_for(duid)
-                if not os.path.exists(os.path.join(cdir, "distributor.p12")):
-                    sys.exit(f"No certificates for this TV yet. Run: aerotizen --tv {host} certs")
-                signed = Path(temporary) / f"{app_id.split('.')[0]}-signed.wgt"
-                signer.sign_wgt(src, signed, cdir)
-                with open(os.path.join(cdir, "device-profile.xml"), "rb") as f:
-                    s.push(f.read(), f"{tool_path}/device-profile.xml")
-                output = s.install(app_id, signed.read_bytes(), tool_path)
-                print(output.strip())
-                verify_install(app_id, version, output, s.applist())
+                _install_signed(s, src, temporary, host)
     except (OSError, ValueError, zipfile.BadZipFile, ET.ParseError, KeyError, SdbError) as exc:
         sys.exit(f"Install failed: {exc}")
+
+
+def cmd_update(args):
+    from aerotizen import releases
+
+    try:
+        release = releases.resolve_launcher(repository=args.release_repo or releases.DEFAULT_REPOSITORY)
+        host = pick_tv(args)
+        with require_sdb(host) as session:
+            installed = [
+                app for app in catalog.parse_applist(session.applist()) if app["appid"] == releases.APP_ID
+            ]
+            if not installed:
+                sys.exit("The launcher is not installed. Run: aerotizen install launcher")
+            if len(installed) != 1 or installed[0]["pkgid"] != releases.PACKAGE_ID:
+                raise ValueError("The TV reported an unexpected launcher package identity.")
+            current = installed[0].get("version")
+            try:
+                current_key = releases.version_key(current)
+            except releases.ReleaseError:
+                current_key = None
+            print(f"Installed launcher: {current or 'version unavailable'}")
+            print(f"Latest stable launcher: {release.version}")
+            print(f"Minimum CLI version: {release.min_cli_version} (current: {__version__})")
+            latest_key = releases.version_key(release.version)
+            if current_key is not None and current_key > latest_key:
+                print("The installed launcher is newer than this release. No changes made.")
+                return
+            if current_key == latest_key and not args.force:
+                print("The launcher is up to date. No changes made.")
+                return
+            if current_key is None:
+                print("The TV does not report a comparable version; an update cannot be confirmed.")
+            elif current_key < latest_key:
+                print("A launcher update is available.")
+            if args.check:
+                return
+            if current_key is None and not args.force:
+                sys.exit("Use --force to install this release without a version comparison. It may be older.")
+            with TemporaryDirectory(prefix="aerotizen-update-") as temporary:
+                downloaded = release.download(Path(temporary))
+                print(f"Downloaded launcher {downloaded.version}.")
+                _install_signed(session, downloaded.path, temporary, host)
+    except (OSError, ValueError, zipfile.BadZipFile, ET.ParseError, KeyError, SdbError) as exc:
+        sys.exit(f"Update failed: {exc}")
 
 
 def cmd_uninstall(args):
@@ -489,6 +544,17 @@ def main():
         "--release-repo", metavar="OWNER/REPO", help="download launcher releases from this repository"
     )
     p.set_defaults(fn=cmd_install)
+    p = sub.add_parser("update", help="update the installed launcher without uninstalling it")
+    p.add_argument("target", choices=["launcher"])
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--check", action="store_true", help="compare versions without downloading or installing the app"
+    )
+    mode.add_argument(
+        "--force", action="store_true", help="reinstall if the version is unavailable or already current"
+    )
+    p.add_argument("--release-repo", metavar="OWNER/REPO", help="use launcher releases from this repository")
+    p.set_defaults(fn=cmd_update)
     p = sub.add_parser("uninstall", help="remove the launcher or another app you installed")
     p.add_argument("appid", help="'launcher' or an application ID")
     p.add_argument("--yes", action="store_true", help="don't ask for confirmation")
