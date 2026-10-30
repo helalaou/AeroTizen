@@ -28,6 +28,8 @@ export const createSettingsActions = (
     setNetworkVisible: showNetwork => commit({ showNetwork }, services.applyNetworkVisibility),
     setLiveTvVisible: showLiveTv => commit({ showLiveTv }, services.applyInputs),
     setCardSize: cardSize => commit({ cardSize }, services.applyCardSize),
+    setHomeCardMode: homeCardMode => commit({ homeCardMode }, services.applyCardSize),
+    setHomeCardColumns: homeCardColumns => commit({ homeCardColumns }, services.applyCardSize),
     setHdmiVisibility: hideDisconnectedHdmi => commit({ hideDisconnectedHdmi }, services.applyInputs),
     setHdmiKeepVisible: (port, keep) => commit({ hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } }, services.applyInputs),
     setTimeFormat: format => commit(format === 'none' ? { showTime: false } : { showTime: true, timeFormat: format }, services.applyClock),

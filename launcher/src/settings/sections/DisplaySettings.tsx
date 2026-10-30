@@ -33,8 +33,13 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt }: Props) =
       <Choice id="live-tv-visibility" label="Live TV visibility" value={settings.showLiveTv}
         options={[[true, 'Show'], [false, 'Hide']]} onSelect={actions.setLiveTvVisible} />
       <h3>App cards</h3>
-      <Choice id="card-sizes" label="App card size" value={settings.cardSize || 'big'}
-        options={[['big', 'Big'], ['small', 'Small']]} onSelect={actions.setCardSize} />
+      <Choice id="home-card-mode" label="Home tile layout" value={settings.homeCardMode}
+        options={[['square', 'Square'], ['rectangle', 'Rectangle']]} onSelect={actions.setHomeCardMode} />
+      <Choice id="home-card-columns" label="Apps per row" value={String(settings.homeCardColumns || 'auto')}
+        options={[['auto', 'Follow card size'], ['3', '3'], ['4', '4'], ['5', '5']]}
+        onSelect={value => actions.setHomeCardColumns(value === 'auto' ? null : Number(value))} />
+      {!settings.homeCardColumns ? <Choice id="card-sizes" label="App card size" value={settings.cardSize || 'big'}
+        options={[["big", "Big"], ["small", "Small"]]} onSelect={actions.setCardSize} /> : null}
     </>
   );
 };
