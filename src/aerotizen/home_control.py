@@ -45,7 +45,7 @@ def preview(action, backup=None, *, boot=False):
     }
     if boot:
         result["boot"] = True
-        result["startup"] = "Enable Smart Hub autostart (1). The TV may update its derived startup IDs."
+        result["startup"] = "Enable Smart Hub autostart (1) and assign AeroTizen startup and boot-backup IDs."
     elif action == "restore":
         result["startup"] = (
             "Restore all saved startup values, including autostart; recover boot using its matching receipt."
