@@ -254,7 +254,8 @@
       "launch",
       "logs",
       "status",
-      "uninstall"
+      "uninstall",
+      "update"
     ],
     "method": [
       "applist",

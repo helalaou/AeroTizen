@@ -154,4 +154,6 @@ references, legacy matching and the preloaded IDs sent to the Home watcher.
 
 - One change per PR, with a short description of what you tested and on which TV.
 - New launcher strings and behaviour should work with only the remote (no pointer).
+- For UI changes, screenshots or a short video from the TV are really helpful (before and after
+  if you can). They make the idea much easier to follow and review. A photo of the screen is fine.
 - Don't commit certificates, `.wgt` packages or anything from `~/.config/aerotizen`.

@@ -160,10 +160,43 @@ You need a computer on the same network as the TV.
    compatibility, signs it with your TV certificates, and installs it. No source checkout
    or Node.js is needed. Keep your existing certificates for future app updates.
 
-   Run the same command to install a newer launcher. To select a version, use
-   `./aerotizen install launcher --version 2.2.0` (replace the number with a published
-   launcher version). CLI and launcher versions are independent; a launcher release
-   can require a newer CLI. Use `./aerotizen --version` to check your CLI version.
+   Check for a launcher update, then install it:
+
+   ```bash
+   ./aerotizen update launcher --check
+   ./aerotizen update launcher
+   ```
+
+   The check shows the installed version, latest stable release, and minimum CLI
+   version. It does not download the app or need signing certificates. The update
+   uses your saved certificates and installs in place, keeping launcher settings.
+   If the installed version is current or newer, it makes no changes.
+
+   Some TVs do not report an app version. The update reports that it cannot compare
+   versions and stops. Use `./aerotizen install launcher` to explicitly install the
+   latest stable release without a comparison, or to reinstall the current release.
+   This can replace a newer development build.
+
+   To select a specific version, use `./aerotizen install launcher --version 2.2.0`
+   (replace the number with a published launcher version). CLI and launcher versions
+   are independent; these commands update the TV launcher, not the CLI executable.
+   A launcher release can require a newer CLI. Check and update a downloaded
+   standalone copy with:
+
+   ```bash
+   ./aerotizen update cli --check
+   ./aerotizen update cli
+   ```
+
+   These commands need no TV connection. The update downloads the matching OS/CPU
+   archive, verifies its checksum and version, and replaces the running CLI's file.
+   It keeps the previous executable and prints its backup path. Current or newer
+   versions are left unchanged. Settings and TV certificates stay in place.
+
+   On Windows, replacement finishes after the original process exits. Wait for the
+   completion message; the command also prints a JSON result path for failures.
+   Python-installed copies show a package-installer command instead of replacing
+   the Python executable. Use `./aerotizen --version` to confirm the installed version.
 
    To install local development files or a downloaded package, use an explicit path:
    `./aerotizen install ./dist/launcher` (after `npm ci && npm run build`) or

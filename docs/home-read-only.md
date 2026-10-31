@@ -16,6 +16,12 @@ package-name command workaround. It does not acquire root. The helper targets
 .NET Core 3.1 with major-version roll-forward. Other TV runtimes, firmware and
 host platforms require their own hardware checks.
 
+Before starting the SDK helper, the CLI checks that `/usr/bin/dotnet` is executable
+on the TV. If it is missing or not executable, Native Home stops with a compatibility
+error and removes its staged files. Installing .NET on the computer does not fix a
+missing TV command. Use the default watcher setup on these TVs. This check does not
+add Native Home support for Tizen 5.5; other runtime entry points remain unverified.
+
 ## Commands
 
 ```sh

@@ -83,5 +83,61 @@ jobs:
       - run: python tools/build_home_query.py
       - run: python tools/build_home_control.py
       - run: python -m pip install -e ".[dev]"
-      - run: python -m pytest tests/test_releases.py tests/test_home.py tests/test_home_control.py tests/test_diagnostics.py
+      - run: python -m pytest tests/test_releases.py tests/test_cli_updates.py tests/test_self_update.py tests/test_home.py tests/test_home_control.py tests/test_diagnostics.py
       - run: node --test tests/home_store.test.cjs tests/diagnostics.test.cjs tests/watcher.test.cjs
+
+  cli-update:
+    name: CLI update (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-22.04, windows-2022, macos-15, macos-15-intel]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Select native update checks
+        id: changes
+        shell: python
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          import os, subprocess
+          result = subprocess.run(['git', 'diff', '--name-only', 'HEAD^1', 'HEAD'], capture_output=True, text=True)
+          paths = result.stdout.splitlines()
+          run = os.environ['EVENT'] != 'pull_request' or result.returncode != 0 or any(
+              path.startswith(('src/aerotizen/', 'tools/build_release.py', 'tools/test_cli_self_update.py',
+                               'tests/test_self_update.py', 'tests/test_cli_updates.py', 'pyproject.toml',
+                               '.github/workflows/ci.yml')) for path in paths)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('run=' + str(run).lower() + '\n')
+      - uses: actions/setup-python@v5
+        if: steps.changes.outputs.run == 'true'
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v4
+        if: steps.changes.outputs.run == 'true'
+        with:
+          dotnet-version: 6.0.428
+      - name: Prepare native update tests
+        if: steps.changes.outputs.run == 'true'
+        run: |
+          python tools/build_home_query.py
+          python tools/build_home_control.py
+          python -m pip install -e ".[dev]" "pyinstaller>=6.22.1,<7" certifi
+      - name: Test real executable updates and recovery
+        if: steps.changes.outputs.run == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python tools/test_cli_self_update.py --output "${{ runner.temp }}/cli-update-proof"
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.changes.outputs.run == 'true'
+        with:
+          name: cli-update-proof-${{ matrix.runner }}
+          path: |
+            ${{ runner.temp }}/cli-update-proof/report.json
+            ${{ runner.temp }}/cli-update-proof/*.log
+          retention-days: 7

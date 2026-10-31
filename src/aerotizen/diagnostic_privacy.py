@@ -123,6 +123,7 @@ ENUMS = {
             "debloat",
             "certs",
             "install",
+            "update",
             "uninstall",
             "key",
             "launch",

@@ -70,6 +70,26 @@ def test_auth_console_is_not_captured(tmp_path, log_folder):
     assert "ONE-TIME-LOGIN-CODE" not in next(log_folder.glob("*.log")).read_text()
 
 
+def test_cli_update_check_is_identified_without_recording_release_urls(monkeypatch, log_folder):
+    from aerotizen import releases
+
+    private_repository = "example/private-release-source"
+    private_url = f"https://github.com/{private_repository}/releases/tag/cli-v99.0.0"
+    monkeypatch.setattr(
+        releases, "resolve_cli", lambda **kwargs: releases.CLIRelease("99.0.0", private_url, None)
+    )
+    monkeypatch.setattr(cli, "pick_tv", lambda *args: pytest.fail("CLI update must not contact a TV"))
+    monkeypatch.setattr(
+        "sys.argv", ["aerotizen", "update", "cli", "--check", "--release-repo", private_repository]
+    )
+    cli.main()
+    raw = next(log_folder.glob("*.log")).read_text()
+    records = [json.loads(line) for line in raw.splitlines()]
+    assert records[0]["data"]["command"] == "update"
+    assert records[-1]["data"]["failed"] is False
+    assert private_repository not in raw and private_url not in raw
+
+
 def test_export_is_offline_by_default_and_omits_recovery_credentials(tmp_path, monkeypatch, log_folder):
     from aerotizen import device
 
