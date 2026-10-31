@@ -212,7 +212,16 @@ namespace AeroTizen.Home
             {
                 if (!Same(platform.Read(), before)) throw new Exception("Home changed during the watcher handoff; no native write attempted.");
                 var desired = request.Original.Copy();
-                if (request.Action == "apply") { desired.Main = Target; desired.Strings[HomeKey] = Target; }
+                if (request.Action == "apply") {
+                    desired.Main = Target; desired.Strings[HomeKey] = Target;
+                    // Explicit boot setup assigns both startup IDs. Q7F firmware
+                    // couples these values to Home, so restoring stock startup
+                    // IDs while assigning AeroTizen Home cannot pass readback.
+                    if (request.Boot) {
+                        desired.Strings["db/appfw/startup_appid"] = Target;
+                        desired.Strings["db/appfw/booting_appid_backup"] = Target;
+                    }
+                }
                 nativeStarted = true;
                 Write(platform, desired);
                 if (request.Boot && platform.Read().AutoStart != 1) platform.SetAutoStart(1);

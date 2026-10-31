@@ -10,6 +10,7 @@ sealed class Fake : IPlatform
 {
     public string Firmware { get; set; } = "TEST-1";
     public bool Eligible = true, SideEffects, AutoSideEffects, AutoBadScreen, FailAll, SilentMain, LostCommit, ChangeDuringHold;
+    public bool CoupleStartupToHome;
     public bool Installed = true, WatcherUnavailable, InstallationUnavailable, ReinstallOnWrite;
     public string BootBackupDuringHold;
     public int FailWrite, FailFrom, Writes;
@@ -45,7 +46,13 @@ sealed class Fake : IPlatform
         if (InstallationUnavailable) throw new Exception("installation lookup unavailable");
         return Installed;
     }
-    public Snapshot Read() => Current.Copy();
+    public Snapshot Read() {
+        if (CoupleStartupToHome && Current.Main == Policy.Target) {
+            Current.Strings["db/appfw/startup_appid"] = Policy.Target;
+            Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
+        }
+        return Current.Copy();
+    }
     private void Write(string kind)
     {
         Program.Check(CompatibilityChecked, "compatibility must precede every native write");
@@ -162,7 +169,11 @@ static class Program
                 fake.Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
                 var result = Policy.Execute(fake, request);
                 var desired = original.Copy(); desired.Main = Policy.Target; desired.Strings[Policy.HomeKey] = Policy.Target;
-                if (boot) desired.AutoStart = 1;
+                if (boot) {
+                    desired.AutoStart = 1;
+                    desired.Strings["db/appfw/startup_appid"] = Policy.Target;
+                    desired.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
+                }
                 Check(result.Success && Policy.Same(fake.Current, desired));
                 Check(Policy.Same(request.Original, original), "original snapshot must not change");
                 Check(fake.Events[0] == "mode:hold" && fake.Control.Mode == "native");
@@ -269,6 +280,34 @@ static class Program
         Test("Home changes during hold are preserved for review", () => {
             var fake = new Fake { ChangeDuringHold = true }; var result = Policy.Execute(fake, Request());
             Check(!result.Success && fake.Writes == 0 && fake.Current.Main == "Other.Home" && fake.Control.Mode == "hold");
+        });
+        Test("coupled Q7F startup refuses Home-only and restores original settings", () => {
+            var fake = new Fake { CoupleStartupToHome = true };
+            var request = Request(); request.Original.AutoStart = 1; fake.Current.AutoStart = 1;
+            var result = Policy.Execute(fake, request);
+            Check(!result.Success && result.RolledBack);
+            Check(Policy.Same(fake.Current, request.Original) && fake.Control.Mode == "watcher");
+        });
+        Test("explicit boot supports coupled Q7F startup and exact installed restore", () => {
+            foreach (int autoStart in new[] { 0, 1 }) {
+                var fake = new Fake { CoupleStartupToHome = true };
+                var request = Request(); request.Boot = true; request.Original.AutoStart = autoStart; fake.Current.AutoStart = autoStart;
+                var original = request.Original.Copy();
+                Check(Policy.Execute(fake, request).Success && Policy.BootReady(fake.Current, original));
+                Check(fake.Current.Strings["db/appfw/startup_appid"] == Policy.Target);
+                Check(fake.Current.Strings["db/appfw/booting_appid_backup"] == Policy.Target);
+                Check(Policy.Same(request.Original, original), "baseline must stay immutable");
+                var restore = Request("restore"); restore.Original = original; restore.RestoreBootTransaction = request.Transaction;
+                Check(Policy.Execute(fake, restore).Success && Policy.Same(fake.Current, original));
+                Check(fake.Control.Mode == "watcher");
+            }
+        });
+        Test("explicit boot with coupled startup rolls back after a lost commit", () => {
+            var fake = new Fake { CoupleStartupToHome = true, LostCommit = true };
+            var request = Request(); request.Boot = true; request.Original.AutoStart = 1; fake.Current.AutoStart = 1;
+            var result = Policy.Execute(fake, request);
+            Check(!result.Success && result.RolledBack && Policy.Same(fake.Current, request.Original));
+            Check(fake.Control.Mode == "watcher");
         });
         Test("boot enables autostart and accepts OS-derived startup IDs", () => {
             var fake = new Fake { AutoSideEffects = true }; var request = Request(); request.Boot = true;

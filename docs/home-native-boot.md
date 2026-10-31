@@ -15,8 +15,11 @@ aerotizen --tv TV_IP home restore --yes
 
 Apply requires the exact original state. Restore an existing native assignment
 first before adding boot. Plain `home apply` still preserves the original startup
-settings. `--boot` also enables Smart Hub autostart (`1`). It lets the TV derive
-its startup and boot-backup IDs and preserves the saved first-screen preference.
+settings. `--boot` also enables Smart Hub autostart (`1`). It explicitly assigns
+both startup and boot-backup IDs to AeroTizen and preserves the saved first-screen
+preference. This avoids restoring Samsung startup IDs
+while assigning AeroTizen Home on firmware that couples these values, including
+the 2025 Q7F. Home-only apply still preserves the original startup settings.
 It does not install a boot daemon or enable the watcher.
 
 The boot request is saved in a private transaction receipt before the writer runs.
