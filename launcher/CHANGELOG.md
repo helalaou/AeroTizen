@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.6.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.5.0...launcher-v2.6.0) (2026-10-31)
+
+
+### Features
+
+* **launcher:** offer classic and custom clock layouts ([#28](https://github.com/helalaou/AeroTizen/issues/28)) ([dd457ea](https://github.com/helalaou/AeroTizen/commit/dd457eae51838e4e8ca8f323a2338440989fd5ad))
+* **launcher:** offer Square and Rectangle Home card layouts ([#34](https://github.com/helalaou/AeroTizen/issues/34)) ([91a7dbe](https://github.com/helalaou/AeroTizen/commit/91a7dbe6d0e611a4611a15203b282e84889572f2))
+* **launcher:** retain recognised HDMI devices in standby ([#29](https://github.com/helalaou/AeroTizen/issues/29)) ([aee7373](https://github.com/helalaou/AeroTizen/commit/aee737386044ec479c0c975635256f38333f8fc8))
+
 ## [2.5.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.4.0...launcher-v2.5.0) (2026-10-29)
 
 
