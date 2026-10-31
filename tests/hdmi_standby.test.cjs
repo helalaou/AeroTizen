@@ -53,7 +53,7 @@ function harness(settings = {}, report = {}, selected = null) {
     }
   };
   vm.runInNewContext(source, {
-    window: { AeroTizen: A },
+    window: { AeroTizen: A, addEventListener() {} },
     document: { addEventListener() {} },
     AeroTizen: A
   });
@@ -161,7 +161,7 @@ test('manual per-port exception preserves an unidentified but explicitly selecte
 });
 
 test('Settings override controls use persisted source numbers and accept remote selection', () => {
-  const source = fs.readFileSync(path.join(__dirname, '../launcher/js/settings-ui.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '../launcher/js/settings-ui.js'), 'utf8').replace(/\r\n/g, '\n');
   const start = source.indexOf('  function renderHdmiOverrides() {');
   const end = source.indexOf('\n\n  // OK opens the TV', start);
   assert.ok(start >= 0 && end > start);

@@ -12,7 +12,7 @@ const appsSource = get('js/apps.js');
 
 function harness(options = {}) {
   const requests = [], launches = [], inputs = [], embedded = [], toasts = [], timers = [];
-  const listeners = {}, watch = [], resume = [];
+  const listeners = {}, documentListeners = {}, watch = [], resume = [];
   function Request() {
     this.status = 0;
     this.open = (method, url) => { this.method = method; this.url = url; };
@@ -24,6 +24,11 @@ function harness(options = {}) {
     ApplicationControl: function (op) { this.operation = op; },
     application: {
       getAppMetaData() { return []; },
+      getCurrentApplication() {
+        return { getRequestedAppControl() {
+          return { appControl: { operation: options.operation || 'http://tizen.org/appcontrol/operation/main' } };
+        } };
+      },
       launch(id, success, failure) {
         launches.push({ id, method: 'launch' });
         if (options.launchFails && (id === options.launchFails || options.launchFails === true)) {
@@ -44,7 +49,7 @@ function harness(options = {}) {
         else success();
       },
       show(success) { embedded.push('shown'); if (success) success(); },
-      hide() {}
+      hide() { embedded.push('hidden'); }
     }
   };
   if (options.noNativeLaunch) { delete tz.application.launch; }
@@ -53,6 +58,7 @@ function harness(options = {}) {
     delete tz.application.launchAppControl;
   }
   const document = {
+    addEventListener(name, handler) { documentListeners[name] = handler; },
     hidden: options.visible === true ? false : true,
     body: { classList: { add() {}, remove() {} } },
     documentElement: { style: {} }
@@ -92,7 +98,7 @@ function harness(options = {}) {
   vm.runInNewContext(inputSource, context, { filename: 'inputs.js' });
   vm.runInNewContext(appsSource, context, { filename: 'apps.js' });
   return { A, tz, requests, launches, inputs, embedded, watch, resume, toasts, timers, listeners,
-    document };
+    document, documentListeners };
 }
 
 test('YouTube/Cobalt waits for a confirmed /leave before starting', () => {
@@ -256,4 +262,42 @@ test('app store falls back to org.volt.apps where com.samsung.tv.store is missin
   h.A.apps.openStore();
   assert.deepEqual(h.launches.map(r => r.id), ['com.samsung.tv.store', 'org.volt.apps']);
   assert.deepEqual(h.toasts, []);
+});
+
+test('Native Home closes an embedded HDMI window in the existing launcher', () => {
+  const h = harness({ visible: true });
+  h.A.inputs.show({ type: 'HDMI', number: 1 });
+  assert.equal(h.A.inputs.watching, true);
+  h.listeners.appcontrol();
+  assert.equal(h.A.inputs.watching, false);
+  assert.deepEqual(h.embedded, ['shown', 'hidden']);
+  assert.equal(h.launches.length, 0, 'no watcher or foreground relaunch needed');
+});
+
+test('non-Home appcontrol leaves HDMI playback untouched', () => {
+  const h = harness({ visible: true, operation: 'http://tizen.org/appcontrol/operation/view' });
+  h.A.inputs.show({ type: 'HDMI', number: 1 });
+  h.listeners.appcontrol();
+  assert.equal(h.A.inputs.watching, true);
+  assert.deepEqual(h.embedded, ['shown']);
+});
+
+test('visibility resume closes HDMI only after a real hide transition', () => {
+  const h = harness({ visible: true });
+  h.A.inputs.show({ type: 'HDMI', number: 1 });
+  h.documentListeners.visibilitychange();
+  assert.equal(h.A.inputs.watching, true, 'ordinary HDMI selection stays visible');
+  h.document.hidden = true;
+  h.documentListeners.visibilitychange();
+  assert.equal(h.A.inputs.watching, true);
+  h.document.hidden = false;
+  h.documentListeners.visibilitychange();
+  assert.equal(h.A.inputs.watching, false);
+  assert.deepEqual(h.embedded, ['shown', 'hidden']);
+});
+
+test('Home requests while no input is open do not hide the TV window', () => {
+  const h = harness({ visible: true });
+  h.listeners.appcontrol();
+  assert.deepEqual(h.embedded, []);
 });
