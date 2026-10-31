@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.6.0](https://github.com/helalaou/AeroTizen/compare/cli-v2.5.0...cli-v2.6.0) (2026-10-31)
+
+
+### Features
+
+* **cli:** add launcher and standalone CLI updates ([#92](https://github.com/helalaou/AeroTizen/issues/92)) ([a26dfae](https://github.com/helalaou/AeroTizen/commit/a26dfaed51c3a693e0069904da75dc398af3a63d))
+* **launcher:** offer classic and custom clock layouts ([#28](https://github.com/helalaou/AeroTizen/issues/28)) ([dd457ea](https://github.com/helalaou/AeroTizen/commit/dd457eae51838e4e8ca8f323a2338440989fd5ad))
+* **launcher:** offer Square and Rectangle Home card layouts ([#34](https://github.com/helalaou/AeroTizen/issues/34)) ([91a7dbe](https://github.com/helalaou/AeroTizen/commit/91a7dbe6d0e611a4611a15203b282e84889572f2))
+* **launcher:** retain recognised HDMI devices in standby ([#29](https://github.com/helalaou/AeroTizen/issues/29)) ([aee7373](https://github.com/helalaou/AeroTizen/commit/aee737386044ec479c0c975635256f38333f8fc8))
+
+
+### Bug Fixes
+
+* **cli:** check TV runtime before native Home helpers ([#94](https://github.com/helalaou/AeroTizen/issues/94)) ([d577046](https://github.com/helalaou/AeroTizen/commit/d577046d969e094cf90eb9bdcf88178febcfda0d))
+
+
+### Documentation
+
+* add the U8000F to the tested TVs ([#89](https://github.com/helalaou/AeroTizen/issues/89)) ([6457422](https://github.com/helalaou/AeroTizen/commit/64574228cee973095af590cd9ff387467e84d3b7))
+* ask for screenshots on UI pull requests ([#96](https://github.com/helalaou/AeroTizen/issues/96)) ([62d616f](https://github.com/helalaou/AeroTizen/commit/62d616f1fed54b6c9192703551acc06c748ca595))
+
 ## [2.5.0](https://github.com/helalaou/AeroTizen/compare/cli-v2.4.0...cli-v2.5.0) (2026-10-29)
 
 
