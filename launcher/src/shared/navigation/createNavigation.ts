@@ -3,6 +3,7 @@ import type { Store } from '../state/createStore';
 
 export type Direction = 'left' | 'right' | 'up' | 'down';
 export interface Navigation extends Store<string | undefined> {
+  setScope?(element: HTMLElement | null): void;
   register(key: string, node: HTMLElement | null): void;
   focus(): HTMLElement | undefined; clear(): void; invalidate(): void;
   select(key: string | undefined): void; reset(key: string): void;
@@ -16,6 +17,7 @@ export const createNavigation = (onFocus: (element: HTMLElement) => void): Navig
   const focused = createStore<string | undefined>(undefined);
   const nodes = new Map<string, HTMLElement>();
   let rows: Target[][] | undefined;
+  let scope: HTMLElement | null = null;
   let keys = new Map<string, [number, number]>();
   let row = 0, column = 0;
   let selected: string | undefined;
@@ -23,10 +25,10 @@ export const createNavigation = (onFocus: (element: HTMLElement) => void): Navig
     if (!rows) {
       const measuredRows: Target[][] = [];
       keys = new Map();
-      const positions = [...nodes].filter(([, node]) => node.offsetParent !== null)
+      const positions = [...nodes].filter(([, node]) => node.offsetParent !== null && (!scope || scope.contains(node)))
         .map(([key, node]) => {
-          const top = node.offsetTop;
-          return { key, node, top, bottom: top + node.offsetHeight, left: node.offsetLeft };
+          const top = scope ? node.getBoundingClientRect().top : node.offsetTop;
+          return { key, node, top, bottom: top + node.offsetHeight, left: scope ? node.getBoundingClientRect().left : node.offsetLeft };
         })
         .sort((a, b) => a.top - b.top || a.left - b.left);
       let bottom = -Infinity;
@@ -61,6 +63,7 @@ export const createNavigation = (onFocus: (element: HTMLElement) => void): Navig
   return {
     getSnapshot: focused.getSnapshot,
     subscribe: focused.subscribe,
+    setScope(element) { scope = element; rows = undefined; },
     register(key, node) {
       if (node) { nodes.set(key, node); } else { nodes.delete(key); }
       rows = undefined;

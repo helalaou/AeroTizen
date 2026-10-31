@@ -1,3 +1,4 @@
+const {openCategory}=require('./drawer_helpers.cjs');
 const { test, expect } = require('@playwright/test');
 const { runSettingsUi } = require('../settings_ui.browser');
 const { runSettingsFocus } = require('../settings_focus.browser');
@@ -27,7 +28,10 @@ const openSettings = async (page, waitForApps = true) => {
     AeroTizen.settings.save(); AeroTizen.settingsUi.open();
   });
   await expect(page.locator('#editor')).toBeVisible();
-  await expect(page.locator('[data-key="bg:black"]')).toHaveClass(/focused/);
+  await expect(page.locator('[data-key="section:appearance"]')).toHaveClass(/focused/);
+  await openCategory(page,'wallpaper');
+  await page.locator('[data-key="bg:black"]').click();
+  await page.locator('[data-key="wallpaper-categories:photo"]').click();
 };
 
 test('compiled Settings escape waits for /leave before launching native Samsung Home by remote', async ({ page }) => {
@@ -48,6 +52,7 @@ test('compiled Settings escape waits for /leave before launching native Samsung 
     acknowledge = async () => { await route.fulfill({ status: 200, body: '{}' }); resolve(); };
   }));
   await openSettings(page);
+  await openCategory(page,'apps');
   const escape = page.getByRole('button', { name: 'Use Samsung Home instead', exact: true });
   await escape.focus();
   await page.keyboard.press('Enter');
@@ -65,6 +70,7 @@ test('compiled Settings retains the original Samsung Home escape without the opt
     window.legacyEscapes = 0;
     AeroTizen.homewatch.useSamsungHome = () => { window.legacyEscapes++; };
   });
+  await openCategory(page,'apps');
   await page.getByRole('button', { name: 'Use Samsung Home instead', exact: true }).click();
   expect(await page.evaluate(() => window.legacyEscapes)).toBe(1);
 });
@@ -113,6 +119,7 @@ test('failed artwork retries from the first candidate on reopen while loaded art
   await expect(loadedTile).toHaveClass(/has-artwork/);
   await expect.poll(() => failedRequests).toEqual(['/failed/first', '/failed/second']);
   await expect(failedTile.locator('.app-artwork')).toHaveCount(0);
+  await openCategory(page,'apps');
   await expect(failedTile.locator('.app-fallback')).toBeVisible();
   const loadedNode = await loadedTile.locator('.app-artwork').elementHandle();
   recovered = true;
@@ -126,10 +133,13 @@ test('failed artwork retries from the first candidate on reopen while loaded art
 
 test('the first pointer click activates its control; Space activates buttons without consuming input spaces', async ({ page }) => {
   await openSettings(page);
+  await openCategory(page,'status');
   const time = page.locator('[data-key="time:12"]');
   await time.click();
   await expect(time).toHaveAttribute('aria-pressed', 'true');
   expect(await page.evaluate(() => AeroTizen.settings.timeFormat)).toBe('12');
+  await openCategory(page,'wallpaper');
+  await page.locator('[data-key="wallpaper-categories:animated"]').click();
   await page.locator('[data-key="bg:lava"]').focus();
   await page.keyboard.press('Space');
   await expect(page.locator('[data-key="bg:lava"]')).toHaveAttribute('aria-pressed', 'true');
@@ -138,6 +148,7 @@ test('the first pointer click activates its control; Space activates buttons wit
   await expect(page.locator('body')).toHaveClass(/previewing/);
   await page.keyboard.press('Space');
   await expect(page.locator('body')).not.toHaveClass(/previewing/);
+  await openCategory(page,'status');
   const input = page.getByRole('textbox', { name: 'Weather location', exact: true });
   await input.fill('A');
   await page.keyboard.press('Space');
@@ -146,6 +157,7 @@ test('the first pointer click activates its control; Space activates buttons wit
 
 test('an unrelated preference does not remeasure navigation; removed controls restore focus', async ({ page }) => {
   await openSettings(page);
+  await openCategory(page,'status');
   await page.locator('[data-key="time:12"]').click();
   await expect(page.locator('[data-key="time:12"]')).toHaveAttribute('aria-pressed', 'true');
   await page.evaluate(() => {
@@ -159,6 +171,8 @@ test('an unrelated preference does not remeasure navigation; removed controls re
   await expect(page.locator('[data-key="time:24"]')).toHaveAttribute('aria-pressed', 'true');
   expect(await page.evaluate(() => window.layoutReads)).toBe(0);
   await page.evaluate(() => { AeroTizen.settings.background = 'aurora'; AeroTizen.settings.save(); });
+  await openCategory(page,'wallpaper');
+  await page.locator('[data-key="wallpaper-categories:animated"]').click();
   await page.locator('[data-key="speed"]').focus();
   await page.keyboard.press('Enter');
   await page.keyboard.press('ArrowRight');
@@ -175,6 +189,7 @@ test('date previews stay stable during an opening and refresh on the next openin
   const time = page.locator('[data-key="time:24"]');
   const original = await time.textContent();
   await page.clock.setFixedTime(new Date('2026-10-24T13:10:00Z'));
+  await openCategory(page,'appearance');
   await page.locator('[data-key="network-visibility:false"]').click();
   await expect(page.locator('[data-key="network-visibility:false"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(time).toHaveText(original);
@@ -202,6 +217,7 @@ test('late TV inventory and hot-plug updates reach Settings without a preference
   await page.evaluate(() => testTv.apps.shift()([{ id: 'review-one', name: 'First app', packageId: '1234567890' }]));
   await expect(page.locator('[data-key="app:review-one"]')).toHaveAttribute('aria-label', 'First app');
   await page.evaluate(() => testTv.inputs.shift()({ connected: [{ type: 'HDMI', number: 1, editName: 'Console' }], disconnected: [] }));
+  await openCategory(page,'sources');
   const input = page.getByRole('textbox', { name: 'HDMI 1 name', exact: true });
   await input.fill('Unsaved draft');
   await page.evaluate(() => {
@@ -251,6 +267,8 @@ test('weather wallpapers are opt-in, use hidden-header weather, persist and rest
   await page.waitForFunction(() => AeroTizen.settings.weatherPhoto === true);
   await expect(page.locator('#weather-photo')).toBeVisible();
   await page.evaluate(() => AeroTizen.settingsUi.open());
+  await openCategory(page,'wallpaper');
+  await page.locator('[data-key="wallpaper-categories:photo"]').click();
   await control.getByRole('button', { name: 'Off', exact: true }).click();
   await expect(page.locator('#weather-photo')).toBeHidden();
   await expect(page.locator('#bg')).toBeVisible();
@@ -270,6 +288,8 @@ test('turning weather wallpaper off while its image is pending cannot hide the f
   const control = page.getByRole('group', { name: 'Dynamic weather wallpapers', exact: true });
   await control.getByRole('button', { name: 'Automatic (weather)', exact: true }).click();
   await expect.poll(() => typeof release).toBe('function');
+  await openCategory(page,'wallpaper');
+  await page.locator('[data-key="wallpaper-categories:photo"]').click();
   await control.getByRole('button', { name: 'Off', exact: true }).click();
   await release();
   await expect(page.locator('#weather-photo')).toBeHidden();

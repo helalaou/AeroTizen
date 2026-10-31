@@ -1,0 +1,80 @@
+# Optional Preact Glass interface
+
+PR #30 uses the Preact Home core already merged in #73. This branch includes
+upstream main `d577046d969e094cf90eb9bdcf88178febcfda0d`, including merged
+#28 clocks, #29 HDMI and #34 cards, without rewriting shared history. Clock
+controls belong to Weather and clock; standby overrides belong to Inputs;
+Square/Rectangle and column controls remain in Home appearance. Each uses the
+existing upstream settings/actions once, rather than a parallel implementation.
+
+The final synchronization resolves stylesheet order, clock-aware navigation,
+DisplaySettings composition and shared preference types. It removes a duplicate
+runtime i18n type declaration introduced by the automatic merge. Clock and HDMI
+browser tests use the visible category controls and two-level Back flow; clock
+clearance checks cover both Classic and Glass. Native Home services, app launch
+handlers, startup bindings and backup/recovery implementations match main.
+
+Classic stays the default. Settings > Home appearance > Interface appearance > Glass enables the satin
+header, Samsung Home shortcut and source dock. The compact Settings category drawer
+is shared by Classic and Glass; the appearance preference changes paint, not navigation. The
+preference persists. Categories are Home appearance, Applications, Backgrounds,
+Weather and clock, and Inputs. Continue Watching remains available under Applications.
+The actual Preact controls are composed into panes, with no DOM reparenting or cloned
+handlers. Sidebar Up/Down selects, Right/OK expands, Back or Left at the content edge
+returns to categories, and a second Back closes. The close button is also reachable
+through content navigation. Text input and speed-adjustment retain their existing
+priority and IME handling. Ref-measured scope navigation uses screen coordinates;
+late inventory/preference updates retain the current control instead of resetting it.
+
+A single content focus plate replaces per-control outlines; a header plate moves
+between shortcuts/tabs. Selected states and connection metadata do not add focus rings.
+Reduced-motion rules, bounded transitions and immediate remote transactions remain.
+The dock reuses input switching/native Live TV commands and distinguishes connected,
+selected, recognised standby and empty ports when the HDMI contribution is present.
+Background category browsing changes no persisted setting and makes no weather request;
+choosing an ordinary background exits photo mode through the shared weather service.
+No new wallpaper client, native HOME policy, watcher or firmware modification is added.
+Existing runtime translations remain available through the service adapter; untranslated
+new labels fall back to English. This does not replace the independent locale PR #27.
+
+Compiled-browser regression checks cover categories, Back/Left, focus bounds and one
+outline, background browsing, persistence and Samsung Home escape. The existing behavioural suite
+uses the shared category controls in Classic mode; additional integration checks exercise Glass with clock,
+HDMI, cards and solar-cache fixes. Screenshots are generated at 1920x1080. Physical
+S90C performance, animation/remote latency, standby devices and reboot acceptance remain
+pending until the owner tests the exact signed integration build.
+
+Parity review follow-up: dock badges distinguish RECOGNISED and PINNED evidence
+from ON/ACTIVE signal state. Optional per-port pins retain reference reachability
+without inventing a connection. Core hidden-session and stale-move fixes remain
+part of the #73 dependency; clock-navigation fixes belong to #28.
+
+S90C acceptance correction: category navigation no longer depends on Glass. Classic
+uses opaque neutral surfaces and violet focus; Glass retains satin surfaces and its
+light focus plate. Changing appearance preserves the open category and focused control.
+
+## Consistent appearance and Settings scale
+
+Classic uses the original violet focus accent throughout Home, source selection,
+Continue Watching and the category drawer. Glass uses a light focus accent and
+adds a satin surface to Continue Watching, without changing feed data, progress
+geometry or artwork sources. Selected icon badges retain a dark background in
+Glass so their white check marks remain legible.
+
+Ordinary Settings choices share a 20px font, 24px line height and 64px minimum
+height. Long labels may wrap; image previews and text-entry fields keep their
+semantic roles. App-selection grids use fixed 160px square icons regardless of
+Home card mode or column count. Home layout preferences do not rebuild those
+Settings icon nodes or change their artwork source selection.
+
+HDMI name controls reserve a flexible text-entry area beside a non-shrinking port
+label. This keeps long names inside the control in both appearances without
+changing input-name persistence or remote text-entry behavior. Physical S90C
+acceptance of this correction remains pending.
+
+Header controls and motion are shared with the core renderer: Classic/Glass retain
+identical tab positions, the Samsung Home shortcut, remote order and focus
+transitions. Theme changes do not remove the shortcut or rebuild artwork. The core
+uses cached one-shot page reveals and an interpolated viewport mask; this replaces
+the former theme-dependent geometry and abrupt page show/hide behavior. Physical
+S90C acceptance of this follow-up remains pending.

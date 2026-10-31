@@ -23,12 +23,18 @@ const services = createSettingsServices(runtime);
 const actions = createSettingsActions(settings, services, view, flushSync);
 const bridge = createSettingsBridge(settings, view, services, flushSync);
 const root = createRef<HTMLDivElement>();
+const glass = createStore<import('./glass/categories').GlassState>({ category: 'appearance', expanded: false });
+const glassMenu = createRef<HTMLDivElement>(), glassContent = createRef<HTMLDivElement>(), glassScroll = createRef<HTMLDivElement>();
 const navigation = createNavigation(element => {
   // A command can restore browser focus without changing the selected key (IME Done).
   focusControl(element);
-  if (root.current) { root.current.scrollTop = Math.max(0, element.offsetTop - 640); }
+  if (glassScroll.current?.contains(element)) {
+    const item = element.getBoundingClientRect(), clip = glassScroll.current.getBoundingClientRect();
+    if (item.bottom > clip.bottom - 30) { glassScroll.current.scrollTop += item.bottom - clip.bottom + 30; }
+    else if (item.top < clip.top + 10) { glassScroll.current.scrollTop += item.top - clip.top - 10; }
+  } else if (root.current) { root.current.scrollTop = Math.max(0, element.offsetTop - 640); }
 });
-const environment: SettingsEnvironment = { settings, inventory, view, services, actions, bridge, navigation, root };
+const environment: SettingsEnvironment = { settings, inventory, view, services, actions, bridge, navigation, root, glass, glassMenu, glassContent, glassScroll };
 runtime.settingsUi = bridge;
 render(<SettingsProvider environment={environment}><SettingsRoot /></SettingsProvider>, mount);
 

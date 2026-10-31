@@ -10,12 +10,15 @@ const runSettingsFocus = async page => {
     AeroTizen.settings.background = 'aurora'; AeroTizen.settings.save();
     AeroTizen.settingsUi.open();
   });
+  await page.locator('[data-key="section:wallpaper"]').click();
+  await page.locator('[data-key="bg:aurora"]').click();
   await page.waitForFunction(() => document.activeElement?.getAttribute('data-key') === 'bg:aurora');
   await page.keyboard.press('ArrowDown');
   await page.waitForFunction(() => document.activeElement?.getAttribute('data-key')?.startsWith('bg:') &&
     document.activeElement.getAttribute('data-key') !== 'bg:aurora');
   await page.keyboard.press('ArrowUp');
   await page.waitForFunction(() => document.activeElement?.getAttribute('data-key') === 'bg:aurora');
+  await page.locator('[data-key="section:sources"]').click();
   await page.locator('[data-key="name:HDMI 1"]').click();
   await page.locator('[data-key="name:HDMI 1"] input').fill('React draft');
   await page.keyboard.press('Enter');
@@ -28,6 +31,7 @@ const runSettingsFocus = async page => {
     if (!document.activeElement.classList.contains('focused')) throw new Error('Browser focus and rendered state differ');
     return true;
   });
+  await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !AeroTizen.settingsUi.isOpen() && document.querySelector('#editor').hidden);
   if (await page.evaluate(() => document.querySelector('#editor').contains(document.activeElement))) {

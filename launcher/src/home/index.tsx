@@ -17,7 +17,11 @@ const environment = createHomeController({ runtime, settings, inventory, rows, n
   describe: app => runtime.tiles.describe(app),
   columns: values => [3,4,5].includes(Number(values.homeCardColumns)) ? Number(values.homeCardColumns) : runtime.config.CARD_COLUMNS[values.cardSize === 'small' ? 'small' : 'big']
 }, flushSync);
+// Apply the shared shell mode before any Home focus geometry is measured.
+const syncShell = () => document.body.classList.toggle('glass-ui', runtime.settings.glassSettings === true);
+syncShell();
 const refresh = () => flushSync(() => {
+  syncShell();
   const inputs = runtime.inputs.sources.filter(source => runtime.inputs.isVisible ? runtime.inputs.isVisible(source) :
     source.type === 'TV' ? runtime.settings.showLiveTv !== false : !(runtime.settings.hideDisconnectedHdmi && source.type === 'HDMI' && source.connected === false));
   inventory.set({ apps: runtime.apps.all, inputs, items: runtime.continueWatching.items, ready: runtime.apps.ready });
@@ -37,5 +41,5 @@ const visibility = () => document.hidden ? environment.bridge.blur() : environme
 document.addEventListener('visibilitychange', visibility);
 if (import.meta.hot) {import.meta.hot.dispose(() => {
   document.removeEventListener('visibilitychange', visibility);
-  environment.bridge.blur(); render(null, mount); settings.dispose(); unsubscribers.forEach(unsubscribe => unsubscribe()); runtime.inputs.render = originalRender;
+  document.body.classList.remove('glass-ui'); environment.bridge.blur(); render(null, mount); settings.dispose(); unsubscribers.forEach(unsubscribe => unsubscribe()); runtime.inputs.render = originalRender;
 });}

@@ -2,13 +2,14 @@ import { Choice } from '../components/Choice';
 import { Pill } from '../components/Pill';
 import type { Clock, SettingsSectionProps } from '../types';
 
-interface Props extends SettingsSectionProps { clock: Omit<Clock, 'tick'>; openedAt: number }
+interface Props extends SettingsSectionProps { section?: 'appearance' | 'status' | 'sources'; clock: Omit<Clock, 'tick'>; openedAt: number }
 
-export const DisplaySettings = ({ settings, actions, clock, openedAt }: Props) => {
+export const DisplaySettings = ({ settings, actions, clock, openedAt, section }: Props) => {
   const now = new Date(openedAt);
   const dateStyle = clock.dateStyle(settings.dateFormat);
   return (
     <>
+      {!section || section === 'status' ? <>
       <h3>Clock layout</h3>
       <Choice id="clock-layouts" label="Clock layout" value={settings.clockLayout}
         options={[['classic', 'Compact clock'], ['custom', 'Custom clock']]} onSelect={actions.setClockLayout} />
@@ -33,13 +34,22 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt }: Props) =
             onSelect={() => actions.setDateFormat(format.id)}>{format.id === 'none' ? 'No date' : format.format(now)}</Pill>
         ))}
       </div>
+      </> : null}
+      {!section || section === 'appearance' ? <>
+      <h3>Interface appearance</h3>
+      <Choice id="settings-appearance" label="Interface appearance" value={settings.glassSettings === true}
+        options={[[false, 'Classic'], [true, 'Glass']]} onSelect={actions.setGlassSettings} />
       <h3>Network indicator</h3>
       <Choice id="network-visibility" label="Network indicator visibility" value={settings.showNetwork !== false}
         options={[[true, 'Show'], [false, 'Hide']]} onSelect={actions.setNetworkVisible} />
+      </> : null}
+      {!section || section === 'sources' ? <>
       <h3>Live TV</h3>
       <p class="hint">Show the Live TV tile in Inputs.</p>
       <Choice id="live-tv-visibility" label="Live TV visibility" value={settings.showLiveTv}
         options={[[true, 'Show'], [false, 'Hide']]} onSelect={actions.setLiveTvVisible} />
+      </> : null}
+      {!section || section === 'appearance' ? <>
       <h3>App cards</h3>
       <Choice id="home-card-mode" label="Home tile layout" value={settings.homeCardMode}
         options={[['square', 'Square'], ['rectangle', 'Rectangle']]} onSelect={actions.setHomeCardMode} />
@@ -48,6 +58,7 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt }: Props) =
         onSelect={value => actions.setHomeCardColumns(value === 'auto' ? null : Number(value))} />
       {!settings.homeCardColumns ? <Choice id="card-sizes" label="App card size" value={settings.cardSize || 'big'}
         options={[["big", "Big"], ["small", "Small"]]} onSelect={actions.setCardSize} /> : null}
+      </> : null}
     </>
   );
 };

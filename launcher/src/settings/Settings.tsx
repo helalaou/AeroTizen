@@ -1,3 +1,4 @@
+import { SettingsDrawer } from './glass/GlassSettings';
 import { RemoteControl } from './components/RemoteControl';
 import { useMemo } from 'preact/hooks';
 import { useStore } from '../shared/hooks/useStore';
@@ -21,18 +22,11 @@ export const Settings = ({ active, previewing, openedAt }: { active: boolean; pr
     <AppMenu home={settings.home} apps={apps} actions={actions} active={active}
       describeApp={services.describeApp} fireplaceId={services.config.FIREPLACE_ID} />
   ), [settings.home, apps, actions, active, services]);
-  return (
-    <>
-      <h2>Settings</h2>
-      <BackgroundSettings settings={settings} actions={actions} config={services.config} backgrounds={services.backgrounds} />
-      <WeatherSettings settings={settings} actions={actions} active={active} />
-      <DisplaySettings settings={settings} actions={actions} clock={services.clock} openedAt={openedAt} />
-      <ContinueWatchingSettings settings={settings} actions={actions} sources={continueSources} message={continueMessage} active={active} describeApp={services.describeApp} />
-      <InputSettings settings={settings} actions={actions} inputs={inputs} />
-      {appMenu}
-      <RemoteControl id="escape" class="escape" focusKey="escape" role="button" onClick={actions.useSamsungHome}>
-        Use Samsung Home instead
-      </RemoteControl>
-    </>
-  );
+  return <SettingsDrawer panes={{
+      appearance: <DisplaySettings settings={settings} actions={actions} clock={services.clock} openedAt={openedAt} section="appearance" />,
+      apps: <>{appMenu}<ContinueWatchingSettings settings={settings} actions={actions} sources={continueSources} message={continueMessage} active={active} describeApp={services.describeApp} /><RemoteControl id="escape" class="escape" focusKey="escape" role="button" onClick={actions.useSamsungHome}>{services.translate('Use Samsung Home instead')}</RemoteControl></>,
+      wallpaper: <BackgroundSettings settings={settings} actions={actions} config={services.config} backgrounds={services.backgrounds} />,
+      status: <><WeatherSettings settings={settings} actions={actions} active={active} /><DisplaySettings settings={settings} actions={actions} clock={services.clock} openedAt={openedAt} section="status" /></>,
+      sources: <><DisplaySettings settings={settings} actions={actions} clock={services.clock} openedAt={openedAt} section="sources" /><InputSettings settings={settings} actions={actions} inputs={inputs} /></>
+    }} />;
 };

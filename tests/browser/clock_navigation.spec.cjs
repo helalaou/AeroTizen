@@ -1,3 +1,4 @@
+const { openCategory } = require('./drawer_helpers.cjs');
 const { test, expect } = require('@playwright/test');
 
 const errors=new WeakMap();
@@ -11,7 +12,7 @@ test.beforeEach(async ({page})=>{
 
 test('clock layout changes update remote navigation before the next directional key',async({page})=>{
   await page.goto('/'); await page.waitForFunction(()=>AeroTizen.apps.ready);
-  await page.locator('#gear').click();
+  await page.locator('#gear').click(); await openCategory(page, 'status');
   await page.locator('[data-key="clock-layouts:custom"]').click();
   await page.keyboard.press('ArrowDown');
   await expect(page.locator('#editor .focused')).toHaveAttribute('data-key',/^clock-styles:/);

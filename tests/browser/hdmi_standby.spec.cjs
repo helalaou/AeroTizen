@@ -1,3 +1,4 @@
+const { openCategory, closeSettings } = require('./drawer_helpers.cjs');
 const { test, expect } = require('@playwright/test');
 
 test('Preact standby overrides persist without confusing custom labels with device recognition', async ({ page }) => {
@@ -12,16 +13,16 @@ test('Preact standby overrides persist without confusing custom labels with devi
   await page.waitForFunction(() => AeroTizen.inputs.sources.length === 4);
   await expect(page.locator('#inputs')).toContainText('PC');
   await expect(page.locator('#inputs')).not.toContainText('Custom console label');
-  await page.locator('#gear').click();
+  await page.locator('#gear').click(); await openCategory(page, 'sources');
   await page.locator('[data-key="hdmi-keep:2:true"]').click();
-  await page.keyboard.press('Escape');
+  await closeSettings(page);
   await expect(page.locator('#inputs')).toContainText('Custom console label');
   await page.reload();
   await expect(page.locator('#inputs')).toContainText('Custom console label');
   expect(await page.evaluate(() => AeroTizen.settings.hdmiKeepVisible['2'])).toBe(true);
-  await page.locator('#gear').click();
+  await page.locator('#gear').click(); await openCategory(page, 'sources');
   await page.locator('[data-key="hdmi-keep:2:false"]').click();
-  await page.keyboard.press('Escape');
+  await closeSettings(page);
   await expect(page.locator('#inputs')).not.toContainText('Custom console label');
   expect(errors).toEqual([]);
 });
