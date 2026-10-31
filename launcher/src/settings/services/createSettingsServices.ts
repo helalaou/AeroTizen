@@ -7,6 +7,8 @@ export const createSettingsServices = (runtime: LauncherRuntime): SettingsServic
   config: runtime.config,
   clock: {
     dateStyle: runtime.clock.dateStyle,
+    formatDate: runtime.clock.formatDate,
+    subscribe: runtime.clock.subscribe,
     formatTime: runtime.clock.formatTime,
     DATE_FORMATS: runtime.clock.DATE_FORMATS
   },

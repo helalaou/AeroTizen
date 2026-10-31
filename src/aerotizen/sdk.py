@@ -18,6 +18,7 @@ from aerotizen.device import DeviceSessionError
 DIRECTORY = "/home/owner/share/tmp/sdk_tools"
 CLEANUP_MARKER = "AEROTIZEN_SDK_CLEANED"
 EXIT_PREFIX = "AEROTIZEN_SDK_EXIT="
+DOTNET_UNAVAILABLE_MARKER = "AEROTIZEN_SDK_DOTNET_UNAVAILABLE"
 
 
 def build_script(files, entrypoint, args, callback, port, token):
@@ -30,7 +31,14 @@ def build_script(files, entrypoint, args, callback, port, token):
     claimed = stage[:-1] + "r"
     paths = {name: f"{DIRECTORY}/ah-{token}-{name}" for name in files}
     cleanup = "rm -f " + " ".join(shlex.quote(path) for path in [stage, claimed, *paths.values()])
-    checks = ["set -eu", 'test "$(id -u)" = 901']
+    checks = [
+        "set -eu",
+        'test "$(id -u)" = 901',
+        "if [ ! -x /usr/bin/dotnet ]; then",
+        f"  printf '%s\\n' {DOTNET_UNAVAILABLE_MARKER}",
+        "  exit 127",
+        "fi",
+    ]
     for name, path in paths.items():
         digest = hashlib.sha256(files[name]).hexdigest()
         checks.append(f"printf '%s  %s\\n' {digest} {shlex.quote(path)} | sha256sum -c - >/dev/null")
@@ -67,6 +75,11 @@ def parse_output(output):
     exits = [line[len(EXIT_PREFIX) :] for line in lines if line.startswith(EXIT_PREFIX)]
     if lines.count(CLEANUP_MARKER) != 1 or len(exits) != 1 or not exits[0].isdigit():
         raise DeviceSessionError("SDK helper completion or staging cleanup was not confirmed.")
+    if int(exits[0]) == 127 and DOTNET_UNAVAILABLE_MARKER in lines:
+        raise DeviceSessionError(
+            "Native Home is unavailable: /usr/bin/dotnet is missing or not executable on the TV. "
+            "Installing .NET on your computer will not fix this. Use the default watcher setup instead."
+        )
     result = {"stdout": output, "exit_code": int(exits[0]), "staging_cleaned": True}
     return result
 

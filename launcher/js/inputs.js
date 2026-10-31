@@ -33,16 +33,41 @@
     return ICONS.hdmi;
   }
 
+  // A configured device can appear in VIDEOSOURCE.disconnected while asleep.
+  // Use the TV-provided editName, never a custom AeroTizen input name, as evidence.
+  inputs.hasRecognizedDevice = function (s) {
+    if (!s || s.type !== 'HDMI' || typeof s.editName !== 'string') { return false; }
+    var name = s.editName.replace(/\s+/g, ' ').trim();
+    if (!name) { return false; }
+    var ordinary = name.toLowerCase().replace(/[_.-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    // The exact placeholder filter used in the reference HDMI implementation.
+    if (/^(?:hdmi(?: \d+)?|ingresso(?: hdmi)?(?: \d+)?|source(?: hdmi)?(?: \d+)?|input(?: hdmi)?(?: \d+)?|sorgente(?: hdmi)?(?: \d+)?|unknown(?: device)?|unrecognized(?: device)?|unrecognised(?: device)?|dispositivo sconosciuto|sconosciuto|non riconosciuto|nessun dispositivo|no device|not connected|non collegato|disconnected)$/i.test(ordinary)) { return false; }
+    return true;
+  };
+
+  inputs.alwaysVisible = function (s) {
+    return !!(s && s.type === 'HDMI' && (A.settings.hdmiKeepVisible || {})[String(s.number)] === true);
+  };
+
+  inputs.isVisible = function (s) {
+    if (s.type === 'TV') { return A.settings.showLiveTv !== false; }
+    if (s.type !== 'HDMI' || A.settings.hideDisconnectedHdmi !== true) { return true; }
+    return s.connected === true || s.active === true ||
+      inputs.hasRecognizedDevice(s) || inputs.alwaysVisible(s);
+  };
+
   inputs.render = function () {
     var row = A.$('inputs');
     row.textContent = '';
     inputs.sources.forEach(function (s) {
-      if (!A.settings.showLiveTv && s.type === 'TV') { return; }
-      if (A.settings.hideDisconnectedHdmi && s.type === 'HDMI' && s.connected === false) { return; }
+      // Keep TV-recognised HDMI devices visible while in standby; empty ports
+      // still follow the existing Hide disconnected setting.
+      if (!inputs.isVisible(s)) { return; }
       var label = inputs.label(s), port = inputs.portName(s);
       var tile = A.tiles.card(label, iconFor(s, label), function () { inputs.show(s); });
       if (label !== port && s.type !== 'TV') { tile.querySelector('.name').appendChild(A.el('div', 'sub', port)); }
-      if (!s.connected) { tile.classList.add('off'); }
+      // A sleeping, recognised device is reachable: do not label it as empty.
+      if (s.connected === false && !s.active && !inputs.hasRecognizedDevice(s) && !inputs.alwaysVisible(s)) { tile.classList.add('off'); }
       row.appendChild(tile);
     });
     A.homeScreen.buildRows();
@@ -59,13 +84,36 @@
     }
     try {
       tz.systeminfo.getPropertyValue('VIDEOSOURCE', function (info) {
+        // A selected HDMI may be reported disconnected while the TV is
+        // switching sources. Reading the selected source does not imply a cable.
+        var current = null;
+        try { if (tz.tvwindow && tz.tvwindow.getSource) { current = tz.tvwindow.getSource('MAIN'); } }
+        catch (e) { /* firmware may deny this while no video window is active */ }
         function tag(list, connected) {
           return (list || []).filter(function (s) { return s.type !== 'MEDIA'; }).map(function (s) {
-            return { type: s.type, number: s.number, editName: s.editName, connected: connected, raw: s };
+            var active = !!(current && s.type === 'HDMI' && current.type === 'HDMI' &&
+              Number(current.number) === Number(s.number));
+            return { type: s.type, number: s.number, editName: s.editName,
+              connected: connected || s.signal === true, active: active, raw: s };
           });
         }
-        inputs.sources = tag(info.connected, true).concat(tag(info.disconnected, false)).sort(function (a, b) {
-          return (a.type === 'TV') - (b.type === 'TV') || (b.connected - a.connected) || a.number - b.number;
+        // Keep one tile per port if firmware reports it in both lists.
+        // The connected record wins; preserve a TV-recognised label if needed.
+        var discovered = tag(info.connected, true).concat(tag(info.disconnected, false));
+        var unique = {};
+        discovered.forEach(function (s) {
+          var id = String(s.type) + ':' + String(s.number), prior = unique[id];
+          if (!prior) { unique[id] = s; return; }
+          var preferred = (!prior.connected && s.connected) ? s : prior;
+          var alternate = preferred === s ? prior : s;
+          if (!inputs.hasRecognizedDevice(preferred) && inputs.hasRecognizedDevice(alternate)) {
+            preferred.editName = alternate.editName;
+          }
+          unique[id] = preferred;
+        });
+        inputs.sources = Object.keys(unique).map(function (id) { return unique[id]; }).sort(function (a, b) {
+          return (a.type === 'TV') - (b.type === 'TV') ||
+            (Number(b.connected) - Number(a.connected)) || a.number - b.number;
         });
         publish();
       }, inputs.render);

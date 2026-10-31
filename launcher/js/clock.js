@@ -141,6 +141,21 @@
     return timeText(d, id, timeFormatter(id));
   }
 
+  // Custom layouts need fields, not assumptions about locale separators or
+  // whether a day period precedes the hour. Reuse the existing time formatter.
+  function formatTimeParts(d, id) {
+    var formatter = timeFormatter(id), result = { hour: '', minute: '', dayPeriod: '' };
+    try {
+      if (!formatter || typeof formatter.formatToParts !== 'function') { return null; }
+      formatter.formatToParts(d).forEach(function (part) {
+        if (part.type === 'hour' || part.type === 'minute' || part.type === 'dayPeriod') {
+          result[part.type] = part.value;
+        }
+      });
+      return result.hour && result.minute ? result : null;
+    } catch (e) { return null; }  // Older TVs retain the formatted-string fallback.
+  }
+
   function sizeTime(el, id) {
     if (!el.style || typeof window.getComputedStyle !== 'function') { return; }
     var style = window.getComputedStyle(el);
@@ -185,6 +200,7 @@
     defaultTimeFormat: defaultTimeFormat,
     formatDate: formatDate,
     formatTime: formatTime,
+    formatTimeParts: formatTimeParts,
     tick: tick,
     start: function () { tick(); setInterval(tick, 10000); }
   };

@@ -11,9 +11,11 @@ export const createSettingsStore = (source: SettingsSource, defaults: SettingsVa
     const home = values.home || [];
     const continueApps = values.continueWatchingApps || [];
     const inputNames = values.inputNames || {};
+    const hdmiKeepVisible = values.hdmiKeepVisible || {};
     const weatherLocation = values.weatherLocation;
     const next = Object.freeze({
       ...values,
+      hdmiKeepVisible: previous && equalRecord(previous.hdmiKeepVisible, hdmiKeepVisible) ? previous.hdmiKeepVisible : Object.freeze({ ...hdmiKeepVisible }),
       continueWatchingApps: previous && equalRecord(previous.continueWatchingApps, continueApps) ?
         previous.continueWatchingApps : Object.freeze([...continueApps]),
       home: previous && equalRecord(previous.home, home) ? previous.home : Object.freeze([...home]),

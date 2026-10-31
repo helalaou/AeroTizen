@@ -16,7 +16,7 @@ export const Settings = ({ active, previewing, openedAt }: { active: boolean; pr
   const { apps, inputs, continueSources, continueMessage } = useStore(inventory);
   const animated = services.backgrounds.some(background => background.id === settings.background && Boolean(background.anim));
   const locationLabel = settings.weatherLocation?.label || settings.weatherLocation?.name;
-  useSettingsNavigation(active, previewing, { apps, inputs, continueSources, continueMessage, continueEnabled: settings.continueWatching, animated, locationLabel });
+  useSettingsNavigation(active, previewing, { apps, inputs, continueSources, continueMessage, continueEnabled: settings.continueWatching, animated, locationLabel, clockLayout: settings.clockLayout });
   const appMenu = useMemo(() => (
     <AppMenu home={settings.home} apps={apps} actions={actions} active={active}
       describeApp={services.describeApp} fireplaceId={services.config.FIREPLACE_ID} />
