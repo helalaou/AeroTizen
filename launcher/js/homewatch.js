@@ -12,9 +12,13 @@
     var x = new XMLHttpRequest();
     x.open('GET', cfg.SERVICE_URL + path);
     x.timeout = 1500;
-    x.onerror = x.ontimeout = failed || start;
+    x.onerror = x.ontimeout = function () {
+      if (window.AeroDiagnostics) { window.AeroDiagnostics.record('service.unavailable', { action: path.split('?')[0], error: 'RequestFailed' }); }
+      (failed || start)();
+    };
     x.onload = function () {
       if (x.status !== 200) { (failed || start)(); return; }
+      if (window.AeroDiagnostics) { window.AeroDiagnostics.flush(); }
       if (done) {
         try { done(JSON.parse(x.responseText)); } catch (e) { if (failed) { failed(); } }
       }
@@ -24,6 +28,7 @@
 
   function start() {
     if (!tz) { return; }
+    if (window.AeroDiagnostics) { window.AeroDiagnostics.record('service.launch_requested'); }
     try {
       tz.application.launchAppControl(new tz.ApplicationControl('http://tizen.org/appcontrol/operation/service'),
         cfg.SERVICE_ID, null, null);

@@ -325,6 +325,41 @@ Night Mode settings stay unchanged. See [setup and recovery](docs/home-pc-flow.m
 backup transfer and recovery steps. Test reports should include the CLI commit, TV model,
 firmware, and Home/restore/boot results; remove device IDs and private paths before sharing.
 
+## Diagnostic logs
+
+The CLI saves a local log for each command. To find the files or create a report:
+
+```sh
+./aerotizen logs open
+./aerotizen logs export
+./aerotizen --tv TV_IP logs export
+```
+
+Export creates a ZIP in the current folder. Adding `--tv` also fetches recent launcher
+and background-service events through the developer connection. It does not launch
+apps or change Home settings. If the TV is unavailable, the ZIP still contains PC logs.
+TV logs need a launcher build with this feature and a running background service.
+On the tested Frame, return from another app before exporting after a cold start
+to include queued UI startup events.
+
+The report includes TV/firmware details when available, exact CLI/launcher build IDs,
+launch results, error codes and source locations, and logging health. For Home or startup bugs,
+add `--include-home` to read the native routing settings (up to 35 seconds; no setting
+changes). Missing information is marked in the report.
+
+TV events are buffered in memory and saved in asynchronous batches, outside remote
+action handlers. Error formatting is deferred too. Session, sequence and elapsed time
+keep events ordered even if the TV clock is wrong. A sudden power cut can lose the
+unsaved batch. Attach the ZIP and reproduction steps using the GitHub bug report form.
+
+Logs use approved technical fields. Console output, raw error messages, names, accounts,
+network addresses and content titles are excluded. Third-party app IDs use temporary
+aliases. Reports retain model/firmware, build details, event times and Home readback
+results. Exports also exclude certificates, login tokens and recovery backup files.
+Check the report before sharing it. Nothing is uploaded automatically. Keep your original
+Home backup folder separately for restore. See [diagnostics](docs/diagnostics.md) for
+file locations, limits and troubleshooting.
+
 ## Limits
 
 Samsung doesn't support any of this officially, so some parts are workarounds:

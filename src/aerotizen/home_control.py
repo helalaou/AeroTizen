@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from itertools import islice
 from pathlib import Path
 
-from aerotizen import home, remote, sdk
+from aerotizen import diagnostics, home, remote, sdk
 
 PAYLOAD_PATH = Path(__file__).parent / "helpers/home-control.json"
 HELPER_FILES = ("AeroTizenHomeControl.dll", "AeroTizenHomeControl.runtimeconfig.json")
@@ -295,6 +295,14 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False):
                     "Autostart changed and the matching boot receipt is unavailable; no write was attempted."
                 )
             request["recovery_apply"] = proof
+    diagnostics.event(
+        "home.prepared",
+        action=action,
+        boot=boot,
+        transaction=token,
+        model=device["model"],
+        firmware=device["firmware_build"],
+    )
     receipt_path = backup.parent / "transactions" / f"{token}.json"
     receipt = {
         "schema_version": 1,
@@ -312,6 +320,7 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False):
         _write_receipt(receipt_path, receipt)
         result = parse_result(native["stdout"], action, native["exit_code"])
         receipt["native_result"] = result
+        diagnostics.event("home.native_result", result=result)
         receipt["state"] = (
             "applied"
             if result["Success"] and action == "apply"

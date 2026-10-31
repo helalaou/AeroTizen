@@ -1,0 +1,67 @@
+{
+  "date": "2026-10-28",
+  "status": "Runtime logging passed; cold-start UI delivery has a known limitation",
+  "commits": {
+    "initial_feature": "ba61637",
+    "bounded_delivery_retry": "103ab3f"
+  },
+  "launcher_version": "2.4.0",
+  "device": {
+    "model": "QE65LS03DAUXXU",
+    "firmware_build": "T-PTMDDEUC-0090-REL-202605141701",
+    "os_version": "9.0.0"
+  },
+  "access": {
+    "root_used": false,
+    "native_home_writes": false,
+    "collector": "SDB read-only HTTP request to the existing loopback service"
+  },
+  "results": {
+    "cli_log_folder_open": "pass",
+    "pc_only_zip_export": "pass",
+    "unplugged_tv_partial_export": "pass; PC diagnostics saved and TV marked unavailable",
+    "older_launcher_partial_export": "pass; missing diagnostic protocol reported",
+    "ui_and_service_collection": "pass",
+    "redaction_checks": "passed for known device address, private user path, raw baseline requests and private-key text; not an exhaustive privacy audit",
+    "youtube_home_return": "pass; user observed on ba61637",
+    "prime_video_home_return": "pass; user observed on ba61637",
+    "samsung_home_return": "pass; user observed on ba61637 after 10 seconds",
+    "short_art_mode_roundtrip": "pass; user observed on ba61637, direct versus Samsung Art-page path not distinguished",
+    "cold_boot": "AeroTizen opened and was usable; user observed on both builds",
+    "persistence": "58 of 58 events retained across the final full power cycle, including both UI and service sources",
+    "new_service_startup": "available without navigation",
+    "new_ui_startup": "queued until a YouTube/Home roundtrip; recovered without lost records",
+    "bounded_retry": "passes delayed-service tests; does not resolve this Frame cold-start UI delivery case",
+    "recorded_ui_errors": 0,
+    "native_home_and_control": "unchanged before/after; complete SDK UID 901 reads",
+    "pc_recovery_files": "115 files unchanged by checksum comparison",
+    "watcher_heartbeats": 0,
+    "watcher_launch_calls": 0,
+    "final_screen": "AeroTizen; user confirmed"
+  },
+  "scope_notes": [
+    "The retry package changed only js/diagnostics.js. Home routing and service runtime files were unchanged.",
+    "The final cold-start collection ran after a 20-second settling period, without navigation. A normal launch request did not flush the newest UI records; the later app return did.",
+    "The reason for delayed UI delivery is unresolved. Do not claim the retries fixed it.",
+    "Full preference backup was unavailable because the inspector timed out twice. The user confirmed saved Home tiles were unchanged.",
+    "No native apply/restore failure was forced on the TV. Failure-before-rollback evidence remains covered by local native-policy tests.",
+    "No Windows device test or hosted CI run was performed during this test.",
+    "This hardware record predates asynchronous batching and IndexedDB UI storage. Those changes require separate TV validation."
+  ],
+  "local_checks_after_retry": {
+    "launcher_service": 191,
+    "browser": 26,
+    "build_lint_packaging": "pass"
+  },
+  "retry_package_sha256": "cf24137c1920be12c77671a8bc09fda276b7442852146cf34425d2fc6a5d10ee",
+  "support_report_followup": {
+    "scope": "Build identity, environment, error context, action outcomes, ordering and health fields added after this hardware run.",
+    "validation": "Local automated tests only; not installed on the TV.",
+    "unchanged_limit": "Newest cold-start UI records may require an app roundtrip before export."
+  },
+  "privacy_followup": {
+    "policy_version": 2,
+    "scope": "Structured fields, fixed error codes, temporary third-party app aliases and filtered legacy exports; covered by local privacy tests.",
+    "hardware": "This privacy update was not installed or tested on the TV."
+  }
+}

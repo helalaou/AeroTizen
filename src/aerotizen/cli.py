@@ -39,7 +39,7 @@ from collections import OrderedDict
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from aerotizen import __version__, catalog, discover, remote
+from aerotizen import __version__, catalog, diagnostics, discover, remote
 from aerotizen.device import DeviceSession
 from aerotizen.sdb import SdbError
 
@@ -441,6 +441,7 @@ def wait_on_screen(host, app_id, seconds=12.0):
 
 def cmd_launch(args):
     host = pick_tv(args)
+    diagnostics.event("app.launch_requested", app_id=args.appid)
     accepted, reply = remote.rest_launch(host, args.appid)
     print(f"REST launch: {reply}")
     if not accepted:
@@ -452,7 +453,13 @@ def cmd_launch(args):
             accepted = answer in (200, "200")  # TVs that reply send 200 on success, an error code otherwise
         except Exception as e:
             print(f"remote-channel launch failed: {e}")
+    diagnostics.event("app.launch_result", app_id=args.appid, accepted=accepted)
     status = wait_on_screen(host, args.appid)
+    diagnostics.event(
+        "app.visibility",
+        app_id=args.appid,
+        status="confirmed" if status and status.get("visible") else "unconfirmed",
+    )
     if status is None:
         print(f"{args.appid}: the TV doesn't report this app's state. Check the screen.")
         if not accepted:
@@ -561,6 +568,23 @@ def cmd_home(args):
         sys.exit(f"Home {args.home_command} failed: {exc}")
 
 
+def cmd_logs(args):
+    try:
+        if args.logs_command == "open":
+            diagnostics.open_logs(STATE_DIR)
+            return
+        output = args.output or Path(f"aerotizen-diagnostics-{datetime.datetime.now():%Y%m%d-%H%M%S}.zip")
+        if getattr(args, "include_home", False) and not args.tv:
+            sys.exit("Use --tv TV_IP with --include-home.")
+        path, tv_state = diagnostics.export_logs(
+            STATE_DIR, output, args.tv, include_home=getattr(args, "include_home", False)
+        )
+        print(f"Diagnostic report: {path}")
+        print(f"TV logs: {tv_state}. Recovery backups and credentials are excluded.")
+    except (OSError, ValueError) as error:
+        sys.exit(f"Diagnostic logs failed: {error}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="aerotizen", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -635,8 +659,19 @@ def main():
         if name == "apply":
             command.add_argument("--boot", action="store_true", help="also enable native Smart Hub autostart")
         command.set_defaults(fn=cmd_home)
+    p = sub.add_parser("logs", help="open local logs or export a redacted diagnostic report")
+    commands = p.add_subparsers(dest="logs_command", required=True)
+    commands.add_parser("open", help="open the local log folder").set_defaults(fn=cmd_logs)
+    p = commands.add_parser("export", help="export PC logs; add --tv IP to also fetch TV logs")
+    p.add_argument("--output", type=Path, help="new ZIP path; existing files are never overwritten")
+    p.add_argument(
+        "--include-home",
+        action="store_true",
+        help="also collect a read-only SDK Home snapshot (may take up to 35 seconds)",
+    )
+    p.set_defaults(fn=cmd_logs)
     args = parser.parse_args()
-    args.fn(args)
+    diagnostics.run_logged(args, args.fn, STATE_DIR)
 
 
 if __name__ == "__main__":

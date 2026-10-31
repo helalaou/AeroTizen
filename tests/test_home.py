@@ -453,7 +453,14 @@ def test_cli_reports_missing_tv_runtime_without_backup_or_writer(
     assert "Use the default watcher setup instead" in message
     assert sdk.DOTNET_UNAVAILABLE_MARKER not in message
     assert events == ["connect", "runtime_check", "close"]
-    assert not list(tmp_path.iterdir()) and not capsys.readouterr().out
+    assert {path.name for path in tmp_path.iterdir()} == {"cli-logs"}
+    logs = list((tmp_path / "cli-logs").glob("*.log"))
+    assert len(logs) == 1
+    records = [json.loads(line) for line in logs[0].read_text().splitlines()]
+    assert records[0]["data"]["action"] == action
+    assert records[-1]["event"] == "command.finish"
+    assert records[-1]["data"]["failed"] is True
+    assert not capsys.readouterr().out
 
 
 def test_zero_autostart_is_preserved_as_an_integer(tmp_path, status):

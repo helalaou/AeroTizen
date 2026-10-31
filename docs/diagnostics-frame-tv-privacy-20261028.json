@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-28",
+  "source_commit": "399b74b0fa23e313b6f7583d402feaf6abaa2c2b",
+  "source_dirty": false,
+  "launcher_version": "2.4.0",
+  "privacy_policy": 2,
+  "device": {
+    "model": "QE65LS03DAUXXU",
+    "year": 2024,
+    "tizen": "9.0.0",
+    "firmware": "T-PTMDDEUC-0090-REL-202605141701"
+  },
+  "root_used": false,
+  "native_home_writes_performed": false,
+  "update": "In place; no uninstall",
+  "user_observed": {
+    "saved_home_tiles": "unchanged after update",
+    "youtube_home_once": "pass before and after cold boot",
+    "prime_video_home_once": "pass",
+    "samsung_home_return_once": "pass",
+    "cold_boot": "AeroTizen opened automatically and was usable",
+    "final_screen": "AeroTizen"
+  },
+  "automated_checks": {
+    "ui_and_service_builds_match": true,
+    "cli_failure_logging": "normal failure result preserved; console text and private paths excluded",
+    "pc_only_export": "pass without TV contact",
+    "ui_storage": "IndexedDB ready; successful asynchronous saves",
+    "service_storage": "ready; successful asynchronous saves",
+    "ui_read_failures": 0,
+    "ui_write_failures": 0,
+    "service_read_failures": 0,
+    "service_write_failures": 0,
+    "records_retained_at_first_post_boot_read": 196,
+    "records_saved_before_power_cycle": 196,
+    "new_service_start_available_before_navigation": true,
+    "new_ui_start_recovered_after_app_return": true,
+    "ui_buffer_before_restart": 87,
+    "ui_buffer_after_restart_and_app_return": 99,
+    "fresh_ui_session_and_elapsed_ordering": "pass",
+    "accepted_results_linked_to_requests": 3,
+    "third_party_app_ids": "temporary aliases",
+    "ui_errors": 0,
+    "known_private_marker_matches": 0,
+    "marker_scan_scope": "Known TV address, friendly name and identifiers, user paths and raw recovery fields; not a guarantee against every possible disclosure",
+    "native_home_and_boot_settings": "unchanged from pre-update readback",
+    "service_control_receipt": "unchanged",
+    "watcher_heartbeats": 0,
+    "watcher_launch_calls": 0,
+    "pc_recovery_files_unchanged": 115,
+    "bounded_retention": {
+      "limit": 200,
+      "final_records": 200,
+      "oldest_discarded_after_new_activity": 12
+    }
+  },
+  "known_limit": "Newest cold-start UI records stayed queued until another app was opened and Home returned to AeroTizen. Previously saved records and the new service start were available before navigation.",
+  "scope_limits": [
+    "No native apply/restore failure or UI error was forced on the TV; failure/privacy injection remains covered by local tests.",
+    "Art Mode was not retested in this run.",
+    "No hardware latency measurement, Windows device test or older-TV test was performed.",
+    "Saved tiles were checked by the user; a full UI preference snapshot was not taken."
+  ]
+}

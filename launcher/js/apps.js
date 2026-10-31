@@ -98,8 +98,19 @@
   };
 
   apps.launch = function (app) {
+    var log = window.AeroDiagnostics;
+    var operation = log ? log.record('app.launch_requested', { app_id: app.id }) : null;
+    function outcome(status, error) {
+      if (!log) { return; }
+      var data = { app_id: app.id, operation_id: operation, status: status };
+      if (error) { log.captureError('app.launch_failed', error, data); }
+      else { log.record('app.launch_' + status, data); }
+      if (log.flush) { log.flush(); }
+    }
+    function accepted() { outcome('accepted'); }
+    function failed(error) { outcome('failed', error || { name: 'LaunchError', message: 'Launch denied' }); A.toast('Could not open ' + label); }
     var label = A.tiles.shortName(app.name);
-    if (!tz || !tz.application) { return A.toast('Would open ' + label); }
+    if (!tz || !tz.application) { outcome('unavailable'); return A.toast('Would open ' + label); }
     var link = hbbtvLink(app.id);
     if (link) {
       try {
@@ -110,8 +121,8 @@
         ];
         var control = new tz.ApplicationControl('http://tizen.org/appcontrol/operation/default', null, null, null, data);
         A.homewatch.watch(cfg.HBBTV_APP_ID);
-        tz.application.launchAppControl(control, cfg.HBBTV_APP_ID, null, function () { A.toast('Could not open ' + label); });
-      } catch (e) { A.toast('Could not open ' + label); }
+        tz.application.launchAppControl(control, cfg.HBBTV_APP_ID, accepted, failed);
+      } catch (e) { failed(e); }
       return;
     }
     // Samsung's preloaded Cobalt YouTube sometimes reports visible=false.
@@ -119,15 +130,16 @@
     // launching; otherwise HomeWatcher can immediately reclaim the screen.
     var isYouTube = /^youtube$/i.test(String(app.name || '').trim());
     if (isYouTube && A.homewatch && A.homewatch.suspendForExternal) {
-      function youtubeFailed(reason) {
+      function youtubeFailed(reason, error) {
+        outcome('failed', error || { name: 'HandoffError', message: reason || 'Launch failed' });
         if (A.homewatch.resume) { A.homewatch.resume(); }
         A.toast('Could not open ' + label + (reason ? ': ' + reason : ''));
       }
       A.homewatch.suspendForExternal(function () {
         try {
-          tz.application.launch(app.id, null, function () { youtubeFailed('launch denied'); });
+          tz.application.launch(app.id, accepted, function (error) { youtubeFailed('launch denied', error); });
         } catch (error) {
-          youtubeFailed('launch failed');
+          youtubeFailed('launch failed', error);
         }
       }, youtubeFailed);
       return;
@@ -135,7 +147,7 @@
     // Preserve upstream app /watch behaviour when the optional handoff
     // module is absent and for all non-YouTube / HbbTV applications.
     A.homewatch.watch(app.id);
-    tz.application.launch(app.id, null, function () { A.toast('Could not open ' + label); });
+    try { tz.application.launch(app.id, accepted, failed); } catch (error) { failed(error); }
   };
 
   apps.openStore = function () {
