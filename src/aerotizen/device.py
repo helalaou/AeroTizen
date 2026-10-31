@@ -3,6 +3,7 @@
 import hashlib
 import os
 import threading
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Protocol
 
@@ -29,15 +30,67 @@ class DeviceSession:
     is released for an external provider. Other SDK tools do not honor this lock.
     """
 
-    def __init__(self, host, port=PORT, timeout=15, *, lock_dir=None):
+    def __init__(
+        self,
+        host,
+        port=PORT,
+        timeout=15,
+        *,
+        lock_dir=None,
+        source_address=None,
+        direct=False,
+        bridge_receipt=None,
+    ):
         self.host, self.port, self.timeout = host, port, timeout
         self.lock_dir = Path(lock_dir) if lock_dir is not None else Path(remote.CONFIG_DIR) / "sessions"
         self._mutex = threading.RLock()
         self._lock_file = None
         self._connection = None
         self._external = False
+        self.source_address, self.direct = source_address, direct
+        self.managed_root = False
+        self.bridge_receipt = bridge_receipt
+
+    def _new_connection(self):
+        if not self.direct and self.port == PORT:
+            from aerotizen import root_state
+
+            try:
+                receipt = self.bridge_receipt or root_state.find(self.host)
+            except (ValueError, OSError, KeyError) as exc:
+                raise DeviceSessionError(
+                    "Saved root pairing is invalid; use the original private recovery record."
+                ) from exc
+            if receipt:
+                try:
+                    developer = remote.info(self.host).get("developerIP")
+                except (OSError, SystemExit):
+                    developer = None
+                if receipt["phase"] != "removed" and developer in (None, "127.0.0.1"):
+                    from aerotizen.root_bridge import BridgeSdb
+
+                    self.managed_root = True
+                    return BridgeSdb(self.host, receipt, timeout=self.timeout)
+                if developer == "127.0.0.1":
+                    raise DeviceSessionError(
+                        "Restore Developer Mode Host PC IP to the saved PC address before using normal SDB."
+                    )
+                if not self.source_address:
+                    import socket
+
+                    try:
+                        with socket.socket(socket.AF_INET) as probe:
+                            probe.bind((developer, 0))
+                        self.source_address = developer
+                    except (OSError, TypeError):
+                        pass
+        options = {"source_address": self.source_address} if self.source_address else {}
+        self.managed_root = False
+        return Sdb(self.host, port=self.port, timeout=self.timeout, **options)
 
     def _acquire(self):
+        if self._lock_file is not None:
+            return
         self.lock_dir.mkdir(parents=True, exist_ok=True)
         key = hashlib.sha256(f"{self.host.lower()}:{self.port}".encode()).hexdigest()
         handle = (self.lock_dir / f"{key}.lock").open("a+b")
@@ -70,8 +123,12 @@ class DeviceSession:
                 return self
             self._acquire()
             try:
-                self._connection = Sdb(self.host, port=self.port, timeout=self.timeout)
+                self._connection = self._new_connection()
                 self._connection.connect()
+                if self.managed_root:
+                    expected = self._connection.receipt["duid_sha256"]
+                    if hashlib.sha256(self._connection.duid().encode()).hexdigest() != expected:
+                        raise DeviceSessionError("The SDB bridge reached a different TV identity.")
             except BaseException:
                 self.close()
                 raise
@@ -92,6 +149,15 @@ class DeviceSession:
 
     def __enter__(self):
         return self.connect()
+
+    @contextmanager
+    def ownership(self):
+        """Hold the same TV lock for bridge management without opening SDB."""
+        self._acquire()
+        try:
+            yield self
+        finally:
+            self.close()
 
     def __exit__(self, *exc):
         self.close()
@@ -134,6 +200,9 @@ class DeviceSession:
     def install(self, app_id, data, tool_path):
         return self._call("install", app_id, data, tool_path)
 
+    def install_native(self, data, name):
+        return self._call("install_native", data, name)
+
     def uninstall(self, app_id):
         return self._call("uninstall", app_id)
 
@@ -155,6 +224,11 @@ class DeviceSession:
         """
         with self._mutex:
             connection = self._require_connection()
+            if self.managed_root:
+                raise DeviceSessionError(
+                    "External root tools need direct SDB. Restore the saved PC host to use --root; "
+                    "normal SDK commands work through the bridge."
+                )
             if self.port != PORT:
                 raise DeviceSessionError("The upstream root provider requires SDB port 26101.")
             provider.prepare()
@@ -176,7 +250,7 @@ class DeviceSession:
                         + (f" Root operation also failed: {failure}" if failure else "")
                     ) from exc
                 try:
-                    self._connection = Sdb(self.host, port=self.port, timeout=self.timeout)
+                    self._connection = self._new_connection()
                     self._connection.connect()
                 except BaseException as exc:
                     raise DeviceSessionError(

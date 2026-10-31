@@ -5,6 +5,7 @@ build/
 dist/
 .DS_Store
 *.wgt
+*.tpk
 *.p12
 password.txt
 device-profile.xml
@@ -15,5 +16,12 @@ native/**/bin/
 native/**/obj/
 src/aerotizen/helpers/home-query.json
 src/aerotizen/helpers/home-control.json
+src/aerotizen/helpers/root-runtime.json
+tests/native-root/bin/
+tests/native-root/obj/
 tests/native-home/bin/
 tests/native-home/obj/
+tests/native-untethered/bin/
+tests/native-untethered/obj/
+tests/native-boot-probe/bin/
+tests/native-boot-probe/obj/

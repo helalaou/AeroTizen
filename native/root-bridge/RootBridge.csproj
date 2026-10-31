@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework><OutputType>Exe</OutputType><UseAppHost>false</UseAppHost>
+    <AssemblyName>AeroTizenRootBridge</AssemblyName><DebugType>none</DebugType><Deterministic>true</Deterministic>
+    <StartupObject>AeroTizen.Root.BridgeProgram</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../root-common/*.cs" Link="Common/%(Filename)%(Extension)" />
+    <Compile Include="../untethered-probe/Bundle.cs" Link="Bundle.cs" />
+    <Compile Include="../untethered-probe/ServiceLaunch.cs" Link="ServiceLaunch.cs" />
+    <Compile Include="../untethered-probe/Probe.cs" Link="Probe.cs" />
+    <Compile Include="../untethered-probe/PayloadRunner.cs" Link="PayloadRunner.cs" />
+    <Compile Include="../untethered-probe/SdbProtocol.cs" Link="SdbProtocol.cs" />
+  </ItemGroup>
+</Project>

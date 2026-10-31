@@ -21,6 +21,9 @@
   aerotizen home backup         save an immutable local Home baseline
   aerotizen home apply          preview native Home assignment (--yes writes)
   aerotizen home restore        preview baseline restore (--yes writes)
+  aerotizen root setup          preview untethered root setup (--yes installs)
+  aerotizen root status         check the paired root helper
+  aerotizen root remove         preview root helper removal (--yes removes)
 
 Add --tv IP to target a specific TV (otherwise the first one found is used).
 """
@@ -561,6 +564,73 @@ def cmd_home(args):
         sys.exit(f"Home {args.home_command} failed: {exc}")
 
 
+def cmd_root(args):
+    from aerotizen import root_control, root_state
+
+    try:
+        host = pick_tv(args)
+        path = args.receipt or root_state.selected_path(host, STATE_DIR)
+        if args.root_command != "status" and not args.yes:
+            receipt = root_state.load(path) if Path(path).exists() else None
+            plan = root_control.preview(args.root_command, host, receipt=receipt)
+            if args.json:
+                print(json.dumps(plan, indent=2))
+            else:
+                print(f"Root {args.root_command}: preview only. No TV changes.")
+                print(f"Dedicated package: {plan['app_id']}. Home and Art settings stay unchanged.")
+                if receipt:
+                    print(f"Saved PC recovery address: {receipt['original_pc_host']}")
+                print(f"Use --yes to perform root {args.root_command}.")
+            return
+        if args.root_command == "status":
+            result = root_control.status(host, receipt_path=path, wait=args.wait, state_dir=STATE_DIR)
+        else:
+            operation = root_control.setup if args.root_command == "setup" else root_control.remove
+            options = {
+                "state_dir": STATE_DIR,
+                "receipt_path": path,
+                "runtime": args.runtime_file,
+                "release": args.root_release,
+            }
+            if args.root_command == "setup":
+                options["wait"] = args.wait
+            result = operation(host, **options)
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print(
+                f"Root helper: {result.get('phase', 'unknown')}; "
+                f"root available: {result.get('root_available', False)}"
+            )
+            if result.get("setup_complete"):
+                print("Untethered root verified for this boot. The computer can be switched off.")
+            if result.get("removed"):
+                print("Root helper and its startup registration are removed.")
+            if result.get("next_step"):
+                print(result["next_step"])
+            if result.get("error"):
+                print("Details: " + result["error"])
+            print("Private recovery record: " + str(path))
+        if (
+            args.root_command == "status"
+            and result.get("phase") not in ("not_configured", "removed")
+            and not result.get("root_available")
+        ):
+            raise SystemExit(1)
+    except (OSError, SdbError, ValueError, KeyError) as exc:
+        sys.exit(f"Root {args.root_command} failed: {exc}")
+
+
+def bounded_wait(value):
+    try:
+        seconds = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("Use seconds from 0 to 600") from exc
+    if not 0 <= seconds <= 600:
+        raise argparse.ArgumentTypeError("Use seconds from 0 to 600")
+    return seconds
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="aerotizen", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -635,6 +705,35 @@ def main():
         if name == "apply":
             command.add_argument("--boot", action="store_true", help="also enable native Smart Hub autostart")
         command.set_defaults(fn=cmd_home)
+    p = sub.add_parser(
+        "root", help="set up, check or remove untethered root without changing Home or Art settings"
+    )
+    commands = p.add_subparsers(dest="root_command", required=True)
+    for name in ("setup", "status", "remove"):
+        command = commands.add_parser(name)
+        command.add_argument(
+            "--receipt", type=Path, help="private root recovery receipt (default: this TV's saved receipt)"
+        )
+        command.add_argument(
+            "--json", action="store_true", help="show public status; pairing secrets are omitted"
+        )
+        if name in ("setup", "status"):
+            command.add_argument(
+                "--wait",
+                type=bounded_wait,
+                default=0,
+                metavar="SECONDS",
+                help="wait up to 600 seconds for the root helper",
+            )
+        if name != "status":
+            command.add_argument(
+                "--yes", action="store_true", help="perform the operation; default is a preview"
+            )
+            command.add_argument("--runtime-file", type=Path, help=argparse.SUPPRESS)
+            command.add_argument(
+                "--root-release", type=Path, help="use a local verified samsung-tv-root v0.0.12 release"
+            )
+        command.set_defaults(fn=cmd_root)
     args = parser.parse_args()
     args.fn(args)
 
