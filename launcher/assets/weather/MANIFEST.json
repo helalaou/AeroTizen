@@ -1,9 +1,6 @@
 {
   "reference_commit": "c9c34bf0b8478bf1c156b41c0568f475f008d272",
-  "dimensions": [
-    1920,
-    1080
-  ],
+  "dimensions": [1920, 1080],
   "encoding": "baseline JPEG, quality 82, optimize, subsampling 2",
   "assets": [
     {

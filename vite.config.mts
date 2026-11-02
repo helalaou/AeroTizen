@@ -14,8 +14,12 @@ const settingsHtml = (html: string): string => {
   if (!editor.test(html)) {
     throw new Error('Cannot find the Settings mount point.');
   }
-  return html.replace(editor, '<div id="settings-root"></div>\n\n')
-    .replace(/ {2}<!-- Layout inspired[\s\S]*?(?= {2}<div id="settings-root")/, '  <div id="home-root"></div>\n\n')
+  return html
+    .replace(editor, '<div id="settings-root"></div>\n\n')
+    .replace(
+      / {2}<!-- Layout inspired[\s\S]*?(?= {2}<div id="settings-root")/,
+      '  <div id="home-root"></div>\n\n'
+    )
     .replace('  <script src="js/home-screen.js"></script>\n', '')
     .replace('</head>', '  <link rel="stylesheet" href="css/preact-home.css">\n</head>')
     .replace('  <script src="js/continue-row.js"></script>\n', '');
@@ -27,11 +31,20 @@ const widgetAssets: Plugin = {
   apply: 'build',
   async buildStart() {
     await rm(output, { recursive: true, force: true });
-    await cp(source, output, { recursive: true, filter: file => file !== path.join(source, 'src') });
-    await writeFile(path.join(output, 'index.html'), settingsHtml(await readFile(path.join(source, 'index.html'), 'utf8')));
+    await cp(source, output, {
+      recursive: true,
+      filter: (file) => file !== path.join(source, 'src'),
+    });
+    await writeFile(
+      path.join(output, 'index.html'),
+      settingsHtml(await readFile(path.join(source, 'index.html'), 'utf8'))
+    );
     await mkdir(path.join(output, 'licenses'), { recursive: true });
-    await cp(path.join(root, 'node_modules/preact/LICENSE'), path.join(output, 'licenses/preact.txt'));
-  }
+    await cp(
+      path.join(root, 'node_modules/preact/LICENSE'),
+      path.join(output, 'licenses/preact.txt')
+    );
+  },
 };
 
 const developmentEntry: Plugin = {
@@ -42,9 +55,12 @@ const developmentEntry: Plugin = {
     handler(html) {
       return settingsHtml(html)
         .replace('  <script src="js/settings-ui.js"></script>\n', '')
-        .replace('<script src="js/main.js"></script>', '<script type="module" src="/src/settings/dev.ts"></script>');
-    }
-  }
+        .replace(
+          '<script src="js/main.js"></script>',
+          '<script type="module" src="/src/settings/dev.ts"></script>'
+        );
+    },
+  },
 };
 
 export default defineConfig({
@@ -62,7 +78,7 @@ export default defineConfig({
       entry: path.join(source, 'src/index.ts'),
       name: 'AeroTizenSettings',
       formats: ['iife'],
-      fileName: () => 'settings-ui.js'
-    }
-  }
+      fileName: () => 'settings-ui.js',
+    },
+  },
 });

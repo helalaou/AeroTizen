@@ -62,25 +62,25 @@ output retains the Chromium 69 and ES2018 checks.
 
 ## Project layout
 
-| Path | What |
-|---|---|
-| `cli/src/aerotizen/` | Python CLI: sdb client, certificates, package signing, debloat |
-| `cli/pyproject.toml` | CLI package metadata; root pip installs use this same definition |
-| `cli/native/`, `cli/tools/` | Native Home helpers, root runtime, and CLI build tools |
-| `launcher/` | TV runtime files and the legacy Settings baseline |
-| `launcher/src/settings/` | TypeScript/TSX Settings components, state, actions and service adapters |
-| `launcher/src/settings/sections/` | Settings sections with their own controls and hooks |
-| `launcher/src/shared/` | Store subscriptions, ref-based navigation and reusable lifecycle hooks |
-| `launcher/src/shared/icons/` | SVG icon components, one per TSX file |
-| `tests/browser/` | Playwright regression checks at the TV's 1920×1080 viewport |
-| `vite.config.mts` | Official Preact preset, dev server and TV bundle settings |
-| `dist/launcher/` | Generated TV runtime with compiled Settings; no Node needed on TV |
-| `launcher/js/config.js` | Launcher behaviour and settings |
-| `launcher/js/app-catalog.js` | App IDs, Samsung store IDs and optional fallback branding |
-| `launcher/js/app-lookup.js` | Shared ID lookup and legacy name compatibility |
-| `launcher/service/` | Background service that reclaims the screen from Samsung Home |
-| `tests/` | pytest suite (`test_*.py`, a fake TV covers the sdb protocol) and launcher tests (`*.test.cjs`) |
-| `dns/`, `docs/` | Ad/telemetry blocklists and the settings guide |
+| Path                              | What                                                                                            |
+| --------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `cli/src/aerotizen/`              | Python CLI: sdb client, certificates, package signing, debloat                                  |
+| `cli/pyproject.toml`              | CLI package metadata; root pip installs use this same definition                                |
+| `cli/native/`, `cli/tools/`       | Native Home helpers, root runtime, and CLI build tools                                          |
+| `launcher/`                       | TV runtime files and the legacy Settings baseline                                               |
+| `launcher/src/settings/`          | TypeScript/TSX Settings components, state, actions and service adapters                         |
+| `launcher/src/settings/sections/` | Settings sections with their own controls and hooks                                             |
+| `launcher/src/shared/`            | Store subscriptions, ref-based navigation and reusable lifecycle hooks                          |
+| `launcher/src/shared/icons/`      | SVG icon components, one per TSX file                                                           |
+| `tests/browser/`                  | Playwright regression checks at the TV's 1920×1080 viewport                                     |
+| `vite.config.mts`                 | Official Preact preset, dev server and TV bundle settings                                       |
+| `dist/launcher/`                  | Generated TV runtime with compiled Settings; no Node needed on TV                               |
+| `launcher/js/config.js`           | Launcher behaviour and settings                                                                 |
+| `launcher/js/app-catalog.js`      | App IDs, Samsung store IDs and optional fallback branding                                       |
+| `launcher/js/app-lookup.js`       | Shared ID lookup and legacy name compatibility                                                  |
+| `launcher/service/`               | Background service that reclaims the screen from Samsung Home                                   |
+| `tests/`                          | pytest suite (`test_*.py`, a fake TV covers the sdb protocol) and launcher tests (`*.test.cjs`) |
+| `dns/`, `docs/`                   | Ad/telemetry blocklists and the settings guide                                                  |
 
 ## Working on the launcher
 

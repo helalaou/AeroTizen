@@ -5,24 +5,33 @@ import type { LauncherRuntime } from './launcherRuntime';
 // receive data/commands; none can call the legacy tile DOM constructors.
 export const createSettingsServices = (runtime: LauncherRuntime): SettingsServices => ({
   config: runtime.config,
-  translate: value => runtime.i18n?.t(value) || value,
+  translate: (value) => runtime.i18n?.t(value) || value,
   clock: {
     dateStyle: runtime.clock.dateStyle,
     formatDate: runtime.clock.formatDate,
     subscribe: runtime.clock.subscribe,
     formatTime: runtime.clock.formatTime,
-    DATE_FORMATS: runtime.clock.DATE_FORMATS
+    DATE_FORMATS: runtime.clock.DATE_FORMATS,
   },
-  backgrounds: window.Backgrounds.list.map(background => ({ ...background, preview: window.Backgrounds.preview(background) })),
-  describeApp: app => runtime.tiles.describe(app),
+  backgrounds: window.Backgrounds.list.map((background) => ({
+    ...background,
+    preview: window.Backgrounds.preview(background),
+  })),
+  describeApp: (app) => runtime.tiles.describe(app),
   searchLocations(query, done) {
     let cancelled = false;
-    window.Weather.searchLocations(query, results => { if (!cancelled) { done(results); } });
+    window.Weather.searchLocations(query, (results) => {
+      if (!cancelled) {
+        done(results);
+      }
+    });
     // The old client cannot abort transport; cancellation suppresses delivery.
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   },
   applyBackground: () => runtime.applyBackground(),
-  applySpeed: speed => window.Backgrounds.setSpeed(speed),
+  applySpeed: (speed) => window.Backgrounds.setSpeed(speed),
   applyClock: () => runtime.clock.tick(),
   applyWeatherVisibility: () => window.Weather.updateVisibility(),
   applyLocationVisibility: () => window.Weather.updateDisplay(),
@@ -34,11 +43,20 @@ export const createSettingsServices = (runtime: LauncherRuntime): SettingsServic
   useSamsungHome() {
     // Native navigation owns the acknowledged handoff, not physical HOME routing.
     // Keep the original escape available when that optional module is absent.
-    if (runtime.homewatch.openSamsungHome) { runtime.homewatch.openSamsungHome(); }
-    else { runtime.homewatch.useSamsungHome(); }
+    if (runtime.homewatch.openSamsungHome) {
+      runtime.homewatch.openSamsungHome();
+    } else {
+      runtime.homewatch.useSamsungHome();
+    }
   },
-  finishEditing() { runtime.settings.save(); runtime.homeScreen.render(); },
-  clearHomeFocus: () => { runtime.homeScreen.blur?.(); runtime.clearFocus(); },
+  finishEditing() {
+    runtime.settings.save();
+    runtime.homeScreen.render();
+  },
+  clearHomeFocus: () => {
+    runtime.homeScreen.blur?.();
+    runtime.clearFocus();
+  },
   showPreviewMessage: () => runtime.toast('Previewing. Press any key to return'),
-  hidePreviewMessage: () => runtime.hideToast()
+  hidePreviewMessage: () => runtime.hideToast(),
 });

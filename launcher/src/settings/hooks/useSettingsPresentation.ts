@@ -7,10 +7,17 @@ export const useSettingsPresentation = (open: boolean, previewing: boolean) => {
   useLayoutEffect(() => {
     document.body.classList.toggle('editing', open);
     document.body.classList.toggle('previewing', open && previewing);
-    if (open && previewing) { services.showPreviewMessage(); } else { services.hidePreviewMessage(); }
+    if (open && previewing) {
+      services.showPreviewMessage();
+    } else {
+      services.hidePreviewMessage();
+    }
   }, [open, previewing, services]);
-  useLayoutEffect(() => () => {
-    document.body.classList.remove('editing', 'previewing');
-    services.hidePreviewMessage();
-  }, [services]);
+  useLayoutEffect(
+    () => () => {
+      document.body.classList.remove('editing', 'previewing');
+      services.hidePreviewMessage();
+    },
+    [services]
+  );
 };

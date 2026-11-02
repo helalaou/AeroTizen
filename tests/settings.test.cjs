@@ -8,13 +8,22 @@ const vm = require('node:vm');
 function loadSettings(storage) {
   const store = { ...storage };
   const localStorage = {
-    getItem: k => (k in store ? store[k] : null),
-    setItem: (k, v) => { store[k] = String(v); }
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => {
+      store[k] = String(v);
+    },
   };
   const A = {};
-  const context = vm.createContext({ window: { AeroTizen: A, Intl, navigator: { language: 'en-GB', languages: ['en-GB'] } }, AeroTizen: A, localStorage });
+  const context = vm.createContext({
+    window: { AeroTizen: A, Intl, navigator: { language: 'en-GB', languages: ['en-GB'] } },
+    AeroTizen: A,
+    localStorage,
+  });
   for (const file of ['config.js', 'settings.js', 'clock.js']) {
-    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'launcher', 'js', file), 'utf8'), context);
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, '..', 'launcher', 'js', file), 'utf8'),
+      context
+    );
   }
   A.settings.load();
   return { settings: A.settings, store };
@@ -33,7 +42,9 @@ test('defaults apply when nothing is saved', () => {
 
 test('older current and legacy saves keep all header items visible', () => {
   for (const key of ['aerotizen.settings.v1', 'hearth.home.v1', 'declutter.home.v5']) {
-    const { settings } = loadSettings({ [key]: JSON.stringify({ tempUnit: 'F', dateFormat: 'none' }) });
+    const { settings } = loadSettings({
+      [key]: JSON.stringify({ tempUnit: 'F', dateFormat: 'none' }),
+    });
     assert.equal(settings.showWeather, true, key);
     assert.equal(settings.showTime, true, key);
     assert.equal(settings.showNetwork, true, key);
@@ -46,9 +57,14 @@ test('header visibility survives a restart without changing date or weather pref
   const location = { name: 'London', latitude: 51.5085, longitude: -0.1257, country_code: 'GB' };
   const { settings, store } = loadSettings({});
   Object.assign(settings, {
-    showWeather: false, showTime: false, showNetwork: false,
-    dateFormat: 'iso', timeFormat: '24', weatherLocation: location,
-    tempUnit: 'F', weatherShowLocation: false
+    showWeather: false,
+    showTime: false,
+    showNetwork: false,
+    dateFormat: 'iso',
+    timeFormat: '24',
+    weatherLocation: location,
+    tempUnit: 'F',
+    weatherShowLocation: false,
   });
   settings.save();
   const restarted = loadSettings(store).settings;
@@ -106,22 +122,29 @@ test('settings publish saves and reloads, and unsubscribe is safe to repeat', ()
   const { settings } = loadSettings({});
   const values = [];
   const unsubscribe = settings.subscribe(() => values.push(settings.background));
-  settings.background = 'snow'; settings.save();
-  settings.background = 'black'; settings.load();
+  settings.background = 'snow';
+  settings.save();
+  settings.background = 'black';
+  settings.load();
   assert.deepEqual(values, ['snow', 'snow']);
-  unsubscribe(); unsubscribe();
-  settings.background = 'lava'; settings.save();
+  unsubscribe();
+  unsubscribe();
+  settings.background = 'lava';
+  settings.save();
   assert.deepEqual(values, ['snow', 'snow']);
 });
-
 
 test('Continue Watching requires explicit opt-in and validates saved source choices', () => {
   const { settings } = loadSettings({});
   assert.equal(settings.continueWatching, false);
   assert.deepEqual(Array.from(settings.continueWatchingApps), []);
   const key = 'aerotizen.settings.v1';
-  const restored = loadSettings({ [key]: JSON.stringify({ continueWatching: 'true',
-    continueWatchingApps: ['video.app', 'video.app', null, {}, 'bad id', 'other-app'] }) }).settings;
+  const restored = loadSettings({
+    [key]: JSON.stringify({
+      continueWatching: 'true',
+      continueWatchingApps: ['video.app', 'video.app', null, {}, 'bad id', 'other-app'],
+    }),
+  }).settings;
   assert.equal(restored.continueWatching, false);
   assert.deepEqual(Array.from(restored.continueWatchingApps), ['video.app', 'other-app']);
 });

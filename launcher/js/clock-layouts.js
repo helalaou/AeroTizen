@@ -5,7 +5,9 @@
   'use strict';
   var S = A.settings;
   var widget = document.getElementById('aero-v991-widget');
-  if (!widget) { return; }
+  if (!widget) {
+    return;
+  }
   var hours = document.getElementById('aero-v991-hours');
   var minutes = document.getElementById('aero-v991-minutes');
   var date = document.getElementById('aero-v991-date');
@@ -24,7 +26,9 @@
   function applyClock() {
     var t = clockSetting('aeroClockStyle', clockOptions, 'vertical');
     widget.classList.remove('style-horizontal', 'style-minimal', 'style-bold');
-    if (t !== 'vertical') { widget.classList.add('style-' + t); }
+    if (t !== 'vertical') {
+      widget.classList.add('style-' + t);
+    }
     document.body.classList.toggle('aero-clock-horizontal', t === 'horizontal');
     var classic = clockSetting('clockLayout', clockLayouts, 'classic') === 'classic';
     document.body.classList.toggle('s90c-clock-classic', classic);
@@ -32,17 +36,25 @@
     tick();
     refreshWeather();
   }
-  function tr(s) { return A.i18n && A.i18n.t ? A.i18n.t(s) : s; }
-  function p2(n) { return n < 10 ? '0' + n : String(n); }
+  function tr(s) {
+    return A.i18n && A.i18n.t ? A.i18n.t(s) : s;
+  }
+  function p2(n) {
+    return n < 10 ? '0' + n : String(n);
+  }
 
   // Source clock update: time/date formatting remains owned by upstream.
   function tick() {
-    if (S.clockLayout !== 'custom') { return; }
+    if (S.clockLayout !== 'custom') {
+      return;
+    }
     var now = new Date();
     var timeFormat = S.timeFormat === '12' ? '12' : '24';
     var dateFormat = S.dateFormat || 'long';
-    var time = A.clock && A.clock.formatTime ? A.clock.formatTime(now, timeFormat) :
-      (p2(now.getHours()) + ':' + p2(now.getMinutes()));
+    var time =
+      A.clock && A.clock.formatTime
+        ? A.clock.formatTime(now, timeFormat)
+        : p2(now.getHours()) + ':' + p2(now.getMinutes());
     var match = /^([0-9]{1,2}):([0-9]{2})(?:\s*(am|pm))?$/i.exec(time);
     var hh = match ? match[1] : p2(now.getHours());
     var mm = match ? match[2] : p2(now.getMinutes());
@@ -52,52 +64,86 @@
     if (meridiem) {
       var marker = document.createElement('span');
       marker.textContent = ' ' + meridiem;
-      marker.style.cssText = 'display:inline-block;font-size:.20em;line-height:1;'
-        + 'letter-spacing:0;margin-left:4px;font-weight:400;vertical-align:baseline;';
+      marker.style.cssText =
+        'display:inline-block;font-size:.20em;line-height:1;' +
+        'letter-spacing:0;margin-left:4px;font-weight:400;vertical-align:baseline;';
       minutes.appendChild(marker);
     }
     var formattedDate = A.clock && A.clock.formatDate ? A.clock.formatDate(now, dateFormat) : '';
     date.textContent = formattedDate;
     date.style.display = formattedDate && S.dateFormat !== 'none' ? '' : 'none';
     hours.style.display = minutes.style.display = S.showTime === false ? 'none' : '';
-    widget.hidden = S.showTime === false && (S.dateFormat === 'none') && S.showWeather === false;
+    widget.hidden = S.showTime === false && S.dateFormat === 'none' && S.showWeather === false;
   }
 
   // Same WMO code mapping as the reference widget, with English labels
   // because English is the upstream source language.
   function describe(c) {
-    if (c === 0) { return 'Clear'; }
-    if (c === 1) { return 'Mainly clear'; }
-    if (c === 2) { return 'Partly cloudy'; }
-    if (c === 3) { return 'Cloudy'; }
-    if (c === 45 || c === 48) { return 'Fog'; }
-    if (c >= 51 && c <= 57) { return 'Drizzle'; }
-    if (c >= 61 && c <= 67) { return 'Rain'; }
-    if ((c >= 71 && c <= 77) || c === 85 || c === 86) { return 'Snow'; }
-    if (c >= 80 && c <= 82) { return 'Showers'; }
-    if (c >= 95 && c <= 99) { return 'Thunderstorm'; }
+    if (c === 0) {
+      return 'Clear';
+    }
+    if (c === 1) {
+      return 'Mainly clear';
+    }
+    if (c === 2) {
+      return 'Partly cloudy';
+    }
+    if (c === 3) {
+      return 'Cloudy';
+    }
+    if (c === 45 || c === 48) {
+      return 'Fog';
+    }
+    if (c >= 51 && c <= 57) {
+      return 'Drizzle';
+    }
+    if (c >= 61 && c <= 67) {
+      return 'Rain';
+    }
+    if ((c >= 71 && c <= 77) || c === 85 || c === 86) {
+      return 'Snow';
+    }
+    if (c >= 80 && c <= 82) {
+      return 'Showers';
+    }
+    if (c >= 95 && c <= 99) {
+      return 'Thunderstorm';
+    }
     return 'Weather';
   }
   // Directly uses the reference implementation's existing Open-Meteo cache
   // validation rather than cloning or re-requesting the upstream weather UI.
   function refreshWeather() {
-    if (S.clockLayout !== 'custom') { return; }
+    if (S.clockLayout !== 'custom') {
+      return;
+    }
     var value = null;
-    try { value = JSON.parse(localStorage.getItem('aerotizen.weather.v2') || 'null'); }
-    catch (e) {}
+    try {
+      value = JSON.parse(localStorage.getItem('aerotizen.weather.v2') || 'null');
+    } catch (e) {}
     var g = S.weatherLocation;
-    var source = g && g.name && typeof g.latitude === 'number' && typeof g.longitude === 'number'
-      ? JSON.stringify([g.latitude, g.longitude, g.name, g.country_code]) : 'auto';
+    var source =
+      g && g.name && typeof g.latitude === 'number' && typeof g.longitude === 'number'
+        ? JSON.stringify([g.latitude, g.longitude, g.name, g.country_code])
+        : 'auto';
     var unit = S.tempUnit === 'C' || S.tempUnit === 'F' ? S.tempUnit : 'auto';
-    if (!value || value.source !== source || value.unit !== unit ||
-        typeof value.at !== 'number' || Date.now() - value.at > 7200000 || Date.now() < value.at) {
+    if (
+      !value ||
+      value.source !== source ||
+      value.unit !== unit ||
+      typeof value.at !== 'number' ||
+      Date.now() - value.at > 7200000 ||
+      Date.now() < value.at
+    ) {
       value = null;
     }
     var displayWeather = S.showWeather !== false;
     var parent = icon.parentNode;
     parent.style.display = displayWeather ? '' : 'none';
     city.style.display = displayWeather && S.weatherShowLocation !== false ? '' : 'none';
-    if (!displayWeather) { return; }
+    if (!displayWeather) {
+      return;
+    }
     if (!value || !isFinite(Number(value.temp))) {
       temp.textContent = '--°';
       condition.textContent = tr('Weather unavailable');
@@ -109,7 +155,9 @@
     condition.textContent = tr(describe(Number(value.code)));
     var oldIcon = weatherOrigin && weatherOrigin.querySelector('svg');
     icon.textContent = '';
-    if (oldIcon) { icon.appendChild(oldIcon.cloneNode(true)); }
+    if (oldIcon) {
+      icon.appendChild(oldIcon.cloneNode(true));
+    }
     city.textContent = S.weatherShowLocation === false ? '' : String(value.city || '');
   }
   function chooseLayout(value) {
@@ -126,18 +174,28 @@
     LAYOUTS: clockLayouts,
     STYLES: clockOptions,
     apply: applyClock,
-    update: function () { tick(); },
+    update: function () {
+      tick();
+    },
     refreshWeather: refreshWeather,
     chooseLayout: chooseLayout,
-    chooseStyle: chooseStyle
+    chooseStyle: chooseStyle,
   };
   if (weatherOrigin && window.MutationObserver) {
-    var observer = new window.MutationObserver(function () { refreshWeather(); });
+    var observer = new window.MutationObserver(function () {
+      refreshWeather();
+    });
     observer.observe(weatherOrigin, {
-      childList: true, subtree: true, attributes: true, attributeFilter: ['hidden']
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['hidden'],
     });
   }
   document.addEventListener('visibilitychange', function () {
-    if (!document.hidden) { tick(); refreshWeather(); }
+    if (!document.hidden) {
+      tick();
+      refreshWeather();
+    }
   });
 })(window.AeroTizen);

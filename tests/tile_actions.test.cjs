@@ -18,66 +18,103 @@ class Element {
     this.hidden = false;
     this._text = '';
     this.classList = {
-      add: name => this._setClass(name, true),
-      remove: name => this._setClass(name, false),
+      add: (name) => this._setClass(name, true),
+      remove: (name) => this._setClass(name, false),
       toggle: (name, enabled) => {
         this._setClass(name, enabled === undefined ? !this.classList.contains(name) : enabled);
       },
-      contains: name => this.className.split(/\s+/).includes(name)
+      contains: (name) => this.className.split(/\s+/).includes(name),
     };
   }
   _setClass(name, enabled) {
     const classes = new Set(this.className.split(/\s+/).filter(Boolean));
-    if (enabled) { classes.add(name); } else { classes.delete(name); }
+    if (enabled) {
+      classes.add(name);
+    } else {
+      classes.delete(name);
+    }
     this.className = [...classes].join(' ');
   }
   set textContent(text) {
     this._text = String(text);
-    for (const child of this.children) { child.parentNode = null; }
+    for (const child of this.children) {
+      child.parentNode = null;
+    }
     this.children = [];
   }
-  get textContent() { return this._text; }
-  get firstChild() { return this.children[0] || null; }
-  get offsetTop() { return 0; }
-  get offsetWidth() { return 332; }
-  get offsetHeight() { return 332; }
+  get textContent() {
+    return this._text;
+  }
+  get firstChild() {
+    return this.children[0] || null;
+  }
+  get offsetTop() {
+    return 0;
+  }
+  get offsetWidth() {
+    return 332;
+  }
+  get offsetHeight() {
+    return 332;
+  }
   appendChild(child) {
     if (child.tagName === '#FRAGMENT') {
-      while (child.firstChild) { this.appendChild(child.firstChild); }
+      while (child.firstChild) {
+        this.appendChild(child.firstChild);
+      }
       return child;
     }
-    if (child.parentNode) { child.parentNode.removeChild(child); }
+    if (child.parentNode) {
+      child.parentNode.removeChild(child);
+    }
     this.children.push(child);
     child.parentNode = this;
     return child;
   }
   removeChild(child) {
     const index = this.children.indexOf(child);
-    if (index < 0) { throw Error('Not a child'); }
+    if (index < 0) {
+      throw Error('Not a child');
+    }
     this.children.splice(index, 1);
     child.parentNode = null;
     return child;
   }
   insertBefore(child, next) {
-    if (child.parentNode) { child.parentNode.removeChild(child); }
+    if (child.parentNode) {
+      child.parentNode.removeChild(child);
+    }
     const index = next ? this.children.indexOf(next) : -1;
-    if (index < 0) { return this.appendChild(child); }
+    if (index < 0) {
+      return this.appendChild(child);
+    }
     this.children.splice(index, 0, child);
     child.parentNode = this;
     return child;
   }
-  setAttribute(name, value) { this.attributes[name] = String(value); }
-  getAttribute(name) { return this.attributes[name]; }
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+  getAttribute(name) {
+    return this.attributes[name];
+  }
   getBoundingClientRect() {
     return { left: 100, right: 432, top: 300, bottom: 632, width: 332, height: 332 };
   }
   querySelectorAll(selector) {
     const matches = [];
-    const selectors = selector.split(',').map(s => s.trim());
+    const selectors = selector.split(',').map((s) => s.trim());
     function descend(root) {
       for (const child of root.children) {
         const names = child.className.split(/\s+/);
-        if (selectors.some(s => s.split('.').slice(1).every(name => names.includes(name)))) {
+        if (
+          selectors.some((s) =>
+            s
+              .split('.')
+              .slice(1)
+              .every((name) => names.includes(name))
+          )
+        ) {
           matches.push(child);
         }
         descend(child);
@@ -90,7 +127,10 @@ class Element {
 
 function fixture(initial = ['a', 'b'], withInput = true) {
   const timers = new Map();
-  let serial = 0, saves = 0, launched = 0, openedSettings = 0;
+  let serial = 0,
+    saves = 0,
+    launched = 0,
+    openedSettings = 0;
   const body = new Element('body');
   const header = body.appendChild(new Element('header'));
   const gear = header.appendChild(new Element('div'));
@@ -101,51 +141,97 @@ function fixture(initial = ['a', 'b'], withInput = true) {
   const grid = rows.appendChild(new Element('div'));
   const inputsSection = rows.appendChild(new Element('section'));
   const inputs = inputsSection.appendChild(new Element('div'));
-  if (withInput) { inputs.appendChild(new Element('div', 'tile')); }
+  if (withInput) {
+    inputs.appendChild(new Element('div', 'tile'));
+  }
   const empty = rows.appendChild(new Element('p'));
-  const nodes = { gear, 'home-tab': homeTab, 'apps-tab': appsTab,
-    rows, grid, inputs, 'inputs-section': inputsSection, 'apps-empty': empty };
-  const apps = ['a', 'b', 'c'].map(id => ({ id, name: 'App ' + id }));
-  const settings = { home: initial.slice(), cardSize: 'big',
-    save() { saves++; this.persisted = this.home.slice(); } };
+  const nodes = {
+    gear,
+    'home-tab': homeTab,
+    'apps-tab': appsTab,
+    rows,
+    grid,
+    inputs,
+    'inputs-section': inputsSection,
+    'apps-empty': empty,
+  };
+  const apps = ['a', 'b', 'c'].map((id) => ({ id, name: 'App ' + id }));
+  const settings = {
+    home: initial.slice(),
+    cardSize: 'big',
+    save() {
+      saves++;
+      this.persisted = this.home.slice();
+    },
+  };
   const A = {
-    config: { CARD_COLUMNS: { big: 3, small: 5 }, FIREPLACE_ID: '__fire',
-      LONG_PRESS_MS: 600, KEY: { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40,
-        ENTER: 13, BACK: 10009, ESC: 27 } },
+    config: {
+      CARD_COLUMNS: { big: 3, small: 5 },
+      FIREPLACE_ID: '__fire',
+      LONG_PRESS_MS: 600,
+      KEY: { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 10009, ESC: 27 },
+    },
     settings,
-    apps: { all: apps, byId: id => apps.find(a => a.id === id) || null },
-    $: id => nodes[id],
+    apps: { all: apps, byId: (id) => apps.find((a) => a.id === id) || null },
+    $: (id) => nodes[id],
     el: (tag, cls, txt) => {
       const el = new Element(tag, cls);
-      if (txt !== undefined) { el.textContent = txt; }
+      if (txt !== undefined) {
+        el.textContent = txt;
+      }
       return el;
     },
     chunk: (arr, n) => {
       const out = [];
-      for (let i = 0; i < arr.length; i += n) { out.push(arr.slice(i, i + n)); }
+      for (let i = 0; i < arr.length; i += n) {
+        out.push(arr.slice(i, i + n));
+      }
       return out;
     },
-    clearFocus: () => body.querySelectorAll('.focused').forEach(el => el.classList.remove('focused')),
-    settingsUi: { isOpen: () => false, open() { openedSettings++; } },
+    clearFocus: () =>
+      body.querySelectorAll('.focused').forEach((el) => el.classList.remove('focused')),
+    settingsUi: {
+      isOpen: () => false,
+      open() {
+        openedSettings++;
+      },
+    },
     tiles: {
       ICONS: { flame: '<svg></svg>' },
       app: (app, className, onClick) => {
         const el = new Element('div', 'tile');
-        el.onclick = () => { launched++; onClick(); };
+        el.onclick = () => {
+          launched++;
+          onClick();
+        };
         return el;
-      }
+      },
     },
-    toast() {}, hideToast() {}
+    toast() {},
+    hideToast() {},
   };
   // Avoid counting launches twice: the app's launch method is what is tested.
   A.apps.launch = () => {};
-  const document = { body, createDocumentFragment: () => new Element('#fragment'), querySelectorAll: selector => body.querySelectorAll(selector) };
+  const document = {
+    body,
+    createDocumentFragment: () => new Element('#fragment'),
+    querySelectorAll: (selector) => body.querySelectorAll(selector),
+  };
   const context = vm.createContext({
-    window: { AeroTizen: A, innerWidth: 1920, innerHeight: 1080,
-      requestAnimationFrame: fn => fn() },
+    window: {
+      AeroTizen: A,
+      innerWidth: 1920,
+      innerHeight: 1080,
+      requestAnimationFrame: (fn) => fn(),
+    },
     document,
-    setTimeout(fn, delay) { timers.set(++serial, { fn, delay }); return serial; },
-    clearTimeout(id) { timers.delete(id); }
+    setTimeout(fn, delay) {
+      timers.set(++serial, { fn, delay });
+      return serial;
+    },
+    clearTimeout(id) {
+      timers.delete(id);
+    },
   });
   vm.runInContext(source, context);
   A.homeScreen.render();
@@ -159,14 +245,30 @@ function fixture(initial = ['a', 'b'], withInput = true) {
     A.homeScreen.keyup(13);
   }
   function menuOptions() {
-    return body.querySelectorAll('.tile-actions-option')
-      .filter(el => !el.parentNode.classList.contains('is-closing'));
+    return body
+      .querySelectorAll('.tile-actions-option')
+      .filter((el) => !el.parentNode.classList.contains('is-closing'));
   }
   return {
-    A, body, grid, inputs, homeTab, appsTab, settings, key, fireHold, menuOptions,
-    get launches() { return launched; },
-    get saves() { return saves; },
-    get settingsOpens() { return openedSettings; }
+    A,
+    body,
+    grid,
+    inputs,
+    homeTab,
+    appsTab,
+    settings,
+    key,
+    fireHold,
+    menuOptions,
+    get launches() {
+      return launched;
+    },
+    get saves() {
+      return saves;
+    },
+    get settingsOpens() {
+      return openedSettings;
+    },
   };
 }
 
@@ -185,8 +287,10 @@ test('holding OK only opens Home actions and release does nothing', () => {
   h.fireHold();
   assert.equal(h.launches, 0);
   assert.equal(h.saves, 0);
-  assert.deepEqual(h.menuOptions().map(x => x.children[1].textContent),
-    ['Move', 'Remove from Home']);
+  assert.deepEqual(
+    h.menuOptions().map((x) => x.children[1].textContent),
+    ['Move', 'Remove from Home']
+  );
   h.key(13); // fresh physical press chooses Move, but its release does not execute anything else
   h.A.homeScreen.keyup(13);
   h.key(39); // move right
@@ -214,13 +318,21 @@ test('All apps menu adds and removes favourites without hiding the app', () => {
   h.appsTab.onclick();
   h.key(40);
   h.fireHold();
-  assert.deepEqual(h.menuOptions().map(x => x.children[1].textContent), ['Remove from Home']);
-  h.key(13); h.A.homeScreen.keyup(13);
+  assert.deepEqual(
+    h.menuOptions().map((x) => x.children[1].textContent),
+    ['Remove from Home']
+  );
+  h.key(13);
+  h.A.homeScreen.keyup(13);
   assert.deepEqual(h.settings.home, []);
   assert.equal(h.grid.children.length, 3);
   h.fireHold();
-  assert.deepEqual(h.menuOptions().map(x => x.children[1].textContent), ['Add to Home']);
-  h.key(13); h.A.homeScreen.keyup(13);
+  assert.deepEqual(
+    h.menuOptions().map((x) => x.children[1].textContent),
+    ['Add to Home']
+  );
+  h.key(13);
+  h.A.homeScreen.keyup(13);
   assert.deepEqual(h.settings.home, ['a']);
   assert.equal(h.grid.children.length, 3);
   assert.equal(h.launches, 0);
@@ -241,7 +353,8 @@ test('removing the last tile selects Inputs when available, otherwise Home tab',
     const h = fixture(['a'], withInput);
     h.fireHold();
     h.key(40);
-    h.key(13); h.A.homeScreen.keyup(13);
+    h.key(13);
+    h.A.homeScreen.keyup(13);
     assert.deepEqual(h.settings.home, []);
     const expected = withInput ? h.inputs.children[0] : h.homeTab;
     assert.ok(expected.classList.contains('focused'));
@@ -256,7 +369,6 @@ test('a long press on a navigation tab never opens tile actions', () => {
   assert.equal(h.launches, 0);
   assert.equal(h.settingsOpens, 0);
 });
-
 
 test('tab switches reuse tile DOM, while a changed favourite list invalidates parked tiles', () => {
   const h = fixture(['a']);

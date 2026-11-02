@@ -5,35 +5,74 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 function element() {
-  const attributes = new Map(), classes = new Set();
+  const attributes = new Map(),
+    classes = new Set();
   return {
-    hidden: false, textContent: '', innerHTML: '',
-    setAttribute(name, value) { attributes.set(name, String(value)); },
-    removeAttribute(name) { attributes.delete(name); },
-    hasAttribute(name) { return attributes.has(name); },
-    getAttribute(name) { return attributes.get(name); },
+    hidden: false,
+    textContent: '',
+    innerHTML: '',
+    setAttribute(name, value) {
+      attributes.set(name, String(value));
+    },
+    removeAttribute(name) {
+      attributes.delete(name);
+    },
+    hasAttribute(name) {
+      return attributes.has(name);
+    },
+    getAttribute(name) {
+      return attributes.get(name);
+    },
     classList: {
-      toggle(name, enabled) { if (enabled) { classes.add(name); } else { classes.delete(name); } },
-      contains(name) { return classes.has(name); }
-    }
+      toggle(name, enabled) {
+        if (enabled) {
+          classes.add(name);
+        } else {
+          classes.delete(name);
+        }
+      },
+      contains(name) {
+        return classes.has(name);
+      },
+    },
   };
 }
 
 function harness({ settings = {}, tizen, online = true } = {}) {
   const parent = element();
-  const elements = Object.fromEntries(['date', 'time', 'network'].map(id => [id, { ...element(), parentNode: parent }]));
+  const elements = Object.fromEntries(
+    ['date', 'time', 'network'].map((id) => [id, { ...element(), parentNode: parent }])
+  );
   const intervals = [];
   const A = {
-    settings: { dateFormat: 'iso', timeFormat: '24', showTime: true, showNetwork: true, ...settings },
-    tizen, $: id => elements[id]
+    settings: {
+      dateFormat: 'iso',
+      timeFormat: '24',
+      showTime: true,
+      showNetwork: true,
+      ...settings,
+    },
+    tizen,
+    $: (id) => elements[id],
   };
   const context = vm.createContext({
-    window: { AeroTizen: A }, navigator: { onLine: online },
-    Date: class extends Date { constructor() { super(2026, 9, 23, 14, 5); } },
-    setInterval(fn, ms) { intervals.push({ fn, ms }); return intervals.length; }
+    window: { AeroTizen: A },
+    navigator: { onLine: online },
+    Date: class extends Date {
+      constructor() {
+        super(2026, 9, 23, 14, 5);
+      }
+    },
+    setInterval(fn, ms) {
+      intervals.push({ fn, ms });
+      return intervals.length;
+    },
   });
   for (const file of ['clock.js', 'network.js']) {
-    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'launcher/js', file), 'utf8'), context);
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, '..', 'launcher/js', file), 'utf8'),
+      context
+    );
   }
   return { A, elements, intervals };
 }
@@ -82,11 +121,18 @@ test('network visibility applies on startup and changes immediately in the brows
 });
 
 test('delayed network responses and change listeners cannot reveal a hidden indicator', () => {
-  const requests = [], listeners = [];
-  const tizen = { systeminfo: {
-    getPropertyValue(property, success, failure) { requests.push({ property, success, failure }); },
-    addPropertyValueChangeListener(property, listener) { listeners.push({ property, listener }); }
-  } };
+  const requests = [],
+    listeners = [];
+  const tizen = {
+    systeminfo: {
+      getPropertyValue(property, success, failure) {
+        requests.push({ property, success, failure });
+      },
+      addPropertyValueChangeListener(property, listener) {
+        listeners.push({ property, listener });
+      },
+    },
+  };
   const h = harness({ tizen });
   const indicator = h.elements.network;
   h.A.network.start();

@@ -7,52 +7,84 @@ const vm = require('node:vm');
 
 function runtime(saved = {}, cache) {
   const values = new Map([['aerotizen.settings.v1', JSON.stringify(saved)]]);
-  if (cache) { values.set('aerotizen.weather.v2', JSON.stringify(cache)); }
+  if (cache) {
+    values.set('aerotizen.weather.v2', JSON.stringify(cache));
+  }
   function element() {
     const classes = new Set();
     const node = {
-      hidden: false, style: {}, childNodes: [], parentNode: { classList: { toggle() {} } },
+      hidden: false,
+      style: {},
+      childNodes: [],
+      parentNode: { classList: { toggle() {} } },
       classList: {
-        add: key => classes.add(key),
-        remove: (...keys) => keys.forEach(key => classes.delete(key)),
-        contains: key => classes.has(key),
+        add: (key) => classes.add(key),
+        remove: (...keys) => keys.forEach((key) => classes.delete(key)),
+        contains: (key) => classes.has(key),
         toggle: (key, on) => {
-          if (on) { classes.add(key); } else { classes.delete(key); }
-        }
+          if (on) {
+            classes.add(key);
+          } else {
+            classes.delete(key);
+          }
+        },
       },
       querySelector: () => null,
       setAttribute() {},
-      appendChild(child) { this.childNodes.push(child); return child; },
-      cloneNode() { return element(); }
+      appendChild(child) {
+        this.childNodes.push(child);
+        return child;
+      },
+      cloneNode() {
+        return element();
+      },
     };
     let value = '';
     Object.defineProperty(node, 'textContent', {
       get: () => value,
-      set: next => { value = String(next); node.childNodes = []; }
+      set: (next) => {
+        value = String(next);
+        node.childNodes = [];
+      },
     });
     return node;
   }
   const elements = {};
   [
-    'date', 'time', 'weather', 'aero-v991-widget', 'aero-v991-hours',
-    'aero-v991-minutes', 'aero-v991-date', 'aero-v991-weather-icon',
-    'aero-v991-temp', 'aero-v991-condition', 'aero-v991-city'
-  ].forEach(id => { elements[id] = element(); });
+    'date',
+    'time',
+    'weather',
+    'aero-v991-widget',
+    'aero-v991-hours',
+    'aero-v991-minutes',
+    'aero-v991-date',
+    'aero-v991-weather-icon',
+    'aero-v991-temp',
+    'aero-v991-condition',
+    'aero-v991-city',
+  ].forEach((id) => {
+    elements[id] = element();
+  });
   elements['aero-v991-weather-icon'].parentNode = element();
   const document = {
     body: element(),
-    getElementById: id => elements[id],
+    getElementById: (id) => elements[id],
     createElement: () => element(),
-    addEventListener() {}
+    addEventListener() {},
   };
-  const A = { $: id => elements[id] };
+  const A = { $: (id) => elements[id] };
   const context = vm.createContext({
     window: { AeroTizen: A, navigator: { languages: ['en-GB'], language: 'en-GB' }, Intl },
-    document, AeroTizen: A, Date, isFinite,
+    document,
+    AeroTizen: A,
+    Date,
+    isFinite,
     localStorage: {
-      getItem: key => values.get(key) ?? null,
-      setItem: (key, value) => { values.set(key, value); }
-    }
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => {
+        values.set(key, value);
+      },
+    },
   });
   for (const name of ['config.js', 'settings.js', 'clock.js', 'clock-layouts.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../launcher/js', name), 'utf8'), context);
@@ -79,7 +111,10 @@ test('four imported clock styles can be selected and persisted', () => {
     A.clockLayouts.chooseStyle(style);
     assert.equal(A.settings.aeroClockStyle, style);
     assert.equal(JSON.parse(values.get(A.config.STORAGE_KEY)).aeroClockStyle, style);
-    assert.equal(elements['aero-v991-widget'].classList.contains('style-' + style), style !== 'vertical');
+    assert.equal(
+      elements['aero-v991-widget'].classList.contains('style-' + style),
+      style !== 'vertical'
+    );
   }
   A.clockLayouts.chooseLayout('classic');
   assert.equal(elements['aero-v991-widget'].hidden, true);
@@ -95,10 +130,22 @@ test('large clock uses upstream date and 24-hour time formats', () => {
 
 test('the tested cache validation rejects stale and mismatched weather', () => {
   const saved = { clockLayout: 'custom', showWeather: true, tempUnit: 'C' };
-  const old = runtime(saved, { source: 'auto', temp: 20, code: 0, at: Date.now() - 8000000, unit: 'C' });
+  const old = runtime(saved, {
+    source: 'auto',
+    temp: 20,
+    code: 0,
+    at: Date.now() - 8000000,
+    unit: 'C',
+  });
   old.A.clockLayouts.apply();
   assert.equal(old.elements['aero-v991-temp'].textContent, '--°');
-  const wrongUnit = runtime(saved, { source: 'auto', temp: 20, code: 0, at: Date.now(), unit: 'F' });
+  const wrongUnit = runtime(saved, {
+    source: 'auto',
+    temp: 20,
+    code: 0,
+    at: Date.now(),
+    unit: 'F',
+  });
   wrongUnit.A.clockLayouts.apply();
   assert.equal(wrongUnit.elements['aero-v991-temp'].textContent, '--°');
 });
@@ -118,7 +165,12 @@ test('valid cached weather renders temperature, WMO condition and city', () => {
 });
 
 test('time, weather, and date visibility respect saved preferences', () => {
-  const { A, elements } = runtime({ clockLayout: 'custom', showTime: false, showWeather: false, dateFormat: 'none' });
+  const { A, elements } = runtime({
+    clockLayout: 'custom',
+    showTime: false,
+    showWeather: false,
+    dateFormat: 'none',
+  });
   A.clockLayouts.apply();
   assert.equal(elements['aero-v991-widget'].hidden, true);
   assert.equal(elements['aero-v991-hours'].style.display, 'none');

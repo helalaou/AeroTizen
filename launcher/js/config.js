@@ -10,7 +10,17 @@ AeroTizen.config = {
   LEGACY_STORAGE_KEYS: ['hearth.home.v1', 'declutter.home.v5'],
 
   // Remote control key codes (Tizen TV).
-  KEY: { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 10009, ESC: 27, IME_DONE: 65376, IME_CANCEL: 65385 },
+  KEY: {
+    LEFT: 37,
+    UP: 38,
+    RIGHT: 39,
+    DOWN: 40,
+    ENTER: 13,
+    BACK: 10009,
+    ESC: 27,
+    IME_DONE: 65376,
+    IME_CANCEL: 65385,
+  },
 
   // Apps placed on the home grid the first time, by name prefix, in this order.
   DEFAULT_HOME_APPS: ['youtube', 'netflix', 'prime video', 'stremio', 'spotify'],
@@ -28,35 +38,35 @@ AeroTizen.config = {
   FIREPLACE_ID: '__fire',
   FIREPLACE_VIDEO: 'WuHSBSLK3_A',
 
-  CARD_COLUMNS: { big: 3, small: 5 },  // Settings → App cards
+  CARD_COLUMNS: { big: 3, small: 5 }, // Settings → App cards
   LONG_PRESS_MS: 600,
   SPEED: { MIN: 0.25, MAX: 3, STEP: 0.25 },
 
   DEFAULTS: {
-    home: null,  // null selects defaults on first launch; [] keeps an empty Home.
+    home: null, // null selects defaults on first launch; [] keeps an empty Home.
     cardSize: 'big',
-    glassSettings: false,  // Optional Preact Glass categories and source dock.
-    homeCardMode: 'square',   // Square Samsung artwork remains the default.
-    homeCardColumns: null,    // null preserves the existing Big/Small column count.
+    glassSettings: false, // Optional Preact Glass categories and source dock.
+    homeCardMode: 'square', // Square Samsung artwork remains the default.
+    homeCardColumns: null, // null preserves the existing Big/Small column count.
     background: 'aurora',
-    weatherPhoto: false,  // Opt-in AI-generated scenes using the existing forecast.
+    weatherPhoto: false, // Opt-in AI-generated scenes using the existing forecast.
     speed: 1,
     showWeather: true,
     showTime: true,
     showNetwork: true,
-    tempUnit: null,  // Select the locale's weather unit when first loaded.
+    tempUnit: null, // Select the locale's weather unit when first loaded.
     weatherLocation: null,
     weatherShowLocation: true,
     dateFormat: 'short',
     // Existing installs continue using the unchanged compact header.
     clockLayout: 'classic',
     aeroClockStyle: 'vertical',
-    timeFormat: null,  // Detect 12/24-hour format when first loaded.
+    timeFormat: null, // Detect 12/24-hour format when first loaded.
     continueWatching: false,
     continueWatchingApps: [],
     showLiveTv: true,
     hideDisconnectedHdmi: false,
-    hdmiKeepVisible: {},  // Optional per-port exception for an unidentified device.
-    inputNames: {}
-  }
+    hdmiKeepVisible: {}, // Optional per-port exception for an unidentified device.
+    inputNames: {},
+  },
 };

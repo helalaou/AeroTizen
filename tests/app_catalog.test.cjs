@@ -5,10 +5,11 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const launcher = path.join(__dirname, '../launcher');
-const script = name => fs.readFileSync(path.join(launcher, 'js', name), 'utf8');
+const script = (name) => fs.readFileSync(path.join(launcher, 'js', name), 'utf8');
 
 function runtime(entries) {
-  const A = {}, context = vm.createContext({ window: { AeroTizen: A } });
+  const A = {},
+    context = vm.createContext({ window: { AeroTizen: A } });
   vm.runInContext(script('app-catalog.js'), context);
   if (entries) A.catalog.apps = entries;
   vm.runInContext(script('app-lookup.js'), context);
@@ -18,7 +19,8 @@ function runtime(entries) {
 
 test('catalogue records have unique keys and unambiguous string IDs', () => {
   const { A } = runtime();
-  const keys = new Set(), ids = new Set();
+  const keys = new Set(),
+    ids = new Set();
   assert.ok(A.catalog.apps.length > 0);
   for (const entry of A.catalog.apps) {
     assert.match(entry.key, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
@@ -68,8 +70,13 @@ test('catalogue fallback logos exist and legacy rules are explicit', () => {
         assert.equal(typeof alias, 'string');
         assert.ok(alias && alias === alias.toLowerCase());
       }
-      if (field === 'brandPrefixes') assert.ok(entry.fallback, `Brand rule needs fallback styling: ${entry.key}`);
-      if (field === 'artworkNames') assert.ok(entry.variants.some(v => v.storeId), `Artwork rule needs store ID: ${entry.key}`);
+      if (field === 'brandPrefixes')
+        assert.ok(entry.fallback, `Brand rule needs fallback styling: ${entry.key}`);
+      if (field === 'artworkNames')
+        assert.ok(
+          entry.variants.some((v) => v.storeId),
+          `Artwork rule needs store ID: ${entry.key}`
+        );
     }
   }
 });
@@ -82,7 +89,10 @@ test('verified app and store IDs select the same record despite renamed or confl
     assert.equal(A.catalog.brand(app).logo.slug, 'stremio');
   }
   assert.equal(A.catalog.brand({ id: 'DqEoaplKlw.bbchybrid', name: 'YouTube' }), null);
-  assert.equal(A.catalog.artworkStoreId({ id: 'DqEoaplKlw.bbchybrid', name: 'Renamed app' }), '3201601007670');
+  assert.equal(
+    A.catalog.artworkStoreId({ id: 'DqEoaplKlw.bbchybrid', name: 'Renamed app' }),
+    '3201601007670'
+  );
 });
 
 test('legacy prefix branding does not enable artwork for an unrelated app name', () => {
@@ -90,16 +100,28 @@ test('legacy prefix branding does not enable artwork for an unrelated app name',
   const app = { id: 'unknown.app', name: 'YouTube TV' };
   assert.equal(A.catalog.brand(app).logo.slug, 'youtube');
   assert.equal(A.catalog.artworkStoreId(app), null);
-  assert.equal(A.catalog.artworkStoreId({ id: 'unknown.app', name: 'Amazon Prime Video' }), '3201910019365');
+  assert.equal(
+    A.catalog.artworkStoreId({ id: 'unknown.app', name: 'Amazon Prime Video' }),
+    '3201910019365'
+  );
   assert.equal(A.catalog.brand({ id: 'unknown.app', name: 'Amazon Prime Video' }), null);
-  assert.equal(A.catalog.artworkStoreId({ id: 'unknown.app', name: ' ITVX - fresh, free streaming.' }), '121299000089');
+  assert.equal(
+    A.catalog.artworkStoreId({ id: 'unknown.app', name: ' ITVX - fresh, free streaming.' }),
+    '121299000089'
+  );
 });
 
 test('each app variant retains its paired store ID', () => {
-  const { A } = runtime([{
-    key: 'example', name: 'Example',
-    variants: [{ appId: 'example.first', storeId: '123' }, { appId: 'example.second', storeId: '456' }]
-  }]);
+  const { A } = runtime([
+    {
+      key: 'example',
+      name: 'Example',
+      variants: [
+        { appId: 'example.first', storeId: '123' },
+        { appId: 'example.second', storeId: '456' },
+      ],
+    },
+  ]);
   assert.equal(A.catalog.artworkStoreId({ id: 'example.first' }), '123');
   assert.equal(A.catalog.artworkStoreId({ id: 'example.second' }), '456');
   assert.equal(A.catalog.artworkStoreId({ id: '456' }), '456');
@@ -131,23 +153,36 @@ test('preloaded Apple TV resolves its store ID and branding by ID', () => {
 test('preloaded Apple TV passes discovery and uses its store ID in the watcher inventory', () => {
   const { A } = runtime();
   const appleTV = {
-    id: 'com.samsung.tv.aria-video', packageId: 'com.samsung.tv.aria-video',
-    name: 'Apple TV', iconPath: 'apple-tv.png', show: true
+    id: 'com.samsung.tv.aria-video',
+    packageId: 'com.samsung.tv.aria-video',
+    name: 'Apple TV',
+    iconPath: 'apple-tv.png',
+    show: true,
   };
-  const installed = [appleTV, { id: 'unrelated.native', packageId: 'unrelated.native', name: 'Apple TV', show: true }];
-  A.tizen = { application: {
-    getAppsInfo(done) { done(installed); }
-  } };
+  const installed = [
+    appleTV,
+    { id: 'unrelated.native', packageId: 'unrelated.native', name: 'Apple TV', show: true },
+  ];
+  A.tizen = {
+    application: {
+      getAppsInfo(done) {
+        done(installed);
+      },
+    },
+  };
   const context = vm.createContext({ window: { AeroTizen: A }, AeroTizen: A });
   vm.runInContext(script('config.js'), context);
   vm.runInContext(script('apps.js'), context);
   assert.equal(A.config.STORE_PACKAGE.test(appleTV.packageId), false);
   let loaded = false;
-  A.apps.load(() => { loaded = true; });
+  A.apps.load(() => {
+    loaded = true;
+  });
   assert.equal(loaded, true);
-  assert.deepEqual(Array.from(A.apps.all, app => ({ ...app })), [
-    { id: appleTV.id, name: 'Apple TV', icon: 'apple-tv.png' }
-  ]);
+  assert.deepEqual(
+    Array.from(A.apps.all, (app) => ({ ...app })),
+    [{ id: appleTV.id, name: 'Apple TV', icon: 'apple-tv.png' }]
+  );
   assert.deepEqual(Array.from(A.apps.realIds), ['3201807016597']);
 
   appleTV.show = false;
@@ -157,14 +192,19 @@ test('preloaded Apple TV passes discovery and uses its store ID in the watcher i
 });
 
 test('watcher requests keep the preloaded store IDs from the shared catalogue', () => {
-  const requests = [], A = { tizen: {} };
+  const requests = [],
+    A = { tizen: {} };
   class Request {
-    open(method, url) { requests.push({ method, url }); }
+    open(method, url) {
+      requests.push({ method, url });
+    }
     send() {}
   }
   const context = vm.createContext({
-    window: { AeroTizen: A }, AeroTizen: A, XMLHttpRequest: Request,
-    document: { addEventListener() {} }
+    window: { AeroTizen: A },
+    AeroTizen: A,
+    XMLHttpRequest: Request,
+    document: { addEventListener() {} },
   });
   for (const name of ['config.js', 'app-catalog.js', 'app-lookup.js', 'homewatch.js']) {
     vm.runInContext(script(name), context);
@@ -177,6 +217,6 @@ test('watcher requests keep the preloaded store IDs from the shared catalogue', 
     { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=3201907018807' },
     { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=3201910019365' },
     { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=3201807016597' },
-    { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=normal.app' }
+    { method: 'GET', url: 'http://127.0.0.1:47790/watch?id=normal.app' },
   ]);
 });

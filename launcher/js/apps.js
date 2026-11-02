@@ -2,20 +2,25 @@
 (function (A) {
   'use strict';
 
-  var cfg = A.config, tz = A.tizen;
-  var apps = A.apps = { all: [], inventory: [], realIds: [], ready: false };
+  var cfg = A.config,
+    tz = A.tizen;
+  var apps = (A.apps = { all: [], inventory: [], realIds: [], ready: false });
   var listeners = [];
 
   apps.subscribe = function (listener) {
     listeners.push(listener);
     return function () {
       var index = listeners.indexOf(listener);
-      if (index >= 0) { listeners.splice(index, 1); }
+      if (index >= 0) {
+        listeners.splice(index, 1);
+      }
     };
   };
 
   function publish(done, success) {
-    listeners.slice().forEach(function (listener) { listener(); });
+    listeners.slice().forEach(function (listener) {
+      listener();
+    });
     done(success);
   }
   var CACHE_KEY = 'aerotizen.apps.v1';
@@ -25,65 +30,147 @@
   apps.restore = function () {
     try {
       var cached = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
-      if (!Array.isArray(cached) || cached.length > 1000) { return; }
+      if (!Array.isArray(cached) || cached.length > 1000) {
+        return;
+      }
       apps.all = cached.filter(function (app) {
-        return app && typeof app.id === 'string' && app.id && typeof app.name === 'string' &&
-          app.name && typeof app.icon === 'string';
+        return (
+          app &&
+          typeof app.id === 'string' &&
+          app.id &&
+          typeof app.name === 'string' &&
+          app.name &&
+          typeof app.icon === 'string'
+        );
       });
-    } catch (e) { /* cache is optional */ }
+    } catch (e) {
+      /* cache is optional */
+    }
   };
 
   function isRealApp(a) {
-    return a.show !== false && (cfg.STORE_PACKAGE.test(a.packageId || '') || !!A.catalog.preloadedStoreId(a.id));
+    return (
+      a.show !== false &&
+      (cfg.STORE_PACKAGE.test(a.packageId || '') || !!A.catalog.preloadedStoreId(a.id))
+    );
   }
 
   function hbbtvLink(appId) {
     try {
-      if (!tz.application.getAppMetaData) { return ''; }
+      if (!tz.application.getAppMetaData) {
+        return '';
+      }
       var metadata = tz.application.getAppMetaData(appId);
       for (var i = 0; metadata && i < metadata.length; i++) {
         var item = metadata[i];
-        if (item && item.key === cfg.HBBTV_LINK_METADATA && typeof item.value === 'string' && item.value.trim()) {
+        if (
+          item &&
+          item.key === cfg.HBBTV_LINK_METADATA &&
+          typeof item.value === 'string' &&
+          item.value.trim()
+        ) {
           return item.value;
         }
       }
-    } catch (e) { /* older TVs may not expose metadata for another app */ }
+    } catch (e) {
+      /* older TVs may not expose metadata for another app */
+    }
     return '';
   }
 
   apps.load = function (done) {
-    if (!tz || !tz.application) {  // desktop browser preview
+    if (!tz || !tz.application) {
+      // desktop browser preview
       // Keep the original IDs stable; extra samples exercise long lists and a partial last row.
       apps.all = [
-        'YouTube', 'Netflix', 'Stremio', 'Prime Video', 'Spotify - Music and Podcasts', 'TizenBrew', 'Disney+', 'Plex',
-        'Apple TV', 'BBC iPlayer', 'Channel 4', 'Crunchyroll', 'DAZN', 'discovery+', 'Hulu', 'ITVX', 'Jellyfin',
-        'Max', 'My5', 'NOW', 'Paramount+', 'Rakuten TV', 'Samsung TV Plus', 'Tubi', 'Twitch'
+        'YouTube',
+        'Netflix',
+        'Stremio',
+        'Prime Video',
+        'Spotify - Music and Podcasts',
+        'TizenBrew',
+        'Disney+',
+        'Plex',
+        'Apple TV',
+        'BBC iPlayer',
+        'Channel 4',
+        'Crunchyroll',
+        'DAZN',
+        'discovery+',
+        'Hulu',
+        'ITVX',
+        'Jellyfin',
+        'Max',
+        'My5',
+        'NOW',
+        'Paramount+',
+        'Rakuten TV',
+        'Samsung TV Plus',
+        'Tubi',
+        'Twitch',
       ]
-        .map(function (name, i) { return { id: 'demo' + i, name: name, icon: '' }; })
-        .sort(function (a, b) { return a.name.localeCompare(b.name); });
+        .map(function (name, i) {
+          return { id: 'demo' + i, name: name, icon: '' };
+        })
+        .sort(function (a, b) {
+          return a.name.localeCompare(b.name);
+        });
       apps.ready = true;
       return publish(done, true);
     }
     var settled = false;
-    function failed() { if (!settled) { settled = true; publish(done, false); } }
-    try { tz.application.getAppsInfo(function (list) {
-      if (settled) { return; }
-      settled = true;
-      apps.inventory = list;
-      // HbbTV content runs in a shared host; include it in the watcher's inventory.
-      apps.realIds = list.filter(function (a) { return (isRealApp(a) || a.id === cfg.HBBTV_APP_ID) && !/service|DclHome001/i.test(a.id); })
-        .map(function (a) { return A.catalog.preloadedStoreId(a.id) || a.id; });
-      apps.all = list.filter(function (a) { return isRealApp(a) && a.name && !cfg.HIDDEN_APPS.test(a.id) && !cfg.HIDDEN_APPS.test(a.name); })
-        .map(function (a) { return { id: a.id, name: a.name, icon: a.iconPath || '' }; })
-        .sort(function (a, b) { return a.name.localeCompare(b.name); });
-      apps.ready = true;
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify(apps.all)); } catch (e) { /* cache is optional */ }
-      publish(done, true);
-    }, failed); } catch (e) { failed(); }
+    function failed() {
+      if (!settled) {
+        settled = true;
+        publish(done, false);
+      }
+    }
+    try {
+      tz.application.getAppsInfo(function (list) {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        apps.inventory = list;
+        // HbbTV content runs in a shared host; include it in the watcher's inventory.
+        apps.realIds = list
+          .filter(function (a) {
+            return (isRealApp(a) || a.id === cfg.HBBTV_APP_ID) && !/service|DclHome001/i.test(a.id);
+          })
+          .map(function (a) {
+            return A.catalog.preloadedStoreId(a.id) || a.id;
+          });
+        apps.all = list
+          .filter(function (a) {
+            return (
+              isRealApp(a) && a.name && !cfg.HIDDEN_APPS.test(a.id) && !cfg.HIDDEN_APPS.test(a.name)
+            );
+          })
+          .map(function (a) {
+            return { id: a.id, name: a.name, icon: a.iconPath || '' };
+          })
+          .sort(function (a, b) {
+            return a.name.localeCompare(b.name);
+          });
+        apps.ready = true;
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(apps.all));
+        } catch (e) {
+          /* cache is optional */
+        }
+        publish(done, true);
+      }, failed);
+    } catch (e) {
+      failed();
+    }
   };
 
   apps.byId = function (id) {
-    for (var i = 0; i < apps.all.length; i++) { if (apps.all[i].id === id) { return apps.all[i]; } }
+    for (var i = 0; i < apps.all.length; i++) {
+      if (apps.all[i].id === id) {
+        return apps.all[i];
+      }
+    }
     return apps.ready ? null : { id: id, name: id, icon: '' };
   };
 
@@ -91,7 +178,9 @@
     var picked = [];
     cfg.DEFAULT_HOME_APPS.forEach(function (want) {
       apps.all.forEach(function (a) {
-        if (picked.indexOf(a.id) < 0 && a.name.toLowerCase().indexOf(want) === 0) { picked.push(a.id); }
+        if (picked.indexOf(a.id) < 0 && a.name.toLowerCase().indexOf(want) === 0) {
+          picked.push(a.id);
+        }
       });
     });
     return [cfg.FIREPLACE_ID].concat(picked);
@@ -101,28 +190,51 @@
     var log = window.AeroDiagnostics;
     var operation = log ? log.record('app.launch_requested', { app_id: app.id }) : null;
     function outcome(status, error) {
-      if (!log) { return; }
+      if (!log) {
+        return;
+      }
       var data = { app_id: app.id, operation_id: operation, status: status };
-      if (error) { log.captureError('app.launch_failed', error, data); }
-      else { log.record('app.launch_' + status, data); }
-      if (log.flush) { log.flush(); }
+      if (error) {
+        log.captureError('app.launch_failed', error, data);
+      } else {
+        log.record('app.launch_' + status, data);
+      }
+      if (log.flush) {
+        log.flush();
+      }
     }
-    function accepted() { outcome('accepted'); }
-    function failed(error) { outcome('failed', error || { name: 'LaunchError', message: 'Launch denied' }); A.toast('Could not open ' + label); }
+    function accepted() {
+      outcome('accepted');
+    }
+    function failed(error) {
+      outcome('failed', error || { name: 'LaunchError', message: 'Launch denied' });
+      A.toast('Could not open ' + label);
+    }
     var label = A.tiles.shortName(app.name);
-    if (!tz || !tz.application) { outcome('unavailable'); return A.toast('Would open ' + label); }
+    if (!tz || !tz.application) {
+      outcome('unavailable');
+      return A.toast('Would open ' + label);
+    }
     var link = hbbtvLink(app.id);
     if (link) {
       try {
         var data = [
           new tz.ApplicationControlData('tizenid', [app.id]),
           new tz.ApplicationControlData('hbbtv', [link]),
-          new tz.ApplicationControlData('deeplink', ['true'])
+          new tz.ApplicationControlData('deeplink', ['true']),
         ];
-        var control = new tz.ApplicationControl('http://tizen.org/appcontrol/operation/default', null, null, null, data);
+        var control = new tz.ApplicationControl(
+          'http://tizen.org/appcontrol/operation/default',
+          null,
+          null,
+          null,
+          data
+        );
         A.homewatch.watch(cfg.HBBTV_APP_ID);
         tz.application.launchAppControl(control, cfg.HBBTV_APP_ID, accepted, failed);
-      } catch (e) { failed(e); }
+      } catch (e) {
+        failed(e);
+      }
       return;
     }
     // Samsung's preloaded Cobalt YouTube sometimes reports visible=false.
@@ -132,12 +244,16 @@
     if (isYouTube && A.homewatch && A.homewatch.suspendForExternal) {
       function youtubeFailed(reason, error) {
         outcome('failed', error || { name: 'HandoffError', message: reason || 'Launch failed' });
-        if (A.homewatch.resume) { A.homewatch.resume(); }
+        if (A.homewatch.resume) {
+          A.homewatch.resume();
+        }
         A.toast('Could not open ' + label + (reason ? ': ' + reason : ''));
       }
       A.homewatch.suspendForExternal(function () {
         try {
-          tz.application.launch(app.id, accepted, function (error) { youtubeFailed('launch denied', error); });
+          tz.application.launch(app.id, accepted, function (error) {
+            youtubeFailed('launch denied', error);
+          });
         } catch (error) {
           youtubeFailed('launch failed', error);
         }
@@ -147,15 +263,23 @@
     // Preserve upstream app /watch behaviour when the optional handoff
     // module is absent and for all non-YouTube / HbbTV applications.
     A.homewatch.watch(app.id);
-    try { tz.application.launch(app.id, accepted, failed); } catch (error) { failed(error); }
+    try {
+      tz.application.launch(app.id, accepted, failed);
+    } catch (error) {
+      failed(error);
+    }
   };
 
   apps.openStore = function () {
-    if (!tz || !tz.application) { return A.toast('Would open the Samsung app store'); }
+    if (!tz || !tz.application) {
+      return A.toast('Would open the Samsung app store');
+    }
     var ids = cfg.STORE_APP_IDS.slice();
     (function next() {
       var id = ids.shift();
-      if (!id) { return A.toast('Could not open the app store'); }
+      if (!id) {
+        return A.toast('Could not open the app store');
+      }
       A.homewatch.watch(id);
       tz.application.launch(id, null, next);
     })();
@@ -164,13 +288,35 @@
   // Fireplace: a fireplace video in YouTube; the built-in animated fire as a fallback.
   apps.playFireplace = function () {
     var yt = null;
-    apps.all.forEach(function (a) { if (!yt && /^youtube$/i.test(a.name)) { yt = a; } });
-    if (!tz || !yt) { return window.Fireplace.open(); }
+    apps.all.forEach(function (a) {
+      if (!yt && /^youtube$/i.test(a.name)) {
+        yt = a;
+      }
+    });
+    if (!tz || !yt) {
+      return window.Fireplace.open();
+    }
     A.homewatch.watch(yt.id);
     try {
-      var data = [new tz.ApplicationControlData('PAYLOAD', [JSON.stringify({ values: 'v=' + cfg.FIREPLACE_VIDEO })])];
-      tz.application.launchAppControl(new tz.ApplicationControl('http://tizen.org/appcontrol/operation/view', null, null, null, data),
-        yt.id, null, function () { window.Fireplace.open(); });
+      var data = [
+        new tz.ApplicationControlData('PAYLOAD', [
+          JSON.stringify({ values: 'v=' + cfg.FIREPLACE_VIDEO }),
+        ]),
+      ];
+      tz.application.launchAppControl(
+        new tz.ApplicationControl(
+          'http://tizen.org/appcontrol/operation/view',
+          null,
+          null,
+          null,
+          data
+        ),
+        yt.id,
+        null,
+        function () {
+          window.Fireplace.open();
+        }
+      );
     } catch (e) {
       window.Fireplace.open();
     }
