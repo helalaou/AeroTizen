@@ -291,7 +291,7 @@ test('Settings override controls use persisted source numbers and accept remote 
   assert.equal(box.children[0].attributes['aria-pressed'], 'true');
   box.children[0].callback();
   assert.equal(S.hdmiKeepVisible['1'], undefined);
-  assert.match(source, /kids\('hdmi-force-visibility'\)/);
+  assert.match(source, /kids\((["'])hdmi-force-visibility\1\)/);
   assert.match(
     fs.readFileSync(path.join(__dirname, '../launcher/index.html'), 'utf8'),
     /id="hdmi-force-visibility"/
