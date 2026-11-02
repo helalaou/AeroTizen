@@ -1,3 +1,4 @@
+import type { GlassState } from './glass/categories';
 import type { RefObject } from 'preact';
 import type { MutableStore, Store } from '../shared/state/createStore';
 import type { Navigation } from '../shared/navigation/createNavigation';
@@ -10,7 +11,7 @@ export interface WeatherLocation {
   name: string; label?: string; latitude: number; longitude: number; country_code?: string;
 }
 export interface SettingsValues {
-  home: string[]; homeCardMode: 'square' | 'rectangle'; homeCardColumns: number | null; clockLayout: 'classic' | 'custom'; aeroClockStyle: 'vertical' | 'horizontal' | 'minimal' | 'bold'; cardSize: CardSize; background: string; speed: number;
+  home: string[]; homeCardMode: 'square' | 'rectangle'; homeCardColumns: number | null; clockLayout: 'classic' | 'custom'; aeroClockStyle: 'vertical' | 'horizontal' | 'minimal' | 'bold'; glassSettings: boolean; cardSize: CardSize; background: string; speed: number;
   weatherPhoto: boolean; showWeather: boolean; showTime: boolean; showNetwork: boolean; tempUnit: TemperatureUnit;
   weatherLocation: WeatherLocation | null; weatherShowLocation: boolean;
   dateFormat: DateFormat | 'auto' | 'weekday' | 'dmy' | 'mdy'; timeFormat: TimeFormat;
@@ -69,6 +70,7 @@ export interface AppPresentation {
 }
 export interface SettingsServices {
   config: LauncherConfig;
+  translate(value: string): string;
   clock: Omit<Clock, 'tick'>;
   backgrounds: readonly BackgroundOption[];
   describeApp(app: InstalledApp): AppPresentation;
@@ -80,6 +82,7 @@ export interface SettingsServices {
   showPreviewMessage(): void; hidePreviewMessage(): void;
 }
 export interface SettingsActions {
+  setGlassSettings(enabled: boolean): void;
   setWeatherPhoto(enabled: boolean): void;
   setContinueWatching(enabled: boolean): void; toggleContinueApp(id: string): void;
   setBackground(background: string): void; setWeatherVisible(visible: boolean): void;
@@ -105,6 +108,6 @@ export interface SettingsBridge {
 export interface SettingsEnvironment {
   settings: SettingsStore; inventory: SettingsInventory; view: MutableStore<ViewState>; services: SettingsServices;
   actions: SettingsActions; bridge: SettingsBridge; navigation: Navigation;
-  root: RefObject<HTMLDivElement>;
+  root: RefObject<HTMLDivElement>; glass: MutableStore<GlassState>; glassMenu: RefObject<HTMLDivElement>; glassContent: RefObject<HTMLDivElement>; glassScroll: RefObject<HTMLDivElement>;
 }
 export interface SettingsSectionProps { settings: SettingsSnapshot; actions: SettingsActions }

@@ -35,6 +35,7 @@ AeroTizen.config = {
   DEFAULTS: {
     home: null,  // null selects defaults on first launch; [] keeps an empty Home.
     cardSize: 'big',
+    glassSettings: false,  // Optional Preact Glass categories and source dock.
     homeCardMode: 'square',   // Square Samsung artwork remains the default.
     homeCardColumns: null,    // null preserves the existing Big/Small column count.
     background: 'aurora',

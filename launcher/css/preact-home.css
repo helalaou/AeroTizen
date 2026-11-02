@@ -30,7 +30,13 @@
 @keyframes aero-page-home { from { opacity: .70; transform: translate3d(-12px,0,0); } to { opacity: 1; transform: none; } }
 @keyframes aero-page-apps { from { opacity: .70; transform: translate3d(12px,0,0); } to { opacity: 1; transform: none; } }
 /* Shared header geometry and moving plates in both appearances; themes change paint. */
-#home-root .topbar-left { position: relative; gap: 18px; }
+/* Equal 64px slots keep shortcut/status centres aligned. Explicit margins also
+   work on TV engines without flex-gap support. */
+#home-root .topbar-left { position: relative; gap: 0; align-items: center; }
+#home-root .topbar-left > .icon-btn { margin-right: 18px; }
+#home-root .topbar-left > #network {
+  display: block; flex: 0 0 64px; width: 64px; height: 64px; padding: 12px;
+}
 #home-root .topbar > .view-tabs {
   position: absolute; left: 50%; top: 24px; transform: translate3d(-50%,0,0);
   align-items: stretch; gap: 0; padding: 7px; height: 76px; min-height: 76px;
@@ -73,3 +79,7 @@ body.glass-ui #home-root #aero-tab-glider { background: rgba(236,242,255,.16); }
   #home-root #aero-header-focus, #home-root #aero-tab-glider { transition: none; }
   #home-root .home-page-surface { animation: none; }
 }
+
+/* Reserve the scaled card, upward motion and complete 9px focus ring inside
+   the horizontal clip. Matching negative margins preserve the row position. */
+#home-root .continue-viewport { margin: -32px; padding: 32px; }

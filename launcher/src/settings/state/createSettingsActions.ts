@@ -11,6 +11,7 @@ export const createSettingsActions = (
     settings.refresh();
   });
   return {
+    setGlassSettings: glassSettings => commit({ glassSettings }),
     setWeatherPhoto: weatherPhoto => commit({ weatherPhoto }, () => {
       services.applyWeatherVisibility();
       services.applyBackground();
@@ -20,7 +21,10 @@ export const createSettingsActions = (
       const selected = settings.getSnapshot().continueWatchingApps;
       commit({ continueWatchingApps: selected.includes(id) ? selected.filter(app => app !== id) : [...selected, id] });
     },
-    setBackground: background => commit({ background }, services.applyBackground),
+    setBackground(background) {
+      const wasPhoto = settings.getSnapshot().weatherPhoto;
+      commit({ background, weatherPhoto: false }, () => { if (wasPhoto) { services.applyWeatherVisibility(); } services.applyBackground(); });
+    },
     setWeatherVisible: showWeather => commit({ showWeather }, services.applyWeatherVisibility),
     setLocationVisible: weatherShowLocation => commit({ weatherShowLocation }, services.applyLocationVisibility),
     setTempUnit: tempUnit => commit({ tempUnit }, services.refreshWeather),

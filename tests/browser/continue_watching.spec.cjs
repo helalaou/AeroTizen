@@ -1,3 +1,4 @@
+const {openCategory,closeSettings}=require('./drawer_helpers.cjs');
 const { test, expect } = require('@playwright/test');
 const prime = 'org.tizen.primevideo', itv = 'OEvCiupaFR.ITVHub', channel4 = 'OCaxbgg9v6.chfourctv';
 const make = (app, id, title, timestamp) => ({ app_id: app, content_id: id, content_title: title,
@@ -47,7 +48,7 @@ test('opt-in discovery, selection, merged row, remote navigation, launch and res
   await page.clock.fastForward(300001); // Exercise ordinary refreshes after the startup window.
   await expect(page.locator('#continue-section')).toBeHidden();
   expect(reads).toEqual([]);
-  await page.locator('#gear').click();
+  await page.locator('#gear').click(); await openCategory(page,'apps');
   await page.locator('[data-key="continue-watching:true"]').click();
   await expect(page.locator('.continue-option')).toHaveCount(3);
   await expect(page.locator('.continue-option')).not.toContainText(['BBC iPlayer']);
@@ -57,10 +58,11 @@ test('opt-in discovery, selection, merged row, remote navigation, launch and res
   await page.clock.runFor(4500);
   await expect.poll(() => page.evaluate(() => AeroTizen.continueWatching.sources.find(s => s.name === 'Channel 4').status)).toBe('No items available');
   await expect(page.locator('.continue-option')).not.toContainText(['5 items']);
-  await expect(page.locator('.continue-option').first()).toHaveCSS('width', '176px');
+  await expect(page.locator('.continue-option').first()).toHaveCSS('width', '160px');
+  await expect(page.locator('.continue-option').first()).toHaveCSS('height', '160px');
   await expect(page.locator('.continue-option.has-artwork')).toHaveCount(3);
   await page.screenshot({ path: info.outputPath('continue-watching-selection.png') });
-  await page.keyboard.press('Escape');
+  await closeSettings(page);
   await expect(page.locator('.continue-card')).toHaveCount(7);
   await expect(page.locator('.continue-card').first()).toContainText('Recent episode 0');
   await expect(page.locator('.continue-source')).toHaveCount(0);
@@ -127,10 +129,10 @@ test('opt-in discovery, selection, merged row, remote navigation, launch and res
   await page.locator('#home-tab').click(); await expect(page.locator('#continue-section')).toBeVisible();
   await page.reload();
   await expect(page.locator('.continue-card')).toHaveCount(7);
-  await page.locator('#gear').click();
+  await page.locator('#gear').click(); await openCategory(page,'apps');
   await page.locator('[data-key="continue-watching:false"]').click();
   const stopped = reads.length;
-  await page.keyboard.press('Escape');
+  await closeSettings(page);
   await expect(page.locator('#continue-section')).toBeHidden();
   await page.waitForTimeout(100); expect(reads.length).toBe(stopped);
   expect(await page.evaluate(() => AeroTizen.settings.continueWatchingApps.length)).toBe(3);

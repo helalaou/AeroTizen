@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-for (const glassSettings of [false]) {
+for (const glassSettings of [false, true]) {
   for(const style of ['vertical','horizontal','minimal','bold']) {
     test(`${glassSettings ? 'Glass' : 'Classic'} ${style} clock clears focused apps, centres tabs and fades only scrolled content`,async({page},info)=>{
       await page.route('https://**/*',r=>r.fulfill({body:'{}'}));

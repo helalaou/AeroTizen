@@ -1,0 +1,161 @@
+/* TV source dock presentation ported from the tested AeroTizen glass dock.
+   The upstream Tizen VIDEOSOURCE and tvwindow.setSource handlers are unchanged. */
+body.glass-ui .inputs-wrap { margin-top: 4px; margin-bottom: 12px; }
+body.glass-ui .inputs-wrap > h2 {
+  font-family: "SamsungOne","Roboto",Arial,sans-serif;
+  font-size: 21px !important; font-weight: 500;
+  letter-spacing: 2.5px; line-height: 1.35; text-transform: uppercase;
+  color: rgba(250,252,255,.85); text-shadow: 0 2px 9px rgba(0,0,0,.42);
+  margin: 0 0 17px 9px !important;
+}
+body.glass-ui .inputs-wrap[hidden] { display: none !important; }
+
+/* One glass shell for all sources; slots are not individual opaque cards. */
+body.glass-ui #inputs.row.small {
+  position: relative; display: flex; align-items: stretch; box-sizing: border-box;
+  width: 100%; min-height: 140px; gap: 0 !important;
+  padding: 9px 11px !important; overflow: visible; isolation: isolate;
+  border: 1px solid rgba(255,255,255,.31); border-radius: 37px;
+  background: linear-gradient(165deg,rgba(255,255,255,.20),
+    rgba(60,68,78,.44) 18%,rgba(20,25,35,.63) 62%,
+    rgba(15,20,28,.71));
+  box-shadow: inset 0 1px rgba(255,255,255,.24),
+    inset 0 -1px rgba(255,255,255,.09),0 13px 32px rgba(0,0,0,.27);
+}
+body.glass-ui #inputs.row.small::before {
+  content: ''; position: absolute; z-index: 0; pointer-events: none;
+  left: 19px; right: 19px; top: 1px; height: 46%;
+  border-radius: 36px 36px 58% 58%;
+  background: linear-gradient(to bottom,rgba(255,255,255,.075),transparent);
+}
+body.glass-ui #inputs .tile.aero-source-card {
+  box-sizing: border-box; position: relative; z-index: 1;
+  flex: 1 1 0; min-width: 0; max-width: none;
+  height: 120px !important; padding: 11px 6px 8px !important;
+  margin: 0; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center; gap: 5px !important;
+  border: 2px solid transparent !important; border-radius: 27px !important;
+  background: transparent !important; box-shadow: none !important;
+  overflow: hidden; transform: translateZ(0) !important;
+  transition: background-color .15s ease, transform .15s ease !important;
+}
+body.glass-ui #inputs .tile.aero-source-card:not(:last-child)::after {
+  content: ''; position: absolute; right: 0; top: 30px; height: 62px; width: 1px;
+  background: linear-gradient(to bottom,transparent,rgba(255,255,255,.27),transparent);
+  pointer-events: none;
+}
+body.glass-ui #inputs .tile.aero-source-card .aero-source-icon {
+  display: flex; flex: 0 0 42px; width: 56px; height: 42px;
+  align-items: center; justify-content: center; margin: 0; padding: 0;
+  border: 0; border-radius: 0; background: transparent !important;
+  color: rgba(255,255,255,.89);
+}
+body.glass-ui #inputs .tile.aero-source-card .aero-source-icon svg {
+  display: block; width: 38px !important; height: 38px !important;
+  flex: 0 0 38px; border-radius: 0 !important;
+}
+body.glass-ui #inputs .tile.aero-source-card .name {
+  display: block; flex: 0 1 auto; width: 100%;
+  max-width: none !important; min-width: 0;
+  font-family: "SamsungOne","Roboto",Arial,sans-serif;
+  font-size: 22px !important; font-weight: 500; line-height: 1.13;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: rgba(255,255,255,.89) !important;
+  text-shadow: 0 1px 6px rgba(0,0,0,.33);
+}
+body.glass-ui #inputs .tile.aero-source-card .name .sub {
+  display: block; margin-top: 5px; font-size: 15px !important;
+  font-weight: 400; letter-spacing: .25px; line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: rgba(237,242,250,.64) !important; text-shadow: none;
+}
+/* Single satin focus surface. No shadow-ring doubled over its border. */
+body.glass-ui #inputs .tile.aero-source-card.focused {
+  opacity: 1 !important; z-index: 5;
+  border: 2px solid rgba(255,255,255,.95) !important;
+  border-radius: 27px !important;
+  background: linear-gradient(170deg,rgba(255,255,255,.23),
+    rgba(255,255,255,.09) 47%,rgba(255,255,255,.04)) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.28),
+    0 7px 18px rgba(0,0,0,.25) !important;
+  transform: translate3d(0,-1px,0) scale(1.015) !important;
+  outline: none !important;
+}
+body.glass-ui #inputs .tile.aero-source-card.focused::after { opacity: 0; }
+body.glass-ui #inputs .tile.aero-source-card.focused .aero-source-icon,
+body.glass-ui #inputs .tile.aero-source-card.focused .name { color: #fff !important; }
+body.glass-ui #inputs .tile.aero-source-card.focused .name .sub { color: rgba(255,255,255,.88) !important; }
+body.glass-ui #inputs .tile.aero-source-card.off:not(.focused) {
+  opacity: .37 !important; border-color: transparent !important;
+  background: transparent !important; box-shadow: none !important;
+}
+body.glass-ui #inputs .tile.aero-source-card:not(.off):not(.focused) {
+  opacity: 1 !important; border-color: rgba(255,255,255,.18) !important;
+  background: linear-gradient(170deg,rgba(255,255,255,.145),
+    rgba(255,255,255,.035) 70%,rgba(255,255,255,.055)) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.16),
+    0 4px 13px rgba(0,0,0,.10) !important;
+}
+body.glass-ui #inputs .tile.aero-source-card:not(.off) .aero-source-icon,
+body.glass-ui #inputs .tile.aero-source-card:not(.off) .name { color: #fff !important; }
+body.glass-ui #inputs .tile.aero-source-card:not(.off) .name .sub {
+  color: rgba(255,255,255,.83) !important;
+}
+/* The original 354px card width remains constant after hiding empty slots. */
+body.glass-ui #inputs.row.small.aero-dock-compact {
+  display: inline-flex; width: auto; max-width: 100%; min-height: 140px;
+  padding: 9px 11px !important; border-radius: 37px; vertical-align: top;
+}
+body.glass-ui #inputs.row.small.aero-dock-compact > .tile.aero-source-card {
+  flex: 0 0 354px; width: 354px; min-width: 354px; max-width: 354px;
+  height: 120px !important; padding: 11px 6px 8px !important;
+}
+/* Small state indicators are metadata, not focus outlines. */
+body.glass-ui #inputs .tile.aero-source-card .aero-source-status {
+  position: absolute; top: 7px; right: 12px; z-index: 2;
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px;
+  border: 1px solid rgba(255,255,255,.20); border-radius: 12px;
+  background: rgba(0,0,0,.25); color: rgba(255,255,255,.87);
+  font: 600 12px/1.1 "SamsungOne","Roboto",Arial,sans-serif;
+  letter-spacing: .45px; white-space: nowrap; pointer-events: none;
+}
+body.glass-ui #inputs .tile.aero-source-card .aero-source-status::before {
+  content: ''; display: inline-block; width: 6px; height: 6px;
+  flex: 0 0 6px; border-radius: 50%; background: currentColor;
+}
+body.glass-ui #inputs .tile.aero-source-card.aero-source-connected:not(.focused),
+body.glass-ui #inputs .tile.aero-source-card.aero-source-active:not(.focused) {
+  border-color: rgba(106,239,201,.45) !important;
+  background: linear-gradient(165deg,rgba(97,217,182,.18),
+    rgba(255,255,255,.04) 73%) !important;
+  box-shadow: inset 0 1px rgba(184,255,235,.18),
+    0 4px 14px rgba(0,0,0,.12) !important;
+}
+body.glass-ui #inputs .tile.aero-source-card.aero-source-connected .aero-source-status,
+body.glass-ui #inputs .tile.aero-source-card.aero-source-active .aero-source-status {
+  color: #a3f4d9; border-color: rgba(132,233,197,.30);
+  background: rgba(12,66,53,.36);
+}
+body.glass-ui #inputs .tile.aero-source-card.aero-source-recognised:not(.focused) {
+  border-color: rgba(245,210,145,.40) !important;
+  background: linear-gradient(165deg,rgba(210,159,85,.14),
+    rgba(255,255,255,.035) 76%) !important;
+}
+body.glass-ui #inputs .tile.aero-source-card.aero-source-recognised .aero-source-status {
+  color: #f3d69b; border-color: rgba(239,204,133,.28);
+  background: rgba(90,60,19,.33);
+}
+body.glass-ui #inputs .tile.aero-source-card.aero-source-live .aero-source-status {
+  color: #dae7ff; border-color: rgba(191,212,255,.25);
+}
+body.glass-ui #inputs .tile.aero-source-card.focused .aero-source-status {
+  color: #fff; border-color: rgba(255,255,255,.55);
+  background: rgba(15,21,30,.44);
+}
+@media (prefers-reduced-motion: reduce) {
+  #inputs .tile.aero-source-card { transition: none !important; }
+}
+
+/* Manual visibility is reachability, not evidence of a connected HDMI signal. */
+body.glass-ui #inputs .tile.aero-source-forced:not(.focused) { border-color: rgba(180,200,230,.45); }
+body.glass-ui #inputs .tile.aero-source-forced .aero-source-status { color: #dce9ff; }
