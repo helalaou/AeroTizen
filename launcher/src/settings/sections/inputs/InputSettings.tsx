@@ -1,5 +1,5 @@
 import type { InputOption } from "../../../contracts/launcher";
-import { Choice } from "../../components/Choice";
+import { ChoiceGroup } from "../../components/ChoiceGroup";
 import type { SettingsSectionProps } from "../../types";
 
 import { InputName } from "./InputName";
@@ -10,9 +10,21 @@ interface Props extends SettingsSectionProps {
 
 export const InputSettings = ({ settings, actions, inputs }: Props) => (
   <>
+    <h3>Live TV</h3>
+    <p class="hint">Show the Live TV tile in Inputs.</p>
+    <ChoiceGroup
+      id="live-tv-visibility"
+      label="Live TV visibility"
+      value={settings.showLiveTv}
+      options={[
+        [true, "Show"],
+        [false, "Hide"],
+      ]}
+      onSelect={actions.setLiveTvVisible}
+    />
     <h3>HDMI ports</h3>
     <p class="hint">Choose whether to show HDMI ports that the TV reports as disconnected.</p>
-    <Choice
+    <ChoiceGroup
       id="input-visibility"
       label="HDMI visibility"
       value={settings.hideDisconnectedHdmi}
@@ -32,7 +44,7 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => (
         .map((input) => {
           const number = input.port.slice(5);
           return (
-            <Choice
+            <ChoiceGroup
               key={input.port}
               id={"hdmi-keep:" + number}
               label={input.port + " standby visibility"}

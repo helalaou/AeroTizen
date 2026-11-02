@@ -33,23 +33,23 @@ export const mountSettings = (
   const actions = createSettingsActions(settings, services, view, flushSync);
   const bridge = createSettingsBridge(settings, view, services, flushSync);
   const root = createRef<HTMLDivElement>();
-  const glass = createStore<import("./glass/categories").GlassState>({
+  const drawer = createStore<import("./layout/categories").SettingsDrawerState>({
     category: "appearance",
     expanded: false,
   });
-  const glassMenu = createRef<HTMLDivElement>(),
-    glassContent = createRef<HTMLDivElement>(),
-    glassScroll = createRef<HTMLDivElement>();
+  const categoryMenu = createRef<HTMLDivElement>(),
+    categoryContent = createRef<HTMLDivElement>(),
+    categoryScroll = createRef<HTMLDivElement>();
   const navigation = createNavigation((element) => {
     // A command can restore browser focus without changing the selected key (IME Done).
     focusControl(element);
-    if (glassScroll.current?.contains(element)) {
+    if (categoryScroll.current?.contains(element)) {
       const item = element.getBoundingClientRect(),
-        clip = glassScroll.current.getBoundingClientRect();
+        clip = categoryScroll.current.getBoundingClientRect();
       if (item.bottom > clip.bottom - 30) {
-        glassScroll.current.scrollTop += item.bottom - clip.bottom + 30;
+        categoryScroll.current.scrollTop += item.bottom - clip.bottom + 30;
       } else if (item.top < clip.top + 10) {
-        glassScroll.current.scrollTop += item.top - clip.top - 10;
+        categoryScroll.current.scrollTop += item.top - clip.top - 10;
       }
     } else if (root.current) {
       root.current.scrollTop = Math.max(0, element.offsetTop - 640);
@@ -64,10 +64,11 @@ export const mountSettings = (
     bridge,
     navigation,
     root,
-    glass,
-    glassMenu,
-    glassContent,
-    glassScroll,
+    drawer,
+    categoryMenu,
+    categoryContent,
+    categoryScroll,
+    panes: new Map(),
   };
   const dispose = () => {
     render(null, mount);

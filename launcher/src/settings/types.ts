@@ -23,7 +23,7 @@ import type {
 import type { Navigation } from "../shared/navigation/createNavigation";
 import type { MutableStore, Store } from "../shared/state/createStore";
 
-import type { GlassState } from "./glass/categories";
+import type { Category, SettingsDrawerState } from "./layout/categories";
 export interface SettingsInventorySnapshot {
   readonly apps: readonly Readonly<InstalledApp>[];
   readonly continueMessage: string;
@@ -95,12 +95,13 @@ export interface ViewState {
 export interface SettingsEnvironment {
   actions: SettingsActions;
   bridge: SettingsBridge;
-  glass: MutableStore<GlassState>;
-  glassContent: RefObject<HTMLDivElement>;
-  glassMenu: RefObject<HTMLDivElement>;
-  glassScroll: RefObject<HTMLDivElement>;
+  categoryContent: RefObject<HTMLDivElement>;
+  categoryMenu: RefObject<HTMLDivElement>;
+  categoryScroll: RefObject<HTMLDivElement>;
+  drawer: MutableStore<SettingsDrawerState>;
   inventory: SettingsInventory;
   navigation: Navigation;
+  panes: Map<Category, HTMLElement>;
   root: RefObject<HTMLDivElement>;
   services: SettingsServices;
   settings: SettingsStore;

@@ -14,10 +14,12 @@ export interface Inventory {
 export type Page = "home" | "apps";
 export interface HomeState {
   active: boolean;
+  continueOffset: number;
   draft: readonly string[] | null;
   menu: { id: string; selected: number } | null;
   moving: string | null;
   page: Page;
+  scroll: number;
   selected: string;
 }
 export interface HomeEnvironment {
@@ -25,6 +27,8 @@ export interface HomeEnvironment {
   bridge: HomeBridge;
   choose(index: number): void;
   columns(settings: SettingsSnapshot): number;
+  continueItems: RefObject<HTMLDivElement>;
+  continueViewport: RefObject<HTMLDivElement>;
   describe(app: InstalledApp): AppPresentation;
   dismiss(): void;
   inventory: Store<Inventory>;

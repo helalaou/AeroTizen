@@ -37,9 +37,9 @@ for (const clockLayout of ["classic", "custom"]) {
       await page.keyboard.press("Escape");
       expect(await geometry()).toEqual(before);
       await expect(page.locator("#samsung-home-shortcut")).toBeVisible();
-      expect(await page.locator("#aero-tab-glider").evaluate((n) => getComputedStyle(n).transitionProperty)).toContain(
-        "transform",
-      );
+      expect(
+        await page.locator(".header-focus-indicator--tabs").evaluate((n) => getComputedStyle(n).transitionProperty),
+      ).toContain("transform");
       await page.screenshot({ path: info.outputPath(`${glass ? "glass" : "classic"}-header.png`) });
     }
   });

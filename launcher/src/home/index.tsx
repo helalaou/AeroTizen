@@ -20,7 +20,7 @@ export const mountHome = (
   const syncShell = () => {
     const values = settings.getSnapshot();
     document.body.classList.toggle("glass-ui", values.glassSettings);
-    document.body.classList.toggle("s90c-clock-classic", values.clockLayout !== "custom");
+    document.body.classList.toggle("clock-layout-compact", values.clockLayout !== "custom");
   };
   syncShell();
   const unsubscribeShell = settings.subscribe(syncShell);
@@ -33,6 +33,8 @@ export const mountHome = (
       inventory,
       status,
       rows,
+      continueItems: createRef<HTMLDivElement>(),
+      continueViewport: createRef<HTMLDivElement>(),
       nodes: new Map(),
       translate: (value) => runtime.i18n?.t(value) || value,
       describe: (app) => runtime.tiles.describe(app),
@@ -53,7 +55,7 @@ export const mountHome = (
     render(null, mount);
     inventory.dispose();
     unsubscribeShell();
-    document.body.classList.remove("glass-ui", "s90c-clock-classic");
+    document.body.classList.remove("glass-ui", "clock-layout-compact");
   };
   try {
     render(<Home env={environment} />, mount);

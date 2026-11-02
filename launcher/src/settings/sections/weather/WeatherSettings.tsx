@@ -1,6 +1,6 @@
-import { Choice } from "../../components/Choice";
-import { Pill } from "../../components/Pill";
-import { RemoteControl } from "../../components/RemoteControl";
+import { ChoiceGroup } from "../../components/ChoiceGroup";
+import { ChoiceOption } from "../../components/ChoiceOption";
+import { SettingsControl } from "../../components/SettingsControl";
 import type { SettingsSectionProps } from "../../types";
 
 import { useWeatherLocation } from "./useWeatherLocation";
@@ -14,7 +14,7 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
   return (
     <>
       <h3>Weather</h3>
-      <Choice
+      <ChoiceGroup
         id="weather-display"
         label="Weather visibility"
         value={settings.showWeather !== false}
@@ -30,10 +30,18 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
           : "Automatic location uses your internet address and can be inaccurate. Search for your town, city or postcode to set it."}
       </p>
       <div id="weather-location" class="units">
-        <Pill id="weather:auto" selected={!settings.weatherLocation} onSelect={() => search.selectLocation(null)}>
+        <ChoiceOption
+          id="weather:auto"
+          selected={!settings.weatherLocation}
+          onSelect={() => search.selectLocation(null)}
+        >
           Automatic
-        </Pill>
-        <RemoteControl class="pill unit name-pill weather-search" focusKey="weather:query" onClick={search.focusQuery}>
+        </ChoiceOption>
+        <SettingsControl
+          class="pill unit name-pill weather-search"
+          focusKey="weather:query"
+          onClick={search.focusQuery}
+        >
           <input
             ref={search.inputRef}
             type="text"
@@ -43,26 +51,26 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
             aria-label="Weather location"
             onInput={search.onQueryInput}
           />
-        </RemoteControl>
-        <Pill id="weather:search" onSelect={search.search}>
+        </SettingsControl>
+        <ChoiceOption id="weather:search" onSelect={search.search}>
           Search
-        </Pill>
+        </ChoiceOption>
       </div>
       <p id="weather-search-status" class="hint" role="status" hidden={!search.message}>
         {search.message}
       </p>
       <div id="weather-results" class="weather-results" hidden={!search.results.length}>
         {search.results.map((location, index) => (
-          <Pill
+          <ChoiceOption
             key={location.label + ":" + index}
             id={"weather:result:" + index}
             onSelect={() => search.selectLocation(location)}
           >
             {location.label}
-          </Pill>
+          </ChoiceOption>
         ))}
       </div>
-      <Choice
+      <ChoiceGroup
         id="weather-visibility"
         label="Weather location visibility"
         value={settings.weatherShowLocation}
@@ -73,7 +81,7 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
         onSelect={actions.setLocationVisible}
       />
       <h3>Temperature</h3>
-      <Choice
+      <ChoiceGroup
         id="units"
         label="Temperature unit"
         value={settings.tempUnit}

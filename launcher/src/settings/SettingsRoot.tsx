@@ -2,26 +2,28 @@ import { useStore } from "../shared/hooks/useStore";
 
 import { useSettingsEnvironment } from "./hooks/useSettingsEnvironment";
 import { useSettingsPresentation } from "./hooks/useSettingsPresentation";
-import { Settings } from "./Settings";
+import { SettingsContent } from "./SettingsContent";
 
 export const SettingsRoot = () => {
-  const { view, root, settings, glass } = useSettingsEnvironment();
+  const { view, root, settings, drawer } = useSettingsEnvironment();
   const state = useStore(view);
   const values = useStore(settings),
-    category = useStore(glass);
+    category = useStore(drawer);
   useSettingsPresentation(state.open, state.previewing);
   return (
     <div
       id="editor"
       class={
-        "sheet aero-settings-ready" +
-        (values.glassSettings ? " aero-settings-glass" : " aero-settings-classic") +
-        (!category.expanded ? " aero-settings-collapsed" : "")
+        "sheet settings-drawer" +
+        (values.glassSettings ? " settings-drawer--glass" : " settings-drawer--classic") +
+        (!category.expanded ? " settings-drawer--collapsed" : "")
       }
       hidden={!state.open}
       ref={root}
     >
-      {state.mounted ? <Settings active={state.open} previewing={state.previewing} openedAt={state.openedAt} /> : null}
+      {state.mounted ? (
+        <SettingsContent active={state.open} previewing={state.previewing} openedAt={state.openedAt} />
+      ) : null}
     </div>
   );
 };

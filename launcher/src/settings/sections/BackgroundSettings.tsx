@@ -3,9 +3,9 @@ import { useState } from "preact/hooks";
 
 import type { BackgroundOption, LauncherConfig } from "../../contracts/launcher";
 import { useStore } from "../../shared/hooks/useStore";
-import { Choice } from "../components/Choice";
-import { Pill } from "../components/Pill";
-import { RemoteControl } from "../components/RemoteControl";
+import { ChoiceGroup } from "../components/ChoiceGroup";
+import { ChoiceOption } from "../components/ChoiceOption";
+import { SettingsControl } from "../components/SettingsControl";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 import type { SettingsSectionProps } from "../types";
 
@@ -32,7 +32,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
     return list
       .filter((background) => Boolean(background.anim) === isAnimated)
       .map((background) => (
-        <RemoteControl
+        <SettingsControl
           key={background.id}
           class={"swatch" + (background.id === settings.background ? " on" : "")}
           hidden={!isAnimated && (filter === "solid" ? background.id !== "black" : background.id === "black")}
@@ -43,14 +43,14 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
           onClick={() => actions.setBackground(background.id)}
         >
           <span>{background.name}</span>
-        </RemoteControl>
+        </SettingsControl>
       ));
   };
 
   return (
     <>
       {
-        <Choice
+        <ChoiceGroup
           id="wallpaper-categories"
           label="Background type"
           value={filter}
@@ -68,7 +68,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
       }
       <div hidden={!show("photo")}>
         <h3>Dynamic weather wallpapers</h3>
-        <Choice
+        <ChoiceGroup
           id="weather-photo-choice"
           value={settings.weatherPhoto}
           label="Dynamic weather wallpapers"
@@ -90,7 +90,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
         <div id="speed-row" class="speed-row" hidden={!animated}>
           {animated ? (
             <>
-              <RemoteControl
+              <SettingsControl
                 class={"slider" + (adjusting ? " adjusting" : "")}
                 focusKey="speed"
                 role="slider"
@@ -107,10 +107,10 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
                 </div>
                 <span class="slider-value">{settings.speed}×</span>
                 <span class="slider-hint">{adjusting ? "◀ ▶" : "OK to adjust"}</span>
-              </RemoteControl>
-              <Pill id="preview" onSelect={actions.preview}>
+              </SettingsControl>
+              <ChoiceOption id="preview" onSelect={actions.preview}>
                 {"▶  Preview"}
-              </Pill>
+              </ChoiceOption>
             </>
           ) : null}
         </div>

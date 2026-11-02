@@ -1,6 +1,6 @@
 import type { ComponentChildren } from "preact";
 
-import { RemoteControl } from "./RemoteControl";
+import { SettingsControl } from "./SettingsControl";
 
 interface PillProps {
   children: ComponentChildren;
@@ -9,16 +9,16 @@ interface PillProps {
   selected?: boolean;
 }
 
-export const Pill = ({ id, selected = false, onSelect, children }: PillProps) => {
+export const ChoiceOption = ({ id, selected = false, onSelect, children }: PillProps) => {
   return (
-    <RemoteControl
-      class={"pill unit" + (selected ? " on" : "")}
+    <SettingsControl
+      class={"pill unit choice-option" + (selected ? " on" : "")}
       focusKey={id}
       role="button"
       aria-pressed={selected}
       onClick={onSelect}
     >
       {children}
-    </RemoteControl>
+    </SettingsControl>
   );
 };

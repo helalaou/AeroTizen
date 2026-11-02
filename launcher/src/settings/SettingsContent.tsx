@@ -2,18 +2,19 @@ import { useMemo } from "preact/hooks";
 
 import { useStore } from "../shared/hooks/useStore";
 
-import { RemoteControl } from "./components/RemoteControl";
-import { SettingsDrawer } from "./glass/GlassSettings";
+import { SettingsControl } from "./components/SettingsControl";
 import { useSettingsEnvironment } from "./hooks/useSettingsEnvironment";
 import { useSettingsNavigation } from "./hooks/useSettingsNavigation";
-import { AppMenu } from "./sections/apps/AppMenu";
+import { SettingsDrawer } from "./layout/SettingsDrawer";
+import { AppearanceSettings } from "./sections/AppearanceSettings";
+import { HomeAppsSettings } from "./sections/apps/HomeAppsSettings";
 import { BackgroundSettings } from "./sections/BackgroundSettings";
+import { ClockSettings } from "./sections/ClockSettings";
 import { ContinueWatchingSettings } from "./sections/ContinueWatchingSettings";
-import { DisplaySettings } from "./sections/DisplaySettings";
 import { InputSettings } from "./sections/inputs/InputSettings";
 import { WeatherSettings } from "./sections/weather/WeatherSettings";
 
-export const Settings = ({
+export const SettingsContent = ({
   active,
   previewing,
   openedAt,
@@ -39,9 +40,9 @@ export const Settings = ({
     locationLabel,
     clockLayout: settings.clockLayout,
   });
-  const appMenu = useMemo(
+  const homeApps = useMemo(
     () => (
-      <AppMenu
+      <HomeAppsSettings
         home={settings.home}
         apps={apps}
         actions={actions}
@@ -55,18 +56,10 @@ export const Settings = ({
   return (
     <SettingsDrawer
       panes={{
-        appearance: (
-          <DisplaySettings
-            settings={settings}
-            actions={actions}
-            clock={services.clock}
-            openedAt={openedAt}
-            section="appearance"
-          />
-        ),
+        appearance: <AppearanceSettings settings={settings} actions={actions} />,
         apps: (
           <>
-            {appMenu}
+            {homeApps}
             <ContinueWatchingSettings
               settings={settings}
               actions={actions}
@@ -75,9 +68,15 @@ export const Settings = ({
               active={active}
               describeApp={services.describeApp}
             />
-            <RemoteControl id="escape" class="escape" focusKey="escape" role="button" onClick={actions.useSamsungHome}>
+            <SettingsControl
+              id="escape"
+              class="escape"
+              focusKey="escape"
+              role="button"
+              onClick={actions.useSamsungHome}
+            >
               {services.translate("Use Samsung Home instead")}
-            </RemoteControl>
+            </SettingsControl>
           </>
         ),
         wallpaper: (
@@ -91,27 +90,10 @@ export const Settings = ({
         status: (
           <>
             <WeatherSettings settings={settings} actions={actions} active={active} />
-            <DisplaySettings
-              settings={settings}
-              actions={actions}
-              clock={services.clock}
-              openedAt={openedAt}
-              section="status"
-            />
+            <ClockSettings settings={settings} actions={actions} clock={services.clock} openedAt={openedAt} />
           </>
         ),
-        sources: (
-          <>
-            <DisplaySettings
-              settings={settings}
-              actions={actions}
-              clock={services.clock}
-              openedAt={openedAt}
-              section="sources"
-            />
-            <InputSettings settings={settings} actions={actions} inputs={inputs} />
-          </>
-        ),
+        sources: <InputSettings settings={settings} actions={actions} inputs={inputs} />,
       }}
     />
   );

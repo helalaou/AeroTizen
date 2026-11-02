@@ -1,8 +1,8 @@
 import type { ContinueSource } from "../../contracts/launcher";
-import { Choice } from "../components/Choice";
+import { ChoiceGroup } from "../components/ChoiceGroup";
 import type { SettingsSectionProps, SettingsServices } from "../types";
 
-import { AppTile } from "./apps/AppTile";
+import { AppOption } from "./apps/AppOption";
 
 interface Props extends SettingsSectionProps {
   active: boolean;
@@ -15,7 +15,7 @@ export const ContinueWatchingSettings = ({ settings, actions, sources, message, 
   <section aria-label="Continue Watching settings">
     <h3>Continue Watching</h3>
     <p class="hint">Show saved programmes from the apps you choose. Shared lists can differ from the app.</p>
-    <Choice
+    <ChoiceGroup
       id="continue-watching"
       label="Continue Watching"
       value={settings.continueWatching === true}
@@ -35,7 +35,7 @@ export const ContinueWatchingSettings = ({ settings, actions, sources, message, 
         )}
         <div class="grid continue-apps">
           {sources.map((source) => (
-            <AppTile
+            <AppOption
               key={source.id}
               app={source}
               focusKey={"continue-app:" + source.id}

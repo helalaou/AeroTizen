@@ -38,11 +38,11 @@ for (const glassSettings of [false, true]) {
       await page.clock.setFixedTime(new Date("2026-10-29T10:20:00Z"));
       await page.goto("/");
       await page.waitForFunction(() => AeroTizen.apps.ready);
-      await expect(page.locator("#aero-v991-city")).toBeVisible();
+      await expect(page.locator(".weather-status__location")).toBeVisible();
       await expect(page.locator("#rows")).toHaveCSS("padding-top", "24px");
       const measure = () =>
         page.evaluate(() => {
-          const city = document.querySelector("#aero-v991-widget").getBoundingClientRect();
+          const city = document.querySelector(".clock--expanded").getBoundingClientRect();
           const card = document.querySelector("#grid .tile.focused").getBoundingClientRect();
           const tabs = document.querySelector(".view-tabs").getBoundingClientRect();
           return { gap: card.top - city.bottom, centre: tabs.left + tabs.width / 2 };
@@ -59,7 +59,7 @@ for (const glassSettings of [false, true]) {
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("ArrowDown");
       await expect(page.locator(".content-viewport")).toHaveClass(/is-scrolled/);
-      expect(await page.locator("#aero-v991-city").textContent()).toContain("fixture city");
+      expect(await page.locator(".weather-status__location").textContent()).toContain("fixture city");
       const headerAfter = await page.screenshot();
       const difference = await compareHeaderPixels(page, headerBefore, headerAfter, headerHeight);
       expect(

@@ -93,4 +93,14 @@ in the weather service. PhotoWeather subscribes to weather updates directly.
 formatting path and timer source. Weather rendering and network rendering are separate
 components. Status views do not scrape another view or observe its markup. Compact
 time width uses a ref and cached font/locale measurements to keep the header stable.
-Saved clock settings and existing CSS IDs are retained.
+Saved clock settings are retained. Clock classes now use component names; see
+[component ownership](component-structure.md) for screen boundaries and style owners.
+
+### Screen components and navigation refs
+
+Home composes HomeHeader, AppGrid, ContinueWatchingRow, InputDock and AppActionsMenu.
+Each collection owns its item presentation. The controller publishes vertical scroll
+and carousel offset state; Preact renders transforms and the scrolled class. Ref
+registrations supply viewport geometry without document-wide component lookups.
+Menu positioning also renders from measured state. Existing keyed app/feed trees and
+remote action contracts remain intact.

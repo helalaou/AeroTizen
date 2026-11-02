@@ -3,7 +3,14 @@ import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { useStore } from "../../shared/hooks/useStore";
 import type { HomeEnvironment } from "../types";
 
-export const HeaderPlate = ({ env, tabs = false }: { env: HomeEnvironment; tabs?: boolean }) => {
+export const HeaderFocusIndicator = ({
+  env,
+  group = "shortcuts",
+}: {
+  env: HomeEnvironment;
+  group?: "shortcuts" | "tabs";
+}) => {
+  const tabs = group === "tabs";
   const state = useStore(env.state);
   const keys = tabs ? ["home-tab", "apps-tab"] : ["gear", "samsung-home-shortcut"];
   const focused = state.active && keys.includes(state.selected);
@@ -43,10 +50,13 @@ export const HeaderPlate = ({ env, tabs = false }: { env: HomeEnvironment; tabs?
   }, [env, key]);
   return (
     <div
-      id={tabs ? "aero-tab-glider" : "aero-header-focus"}
       aria-hidden="true"
       class={
-        (tabs || focused ? "is-visible" : "") + (focused ? " is-focused" : "") + (plate.motion ? "" : " no-motion")
+        "header-focus-indicator " +
+        (tabs ? "header-focus-indicator--tabs" : "header-focus-indicator--shortcuts") +
+        (tabs || focused ? " is-visible" : "") +
+        (focused ? " is-focused" : "") +
+        (plate.motion ? "" : " no-motion")
       }
       style={plate.style}
     />

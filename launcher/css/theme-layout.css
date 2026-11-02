@@ -11,7 +11,7 @@ body.glass-ui .topbar-left {
   position: relative;
   gap: 18px;
 }
-body.glass-ui .topbar-left > #aero-header-focus {
+body.glass-ui .topbar-left > .header-focus-indicator--shortcuts {
   position: absolute;
   top: 0;
   left: 0;
@@ -28,7 +28,7 @@ body.glass-ui .topbar-left > #aero-header-focus {
     transform 0.15s ease-out,
     opacity 0.1s linear;
 }
-body.glass-ui .topbar-left > #aero-header-focus.is-visible {
+body.glass-ui .topbar-left > .header-focus-indicator--shortcuts.is-visible {
   opacity: 1;
 }
 body.glass-ui .topbar-left > #gear,
@@ -115,7 +115,7 @@ body.glass-ui .view-tab .aero-tab-icon {
   flex: 0 0 26px;
   stroke: currentColor;
 }
-body.glass-ui .topbar > .view-tabs > #aero-tab-glider,
+body.glass-ui .topbar > .view-tabs > .header-focus-indicator--tabs,
 body.glass-ui .topbar > .view-tabs > #aero-tab-focus {
   position: absolute;
   top: 7px;
@@ -131,7 +131,7 @@ body.glass-ui .topbar > .view-tabs > #aero-tab-focus {
     transform 0.15s ease-out,
     opacity 0.1s linear;
 }
-body.glass-ui .topbar > .view-tabs > #aero-tab-glider {
+body.glass-ui .topbar > .view-tabs > .header-focus-indicator--tabs {
   background: rgba(236, 242, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.24);
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.2);
@@ -157,7 +157,7 @@ body.editing:not(.previewing) #home-root main {
   opacity: 0.48;
   pointer-events: none;
 }
-#editor.sheet.aero-settings-ready {
+#editor.sheet.settings-drawer {
   position: fixed;
   top: 0;
   right: 0;
@@ -169,10 +169,10 @@ body.editing:not(.previewing) #home-root main {
   background: rgba(0, 0, 13, 0.35);
   overflow: hidden;
 }
-#editor.sheet.aero-settings-ready[hidden] {
+#editor.sheet.settings-drawer[hidden] {
   display: none !important;
 }
-#editor .aero-settings-frame {
+#editor .settings-drawer__frame {
   position: absolute;
   top: 112px;
   left: 60px;
@@ -203,7 +203,7 @@ body.editing:not(.previewing) #home-root main {
     transform: translate3d(0, 0, 0);
   }
 }
-#editor .aero-settings-sidebar {
+#editor .settings-drawer__sidebar {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -214,21 +214,21 @@ body.editing:not(.previewing) #home-root main {
   background: transparent;
   border-right: 1px solid rgba(255, 255, 255, 0.12);
 }
-#editor .aero-settings-head {
+#editor .settings-drawer__head {
   padding: 0 10px 5px 21px;
 }
-#editor .aero-settings-kicker {
+#editor .settings-drawer__kicker {
   font-size: 12px;
   color: rgba(235, 241, 249, 0.72);
   letter-spacing: 2.8px;
   font-weight: 600;
 }
-#editor .aero-settings-sidebar h2 {
+#editor .settings-drawer__sidebar h2 {
   font-size: 31px !important;
   font-weight: 500 !important;
   margin: 7px 0 22px !important;
 }
-#editor .aero-settings-menu {
+#editor .settings-drawer__menu {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
@@ -237,7 +237,7 @@ body.editing:not(.previewing) #home-root main {
   overflow-y: auto;
   overflow-x: hidden;
 }
-#editor .aero-section-entry {
+#editor .settings-category {
   position: relative;
   z-index: 1;
   display: flex;
@@ -256,44 +256,44 @@ body.editing:not(.previewing) #home-root main {
   transform: none !important;
   transition: color 0.1s linear;
 }
-#editor .aero-section-entry.focused,
-#editor .aero-section-entry.aero-current-section {
+#editor .settings-category.focused,
+#editor .settings-category.is-current {
   color: #fff;
   outline: none !important;
   box-shadow: none !important;
   border-color: transparent !important;
 }
-#editor .aero-section-icon {
+#editor .settings-category__icon {
   flex: 0 0 35px;
   width: 35px;
   text-align: center;
   font-size: 27px;
   color: inherit;
 }
-#editor .aero-section-label {
+#editor .settings-category__label {
   display: flex;
   flex-direction: column;
   gap: 3px;
   min-width: 0;
 }
-#editor .aero-section-label strong {
+#editor .settings-category__label strong {
   font-size: 20px;
   font-weight: 500;
   color: inherit;
   white-space: nowrap;
 }
-#editor .aero-section-label small {
+#editor .settings-category__label small {
   font-size: 12px;
   line-height: 1.15;
   color: rgba(225, 234, 249, 0.69);
   white-space: nowrap;
 }
-#editor .aero-section-chevron {
+#editor .settings-category__chevron {
   margin-left: auto;
   font-size: 27px;
   color: inherit;
 }
-#editor .aero-settings-menu > .aero-settings-glider {
+#editor .settings-drawer__menu > .settings-focus-indicator--sidebar {
   position: absolute;
   top: 0;
   left: 4px;
@@ -312,13 +312,13 @@ body.editing:not(.previewing) #home-root main {
     transform 0.15s ease-out,
     opacity 0.1s linear;
 }
-#editor .aero-settings-glider.is-visible {
+#editor .settings-focus-indicator--sidebar.is-visible {
   opacity: 1;
 }
-#editor .aero-settings-glider.is-content {
+#editor .settings-focus-indicator--sidebar.is-content {
   opacity: 0.46;
 }
-#editor .aero-settings-help {
+#editor .settings-drawer__help {
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding: 16px 2px 0;
   text-align: center;
@@ -326,7 +326,7 @@ body.editing:not(.previewing) #home-root main {
   color: rgba(235, 241, 249, 0.72);
   white-space: nowrap;
 }
-#editor .aero-settings-main {
+#editor .settings-drawer__main {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -337,23 +337,23 @@ body.editing:not(.previewing) #home-root main {
   padding: 30px 35px 36px 38px;
   background: rgba(10, 16, 28, 0.17);
 }
-#editor .aero-settings-content-head {
+#editor .settings-drawer__content-head {
   position: relative;
   flex: 0 0 auto;
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   padding-bottom: 18px;
 }
-#editor .aero-settings-content-kicker {
+#editor .settings-drawer__content-kicker {
   font-size: 13px;
   color: rgba(235, 241, 249, 0.69);
   letter-spacing: 2px;
 }
-#editor .aero-settings-active-title {
+#editor .settings-drawer__active-title {
   margin: 6px 0 0 !important;
   font-size: 37px !important;
   font-weight: 500 !important;
 }
-#editor .aero-settings-close {
+#editor .settings-drawer__close {
   position: absolute;
   top: 0;
   right: 0;
@@ -367,7 +367,7 @@ body.editing:not(.previewing) #home-root main {
   color: #fff;
   background: rgba(255, 255, 255, 0.07);
 }
-#editor .aero-settings-scroll {
+#editor .settings-drawer__scroll {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
@@ -375,27 +375,27 @@ body.editing:not(.previewing) #home-root main {
   overflow-x: hidden;
   padding: 24px 9px 25px 4px;
 }
-#editor .aero-section-pane[hidden] {
+#editor .settings-drawer__pane[hidden] {
   display: none !important;
 }
-#editor .aero-section-pane h3 {
+#editor .settings-drawer__pane h3 {
   margin: 5px 0 15px;
   font-size: 24px !important;
   font-weight: 500 !important;
 }
-#editor .aero-section-pane .hint {
+#editor .settings-drawer__pane .hint {
   font-size: 20px;
   line-height: 1.3;
 }
-#editor .aero-section-pane .units {
+#editor .settings-drawer__pane .units {
   display: flex;
   flex-wrap: wrap;
   max-width: 100%;
   margin: 0 0 30px !important;
   gap: 12px;
 }
-#editor .aero-section-pane .pill.unit,
-#editor .aero-section-pane .name-pill {
+#editor .settings-drawer__pane .pill.unit,
+#editor .settings-drawer__pane .name-pill {
   font-size: 20px;
   padding: 12px 20px;
   border: 2px solid rgba(255, 255, 255, 0.12);
@@ -404,16 +404,16 @@ body.editing:not(.previewing) #home-root main {
   background: rgba(236, 242, 255, 0.08);
   transform: none !important;
 }
-#editor .aero-section-pane .pill.unit.on {
+#editor .settings-drawer__pane .pill.unit.on {
   background: rgba(236, 242, 255, 0.14) !important;
   color: #fff !important;
 }
-#editor .aero-section-pane .pill.unit.focused,
-#editor .aero-section-pane .name-pill.focused,
-#editor .aero-section-pane .swatch.focused,
-#editor .aero-section-pane .slider.focused,
-#editor .aero-section-pane #all-apps .tile.focused,
-#editor .aero-section-pane [data-key].focused {
+#editor .settings-drawer__pane .pill.unit.focused,
+#editor .settings-drawer__pane .name-pill.focused,
+#editor .settings-drawer__pane .swatch.focused,
+#editor .settings-drawer__pane .slider.focused,
+#editor .settings-drawer__pane #all-apps .tile.focused,
+#editor .settings-drawer__pane [data-key].focused {
   border-color: transparent !important;
   outline: none !important;
   outline-offset: 0 !important;
@@ -424,33 +424,33 @@ body.editing:not(.previewing) #home-root main {
     color 0.1s linear,
     background-color 0.1s linear;
 }
-#editor .aero-section-pane .swatches {
+#editor .settings-drawer__pane .swatches {
   width: 100% !important;
   gap: 15px;
 }
-#editor .aero-section-pane .swatch {
+#editor .settings-drawer__pane .swatch {
   width: 168px;
   height: 96px;
   max-width: calc(20% - 12px);
 }
-#editor .aero-section-pane #all-apps {
+#editor .settings-drawer__pane #all-apps {
   width: 100% !important;
   gap: 18px;
 }
-#editor .aero-section-pane #all-apps .tile {
+#editor .settings-drawer__pane #all-apps .tile {
   width: 160px !important;
   height: 160px !important;
   min-width: 160px;
   border-radius: 17px !important;
 }
-#editor .aero-section-pane #all-apps .tile .name {
+#editor .settings-drawer__pane #all-apps .tile .name {
   font-size: 19px !important;
 }
-#editor .aero-section-pane .name-pill input {
+#editor .settings-drawer__pane .name-pill input {
   width: 210px;
   max-width: 100%;
 }
-#editor .aero-section-pane #escape {
+#editor .settings-drawer__pane #escape {
   margin: 0 0 20px;
   padding: 20px;
   max-width: 800px;
@@ -460,7 +460,7 @@ body.editing:not(.previewing) #home-root main {
   border-radius: 17px;
   background: rgba(236, 242, 255, 0.08);
 }
-#editor .aero-settings-scroll > .aero-content-glider {
+#editor .settings-drawer__scroll > .settings-focus-indicator--content {
   position: absolute;
   top: 0;
   left: 0;
@@ -480,41 +480,41 @@ body.editing:not(.previewing) #home-root main {
     opacity 0.1s linear,
     border-radius 0.12s ease-out;
 }
-#editor .aero-content-glider.is-visible {
+#editor .settings-focus-indicator--content.is-visible {
   opacity: 1;
 }
-#editor .aero-content-glider.no-motion {
+#editor .settings-focus-indicator--content.no-motion {
   transition: opacity 0.1s linear;
 }
-#editor .aero-section-pane .pill.unit.focused,
-#editor .aero-section-pane .name-pill.focused,
-#editor .aero-section-pane #all-apps .tile.focused {
+#editor .settings-drawer__pane .pill.unit.focused,
+#editor .settings-drawer__pane .name-pill.focused,
+#editor .settings-drawer__pane #all-apps .tile.focused {
   background: rgba(236, 242, 255, 0.15) !important;
 }
-#editor .aero-section-pane .swatch.focused {
+#editor .settings-drawer__pane .swatch.focused {
   background-blend-mode: normal !important;
 }
 @media (prefers-reduced-motion: reduce) {
-  .topbar-left > #aero-header-focus,
-  .topbar > .view-tabs > #aero-tab-glider,
+  .topbar-left > .header-focus-indicator--shortcuts,
+  .topbar > .view-tabs > .header-focus-indicator--tabs,
   .topbar > .view-tabs > #aero-tab-focus,
-  #editor .aero-settings-glider,
-  #editor .aero-content-glider,
-  #editor .aero-settings-frame {
+  #editor .settings-focus-indicator--sidebar,
+  #editor .settings-focus-indicator--content,
+  #editor .settings-drawer__frame {
     animation: none !important;
     transition: none !important;
   }
 }
 
 /* Compact category browsing from V992.56; expansion never waits for animation. */
-#editor.aero-settings-collapsed .aero-settings-frame {
+#editor.settings-drawer--collapsed .settings-drawer__frame {
   width: 390px;
 }
-#editor.aero-settings-collapsed .aero-settings-sidebar {
+#editor.settings-drawer--collapsed .settings-drawer__sidebar {
   flex: 1 1 auto;
   border-right: 0;
 }
-#editor.aero-settings-collapsed .aero-settings-main {
+#editor.settings-drawer--collapsed .settings-drawer__main {
   display: none;
 }
 body.glass-ui .topbar-left > #gear.focused,
@@ -526,18 +526,18 @@ body.glass-ui .view-tab.focused {
   border: 2px solid rgba(255, 255, 255, 0.9) !important;
   background: rgba(236, 242, 255, 0.18) !important;
 }
-#editor .aero-settings-close.focused {
+#editor .settings-drawer__close.focused {
   outline: 2px solid #fff;
   box-shadow: none;
   transform: none;
 }
-#editor .aero-settings-menu > .aero-settings-glider {
+#editor .settings-drawer__menu > .settings-focus-indicator--sidebar {
   left: 0;
 }
-#editor .aero-settings-scroll > .aero-content-glider {
+#editor .settings-drawer__scroll > .settings-focus-indicator--content {
   border-radius: 17px;
 }
-body.glass-ui .aero-source-icon svg > rect:first-child {
+body.glass-ui .input-card__icon svg > rect:first-child {
   fill: transparent;
 }
 /* One ref-measured plate moves between controls; controls add no second ring. */
@@ -547,31 +547,31 @@ body.glass-ui .topbar > .view-tabs .view-tab.focused {
   border-color: transparent !important;
   background: transparent !important;
 }
-body.glass-ui .topbar > .view-tabs > #aero-tab-glider.is-focused {
+body.glass-ui .topbar > .view-tabs > .header-focus-indicator--tabs.is-focused {
   border: 2px solid rgba(255, 255, 255, 0.9);
 }
 
 /* The category drawer is functional in both themes; appearance changes only paint. */
-#editor.aero-settings-classic .aero-settings-frame {
+#editor.settings-drawer--classic .settings-drawer__frame {
   background: #1c1c1e;
   border-color: #444448;
   border-radius: 18px;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
 }
-#editor.aero-settings-classic .aero-settings-main {
+#editor.settings-drawer--classic .settings-drawer__main {
   background: #141416;
 }
-#editor.aero-settings-classic .aero-settings-glider,
-#editor.aero-settings-classic .aero-content-glider {
+#editor.settings-drawer--classic .settings-focus-indicator--sidebar,
+#editor.settings-drawer--classic .settings-focus-indicator--content {
   border-color: var(--focus);
   background: rgba(124, 92, 255, 0.12);
   box-shadow: none;
 }
-#editor.aero-settings-classic .aero-section-pane .pill.unit.on {
+#editor.settings-drawer--classic .settings-drawer__pane .pill.unit.on {
   background: var(--focus) !important;
   color: #fff !important;
 }
-#editor.aero-settings-classic .aero-section-pane .pill.unit.focused {
+#editor.settings-drawer--classic .settings-drawer__pane .pill.unit.focused {
   background: rgba(124, 92, 255, 0.25) !important;
   color: #fff !important;
 }
@@ -615,7 +615,7 @@ body.glass-ui .continue-progress {
 }
 
 /* One control scale for choices; previews and text-entry fields keep their roles. */
-#editor.aero-settings-ready .aero-section-pane .pill.unit {
+#editor.settings-drawer .settings-drawer__pane .pill.unit {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -630,76 +630,76 @@ body.glass-ui .continue-progress {
   white-space: normal;
   text-align: center;
 }
-#editor.aero-settings-ready .aero-section-pane .units {
+#editor.settings-drawer .settings-drawer__pane .units {
   align-items: stretch;
 }
-#editor.aero-settings-ready .aero-section-pane .name-pill {
+#editor.settings-drawer .settings-drawer__pane .name-pill {
   min-height: 64px;
   font-size: 20px;
   border-radius: 17px;
 }
-#editor.aero-settings-ready .aero-section-pane .name-pill input {
+#editor.settings-drawer .settings-drawer__pane .name-pill input {
   font-size: 20px;
 }
-#editor.aero-settings-ready .aero-section-pane .speed-row {
+#editor.settings-drawer .settings-drawer__pane .speed-row {
   gap: 12px;
   flex-wrap: wrap;
 }
-#editor.aero-settings-ready .aero-section-pane .slider {
+#editor.settings-drawer .settings-drawer__pane .slider {
   min-height: 64px;
   padding: 10px 16px;
   border-radius: 17px;
   gap: 16px;
 }
-#editor.aero-settings-ready .aero-section-pane .slider-label,
-#editor.aero-settings-ready .aero-section-pane .slider-value {
+#editor.settings-drawer .settings-drawer__pane .slider-label,
+#editor.settings-drawer .settings-drawer__pane .slider-value {
   font-size: 20px;
 }
-#editor.aero-settings-ready .aero-section-pane .track {
+#editor.settings-drawer .settings-drawer__pane .track {
   width: 260px;
 }
 
 /* Settings always uses standard square icons, independently of Home card layout. */
-#editor.aero-settings-ready .aero-section-pane .grid .tile {
+#editor.settings-drawer .settings-drawer__pane .grid .tile {
   flex: 0 0 160px;
   width: 160px !important;
   height: 160px !important;
   min-width: 160px;
   border-radius: 17px !important;
 }
-#editor.aero-settings-ready .aero-section-pane .grid .tile .app-fallback {
+#editor.settings-drawer .settings-drawer__pane .grid .tile .app-fallback {
   padding: 12px;
   gap: 8px;
 }
-#editor.aero-settings-ready .aero-section-pane .grid .tile .logo {
+#editor.settings-drawer .settings-drawer__pane .grid .tile .logo {
   width: 92px;
   height: 92px;
 }
-#editor.aero-settings-ready .aero-section-pane .grid .tile .app-fallback.logo-only .logo {
+#editor.settings-drawer .settings-drawer__pane .grid .tile .app-fallback.logo-only .logo {
   width: 136px;
   height: 112px;
 }
-#editor.aero-settings-ready .aero-section-pane .grid .tile .name {
+#editor.settings-drawer .settings-drawer__pane .grid .tile .name {
   font-size: 18px !important;
   line-height: 21px;
   max-width: 100%;
   text-align: center;
 }
-#editor.aero-settings-ready .aero-section-pane .grid .tile .app-artwork {
+#editor.settings-drawer .settings-drawer__pane .grid .tile .app-artwork {
   object-fit: contain;
 }
-#editor.aero-settings-ready .aero-section-pane .grid .tile.addapps,
-#editor.aero-settings-ready .aero-section-pane .grid .tile.fire {
+#editor.settings-drawer .settings-drawer__pane .grid .tile.addapps,
+#editor.settings-drawer .settings-drawer__pane .grid .tile.fire {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
 }
-#editor.aero-settings-ready .aero-section-pane .grid .tile > svg {
+#editor.settings-drawer .settings-drawer__pane .grid .tile > svg {
   width: 76px;
   height: 76px;
   flex: 0 0 76px;
 }
-#editor.aero-settings-ready .aero-section-pane .grid .tile .sub {
+#editor.settings-drawer .settings-drawer__pane .grid .tile .sub {
   font-size: 13px;
 }
 
@@ -709,31 +709,31 @@ body.glass-ui .continue-progress {
     0 0 0 9px var(--focus),
     0 28px 50px rgba(0, 0, 0, 0.7);
 }
-#home-root .tile-actions-glider {
+#home-root .app-actions-menu__focus-indicator {
   border-color: var(--focus);
 }
-body:not(.glass-ui) #home-root .tile-actions-menu {
+body:not(.glass-ui) #home-root .app-actions-menu {
   background: #1c1c1e;
   border-color: #444448;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
 }
-body:not(.glass-ui) #home-root .tile-actions-glider {
+body:not(.glass-ui) #home-root .app-actions-menu__focus-indicator {
   background: rgba(124, 92, 255, 0.18);
 }
 
 /* Text-entry controls reserve space for both the port label and editable value. */
-#editor.aero-settings-ready .aero-section-pane #input-names .name-pill {
+#editor.settings-drawer .settings-drawer__pane #input-names .name-pill {
   flex: 0 1 360px;
   min-width: 0;
   justify-content: flex-start;
   text-align: left;
 }
-#editor.aero-settings-ready .aero-section-pane #input-names .port {
+#editor.settings-drawer .settings-drawer__pane #input-names .port {
   flex: 0 0 auto;
   font-size: 20px;
   white-space: nowrap;
 }
-#editor.aero-settings-ready .aero-section-pane #input-names input {
+#editor.settings-drawer .settings-drawer__pane #input-names input {
   flex: 1 1 0;
   min-width: 0;
   width: 0;

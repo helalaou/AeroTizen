@@ -95,3 +95,23 @@ test("navigation groups vertically centred controls of different heights in left
   nav.move("up");
   assert.equal(nav.current(), speed);
 });
+
+test("category entry uses the first visible registered control inside its pane", () => {
+  const close = element(0, 0),
+    hidden = element(50, 0),
+    second = element(200, 0),
+    first = element(100, 0);
+  hidden.offsetParent = null;
+  const pane = { contains: (node) => [hidden, first, second].includes(node) };
+  const nav = createNavigation(() => {});
+  nav.register("close", close);
+  nav.register("second", second);
+  nav.register("hidden", hidden);
+  nav.register("first", first);
+  assert.equal(nav.firstKey(pane), "first", "the close button and hidden choices are excluded");
+  nav.register("first", null);
+  assert.equal(nav.firstKey(pane), "second", "removed controls do not retain category entry focus");
+  nav.register("second", null);
+  assert.equal(nav.firstKey(pane), undefined);
+  assert.equal(nav.firstKey(), undefined);
+});

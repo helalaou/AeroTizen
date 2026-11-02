@@ -2,7 +2,7 @@
 #home-root [role="button"]:focus {
   outline: none;
 }
-#custom-clock-root:empty {
+.clock-container:empty {
   display: none;
 }
 
@@ -87,12 +87,12 @@
 /* One-shot reveals keep cached artwork and remote transactions synchronous.
    Separate names restart cleanly on rapid Home/All apps changes, without timers. */
 .home-page-surface[data-page="home"] {
-  animation: aero-page-home 0.24s ease-out both;
+  animation: home-page-reveal 0.24s ease-out both;
 }
 .home-page-surface[data-page="apps"] {
-  animation: aero-page-apps 0.24s ease-out both;
+  animation: apps-page-reveal 0.24s ease-out both;
 }
-@keyframes aero-page-home {
+@keyframes home-page-reveal {
   from {
     opacity: 0.7;
     transform: translate3d(-12px, 0, 0);
@@ -102,7 +102,7 @@
     transform: none;
   }
 }
-@keyframes aero-page-apps {
+@keyframes apps-page-reveal {
   from {
     opacity: 0.7;
     transform: translate3d(12px, 0, 0);
@@ -175,8 +175,8 @@
   background: transparent;
   box-shadow: none;
 }
-#home-root #aero-header-focus,
-#home-root #aero-tab-glider {
+#home-root .header-focus-indicator--shortcuts,
+#home-root .header-focus-indicator--tabs {
   position: absolute;
   left: 0;
   top: 0;
@@ -188,22 +188,22 @@
     transform 0.18s cubic-bezier(0.2, 0.72, 0.25, 1),
     opacity 0.15s ease-out;
 }
-#home-root #aero-header-focus.no-motion,
-#home-root #aero-tab-glider.no-motion {
+#home-root .header-focus-indicator--shortcuts.no-motion,
+#home-root .header-focus-indicator--tabs.no-motion {
   transition: none;
 }
-#home-root #aero-header-focus {
+#home-root .header-focus-indicator--shortcuts {
   opacity: 0;
   border-radius: 50%;
 }
-#home-root #aero-header-focus.is-visible {
+#home-root .header-focus-indicator--shortcuts.is-visible {
   opacity: 1;
 }
-#home-root #aero-tab-glider {
+#home-root .header-focus-indicator--tabs {
   border-color: transparent;
   border-radius: 19px;
 }
-#home-root #aero-tab-glider.is-focused {
+#home-root .header-focus-indicator--tabs.is-focused {
   border-color: var(--focus);
 }
 #home-root .view-tabs .view-tab:focus {
@@ -212,8 +212,8 @@
 #home-root .view-tabs .view-tab.focused {
   box-shadow: none;
 }
-body.glass-ui #home-root #aero-header-focus,
-body.glass-ui #home-root #aero-tab-glider {
+body.glass-ui #home-root .header-focus-indicator--shortcuts,
+body.glass-ui #home-root .header-focus-indicator--tabs {
   background: rgba(236, 242, 255, 0.16);
 }
 /* Continue Watching follows the same short composited focus movement as app tiles. */
@@ -229,8 +229,8 @@ body.glass-ui #home-root #aero-tab-glider {
   #home-root .continue-card,
   #home-root .content-mask,
   #home-root #rows,
-  #home-root #aero-header-focus,
-  #home-root #aero-tab-glider {
+  #home-root .header-focus-indicator--shortcuts,
+  #home-root .header-focus-indicator--tabs {
     transition: none;
   }
   #home-root .home-page-surface {

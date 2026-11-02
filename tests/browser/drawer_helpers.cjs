@@ -6,7 +6,7 @@ async function openCategory(page, category) {
   await expect(page.locator(`[data-section-pane="${category}"]`)).toBeVisible();
 }
 async function closeSettings(page) {
-  if (!(await page.locator("#editor").getAttribute("class")).includes("aero-settings-collapsed")) {
+  if (!(await page.locator("#editor").getAttribute("class")).includes("settings-drawer--collapsed")) {
     await page.keyboard.press("Escape");
   }
   await page.keyboard.press("Escape");

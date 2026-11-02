@@ -78,7 +78,7 @@ CSS behaviour or physical TV compatibility.
 - `shared/` contains the small store, navigation engine and hooks for external store
   subscriptions, input drafts and image retries. Store subscriptions use Preact's
   documented `useSyncExternalStore` hook.
-- `settings/components/RemoteControl.tsx` renders the focused class and tab position
+- `settings/components/SettingsControl.tsx` renders the focused class and tab position
   from the selected key in context. Its ref callback registers the control with the
   navigation engine. Layout reads these registered nodes, including wrapped and hidden
   controls; there are no DOM selector lists or imperative focus-class repairs.
@@ -111,24 +111,25 @@ CSS behaviour or physical TV compatibility.
   Exported helpers also use `const`. ESLint enforces these conventions.
 
 Keep these boundaries when adding Settings controls. Promote a helper to `shared/` only
-when it expresses a reusable behavior. Home and other screens keep their current DOM
-ownership until their own migration; this change adds no second rendering path there.
+when it expresses a reusable behavior. Home owns its components and uses the same shared preference/status stores. See
+[component ownership](component-structure.md) for screen and style boundaries.
 
 ## Directory layout
 
 ```text
 launcher/src/
   settings/
-    index.tsx, dev.ts              # Build/development entry points
-    SettingsRoot.tsx, Settings.tsx # Shell and screen composition
+    index.tsx                     # Mount and teardown
+    SettingsRoot.tsx, SettingsContent.tsx # Shell and screen composition
     SettingsProvider.tsx, context.ts
     types.ts                      # Feature contracts
     components/                   # Declarative remote-control host and section controls
     sections/
-      BackgroundSettings.tsx, DisplaySettings.tsx
-      apps/                       # App menu and its tile components
+      BackgroundSettings.tsx, AppearanceSettings.tsx, ClockSettings.tsx
+      apps/                       # Home membership and app-store options
       inputs/                     # Input controls and names
       weather/                    # Weather UI and location/search hooks
+    layout/                       # Shared category drawer and focus indicator
     hooks/                        # Screen lifecycle and navigation hooks
     state/                        # Settings snapshots and named actions
     services/                     # Legacy runtime types, adapters and key-router bridge
@@ -250,3 +251,9 @@ The Settings form controls shared preferences and invokes the existing status-se
 commands. It does not mount the clock. Home composes the shared status views, including
 one Clock with layout variants. Weather and network presentation use typed snapshots;
 there is no weather-markup observer or duplicated forecast client.
+
+The category drawer and its state live in `settings/layout/`; both Classic and Glass
+use them. `ChoiceGroup` and `ChoiceOption` express selection rather than visual shape.
+`AppearanceSettings` owns appearance/card choices, `ClockSettings` owns date/time and
+layout choices, and `InputSettings` owns both Live TV and HDMI controls. Pane refs
+and registered controls determine entry focus without CSS selector lookups.

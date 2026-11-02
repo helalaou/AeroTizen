@@ -42,7 +42,10 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       function reveal(element) {
         if (variant !== "preact") return element;
         const pane = element.closest("[data-section-pane]");
-        if (pane && (pane.hidden || document.querySelector("#editor").classList.contains("aero-settings-collapsed"))) {
+        if (
+          pane &&
+          (pane.hidden || document.querySelector("#editor").classList.contains("settings-drawer--collapsed"))
+        ) {
           const entry = document.querySelector('[data-key="section:' + pane.dataset.sectionPane + '"]');
           // Category clicks use the same public controls as the physical drawer.
           entry.click();
@@ -261,7 +264,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       for (let i = 0; i < 60; i++) key(K.DOWN);
       assert(document.querySelector("#editor .focused").textContent.includes("Samsung Home"), "bottom row reachable");
       assert(
-        (variant === "preact" ? document.querySelector(".aero-settings-scroll") : document.querySelector("#editor"))
+        (variant === "preact" ? document.querySelector(".settings-drawer__scroll") : document.querySelector("#editor"))
           .scrollTop > 0,
         "focus scrolls into view",
       );

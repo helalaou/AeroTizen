@@ -44,7 +44,9 @@ for (const glassSettings of [false, true]) {
     await page.keyboard.down("Enter");
     await expect(page.getByRole("menu")).toBeVisible();
     await page.keyboard.up("Enter");
-    expect(await page.locator(".tile-actions-glider").evaluate((n) => getComputedStyle(n).borderColor)).toBe(colour);
+    expect(
+      await page.locator(".app-actions-menu__focus-indicator").evaluate((n) => getComputedStyle(n).borderColor),
+    ).toBe(colour);
     expect(await page.getByRole("menu").evaluate((n) => getComputedStyle(n).backgroundImage === "none")).toBe(
       !glassSettings,
     );

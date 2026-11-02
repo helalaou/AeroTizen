@@ -12,7 +12,7 @@ interface Props extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "class" | "ref"
 }
 
 // Focus is rendered from state. Refs supply nodes for measurement and browser focus.
-export const RemoteControl = ({ focusKey, class: className = "", onClick, onFocusCapture, ...props }: Props) => {
+export const SettingsControl = ({ focusKey, class: className = "", onClick, onFocusCapture, ...props }: Props) => {
   const { navigation } = useSettingsEnvironment();
   const focused = useContext(FocusedControlContext) === focusKey;
   const ref = useRef<HTMLDivElement>(null);

@@ -11,15 +11,15 @@ test("custom clock styles preserve upstream date/time preferences, visibility an
   await page.clock.install({ time: new Date("2026-10-28T14:05:00Z") });
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.all.length > 0);
-  await expect(page.locator("#aero-v991-widget")).toBeHidden();
+  await expect(page.locator(".clock--expanded")).toBeHidden();
   await page.locator("#gear").click();
   await openCategory(page, "status");
   await page.locator('[data-key="clock-layouts:custom"]').click();
   for (const style of ["vertical", "horizontal", "minimal", "bold"]) {
     await page.locator(`[data-key="clock-styles:${style}"]`).click();
     await closeSettings(page);
-    await expect(page.locator("#aero-v991-widget")).toBeVisible();
-    expect(await page.locator(".aero-v991-digits").getAttribute("aria-label")).toBe(
+    await expect(page.locator(".clock--expanded")).toBeVisible();
+    expect(await page.locator(".clock__time").getAttribute("aria-label")).toBe(
       await page.evaluate(() =>
         AeroTizen.clock.formatTime(new Date(AeroTizen.clock.getSnapshot()), AeroTizen.settings.timeFormat),
       ),
@@ -31,9 +31,9 @@ test("custom clock styles preserve upstream date/time preferences, visibility an
   await page.locator('[data-key="time:24"]').click();
   await page.locator('[data-key="date:none"]').click();
   await closeSettings(page);
-  await expect(page.locator("#aero-v991-date")).toBeHidden();
+  await expect(page.locator(".clock__date")).toBeHidden();
   await page.reload();
-  await expect(page.locator("#aero-v991-widget")).toHaveClass("style-bold");
+  await expect(page.locator(".clock--expanded")).toHaveClass(/clock--bold/);
   expect(await page.evaluate(() => [AeroTizen.settings.timeFormat, AeroTizen.settings.dateFormat])).toEqual([
     "24",
     "none",
@@ -42,7 +42,7 @@ test("custom clock styles preserve upstream date/time preferences, visibility an
   await openCategory(page, "status");
   await page.locator('[data-key="clock-layouts:classic"]').click();
   await closeSettings(page);
-  await expect(page.locator("#aero-v991-widget")).toBeHidden();
+  await expect(page.locator(".clock--expanded")).toBeHidden();
   await expect(page.locator("#time")).toBeVisible();
   expect(errors).toEqual([]);
 });

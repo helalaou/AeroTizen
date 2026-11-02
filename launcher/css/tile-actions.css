@@ -1,5 +1,5 @@
 /* Lightweight remote-first tile action menu; no backdrop filtering. */
-.tile-actions-backdrop {
+.app-actions-menu__backdrop {
   position: fixed;
   top: 0;
   right: 0;
@@ -10,14 +10,14 @@
   opacity: 0;
   transition: opacity 0.13s ease-out;
 }
-.tile-actions-backdrop.is-open {
+.app-actions-menu__backdrop.is-open {
   opacity: 1;
 }
-.tile-actions-backdrop.is-closing {
+.app-actions-menu__backdrop.is-closing {
   opacity: 0;
   pointer-events: none;
 }
-.tile-actions-menu {
+.app-actions-menu {
   position: fixed;
   z-index: 1001;
   box-sizing: border-box;
@@ -40,16 +40,16 @@
     opacity 0.14s ease-out,
     transform 0.14s ease-out;
 }
-.tile-actions-menu.is-open {
+.app-actions-menu.is-open {
   opacity: 1;
   transform: translate3d(0, 0, 0);
 }
-.tile-actions-menu.is-closing {
+.app-actions-menu.is-closing {
   opacity: 0;
   transform: translate3d(0, 4px, 0);
   pointer-events: none;
 }
-.tile-actions-glider {
+.app-actions-menu__focus-indicator {
   position: absolute;
   z-index: 0;
   pointer-events: none;
@@ -64,7 +64,7 @@
   transform: translate3d(0, 0, 0);
   transition: transform 0.15s ease-out;
 }
-.tile-actions-option {
+.app-actions-menu__option {
   display: flex;
   position: relative;
   z-index: 1;
@@ -87,16 +87,16 @@
   font-weight: 600;
   transition: color 0.1s linear;
 }
-.tile-actions-option.selected {
+.app-actions-menu__option.selected {
   color: #fff;
 }
-.tile-actions-icon {
+.app-actions-menu__icon {
   display: block;
   flex: 0 0 26px;
   width: 26px;
   height: 26px;
 }
-.tile-actions-icon svg {
+.app-actions-menu__icon svg {
   display: block;
   width: 26px;
   height: 26px;
@@ -106,16 +106,16 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.tile-actions-label {
+.app-actions-menu__label {
   min-width: 0;
   flex: 1;
   white-space: nowrap;
 }
 @media (prefers-reduced-motion: reduce) {
-  .tile-actions-backdrop,
-  .tile-actions-menu,
-  .tile-actions-glider,
-  .tile-actions-option {
+  .app-actions-menu__backdrop,
+  .app-actions-menu,
+  .app-actions-menu__focus-indicator,
+  .app-actions-menu__option {
     transition: none;
   }
 }

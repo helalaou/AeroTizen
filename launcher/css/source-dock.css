@@ -57,7 +57,7 @@ body.glass-ui #inputs.row.small::before {
   border-radius: 36px 36px 58% 58%;
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.075), transparent);
 }
-body.glass-ui #inputs .tile.aero-source-card {
+body.glass-ui #inputs .tile.input-card {
   box-sizing: border-box;
   position: relative;
   z-index: 1;
@@ -83,7 +83,7 @@ body.glass-ui #inputs .tile.aero-source-card {
     background-color 0.15s ease,
     transform 0.15s ease !important;
 }
-body.glass-ui #inputs .tile.aero-source-card:not(:last-child)::after {
+body.glass-ui #inputs .tile.input-card:not(:last-child)::after {
   content: "";
   position: absolute;
   right: 0;
@@ -93,7 +93,7 @@ body.glass-ui #inputs .tile.aero-source-card:not(:last-child)::after {
   background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.27), transparent);
   pointer-events: none;
 }
-body.glass-ui #inputs .tile.aero-source-card .aero-source-icon {
+body.glass-ui #inputs .tile.input-card .input-card__icon {
   display: flex;
   flex: 0 0 42px;
   width: 56px;
@@ -107,14 +107,14 @@ body.glass-ui #inputs .tile.aero-source-card .aero-source-icon {
   background: transparent !important;
   color: rgba(255, 255, 255, 0.89);
 }
-body.glass-ui #inputs .tile.aero-source-card .aero-source-icon svg {
+body.glass-ui #inputs .tile.input-card .input-card__icon svg {
   display: block;
   width: 38px !important;
   height: 38px !important;
   flex: 0 0 38px;
   border-radius: 0 !important;
 }
-body.glass-ui #inputs .tile.aero-source-card .name {
+body.glass-ui #inputs .tile.input-card .name {
   display: block;
   flex: 0 1 auto;
   width: 100%;
@@ -130,7 +130,7 @@ body.glass-ui #inputs .tile.aero-source-card .name {
   color: rgba(255, 255, 255, 0.89) !important;
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.33);
 }
-body.glass-ui #inputs .tile.aero-source-card .name .sub {
+body.glass-ui #inputs .tile.input-card .name .sub {
   display: block;
   margin-top: 5px;
   font-size: 15px !important;
@@ -144,7 +144,7 @@ body.glass-ui #inputs .tile.aero-source-card .name .sub {
   text-shadow: none;
 }
 /* Single satin focus surface. No shadow-ring doubled over its border. */
-body.glass-ui #inputs .tile.aero-source-card.focused {
+body.glass-ui #inputs .tile.input-card.focused {
   opacity: 1 !important;
   z-index: 5;
   border: 2px solid rgba(255, 255, 255, 0.95) !important;
@@ -161,23 +161,23 @@ body.glass-ui #inputs .tile.aero-source-card.focused {
   transform: translate3d(0, -1px, 0) scale(1.015) !important;
   outline: none !important;
 }
-body.glass-ui #inputs .tile.aero-source-card.focused::after {
+body.glass-ui #inputs .tile.input-card.focused::after {
   opacity: 0;
 }
-body.glass-ui #inputs .tile.aero-source-card.focused .aero-source-icon,
-body.glass-ui #inputs .tile.aero-source-card.focused .name {
+body.glass-ui #inputs .tile.input-card.focused .input-card__icon,
+body.glass-ui #inputs .tile.input-card.focused .name {
   color: #fff !important;
 }
-body.glass-ui #inputs .tile.aero-source-card.focused .name .sub {
+body.glass-ui #inputs .tile.input-card.focused .name .sub {
   color: rgba(255, 255, 255, 0.88) !important;
 }
-body.glass-ui #inputs .tile.aero-source-card.off:not(.focused) {
+body.glass-ui #inputs .tile.input-card.off:not(.focused) {
   opacity: 0.37 !important;
   border-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
 }
-body.glass-ui #inputs .tile.aero-source-card:not(.off):not(.focused) {
+body.glass-ui #inputs .tile.input-card:not(.off):not(.focused) {
   opacity: 1 !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
   background: linear-gradient(
@@ -190,15 +190,15 @@ body.glass-ui #inputs .tile.aero-source-card:not(.off):not(.focused) {
     inset 0 1px rgba(255, 255, 255, 0.16),
     0 4px 13px rgba(0, 0, 0, 0.1) !important;
 }
-body.glass-ui #inputs .tile.aero-source-card:not(.off) .aero-source-icon,
-body.glass-ui #inputs .tile.aero-source-card:not(.off) .name {
+body.glass-ui #inputs .tile.input-card:not(.off) .input-card__icon,
+body.glass-ui #inputs .tile.input-card:not(.off) .name {
   color: #fff !important;
 }
-body.glass-ui #inputs .tile.aero-source-card:not(.off) .name .sub {
+body.glass-ui #inputs .tile.input-card:not(.off) .name .sub {
   color: rgba(255, 255, 255, 0.83) !important;
 }
 /* The original 354px card width remains constant after hiding empty slots. */
-body.glass-ui #inputs.row.small.aero-dock-compact {
+body.glass-ui #inputs.row.small.input-dock--compact {
   display: inline-flex;
   width: auto;
   max-width: 100%;
@@ -207,7 +207,7 @@ body.glass-ui #inputs.row.small.aero-dock-compact {
   border-radius: 37px;
   vertical-align: top;
 }
-body.glass-ui #inputs.row.small.aero-dock-compact > .tile.aero-source-card {
+body.glass-ui #inputs.row.small.input-dock--compact > .tile.input-card {
   flex: 0 0 354px;
   width: 354px;
   min-width: 354px;
@@ -216,7 +216,7 @@ body.glass-ui #inputs.row.small.aero-dock-compact > .tile.aero-source-card {
   padding: 11px 6px 8px !important;
 }
 /* Small state indicators are metadata, not focus outlines. */
-body.glass-ui #inputs .tile.aero-source-card .aero-source-status {
+body.glass-ui #inputs .tile.input-card .input-card__status {
   position: absolute;
   top: 7px;
   right: 12px;
@@ -238,7 +238,7 @@ body.glass-ui #inputs .tile.aero-source-card .aero-source-status {
   white-space: nowrap;
   pointer-events: none;
 }
-body.glass-ui #inputs .tile.aero-source-card .aero-source-status::before {
+body.glass-ui #inputs .tile.input-card .input-card__status::before {
   content: "";
   display: inline-block;
   width: 6px;
@@ -247,48 +247,48 @@ body.glass-ui #inputs .tile.aero-source-card .aero-source-status::before {
   border-radius: 50%;
   background: currentColor;
 }
-body.glass-ui #inputs .tile.aero-source-card.aero-source-connected:not(.focused),
-body.glass-ui #inputs .tile.aero-source-card.aero-source-active:not(.focused) {
+body.glass-ui #inputs .tile.input-card.input-card--connected:not(.focused),
+body.glass-ui #inputs .tile.input-card.input-card--active:not(.focused) {
   border-color: rgba(106, 239, 201, 0.45) !important;
   background: linear-gradient(165deg, rgba(97, 217, 182, 0.18), rgba(255, 255, 255, 0.04) 73%) !important;
   box-shadow:
     inset 0 1px rgba(184, 255, 235, 0.18),
     0 4px 14px rgba(0, 0, 0, 0.12) !important;
 }
-body.glass-ui #inputs .tile.aero-source-card.aero-source-connected .aero-source-status,
-body.glass-ui #inputs .tile.aero-source-card.aero-source-active .aero-source-status {
+body.glass-ui #inputs .tile.input-card.input-card--connected .input-card__status,
+body.glass-ui #inputs .tile.input-card.input-card--active .input-card__status {
   color: #a3f4d9;
   border-color: rgba(132, 233, 197, 0.3);
   background: rgba(12, 66, 53, 0.36);
 }
-body.glass-ui #inputs .tile.aero-source-card.aero-source-recognised:not(.focused) {
+body.glass-ui #inputs .tile.input-card.input-card--recognized:not(.focused) {
   border-color: rgba(245, 210, 145, 0.4) !important;
   background: linear-gradient(165deg, rgba(210, 159, 85, 0.14), rgba(255, 255, 255, 0.035) 76%) !important;
 }
-body.glass-ui #inputs .tile.aero-source-card.aero-source-recognised .aero-source-status {
+body.glass-ui #inputs .tile.input-card.input-card--recognized .input-card__status {
   color: #f3d69b;
   border-color: rgba(239, 204, 133, 0.28);
   background: rgba(90, 60, 19, 0.33);
 }
-body.glass-ui #inputs .tile.aero-source-card.aero-source-live .aero-source-status {
+body.glass-ui #inputs .tile.input-card.input-card--live .input-card__status {
   color: #dae7ff;
   border-color: rgba(191, 212, 255, 0.25);
 }
-body.glass-ui #inputs .tile.aero-source-card.focused .aero-source-status {
+body.glass-ui #inputs .tile.input-card.focused .input-card__status {
   color: #fff;
   border-color: rgba(255, 255, 255, 0.55);
   background: rgba(15, 21, 30, 0.44);
 }
 @media (prefers-reduced-motion: reduce) {
-  #inputs .tile.aero-source-card {
+  #inputs .tile.input-card {
     transition: none !important;
   }
 }
 
 /* Manual visibility is reachability, not evidence of a connected HDMI signal. */
-body.glass-ui #inputs .tile.aero-source-forced:not(.focused) {
+body.glass-ui #inputs .tile.input-card--pinned:not(.focused) {
   border-color: rgba(180, 200, 230, 0.45);
 }
-body.glass-ui #inputs .tile.aero-source-forced .aero-source-status {
+body.glass-ui #inputs .tile.input-card--pinned .input-card__status {
   color: #dce9ff;
 }

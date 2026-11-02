@@ -11,12 +11,13 @@ renders the shared weather snapshot. Views add no timer or forecast client, and 
 not scrape weather markup or use a MutationObserver. The existing service owns
 weather requests, matching caches, unit conversion, cancellation and solar policy.
 
-Settings controls remain in `DisplaySettings`. Browser coverage includes all layouts,
+Settings controls live in `settings/sections/ClockSettings.tsx`. Browser coverage includes all layouts,
 12/24-hour and date choices, visibility, persistence, remote navigation and locale
 fields. Clock uses structured hour/minute/day-period fields where available, retaining
 the formatted-string fallback for older Intl implementations. Compact width reserves
 cached font/locale measurements through a ref.
 
-Existing active CSS IDs are retained for the naming/style stage. Expanded layouts
-keep the 24 px content clearance. TV testing of the completed cleanup is deferred;
+Clock styles use component classes such as `clock__time` and `clock--horizontal`;
+weather uses its own `weather-status__*` classes. Historical model/version selectors
+are confined to comparison fixtures. Expanded layouts keep the 24 px content clearance. TV testing of the completed cleanup is deferred;
 reference-version results do not establish older-TV compatibility.

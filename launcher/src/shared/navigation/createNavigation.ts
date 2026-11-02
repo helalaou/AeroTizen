@@ -5,6 +5,7 @@ export type Direction = "left" | "right" | "up" | "down";
 export interface Navigation extends Store<string | undefined> {
   clear(): void;
   current(): HTMLElement | undefined;
+  firstKey(container?: HTMLElement): string | undefined;
   focus(): HTMLElement | undefined;
   invalidate(): void;
   move(direction: Direction): void;
@@ -100,6 +101,17 @@ export const createNavigation = (onFocus: (element: HTMLElement) => void): Navig
       rows = undefined;
     },
     focus,
+    firstKey(container) {
+      if (container) {
+        for (const row of getRows()) {
+          const target = row.find((item) => container.contains(item.node));
+          if (target) {
+            return target.key;
+          }
+        }
+      }
+      return undefined;
+    },
     current: () => currentTarget()?.node,
     clear: () => focused.set(undefined),
     invalidate: () => {

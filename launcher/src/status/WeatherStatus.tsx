@@ -13,7 +13,7 @@ export const WeatherStatus = ({
   showLocation: boolean;
 }) =>
   variant === "compact" ? (
-    <span id="weather" class="weather" hidden={!weather.visible}>
+    <span id="weather" class="weather weather-status--compact" hidden={!weather.visible}>
       {weather.visible ? (
         <>
           <WeatherIcon code={weather.code} />
@@ -24,16 +24,12 @@ export const WeatherStatus = ({
     </span>
   ) : (
     <>
-      <div class="aero-v991-weather" hidden={!showWeather}>
-        <span class="aero-v991-weather-icon">{weather.visible ? <WeatherIcon code={weather.code} /> : null}</span>
-        <span id="aero-v991-temp" class="aero-v991-temp">
-          {weather.text}
-        </span>
-        <span id="aero-v991-condition" class="aero-v991-condition">
-          {weather.condition}
-        </span>
+      <div class="weather-status--expanded" hidden={!showWeather}>
+        <span class="weather-status__icon">{weather.visible ? <WeatherIcon code={weather.code} /> : null}</span>
+        <span class="weather-status__temperature">{weather.text}</span>
+        <span class="weather-status__condition">{weather.condition}</span>
       </div>
-      <div id="aero-v991-city" class="aero-v991-city" hidden={!showWeather || !showLocation || !weather.visible}>
+      <div class="weather-status__location" hidden={!showWeather || !showLocation || !weather.visible}>
         {weather.city}
       </div>
     </>

@@ -56,15 +56,15 @@ for (const scenario of [
         scenario.format,
       );
       await page.goto("/");
-      await expect(page.locator("#aero-v991-hours")).toHaveText(scenario.hour);
-      await expect(page.locator("#aero-v991-minutes")).toContainText(scenario.minute);
-      const label = await page.locator(".aero-v991-digits").getAttribute("aria-label");
+      await expect(page.locator(".clock__hours")).toHaveText(scenario.hour);
+      await expect(page.locator(".clock__minutes")).toContainText(scenario.minute);
+      const label = await page.locator(".clock__time").getAttribute("aria-label");
       expect(label).toBe(
         await page.evaluate(() =>
           AeroTizen.clock.formatTime(new Date(AeroTizen.clock.getSnapshot()), AeroTizen.settings.timeFormat),
         ),
       );
-      expect(await page.locator("#aero-v991-minutes small").textContent()).toContain(
+      expect(await page.locator(".clock__minutes small").textContent()).toContain(
         scenario.format === "12" ? "오후" : "",
       );
     });

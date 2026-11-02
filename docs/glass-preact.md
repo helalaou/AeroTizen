@@ -8,7 +8,7 @@ Square/Rectangle and column controls remain in Home appearance. Each uses the
 existing upstream settings/actions once, rather than a parallel implementation.
 
 The final synchronization resolves stylesheet order, clock-aware navigation,
-DisplaySettings composition and shared preference types. It removes a duplicate
+AppearanceSettings/ClockSettings composition and shared preference types. It removes a duplicate
 runtime i18n type declaration introduced by the automatic merge. Clock and HDMI
 browser tests use the visible category controls and two-level Back flow; clock
 clearance checks cover both Classic and Glass. Native Home services, app launch

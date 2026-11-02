@@ -65,6 +65,13 @@ for (const scenario of [
         },
       };
     }, scenario);
+    await page.addInitScript(() => {
+      const getById = document.getElementById.bind(document);
+      document.getElementById = (id) => {
+        if (id === "continue-items") throw new Error("Continue Watching must use its registered refs");
+        return getById(id);
+      };
+    });
     await page.goto("/");
     await expect(page).toHaveTitle("AeroTizen");
     const cards = page.locator(".continue-card"),

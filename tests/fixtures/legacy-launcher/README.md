@@ -5,7 +5,8 @@ tests. They are not production entry points or release assets. Change active vie
 in `launcher/src/` and production markup in `launcher/index.html`.
 
 The fixture page uses `<base href="/launcher/">` to load shared runtime services,
-styles and assets from the current launcher. Its old view scripts load explicitly
+styles and assets from the current launcher. The clock stylesheet is frozen in
+`css/clock-layouts.css` here, so old clock selectors do not constrain active names. Its old view scripts load explicitly
 from this directory. Serve the repository root and open
 `/tests/fixtures/legacy-launcher/`, or run `npm run test:browser` for managed servers.
 The input view subscribes to the shared data service and keeps its tile constructors

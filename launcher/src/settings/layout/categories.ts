@@ -6,7 +6,7 @@ export const categories = [
   { id: "sources", title: "Inputs", hint: "Live TV and HDMI", icon: "□" },
 ] as const;
 export type Category = (typeof categories)[number]["id"];
-export interface GlassState {
+export interface SettingsDrawerState {
   category: Category;
   expanded: boolean;
 }

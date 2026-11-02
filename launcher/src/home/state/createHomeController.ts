@@ -14,6 +14,8 @@ export const createHomeController = (
   const { runtime: A, settings, inventory, nodes } = env;
   const state = createStore<HomeState>({
     page: "home",
+    scroll: 0,
+    continueOffset: 0,
     selected: "",
     active: true,
     moving: null,
@@ -22,7 +24,6 @@ export const createHomeController = (
   });
   let timer: number | undefined,
     enterDown = false,
-    scroll = 0,
     started = false;
   const cancelPress = () => {
     if (timer !== undefined) {
@@ -100,19 +101,19 @@ export const createHomeController = (
       return;
     }
     focusControl(node);
-    const listNode = node.parentElement;
+    const listNode = env.continueItems.current;
     if (selected.startsWith("continue:") && listNode) {
-      const viewport = listNode.parentElement;
+      const viewport = env.continueViewport.current;
       if (viewport) {
-        const previous = Number(listNode.dataset.offset || 0);
+        const previous = state.getSnapshot().continueOffset;
         const offset = Math.max(
           0,
           Math.min(Math.max(previous, node.offsetLeft + node.offsetWidth - listNode.clientWidth), node.offsetLeft),
         );
-        listNode.dataset.offset = String(offset);
-        listNode.style.transform = "translate3d(" + -offset + "px,0,0)";
+        update({ continueOffset: offset });
       }
     }
+    let scroll = state.getSnapshot().scroll;
     const rect = node.getBoundingClientRect(),
       top = main.getBoundingClientRect().top;
     const origin = main.parentElement?.getBoundingClientRect().top || 0;
@@ -125,8 +126,7 @@ export const createHomeController = (
     } else if (y - scroll < origin + 128) {
       scroll = Math.max(0, y - origin - 128);
     }
-    main.closest(".content-viewport")?.classList.toggle("is-scrolled", scroll > 0);
-    main.style.transform = "translate3d(0," + -scroll + "px,0)";
+    update({ scroll });
   };
   const select = (selected: string) => {
     if (state.getSnapshot().selected !== selected) {
@@ -150,8 +150,7 @@ export const createHomeController = (
   const showPage = (page: Page) => {
     cancelPress();
     endMove();
-    scroll = 0;
-    update({ page, menu: null, selected: page === "home" ? "home-tab" : "apps-tab" });
+    update({ page, scroll: 0, menu: null, selected: page === "home" ? "home-tab" : "apps-tab" });
     focus();
   };
   const activate = (key: string) => {
@@ -317,7 +316,7 @@ export const createHomeController = (
           const from = nodes.get(current.selected)?.getBoundingClientRect();
           if (from) {
             let distance = Infinity;
-            const viewport = document.getElementById("continue-items")?.parentElement?.getBoundingClientRect();
+            const viewport = env.continueViewport.current?.getBoundingClientRect();
             all[target].forEach((key, i) => {
               const rect = nodes.get(key)?.getBoundingClientRect();
               if (

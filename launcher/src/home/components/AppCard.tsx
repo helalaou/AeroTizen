@@ -6,7 +6,7 @@ import type { HomeEnvironment } from "../types";
 
 import { AppArtwork } from "./AppArtwork";
 import { HomeControl } from "./HomeControl";
-import { MoveArrows } from "./MoveArrows";
+import { ReorderControls } from "./ReorderControls";
 export const AppCard = ({ env, app, active }: { env: HomeEnvironment; app: InstalledApp; active: boolean }) => {
   const brand = useMemo(() => env.describe(app), [env, app]);
   const state = useStore(env.state),
@@ -22,7 +22,7 @@ export const AppCard = ({ env, app, active }: { env: HomeEnvironment; app: Insta
       style={{ background: brand.background }}
     >
       <AppArtwork app={app} brand={brand} active={active} />
-      {moving ? <MoveArrows env={env} id={app.id} /> : null}
+      {moving ? <ReorderControls env={env} id={app.id} /> : null}
     </HomeControl>
   );
 };

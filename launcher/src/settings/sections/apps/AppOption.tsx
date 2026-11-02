@@ -3,7 +3,7 @@ import { useMemo } from "preact/hooks";
 import type { InstalledApp } from "../../../contracts/launcher";
 import { useImageSequence } from "../../../shared/hooks/useImageSequence";
 import { AppLogoIcon } from "../../../shared/icons/AppLogoIcon";
-import { RemoteControl } from "../../components/RemoteControl";
+import { SettingsControl } from "../../components/SettingsControl";
 import type { SettingsServices } from "../../types";
 
 interface Props {
@@ -17,7 +17,7 @@ interface Props {
   selected: boolean;
 }
 
-export const AppTile = ({
+export const AppOption = ({
   app,
   selected,
   active,
@@ -32,7 +32,7 @@ export const AppTile = ({
   const icons = useMemo(() => (brand.useAppIcon && app.icon ? [app.icon] : []), [brand.useAppIcon, app.icon]);
   const icon = useImageSequence(icons, active);
   return (
-    <RemoteControl
+    <SettingsControl
       class={"tile app-tile " + className + (selected ? " on" : "") + (artwork.loaded ? " has-artwork" : "")}
       focusKey={focusKey || "app:" + app.id}
       role="button"
@@ -74,6 +74,6 @@ export const AppTile = ({
           onError={artwork.onError}
         />
       ) : null}
-    </RemoteControl>
+    </SettingsControl>
   );
 };

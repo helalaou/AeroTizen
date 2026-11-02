@@ -42,22 +42,19 @@ export const Clock = ({
       </span>
     </>
   ) : (
-    <div id="custom-clock-root">
+    <div class="clock-container">
       <div
-        id="aero-v991-widget"
-        class={layout === "vertical" ? "" : "style-" + layout}
+        class={"clock clock--expanded clock--" + layout}
         hidden={!settings.showTime && settings.dateFormat === "none" && !settings.showWeather}
       >
-        <div class="aero-v991-digits" aria-label={value.text} hidden={!settings.showTime}>
-          <span id="aero-v991-hours" class="aero-v991-digit">
-            {value.hour}
-          </span>
-          <span id="aero-v991-minutes" class="aero-v991-digit">
+        <div class="clock__time" aria-label={value.text} hidden={!settings.showTime}>
+          <span class="clock__digit clock__hours">{value.hour}</span>
+          <span class="clock__digit clock__minutes">
             {value.minute}
             <small style={{ fontSize: ".2em", letterSpacing: 0 }}>{value.period}</small>
           </span>
         </div>
-        <div id="aero-v991-date" class="aero-v991-date" hidden={settings.dateFormat === "none"}>
+        <div class="clock__date" hidden={settings.dateFormat === "none"}>
           {value.date}
         </div>
         {children}

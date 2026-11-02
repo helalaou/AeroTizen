@@ -1,10 +1,11 @@
-import { useLayoutEffect, useRef } from "preact/hooks";
+import { useLayoutEffect, useRef, useState } from "preact/hooks";
 
 import { useStore } from "../../shared/hooks/useStore";
 import type { HomeEnvironment } from "../types";
-export const TileMenu = ({ env }: { env: HomeEnvironment }) => {
+export const AppActionsMenu = ({ env }: { env: HomeEnvironment }) => {
   const { menu } = useStore(env.state),
     panel = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ left: "0px", top: "0px" });
   useLayoutEffect(() => {
     const origin = menu && env.nodes.get("app:" + menu.id),
       element = panel.current;
@@ -14,30 +15,38 @@ export const TileMenu = ({ env }: { env: HomeEnvironment }) => {
     const rect = origin.getBoundingClientRect(),
       width = Math.min(382, window.innerWidth - 48);
     const left = rect.right + 20 + width > window.innerWidth - 24 ? rect.left - width - 20 : rect.right + 20;
-    element.style.left = Math.max(24, Math.min(window.innerWidth - width - 24, left)) + "px";
-    element.style.top = Math.max(24, Math.min(window.innerHeight - element.offsetHeight - 24, rect.top + 10)) + "px";
+    setPosition({
+      left: Math.max(24, Math.min(window.innerWidth - width - 24, left)) + "px",
+      top: Math.max(24, Math.min(window.innerHeight - element.offsetHeight - 24, rect.top + 10)) + "px",
+    });
   }, [env, menu]);
   if (!menu) {
     return null;
   }
   return (
     <>
-      <div class="tile-actions-backdrop is-open" aria-hidden="true" onClick={env.dismiss} />
-      <div ref={panel} class="tile-actions-menu is-open" role="menu" aria-label={env.translate("App actions")}>
+      <div class="app-actions-menu__backdrop is-open" aria-hidden="true" onClick={env.dismiss} />
+      <div
+        ref={panel}
+        style={position}
+        class="app-actions-menu is-open"
+        role="menu"
+        aria-label={env.translate("App actions")}
+      >
         <div
-          class="tile-actions-glider"
+          class="app-actions-menu__focus-indicator"
           aria-hidden="true"
           style={{ transform: "translate3d(0," + menu.selected * 64 + "px,0)" }}
         />
         {env.menuChoices().map((choice, i) => (
           <div
             key={choice.action}
-            class={"tile-actions-option" + (menu.selected === i ? " selected" : "")}
+            class={"app-actions-menu__option" + (menu.selected === i ? " selected" : "")}
             role="menuitem"
             aria-selected={menu.selected === i}
             onClick={() => env.choose(i)}
           >
-            <span class="tile-actions-icon" aria-hidden="true">
+            <span class="app-actions-menu__icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
                 {choice.action !== "move" ? <rect x="4" y="4" width="16" height="16" rx="4" /> : null}
                 <path
@@ -51,7 +60,7 @@ export const TileMenu = ({ env }: { env: HomeEnvironment }) => {
                 />
               </svg>
             </span>
-            <span class="tile-actions-label">{env.translate(choice.label)}</span>
+            <span class="app-actions-menu__label">{env.translate(choice.label)}</span>
           </div>
         ))}
       </div>

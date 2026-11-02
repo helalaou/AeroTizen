@@ -2,7 +2,7 @@ import { flushSync } from "preact/compat";
 import { useLayoutEffect, useRef } from "preact/hooks";
 
 import { useStore } from "../../shared/hooks/useStore";
-import { categories } from "../glass/categories";
+import { categories } from "../layout/categories";
 import type { SettingsInventorySnapshot } from "../types";
 
 import { useSettingsEnvironment } from "./useSettingsEnvironment";
@@ -20,23 +20,21 @@ export const useSettingsNavigation = (
   previewing: boolean,
   { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel, clockLayout }: Layout,
 ) => {
-  const { navigation, bridge, services, actions, settings, view, root, glass, glassMenu, glassContent } =
+  const { navigation, bridge, services, actions, settings, view, root, drawer, categoryMenu, categoryContent, panes } =
     useSettingsEnvironment();
   const wasOpen = useRef(false);
   const previousScope = useRef("");
-  const category = useStore(glass);
+  const category = useStore(drawer);
   useLayoutEffect(() => {
     if (active && !wasOpen.current && category.expanded) {
-      glass.set({ ...category, expanded: false });
+      drawer.set({ ...category, expanded: false });
     }
     navigation.invalidate();
-    navigation.setScope?.(category.expanded ? glassContent.current : glassMenu.current);
+    navigation.setScope?.(category.expanded ? categoryContent.current : categoryMenu.current);
     const scope = category.category + ":" + category.expanded;
     if (!wasOpen.current || previousScope.current !== scope) {
       const key = category.expanded
-        ? glassContent.current
-            ?.querySelector(".aero-section-pane:not([hidden]) [data-key]")
-            ?.getAttribute("data-key") || "settings-close"
+        ? navigation.firstKey(panes.get(category.category)) || "settings-close"
         : "section:" + category.category;
       navigation.reset(key);
     }
@@ -61,9 +59,10 @@ export const useSettingsNavigation = (
     navigation,
     settings,
     category,
-    glass,
-    glassContent,
-    glassMenu,
+    drawer,
+    categoryContent,
+    categoryMenu,
+    panes,
   ]);
   useLayoutEffect(() => {
     if (!active) {
@@ -100,11 +99,11 @@ export const useSettingsNavigation = (
           if (code === K.BACK || code === K.ESC) {
             bridge.close();
           } else if (code === K.RIGHT || code === K.ENTER || code === SPACE_KEY) {
-            flushSync(() => glass.set({ ...category, expanded: true }));
+            flushSync(() => drawer.set({ ...category, expanded: true }));
           } else if (code === K.UP || code === K.DOWN) {
             const index = categories.findIndex((item) => item.id === category.category);
             const next = categories[Math.max(0, Math.min(categories.length - 1, index + (code === K.UP ? -1 : 1)))];
-            flushSync(() => glass.set({ category: next.id, expanded: false }));
+            flushSync(() => drawer.set({ category: next.id, expanded: false }));
           }
           return;
         }
@@ -114,11 +113,11 @@ export const useSettingsNavigation = (
             (code === K.LEFT &&
               current &&
               current.getBoundingClientRect().left <=
-                (glassContent.current?.getBoundingClientRect().left || 0) + 64)) &&
+                (categoryContent.current?.getBoundingClientRect().left || 0) + 64)) &&
           !view.getSnapshot().adjusting
         ) {
           event.preventDefault();
-          flushSync(() => glass.set({ ...category, expanded: false }));
+          flushSync(() => drawer.set({ ...category, expanded: false }));
           return;
         }
         if (view.getSnapshot().adjusting) {
@@ -166,5 +165,5 @@ export const useSettingsNavigation = (
       window.removeEventListener("resize", resize);
       navigation.clear();
     };
-  }, [active, actions, bridge, navigation, root, services, view, category, glass, glassContent]);
+  }, [active, actions, bridge, navigation, root, services, view, category, drawer, categoryContent]);
 };

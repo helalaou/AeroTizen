@@ -1,5 +1,5 @@
 import { useTextInput } from "../../../shared/hooks/useTextInput";
-import { RemoteControl } from "../../components/RemoteControl";
+import { SettingsControl } from "../../components/SettingsControl";
 import type { SettingsActions } from "../../types";
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
 export const InputName = ({ port, name, placeholder, actions }: Props) => {
   const { focus, ...input } = useTextInput(name || "", (value) => actions.saveInputName(port, value));
   return (
-    <RemoteControl class="pill unit name-pill" focusKey={"name:" + port} onClick={focus}>
+    <SettingsControl class="pill unit name-pill" focusKey={"name:" + port} onClick={focus}>
       <span class="port">{port}</span>
       <input
         {...input}
@@ -21,6 +21,6 @@ export const InputName = ({ port, name, placeholder, actions }: Props) => {
         placeholder={placeholder || "Add a name"}
         aria-label={port + " name"}
       />
-    </RemoteControl>
+    </SettingsControl>
   );
 };

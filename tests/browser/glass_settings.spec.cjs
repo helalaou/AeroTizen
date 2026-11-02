@@ -23,7 +23,7 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   const checkTabPlate = async () =>
     expect
       .poll(() =>
-        page.locator("#aero-tab-glider").evaluate((plate) => {
+        page.locator(".header-focus-indicator--tabs").evaluate((plate) => {
           const target = document.querySelector("#home-tab"),
             a = plate.getBoundingClientRect(),
             b = target.getBoundingClientRect();
@@ -38,24 +38,24 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
       .toBeLessThan(2);
   await checkTabPlate();
   await page.locator("#gear").click();
-  await expect(page.locator("#editor")).toHaveClass(/aero-settings-collapsed/);
+  await expect(page.locator("#editor")).toHaveClass(/settings-drawer--collapsed/);
   await expect(page.locator('[data-key="section:appearance"]')).toHaveClass(/focused/);
   await page.keyboard.press("ArrowDown");
   await expect(page.locator('[data-key="section:apps"]')).toHaveClass(/focused/);
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-section-pane="apps"]')).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(page.locator("#editor")).toHaveClass(/aero-settings-collapsed/);
+  await expect(page.locator("#editor")).toHaveClass(/settings-drawer--collapsed/);
   for (const category of ["appearance", "apps", "wallpaper", "status", "sources"]) {
     await page.locator(`[data-key="section:${category}"]`).click();
     await expect(page.locator(`[data-section-pane="${category}"]`)).toBeVisible();
     await expect(page.locator("#editor .focused")).toHaveCount(1);
-    await expect(page.locator(".aero-content-glider")).toHaveClass(/is-visible/);
+    await expect(page.locator(".settings-focus-indicator--content")).toHaveClass(/is-visible/);
     const current = page.locator("#editor .focused");
     expect(await current.evaluate((node) => getComputedStyle(node).boxShadow)).toBe("none");
     await expect
       .poll(() =>
-        page.locator(".aero-content-glider").evaluate((plate) => {
+        page.locator(".settings-focus-indicator--content").evaluate((plate) => {
           const target = document.querySelector("#editor .focused"),
             a = plate.getBoundingClientRect(),
             b = target.getBoundingClientRect();
@@ -112,7 +112,7 @@ for (const glass of [false, true])
       const bounds = await page.locator("#editor").evaluate((el) => {
         const rule = Array.from(document.styleSheets)
           .flatMap((sheet) => Array.from(sheet.cssRules))
-          .find((rule) => rule.selectorText === "#editor.sheet.aero-settings-ready");
+          .find((rule) => rule.selectorText === "#editor.sheet.settings-drawer");
         const rect = el.getBoundingClientRect();
         return {
           sides: ["top", "right", "bottom", "left"].map((side) => rule.style[side]),
@@ -129,7 +129,7 @@ for (const glass of [false, true])
       for (let i = 0; i < 20; i++) await page.keyboard.press("ArrowDown");
       const visible = await page.locator("#editor .focused").evaluate((el) => {
         const r = el.getBoundingClientRect(),
-          host = el.closest(".aero-settings-scroll") || el.closest(".aero-settings-main"),
+          host = el.closest(".settings-drawer__scroll") || el.closest(".settings-drawer__main"),
           h = host.getBoundingClientRect();
         return r.width > 0 && r.height > 0 && r.top >= h.top && r.bottom <= h.bottom && r.right <= innerWidth;
       });

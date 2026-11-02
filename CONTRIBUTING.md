@@ -168,6 +168,9 @@ See [Release process](docs/releases.md) for required repository settings, assets
 local package checks, and failed-build recovery. Build outputs belong in release
 assets, not in Git.
 
+See [component ownership](docs/component-structure.md) for the Home/Settings responsibility
+map, component naming, navigation refs and style owners.
+
 ## Updating app metadata
 
 Edit `launcher/js/app-catalog.js`. It is a data-only script so the launcher can load it

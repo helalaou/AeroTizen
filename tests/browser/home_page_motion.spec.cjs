@@ -23,16 +23,18 @@ for (const glassSettings of [false, true]) {
     await page.evaluate(() => {
       window.savedHomeCard = document.querySelector("#grid > .tile");
     });
-    expect(await page.locator("#aero-tab-glider").evaluate((n) => getComputedStyle(n).transitionProperty)).toBe("none");
+    expect(
+      await page.locator(".header-focus-indicator--tabs").evaluate((n) => getComputedStyle(n).transitionProperty),
+    ).toBe("none");
     await page.locator("#apps-tab").click();
-    await expect(page.locator(".home-page-surface")).toHaveCSS("animation-name", "aero-page-apps");
-    expect(await page.locator("#aero-tab-glider").evaluate((n) => getComputedStyle(n).transitionProperty)).toContain(
-      "transform",
-    );
+    await expect(page.locator(".home-page-surface")).toHaveCSS("animation-name", "apps-page-reveal");
+    expect(
+      await page.locator(".header-focus-indicator--tabs").evaluate((n) => getComputedStyle(n).transitionProperty),
+    ).toContain("transform");
     await page.keyboard.press("ArrowDown");
     await expect(page.locator("#grid > .tile").first()).toHaveClass(/focused/);
     await page.keyboard.press("Escape");
-    await expect(page.locator(".home-page-surface")).toHaveCSS("animation-name", "aero-page-home");
+    await expect(page.locator(".home-page-surface")).toHaveCSS("animation-name", "home-page-reveal");
     expect(await page.evaluate(() => window.savedHomeCard === document.querySelector("#grid > .tile"))).toBe(true);
     for (let i = 0; i < 3; i++) {
       await page.locator("#apps-tab").click();

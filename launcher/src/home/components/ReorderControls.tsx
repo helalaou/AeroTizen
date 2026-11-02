@@ -6,7 +6,7 @@ const paths = {
   up: "M5 15l7-7 7 7",
   down: "M5 9l7 7 7-7",
 };
-export const MoveArrows = ({ env, id }: { env: HomeEnvironment; id: string }) => {
+export const ReorderControls = ({ env, id }: { env: HomeEnvironment; id: string }) => {
   const { draft } = useStore(env.state),
     settings = useStore(env.settings);
   const ids = draft || settings.home,

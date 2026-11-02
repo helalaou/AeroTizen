@@ -1,11 +1,11 @@
-import { useMemo } from "preact/hooks";
+import { useMemo, useState } from "preact/hooks";
 
 import type { ContinueItem } from "../../contracts/launcher";
 import type { HomeEnvironment } from "../types";
 
 import { AppArtwork } from "./AppArtwork";
 import { HomeControl } from "./HomeControl";
-export const ContinueCard = ({ env, item }: { env: HomeEnvironment; item: ContinueItem }) => {
+export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item: ContinueItem }) => {
   const app = useMemo(
     () => ({ id: item.sourceId, name: item.sourceName, icon: item.sourceIcon }),
     [item.sourceId, item.sourceName, item.sourceIcon],
@@ -47,7 +47,6 @@ export const ContinueCard = ({ env, item }: { env: HomeEnvironment; item: Contin
   );
 };
 // Artwork errors are local to each keyed feed item; changing its URL permits retry.
-import { useState } from "preact/hooks";
 const useImageFailure = (url?: string): [boolean, () => void] => {
   const [failed, setFailed] = useState<string | undefined>();
   return [Boolean(url && failed === url), () => setFailed(url)];

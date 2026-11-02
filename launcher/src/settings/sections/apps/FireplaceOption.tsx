@@ -1,8 +1,8 @@
 import { FlameIcon } from "../../../shared/icons/FlameIcon";
-import { RemoteControl } from "../../components/RemoteControl";
+import { SettingsControl } from "../../components/SettingsControl";
 
-export const FireplaceTile = ({ id, selected, onSelect }: { id: string; selected: boolean; onSelect(): void }) => (
-  <RemoteControl
+export const FireplaceOption = ({ id, selected, onSelect }: { id: string; selected: boolean; onSelect(): void }) => (
+  <SettingsControl
     class={"tile fire" + (selected ? " on" : "")}
     focusKey={"app:" + id}
     role="button"
@@ -12,5 +12,5 @@ export const FireplaceTile = ({ id, selected, onSelect }: { id: string; selected
   >
     <FlameIcon />
     <div class="name">Fireplace</div>
-  </RemoteControl>
+  </SettingsControl>
 );

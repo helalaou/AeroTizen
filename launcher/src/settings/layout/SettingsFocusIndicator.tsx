@@ -4,16 +4,16 @@ import { useLayoutEffect, useState } from "preact/hooks";
 import { useStore } from "../../shared/hooks/useStore";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 
-export const FocusPlate = ({
+export const SettingsFocusIndicator = ({
   container,
   sidebar = false,
 }: {
   container: RefObject<HTMLDivElement>;
   sidebar?: boolean;
 }) => {
-  const { navigation, glass } = useSettingsEnvironment(),
+  const { navigation, drawer } = useSettingsEnvironment(),
     key = useStore(navigation),
-    state = useStore(glass);
+    state = useStore(drawer);
   const [style, setStyle] = useState({
     transform: "",
     width: "0px",
@@ -46,7 +46,11 @@ export const FocusPlate = ({
   return (
     <div
       aria-hidden="true"
-      class={(sidebar ? "aero-settings-glider" : "aero-content-glider") + (visible ? " is-visible" : "")}
+      class={
+        "settings-focus-indicator " +
+        (sidebar ? "settings-focus-indicator--sidebar" : "settings-focus-indicator--content") +
+        (visible ? " is-visible" : "")
+      }
       style={style}
     />
   );
