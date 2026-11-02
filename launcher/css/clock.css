@@ -1,32 +1,53 @@
-/* Clock appearance rules ported from the independently tested AeroTizen
-   vertical-clock and four-style CSS. The default classic header is unchanged. */
-body:not(.clock-layout-compact) header.topbar {
-  height: auto;
-  min-height: 325px;
-  padding-bottom: 40px;
-  align-items: flex-start;
-  padding-top: 26px;
+body:not(.clock-layout-compact) {
+  --header-height: auto;
+  --header-min-height: 325px;
+  --header-padding-top: 26px;
+  --header-padding-bottom: 40px;
+  --header-align: flex-start;
+  --header-shortcuts-offset: 13px;
+  --header-status-gap: 0px;
+  --header-status-margin: auto;
+  --home-content-padding: 24px;
 }
-body:not(.clock-layout-compact) .topbar-left {
-  margin-top: 13px;
+
+/* clock: component-owned styles. */
+
+.weather {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 36px;
+  margin-right: 18px;
 }
-body:not(.clock-layout-compact) .topbar-right {
-  margin-left: auto;
-  gap: 0;
+.topbar-right.weather-only .weather {
+  margin-right: 0;
 }
-/* Centre navigation independently of the wider custom clock and status content. */
-body:not(.clock-layout-compact) header.topbar > .view-tabs {
-  position: absolute;
-  left: 50%;
-  top: 24px;
-  transform: translate3d(-50%, 0, 0);
+.weather svg {
+  width: 46px;
+  height: 46px;
 }
-body:not(.clock-layout-compact) .content-viewport main#rows {
-  padding-top: 24px;
+.weather b {
+  font-weight: 700;
 }
-body.clock-layout-compact .clock--expanded,
-.clock--expanded[hidden] {
-  display: none !important;
+.weather span {
+  color: var(--muted);
+  font-weight: 400;
+}
+.date {
+  font-size: 36px;
+  font-weight: 400;
+}
+.time {
+  font-size: 36px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  width: 8ch;
+  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+.time[data-format="24"] {
+  width: 5ch;
 }
 .clock--expanded {
   width: 470px;
@@ -44,18 +65,6 @@ body.clock-layout-compact .clock--expanded,
   text-shadow: 0 3px 16px rgba(0, 0, 0, 0.6);
   pointer-events: none;
   contain: layout style;
-}
-.clock--expanded .clock__time {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  font-family: "SamsungOne", "Roboto", "Helvetica Neue", Arial, sans-serif;
-  font-size: 114px;
-  font-weight: 300;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -5px;
-  line-height: 0.87;
-  white-space: nowrap;
 }
 .clock--expanded .clock__digit {
   display: block;
@@ -106,9 +115,15 @@ body.clock-layout-compact .clock--expanded,
   color: rgba(235, 241, 249, 0.82);
   white-space: nowrap;
 }
-
-/* The source project's four clock variants, in original styling. */
 .clock--expanded .clock__time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 114px;
+  font-weight: 300;
+  letter-spacing: -5px;
+  line-height: 0.87;
+  white-space: nowrap;
   font-family: "SamsungOne", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
   font-variant-numeric: tabular-nums lining-nums;
   font-feature-settings:
@@ -117,7 +132,6 @@ body.clock-layout-compact .clock--expanded,
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
-/* Large vertical */
 .clock--expanded:not(.clock--horizontal):not(.clock--minimal):not(.clock--bold) .clock__time {
   font-size: 118px;
   font-weight: 300;
@@ -128,7 +142,6 @@ body.clock-layout-compact .clock--expanded,
   font-weight: 400;
   letter-spacing: 0.2px;
 }
-/* Horizontal */
 .clock--expanded.clock--horizontal {
   width: 640px;
   flex-basis: 640px;
@@ -157,7 +170,6 @@ body.clock-layout-compact .clock--expanded,
   font-weight: 400;
   letter-spacing: 0.2px;
 }
-/* Thin */
 .clock--expanded.clock--minimal .clock__time {
   flex-direction: column;
   font-family: "Helvetica Neue", "SamsungOne", "Segoe UI", Arial, sans-serif;
@@ -188,7 +200,6 @@ body.clock-layout-compact .clock--expanded,
 .clock--expanded.clock--minimal .weather-status__location {
   font-size: 17px;
 }
-/* Bold */
 .clock--expanded.clock--bold .clock__time {
   flex-direction: column;
   font-family: "Arial Black", "SamsungOne", "Segoe UI", Arial, sans-serif;
@@ -216,81 +227,4 @@ body.clock-layout-compact .clock--expanded,
 }
 .clock--expanded.clock--bold .weather-status__temperature {
   font-weight: 700;
-}
-
-/* Clock setting cards retain upstream remote focus but reuse source previews. */
-#clock-layouts,
-#clock-styles {
-  flex-wrap: wrap;
-}
-#clock-layouts .pill,
-#clock-styles .pill {
-  border-radius: 14px;
-  min-height: 92px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: 5px;
-}
-#clock-layouts .pill {
-  min-width: 290px;
-}
-#clock-styles .pill {
-  min-width: 180px;
-}
-#clock-layouts .pill strong {
-  font-size: 23px;
-  font-weight: 600;
-  line-height: 1.12;
-}
-#clock-layouts .pill small {
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 1.12;
-}
-#clock-styles .clock-preview {
-  white-space: pre-line;
-  text-align: center;
-  font-family: "SamsungOne", "Helvetica Neue", Arial, sans-serif;
-  font-size: 37px;
-  font-weight: 300;
-  letter-spacing: -3px;
-  line-height: 0.78;
-}
-#clock-styles [data-key="clock-style:horizontal"] .clock-preview {
-  font-size: 30px;
-  font-weight: 300;
-  letter-spacing: -2px;
-  line-height: 1.05;
-}
-#clock-styles [data-key="clock-style:minimal"] .clock-preview {
-  font-family: "Helvetica Neue", "SamsungOne", Arial, sans-serif;
-  font-size: 30px;
-  font-weight: 100;
-  letter-spacing: 3px;
-  line-height: 1.02;
-  color: rgba(246, 249, 255, 0.9);
-}
-#clock-styles [data-key="clock-style:bold"] .clock-preview {
-  font-family: "Arial Black", "SamsungOne", Arial, sans-serif;
-  font-size: 39px;
-  font-weight: 900;
-  letter-spacing: -4px;
-  line-height: 0.73;
-  -webkit-text-stroke: 0.6px currentColor;
-}
-#clock-styles .pill small {
-  font-size: 18px;
-  line-height: 1.1;
-}
-.clock--expanded [hidden] {
-  display: none !important;
-}
-.clock-container:empty {
-  display: none;
-}
-body.clock-layout-compact .clock-container {
-  display: none;
 }

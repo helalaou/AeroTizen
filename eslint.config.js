@@ -150,7 +150,7 @@ module.exports = [
     languageOptions: { sourceType: "module", globals: { ...globals.node } },
   },
   {
-    files: ["tests/**/*.cjs", "eslint.config.js", "playwright.config.cjs"],
+    files: ["tests/**/*.cjs", "eslint.config.js", "playwright.config.cjs", "stylelint.config.cjs"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "commonjs",

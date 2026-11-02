@@ -36,7 +36,7 @@ Checks (CI runs the same):
 ruff check . && ruff format --check .
 pytest
 npm run format:check # checks frontend source, tests and tooling without writing
-npm run lint
+npm run lint        # ESLint and Stylelint; each rejects warnings
 npm run typecheck  # strict TypeScript checks for the launcher and Vite config
 npm run build      # type checks, then compiled Home and Settings in dist/launcher
 npm test           # launcher tests: tests/*.test.cjs, run in a Node sandbox
@@ -51,8 +51,10 @@ relaunch cancellation and app visibility, without contacting a TV.
 Run `npm run format` to apply the shared Prettier rules before committing frontend
 changes. Formatting covers launcher JavaScript, TypeScript, TSX, CSS, HTML and JSON;
 JavaScript tests and legacy HTML fixtures; root frontend configuration; the launcher build script; this guide;
-and the CI workflow. ESLint covers launcher code, tests and frontend tooling. The
-TypeScript checks also reject unused locals and parameters. CI rejects formatting
+and the CI workflow. ESLint covers launcher code, tests and frontend tooling.
+Stylelint checks active launcher CSS for errors and duplicate rules. Run either
+check alone with `npm run lint:js` or `npm run lint:css`. The TypeScript checks also
+reject unused locals and parameters. CI rejects formatting
 differences, lint warnings and errors, and type errors.
 
 Generated logos and build/test output are excluded from formatting. The app catalogue
@@ -111,8 +113,9 @@ production services do not render input tiles or replace a renderer at startup.
 Clock, weather and network services publish immutable snapshots. The application
 binds each status source once; views add no polling timers or forecast requests.
 `Clock` owns time/date presentation and uses layout variants. `WeatherStatus` and
-`NetworkStatus` own their markup. Existing CSS IDs stay in place until the naming
-and style cleanup stage.
+`NetworkStatus` own their markup. Component CSS has one owner; shared theme paint
+is defined in `launcher/css/themes.css`. Semantic IDs remain stable for service and
+test integration. See [style rules](docs/styles.md) for the cascade and CSS checks.
 
 ## Working on the launcher
 

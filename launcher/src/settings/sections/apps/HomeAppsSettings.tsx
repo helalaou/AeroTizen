@@ -20,7 +20,7 @@ export const HomeAppsSettings = ({ home, apps, actions, describeApp, fireplaceId
     <p class="hint">
       Press OK to show or hide a tile on the home screen. On the home screen, hold OK on a tile to move it.
     </p>
-    <div id="all-apps" class="grid">
+    <div id="all-apps" class="grid home-apps-settings">
       <AppStoreOption onSelect={actions.openStore} />
       <FireplaceOption
         id={fireplaceId}

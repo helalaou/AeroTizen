@@ -46,7 +46,7 @@ export const AppOption = ({
           onSelect();
         }
       }}
-      style={{ background: artwork.loaded ? "transparent" : brand.background }}
+      style={{ "--app-background": artwork.loaded ? "transparent" : brand.background }}
     >
       <div
         class={"app-fallback" + (!brand.label ? " logo-only" : "") + (brand.largeLogo ? " logo-big" : "")}

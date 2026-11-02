@@ -19,7 +19,7 @@ export const AppCard = ({ env, app, active }: { env: HomeEnvironment; app: Insta
       registered={active}
       className={"tile app-tile" + (moving ? " moving" : "")}
       title={brand.title}
-      style={{ background: brand.background }}
+      style={{ "--app-background": brand.background }}
     >
       <AppArtwork app={app} brand={brand} active={active} />
       {moving ? <ReorderControls env={env} id={app.id} /> : null}

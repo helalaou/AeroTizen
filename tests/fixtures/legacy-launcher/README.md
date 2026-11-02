@@ -4,10 +4,11 @@ These Home, Settings, feed, input and status renderers support regression and co
 tests. They are not production entry points or release assets. Change active views
 in `launcher/src/` and production markup in `launcher/index.html`.
 
-The fixture page uses `<base href="/launcher/">` to load shared runtime services,
-styles and assets from the current launcher. The clock stylesheet is frozen in
-`css/clock-layouts.css` here, so old clock selectors do not constrain active names. Its old view scripts load explicitly
-from this directory. Serve the repository root and open
+The fixture page uses `<base href="/launcher/">` to load shared runtime services
+and assets from the current launcher. Its styles are frozen in this directory's
+`css/` snapshot and load through explicit fixture URLs. This keeps the comparison
+render independent of active CSS, including the old clock selectors. Its old view
+scripts also load explicitly from this directory. Serve the repository root and open
 `/tests/fixtures/legacy-launcher/`, or run `npm run test:browser` for managed servers.
 The input view subscribes to the shared data service and keeps its tile constructors
 out of production. The old clock renderer is used by Node tests only; the page does not load it.

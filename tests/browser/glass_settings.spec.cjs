@@ -112,7 +112,7 @@ for (const glass of [false, true])
       const bounds = await page.locator("#editor").evaluate((el) => {
         const rule = Array.from(document.styleSheets)
           .flatMap((sheet) => Array.from(sheet.cssRules))
-          .find((rule) => rule.selectorText === "#editor.sheet.settings-drawer");
+          .find((rule) => rule.selectorText && el.matches(rule.selectorText) && rule.style.position === "fixed");
         const rect = el.getBoundingClientRect();
         return {
           sides: ["top", "right", "bottom", "left"].map((side) => rule.style[side]),
