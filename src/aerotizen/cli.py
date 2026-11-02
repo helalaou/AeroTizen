@@ -8,6 +8,10 @@
   aerotizen certs               sign in to Samsung, create signing certs for this TV
   aerotizen install launcher    download, sign, and install the latest launcher
   aerotizen install PATH        sign + install a local app folder or .wgt
+  aerotizen update launcher     update the installed launcher to the latest stable release
+  aerotizen update launcher --check  compare versions without installing
+  aerotizen update cli --check  compare CLI versions and show the release download link
+  aerotizen update cli          replace the standalone CLI with a newer release
   aerotizen uninstall launcher  remove the launcher (or: uninstall APPID for another app you installed)
   aerotizen key KEY_VOLUP [n]   press a remote button
   aerotizen launch APPID        open an app and check that it came up
@@ -36,7 +40,7 @@ from collections import OrderedDict
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from aerotizen import __version__, catalog, discover, remote
+from aerotizen import __version__, catalog, diagnostics, discover, remote
 from aerotizen.device import DeviceSession
 from aerotizen.sdb import SdbError
 
@@ -251,8 +255,27 @@ def verify_install(app_id, version, output, applist):
     print(f"\nTV confirmed installation: {app_id}. Installed version is unverified.")
 
 
+def _install_signed(session, src, temporary, host):
+    """Update in place with the saved signing profile and verify the TV's reply."""
+    from aerotizen import signer
+
+    app_id, version = app_metadata_of(src)
+    duid = session.duid()
+    tool_path = session.capability().get("sdk_toolpath", "/home/owner/share/tmp/sdk_tools")
+    cdir = cert_dir_for(duid)
+    if not os.path.exists(os.path.join(cdir, "distributor.p12")):
+        sys.exit(f"No certificates for this TV yet. Run: aerotizen --tv {host} certs")
+    signed = Path(temporary) / f"{app_id.split('.')[0]}-signed.wgt"
+    signer.sign_wgt(src, signed, cdir)
+    with open(os.path.join(cdir, "device-profile.xml"), "rb") as f:
+        session.push(f.read(), f"{tool_path}/device-profile.xml")
+    output = session.install(app_id, signed.read_bytes(), tool_path)
+    print(output.strip())
+    verify_install(app_id, version, output, session.applist())
+
+
 def cmd_install(args):
-    from aerotizen import releases, signer
+    from aerotizen import releases
 
     if args.src != "launcher" and (args.release_version is not None or args.release_repo is not None):
         sys.exit("--version and --release-repo apply only to 'install launcher'.")
@@ -267,23 +290,99 @@ def cmd_install(args):
                 )
                 src = downloaded.path
                 print(f"Downloaded launcher {downloaded.version}.")
-            app_id, version = app_metadata_of(src)
+            app_metadata_of(src)
             host = pick_tv(args)
             with require_sdb(host) as s:
-                duid = s.duid()
-                tool_path = s.capability().get("sdk_toolpath", "/home/owner/share/tmp/sdk_tools")
-                cdir = cert_dir_for(duid)
-                if not os.path.exists(os.path.join(cdir, "distributor.p12")):
-                    sys.exit(f"No certificates for this TV yet. Run: aerotizen --tv {host} certs")
-                signed = Path(temporary) / f"{app_id.split('.')[0]}-signed.wgt"
-                signer.sign_wgt(src, signed, cdir)
-                with open(os.path.join(cdir, "device-profile.xml"), "rb") as f:
-                    s.push(f.read(), f"{tool_path}/device-profile.xml")
-                output = s.install(app_id, signed.read_bytes(), tool_path)
-                print(output.strip())
-                verify_install(app_id, version, output, s.applist())
+                _install_signed(s, src, temporary, host)
     except (OSError, ValueError, zipfile.BadZipFile, ET.ParseError, KeyError, SdbError) as exc:
         sys.exit(f"Install failed: {exc}")
+
+
+def cmd_update_cli(args):
+    from aerotizen import releases
+
+    try:
+        release = releases.resolve_cli(repository=args.release_repo or releases.DEFAULT_REPOSITORY)
+        print(f"Installed CLI: {__version__}")
+        print(f"Latest stable CLI: {release.version}")
+        current_key, latest_key = releases.version_key(__version__), releases.version_key(release.version)
+        if current_key == latest_key:
+            print("The CLI is up to date.")
+        elif current_key > latest_key:
+            print("The installed CLI is newer than the latest stable release.")
+        else:
+            print("A CLI update is available.")
+            if release.download_url:
+                print(f"Download: {release.download_url}")
+                if args.check:
+                    print("Run 'aerotizen update cli' to install this release.")
+            else:
+                print("No matching CLI archive is available for this platform.")
+            print(f"Release: {release.release_url}")
+            if not args.check:
+                from aerotizen import self_update
+
+                result = self_update.install(
+                    release, repository=args.release_repo or releases.DEFAULT_REPOSITORY
+                )
+                if result.receipt:
+                    print(
+                        "CLI update staged. It will finish after this process exits. "
+                        f"Result: {result.receipt}"
+                    )
+                else:
+                    print(f"Updated CLI to {release.version}. Previous executable: {result.backup}")
+    except (OSError, ValueError) as exc:
+        action = "check " if args.check else ""
+        sys.exit(f"CLI update {action}failed: {exc}")
+
+
+def cmd_update(args):
+    from aerotizen import releases
+
+    if args.target == "cli":
+        cmd_update_cli(args)
+        return
+    try:
+        release = releases.resolve_launcher(repository=args.release_repo or releases.DEFAULT_REPOSITORY)
+        host = pick_tv(args)
+        with require_sdb(host) as session:
+            installed = [
+                app for app in catalog.parse_applist(session.applist()) if app["appid"] == releases.APP_ID
+            ]
+            if not installed:
+                sys.exit("The launcher is not installed. Run: aerotizen install launcher")
+            if len(installed) != 1 or installed[0]["pkgid"] != releases.PACKAGE_ID:
+                raise ValueError("The TV reported an unexpected launcher package identity.")
+            current = installed[0].get("version")
+            try:
+                current_key = releases.version_key(current)
+            except releases.ReleaseError:
+                current_key = None
+            print(f"Installed launcher: {current or 'version unavailable'}")
+            print(f"Latest stable launcher: {release.version}")
+            print(f"Minimum CLI version: {release.min_cli_version} (current: {__version__})")
+            latest_key = releases.version_key(release.version)
+            if current_key is not None and current_key > latest_key:
+                print("The installed launcher is newer than this release. No changes made.")
+                return
+            if current_key == latest_key:
+                print("The launcher is up to date. No changes made.")
+                return
+            if current_key is None:
+                print("The TV does not report a comparable version; an update cannot be confirmed.")
+            elif current_key < latest_key:
+                print("A launcher update is available.")
+            if args.check:
+                return
+            if current_key is None:
+                sys.exit("To install without a version comparison, run: aerotizen install launcher")
+            with TemporaryDirectory(prefix="aerotizen-update-") as temporary:
+                downloaded = release.download(Path(temporary))
+                print(f"Downloaded launcher {downloaded.version}.")
+                _install_signed(session, downloaded.path, temporary, host)
+    except (OSError, ValueError, zipfile.BadZipFile, ET.ParseError, KeyError, SdbError) as exc:
+        sys.exit(f"Update failed: {exc}")
 
 
 def cmd_uninstall(args):
@@ -343,6 +442,7 @@ def wait_on_screen(host, app_id, seconds=12.0):
 
 def cmd_launch(args):
     host = pick_tv(args)
+    diagnostics.event("app.launch_requested", app_id=args.appid)
     accepted, reply = remote.rest_launch(host, args.appid)
     print(f"REST launch: {reply}")
     if not accepted:
@@ -354,7 +454,13 @@ def cmd_launch(args):
             accepted = answer in (200, "200")  # TVs that reply send 200 on success, an error code otherwise
         except Exception as e:
             print(f"remote-channel launch failed: {e}")
+    diagnostics.event("app.launch_result", app_id=args.appid, accepted=accepted)
     status = wait_on_screen(host, args.appid)
+    diagnostics.event(
+        "app.visibility",
+        app_id=args.appid,
+        status="confirmed" if status and status.get("visible") else "unconfirmed",
+    )
     if status is None:
         print(f"{args.appid}: the TV doesn't report this app's state. Check the screen.")
         if not accepted:
@@ -485,6 +591,23 @@ def cmd_home(args):
         sys.exit(f"Home {args.home_command} failed: {exc}")
 
 
+def cmd_logs(args):
+    try:
+        if args.logs_command == "open":
+            diagnostics.open_logs(STATE_DIR)
+            return
+        output = args.output or Path(f"aerotizen-diagnostics-{datetime.datetime.now():%Y%m%d-%H%M%S}.zip")
+        if getattr(args, "include_home", False) and not args.tv:
+            sys.exit("Use --tv TV_IP with --include-home.")
+        path, tv_state = diagnostics.export_logs(
+            STATE_DIR, output, args.tv, include_home=getattr(args, "include_home", False)
+        )
+        print(f"Diagnostic report: {path}")
+        print(f"TV logs: {tv_state}. Recovery backups and credentials are excluded.")
+    except (OSError, ValueError) as error:
+        sys.exit(f"Diagnostic logs failed: {error}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="aerotizen", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -512,6 +635,13 @@ def main():
         "--release-repo", metavar="OWNER/REPO", help="download launcher releases from this repository"
     )
     p.set_defaults(fn=cmd_install)
+    p = sub.add_parser("update", help="update the launcher or standalone CLI")
+    p.add_argument("target", choices=["launcher", "cli"])
+    p.add_argument(
+        "--check", action="store_true", help="compare versions without downloading or installing the app"
+    )
+    p.add_argument("--release-repo", metavar="OWNER/REPO", help="use releases from this repository")
+    p.set_defaults(fn=cmd_update)
     p = sub.add_parser("uninstall", help="remove the launcher or another app you installed")
     p.add_argument("appid", help="'launcher' or an application ID")
     p.add_argument("--yes", action="store_true", help="don't ask for confirmation")
@@ -558,8 +688,19 @@ def main():
         if name == "apply":
             command.add_argument("--boot", action="store_true", help="also enable native Smart Hub autostart")
         command.set_defaults(fn=cmd_home)
+    p = sub.add_parser("logs", help="open local logs or export a redacted diagnostic report")
+    commands = p.add_subparsers(dest="logs_command", required=True)
+    commands.add_parser("open", help="open the local log folder").set_defaults(fn=cmd_logs)
+    p = commands.add_parser("export", help="export PC logs; add --tv IP to also fetch TV logs")
+    p.add_argument("--output", type=Path, help="new ZIP path; existing files are never overwritten")
+    p.add_argument(
+        "--include-home",
+        action="store_true",
+        help="also collect a read-only SDK Home snapshot (may take up to 35 seconds)",
+    )
+    p.set_defaults(fn=cmd_logs)
     args = parser.parse_args()
-    args.fn(args)
+    diagnostics.run_logged(args, args.fn, STATE_DIR)
 
 
 if __name__ == "__main__":

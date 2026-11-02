@@ -102,6 +102,9 @@ function harness(options = {}) {
     module: { exports: {} },
     require(name) {
       if (name === 'http') return http;
+      if (name === '../js/diagnostics') return kind => require('../launcher/js/diagnostics')(kind, { later: (fn, ms) => timer(fn, ms, 0) });
+      if (name === './diagnostics-context') return () => require('../launcher/service/diagnostics-context')({ read: done => done(null, 'VERSION_ID=9.0.0\nBUILD_ID=test') });
+      if (name === './diagnostics-store') return (tz, ready) => ready(options.diagnosticsStorage || null);
       if (name === './artmode') return config => { artOptions = config; return art; };
       if (name === './home-mode') return require('../launcher/service/home-mode');
       if (name === './home-store') return (tz, ready) => ready(preference, !!options.storageReadFailed);
@@ -615,6 +618,58 @@ test('startup diagnostics cannot restart native polling or launch an app', () =>
   assert.deepEqual(JSON.parse(JSON.stringify(h.state().startup)), trace);
   assert.equal(h.requests.length, before); assert.equal(h.launches.length, 0);
   assert.equal(h.art.starts, 0); assert.equal(h.state().homeControl.mode, 'native');
+});
+
+test('diagnostics enforce read access and batch limits without changing native Home mode', () => {
+  const h = harness({ capability: false }); h.api.onStart(); h.advance(0);
+  h.handoff('hold'); h.handoff('native');
+  function request(method, url, headers, data) {
+    const req = new EventEmitter(); Object.assign(req, { method, url, headers });
+    let code, body;
+    h.servers[0].handler(req, { writeHead(value) { code = value; }, end(value) { body = JSON.parse(value); } });
+    if (data !== undefined) req.emit('data', typeof data === 'string' ? data : JSON.stringify(data));
+    req.emit('end'); return { code, body };
+  }
+  const event = { id: 'ui-event-1', at: 12, source: 'ui', event: 'ui.appcontrol', data: { password: 'PRIVATE', action: 'home' } };
+  const before = h.requests.length;
+  assert.equal(request('GET', '/diagnostics/logs', {}).code, 403);
+  assert.equal(request('GET', '/diagnostics/logs', { origin: 'https://evil.test', 'x-aerotizen-diagnostics': '1' }).code, 403);
+  assert.equal(request('POST', '/diagnostics/events', { origin: 'https://evil.test' }, [event]).code, 403);
+  assert.equal(request('POST', '/diagnostics/events', { origin: 'null' }, [event]).code, 200);
+  assert.equal(request('POST', '/diagnostics/events', {}, [Object.assign({}, event, { source: 'service' })]).code, 400);
+  assert.equal(request('POST', '/diagnostics/events', {}, Array(25).fill(event)).code, 400);
+  assert.equal(request('POST', '/diagnostics/events', {}, 'x'.repeat(16385)).code, 413);
+  assert.equal(request('POST', '/diagnostics/events', {}, { schema_version: 1, records: [event], version: '2.4.0', build: { build_id: 'a'.repeat(64) }, health: { storage: 'failed', discarded: 2 }, queued: 1 }).code, 200);
+  const logs = request('GET', '/diagnostics/logs', { 'x-aerotizen-diagnostics': '1' });
+  assert.equal(logs.code, 200); assert.equal(logs.body.schema_version, 1);
+  assert.equal(logs.body.ui.health.discarded, 2); assert.equal(logs.body.environment.tizen, '9.0.0');
+  assert.ok(logs.body.records.some(item => item.event === event.event));
+  assert.ok(!JSON.stringify(logs.body).includes('PRIVATE'));
+  h.advance(60000);
+  assert.equal(h.requests.length, before); assert.equal(h.launches.length, 0);
+  assert.equal(h.art.starts, 0); assert.equal(h.state().homeControl.mode, 'native');
+});
+
+test('pending diagnostic storage does not delay Home requests or native mode control', () => {
+  const saves = [], completions = [];
+  const h = harness({ capability: false, diagnosticsStorage: {
+    load: done => done(null, null), save: (value, done) => { saves.push(value); completions.push(done); }
+  } });
+  h.api.onStart(); h.advance(0); h.handoff('hold'); h.handoff('native');
+  assert.equal(saves.length, 0); h.advance(500); assert.equal(saves.length, 1);
+  const before = h.requests.length;
+  assert.equal(h.control('/home').homeControl.mode, 'native');
+  assert.equal(h.handoff('hold', 'c'.repeat(32)).code, 200);
+  assert.equal(h.handoff('native', 'c'.repeat(32)).code, 200);
+  h.advance(60000); assert.equal(saves.length, 1);
+  assert.equal(h.requests.length, before); assert.equal(h.launches.length, 0);
+  assert.equal(h.state().heartbeats, 0);
+  let logs;
+  h.servers[0].handler({ method: 'GET', url: '/diagnostics/logs', headers: { 'x-aerotizen-diagnostics': '1' } }, {
+    writeHead(status) { assert.equal(status, 200); }, end(data) { logs = JSON.parse(data); }
+  });
+  assert.ok(logs.records.some(item => item.event === 'service.request' && item.data.action === 'home'));
+  completions.shift()(null); h.advance(500); assert.equal(saves.length, 2);
 });
 
 let failed = 0;

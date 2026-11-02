@@ -29,9 +29,20 @@ test('compiled Settings ships local scripts, a mount point and the Preact licens
 test('Settings compilation preserves all other runtime scripts, CSS, service and app identity', () => {
   for (const directory of ['js', 'css', 'service']) {
     for (const file of readdirSync(path.join(root, 'launcher', directory))) {
-      if (directory === 'js' && file === 'settings-ui.js') { continue; }
+      if (directory === 'js' && ['settings-ui.js', 'build-info.js'].includes(file)) { continue; }
       assert.equal(read(output, `${directory}/${file}`), read(path.join(root, 'launcher'), `${directory}/${file}`));
     }
   }
   assert.equal(read(output, 'config.xml'), read(path.join(root, 'launcher'), 'config.xml'));
+});
+
+
+test('shipped UI and service share a content build identity without local paths', () => {
+  const info = require(path.join(output, 'js/build-info.js'));
+  assert.match(info.build_id, /^[a-f0-9]{64}$/);
+  assert.match(info.version, /^\d+\.\d+\.\d+$/);
+  assert.match(info.commit, /^[a-f0-9]{40,64}$/);
+  assert.equal(typeof info.dirty, 'boolean');
+  assert.deepEqual(Object.keys(info).sort(), ['build_id', 'commit', 'dirty', 'version']);
+  assert.ok(read(output, 'index.html').indexOf('js/build-info.js') < read(output, 'index.html').indexOf('js/diagnostics.js'));
 });

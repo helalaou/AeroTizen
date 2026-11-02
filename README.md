@@ -160,10 +160,43 @@ You need a computer on the same network as the TV.
    compatibility, signs it with your TV certificates, and installs it. No source checkout
    or Node.js is needed. Keep your existing certificates for future app updates.
 
-   Run the same command to install a newer launcher. To select a version, use
-   `./aerotizen install launcher --version 2.2.0` (replace the number with a published
-   launcher version). CLI and launcher versions are independent; a launcher release
-   can require a newer CLI. Use `./aerotizen --version` to check your CLI version.
+   Check for a launcher update, then install it:
+
+   ```bash
+   ./aerotizen update launcher --check
+   ./aerotizen update launcher
+   ```
+
+   The check shows the installed version, latest stable release, and minimum CLI
+   version. It does not download the app or need signing certificates. The update
+   uses your saved certificates and installs in place, keeping launcher settings.
+   If the installed version is current or newer, it makes no changes.
+
+   Some TVs do not report an app version. The update reports that it cannot compare
+   versions and stops. Use `./aerotizen install launcher` to explicitly install the
+   latest stable release without a comparison, or to reinstall the current release.
+   This can replace a newer development build.
+
+   To select a specific version, use `./aerotizen install launcher --version 2.2.0`
+   (replace the number with a published launcher version). CLI and launcher versions
+   are independent; these commands update the TV launcher, not the CLI executable.
+   A launcher release can require a newer CLI. Check and update a downloaded
+   standalone copy with:
+
+   ```bash
+   ./aerotizen update cli --check
+   ./aerotizen update cli
+   ```
+
+   These commands need no TV connection. The update downloads the matching OS/CPU
+   archive, verifies its checksum and version, and replaces the running CLI's file.
+   It keeps the previous executable and prints its backup path. Current or newer
+   versions are left unchanged. Settings and TV certificates stay in place.
+
+   On Windows, replacement finishes after the original process exits. Wait for the
+   completion message; the command also prints a JSON result path for failures.
+   Python-installed copies show a package-installer command instead of replacing
+   the Python executable. Use `./aerotizen --version` to confirm the installed version.
 
    To install local development files or a downloaded package, use an explicit path:
    `./aerotizen install ./dist/launcher` (after `npm ci && npm run build`) or
@@ -294,6 +327,41 @@ Samsung Home remains available from AeroTizen Settings; Samsung's Art Mode sleep
 Night Mode settings stay unchanged. See [setup and recovery](docs/home-pc-flow.md) for
 backup transfer and recovery steps. Test reports should include the CLI commit, TV model,
 firmware, and Home/restore/boot results; remove device IDs and private paths before sharing.
+
+## Diagnostic logs
+
+The CLI saves a local log for each command. To find the files or create a report:
+
+```sh
+./aerotizen logs open
+./aerotizen logs export
+./aerotizen --tv TV_IP logs export
+```
+
+Export creates a ZIP in the current folder. Adding `--tv` also fetches recent launcher
+and background-service events through the developer connection. It does not launch
+apps or change Home settings. If the TV is unavailable, the ZIP still contains PC logs.
+TV logs need a launcher build with this feature and a running background service.
+On the tested Frame, return from another app before exporting after a cold start
+to include queued UI startup events.
+
+The report includes TV/firmware details when available, exact CLI/launcher build IDs,
+launch results, error codes and source locations, and logging health. For Home or startup bugs,
+add `--include-home` to read the native routing settings (up to 35 seconds; no setting
+changes). Missing information is marked in the report.
+
+TV events are buffered in memory and saved in asynchronous batches, outside remote
+action handlers. Error formatting is deferred too. Session, sequence and elapsed time
+keep events ordered even if the TV clock is wrong. A sudden power cut can lose the
+unsaved batch. Attach the ZIP and reproduction steps using the GitHub bug report form.
+
+Logs use approved technical fields. Console output, raw error messages, names, accounts,
+network addresses and content titles are excluded. Third-party app IDs use temporary
+aliases. Reports retain model/firmware, build details, event times and Home readback
+results. Exports also exclude certificates, login tokens and recovery backup files.
+Check the report before sharing it. Nothing is uploaded automatically. Keep your original
+Home backup folder separately for restore. See [diagnostics](docs/diagnostics.md) for
+file locations, limits and troubleshooting.
 
 ## Limits
 

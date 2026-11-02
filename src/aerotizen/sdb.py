@@ -42,20 +42,27 @@ class Sdb:
         )
         self.sock.sendall(header + payload)
 
-    def _recv_exact(self, n):
+    def _recv_exact(self, n, deadline=None):
         buf = b""
         while len(buf) < n:
+            if deadline is not None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise SdbError("SDB request deadline exceeded")
+                self.sock.settimeout(remaining)
             chunk = self.sock.recv(n - len(buf))
             if not chunk:
                 raise SdbError("connection closed by TV")
             buf += chunk
         return buf
 
-    def _recv(self):
-        cmd, arg0, arg1, length, _checksum, magic = struct.unpack("<6I", self._recv_exact(24))
+    def _recv(self, deadline=None, max_frame=None):
+        cmd, arg0, arg1, length, _checksum, magic = struct.unpack("<6I", self._recv_exact(24, deadline))
+        if max_frame is not None and length > max_frame:
+            raise SdbError("SDB frame size limit exceeded")
         if magic != cmd ^ 0xFFFFFFFF:
             raise SdbError(f"bad frame magic for {cmd:#x}")
-        return cmd, arg0, arg1, self._recv_exact(length) if length else b""
+        return cmd, arg0, arg1, self._recv_exact(length, deadline) if length else b""
 
     # -- session -------------------------------------------------------------
     def connect(self, attempts=3):
@@ -146,6 +153,41 @@ class Sdb:
             return self._service(f"shell:{command}", time.monotonic() + timeout, max_output)
         finally:
             if self.sock is not None:
+                self.sock.settimeout(previous)
+
+    def tcp_request(self, port, request, timeout=5, max_output=262144):
+        """One bounded request over the owned SDB socket; no server or app launch."""
+        if type(port) is not int or not 1 <= port <= 65535 or not request or len(request) > self.max_data:
+            raise ValueError("Invalid SDB TCP request")
+        previous = self.sock.gettimeout()
+        local_id = self._next_id
+        self._next_id += 1
+        remote_id, sent, completed = None, False, False
+        deadline = time.monotonic() + timeout
+        output = bytearray()
+        try:
+            self._send(OPEN, local_id, 0, f"tcp:{port}\0".encode())
+            while True:
+                cmd, arg0, arg1, payload = self._recv(deadline, MAX_DATA)
+                if arg1 != local_id:
+                    continue
+                if cmd == OKAY and not sent:
+                    remote_id, sent = arg0, True
+                    self._send(WRTE, local_id, remote_id, request)
+                elif cmd == WRTE:
+                    output.extend(payload)
+                    if len(output) > max_output:
+                        raise SdbError("TV diagnostics output limit exceeded")
+                    self._send(OKAY, local_id, arg0)
+                elif cmd == CLSE:
+                    if remote_id is not None:
+                        self._send(CLSE, local_id, arg0)
+                    completed = True
+                    return bytes(output)
+        finally:
+            if not completed:
+                self.close()  # Do not reuse a socket containing an uncertain stream.
+            elif self.sock is not None:
                 self.sock.settimeout(previous)
 
     def push(self, data, remote_path):
