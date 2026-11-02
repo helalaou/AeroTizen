@@ -65,6 +65,7 @@ def launcher(tmp_path):
     (runtime / "js/launcher-ui.js").write_text("compiled Home and Settings")
     (runtime / "licenses").mkdir()
     (runtime / "licenses/preact.txt").write_text("MIT License")
+    (runtime / "licenses/lucide-preact.txt").write_text("ISC License; inherited Feather MIT notice")
     (runtime / "src/settings").mkdir(parents=True)
     (runtime / "src/settings/index.tsx").write_text("must not ship")
     return root
@@ -84,6 +85,7 @@ def test_launcher_is_unsigned_deterministic_and_has_verified_manifest(launcher, 
             "index.html",
             "js/launcher-ui.js",
             "js/main.js",
+            "licenses/lucide-preact.txt",
             "licenses/preact.txt",
             "service/artmode.js",
             "service/home-mode.js",
@@ -177,8 +179,8 @@ def test_launcher_rejects_stale_compiled_manifest(launcher, tmp_path):
     assert not (tmp_path / "assets").exists()
 
 
-@pytest.mark.parametrize("name", ["js/launcher-ui.js", "licenses/preact.txt"])
-def test_launcher_requires_preact_runtime_and_license(launcher, tmp_path, name):
+@pytest.mark.parametrize("name", ["js/launcher-ui.js", "licenses/preact.txt", "licenses/lucide-preact.txt"])
+def test_launcher_requires_ui_runtime_and_licenses(launcher, tmp_path, name):
     (launcher / "dist/launcher" / name).unlink()
     with pytest.raises(ValueError, match=r"(?i)runtime file"):
         build.build_launcher(launcher, tmp_path / "assets")
@@ -201,6 +203,7 @@ def test_launcher_rejects_legacy_settings_markup(launcher, tmp_path):
         "settings-ui.js",
         "inputs-view.js",
         "status-view.js",
+        "brands-view.js",
     ],
 )
 def test_launcher_rejects_legacy_renderer_assets(launcher, tmp_path, name):

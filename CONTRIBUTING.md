@@ -169,7 +169,8 @@ local package checks, and failed-build recovery. Build outputs belong in release
 assets, not in Git.
 
 See [component ownership](docs/component-structure.md) for the Home/Settings responsibility
-map, component naming, navigation refs and style owners.
+map, component naming, navigation refs and style owners. Follow the
+[interface icon rules](docs/icons.md) for named imports, labels and notices.
 
 ## Updating app metadata
 

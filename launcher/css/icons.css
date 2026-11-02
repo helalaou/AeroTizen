@@ -1,0 +1,59 @@
+.ui-icon {
+  display: block;
+  flex-shrink: 0;
+}
+.input-card__icon {
+  display: flex;
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #2c2c30;
+  color: var(--fg);
+}
+.input-card__icon > svg.ui-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 0;
+}
+#editor .settings-category__icon,
+#editor .settings-category__chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+}
+#editor .settings-category__icon > .ui-icon {
+  width: 27px;
+  height: 27px;
+}
+
+.selection-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--focus);
+  color: #fff;
+}
+.selection-indicator > svg.ui-icon {
+  width: 26px;
+  height: 26px;
+}
+.swatch > .selection-indicator {
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+}
+.swatch > .selection-indicator > svg.ui-icon {
+  width: 22px;
+  height: 22px;
+}

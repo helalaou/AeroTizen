@@ -34,6 +34,7 @@
     "vite": "8.3.5"
   },
   "dependencies": {
+    "lucide-preact": "1.66.0",
     "preact": "10.29.8"
   },
   "engines": {

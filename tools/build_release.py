@@ -62,10 +62,20 @@ def build_launcher(root, output, tag=None):
         "settings-ui.js",
         "inputs-view.js",
         "status-view.js",
+        "brands-view.js",
     ):
         if (launcher / "js" / name).exists():
             raise ValueError(f"Compiled launcher contains legacy renderer {name}; run npm run build again")
-    files = [launcher / name for name in ("config.xml", "index.html", "icon.png", "licenses/preact.txt")]
+    files = [
+        launcher / name
+        for name in (
+            "config.xml",
+            "index.html",
+            "icon.png",
+            "licenses/preact.txt",
+            "licenses/lucide-preact.txt",
+        )
+    ]
     for directory, suffix in (("css", ".css"), ("js", ".js"), ("service", ".js")):
         files.extend((launcher / directory).rglob(f"*{suffix}"))
     if (launcher / "js/photo-weather.js").is_file():

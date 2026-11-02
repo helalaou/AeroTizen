@@ -54,7 +54,7 @@ export interface LauncherRuntime {
   network: Store<NetworkSnapshot> & { updateVisibility(): void; refresh(): void };
   settings: SettingsSource;
   settingsUi?: SettingsBridge;
-  tiles: { ICONS: Record<string, string>; describe(app: InstalledApp): AppPresentation };
+  tiles: { describe(app: InstalledApp): AppPresentation };
   toast(message: string): void;
 }
 

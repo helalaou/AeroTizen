@@ -537,9 +537,7 @@ body.glass-ui .view-tab.focused {
 #editor .settings-drawer__scroll > .settings-focus-indicator--content {
   border-radius: 17px;
 }
-body.glass-ui .input-card__icon svg > rect:first-child {
-  fill: transparent;
-}
+
 /* One ref-measured plate moves between controls; controls add no second ring. */
 body.glass-ui .topbar-left > #gear.focused,
 body.glass-ui .topbar-left > #samsung-home-shortcut.focused,
@@ -588,8 +586,7 @@ body.glass-ui {
   --focus: #edf2ff;
   --focus-glow: rgba(237, 242, 255, 0.23);
 }
-body.glass-ui .grid .tile.on::after,
-body.glass-ui .swatch.on::after {
+body.glass-ui .selection-indicator {
   background-color: #475269;
 }
 body.glass-ui .continue-card {

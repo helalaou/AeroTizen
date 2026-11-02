@@ -1,4 +1,5 @@
 import { FlameIcon } from "../../../shared/icons/FlameIcon";
+import { SelectionIndicator } from "../../components/SelectionIndicator";
 import { SettingsControl } from "../../components/SettingsControl";
 
 export const FireplaceOption = ({ id, selected, onSelect }: { id: string; selected: boolean; onSelect(): void }) => (
@@ -12,5 +13,6 @@ export const FireplaceOption = ({ id, selected, onSelect }: { id: string; select
   >
     <FlameIcon />
     <div class="name">Fireplace</div>
+    {selected ? <SelectionIndicator /> : null}
   </SettingsControl>
 );

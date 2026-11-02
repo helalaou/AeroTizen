@@ -1,6 +1,8 @@
+import { Move, SquareMinus, SquarePlus } from "lucide-preact";
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 
 import { useStore } from "../../shared/hooks/useStore";
+import { Icon } from "../../shared/icons/Icon";
 import type { HomeEnvironment } from "../types";
 export const AppActionsMenu = ({ env }: { env: HomeEnvironment }) => {
   const { menu } = useStore(env.state),
@@ -47,18 +49,7 @@ export const AppActionsMenu = ({ env }: { env: HomeEnvironment }) => {
             onClick={() => env.choose(i)}
           >
             <span class="app-actions-menu__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                {choice.action !== "move" ? <rect x="4" y="4" width="16" height="16" rx="4" /> : null}
-                <path
-                  d={
-                    choice.action === "add"
-                      ? "M12 8v8M8 12h8"
-                      : choice.action === "move"
-                        ? "M12 3v18M3 12h18M8 6.5 12 3l4 3M8 18l4 3 4-3M6 8l-3 4 3 4M18 8l3 4-3 4"
-                        : "M8 12h8"
-                  }
-                />
-              </svg>
+              <Icon icon={choice.action === "add" ? SquarePlus : choice.action === "move" ? Move : SquareMinus} />
             </span>
             <span class="app-actions-menu__label">{env.translate(choice.label)}</span>
           </div>

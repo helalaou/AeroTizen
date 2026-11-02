@@ -20,3 +20,8 @@ and presentation tests. It subscribes to the same data services as production. P
 service tests also run without it and reject attempts to query view hosts. The active
 clock is `launcher/src/status/Clock.tsx`; the old clock-layout renderer remains only
 for legacy regression coverage.
+
+`brands-view.js` retains the original tile constructors and input icon strings for
+legacy artwork/rendering tests. Production `brands.js` exposes presentation data
+only. `css/selection.css` keeps the old selection badges for the comparison view;
+active Settings uses SelectionIndicator and the shared icon components.

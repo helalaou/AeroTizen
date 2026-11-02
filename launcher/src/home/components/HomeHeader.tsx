@@ -1,4 +1,7 @@
+import { House, Settings } from "lucide-preact";
+
 import { useStore } from "../../shared/hooks/useStore";
+import { Icon } from "../../shared/icons/Icon";
 import { HeaderStatus } from "../../status/HeaderStatus";
 import { NetworkStatus } from "../../status/NetworkStatus";
 import type { HomeEnvironment } from "../types";
@@ -20,13 +23,7 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
           preserveSelection
           title={env.translate("Settings")}
         >
-          <svg viewBox="0 0 24 24">
-            <path
-              fill="currentColor"
-              d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1L11 21h4l.4-2.9a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5A3.5 3.5 0 1 1 13 8.5a3.5 3.5 0 0 1 0 7z"
-              transform="translate(-1 0)"
-            />
-          </svg>
+          <Icon icon={Settings} />
         </HomeControl>
         <HomeControl
           env={env}
@@ -35,9 +32,7 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
           className="icon-btn samsung-home-shortcut"
           title={env.translate("Use Samsung Home instead")}
         >
-          <svg viewBox="0 0 24 24">
-            <path fill="none" stroke="currentColor" stroke-width="1.6" d="M3 11 12 3l9 8v10h-6v-7H9v7H3Z" />
-          </svg>
+          <Icon icon={House} />
         </HomeControl>
         <NetworkStatus status={env.status} translate={env.translate} />
       </div>

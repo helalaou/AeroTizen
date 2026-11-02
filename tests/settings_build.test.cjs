@@ -30,6 +30,15 @@ test("compiled launcher uses the production page, local scripts and the Preact l
   assert.equal(existsSync(path.join(output, "src")), false, "TypeScript source is not a TV runtime asset");
   assert.doesNotMatch(read(output, "js/launcher-ui.js"), /@vite\/client|@prefresh|preact\/debug/);
   assert.match(read(output, "licenses/preact.txt"), /MIT License/);
+  assert.equal(
+    read(output, "licenses/lucide-preact.txt"),
+    read(path.join(root, "node_modules/lucide-preact"), "LICENSE"),
+  );
+  assert.match(read(output, "licenses/lucide-preact.txt"), /ISC License/);
+  assert.match(
+    read(output, "licenses/lucide-preact.txt"),
+    /The MIT License.*Feather|The MIT License.*icons listed above/,
+  );
 });
 
 test("compilation preserves runtime scripts, CSS, service and app identity", () => {
@@ -56,6 +65,7 @@ test("legacy views remain test fixtures and cannot enter the compiled runtime", 
     "clock-layouts.js",
     "inputs-view.js",
     "status-view.js",
+    "brands-view.js",
   ]) {
     assert.ok(existsSync(path.join(root, "tests/fixtures/legacy-launcher/js", file)), file);
     assert.equal(existsSync(path.join(root, "launcher/js", file)), false, file);
@@ -74,4 +84,16 @@ test("shipped UI and service share a content build identity without local paths"
   assert.ok(
     read(output, "index.html").indexOf("js/build-info.js") < read(output, "index.html").indexOf("js/diagnostics.js"),
   );
+});
+
+test("TV bundle includes only the selected Lucide icons", () => {
+  const audit = JSON.parse(read(path.join(root, "dist"), "launcher-icons.json"));
+  assert.equal(audit.package, "lucide-preact");
+  assert.equal(audit.version, JSON.parse(read(path.join(root, "node_modules/lucide-preact"), "package.json")).version);
+  assert.ok(audit.available > 1000);
+  assert.ok(audit.rendered.length > 0 && audit.rendered.length < 100, "the full icon catalogue must not ship");
+  assert.ok(audit.rendered.includes("settings"));
+  assert.ok(audit.rendered.includes("hdmi-port"));
+  assert.ok(!audit.rendered.includes("a-arrow-down"), "unused icons are removed");
+  assert.ok(Buffer.byteLength(read(output, "js/launcher-ui.js")) < 160 * 1024, "reject accidental catalogue bundling");
 });

@@ -98,6 +98,18 @@ module.exports = [
       "no-restricted-syntax": [
         "error",
         {
+          selector: 'ImportDeclaration[source.value="lucide-preact"] > ImportNamespaceSpecifier',
+          message: "Import named Lucide icons so unused icons can be removed.",
+        },
+        {
+          selector: 'ImportDeclaration[source.value="lucide-preact"] > ImportSpecifier[imported.name="icons"]',
+          message: "Do not import the Lucide icon catalogue.",
+        },
+        {
+          selector: 'ImportExpression[source.value="lucide-preact"]',
+          message: "Import named Lucide icons statically.",
+        },
+        {
           selector: "ExportNamedDeclaration > FunctionDeclaration",
           message: "Export functions as const arrow functions.",
         },

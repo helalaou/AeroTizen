@@ -5,6 +5,7 @@ import type { BackgroundOption, LauncherConfig } from "../../contracts/launcher"
 import { useStore } from "../../shared/hooks/useStore";
 import { ChoiceGroup } from "../components/ChoiceGroup";
 import { ChoiceOption } from "../components/ChoiceOption";
+import { SelectionIndicator } from "../components/SelectionIndicator";
 import { SettingsControl } from "../components/SettingsControl";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 import type { SettingsSectionProps } from "../types";
@@ -43,6 +44,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
           onClick={() => actions.setBackground(background.id)}
         >
           <span>{background.name}</span>
+          {background.id === settings.background ? <SelectionIndicator /> : null}
         </SettingsControl>
       ));
   };

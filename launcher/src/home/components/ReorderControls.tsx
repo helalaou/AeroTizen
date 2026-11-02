@@ -1,11 +1,9 @@
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-preact";
+
 import { useStore } from "../../shared/hooks/useStore";
+import { Icon } from "../../shared/icons/Icon";
 import type { HomeEnvironment } from "../types";
-const paths = {
-  left: "M15 5l-7 7 7 7",
-  right: "M9 5l7 7-7 7",
-  up: "M5 15l7-7 7 7",
-  down: "M5 9l7 7 7-7",
-};
+const directions = { left: ChevronLeft, right: ChevronRight, up: ChevronUp, down: ChevronDown };
 export const ReorderControls = ({ env, id }: { env: HomeEnvironment; id: string }) => {
   const { draft } = useStore(env.state),
     settings = useStore(env.settings);
@@ -20,20 +18,11 @@ export const ReorderControls = ({ env, id }: { env: HomeEnvironment; id: string 
   };
   return (
     <>
-      {(Object.keys(paths) as (keyof typeof paths)[])
+      {(Object.keys(directions) as (keyof typeof directions)[])
         .filter((direction) => allowed[direction])
         .map((direction) => (
           <div key={direction} class={"move-arrow " + direction} aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path
-                fill="none"
-                stroke="#111"
-                stroke-width="3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d={paths[direction]}
-              />
-            </svg>
+            <Icon icon={directions[direction]} color="#111" />
           </div>
         ))}
     </>

@@ -23,6 +23,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `AppearanceSettings`, `ClockSettings`, `InputSettings` | Appearance/card choices, clock choices and Live TV/HDMI controls respectively | Section-specific settings and named actions |
 | `HomeAppsSettings`, `AppOption`, `FireplaceOption`, `AppStoreOption` | Home membership and app-store options | Selection state; they do not launch Home tiles |
 | `ChoiceGroup`, `ChoiceOption` | A labelled choice group and one selectable option | Value, options and selection callback |
+| `SelectionIndicator` | Decorative selected-choice check with a consistent contrast badge | Parent control owns selection and `aria-pressed` |
 | `SettingsControl` | Register a Settings control and render focus/activation | Settings navigation context |
 
 `HomeControl` and `SettingsControl` remain separate because they use different
@@ -46,6 +47,7 @@ keys and values also remain compatible.
 
 | Stylesheet | Owner |
 | --- | --- |
+| `icons.css` | Icon sizing, input icon badges and selection indicators |
 | `preact-home.css` | Home viewport/masks, page movement and header focus geometry |
 | `clock-layouts.css` | Clock layouts and their header clearance; clock choice previews |
 | `source-dock.css` | InputDock and InputCard layout/states |
@@ -57,3 +59,6 @@ keys and values also remain compatible.
 Theme token and selector consolidation is a separate cleanup stage. Legacy view
 fixtures retain their old clock stylesheet so comparisons do not follow active
 clock-selector changes. They are excluded from production packages.
+
+See [interface icons](icons.md) for named imports, accessibility, custom artwork and
+third-party notices.

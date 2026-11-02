@@ -100,11 +100,6 @@
   display: block;
   width: 26px;
   height: 26px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 .app-actions-menu__label {
   min-width: 0;

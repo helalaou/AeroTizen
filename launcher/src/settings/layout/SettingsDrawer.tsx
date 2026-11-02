@@ -1,6 +1,8 @@
+import { ChevronRight, X } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 
 import { useStore } from "../../shared/hooks/useStore";
+import { Icon } from "../../shared/icons/Icon";
 import { SettingsControl } from "../components/SettingsControl";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 
@@ -41,14 +43,14 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
               onClick={() => drawer.set({ category: category.id, expanded: true })}
             >
               <span class="settings-category__icon" aria-hidden="true">
-                {category.icon}
+                <Icon icon={category.icon} />
               </span>
               <span class="settings-category__label">
                 <strong>{text(category.title)}</strong>
                 <small>{text(category.hint)}</small>
               </span>
               <span class="settings-category__chevron" aria-hidden="true">
-                ›
+                <Icon icon={ChevronRight} />
               </span>
             </SettingsControl>
           ))}
@@ -68,7 +70,7 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
             aria-label={text("Close settings")}
             onClick={bridge.close}
           >
-            ×
+            <Icon icon={X} />
           </SettingsControl>
         </div>
         <div class="settings-drawer__scroll" ref={categoryScroll}>

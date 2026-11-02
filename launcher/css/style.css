@@ -477,18 +477,6 @@ h2 {
   color: #fff;
   text-shadow: 0 1px 4px #000;
 }
-.swatch.on::after {
-  content: "";
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--focus)
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z'/%3E%3C/svg%3E")
-    center/22px no-repeat;
-}
 
 /* focused theme swatch: unmistakable */
 .swatch.focused {
@@ -593,18 +581,6 @@ h2 {
 }
 .grid .tile .name {
   font-size: 34px;
-}
-.grid .tile.on::after {
-  content: "";
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--focus)
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z'/%3E%3C/svg%3E")
-    center/26px no-repeat;
 }
 
 .escape {

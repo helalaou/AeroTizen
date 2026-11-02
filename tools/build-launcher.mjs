@@ -21,7 +21,35 @@ async function verifyScripts(directory) {
   }
 }
 
-await build({ configFile: path.join(root, "vite.config.mts") });
+const result = await build({ configFile: path.join(root, "vite.config.mts") });
+// Record rendered modules outside the TV runtime, so CI can verify tree shaking.
+const rendered = new Set();
+for (const buildResult of Array.isArray(result) ? result : [result]) {
+  for (const chunk of buildResult.output) {
+    if (chunk.type !== "chunk") continue;
+    for (const [id, module] of Object.entries(chunk.modules)) {
+      const icon = id.replaceAll("\\", "/").match(/\/lucide-preact\/dist\/esm\/icons\/([^/]+)\.mjs$/);
+      if (icon && module.renderedLength > 0) rendered.add(icon[1]);
+    }
+  }
+}
+const iconRoot = path.join(root, "node_modules/lucide-preact");
+const iconPackage = JSON.parse(await readFile(path.join(iconRoot, "package.json"), "utf8"));
+const available = (await readdir(path.join(iconRoot, "dist/esm/icons"))).filter((file) => file.endsWith(".mjs")).length;
+await writeFile(
+  path.join(root, "dist/launcher-icons.json"),
+  JSON.stringify(
+    {
+      package: iconPackage.name,
+      version: iconPackage.version,
+      available,
+      rendered: [...rendered].sort(),
+    },
+    null,
+    2,
+  ) + "\n",
+);
+console.log(`Lucide: ${rendered.size} of ${available} icon modules retained.`);
 const digest = createHash("sha256");
 async function identify(directory) {
   for (const item of (await readdir(directory, { withFileTypes: true })).sort((a, b) =>

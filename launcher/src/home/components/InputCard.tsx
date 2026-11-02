@@ -1,4 +1,7 @@
+import { Gamepad2, HdmiPort, Monitor, RectangleEllipsis, Tv } from "lucide-preact";
+
 import type { InputSource } from "../../contracts/launcher";
+import { Icon } from "../../shared/icons/Icon";
 import type { HomeEnvironment } from "../types";
 
 import { HomeControl } from "./HomeControl";
@@ -16,6 +19,7 @@ export const InputCard = ({ env, source, glass }: { env: HomeEnvironment; source
           : /cable|box|roku|fire|apple|shield|chromecast|blu|dvd|satellite/i.test(label)
             ? "box"
             : "hdmi";
+  const glyph = { tv: Tv, game: Gamepad2, pc: Monitor, box: RectangleEllipsis, hdmi: HdmiPort }[kind];
   const recognized = env.runtime.inputs.hasRecognizedDevice?.(source);
   const pinned = env.runtime.inputs.alwaysVisible?.(source);
   const status =
@@ -46,12 +50,9 @@ export const InputCard = ({ env, source, glass }: { env: HomeEnvironment; source
       className={"tile" + (glass ? " input-card input-card--" + status : "") + (disconnected ? " off" : "")}
       title={label}
     >
-      <span
-        class="input-card__icon"
-        dangerouslySetInnerHTML={{
-          __html: env.runtime.tiles.ICONS[kind],
-        }}
-      />
+      <span class="input-card__icon">
+        <Icon icon={glyph} />
+      </span>
       {glass ? <span class="input-card__status">{statusLabel}</span> : null}
       <div class="name">
         {label}

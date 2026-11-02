@@ -68,6 +68,10 @@ function runtime(tv = false, loading = false) {
   for (const file of ["config.js", "app-catalog.js", "app-lookup.js", "artwork.js", "brands.js"]) {
     vm.runInContext(fs.readFileSync(path.join(root, "js", file), "utf8"), context);
   }
+  vm.runInContext(
+    fs.readFileSync(path.join(root, "../tests/fixtures/legacy-launcher/js/brands-view.js"), "utf8"),
+    context,
+  );
   return {
     A,
     images,

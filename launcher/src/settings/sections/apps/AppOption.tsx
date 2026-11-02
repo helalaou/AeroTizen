@@ -3,6 +3,7 @@ import { useMemo } from "preact/hooks";
 import type { InstalledApp } from "../../../contracts/launcher";
 import { useImageSequence } from "../../../shared/hooks/useImageSequence";
 import { AppLogoIcon } from "../../../shared/icons/AppLogoIcon";
+import { SelectionIndicator } from "../../components/SelectionIndicator";
 import { SettingsControl } from "../../components/SettingsControl";
 import type { SettingsServices } from "../../types";
 
@@ -74,6 +75,7 @@ export const AppOption = ({
           onError={artwork.onError}
         />
       ) : null}
+      {selected ? <SelectionIndicator /> : null}
     </SettingsControl>
   );
 };
