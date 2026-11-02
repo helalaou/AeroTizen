@@ -1,4 +1,4 @@
-"""Run a bounded managed helper as SDK UID 901 through the existing SDB session.
+"""Run bounded built-in shell probes or managed helpers as SDK UID 901.
 
 This uses the published package-name command workaround, not a root provider.
 Only caller-supplied, checksum-verified helper data and one script are staged.
@@ -22,39 +22,54 @@ DOTNET_UNAVAILABLE_MARKER = "AEROTIZEN_SDK_DOTNET_UNAVAILABLE"
 
 
 def build_script(files, entrypoint, args, callback, port, token):
-    ipaddress.IPv4Address(callback)
-    if not re.fullmatch(r"[a-f0-9]{12}", token) or not 1 <= port <= 65535:
-        raise ValueError("Invalid SDK staging token or callback port")
-    if entrypoint not in files or any(not re.fullmatch(r"[A-Za-z0-9_.-]{1,80}", name) for name in files):
-        raise ValueError("Invalid SDK payload names")
-    stage = f"{DIRECTORY}/ah-{token}.s"
-    claimed = stage[:-1] + "r"
-    paths = {name: f"{DIRECTORY}/ah-{token}-{name}" for name in files}
-    cleanup = "rm -f " + " ".join(shlex.quote(path) for path in [stage, claimed, *paths.values()])
+    if entrypoint not in files:
+        raise ValueError("Invalid SDK entrypoint")
     checks = [
-        "set -eu",
-        'test "$(id -u)" = 901',
         "if [ ! -x /usr/bin/dotnet ]; then",
         f"  printf '%s\\n' {DOTNET_UNAVAILABLE_MARKER}",
         "  exit 127",
         "fi",
     ]
-    for name, path in paths.items():
-        digest = hashlib.sha256(files[name]).hexdigest()
-        checks.append(f"printf '%s  %s\\n' {digest} {shlex.quote(path)} | sha256sum -c - >/dev/null")
+    for name, data in files.items():
+        digest = hashlib.sha256(data).hexdigest()
+        checks.append(
+            f"printf '%s  %s\\n' {digest} {shlex.quote(_path(token, name))} | sha256sum -c - >/dev/null"
+        )
     checks.append(
         "/usr/bin/dotnet "
         + " ".join(
-            shlex.quote(value) for value in [paths[entrypoint], *(paths.get(arg, arg) for arg in args)]
+            shlex.quote(value)
+            for value in [
+                _path(token, entrypoint),
+                *(_path(token, arg) if arg in files else arg for arg in args),
+            ]
         )
     )
+    return _build_script(files, "\n".join(checks), callback, port, token)
+
+
+def _path(token, name):
+    return f"{DIRECTORY}/ah-{token}-{name}"
+
+
+def _build_script(files, body, callback, port, token):
+    ipaddress.IPv4Address(callback)
+    if not re.fullmatch(r"[a-f0-9]{12}", token) or not 1 <= port <= 65535:
+        raise ValueError("Invalid SDK staging token or callback port")
+    if any(not re.fullmatch(r"[A-Za-z0-9_.-]{1,80}", name) for name in files):
+        raise ValueError("Invalid SDK payload names")
+    stage = f"{DIRECTORY}/ah-{token}.s"
+    claimed = stage[:-1] + "r"
+    paths = {name: _path(token, name) for name in files}
+    cleanup = "rm -f " + " ".join(shlex.quote(path) for path in [stage, claimed, *paths.values()])
     script = (
         "set -u\numask 077\n"
         + "trap "
         + shlex.quote(cleanup)
         + " EXIT\n"
         + f"exec 3<>/dev/tcp/{callback}/{port} || exit 80\n(\n"
-        + "\n".join(checks)
+        + 'set -eu\ntest "$(id -u)" = 901\n'
+        + body
         + "\n) >&3 2>&3\nresult=$?\n"
         + cleanup
         + " || exit 81\n"
@@ -85,12 +100,23 @@ def parse_output(output):
 
 
 def run(session, files, entrypoint, args=()):
+    if not files or sum(map(len, files.values())) > 2 * 1024 * 1024:
+        raise DeviceSessionError("Invalid SDK helper payload size.")
+    return _run(session, files, lambda *transport: build_script(files, entrypoint, args, *transport))
+
+
+def run_shell(session, script):
+    """Run a trusted built-in inventory script; no managed runtime or payload is used."""
+    if not isinstance(script, str) or not script or len(script.encode()) > 32768:
+        raise DeviceSessionError("Invalid SDK probe script size.")
+    return _run(session, {}, lambda *transport: _build_script({}, script, *transport))
+
+
+def _run(session, files, build):
     try:
         ipaddress.IPv4Address(session.host)
     except ValueError as exc:
         raise DeviceSessionError("SDK execution requires the TV's IPv4 address.") from exc
-    if not files or sum(map(len, files.values())) > 2 * 1024 * 1024:
-        raise DeviceSessionError("Invalid SDK helper payload size.")
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as route:
         route.connect((session.host, 9))
         callback = route.getsockname()[0]
@@ -98,9 +124,7 @@ def run(session, files, entrypoint, args=()):
         listener.bind((callback, 0))
         listener.listen(1)
         listener.settimeout(35)
-        script, command, stage, paths = build_script(
-            files, entrypoint, args, callback, listener.getsockname()[1], secrets.token_hex(6)
-        )
+        script, command, stage, paths = build(callback, listener.getsockname()[1], secrets.token_hex(6))
         for name, path in paths.items():
             session.push(files[name], path)
         session.push(script.encode(), stage)
