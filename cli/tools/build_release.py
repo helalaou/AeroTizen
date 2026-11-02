@@ -103,9 +103,9 @@ def build_cli(root, output, tag=None):
     version = cli_version(root)
     check_tag("cli", version, tag)
     if not (root / "src/aerotizen/helpers/home-query.json").is_file():
-        raise ValueError("Build the read-only Home helper with python tools/build_home_query.py first")
+        raise ValueError("Build the read-only Home helper with python cli/tools/build_home_query.py first")
     if not (root / "src/aerotizen/helpers/home-control.json").is_file():
-        raise ValueError("Build the guarded Home writer with python tools/build_home_control.py first")
+        raise ValueError("Build the guarded Home writer with python cli/tools/build_home_control.py first")
     if not (root / "src/aerotizen/helpers/root-runtime.json").is_file():
         raise ValueError("Build the root runtime with python cli/tools/build_root_runtime.py first")
     target = platform_name()
