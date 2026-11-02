@@ -7,8 +7,9 @@ The production build mounts typed Home components before Settings and the existi
 boot script. Both screens share one bundled Preact instance, using existing Vite,
 TypeScript, external-store hooks and image-sequence lifecycle patterns. No runtime
 CDN, independent weather client or native service rewrite is introduced. The source
-HTML and legacy Home renderer remain a comparison fixture; compiled HTML does not
-load the legacy Home or Continue Watching renderer. Existing app discovery, native
+HTML declares Home and Settings hosts directly. Legacy views live in
+`tests/fixtures/legacy-launcher/`; development and compiled HTML use the same active
+views, and release packages reject the old renderers. Existing app discovery, native
 handoffs, input switching, weather, clock, network and watcher operations stay behind
 typed adapters. Stable header status hosts remain owned by their existing services;
 Preact owns the surrounding header, controls, grids, action menu and feed cards.

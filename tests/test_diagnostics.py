@@ -548,6 +548,7 @@ def test_report_retains_known_error_locations_and_home_operations():
         == "apps.js:12:4"
     )
     assert policy.value("apps.js:12:4", "stack") == "apps.js:12:4"
+    assert policy.value("file:///opt/ui/launcher-ui.js:23:4", "stack") == "launcher-ui.js:23:4"
 
 
 def test_new_cli_logs_do_not_record_console_names_titles_addresses_or_raw_errors(

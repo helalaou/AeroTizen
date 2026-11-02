@@ -59,8 +59,10 @@ def launcher(tmp_path):
         (app / filename).write_text("must not ship")
     runtime = root / "dist/launcher"
     shutil.copytree(app, runtime)
-    (runtime / "index.html").write_text('<div id="settings-root"></div>')
-    (runtime / "js/settings-ui.js").write_text("compiled Settings")
+    (runtime / "index.html").write_text(
+        '<div id="home-root"></div><div id="settings-root"></div><script src="js/launcher-ui.js"></script>'
+    )
+    (runtime / "js/launcher-ui.js").write_text("compiled Home and Settings")
     (runtime / "licenses").mkdir()
     (runtime / "licenses/preact.txt").write_text("MIT License")
     (runtime / "src/settings").mkdir(parents=True)
@@ -80,8 +82,8 @@ def test_launcher_is_unsigned_deterministic_and_has_verified_manifest(launcher, 
             "css/style.css",
             "icon.png",
             "index.html",
+            "js/launcher-ui.js",
             "js/main.js",
-            "js/settings-ui.js",
             "licenses/preact.txt",
             "service/artmode.js",
             "service/home-mode.js",
@@ -175,7 +177,7 @@ def test_launcher_rejects_stale_compiled_manifest(launcher, tmp_path):
     assert not (tmp_path / "assets").exists()
 
 
-@pytest.mark.parametrize("name", ["js/settings-ui.js", "licenses/preact.txt"])
+@pytest.mark.parametrize("name", ["js/launcher-ui.js", "licenses/preact.txt"])
 def test_launcher_requires_preact_runtime_and_license(launcher, tmp_path, name):
     (launcher / "dist/launcher" / name).unlink()
     with pytest.raises(ValueError, match=r"(?i)runtime file"):
@@ -185,7 +187,29 @@ def test_launcher_requires_preact_runtime_and_license(launcher, tmp_path, name):
 
 def test_launcher_rejects_legacy_settings_markup(launcher, tmp_path):
     (launcher / "dist/launcher/index.html").write_text('<div id="editor"></div>')
-    with pytest.raises(ValueError, match="Preact Settings mount"):
+    with pytest.raises(ValueError, match="Preact Home mount"):
+        build.build_launcher(launcher, tmp_path / "assets")
+    assert not (tmp_path / "assets").exists()
+
+
+@pytest.mark.parametrize("name", ["clock-layouts.js", "continue-row.js", "home-screen.js", "settings-ui.js"])
+def test_launcher_rejects_legacy_renderer_assets(launcher, tmp_path, name):
+    (launcher / "dist/launcher/js" / name).write_text("obsolete renderer")
+    with pytest.raises(ValueError, match="contains legacy renderer"):
+        build.build_launcher(launcher, tmp_path / "assets")
+    assert not (tmp_path / "assets").exists()
+
+
+@pytest.mark.parametrize(
+    ("html", "error"),
+    [
+        ('<div id="home-root"></div>', "Preact Settings mount"),
+        ('<div id="home-root"></div><div id="settings-root"></div>', "shared UI script"),
+    ],
+)
+def test_launcher_requires_both_views_and_the_shared_bundle(launcher, tmp_path, html, error):
+    (launcher / "dist/launcher/index.html").write_text(html)
+    with pytest.raises(ValueError, match=error):
         build.build_launcher(launcher, tmp_path / "assets")
     assert not (tmp_path / "assets").exists()
 

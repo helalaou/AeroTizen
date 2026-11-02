@@ -1,0 +1,14 @@
+# Legacy launcher fixtures
+
+These Home, Settings, feed and clock renderers support regression and comparison
+tests. They are not production entry points or release assets. Change active views
+in `launcher/src/` and production markup in `launcher/index.html`.
+
+The fixture page uses `<base href="/launcher/">` to load shared runtime services,
+styles and assets from the current launcher. Its old view scripts load explicitly
+from this directory. Serve the repository root and open
+`/tests/fixtures/legacy-launcher/`, or run `npm run test:browser` for managed servers.
+The old clock renderer is used by Node tests only; the page does not load it.
+
+Keep these fixtures until their comparison tests have equivalent active-view
+coverage. Do not copy them back into the launcher or package output.

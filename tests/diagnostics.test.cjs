@@ -479,7 +479,7 @@ test("error formatting is deferred, bounded and contains source locations withou
     message: "Cannot read value user@example.com",
     get stack() {
       reads++;
-      return "TypeError: token=SECRET\n at f (file:///Users/person/apps.js:42:9)\n at /opt/usr/native-navigation.js:55:3";
+      return "TypeError: token=SECRET\n at f (file:///Users/person/apps.js:42:9)\n at /opt/usr/native-navigation.js:55:3\n at file:///opt/usr/launcher-ui.js:20:6";
     },
   };
   logger.captureError("app.launch_failed", error, {
@@ -495,7 +495,7 @@ test("error formatting is deferred, bounded and contains source locations withou
   assert.equal(data.file, "apps.js");
   assert.equal(data.line, 42);
   assert.equal(data.column, 9);
-  assert.equal(data.stack, "apps.js:42:9\nnative-navigation.js:55:3");
+  assert.equal(data.stack, "apps.js:42:9\nnative-navigation.js:55:3\nlauncher-ui.js:20:6");
   assert.equal(data.message, "property_access_failed");
   assert.doesNotMatch(JSON.stringify(data), /SECRET|PRIVATE|Users|opt|user@example/);
   for (let i = 0; i < 20; i++) logger.captureError("ui.error", error);

@@ -102,7 +102,7 @@ test("compiled Settings retains the original Samsung Home escape without the opt
 test("Settings matches legacy remote, persistence, search and artwork behaviour", async ({ page }, info) => {
   await page.goto("/");
   const result = await runSettingsUi(page, {
-    baselineUrl: "http://127.0.0.1:8170",
+    baselineUrl: "http://127.0.0.1:8170/tests/fixtures/legacy-launcher/",
     screenshotPath: (variant) => info.outputPath(variant + ".png"),
   });
   expect(result.runtimeErrors).toEqual([]);

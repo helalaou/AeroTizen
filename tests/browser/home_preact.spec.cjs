@@ -73,7 +73,7 @@ test("compiled Home preserves legacy geometry and artwork source selection at 10
       }),
     );
   await baseline.addInitScript(seed);
-  await baseline.goto("http://127.0.0.1:8170/");
+  await baseline.goto("http://127.0.0.1:8170/tests/fixtures/legacy-launcher/");
   await page.goto("/");
   for (const tab of [baseline, page])
     await tab.waitForFunction(() => AeroTizen.apps.ready && document.querySelector("#grid > .tile.focused"));

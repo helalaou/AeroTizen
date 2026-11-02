@@ -17,8 +17,8 @@ module.exports = defineConfig({
   },
   webServer: [
     {
-      command: "python3 -m http.server 8170 --bind 127.0.0.1 --directory launcher",
-      url: "http://127.0.0.1:8170",
+      command: "python3 -m http.server 8170 --bind 127.0.0.1",
+      url: "http://127.0.0.1:8170/tests/fixtures/legacy-launcher/",
       timeout: 10000,
       stderr: "ignore",
     },
@@ -27,6 +27,11 @@ module.exports = defineConfig({
       url: "http://127.0.0.1:8171",
       timeout: 10000,
       stderr: "ignore",
+    },
+    {
+      command: "npm run dev -- --host 127.0.0.1 --port 8172",
+      url: "http://127.0.0.1:8172",
+      timeout: 10000,
     },
   ],
 });

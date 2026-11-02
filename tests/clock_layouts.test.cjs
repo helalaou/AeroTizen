@@ -1,4 +1,4 @@
-// Regression tests for the imported custom-clock structure and cached weather.
+// Legacy clock fixture regression tests. Active clocks also have browser coverage.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -87,7 +87,8 @@ function runtime(saved = {}, cache) {
     },
   });
   for (const name of ["config.js", "settings.js", "clock.js", "clock-layouts.js"]) {
-    vm.runInContext(fs.readFileSync(path.join(__dirname, "../launcher/js", name), "utf8"), context);
+    const directory = name === "clock-layouts.js" ? "fixtures/legacy-launcher/js" : "../launcher/js";
+    vm.runInContext(fs.readFileSync(path.join(__dirname, directory, name), "utf8"), context);
   }
   A.settings.load();
   return { A, elements, values, document };

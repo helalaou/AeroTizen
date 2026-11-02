@@ -10,9 +10,10 @@ state and navigation patterns and the cutover does not require another port.
 
 ## Current scope
 
-`npm run build` copies runtime files into `dist/launcher/`, replaces only the Settings
-markup and renderer, and includes Preact's license. It excludes TypeScript/TSX source. App IDs,
-the watcher, Home, CSS, persistence keys and TV APIs remain the same. Preact 10.29.8 is
+`npm run build` copies the explicit production HTML and runtime files into `dist/launcher/`,
+bundles Home and Settings into `js/launcher-ui.js`, and includes Preact's license.
+It excludes TypeScript/TSX source and legacy comparison views. App IDs,
+the watcher, CSS, persistence keys and TV APIs remain the same. Preact 10.29.8 is
 pinned with the lockfile. All code is bundled locally; no CDN or runtime module loader
 is required.
 
@@ -20,9 +21,10 @@ The build uses Vite with the official `@preact/preset-vite`, following the
 [Preact Vite setup](https://preactjs.com/guide/v10/getting-started/#create-a-vite-powered-preact-app).
 This integrates the documented preset into the existing repository rather than generating
 a new application over the launcher. Vite library mode emits a single classic-script IIFE
-for the Settings entry point; the production widget has no Vite client or development entry.
+for the shared `src/index.ts` entry point; the production widget has no Vite client or development entry.
 Two small Vite plugins retain the widget assets and load the existing boot script after
-the development Settings entry point. The dev server uses the preset's hot refresh support.
+the development `src/dev.ts` entry point. Both use the same Home and Settings views.
+The dev server uses the preset's hot refresh support.
 
 All new Settings code is TypeScript. `tsconfig.json` uses `strict: true`,
 `jsx: "react-jsx"` and `jsxImportSource: "preact"`, as documented in the
@@ -31,9 +33,11 @@ runtime interfaces, events and refs are typed. The existing global JavaScript mo
 are described by a small interface; this does not type-check their implementations.
 `npm run typecheck` checks the browser source and Vite config. Builds and CI include it.
 
-The source `launcher/` retains the legacy Settings comparison baseline. Release packages
-contain only the compiled renderer. Install `dist/launcher/` to test local changes;
-installing the source directory tests the baseline. Release users do not need Node.
+The old Home, Settings, feed and clock renderers are isolated in
+`tests/fixtures/legacy-launcher/`. Their tests load shared services and styles from
+the current launcher. Release packages reject these renderer files. Install
+`dist/launcher/` to test local changes; the source directory requires Vite development
+and is not an installable build. Release users do not need Node.
 
 The build targets Chromium 69 and also checks every shipped script against ES2018.
 [Samsung's engine table](https://developer.samsung.com/smarttv/develop/specifications/web-engine-specifications.html)
@@ -153,13 +157,14 @@ npm run dev
 ```
 
 Open `http://localhost:8019` at 1920×1080. The network URL is printed at startup.
-Vite watches source files and supplies hot refresh for Settings components.
-Use `dist/launcher/` when testing the compiled app. An installation of `launcher/` tests
-the legacy baseline. Use a modern desktop browser for Vite development; use the production
+Vite watches source files and supplies hot refresh for Home and Settings components.
+Use `dist/launcher/` when testing the compiled app. Use a modern desktop browser for Vite development; use the production
 build for TV compatibility checks.
 
 `npm run test:browser` builds the launcher and runs the pinned Playwright runner.
-It starts and stops baseline/production static servers on loopback ports 8170/8171.
+It starts and stops baseline/production static servers on loopback ports 8170/8171
+and a Vite development server on port 8172. The baseline URL is
+`http://127.0.0.1:8170/tests/fixtures/legacy-launcher/`.
 Each test gets a separate browser context at 1920×1080. CI installs Chromium with its
 OS dependencies and runs the same command. Failure screenshots and traces are saved
 under ignored `test-results/` and uploaded by CI; comparison screenshots are test artifacts.
@@ -168,7 +173,7 @@ The separate performance sample remains a manual desktop comparison. Start these
 servers in separate terminals after building:
 
 ```sh
-python3 -m http.server 8020 --bind 127.0.0.1 --directory launcher
+python3 -m http.server 8020 --bind 127.0.0.1
 python3 -m http.server 8032 --bind 127.0.0.1 --directory dist/launcher
 npx --package @playwright/cli playwright-cli -s=settings open http://127.0.0.1:8032
 npx --package @playwright/cli playwright-cli -s=settings resize 1920 1080

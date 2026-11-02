@@ -33,7 +33,7 @@ module.exports = [
     },
   },
   {
-    files: ["launcher/js/**/*.js"],
+    files: ["launcher/js/**/*.js", "tests/fixtures/legacy-launcher/js/**/*.js"],
     languageOptions: {
       ecmaVersion: 5,
       sourceType: "script",
@@ -148,7 +148,12 @@ module.exports = [
   },
   prettier,
   {
-    files: ["launcher/js/**/*.js", "launcher/src/**/*.{ts,tsx}", "vite.config.mts"],
+    files: [
+      "launcher/js/**/*.js",
+      "tests/fixtures/legacy-launcher/js/**/*.js",
+      "launcher/src/**/*.{ts,tsx}",
+      "vite.config.mts",
+    ],
     // Keep required braces. The "all" option is compatible with Prettier.
     rules: { curly: ["error", "all"] },
   },

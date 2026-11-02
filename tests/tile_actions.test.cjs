@@ -4,7 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
-const source = fs.readFileSync(path.join(__dirname, "../launcher/js/home-screen.js"), "utf8");
+const source = fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/home-screen.js"), "utf8");
 
 class Element {
   constructor(tag = "div", className = "") {

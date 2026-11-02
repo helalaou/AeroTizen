@@ -202,6 +202,7 @@
       "index.js",
       "inputs.js",
       "inspect_app.py",
+      "launcher-ui.js",
       "logos.js",
       "main.js",
       "native-navigation.js",
