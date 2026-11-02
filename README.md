@@ -95,6 +95,7 @@ data, autorun) and [DNS blocklists](dns/) if you run Pi-hole, AdGuard Home or Ne
 | Samsung 75" QLED Q7F (QE75Q7FAAUXXH) | 2025 | Tizen 9.0 | |
 | Samsung 55" Crystal UHD U8092F (UE55U8092FUXXH) | 2025 | Tizen 9.0 | Native Home apply fails ([#69](../../issues/69)) |
 | Samsung 65" Crystal UHD DU7200 (UN65DU7200FXZA) | 2024 | Tizen 9.0 | |
+| Samsung 85" Crystal UHD DU7179 (GU85DU7179UXZG) | 2024 | Tizen 8.0 | Native Home and boot work; Steam Link on HDMI shows black ([#103](../../issues/103)) |
 | Samsung 65" The Frame LS03D (QE65LS03DAUXXU) | 2024 | Tizen 9.0 | |
 | Samsung 70" Crystal UHD CU7000 (UN70CU7000DXZA) | 2023 | Tizen 9.0 | |
 | Samsung 65" Crystal UHD CU7000 (UN65CU7000DXZA) | 2023 | Tizen 9.0 | Native Home works; Add apps fix in [#81](../../pull/81) |
@@ -103,6 +104,7 @@ data, autorun) and [DNS blocklists](dns/) if you run Pi-hole, AdGuard Home or Ne
 | Samsung 75" QLED Q60B (QE75Q60BAUXXC) | 2022 | Tizen 6.5 | |
 | Samsung 55" OLED S95B (QE55S95BATXXC) | 2022 | Tizen 6.5 | Cold boot issue ([#47](../../issues/47)) |
 | Samsung 55" QLED Q80B (QE55Q80BATXXC) | 2022 | | Watcher works; native Home apply fixed in [#79](../../pull/79) |
+| Samsung 50" The Serif LS01B (QE50LS01BAUXXH) | 2022 | Tizen 6.5 | Native Home works |
 | Samsung 65" The Frame LS03A (QN65LS03AAFXZC) | 2021 | | Runs; Home doesn't return yet ([#65](../../issues/65)) |
 | Samsung 65" Crystal UHD AU7172 (UE65AU7172UXXH) | 2021 | Tizen 6.0 | Home doesn't return yet ([#65](../../issues/65)) |
 | Samsung 43" Crystal UHD AU8000 (UN43AU8000FXZC) | 2021 | | Runs; Home and power-on don't work yet ([#65](../../issues/65)) |
