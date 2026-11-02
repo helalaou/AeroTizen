@@ -2,14 +2,25 @@ import type { SettingsSnapshot, SettingsSource, SettingsStore, SettingsValues } 
 import { createStore } from "../shared/state/createStore";
 import { equalRecord } from "../shared/state/equalRecord";
 
+const getLocationSnapshot = (
+  location: SettingsValues["weatherLocation"],
+  previous?: SettingsSnapshot["weatherLocation"],
+) => {
+  if (!location) {
+    return null;
+  }
+  if (previous && equalRecord(previous, location)) {
+    return previous;
+  }
+  return Object.freeze({ ...location });
+};
+
 export const createSettingsStore = (source: SettingsSource, defaults: SettingsValues): SettingsStore => {
   const read = (previous?: SettingsSnapshot): SettingsSnapshot => {
-    const values = { ...defaults };
-    (Object.keys(defaults) as (keyof SettingsValues)[]).forEach((key) => {
-      if (source[key] !== undefined) {
-        Object.assign(values, { [key]: source[key] });
-      }
-    });
+    const values = (Object.keys(defaults) as (keyof SettingsValues)[]).reduce(
+      (values, key) => (source[key] === undefined ? values : { ...values, [key]: source[key] }),
+      defaults,
+    );
     const home = values.home || [];
     const continueApps = values.continueWatchingApps || [];
     const inputNames = values.inputNames || {};
@@ -31,11 +42,7 @@ export const createSettingsStore = (source: SettingsSource, defaults: SettingsVa
         previous && equalRecord(previous.inputNames, inputNames)
           ? previous.inputNames
           : Object.freeze({ ...inputNames }),
-      weatherLocation: weatherLocation
-        ? previous?.weatherLocation && equalRecord(previous.weatherLocation, weatherLocation)
-          ? previous.weatherLocation
-          : Object.freeze({ ...weatherLocation })
-        : null,
+      weatherLocation: getLocationSnapshot(weatherLocation, previous?.weatherLocation),
     });
     return previous && equalRecord(previous, next) ? previous : next;
   };
@@ -47,6 +54,7 @@ export const createSettingsStore = (source: SettingsSource, defaults: SettingsVa
     subscribe: store.subscribe,
     refresh,
     update(patch) {
+      // This compatibility boundary writes through to the existing global service.
       Object.assign(source, patch);
       source.save();
     },

@@ -2,14 +2,14 @@ import type { ComponentChildren } from "preact";
 
 import { SettingsControl } from "./SettingsControl";
 
-interface PillProps {
+interface Props {
   children: ComponentChildren;
   id: string;
   onSelect(): void;
   selected?: boolean;
 }
 
-export const ChoiceOption = ({ id, selected = false, onSelect, children }: PillProps) => {
+export const ChoiceOption = ({ id, selected = false, onSelect, children }: Props) => {
   return (
     <SettingsControl
       class={"pill unit choice-option" + (selected ? " on" : "")}

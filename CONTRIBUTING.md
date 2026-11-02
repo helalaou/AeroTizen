@@ -72,6 +72,13 @@ import/export sorting and natural interface-member sorting. Import groups preser
 side-effect import order. Runtime objects and class members retain their order. The
 typed rules use the launcher project; Vite uses its Node-specific TypeScript configuration.
 The existing zero-warning CI gate also applies to rules configured as warnings.
+Modern frontend code also requires `const` where a binding does not change, one binding
+per declaration, no nested ternaries and no parameter reassignment or property writes.
+App composition may publish and restore the legacy runtime's UI bridges. Legacy ES5 scripts
+keep their compatibility rules. Use named option objects and static lookup maps for
+presentation data. Keep view snapshots read-only; make new arrays or objects when
+changing preferences. Mutable timers, DOM registries and private layout buffers have
+explicit owners.
 Shared contracts, services, platform adapters and shared utilities cannot import
 screens or app composition; ESLint enforces this dependency rule.
 

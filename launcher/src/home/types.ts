@@ -6,21 +6,25 @@ import type { StatusStores } from "../contracts/status";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import type { MutableStore, Store } from "../shared/state/createStore";
 export interface Inventory {
-  apps: readonly InstalledApp[];
-  inputs: readonly InputSource[];
-  items: readonly ContinueItem[];
-  ready: boolean;
+  readonly apps: readonly InstalledApp[];
+  readonly inputs: readonly InputSource[];
+  readonly items: readonly ContinueItem[];
+  readonly ready: boolean;
 }
 export type Page = "home" | "apps";
+export interface HomeMenuChoice {
+  readonly action: "add" | "remove" | "move";
+  readonly label: string;
+}
 export interface HomeState {
-  active: boolean;
-  continueOffset: number;
-  draft: readonly string[] | null;
-  menu: { id: string; selected: number } | null;
-  moving: string | null;
-  page: Page;
-  scroll: number;
-  selected: string;
+  readonly active: boolean;
+  readonly continueOffset: number;
+  readonly draft: readonly string[] | null;
+  readonly menu: Readonly<{ id: string; selected: number }> | null;
+  readonly moving: string | null;
+  readonly page: Page;
+  readonly scroll: number;
+  readonly selected: string;
 }
 export interface HomeEnvironment {
   activate(key: string): void;
@@ -32,7 +36,7 @@ export interface HomeEnvironment {
   describe(app: InstalledApp): AppPresentation;
   dismiss(): void;
   inventory: Store<Inventory>;
-  menuChoices(): readonly { action: string; label: string }[];
+  menuChoices(): readonly HomeMenuChoice[];
   nodes: Map<string, HTMLElement>;
   rows: RefObject<HTMLElement>;
   runtime: LauncherRuntime;

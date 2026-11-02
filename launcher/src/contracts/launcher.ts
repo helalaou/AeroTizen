@@ -3,19 +3,19 @@ import type { Store } from "../shared/state/createStore";
 import type { DateFormat, SettingsValues, TemperatureUnit, TimeFormat } from "./preferences";
 
 export interface InputSource {
-  active?: boolean;
-  connected?: boolean;
-  editName?: string;
-  number?: number;
-  raw?: unknown;
-  type: string;
+  readonly active?: boolean;
+  readonly connected?: boolean;
+  readonly editName?: string;
+  readonly number?: number;
+  readonly raw?: unknown;
+  readonly type: string;
 }
 
 export interface InstalledApp {
-  icon?: string;
-  id: string;
-  name: string;
-  storeId?: string;
+  readonly icon?: string;
+  readonly id: string;
+  readonly name: string;
+  readonly storeId?: string;
 }
 export interface InputOption {
   readonly placeholder?: string;
@@ -29,12 +29,12 @@ export interface ContinueSource {
   readonly storeId: string;
 }
 export interface Background {
-  anim?: string;
-  id: string;
-  name: string;
+  readonly anim?: string;
+  readonly id: string;
+  readonly name: string;
 }
 export interface BackgroundOption extends Background {
-  preview: string;
+  readonly preview: string;
 }
 export interface ClockService extends Store<number> {
   DATE_FORMATS: ReadonlyArray<{ id: DateFormat; format(date: Date): string }>;
@@ -63,15 +63,15 @@ export interface LauncherConfig {
   SPEED: { MIN: number; MAX: number; STEP: number };
 }
 export interface AppPresentation {
-  artwork: readonly string[];
-  background: string;
-  label: string | null;
-  largeLogo: boolean;
-  logoColour: string;
-  logoPath: string | null;
-  textColour: string;
-  title: string;
-  useAppIcon: boolean;
+  readonly artwork: readonly string[];
+  readonly background: string;
+  readonly label: string | null;
+  readonly largeLogo: boolean;
+  readonly logoColour: string;
+  readonly logoPath: string | null;
+  readonly textColour: string;
+  readonly title: string;
+  readonly useAppIcon: boolean;
 }
 export interface NavigationHandlers {
   blur(): void;
@@ -87,16 +87,16 @@ export interface SettingsBridge {
   register(handlers: NavigationHandlers): () => void;
 }
 export interface ContinueItem {
-  duration: number;
-  episode: number;
-  image?: string;
-  key: string;
-  playback: number;
-  season: number;
-  sourceIcon?: string;
-  sourceId: string;
-  sourceName: string;
-  title: string;
+  readonly duration: number;
+  readonly episode: number;
+  readonly image?: string;
+  readonly key: string;
+  readonly playback: number;
+  readonly season: number;
+  readonly sourceIcon?: string;
+  readonly sourceId: string;
+  readonly sourceName: string;
+  readonly title: string;
 }
 export interface HomeBridge {
   blur(): void;

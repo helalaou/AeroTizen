@@ -33,8 +33,8 @@ export const HomeControl = ({
   registered?: boolean;
   preserveSelection?: boolean;
 }) => {
-  const state = useStore(env.state),
-    focused = registered && state.active && state.selected === controlKey;
+  const state = useStore(env.state);
+  const focused = registered && state.active && state.selected === controlKey;
   const own = useRef<HTMLDivElement | null>(null);
   const register = useCallback(
     (node: HTMLDivElement | null) => {

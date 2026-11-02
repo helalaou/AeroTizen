@@ -52,11 +52,13 @@ await writeFile(
 console.log(`Lucide: ${rendered.size} of ${available} icon modules retained.`);
 const digest = createHash("sha256");
 async function identify(directory) {
-  for (const item of (await readdir(directory, { withFileTypes: true })).sort((a, b) =>
-    a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
-  )) {
-    const file = path.join(directory, item.name),
-      name = path.relative(output, file).split(path.sep).join("/");
+  for (const item of (await readdir(directory, { withFileTypes: true })).sort((a, b) => {
+    if (a.name < b.name) return -1;
+    if (a.name > b.name) return 1;
+    return 0;
+  })) {
+    const file = path.join(directory, item.name);
+    const name = path.relative(output, file).split(path.sep).join("/");
     if (item.isDirectory()) await identify(file);
     else if (name !== "js/build-info.js")
       digest

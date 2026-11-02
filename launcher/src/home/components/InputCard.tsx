@@ -1,48 +1,26 @@
+import type { LucideIcon } from "lucide-preact";
 import { Gamepad2, HdmiPort, Monitor, RectangleEllipsis, Tv } from "lucide-preact";
 
 import type { InputSource } from "../../contracts/launcher";
 import { Icon } from "../../shared/icons/Icon";
+import type { InputKind } from "../presentation/inputs";
+import { getInputPresentation } from "../presentation/inputs";
 import type { HomeEnvironment } from "../types";
 
 import { HomeControl } from "./HomeControl";
 
+const INPUT_ICONS = { tv: Tv, game: Gamepad2, pc: Monitor, box: RectangleEllipsis, hdmi: HdmiPort } satisfies Record<
+  InputKind,
+  LucideIcon
+>;
+
 export const InputCard = ({ env, source, glass }: { env: HomeEnvironment; source: InputSource; glass: boolean }) => {
-  const label = env.runtime.inputs.label(source),
-    port = env.runtime.inputs.portName(source);
-  const kind =
-    source.type === "TV"
-      ? "tv"
-      : /xbox|playstation|ps\d|switch|nintendo|game|console/i.test(label)
-        ? "game"
-        : /pc|computer|mac|laptop/i.test(label)
-          ? "pc"
-          : /cable|box|roku|fire|apple|shield|chromecast|blu|dvd|satellite/i.test(label)
-            ? "box"
-            : "hdmi";
-  const glyph = { tv: Tv, game: Gamepad2, pc: Monitor, box: RectangleEllipsis, hdmi: HdmiPort }[kind];
-  const recognized = env.runtime.inputs.hasRecognizedDevice?.(source);
-  const pinned = env.runtime.inputs.alwaysVisible?.(source);
-  const status =
-    source.type === "TV"
-      ? "live"
-      : source.active
-        ? "active"
-        : source.connected
-          ? "connected"
-          : recognized
-            ? "recognized"
-            : pinned
-              ? "pinned"
-              : "empty";
-  const statusLabel = {
-    live: "TV",
-    active: "ACTIVE",
-    connected: "ON",
-    recognized: "RECOGNISED",
-    pinned: "PINNED",
-    empty: "OFF",
-  }[status];
-  const disconnected = source.connected === false && !source.active && !recognized && !pinned;
+  const label = env.runtime.inputs.label(source);
+  const port = env.runtime.inputs.portName(source);
+  const { kind, status, statusLabel, disconnected } = getInputPresentation(source, label, {
+    recognized: Boolean(env.runtime.inputs.hasRecognizedDevice?.(source)),
+    pinned: Boolean(env.runtime.inputs.alwaysVisible?.(source)),
+  });
   return (
     <HomeControl
       env={env}
@@ -51,7 +29,7 @@ export const InputCard = ({ env, source, glass }: { env: HomeEnvironment; source
       title={label}
     >
       <span class="input-card__icon">
-        <Icon icon={glyph} />
+        <Icon icon={INPUT_ICONS[kind]} />
       </span>
       {glass ? <span class="input-card__status">{statusLabel}</span> : null}
       <div class="name">

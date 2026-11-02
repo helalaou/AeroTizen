@@ -11,9 +11,9 @@ export const SettingsFocusIndicator = ({
   container: RefObject<HTMLDivElement>;
   sidebar?: boolean;
 }) => {
-  const { navigation, drawer } = useSettingsEnvironment(),
-    key = useStore(navigation),
-    state = useStore(drawer);
+  const { navigation, drawer } = useSettingsEnvironment();
+  const key = useStore(navigation);
+  const state = useStore(drawer);
   const [style, setStyle] = useState({
     transform: "",
     width: "0px",
@@ -22,14 +22,14 @@ export const SettingsFocusIndicator = ({
   });
   const [visible, setVisible] = useState(false);
   useLayoutEffect(() => {
-    const host = container.current,
-      target = navigation.current();
+    const host = container.current;
+    const target = navigation.current();
     if (!host || !target || !host.contains(target)) {
       setVisible(false);
       return;
     }
-    const rect = target.getBoundingClientRect(),
-      parent = host.getBoundingClientRect();
+    const rect = target.getBoundingClientRect();
+    const parent = host.getBoundingClientRect();
     setStyle({
       transform:
         "translate3d(" +

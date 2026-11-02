@@ -82,7 +82,7 @@ module.exports = [
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": "off",
       "unused-imports/no-unused-imports": "error",
-      "unused-imports/no-unused-vars": ["error", { args: "none", caughtErrors: "none" }],
+      "unused-imports/no-unused-vars": ["error", { args: "none", caughtErrors: "none", ignoreRestSiblings: true }],
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/no-floating-promises": "warn",
       "@typescript-eslint/no-redundant-type-constituents": "off",
@@ -143,6 +143,23 @@ module.exports = [
           ],
         },
       ],
+    },
+  },
+  {
+    files: ["launcher/src/**/*.{ts,tsx}", "vite.config.mts", "tools/build-launcher.mjs", "*.config.{js,cjs}"],
+    rules: {
+      "no-var": "error",
+      "prefer-const": "error",
+      "one-var": ["error", "never"],
+      "no-nested-ternary": "error",
+      "no-param-reassign": ["error", { props: true }],
+    },
+  },
+  {
+    files: ["launcher/src/app/createLauncherApp.ts"],
+    rules: {
+      // Composition publishes and restores the UI bridges on the legacy runtime.
+      "no-param-reassign": ["error", { props: true, ignorePropertyModificationsFor: ["runtime"] }],
     },
   },
   {

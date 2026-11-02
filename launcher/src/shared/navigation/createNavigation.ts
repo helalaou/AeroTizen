@@ -20,6 +20,17 @@ interface Target {
   node: HTMLElement;
 }
 
+interface Position {
+  readonly column: number;
+  readonly row: number;
+}
+const DIRECTION_OFFSETS = {
+  left: { row: 0, column: -1 },
+  right: { row: 0, column: 1 },
+  up: { row: -1, column: 0 },
+  down: { row: 1, column: 0 },
+} as const;
+
 // Ref callbacks register controls. Geometry is read only when the layout changes;
 // the selected key is observable state, and components render its focus styling.
 export const createNavigation = (onFocus: (element: HTMLElement) => void): Navigation => {
@@ -27,12 +38,12 @@ export const createNavigation = (onFocus: (element: HTMLElement) => void): Navig
   const nodes = new Map<string, HTMLElement>();
   let rows: Target[][] | undefined;
   let scope: HTMLElement | null = null;
-  let keys = new Map<string, [number, number]>();
-  let row = 0,
-    column = 0;
+  let keys = new Map<string, Position>();
+  let position: Position = { row: 0, column: 0 };
   let selected: string | undefined;
   const getRows = () => {
     if (!rows) {
+      // These private layout buffers never change a published snapshot or caller data.
       const measuredRows: Target[][] = [];
       keys = new Map();
       const positions = [...nodes]
@@ -60,7 +71,7 @@ export const createNavigation = (onFocus: (element: HTMLElement) => void): Navig
       });
       measuredRows.forEach((items, rowIndex) => {
         items.sort((a, b) => a.left - b.left);
-        items.forEach((target, columnIndex) => keys.set(target.key, [rowIndex, columnIndex]));
+        items.forEach((target, columnIndex) => keys.set(target.key, { row: rowIndex, column: columnIndex }));
       });
       rows = measuredRows;
     }
@@ -68,12 +79,10 @@ export const createNavigation = (onFocus: (element: HTMLElement) => void): Navig
   };
   const currentTarget = () => {
     const all = getRows();
-    const position = selected && keys.get(selected);
-    if (position) {
-      [row, column] = position;
-    }
-    row = Math.max(0, Math.min(row, all.length - 1));
-    column = Math.max(0, Math.min(column, (all[row]?.length || 1) - 1));
+    const current = (selected && keys.get(selected)) || position;
+    const row = Math.max(0, Math.min(current.row, all.length - 1));
+    const column = Math.max(0, Math.min(current.column, (all[row]?.length || 1) - 1));
+    position = { row, column };
     return all[row]?.[column];
   };
   const focus = () => {
@@ -123,25 +132,15 @@ export const createNavigation = (onFocus: (element: HTMLElement) => void): Navig
     },
     reset: (key) => {
       focused.set(undefined);
-      row = column = 0;
+      position = { row: 0, column: 0 };
       selected = key;
       rows = undefined;
     },
     move: (direction) => {
       currentTarget();
       selected = undefined;
-      if (direction === "left") {
-        column--;
-      }
-      if (direction === "right") {
-        column++;
-      }
-      if (direction === "up") {
-        row--;
-      }
-      if (direction === "down") {
-        row++;
-      }
+      const offset = DIRECTION_OFFSETS[direction];
+      position = { row: position.row + offset.row, column: position.column + offset.column };
       focus();
     },
   };

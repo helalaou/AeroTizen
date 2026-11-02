@@ -4,6 +4,11 @@ import type { SettingsSectionProps, SettingsServices } from "../types";
 
 import { AppOption } from "./apps/AppOption";
 
+const CONTINUE_WATCHING_OPTIONS = [
+  { value: false, label: "Off" },
+  { value: true, label: "On" },
+] as const;
+
 interface Props extends SettingsSectionProps {
   active: boolean;
   describeApp: SettingsServices["describeApp"];
@@ -19,10 +24,7 @@ export const ContinueWatchingSettings = ({ settings, actions, sources, message, 
       id="continue-watching"
       label="Continue Watching"
       value={settings.continueWatching === true}
-      options={[
-        [false, "Off"],
-        [true, "On"],
-      ]}
+      options={CONTINUE_WATCHING_OPTIONS}
       onSelect={actions.setContinueWatching}
     />
     {settings.continueWatching && (

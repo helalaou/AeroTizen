@@ -1,7 +1,8 @@
 import { flushSync } from "preact/compat";
-import { useLayoutEffect, useRef } from "preact/hooks";
+import { useLayoutEffect, useMemo, useRef } from "preact/hooks";
 
 import { useStore } from "../../shared/hooks/useStore";
+import type { Direction } from "../../shared/navigation/createNavigation";
 import { categories } from "../layout/categories";
 import type { SettingsInventorySnapshot } from "../types";
 
@@ -22,6 +23,10 @@ export const useSettingsNavigation = (
 ) => {
   const { navigation, bridge, services, actions, settings, view, root, drawer, categoryMenu, categoryContent, panes } =
     useSettingsEnvironment();
+  const directions = useMemo<Partial<Record<number, Direction>>>(() => {
+    const { KEY } = services.config;
+    return { [KEY.LEFT]: "left", [KEY.RIGHT]: "right", [KEY.UP]: "up", [KEY.DOWN]: "down" };
+  }, [services.config]);
   const wasOpen = useRef(false);
   const previousScope = useRef("");
   const category = useStore(drawer);
@@ -144,16 +149,7 @@ export const useSettingsNavigation = (
           current?.click();
           return;
         }
-        const direction =
-          code === K.LEFT
-            ? "left"
-            : code === K.RIGHT
-              ? "right"
-              : code === K.UP
-                ? "up"
-                : code === K.DOWN
-                  ? "down"
-                  : undefined;
+        const direction = directions[code];
         if (direction) {
           event.preventDefault();
           flushSync(() => navigation.move(direction));
@@ -165,5 +161,5 @@ export const useSettingsNavigation = (
       window.removeEventListener("resize", resize);
       navigation.clear();
     };
-  }, [active, actions, bridge, navigation, root, services, view, category, drawer, categoryContent]);
+  }, [active, actions, bridge, navigation, root, services, view, category, drawer, categoryContent, directions]);
 };

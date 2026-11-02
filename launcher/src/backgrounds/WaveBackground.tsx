@@ -1,4 +1,4 @@
-const layers = [
+const WAVE_LAYERS = [
   {
     className: "bg-wave1",
     seconds: 28,
@@ -11,11 +11,11 @@ const layers = [
     fill: "rgba(20,90,150,.38)",
     path: "M0 80 Q 240 40 480 80 T 960 80 T 1440 80 T 1920 80 V 200 H 0 Z",
   },
-];
+] as const;
 
 export const WaveBackground = ({ speed }: { speed: number }) => (
   <>
-    {layers.map((layer) => (
+    {WAVE_LAYERS.map((layer) => (
       <div
         key={layer.className}
         class={"bg-wave " + layer.className}

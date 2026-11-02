@@ -86,11 +86,11 @@ export interface SettingsActions {
 }
 // adjusting: OK was pressed on the speed slider, so Left/Right change the speed instead of moving focus.
 export interface ViewState {
-  adjusting: boolean;
-  mounted: boolean;
-  open: boolean;
-  openedAt: number;
-  previewing: boolean;
+  readonly adjusting: boolean;
+  readonly mounted: boolean;
+  readonly open: boolean;
+  readonly openedAt: number;
+  readonly previewing: boolean;
 }
 export interface SettingsEnvironment {
   actions: SettingsActions;

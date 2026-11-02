@@ -14,6 +14,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `AppCard`, `FireplaceCard`                                           | Launchable Home app and fireplace presentation                                  | Existing app commands through `HomeControl`                                  |
 | `ContinueWatchingRow`, `ContinueWatchingCard`                        | Feed clipping/offset and item presentation                                      | Immutable feed items; live launch records stay in the service                |
 | `InputDock`, `InputCard`                                             | Input collection and one input's label, artwork and connection state            | Existing input service capabilities and commands                             |
+| `shared/components/AppFallback`                                    | Shared app logo/icon and label fallback for Home and Settings                    | App presentation, image lifetime and visibility                              |
 | `AppActionsMenu`, `ReorderControls`                                  | App actions and move/drop controls                                              | Home controller actions; menu positioning is rendered from state             |
 | `status/Clock`                                                       | One time/date view with compact, vertical, horizontal, minimal and bold layouts | Shared time snapshot and formatter; no timer                                 |
 | `WeatherStatus`, `NetworkStatus`                                     | Render status data                                                              | Shared snapshots; no requests or DOM scraping                                |
@@ -30,6 +31,13 @@ screens need the same behavior, rather than because they have a similar shape.
 `HomeControl` and `SettingsControl` remain separate because they use different
 navigation contracts. Neither starts platform services. Shared navigation, hooks and
 contracts cannot import screens; ESLint enforces that dependency direction.
+
+Feature `presentation/` modules select input, network and weather states from data.
+Static maps define labels and icons; named helpers express rules with a priority or
+range. Components render the selected state. Settings choices use `{ value, label }`
+objects, and fixed options live outside the component. Data snapshots use read-only
+contracts. Navigation replaces position objects and app order arrays when they change.
+Private geometry buffers and DOM ref registries remain local to navigation.
 
 ## DOM and style ownership
 

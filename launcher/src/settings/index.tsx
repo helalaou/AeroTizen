@@ -37,15 +37,15 @@ export const mountSettings = (
     category: "appearance",
     expanded: false,
   });
-  const categoryMenu = createRef<HTMLDivElement>(),
-    categoryContent = createRef<HTMLDivElement>(),
-    categoryScroll = createRef<HTMLDivElement>();
+  const categoryMenu = createRef<HTMLDivElement>();
+  const categoryContent = createRef<HTMLDivElement>();
+  const categoryScroll = createRef<HTMLDivElement>();
   const navigation = createNavigation((element) => {
     // A command can restore browser focus without changing the selected key (IME Done).
     focusControl(element);
     if (categoryScroll.current?.contains(element)) {
-      const item = element.getBoundingClientRect(),
-        clip = categoryScroll.current.getBoundingClientRect();
+      const item = element.getBoundingClientRect();
+      const clip = categoryScroll.current.getBoundingClientRect();
       if (item.bottom > clip.bottom - 30) {
         categoryScroll.current.scrollTop += item.bottom - clip.bottom + 30;
       } else if (item.top < clip.top + 10) {

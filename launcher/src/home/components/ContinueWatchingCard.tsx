@@ -12,7 +12,7 @@ export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item
   );
   const brand = useMemo(() => env.describe(app), [env, app]);
   const episode = item.season > 0 && item.episode > 0 ? "S" + item.season + " E" + item.episode : "";
-  const [imageFailed, setImageFailed] = useImageFailure(item.image);
+  const { failed: imageFailed, onError } = useImageFailure(item.image);
   return (
     <HomeControl
       env={env}
@@ -22,9 +22,7 @@ export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item
       title={item.title + (episode ? " · " + episode : "") + " · " + item.sourceName}
     >
       <div class="continue-image-wrap">
-        {item.image && !imageFailed ? (
-          <img class="continue-image" alt="" src={item.image} onError={setImageFailed} />
-        ) : null}
+        {item.image && !imageFailed ? <img class="continue-image" alt="" src={item.image} onError={onError} /> : null}
         <div class="tile app-tile continue-app-icon" aria-hidden="true" style={{ background: brand.background }}>
           <AppArtwork app={app} brand={brand} active />
         </div>
@@ -47,7 +45,7 @@ export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item
   );
 };
 // Artwork errors are local to each keyed feed item; changing its URL permits retry.
-const useImageFailure = (url?: string): [boolean, () => void] => {
+const useImageFailure = (url?: string) => {
   const [failed, setFailed] = useState<string | undefined>();
-  return [Boolean(url && failed === url), () => setFailed(url)];
+  return { failed: Boolean(url && failed === url), onError: () => setFailed(url) };
 };

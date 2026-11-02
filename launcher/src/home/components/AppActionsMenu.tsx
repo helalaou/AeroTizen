@@ -4,18 +4,20 @@ import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { useStore } from "../../shared/hooks/useStore";
 import { Icon } from "../../shared/icons/Icon";
 import type { HomeEnvironment } from "../types";
+const ACTION_ICONS = { add: SquarePlus, move: Move, remove: SquareMinus } as const;
+
 export const AppActionsMenu = ({ env }: { env: HomeEnvironment }) => {
-  const { menu } = useStore(env.state),
-    panel = useRef<HTMLDivElement>(null);
+  const { menu } = useStore(env.state);
+  const panel = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ left: "0px", top: "0px" });
   useLayoutEffect(() => {
-    const origin = menu && env.nodes.get("app:" + menu.id),
-      element = panel.current;
+    const origin = menu && env.nodes.get("app:" + menu.id);
+    const element = panel.current;
     if (!origin || !element) {
       return;
     }
-    const rect = origin.getBoundingClientRect(),
-      width = Math.min(382, window.innerWidth - 48);
+    const rect = origin.getBoundingClientRect();
+    const width = Math.min(382, window.innerWidth - 48);
     const left = rect.right + 20 + width > window.innerWidth - 24 ? rect.left - width - 20 : rect.right + 20;
     setPosition({
       left: Math.max(24, Math.min(window.innerWidth - width - 24, left)) + "px",
@@ -49,7 +51,7 @@ export const AppActionsMenu = ({ env }: { env: HomeEnvironment }) => {
             onClick={() => env.choose(i)}
           >
             <span class="app-actions-menu__icon" aria-hidden="true">
-              <Icon icon={choice.action === "add" ? SquarePlus : choice.action === "move" ? Move : SquareMinus} />
+              <Icon icon={ACTION_ICONS[choice.action]} />
             </span>
             <span class="app-actions-menu__label">{env.translate(choice.label)}</span>
           </div>

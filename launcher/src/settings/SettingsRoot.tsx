@@ -7,8 +7,8 @@ import { SettingsContent } from "./SettingsContent";
 export const SettingsRoot = () => {
   const { view, root, settings, drawer } = useSettingsEnvironment();
   const state = useStore(view);
-  const values = useStore(settings),
-    category = useStore(drawer);
+  const values = useStore(settings);
+  const category = useStore(drawer);
   useSettingsPresentation(state.open, state.previewing);
   return (
     <div

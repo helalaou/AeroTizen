@@ -2,6 +2,21 @@ import type { ClockFormatter } from "../../contracts/launcher";
 import { ChoiceGroup } from "../components/ChoiceGroup";
 import { ChoiceOption } from "../components/ChoiceOption";
 import type { SettingsSectionProps } from "../types";
+
+const CLOCK_LAYOUT_OPTIONS = [
+  { value: "classic", label: "Compact clock" },
+  { value: "custom", label: "Custom clock" },
+] as const;
+
+const CLOCK_STYLE_OPTIONS = [
+  { value: "vertical", label: "Large Vertical" },
+  { value: "horizontal", label: "Horizontal" },
+  { value: "minimal", label: "Thin" },
+  { value: "bold", label: "Bold" },
+] as const;
+
+const TIME_FORMATS = ["12", "24"] as const;
+
 interface Props extends SettingsSectionProps {
   clock: ClockFormatter;
   openedAt: number;
@@ -16,10 +31,7 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
         id="clock-layouts"
         label="Clock layout"
         value={settings.clockLayout}
-        options={[
-          ["classic", "Compact clock"],
-          ["custom", "Custom clock"],
-        ]}
+        options={CLOCK_LAYOUT_OPTIONS}
         onSelect={actions.setClockLayout}
       />
       <div hidden={settings.clockLayout !== "custom"}>
@@ -28,18 +40,13 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
           id="clock-styles"
           label="Clock style"
           value={settings.aeroClockStyle}
-          options={[
-            ["vertical", "Large Vertical"],
-            ["horizontal", "Horizontal"],
-            ["minimal", "Thin"],
-            ["bold", "Bold"],
-          ]}
+          options={CLOCK_STYLE_OPTIONS}
           onSelect={actions.setClockStyle}
         />
       </div>
       <h3>Date &amp; time</h3>
       <div id="time-formats" class="units">
-        {(["12", "24"] as const).map((format) => (
+        {TIME_FORMATS.map((format) => (
           <ChoiceOption
             key={format}
             id={"time:" + format}

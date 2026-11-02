@@ -5,11 +5,11 @@ export type TemperatureUnit = "C" | "F";
 export type CardSize = "big" | "small";
 export type DateFormat = "compact" | "short" | "long" | "numeric-short" | "numeric" | "iso" | "none";
 export interface WeatherLocation {
-  country_code?: string;
-  label?: string;
-  latitude: number;
-  longitude: number;
-  name: string;
+  readonly country_code?: string;
+  readonly label?: string;
+  readonly latitude: number;
+  readonly longitude: number;
+  readonly name: string;
 }
 export interface SettingsValues {
   aeroClockStyle: "vertical" | "horizontal" | "minimal" | "bold";

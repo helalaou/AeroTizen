@@ -64,12 +64,8 @@ export const createSettingsActions = (
       if ((settings.getSnapshot().inputNames[port] || "") === value) {
         return;
       }
-      const inputNames = { ...settings.getSnapshot().inputNames };
-      if (value) {
-        inputNames[port] = value;
-      } else {
-        delete inputNames[port];
-      }
+      const { [port]: previousName, ...otherNames } = settings.getSnapshot().inputNames;
+      const inputNames = value ? { ...otherNames, [port]: value } : otherNames;
       commit({ inputNames }, services.applyInputs);
     },
     toggleApp(id) {

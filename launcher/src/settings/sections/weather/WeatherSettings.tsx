@@ -5,6 +5,21 @@ import type { SettingsSectionProps } from "../../types";
 
 import { useWeatherLocation } from "./useWeatherLocation";
 
+const WEATHER_VISIBILITY_OPTIONS = [
+  { value: true, label: "Show weather" },
+  { value: false, label: "Hide weather" },
+] as const;
+
+const LOCATION_VISIBILITY_OPTIONS = [
+  { value: true, label: "Show location" },
+  { value: false, label: "Hide location" },
+] as const;
+
+const TEMPERATURE_UNIT_OPTIONS = [
+  { value: "F", label: "°F  Fahrenheit" },
+  { value: "C", label: "°C  Celsius" },
+] as const;
+
 interface Props extends SettingsSectionProps {
   active: boolean;
 }
@@ -18,10 +33,7 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
         id="weather-display"
         label="Weather visibility"
         value={settings.showWeather !== false}
-        options={[
-          [true, "Show weather"],
-          [false, "Hide weather"],
-        ]}
+        options={WEATHER_VISIBILITY_OPTIONS}
         onSelect={actions.setWeatherVisible}
       />
       <p id="weather-location-summary" class="hint">
@@ -74,10 +86,7 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
         id="weather-visibility"
         label="Weather location visibility"
         value={settings.weatherShowLocation}
-        options={[
-          [true, "Show location"],
-          [false, "Hide location"],
-        ]}
+        options={LOCATION_VISIBILITY_OPTIONS}
         onSelect={actions.setLocationVisible}
       />
       <h3>Temperature</h3>
@@ -85,10 +94,7 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
         id="units"
         label="Temperature unit"
         value={settings.tempUnit}
-        options={[
-          ["F", "°F  Fahrenheit"],
-          ["C", "°C  Celsius"],
-        ]}
+        options={TEMPERATURE_UNIT_OPTIONS}
         onSelect={actions.setTempUnit}
       />
     </>

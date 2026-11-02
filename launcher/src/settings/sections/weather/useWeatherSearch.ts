@@ -10,6 +10,16 @@ interface SearchState {
   results: WeatherLocation[];
 }
 
+const getSearchMessage = (results: WeatherLocation[] | null) => {
+  if (results === null) {
+    return "Could not search. Check your connection and try again.";
+  }
+  if (!results.length) {
+    return "No locations found. Try a nearby town or add a region or country.";
+  }
+  return "Select your location. Add a region or country to the search if needed.";
+};
+
 export const useWeatherSearch = (searchLocations: SettingsServices["searchLocations"], active: boolean) => {
   const [state, setState] = useState<SearchState>({ query: "", results: [], message: "" });
   const cancel = useRef<(() => void) | undefined>(undefined);
@@ -40,8 +50,8 @@ export const useWeatherSearch = (searchLocations: SettingsServices["searchLocati
     },
     search: () => {
       clear();
-      const text = state.query.trim(),
-        request = version.current;
+      const text = state.query.trim();
+      const request = version.current;
       setState((previous) => ({
         ...previous,
         message: text.length < 2 ? "Enter at least two characters, then select Search." : "Searching…",
@@ -57,12 +67,7 @@ export const useWeatherSearch = (searchLocations: SettingsServices["searchLocati
           setState((previous) => ({
             ...previous,
             results: results || [],
-            message:
-              results === null
-                ? "Could not search. Check your connection and try again."
-                : results.length
-                  ? "Select your location. Add a region or country to the search if needed."
-                  : "No locations found. Try a nearby town or add a region or country.",
+            message: getSearchMessage(results),
           })),
         );
       });

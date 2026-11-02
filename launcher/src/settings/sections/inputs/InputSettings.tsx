@@ -4,6 +4,16 @@ import type { SettingsSectionProps } from "../../types";
 
 import { InputName } from "./InputName";
 
+const LIVE_TV_VISIBILITY_OPTIONS = [
+  { value: true, label: "Show" },
+  { value: false, label: "Hide" },
+] as const;
+
+const INPUT_VISIBILITY_OPTIONS = [
+  { value: false, label: "Show all" },
+  { value: true, label: "Hide disconnected" },
+] as const;
+
 interface Props extends SettingsSectionProps {
   inputs: readonly InputOption[];
 }
@@ -16,10 +26,7 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => (
       id="live-tv-visibility"
       label="Live TV visibility"
       value={settings.showLiveTv}
-      options={[
-        [true, "Show"],
-        [false, "Hide"],
-      ]}
+      options={LIVE_TV_VISIBILITY_OPTIONS}
       onSelect={actions.setLiveTvVisible}
     />
     <h3>HDMI ports</h3>
@@ -28,10 +35,7 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => (
       id="input-visibility"
       label="HDMI visibility"
       value={settings.hideDisconnectedHdmi}
-      options={[
-        [false, "Show all"],
-        [true, "Hide disconnected"],
-      ]}
+      options={INPUT_VISIBILITY_OPTIONS}
       onSelect={actions.setHdmiVisibility}
     />
     <h3>Keep HDMI ports visible</h3>
@@ -50,8 +54,8 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => (
               label={input.port + " standby visibility"}
               value={settings.hdmiKeepVisible[number] === true}
               options={[
-                [false, input.port + ": Automatic"],
-                [true, input.port + ": Always show"],
+                { value: false, label: input.port + ": Automatic" },
+                { value: true, label: input.port + ": Always show" },
               ]}
               onSelect={(keep) => actions.setHdmiKeepVisible(number, keep)}
             />

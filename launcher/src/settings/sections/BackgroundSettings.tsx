@@ -10,10 +10,32 @@ import { SettingsControl } from "../components/SettingsControl";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 import type { SettingsSectionProps } from "../types";
 
+const WALLPAPER_CATEGORY_OPTIONS = [
+  { value: "photo", label: "Weather photos" },
+  { value: "solid", label: "Solid colour" },
+  { value: "gradient", label: "Gradients" },
+  { value: "animated", label: "Animated backgrounds" },
+] as const;
+
+const WEATHER_PHOTO_OPTIONS = [
+  { value: false, label: "Off" },
+  { value: true, label: "Automatic (weather)" },
+] as const;
+
 interface Props extends SettingsSectionProps {
   backgrounds: readonly BackgroundOption[];
   config: LauncherConfig;
 }
+
+const getInitialCategory = (settings: SettingsSectionProps["settings"], animated: boolean) => {
+  if (settings.weatherPhoto) {
+    return "photo";
+  }
+  if (animated) {
+    return "animated";
+  }
+  return settings.background === "black" ? "solid" : "gradient";
+};
 
 export const BackgroundSettings = ({ settings, actions, config, backgrounds: list }: Props) => {
   const selected = list.find((background) => background.id === settings.background);
@@ -21,9 +43,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
   const percent = ((settings.speed - config.SPEED.MIN) / (config.SPEED.MAX - config.SPEED.MIN)) * 100;
   const { view, navigation } = useSettingsEnvironment();
   const { adjusting } = useStore(view);
-  const [filter, setFilter] = useState(
-    settings.weatherPhoto ? "photo" : animated ? "animated" : settings.background === "black" ? "solid" : "gradient",
-  );
+  const [filter, setFilter] = useState(() => getInitialCategory(settings, animated));
   const show = (category: string) => filter === category;
   // OK toggles adjusting, so Left/Right can still reach Preview from the slider.
   const toggleAdjusting = () =>
@@ -51,33 +71,23 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
 
   return (
     <>
-      {
-        <ChoiceGroup
-          id="wallpaper-categories"
-          label="Background type"
-          value={filter}
-          options={[
-            ["photo", "Weather photos"],
-            ["solid", "Solid colour"],
-            ["gradient", "Gradients"],
-            ["animated", "Animated backgrounds"],
-          ]}
-          onSelect={(category) => {
-            flushSync(() => setFilter(category));
-            navigation.invalidate();
-          }}
-        />
-      }
+      <ChoiceGroup
+        id="wallpaper-categories"
+        label="Background type"
+        value={filter}
+        options={WALLPAPER_CATEGORY_OPTIONS}
+        onSelect={(category) => {
+          flushSync(() => setFilter(category));
+          navigation.invalidate();
+        }}
+      />
       <div hidden={!show("photo")}>
         <h3>Dynamic weather wallpapers</h3>
         <ChoiceGroup
           id="weather-photo-choice"
           value={settings.weatherPhoto}
           label="Dynamic weather wallpapers"
-          options={[
-            [false, "Off"],
-            [true, "Automatic (weather)"],
-          ]}
+          options={WEATHER_PHOTO_OPTIONS}
           onSelect={actions.setWeatherPhoto}
         />
         <p class="hint">

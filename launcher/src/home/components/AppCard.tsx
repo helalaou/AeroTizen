@@ -9,8 +9,8 @@ import { HomeControl } from "./HomeControl";
 import { ReorderControls } from "./ReorderControls";
 export const AppCard = ({ env, app, active }: { env: HomeEnvironment; app: InstalledApp; active: boolean }) => {
   const brand = useMemo(() => env.describe(app), [env, app]);
-  const state = useStore(env.state),
-    moving = state.moving === app.id;
+  const state = useStore(env.state);
+  const moving = state.moving === app.id;
   return (
     <HomeControl
       env={env}

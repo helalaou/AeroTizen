@@ -1,6 +1,107 @@
 import { focusControl } from "../../shared/navigation/focusControl";
 import { createStore } from "../../shared/state/createStore";
-import type { HomeEnvironment, HomeState, Page } from "../types";
+import type { HomeEnvironment, HomeMenuChoice, HomeState, Page } from "../types";
+
+const HEADER_KEYS = ["gear", "samsung-home-shortcut", "home-tab", "apps-tab"] as const;
+const HOME_MENU_CHOICES = [
+  { action: "move", label: "Move" },
+  { action: "remove", label: "Remove from Home" },
+] as const;
+const APP_MENU_CHOICES = {
+  add: { action: "add", label: "Add to Home" },
+  remove: { action: "remove", label: "Remove from Home" },
+} as const;
+
+type Rows = readonly (readonly string[])[];
+
+const getSelectedKey = (rows: Rows, selected: string, started: boolean) => {
+  const first = rows[1]?.[0];
+  if (!started && first) {
+    return first;
+  }
+  if (rows.some((row) => row.includes(selected))) {
+    return selected;
+  }
+  return first || "home-tab";
+};
+
+const getScrollOffset = ({
+  selected,
+  rows,
+  previous,
+  top,
+  bottom,
+  origin,
+}: {
+  selected: string;
+  rows: Rows;
+  previous: number;
+  top: number;
+  bottom: number;
+  origin: number;
+}) => {
+  if (rows[0].includes(selected) || rows[1]?.includes(selected)) {
+    return 0;
+  }
+  if (bottom - previous > 1000) {
+    return bottom - 1000;
+  }
+  if (top - previous < origin + 128) {
+    return Math.max(0, top - origin - 128);
+  }
+  return previous;
+};
+
+const moveItem = (items: readonly string[], from: number, to: number, item: string) => {
+  const remaining = items.filter((_, index) => index !== from);
+  return [...remaining.slice(0, to), item, ...remaining.slice(to)];
+};
+
+const getVerticalColumn = ({
+  rows,
+  row,
+  target,
+  selected,
+  page,
+  nodes,
+  viewport,
+}: {
+  rows: Rows;
+  row: number;
+  target: number;
+  selected: string;
+  page: Page;
+  nodes: ReadonlyMap<string, HTMLElement>;
+  viewport: HTMLElement | null;
+}) => {
+  if (target === 0) {
+    return rows[0].indexOf(page === "home" ? "home-tab" : "apps-tab");
+  }
+  const column = row === 0 ? 0 : rows[row].indexOf(selected);
+  if (!selected.startsWith("continue:") && !rows[target][0]?.startsWith("continue:")) {
+    return column;
+  }
+  const from = nodes.get(selected)?.getBoundingClientRect();
+  if (!from) {
+    return column;
+  }
+  const bounds = viewport?.getBoundingClientRect();
+  const nearest = rows[target].reduce(
+    (nearest, key, column) => {
+      const rect = nodes.get(key)?.getBoundingClientRect();
+      if (
+        !rect ||
+        (key.startsWith("continue:") && bounds && (rect.right <= bounds.left || rect.left >= bounds.right))
+      ) {
+        return nearest;
+      }
+      const distance = Math.abs(rect.left + rect.right - from.left - from.right);
+      return distance < nearest.distance ? { column, distance } : nearest;
+    },
+    { column, distance: Infinity },
+  );
+  return nearest.column;
+};
 
 // Remote transactions publish state synchronously; Preact owns every rendered node.
 // No app/service commands are reimplemented here.
@@ -11,7 +112,7 @@ export const createHomeController = (
   >,
   transaction: (action: () => void) => void,
 ) => {
-  const { runtime: A, settings, inventory, nodes } = env;
+  const { runtime, settings, inventory, nodes } = env;
   const state = createStore<HomeState>({
     page: "home",
     scroll: 0,
@@ -22,9 +123,9 @@ export const createHomeController = (
     draft: null,
     menu: null,
   });
-  let timer: number | undefined,
-    enterDown = false,
-    started = false;
+  let timer: number | undefined;
+  let enterDown = false;
+  let started = false;
   const cancelPress = () => {
     if (timer !== undefined) {
       window.clearTimeout(timer);
@@ -42,52 +143,49 @@ export const createHomeController = (
   const homeIds = () => {
     const saved =
       state.getSnapshot().draft ||
-      (settings.getSnapshot().homeInitialized ? settings.getSnapshot().home : [A.config.FIREPLACE_ID]);
+      (settings.getSnapshot().homeInitialized ? settings.getSnapshot().home : [runtime.config.FIREPLACE_ID]);
     // Movement must address the same visible IDs as the grid, not stale saved apps.
-    return saved.filter((id) => id === A.config.FIREPLACE_ID || !inventory.getSnapshot().ready || A.apps.byId(id));
+    return saved.filter(
+      (id) => id === runtime.config.FIREPLACE_ID || !inventory.getSnapshot().ready || runtime.apps.byId(id),
+    );
   };
   const ids = () =>
-    state.getSnapshot().page === "home"
-      ? homeIds().filter((id) => id === A.config.FIREPLACE_ID || !inventory.getSnapshot().ready || A.apps.byId(id))
-      : inventory.getSnapshot().apps.map((app) => app.id);
+    state.getSnapshot().page === "home" ? homeIds() : inventory.getSnapshot().apps.map((app) => app.id);
   const sourceKey = (source: { type: string; number?: number }) => "input:" + source.type + ":" + source.number;
-  const rows = (): string[][] => {
-    const columns = env.columns(settings.getSnapshot()),
-      all = ids(),
-      result = [["gear", "samsung-home-shortcut", "home-tab", "apps-tab"]];
-    for (let i = 0; i < all.length; i += columns) {
-      result.push(all.slice(i, i + columns).map((id) => "app:" + id));
+  const rows = (): readonly (readonly string[])[] => {
+    const columns = env.columns(settings.getSnapshot());
+    const all = ids();
+    const appRows = Array.from({ length: Math.ceil(all.length / columns) }, (_, index) =>
+      all.slice(index * columns, (index + 1) * columns).map((id) => "app:" + id),
+    );
+    const appLayout = [HEADER_KEYS, ...appRows];
+    if (state.getSnapshot().page !== "home") {
+      return appLayout;
     }
-    if (state.getSnapshot().page === "home") {
-      if (settings.getSnapshot().continueWatching && inventory.getSnapshot().items.length) {
-        result.push(inventory.getSnapshot().items.map((item) => "continue:" + item.key));
-      }
-      const sources = inventory.getSnapshot().inputs;
-      if (sources.length) {
-        result.push(sources.map(sourceKey));
-      }
-    }
-    return result;
+    const { items, inputs } = inventory.getSnapshot();
+    const continueRows =
+      settings.getSnapshot().continueWatching && items.length ? [items.map((item) => "continue:" + item.key)] : [];
+    const inputRows = inputs.length ? [inputs.map(sourceKey)] : [];
+    return [...appLayout, ...continueRows, ...inputRows];
   };
   const focus = () => {
-    if (document.hidden || A.settingsUi?.isOpen()) {
+    if (document.hidden || runtime.settingsUi?.isOpen()) {
       update({ active: false });
       return;
     }
     const pending = state.getSnapshot();
     if (pending.moving && !ids().includes(pending.moving)) {
       update({ moving: null, draft: null });
-      A.hideToast();
+      runtime.hideToast();
       cancelPress();
     }
     if (pending.menu && !ids().includes(pending.menu.id)) {
       update({ menu: null });
       cancelPress();
     }
-    const list = rows(),
-      old = state.getSnapshot().selected;
-    const selected =
-      !started && list[1]?.[0] ? list[1][0] : list.some((row) => row.includes(old)) ? old : list[1]?.[0] || "home-tab";
+    const list = rows();
+    const old = state.getSnapshot().selected;
+    const selected = getSelectedKey(list, old, started);
     if (list[1]?.length) {
       started = true;
     }
@@ -95,9 +193,9 @@ export const createHomeController = (
       cancelPress();
     }
     update({ selected, active: true });
-    const node = nodes.get(selected),
-      main = env.rows.current;
-    if (!node || !main || A.settingsUi?.isOpen()) {
+    const node = nodes.get(selected);
+    const main = env.rows.current;
+    if (!node || !main || runtime.settingsUi?.isOpen()) {
       return;
     }
     focusControl(node);
@@ -113,19 +211,17 @@ export const createHomeController = (
         update({ continueOffset: offset });
       }
     }
-    let scroll = state.getSnapshot().scroll;
-    const rect = node.getBoundingClientRect(),
-      top = main.getBoundingClientRect().top;
+    const rect = node.getBoundingClientRect();
+    const mainTop = main.getBoundingClientRect().top;
     const origin = main.parentElement?.getBoundingClientRect().top || 0;
-    const y = rect.top - top + origin,
-      bottom = rect.bottom - top + origin;
-    if (list[0].includes(selected) || list[1]?.includes(selected)) {
-      scroll = 0;
-    } else if (bottom - scroll > 1000) {
-      scroll = bottom - 1000;
-    } else if (y - scroll < origin + 128) {
-      scroll = Math.max(0, y - origin - 128);
-    }
+    const scroll = getScrollOffset({
+      selected,
+      rows: list,
+      previous: state.getSnapshot().scroll,
+      top: rect.top - mainTop + origin,
+      bottom: rect.bottom - mainTop + origin,
+      origin,
+    });
     update({ scroll });
   };
   const select = (selected: string) => {
@@ -141,7 +237,7 @@ export const createHomeController = (
       settings.update({ home: [...homeIds()] });
     }
     update({ moving: null, draft: null });
-    A.hideToast();
+    runtime.hideToast();
   };
   const dismiss = () => {
     update({ menu: null });
@@ -156,79 +252,71 @@ export const createHomeController = (
   const activate = (key: string) => {
     if (key === "gear") {
       endMove();
-      A.settingsUi?.open();
+      runtime.settingsUi?.open();
     } else if (key === "samsung-home-shortcut") {
-      if (A.homewatch.openSamsungHome) {
-        A.homewatch.openSamsungHome();
+      if (runtime.homewatch.openSamsungHome) {
+        runtime.homewatch.openSamsungHome();
       } else {
-        A.homewatch.useSamsungHome();
+        runtime.homewatch.useSamsungHome();
       }
     } else if (key === "home-tab" || key === "apps-tab") {
       showPage(key === "home-tab" ? "home" : "apps");
     } else if (key.startsWith("app:")) {
-      const id = key.slice(4),
-        app = A.apps.byId(id);
-      if (id === A.config.FIREPLACE_ID) {
-        A.apps.playFireplace();
+      const id = key.slice(4);
+      const app = runtime.apps.byId(id);
+      if (id === runtime.config.FIREPLACE_ID) {
+        runtime.apps.playFireplace();
       } else if (app) {
-        A.apps.launch(app);
+        runtime.apps.launch(app);
       }
     } else if (key.startsWith("continue:")) {
       // Commands need the service's live record, not an immutable view snapshot.
-      const item = A.continueWatching.items.find((item) => item.key === key.slice(9));
+      const item = runtime.continueWatching.items.find((item) => item.key === key.slice(9));
       if (item) {
-        A.continueWatching.open(item);
+        runtime.continueWatching.open(item);
       }
     } else {
       const source = inventory.getSnapshot().inputs.find((source) => sourceKey(source) === key);
       if (source) {
-        A.inputs.show(source);
+        runtime.inputs.show(source);
       }
     }
   };
-  const menuChoices = () =>
-    state.getSnapshot().page === "home"
-      ? [
-          { action: "move", label: "Move" },
-          { action: "remove", label: "Remove from Home" },
-        ]
-      : [
-          {
-            action: homeIds().includes(state.getSnapshot().menu?.id || "") ? "remove" : "add",
-            label: homeIds().includes(state.getSnapshot().menu?.id || "") ? "Remove from Home" : "Add to Home",
-          },
-        ];
+  const menuChoices = (): readonly HomeMenuChoice[] => {
+    if (state.getSnapshot().page === "home") {
+      return HOME_MENU_CHOICES;
+    }
+    const selected = homeIds().includes(state.getSnapshot().menu?.id || "");
+    return [selected ? APP_MENU_CHOICES.remove : APP_MENU_CHOICES.add];
+  };
   const choose = (index: number) => {
-    const menu = state.getSnapshot().menu,
-      choice = menuChoices()[index];
+    const menu = state.getSnapshot().menu;
+    const choice = menuChoices()[index];
     if (!menu || !choice) {
       return;
     }
     update({ menu: null });
     if (choice.action === "move") {
       update({ moving: menu.id, draft: [...homeIds()] });
-      A.toast(env.translate("Use the arrows to move it, OK to drop"));
+      runtime.toast(env.translate("Use the arrows to move it, OK to drop"));
       return;
     }
-    const before = ids(),
-      at = before.indexOf(menu.id),
-      home = [...homeIds()];
+    const before = ids();
+    const at = before.indexOf(menu.id);
+    const home = [...homeIds()];
     settings.update({
       home: choice.action === "add" ? [...home, menu.id] : home.filter((id) => id !== menu.id),
     });
     if (state.getSnapshot().page === "home") {
       const after = ids();
-      update({
-        selected: after.length
-          ? "app:" + after[Math.min(Math.max(at, 0), after.length - 1)]
-          : inventory.getSnapshot().inputs.length
-            ? sourceKey(inventory.getSnapshot().inputs[0])
-            : "home-tab",
-      });
+      const nextApp = after[Math.min(Math.max(at, 0), after.length - 1)];
+      const firstInput = inventory.getSnapshot().inputs[0];
+      const fallback = firstInput ? sourceKey(firstInput) : "home-tab";
+      update({ selected: nextApp ? "app:" + nextApp : fallback });
     }
     focus();
   };
-  const K = A.config.KEY;
+  const K = runtime.config.KEY;
   const keydown = (code: number, event: Pick<KeyboardEvent, "preventDefault">) =>
     transaction(() => {
       const current = state.getSnapshot();
@@ -263,13 +351,11 @@ export const createHomeController = (
           }
           return;
         }
-        const home = [...homeIds()],
-          from = home.indexOf(current.moving),
-          step = code === K.UP || code === K.DOWN ? env.columns(settings.getSnapshot()) : 1;
+        const home = [...homeIds()];
+        const from = home.indexOf(current.moving);
+        const step = code === K.UP || code === K.DOWN ? env.columns(settings.getSnapshot()) : 1;
         const to = Math.max(0, Math.min(home.length - 1, from + delta * step));
-        home.splice(from, 1);
-        home.splice(to, 0, current.moving);
-        update({ draft: home });
+        update({ draft: moveItem(home, from, to, current.moving) });
         focus();
         return;
       }
@@ -284,7 +370,7 @@ export const createHomeController = (
           if (enterDown && selected.startsWith("app:")) {
             update({ menu: { id: selected.slice(4), selected: 0 } });
           }
-        }, A.config.LONG_PRESS_MS);
+        }, runtime.config.LONG_PRESS_MS);
         return;
       }
       if (code === K.BACK || code === K.ESC) {
@@ -294,50 +380,28 @@ export const createHomeController = (
         return;
       }
       const all = rows();
-      let row = all.findIndex((items) => items.includes(current.selected));
+      const row = all.findIndex((items) => items.includes(current.selected));
       if (row < 0) {
         focus();
         return;
       }
-      let column = all[row].indexOf(current.selected);
-      if (code === K.LEFT || code === K.RIGHT) {
-        column += delta;
-      } else {
-        const target = row + delta;
-        if (target < 0 || target >= all.length) {
-          return;
-        }
-        if (row === 0) {
-          column = 0;
-        }
-        if (target === 0) {
-          column = all[0].indexOf(current.page === "home" ? "home-tab" : "apps-tab");
-        } else if (current.selected.startsWith("continue:") || all[target][0]?.startsWith("continue:")) {
-          const from = nodes.get(current.selected)?.getBoundingClientRect();
-          if (from) {
-            let distance = Infinity;
-            const viewport = env.continueViewport.current?.getBoundingClientRect();
-            all[target].forEach((key, i) => {
-              const rect = nodes.get(key)?.getBoundingClientRect();
-              if (
-                !rect ||
-                (key.startsWith("continue:") &&
-                  viewport &&
-                  (rect.right <= viewport.left || rect.left >= viewport.right))
-              ) {
-                return;
-              }
-              const d = Math.abs(rect.left + rect.right - from.left - from.right);
-              if (d < distance) {
-                distance = d;
-                column = i;
-              }
-            });
-          }
-        }
-        row = target;
+      const horizontal = code === K.LEFT || code === K.RIGHT;
+      const target = horizontal ? row : row + delta;
+      if (target < 0 || target >= all.length) {
+        return;
       }
-      select(all[row][Math.max(0, Math.min(all[row].length - 1, column))]);
+      const column = horizontal
+        ? all[row].indexOf(current.selected) + delta
+        : getVerticalColumn({
+            rows: all,
+            row,
+            target,
+            selected: current.selected,
+            page: current.page,
+            nodes,
+            viewport: env.continueViewport.current,
+          });
+      select(all[target][Math.max(0, Math.min(all[target].length - 1, column))]);
     });
   const keyup = (code: number) => {
     if (code !== K.ENTER) {
