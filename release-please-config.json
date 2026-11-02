@@ -14,7 +14,7 @@
       "component": "cli",
       "package-name": "aerotizen",
       "changelog-path": "CHANGELOG-CLI.md",
-      "exclude-paths": ["launcher", "tests"]
+      "exclude-paths": ["launcher", "tests", "docs"]
     },
     "launcher": {
       "release-type": "simple",

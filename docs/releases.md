@@ -96,13 +96,14 @@ Release Please refreshes pending release PRs even when their release notes have 
 changed. This keeps the shared version manifest current after another component is
 released. Let CI pass again if that refresh changes the PR commit.
 
-Launcher source changes belong under `launcher/`. The CLI excludes `launcher/` and
-`tests/` from its release calculation, so a launcher change with JavaScript tests does
-not force a CLI release. A CLI source change with tests still releases the CLI. Shared
-root tooling and documentation can affect the CLI; a change needed in both components
-must also change the relevant launcher source or metadata. Test-only changes do not
-create releases. A commit scope such as `fix(launcher):` is useful context, but paths
-determine component ownership.
+Launcher source changes belong under `launcher/`. The CLI excludes `launcher/`,
+`tests/`, and `docs/` from its release calculation, so a launcher change with tests and
+documentation does not force a CLI release. A CLI source change with tests and
+documentation still releases the CLI. Changes only under the root `docs/` directory
+or `tests/` do not create releases for either component. Root tooling and files such
+as `README.md` can still affect the CLI; a change needed in both components must also
+change the relevant launcher source or metadata. A commit scope such as
+`fix(launcher):` is useful context, but paths determine component ownership.
 
 The launcher builder checks that `version.txt` and `config.xml` agree. Keep the app ID
 `DclHome001.Home` and package ID `DclHome001` stable for upgrades. Release Please updates
