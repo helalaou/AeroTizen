@@ -1,3 +1,4 @@
+import type { WaveBackgroundRenderer } from "../../contracts/backgrounds";
 import type {
   AppPresentation,
   Background,
@@ -62,6 +63,7 @@ export interface LauncherPlatform {
   backgrounds: {
     list: Background[];
     preview(background: Background): string;
+    registerWaveRenderer(renderer: WaveBackgroundRenderer): () => void;
     setSpeed(speed: number): void;
   };
   weather: Store<WeatherSnapshot> & {

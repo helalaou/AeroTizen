@@ -193,10 +193,12 @@ window.Backgrounds = (function () {
     canvasTimer = null,
     speed = 1,
     current = null,
-    suspended = false;
+    suspended = false,
+    wavesActive = false,
+    waveRenderer = null,
+    disposeWaves = null;
   var BLOB_SECONDS = [11, 14, 16, 12],
-    SLOW_SECONDS = 22,
-    WAVE_SECONDS = [28, 18];
+    SLOW_SECONDS = 22;
 
   // Small static rendering used for the Settings swatches.
   function preview(b) {
@@ -242,6 +244,8 @@ window.Backgrounds = (function () {
   }
 
   function clear() {
+    disposeWaveView();
+    wavesActive = false;
     if (canvasTimer) {
       if (canvasTimer.stop) {
         canvasTimer.stop();
@@ -450,31 +454,33 @@ window.Backgrounds = (function () {
     });
   }
 
-  function addWaves() {
-    var paths = [
-      "M0 60 Q 240 20 480 60 T 960 60 T 1440 60 T 1920 60 V 200 H 0 Z",
-      "M0 80 Q 240 40 480 80 T 960 80 T 1440 80 T 1920 80 V 200 H 0 Z",
-    ];
-    [
-      ["rgba(30,130,190,.28)", "bg-wave1"],
-      ["rgba(20,90,150,.38)", "bg-wave2"],
-    ].forEach(function (w, i) {
-      var d = document.createElement("div");
-      d.className = "bg-wave " + w[1];
-      d.style.animationDuration = WAVE_SECONDS[i] / speed + "s";
-      d.innerHTML =
-        '<svg viewBox="0 0 1920 200" preserveAspectRatio="none"><path fill="' +
-        w[0] +
-        '" d="' +
-        paths[i] +
-        '"/>' +
-        '<path fill="' +
-        w[0] +
-        '" transform="translate(1920 0)" d="' +
-        paths[i] +
-        '"/></svg>';
-      layer.appendChild(d);
-    });
+  // Release the app-owned wave view before another renderer uses the layer.
+  function disposeWaveView() {
+    if (disposeWaves) {
+      var dispose = disposeWaves;
+      disposeWaves = null;
+      dispose();
+    }
+  }
+
+  function registerWaveRenderer(renderer) {
+    var registration = { render: renderer };
+    disposeWaveView();
+    waveRenderer = registration;
+    try {
+      if (wavesActive) {
+        disposeWaves = renderer(layer, speed);
+      }
+    } catch (error) {
+      waveRenderer = null;
+      throw error;
+    }
+    return function () {
+      if (waveRenderer === registration) {
+        disposeWaveView();
+        waveRenderer = null;
+      }
+    };
   }
 
   function apply(id) {
@@ -497,7 +503,10 @@ window.Backgrounds = (function () {
     } else if (b.anim === "stars") {
       addStars(true);
     } else if (b.anim === "waves") {
-      addWaves();
+      wavesActive = true;
+      if (waveRenderer) {
+        disposeWaves = waveRenderer.render(layer, speed);
+      }
     } else if (b.anim === "particles") {
       addParticles(b.kind);
     }
@@ -530,6 +539,7 @@ window.Backgrounds = (function () {
 
   return {
     list: LIST,
+    registerWaveRenderer: registerWaveRenderer,
     preview: preview,
     apply: apply,
     hide: hide,

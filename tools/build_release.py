@@ -63,6 +63,7 @@ def build_launcher(root, output, tag=None):
         "inputs-view.js",
         "status-view.js",
         "brands-view.js",
+        "wave-background.js",
     ):
         if (launcher / "js" / name).exists():
             raise ValueError(f"Compiled launcher contains legacy renderer {name}; run npm run build again")

@@ -26,3 +26,8 @@ for legacy regression coverage.
 legacy artwork/rendering tests. Production `brands.js` exposes presentation data
 only. `css/selection.css` keeps the old selection badges for the comparison view;
 active Settings uses SelectionIndicator and the shared icon components.
+
+`wave-background.js` preserves the old SVG-string renderer for wave comparisons at
+fixed animation phases. The fixture registers it with the shared background runtime;
+production uses the app-owned `WaveBackground` component instead. The fixture file
+must not be copied into the launcher or its package.

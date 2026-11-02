@@ -21,7 +21,8 @@ are removed and the UI bundle does not contain the full catalogue.
 App logos and artwork stay in the app catalogue and `AppLogoIcon`. The Fireplace
 flame is the existing custom motif in `FlameIcon`; it is not a general interface
 symbol. These custom SVGs also remain decorative. Input icons are components and
-no longer require the runtime SVG string table.
+no longer require the runtime SVG string table. Decorative wave artwork lives in
+`backgrounds/WaveBackground.tsx`, with its existing shapes and CSS animation.
 
 The old string table, tile constructors and selection badge CSS live only under
 `tests/fixtures/legacy-launcher/` for comparison tests. Production `brands.js`

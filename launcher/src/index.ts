@@ -1,6 +1,7 @@
 import { flushSync } from "preact/compat";
 
 import { createLauncherApp } from "./app/createLauncherApp";
+import { mountWaveBackground } from "./backgrounds/index";
 import { mountHome } from "./home/index";
 import { mountSettings } from "./settings/index";
 
@@ -15,7 +16,7 @@ const app = createLauncherApp(
   runtime,
   platform,
   { home, settings },
-  { home: mountHome, settings: mountSettings },
+  { home: mountHome, settings: mountSettings, waveBackground: mountWaveBackground },
   flushSync,
 );
 if (import.meta.hot) {

@@ -204,6 +204,7 @@ def test_launcher_rejects_legacy_settings_markup(launcher, tmp_path):
         "inputs-view.js",
         "status-view.js",
         "brands-view.js",
+        "wave-background.js",
     ],
 )
 def test_launcher_rejects_legacy_renderer_assets(launcher, tmp_path, name):

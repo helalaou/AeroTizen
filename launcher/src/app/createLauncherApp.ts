@@ -1,3 +1,4 @@
+import type { WaveBackgroundRenderer } from "../contracts/backgrounds";
 import type { HomeBridge, SettingsBridge } from "../contracts/launcher";
 import type { SettingsStore } from "../contracts/preferences";
 import type { StatusStores } from "../contracts/status";
@@ -23,6 +24,7 @@ export interface LauncherViews {
     settings: SettingsStore,
     mount: HTMLElement,
   ): MountedView<SettingsBridge>;
+  waveBackground: WaveBackgroundRenderer;
 }
 
 // One settings owner and one teardown path for both views. The legacy key router
@@ -46,6 +48,7 @@ export const createLauncherApp = (
   const document = hosts.home.ownerDocument;
   let home: MountedView<HomeBridge> | undefined;
   let editor: MountedView<SettingsBridge> | undefined;
+  let disposeWaveRenderer: (() => void) | undefined;
   let disposed = false;
   const visibility = () => (document.hidden ? home?.bridge.blur() : home?.bridge.focus());
   const dispose = () => {
@@ -56,6 +59,7 @@ export const createLauncherApp = (
     document.removeEventListener("visibilitychange", visibility);
     editor?.dispose();
     home?.dispose();
+    disposeWaveRenderer?.();
     if (editor && runtime.settingsUi === editor.bridge) {
       runtime.settingsUi = previousSettings;
     }
@@ -66,6 +70,7 @@ export const createLauncherApp = (
     settings.dispose();
   };
   try {
+    disposeWaveRenderer = platform.backgrounds.registerWaveRenderer(views.waveBackground);
     home = views.home(runtime, settings, hosts.home, status);
     runtime.homeScreen = home.bridge;
     editor = views.settings(runtime, platform, settings, hosts.settings);

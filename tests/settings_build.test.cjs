@@ -66,6 +66,7 @@ test("legacy views remain test fixtures and cannot enter the compiled runtime", 
     "inputs-view.js",
     "status-view.js",
     "brands-view.js",
+    "wave-background.js",
   ]) {
     assert.ok(existsSync(path.join(root, "tests/fixtures/legacy-launcher/js", file)), file);
     assert.equal(existsSync(path.join(root, "launcher/js", file)), false, file);
