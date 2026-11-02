@@ -55,10 +55,10 @@ and the CI workflow. ESLint covers launcher code, tests and frontend tooling. Th
 TypeScript checks also reject unused locals and parameters. CI rejects formatting
 differences, lint warnings and errors, and type errors.
 
-Generated logos and build/test output are excluded from formatting. The catalogue
-has a dedicated formatting override: its object must remain valid JSON because
-`tools/fetch_logos.py` reads it directly. Legacy JavaScript keeps ES5 syntax; compiled
-output retains the Chromium 69 and ES2018 checks.
+Generated logos and build/test output are excluded from formatting. The app catalogue
+and diagnostic privacy schema have a dedicated formatting override: their data objects
+must remain valid JSON because Python reads them directly. Legacy JavaScript keeps
+ES5 syntax; compiled output retains the Chromium 69 and ES2018 checks.
 
 ## Project layout
 

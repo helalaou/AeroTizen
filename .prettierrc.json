@@ -5,7 +5,7 @@
   "endOfLine": "lf",
   "overrides": [
     {
-      "files": "launcher/js/app-catalog.js",
+      "files": ["launcher/js/app-catalog.js", "launcher/js/diagnostics-privacy.js"],
       "options": {
         "singleQuote": false,
         "quoteProps": "preserve",
