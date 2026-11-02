@@ -1,12 +1,13 @@
 import { flushSync } from "preact/compat";
 import { useState } from "preact/hooks";
 
+import type { BackgroundOption, LauncherConfig } from "../../contracts/launcher";
 import { useStore } from "../../shared/hooks/useStore";
 import { Choice } from "../components/Choice";
 import { Pill } from "../components/Pill";
 import { RemoteControl } from "../components/RemoteControl";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
-import type { BackgroundOption, LauncherConfig, SettingsSectionProps } from "../types";
+import type { SettingsSectionProps } from "../types";
 
 interface Props extends SettingsSectionProps {
   backgrounds: readonly BackgroundOption[];

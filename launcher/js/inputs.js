@@ -3,8 +3,7 @@
 (function (A) {
   "use strict";
 
-  var tz = A.tizen,
-    ICONS = A.tiles.ICONS;
+  var tz = A.tizen;
   var inputs = (A.inputs = { sources: [], watching: false });
   var listeners = [];
 
@@ -22,8 +21,9 @@
     listeners.slice().forEach(function (listener) {
       listener();
     });
-    inputs.render();
   }
+
+  inputs.refresh = publish;
 
   inputs.portName = function (s) {
     return s.type === "TV" ? "Live TV" : s.type + " " + s.number;
@@ -32,23 +32,6 @@
   inputs.label = function (s) {
     return A.settings.inputNames[inputs.portName(s)] || s.editName || inputs.portName(s);
   };
-
-  function iconFor(s, label) {
-    if (s.type === "TV") {
-      return ICONS.tv;
-    }
-    var n = label.toLowerCase();
-    if (/xbox|playstation|ps\d|switch|nintendo|game|console/.test(n)) {
-      return ICONS.game;
-    }
-    if (/pc|computer|mac|laptop/.test(n)) {
-      return ICONS.pc;
-    }
-    if (/cable|box|roku|fire|apple|shield|chromecast|blu|dvd|satellite/.test(n)) {
-      return ICONS.box;
-    }
-    return ICONS.hdmi;
-  }
 
   // A configured device can appear in VIDEOSOURCE.disconnected while asleep.
   // Use the TV-provided editName, never a custom AeroTizen input name, as evidence.
@@ -88,32 +71,6 @@
       return true;
     }
     return s.connected === true || s.active === true || inputs.hasRecognizedDevice(s) || inputs.alwaysVisible(s);
-  };
-
-  inputs.render = function () {
-    var row = A.$("inputs");
-    row.textContent = "";
-    inputs.sources.forEach(function (s) {
-      // Keep TV-recognised HDMI devices visible while in standby; empty ports
-      // still follow the existing Hide disconnected setting.
-      if (!inputs.isVisible(s)) {
-        return;
-      }
-      var label = inputs.label(s),
-        port = inputs.portName(s);
-      var tile = A.tiles.card(label, iconFor(s, label), function () {
-        inputs.show(s);
-      });
-      if (label !== port && s.type !== "TV") {
-        tile.querySelector(".name").appendChild(A.el("div", "sub", port));
-      }
-      // A sleeping, recognised device is reachable: do not label it as empty.
-      if (s.connected === false && !s.active && !inputs.hasRecognizedDevice(s) && !inputs.alwaysVisible(s)) {
-        tile.classList.add("off");
-      }
-      row.appendChild(tile);
-    });
-    A.homeScreen.buildRows();
   };
 
   // Connected ports first, then empty ones; Live TV last. Refreshes when something is plugged in.
@@ -195,10 +152,10 @@
             });
           publish();
         },
-        inputs.render
+        publish
       );
     } catch (e) {
-      inputs.render();
+      publish();
     }
   };
 

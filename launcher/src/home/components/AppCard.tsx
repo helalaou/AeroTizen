@@ -1,6 +1,6 @@
 import { useMemo } from "preact/hooks";
 
-import type { InstalledApp } from "../../settings/types";
+import type { InstalledApp } from "../../contracts/launcher";
 import { useStore } from "../../shared/hooks/useStore";
 import type { HomeEnvironment } from "../types";
 

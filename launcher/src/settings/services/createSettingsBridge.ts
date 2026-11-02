@@ -1,5 +1,7 @@
+import type { NavigationHandlers, SettingsBridge } from "../../contracts/launcher";
+import type { SettingsStore } from "../../contracts/preferences";
 import type { MutableStore } from "../../shared/state/createStore";
-import type { NavigationHandlers, SettingsBridge, SettingsServices, SettingsStore, ViewState } from "../types";
+import type { SettingsServices, ViewState } from "../types";
 
 // Compatibility with the existing app key router. Rendering is subscribed to the
 // stores; this bridge never builds markup or requests a root render.

@@ -118,6 +118,22 @@ module.exports = [
     },
   },
   {
+    files: ["launcher/src/{contracts,platform,services,shared}/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/app/**", "**/home/**", "**/settings/**"],
+              message: "Shared contracts, services and platform adapters must not import screens or app composition.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["tools/build-launcher.mjs"],
     languageOptions: { sourceType: "module", globals: { ...globals.node } },
   },

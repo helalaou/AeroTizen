@@ -1,6 +1,7 @@
 import { useMemo } from "preact/hooks";
 
-import type { ContinueItem, HomeEnvironment } from "../types";
+import type { ContinueItem } from "../../contracts/launcher";
+import type { HomeEnvironment } from "../types";
 
 import { AppArtwork } from "./AppArtwork";
 import { HomeControl } from "./HomeControl";

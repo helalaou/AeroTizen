@@ -1,8 +1,9 @@
 import type { JSX } from "preact";
 import { useLayoutEffect, useRef } from "preact/hooks";
 
+import type { WeatherLocation } from "../../../contracts/preferences";
 import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
-import type { SettingsActions, WeatherLocation } from "../../types";
+import type { SettingsActions } from "../../types";
 
 import { useWeatherSearch } from "./useWeatherSearch";
 

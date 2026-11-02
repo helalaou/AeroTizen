@@ -1,4 +1,5 @@
-import type { InstalledApp, SettingsActions, SettingsServices } from "../../types";
+import type { InstalledApp } from "../../../contracts/launcher";
+import type { SettingsActions, SettingsServices } from "../../types";
 
 import { AddAppsTile } from "./AddAppsTile";
 import { AppTile } from "./AppTile";

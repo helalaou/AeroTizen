@@ -1,5 +1,6 @@
+import type { InputOption } from "../../../contracts/launcher";
 import { Choice } from "../../components/Choice";
-import type { InputOption, SettingsSectionProps } from "../../types";
+import type { SettingsSectionProps } from "../../types";
 
 import { InputName } from "./InputName";
 

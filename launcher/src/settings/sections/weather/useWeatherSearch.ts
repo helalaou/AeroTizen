@@ -1,7 +1,8 @@
 import { flushSync } from "preact/compat";
 import { useCallback, useLayoutEffect, useRef, useState } from "preact/hooks";
 
-import type { SettingsServices, WeatherLocation } from "../../types";
+import type { WeatherLocation } from "../../../contracts/preferences";
+import type { SettingsServices } from "../../types";
 
 interface SearchState {
   message: string;

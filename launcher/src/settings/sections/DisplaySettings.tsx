@@ -1,6 +1,7 @@
+import type { Clock } from "../../contracts/launcher";
 import { Choice } from "../components/Choice";
 import { Pill } from "../components/Pill";
-import type { Clock, SettingsSectionProps } from "../types";
+import type { SettingsSectionProps } from "../types";
 
 interface Props extends SettingsSectionProps {
   clock: Omit<Clock, "tick">;

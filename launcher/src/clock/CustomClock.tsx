@@ -1,6 +1,7 @@
 import { useLayoutEffect, useState } from "preact/hooks";
 
-import type { Clock, SettingsStore } from "../settings/types";
+import type { Clock } from "../contracts/launcher";
+import type { SettingsStore } from "../contracts/preferences";
 import { useStore } from "../shared/hooks/useStore";
 
 // Reuse upstream formatting and the already rendered weather. No forecast client,

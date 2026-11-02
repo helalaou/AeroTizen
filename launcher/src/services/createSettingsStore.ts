@@ -1,6 +1,6 @@
-import { createStore } from "../../shared/state/createStore";
-import { equalRecord } from "../../shared/state/equalRecord";
-import type { SettingsSnapshot, SettingsSource, SettingsStore, SettingsValues } from "../types";
+import type { SettingsSnapshot, SettingsSource, SettingsStore, SettingsValues } from "../contracts/preferences";
+import { createStore } from "../shared/state/createStore";
+import { equalRecord } from "../shared/state/equalRecord";
 
 export const createSettingsStore = (source: SettingsSource, defaults: SettingsValues): SettingsStore => {
   const read = (previous?: SettingsSnapshot): SettingsSnapshot => {
@@ -17,6 +17,7 @@ export const createSettingsStore = (source: SettingsSource, defaults: SettingsVa
     const weatherLocation = values.weatherLocation;
     const next = Object.freeze({
       ...values,
+      homeInitialized: source.home !== null && source.home !== undefined,
       hdmiKeepVisible:
         previous && equalRecord(previous.hdmiKeepVisible, hdmiKeepVisible)
           ? previous.hdmiKeepVisible

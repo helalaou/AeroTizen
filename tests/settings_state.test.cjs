@@ -1,7 +1,7 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
-const { createSettingsStore } = loadTypeScript("launcher/src/settings/state/createSettingsStore.ts");
+const { createSettingsStore } = loadTypeScript("launcher/src/services/createSettingsStore.ts");
 const { createStore } = loadTypeScript("launcher/src/shared/state/createStore.ts");
 const { createSettingsActions } = loadTypeScript("launcher/src/settings/state/createSettingsActions.ts");
 const { createSettingsBridge } = loadTypeScript("launcher/src/settings/services/createSettingsBridge.ts");
@@ -118,6 +118,23 @@ test("one source publishes stable immutable snapshots for actions and legacy wri
   assert.equal(updates, 3);
   h.settings.dispose();
   assert.equal(h.listeners.size, 0, "source subscription is removed on disposal");
+});
+
+test("unset Home preferences and a saved empty list have distinct snapshots", () => {
+  const h = harness();
+  h.source.home = null;
+  h.source.save();
+  const unset = h.settings.getSnapshot();
+  assert.equal(unset.homeInitialized, false);
+  assert.deepEqual(unset.home, []);
+  let updates = 0;
+  h.settings.subscribe(() => updates++);
+  h.settings.update({ home: [] });
+  assert.equal(h.settings.getSnapshot().homeInitialized, true);
+  assert.equal(h.settings.getSnapshot().home, unset.home, "unchanged list contents retain identity");
+  assert.equal(updates, 1, "initialization changes notify both views even if the list stays empty");
+  assert.equal("homeInitialized" in h.source, false, "derived state is not persisted");
+  h.settings.dispose();
 });
 
 test("actions persist preferences and invoke only the relevant service", () => {

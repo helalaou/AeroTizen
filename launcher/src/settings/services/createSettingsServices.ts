@@ -1,10 +1,9 @@
+import type { LauncherPlatform, LauncherRuntime } from "../../platform/tizen/launcherRuntime";
 import type { SettingsServices } from "../types";
-
-import type { LauncherRuntime } from "./launcherRuntime";
 
 // All dependencies on unmigrated modules are kept at this boundary. Components
 // receive data/commands; none can call the legacy tile DOM constructors.
-export const createSettingsServices = (runtime: LauncherRuntime): SettingsServices => ({
+export const createSettingsServices = (runtime: LauncherRuntime, platform: LauncherPlatform): SettingsServices => ({
   config: runtime.config,
   translate: (value) => runtime.i18n?.t(value) || value,
   clock: {
@@ -14,14 +13,14 @@ export const createSettingsServices = (runtime: LauncherRuntime): SettingsServic
     formatTime: runtime.clock.formatTime,
     DATE_FORMATS: runtime.clock.DATE_FORMATS,
   },
-  backgrounds: window.Backgrounds.list.map((background) => ({
+  backgrounds: platform.backgrounds.list.map((background) => ({
     ...background,
-    preview: window.Backgrounds.preview(background),
+    preview: platform.backgrounds.preview(background),
   })),
   describeApp: (app) => runtime.tiles.describe(app),
   searchLocations(query, done) {
     let cancelled = false;
-    window.Weather.searchLocations(query, (results) => {
+    platform.weather.searchLocations(query, (results) => {
       if (!cancelled) {
         done(results);
       }
@@ -32,14 +31,14 @@ export const createSettingsServices = (runtime: LauncherRuntime): SettingsServic
     };
   },
   applyBackground: () => runtime.applyBackground(),
-  applySpeed: (speed) => window.Backgrounds.setSpeed(speed),
+  applySpeed: (speed) => platform.backgrounds.setSpeed(speed),
   applyClock: () => runtime.clock.tick(),
-  applyWeatherVisibility: () => window.Weather.updateVisibility(),
-  applyLocationVisibility: () => window.Weather.updateDisplay(),
-  refreshWeather: () => window.Weather.refresh(),
+  applyWeatherVisibility: () => platform.weather.updateVisibility(),
+  applyLocationVisibility: () => platform.weather.updateDisplay(),
+  refreshWeather: () => platform.weather.refresh(),
   applyNetworkVisibility: () => runtime.network.updateVisibility(),
-  applyInputs: () => runtime.inputs.render(),
-  applyCardSize: () => runtime.homeScreen.render(),
+  applyInputs: () => runtime.inputs.refresh(),
+  applyCardSize: () => runtime.homeScreen?.render(),
   openStore: () => runtime.apps.openStore(),
   useSamsungHome() {
     // Native navigation owns the acknowledged handoff, not physical HOME routing.
@@ -52,10 +51,10 @@ export const createSettingsServices = (runtime: LauncherRuntime): SettingsServic
   },
   finishEditing() {
     runtime.settings.save();
-    runtime.homeScreen.render();
+    runtime.homeScreen?.render();
   },
   clearHomeFocus: () => {
-    runtime.homeScreen.blur?.();
+    runtime.homeScreen?.blur();
     runtime.clearFocus();
   },
   showPreviewMessage: () => runtime.toast("Previewing. Press any key to return"),

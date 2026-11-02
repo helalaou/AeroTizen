@@ -46,20 +46,27 @@ CSS behaviour or physical TV compatibility.
 
 ## Code boundaries
 
-- `settings/index.tsx` is the composition root. It creates the stores, services,
-  actions and remote-key bridge once, then mounts a provider and the Settings root.
-  Components use typed context or props; they do not read the launcher global.
-- `settings/state/createSettingsStore.ts` publishes immutable snapshots of the existing
+- `app/createLauncherApp.ts` owns one shared preference store, bridge registration,
+  visibility handling and teardown. The entry point passes the existing runtime and
+  platform services explicitly. Home mounts before Settings; Settings and its clock
+  unmount before Home. Partial assembly releases already mounted views and the store.
+- `settings/index.tsx` mounts the Settings provider, actions, view state and navigation.
+  It receives the shared store and platform services, then returns a bridge and disposer.
+  It does not create a second preference source or register globals itself.
+- `services/createSettingsStore.ts` publishes immutable snapshots of the existing
   `A.settings` object. That object remains the source of persisted preferences.
-  Its small `subscribe` API publishes saves and loads, including changes made by legacy
-  modules. Unchanged snapshots and nested values retain their identity. Actions use
+  `contracts/preferences.ts` owns the shared snapshot and storage types. The derived
+  `homeInitialized` flag distinguishes unset favourites from an explicitly saved empty list
+  without changing persisted keys. Its small `subscribe` API publishes saves and loads,
+  including changes made by legacy modules. Unchanged snapshots and nested values retain their identity. Actions use
   named commands and replace arrays/maps; components do not write storage.
 - `settings/services/createSettingsInventory.ts` subscribes to app discovery and input
   changes. It publishes cached immutable lists, so a late TV callback or hot-plug update
   reaches the open or cached Settings form without a preference change. Matching lists
   retain identity; the composition root disposes both subscriptions on replacement.
 - `settings/services/createSettingsServices.ts` adapts the existing TV and launcher
-  operations. It exposes data and commands, including data-only app branding. Only
+  operations using explicitly supplied runtime and platform dependencies. It exposes
+  data and commands, including data-only app branding. Only
   this boundary calls unmigrated services. The weather adapter can cancel callback
   delivery; the existing search client cannot abort an active request.
 - `settings/services/createSettingsBridge.ts` retains the existing key-router interface. It changes open/closed

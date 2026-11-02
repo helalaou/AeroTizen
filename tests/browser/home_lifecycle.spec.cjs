@@ -106,7 +106,7 @@ test("source reachability keeps active, recognised and manually pinned inputs di
     AeroTizen.inputs.isVisible = () => true;
     AeroTizen.inputs.hasRecognizedDevice = (source) => source.number === 2;
     AeroTizen.inputs.alwaysVisible = (source) => source.number === 3;
-    AeroTizen.inputs.render();
+    AeroTizen.inputs.refresh();
   });
   const sources = page.locator("#inputs > .tile");
   await expect(sources).toHaveCount(4);

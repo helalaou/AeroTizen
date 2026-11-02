@@ -19,8 +19,11 @@ Home/All apps tabs, Back, per-row navigation, nearest visible feed-card navigati
 carousel clipping and Settings focus restoration. Keyed Home/All apps trees retain
 loaded artwork across tab switches. Feed records update in place with stable keys;
 the regression test verifies updated progress and retained nodes rather than requiring
-legacy reconstruction of a changed record. Input subscription/render compatibility
-publishes data instead of writing into Preact-owned children.
+legacy reconstruction of a changed record. Input discovery and `inputs.refresh()`
+publish data without constructing tiles.
+`home/state/createHomeInventory.ts` publishes immutable snapshots from app, input, feed
+and preference subscriptions; unchanged data retains its identity. The old input
+renderer belongs to the legacy test fixture. Production never replaces `inputs.render`.
 
 Validation includes the entire existing browser suite, additional remote/move/drop/
 reload checks and paired 1920x1080 baseline geometry/screenshots. Every compiled
@@ -62,3 +65,17 @@ share centred tab geometry, Samsung Home access and moving focus plates; Glass
 changes their paint rather than adding/removing navigation. Existing Samsung Home
 services still own the escape action and native HOME policy remains unchanged.
 Physical S90C smoothness and firmware rendering acceptance remain pending.
+
+### Application ownership
+
+`app/createLauncherApp.ts` creates the preference store once for Home, Settings and
+the clock. Shared contracts live outside screen folders, and the typed legacy runtime
+boundary is in `platform/tizen/launcherRuntime.ts`. Home's mount function receives
+these dependencies and returns its bridge and disposer. It releases inventory and
+shell subscriptions, cancels held OK state and unmounts its view on disposal.
+Composition owns the visibility listener and restores only the bridges it still owns.
+
+The entry point accepts development updates and releases the previous app instance.
+Legacy boot and service timers run once; remounting views repaints their status hosts
+without restarting those services. Shared status data and clock rendering are the next
+migration stage.

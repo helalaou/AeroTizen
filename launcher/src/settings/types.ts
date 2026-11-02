@@ -1,82 +1,29 @@
 import type { RefObject } from "preact";
 
+import type {
+  AppPresentation,
+  BackgroundOption,
+  Clock,
+  ContinueSource,
+  InputOption,
+  InstalledApp,
+  LauncherConfig,
+  SettingsBridge,
+} from "../contracts/launcher";
+import type {
+  CardSize,
+  DateFormat,
+  SettingsSnapshot,
+  SettingsStore,
+  SettingsValues,
+  TemperatureUnit,
+  TimeFormat,
+  WeatherLocation,
+} from "../contracts/preferences";
 import type { Navigation } from "../shared/navigation/createNavigation";
 import type { MutableStore, Store } from "../shared/state/createStore";
 
 import type { GlassState } from "./glass/categories";
-
-export type TimeFormat = "12" | "24";
-export type TemperatureUnit = "C" | "F";
-export type CardSize = "big" | "small";
-export type DateFormat = "compact" | "short" | "long" | "numeric-short" | "numeric" | "iso" | "none";
-export interface WeatherLocation {
-  country_code?: string;
-  label?: string;
-  latitude: number;
-  longitude: number;
-  name: string;
-}
-export interface SettingsValues {
-  aeroClockStyle: "vertical" | "horizontal" | "minimal" | "bold";
-  background: string;
-  cardSize: CardSize;
-  clockLayout: "classic" | "custom";
-  continueWatching: boolean;
-  continueWatchingApps: string[];
-  dateFormat: DateFormat | "auto" | "weekday" | "dmy" | "mdy";
-  glassSettings: boolean;
-  hdmiKeepVisible: Record<string, boolean>;
-  hideDisconnectedHdmi: boolean;
-  home: string[];
-  homeCardColumns: number | null;
-  homeCardMode: "square" | "rectangle";
-  inputNames: Record<string, string>;
-  showLiveTv: boolean;
-  showNetwork: boolean;
-  showTime: boolean;
-  showWeather: boolean;
-  speed: number;
-  tempUnit: TemperatureUnit;
-  timeFormat: TimeFormat;
-  weatherLocation: WeatherLocation | null;
-  weatherPhoto: boolean;
-  weatherShowLocation: boolean;
-}
-export type SettingsSnapshot = Readonly<
-  Omit<SettingsValues, "home" | "inputNames" | "weatherLocation" | "continueWatchingApps" | "hdmiKeepVisible">
-> & {
-  readonly home: readonly string[];
-  readonly continueWatchingApps: readonly string[];
-  readonly hdmiKeepVisible: Readonly<Record<string, boolean>>;
-  readonly inputNames: Readonly<Record<string, string>>;
-  readonly weatherLocation: Readonly<WeatherLocation> | null;
-};
-export interface SettingsSource extends Partial<SettingsValues> {
-  save(): void;
-  subscribe(listener: () => void): () => void;
-}
-export interface SettingsStore extends Store<SettingsSnapshot> {
-  dispose(): void;
-  refresh(): void;
-  update(patch: Partial<SettingsValues>): void;
-}
-export interface InstalledApp {
-  icon?: string;
-  id: string;
-  name: string;
-  storeId?: string;
-}
-export interface InputOption {
-  readonly placeholder?: string;
-  readonly port: string;
-}
-export interface ContinueSource {
-  readonly icon?: string;
-  readonly id: string;
-  readonly name: string;
-  readonly status: string;
-  readonly storeId: string;
-}
 export interface SettingsInventorySnapshot {
   readonly apps: readonly Readonly<InstalledApp>[];
   readonly continueMessage: string;
@@ -85,44 +32,6 @@ export interface SettingsInventorySnapshot {
 }
 export interface SettingsInventory extends Store<SettingsInventorySnapshot> {
   dispose(): void;
-}
-export interface Background {
-  anim?: string;
-  id: string;
-  name: string;
-}
-export interface BackgroundOption extends Background {
-  preview: string;
-}
-export interface Clock {
-  DATE_FORMATS: ReadonlyArray<{ id: DateFormat; format(date: Date): string }>;
-  dateStyle(format: SettingsValues["dateFormat"]): DateFormat;
-  formatDate(date: Date, format: SettingsValues["dateFormat"]): string;
-  formatTime(date: Date, format: TimeFormat): string;
-  formatTimeParts?(date: Date, format: TimeFormat): { hour: string; minute: string; dayPeriod: string } | null;
-  subscribe(listener: () => void): () => void;
-  tick(): void;
-}
-export interface LauncherConfig {
-  DEFAULTS: Omit<SettingsValues, "home" | "tempUnit" | "timeFormat"> & {
-    home: string[] | null;
-    tempUnit: TemperatureUnit | null;
-    timeFormat: TimeFormat | null;
-  };
-  FIREPLACE_ID: string;
-  KEY: Record<"LEFT" | "RIGHT" | "UP" | "DOWN" | "ENTER" | "BACK" | "ESC" | "IME_DONE" | "IME_CANCEL", number>;
-  SPEED: { MIN: number; MAX: number; STEP: number };
-}
-export interface AppPresentation {
-  artwork: readonly string[];
-  background: string;
-  label: string | null;
-  largeLogo: boolean;
-  logoColour: string;
-  logoPath: string | null;
-  textColour: string;
-  title: string;
-  useAppIcon: boolean;
 }
 export interface SettingsServices {
   applyBackground(): void;
@@ -182,19 +91,6 @@ export interface ViewState {
   open: boolean;
   openedAt: number;
   previewing: boolean;
-}
-export interface NavigationHandlers {
-  blur(): void;
-  focus(): void;
-  keydown(code: number, event: Pick<KeyboardEvent, "preventDefault">): void;
-}
-export interface SettingsBridge {
-  close(): void;
-  focus(): void;
-  isOpen(): boolean;
-  keydown(code: number, event: Pick<KeyboardEvent, "preventDefault">): void;
-  open(): void;
-  register(handlers: NavigationHandlers): () => void;
 }
 export interface SettingsEnvironment {
   actions: SettingsActions;

@@ -1,5 +1,6 @@
+import type { ContinueSource } from "../../contracts/launcher";
 import { Choice } from "../components/Choice";
-import type { ContinueSource, SettingsSectionProps, SettingsServices } from "../types";
+import type { SettingsSectionProps, SettingsServices } from "../types";
 
 import { AppTile } from "./apps/AppTile";
 

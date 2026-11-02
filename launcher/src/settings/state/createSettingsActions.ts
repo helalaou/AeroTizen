@@ -1,5 +1,6 @@
+import type { SettingsStore, SettingsValues } from "../../contracts/preferences";
 import type { MutableStore } from "../../shared/state/createStore";
-import type { SettingsActions, SettingsServices, SettingsStore, SettingsValues, ViewState } from "../types";
+import type { SettingsActions, SettingsServices, ViewState } from "../types";
 
 export const createSettingsActions = (
   settings: SettingsStore,

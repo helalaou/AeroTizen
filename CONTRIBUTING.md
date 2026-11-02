@@ -70,6 +70,8 @@ import/export sorting and natural interface-member sorting. Import groups preser
 side-effect import order. Runtime objects and class members retain their order. The
 typed rules use the launcher project; Vite uses its Node-specific TypeScript configuration.
 The existing zero-warning CI gate also applies to rules configured as warnings.
+Shared contracts, services, platform adapters and shared utilities cannot import
+screens or app composition; ESLint enforces this dependency rule.
 
 ## Project layout
 
@@ -80,6 +82,10 @@ The existing zero-warning CI gate also applies to rules configured as warnings.
 | `cli/native/`, `cli/tools/`       | Native Home helpers, root runtime, and CLI build tools                                          |
 | `launcher/`                       | Production HTML, runtime files and frontend source                                              |
 | `launcher/src/index.ts`           | Shared Home and Settings bundle entry                                                           |
+| `launcher/src/app/`               | Application assembly, shared preference ownership and UI teardown                               |
+| `launcher/src/contracts/`         | Screen-independent preferences, app/input/feed types and bridge protocols                       |
+| `launcher/src/services/`          | Shared preference snapshots and persistence adapter                                             |
+| `launcher/src/platform/tizen/`    | Typed boundary for the existing TV and browser services                                         |
 | `launcher/src/dev.ts`             | Development entry that loads the same views before boot                                         |
 | `launcher/src/settings/`          | TypeScript/TSX Settings components, state, actions and service adapters                         |
 | `launcher/src/settings/sections/` | Settings sections with their own controls and hooks                                             |
@@ -95,6 +101,12 @@ The existing zero-warning CI gate also applies to rules configured as warnings.
 | `launcher/service/`               | Background service that reclaims the screen from Samsung Home                                   |
 | `tests/`                          | pytest suite (`test_*.py`, a fake TV covers the sdb protocol) and launcher tests (`*.test.cjs`) |
 | `dns/`, `docs/`                   | Ad/telemetry blocklists and the settings guide                                                  |
+
+The application creates one shared preference store and passes it to Home, Settings
+and the clock. Feature mount functions return bridges and disposers. Composition
+owns visibility handling and tears down the views before releasing the shared
+source subscription. Input discovery publishes data through `inputs.refresh()`;
+production services do not render input tiles or replace a renderer at startup.
 
 ## Working on the launcher
 

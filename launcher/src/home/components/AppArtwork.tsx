@@ -1,4 +1,4 @@
-import type { AppPresentation, InstalledApp } from "../../settings/types";
+import type { AppPresentation, InstalledApp } from "../../contracts/launcher";
 import { useImageSequence } from "../../shared/hooks/useImageSequence";
 import { AppLogoIcon } from "../../shared/icons/AppLogoIcon";
 

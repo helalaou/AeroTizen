@@ -41,9 +41,7 @@ export const createHomeController = (
   const homeIds = () => {
     const saved =
       state.getSnapshot().draft ||
-      (settings.getSnapshot().home.length || A.settings.home !== null
-        ? settings.getSnapshot().home
-        : [A.config.FIREPLACE_ID]);
+      (settings.getSnapshot().homeInitialized ? settings.getSnapshot().home : [A.config.FIREPLACE_ID]);
     // Movement must address the same visible IDs as the grid, not stale saved apps.
     return saved.filter((id) => id === A.config.FIREPLACE_ID || !inventory.getSnapshot().ready || A.apps.byId(id));
   };
@@ -159,7 +157,7 @@ export const createHomeController = (
   const activate = (key: string) => {
     if (key === "gear") {
       endMove();
-      A.settingsUi.open();
+      A.settingsUi?.open();
     } else if (key === "samsung-home-shortcut") {
       if (A.homewatch.openSamsungHome) {
         A.homewatch.openSamsungHome();
@@ -177,7 +175,8 @@ export const createHomeController = (
         A.apps.launch(app);
       }
     } else if (key.startsWith("continue:")) {
-      const item = inventory.getSnapshot().items.find((item) => item.key === key.slice(9));
+      // Commands need the service's live record, not an immutable view snapshot.
+      const item = A.continueWatching.items.find((item) => item.key === key.slice(9));
       if (item) {
         A.continueWatching.open(item);
       }

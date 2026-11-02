@@ -12,6 +12,32 @@ for (const [name, url] of [
     });
     await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+    await page.route("**/js/settings.js", async (route) => {
+      const response = await route.fetch();
+      const body = await response.text();
+      await route.fulfill({
+        response,
+        body:
+          body +
+          `
+          window.preferenceSourceSubscriptions = 0;
+          var source = AeroTizen.settings, subscribe = source.subscribe;
+          source.subscribe = function (listener) {
+            window.preferenceSourceSubscriptions++;
+            var unsubscribe = subscribe.call(source, listener);
+            return function () { window.preferenceSourceSubscriptions--; unsubscribe(); };
+          };
+        `,
+      });
+    });
+    await page.route("**/js/main.js", async (route) => {
+      const response = await route.fetch();
+      await route.fulfill({
+        response,
+        body:
+          "window.uiPreferenceSourceSubscriptions = window.preferenceSourceSubscriptions;\n" + (await response.text()),
+      });
+    });
     await page.addInitScript(() => {
       localStorage.setItem(
         "aerotizen.settings.v1",
@@ -26,6 +52,10 @@ for (const [name, url] of [
     await expect(page.locator("#settings-root #editor")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.locator("#editor")).toBeHidden();
+    expect(await page.evaluate(() => window.uiPreferenceSourceSubscriptions)).toBe(1);
+    // The existing Continue Watching service also watches its persisted opt-in settings.
+    expect(await page.evaluate(() => window.preferenceSourceSubscriptions)).toBe(2);
+    expect(await page.evaluate(() => typeof AeroTizen.inputs.render)).toBe("undefined");
     expect(
       await page.evaluate(() =>
         Array.from(document.scripts, (script) => script.src && new URL(script.src).pathname).filter((file) =>

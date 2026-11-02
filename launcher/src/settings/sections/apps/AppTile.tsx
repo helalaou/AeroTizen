@@ -1,9 +1,10 @@
 import { useMemo } from "preact/hooks";
 
+import type { InstalledApp } from "../../../contracts/launcher";
 import { useImageSequence } from "../../../shared/hooks/useImageSequence";
 import { AppLogoIcon } from "../../../shared/icons/AppLogoIcon";
 import { RemoteControl } from "../../components/RemoteControl";
-import type { InstalledApp, SettingsServices } from "../../types";
+import type { SettingsServices } from "../../types";
 
 interface Props {
   active: boolean;

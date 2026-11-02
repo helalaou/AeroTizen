@@ -7,7 +7,7 @@ const vm = require("node:vm");
 
 const source = fs.readFileSync(path.join(__dirname, "../launcher/js/inputs.js"), "utf8");
 
-function harness(settings = {}, report = {}, selected = null) {
+function harness(settings = {}, report = {}, selected = null, legacyView = true) {
   const tiles = [];
   const root = {
     children: tiles,
@@ -72,6 +72,11 @@ function harness(settings = {}, report = {}, selected = null) {
     document: { addEventListener() {} },
     AeroTizen: A,
   });
+  if (legacyView) {
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/inputs-view.js"), "utf8"), {
+      window: { AeroTizen: A },
+    });
+  }
   return {
     A,
     tiles,
@@ -80,6 +85,29 @@ function harness(settings = {}, report = {}, selected = null) {
     },
   };
 }
+
+test("input discovery and refresh publish data without rendering tiles", () => {
+  const h = harness({}, { connected: [{ type: "HDMI", number: 1 }] }, null, false);
+  let updates = 0;
+  const unsubscribe = h.A.inputs.subscribe(() => updates++);
+  h.A.$ = () => {
+    throw new Error("Input discovery must not query view hosts");
+  };
+  assert.equal(h.A.inputs.render, undefined);
+  h.A.inputs.load();
+  assert.equal(updates, 1);
+  assert.equal(h.A.inputs.sources.length, 1);
+  h.A.inputs.refresh();
+  assert.equal(updates, 2);
+  assert.equal(h.tiles.length, 0);
+  assert.equal(h.builds, 0);
+  h.A.tizen.systeminfo.getPropertyValue = (name, success, failed) => failed();
+  h.A.inputs.load();
+  assert.equal(updates, 3, "failed discovery still publishes the retained inventory");
+  unsubscribe();
+  h.A.inputs.refresh();
+  assert.equal(updates, 3);
+});
 
 test("a recognised Samsung HDMI label survives standby with filtering enabled", () => {
   const h = harness(

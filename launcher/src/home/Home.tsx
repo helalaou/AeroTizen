@@ -14,16 +14,14 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
   const settings = useStore(env.settings),
     { page, active, draft, moving } = useStore(env.state);
   const { apps, inputs, items, ready } = useStore(env.inventory);
-  const home =
-    draft ||
-    (settings.home.length || env.runtime.settings.home !== null ? settings.home : [env.runtime.config.FIREPLACE_ID]);
+  const home = draft || (settings.homeInitialized ? settings.home : [env.runtime.config.FIREPLACE_ID]);
   const visibleHome = home.filter(
     (id) => id === env.runtime.config.FIREPLACE_ID || !ready || apps.some((app) => app.id === id),
   );
   const size = settings.cardSize === "small" ? "small" : "big";
   useLayoutEffect(() => {
     env.bridge.focus();
-  }, [env, page, apps, inputs, items, settings.home, draft, size]);
+  }, [env, page, apps, inputs, items, ready, settings.home, settings.homeInitialized, draft, size]);
   useLayoutEffect(() => {
     const list = document.getElementById("continue-items");
     if (list) {
@@ -209,7 +207,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
                         <span
                           class="aero-source-icon"
                           dangerouslySetInnerHTML={{
-                            __html: (env.runtime.tiles as unknown as { ICONS: Record<string, string> }).ICONS[kind],
+                            __html: env.runtime.tiles.ICONS[kind],
                           }}
                         />
                         {settings.glassSettings ? (
