@@ -11,6 +11,10 @@
 // http://127.0.0.1:47790.
 var http = require('http');
 var createArtMode = require('./artmode');
+var diagnostics = { record: function () {}, flushStorage: function () {}, attach: function () {}, ingest: function () { return false; }, snapshot: function () { return { schema_version: 1, records: [] }; } };
+try { diagnostics = require('../js/diagnostics')('service'); } catch (e) { /* optional diagnostics */ }
+var diagnosticContext = { start: function () {}, accept: function () {}, enrich: function (value) { return value; } };
+try { diagnosticContext = require('./diagnostics-context')(); } catch (e) { /* optional metadata */ }
 var SELF = 'DclHome001.Home';
 var HIDDEN_GRACE = 250;         // non-Frame: Samsung Home appears almost at once
 var FRAME_HIDDEN_GRACE = 1500;  // Frame: give Art Mode time to report before reclaiming
@@ -45,6 +49,7 @@ var homeMode = createHomeMode(null, updateMode, true);
 function watcherEnabled() { return !stopped && homeMode.read().mode === 'watcher'; }
 
 function record(kind, detail) {
+  diagnostics.record('watcher.' + kind, { reason: detail });
   state.guard.history.push({ at: Date.now(), kind: kind, detail: detail });
   if (state.guard.history.length > 100) { state.guard.history.shift(); }
 }
@@ -371,6 +376,7 @@ function discoverCapability() {
   });
 }
 function updateMode() {
+  diagnostics.record('service.mode', { mode: homeMode.read().mode });
   invalidate('Home routing mode changed'); resetTracking(); scanNumber += 1; busy = false;
   clearInterval(interval); clearTimeout(capabilityRetry); clearTimeout(bootFallback); clearTimeout(bootTimer);
   if (interval || capabilityRetry || bootFallback || bootTimer) { art.stop(); }
@@ -391,6 +397,7 @@ function controlHome(req, res) {
   if (headers.origin || headers['x-aerotizen-home'] !== '1') { reply(403, { error: 'Local native control required' }); return; }
   if (headers['content-type'] !== 'application/json') { reply(415, { error: 'JSON required' }); return; }
   var body = '', finished = false;
+  if (req.setEncoding) { req.setEncoding('utf8'); }
   req.on('data', function (chunk) {
     if (finished) { return; }
     body += chunk;
@@ -404,11 +411,51 @@ function controlHome(req, res) {
     catch (e) { reply(409, { error: e.message, homeControl: homeMode.read() }); }
   });
 }
+function diagnosticRequest(req, res, pathname) {
+  var headers = req.headers || {};
+  function reply(code, data) {
+    var responseHeaders = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+    if (headers.origin === 'null' || headers.origin === 'file://') { responseHeaders['Access-Control-Allow-Origin'] = headers.origin; }
+    res.writeHead(code, responseHeaders); res.end(JSON.stringify(data));
+  }
+  if (pathname === '/diagnostics/logs') {
+    if (req.method !== 'GET' || headers.origin || headers['x-aerotizen-diagnostics'] !== '1') { reply(403, { error: 'Developer connection required' }); return; }
+    reply(200, diagnosticContext.enrich(diagnostics.snapshot(), homeMode.read(), state)); return;
+  }
+  if (req.method !== 'POST' || (headers.origin && headers.origin !== 'null' && headers.origin !== 'file://')) {
+    reply(403, { error: 'Local launcher events required' }); return;
+  }
+  var body = '', finished = false;
+  if (req.setEncoding) { req.setEncoding('utf8'); }
+  req.on('data', function (chunk) {
+    if (finished) { return; }
+    body += chunk;
+    if (body.length > 16384) { finished = true; reply(413, { error: 'Event batch too large' }); }
+  });
+  req.on('error', function () { if (!finished) { finished = true; reply(400, { error: 'Event batch failed' }); } });
+  req.on('end', function () {
+    if (finished) { return; } finished = true;
+    try {
+      var packet = JSON.parse(body);
+      var events = Array.isArray(packet) ? packet : packet && packet.schema_version === 1 ? packet.records : null;
+      if (!Array.isArray(events) || events.length > 24 || events.some(function (item) { return !item || item.source !== 'ui'; }) || !diagnostics.ingest(events)) {
+        reply(400, { error: 'Invalid event batch' }); return;
+      }
+      diagnosticContext.accept(packet);
+      reply(200, { schema_version: 1, accepted: events.length });
+    } catch (e) { reply(400, { error: 'Invalid event batch' }); }
+  });
+}
 module.exports.onStart = function () {
   if (started) { return; }
   started = true;
+  diagnostics.record('service.start');
+  setTimeout(function () { diagnosticContext.start(); }, 0);
+  try { require('./diagnostics-store')(typeof tizen !== 'undefined' ? tizen : null, function (storage) { if (storage) { diagnostics.attach(storage); } }); } catch (e) { /* optional log storage */ }
   server = http.createServer(function (req, res) {
     var url = require('url').parse(req.url, true), query = url.query;
+    if (url.pathname === '/diagnostics/logs' || url.pathname === '/diagnostics/events') { diagnosticRequest(req, res, url.pathname); return; }
+    if (['/home', '/leave', '/watch'].indexOf(url.pathname) >= 0) { diagnostics.record('service.request', { action: url.pathname.slice(1) }); }
     if (url.pathname === '/control/home') { controlHome(req, res); return; }
     if (url.pathname === '/startup' && typeof query.data === 'string' && query.data.length <= 4096) {
       try {
@@ -442,6 +489,8 @@ module.exports.onStart = function () {
 };
 module.exports.onRequest = function () {};
 module.exports.onExit = function () {
+  diagnostics.record('service.exit');
+  diagnostics.flushStorage();
   stopped = true; invalidate('service exit'); scanNumber += 1;
   clearInterval(interval); clearTimeout(capabilityRetry); clearTimeout(bootFallback); clearTimeout(bootTimer);
   art.stop();

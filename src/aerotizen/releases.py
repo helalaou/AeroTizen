@@ -1,11 +1,14 @@
-"""Download and verify unsigned launcher assets from GitHub releases."""
+"""Find component releases and download verified unsigned launcher packages."""
 
 import hashlib
 import http.client
 import io
 import json
+import os
+import platform
 import re
 import stat
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -36,7 +39,38 @@ class DownloadedLauncher:
     version: str
 
 
-def _version(value):
+@dataclass(frozen=True)
+class CLIRelease:
+    version: str
+    release_url: str
+    download_url: str | None
+    checksum_url: str | None = None
+
+
+@dataclass(frozen=True)
+class LauncherRelease:
+    version: str
+    min_cli_version: str
+    asset_url: str
+    sha256: str
+
+    def download(self, destination):
+        if version_key(__version__) < version_key(self.min_cli_version):
+            raise ReleaseError(
+                f"Launcher {self.version} needs AeroTizen CLI {self.min_cli_version} or newer. "
+                f"Your CLI is {__version__}; update it first."
+            )
+        data = _read_url(self.asset_url, MAX_PACKAGE_BYTES)
+        if hashlib.sha256(data).hexdigest() != self.sha256:
+            raise ReleaseError("Launcher checksum mismatch. The package was not installed; try again later.")
+        _check_package(data, self.version)
+        path = Path(destination) / f"aerotizen-launcher-{self.version}.wgt"
+        path.write_bytes(data)
+        return DownloadedLauncher(path=path, version=self.version)
+
+
+def version_key(value):
+    """Validate a stable version and return its numeric comparison key."""
     if not isinstance(value, str) or not VERSION.fullmatch(value):
         raise ReleaseError("Expected a stable version in X.Y.Z form.")
     return tuple(int(part) for part in value.split("."))
@@ -56,20 +90,29 @@ def _read_url(url, limit):
     )
     if urllib.parse.urlsplit(url).netloc == "api.github.com":
         request.add_header("Accept", "application/vnd.github+json")
-    try:
-        with urllib.request.build_opener(_HTTPSRedirect()).open(request, timeout=30) as response:
-            data = response.read(limit + 1)
-    except urllib.error.HTTPError as exc:
-        with exc:
-            if exc.code == 404:
-                message = "Release or asset not found. Check the repository and requested version."
-            elif exc.code in (403, 429):
-                message = "GitHub refused the request or its rate limit was reached. Try again later."
-            else:
-                message = f"GitHub download failed (HTTP {exc.code}). Try again later."
-        raise ReleaseError(message) from exc
-    except (OSError, http.client.HTTPException) as exc:
-        raise ReleaseError(f"Could not download the launcher: {exc}. Check your connection.") from exc
+        token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+        if token and urllib.parse.urlsplit(url).scheme == "https":
+            # Never forward an API credential to an asset host after a redirect.
+            request.add_unredirected_header("Authorization", f"Bearer {token}")
+    for attempt in range(3):
+        try:
+            with urllib.request.build_opener(_HTTPSRedirect()).open(request, timeout=30) as response:
+                data = response.read(limit + 1)
+            break
+        except urllib.error.HTTPError as exc:
+            with exc:
+                if exc.code in (500, 502, 503, 504) and attempt < 2:
+                    time.sleep(0.5 * (attempt + 1))
+                    continue
+                if exc.code == 404:
+                    message = "Release or asset not found. Check the repository and requested version."
+                elif exc.code in (403, 429):
+                    message = "GitHub refused the request or its rate limit was reached. Try again later."
+                else:
+                    message = f"GitHub download failed (HTTP {exc.code}). Try again later."
+            raise ReleaseError(message) from exc
+        except (OSError, http.client.HTTPException) as exc:
+            raise ReleaseError(f"Could not download release data: {exc}. Check your connection.") from exc
     if len(data) > limit:
         raise ReleaseError("Release data exceeds the allowed download size.")
     return data
@@ -84,26 +127,28 @@ def _json_url(url):
         raise ReleaseError("GitHub returned invalid release JSON.") from exc
 
 
-def _release(repository, version):
+def _release(repository, version, component="launcher"):
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository) or any(
         part in (".", "..") for part in repository.split("/")
     ):
         raise ReleaseError("Release repository must be OWNER/REPO, for example helalaou/AeroTizen.")
     api = f"https://api.github.com/repos/{repository}/releases"
+    prefix = f"{component}-v"
+    label = "CLI" if component == "cli" else "launcher"
     if version is not None:
-        _version(version)
-        release = _json_url(f"{api}/tags/launcher-v{version}")
+        version_key(version)
+        release = _json_url(f"{api}/tags/{prefix}{version}")
         if (
             not isinstance(release, dict)
             or release.get("draft", True)
             or release.get("prerelease", True)
-            or release.get("tag_name") != f"launcher-v{version}"
+            or release.get("tag_name") != f"{prefix}{version}"
         ):
-            raise ReleaseError("The requested version is not a published stable launcher release.")
+            raise ReleaseError(f"The requested version is not a published stable {label} release.")
         return release, version
 
     candidates = []
-    # CLI releases share this listing. Read all pages, then compare launcher versions.
+    # Components share this listing. Read all pages, then compare versions in one stream.
     for page in range(1, 101):
         releases = _json_url(f"{api}?per_page=100&page={page}")
         if not isinstance(releases, list):
@@ -116,21 +161,24 @@ def _release(repository, version):
                 release.get("draft", True)
                 or release.get("prerelease", True)
                 or not isinstance(tag, str)
-                or not tag.startswith("launcher-v")
-                or not VERSION.fullmatch(tag.removeprefix("launcher-v"))
+                or not tag.startswith(prefix)
+                or not VERSION.fullmatch(tag.removeprefix(prefix))
             ):
                 continue
-            found = tag.removeprefix("launcher-v")
-            candidates.append((_version(found), release, found))
+            found = tag.removeprefix(prefix)
+            candidates.append((version_key(found), release, found))
         if len(releases) < 100:
             break
     else:
-        raise ReleaseError("Too many releases to select safely. Use --version X.Y.Z.")
+        hint = " Use --version X.Y.Z." if component == "launcher" else ""
+        raise ReleaseError(f"Too many releases to select safely.{hint}")
     if not candidates:
-        raise ReleaseError(
-            f"No stable launcher release is published in {repository}. "
-            "Use an explicit local path (install ./launcher) for a development build."
+        hint = (
+            " Use an explicit local path (install ./launcher) for a development build."
+            if component == "launcher"
+            else ""
         )
+        raise ReleaseError(f"No stable {label} release is published in {repository}.{hint}")
     _, release, found = max(candidates, key=lambda entry: entry[0])
     return release, found
 
@@ -138,10 +186,10 @@ def _release(repository, version):
 def _asset_url(release, repository, name):
     assets = release.get("assets")
     if not isinstance(assets, list):
-        raise ReleaseError("The launcher release has no asset list.")
+        raise ReleaseError("The release has no asset list.")
     matches = [asset for asset in assets if isinstance(asset, dict) and asset.get("name") == name]
     if len(matches) != 1:
-        raise ReleaseError(f"The launcher release must contain exactly one {name} asset.")
+        raise ReleaseError(f"The release must contain exactly one {name} asset.")
     prefix = f"https://github.com/{repository}/releases/download/"
     suffix = f"{release['tag_name']}/{name}"
     actual = matches[0].get("browser_download_url")
@@ -152,6 +200,29 @@ def _asset_url(release, repository, name):
     ):
         raise ReleaseError(f"Unexpected download URL for {name}.")
     return actual
+
+
+def resolve_cli(*, repository=DEFAULT_REPOSITORY, version=None):
+    """Find the latest stable CLI and a matching archive link without downloading it."""
+    release, version = _release(repository, version, component="cli")
+    release_url = f"https://github.com/{repository}/releases/tag/cli-v{version}"
+    assets = release.get("assets")
+    if not isinstance(assets, list):
+        raise ReleaseError("The release has no asset list.")
+    systems = {"Linux": "linux", "Darwin": "macos", "Windows": "windows"}
+    architectures = {"x86_64": "x86_64", "amd64": "x86_64", "arm64": "arm64", "aarch64": "arm64"}
+    system = systems.get(platform.system())
+    architecture = architectures.get(platform.machine().lower())
+    download_url = None
+    checksum_url = None
+    if system and architecture:
+        suffix = "zip" if system == "windows" else "tar.gz"
+        name = f"aerotizen-{version}-{system}-{architecture}.{suffix}"
+        if any(isinstance(asset, dict) and asset.get("name") == name for asset in assets):
+            download_url = _asset_url(release, repository, name)
+            if any(isinstance(asset, dict) and asset.get("name") == name + ".sha256" for asset in assets):
+                checksum_url = _asset_url(release, repository, name + ".sha256")
+    return CLIRelease(version, release_url, download_url, checksum_url)
 
 
 def _check_package(data, version):
@@ -220,8 +291,8 @@ def _check_package(data, version):
         raise ReleaseError("The launcher release is not a valid application package.") from exc
 
 
-def download_launcher(destination, *, version=None, repository=DEFAULT_REPOSITORY):
-    """Download a stable release, verify it, then write an unsigned widget to destination."""
+def resolve_launcher(*, version=None, repository=DEFAULT_REPOSITORY):
+    """Validate release metadata without downloading the widget or requiring a newer CLI."""
     release, version = _release(repository, version)
     manifest = _json_url(_asset_url(release, repository, "launcher-release.json"))
     name = f"aerotizen-launcher-{version}.wgt"
@@ -237,15 +308,15 @@ def download_launcher(destination, *, version=None, repository=DEFAULT_REPOSITOR
         or not re.fullmatch(r"[0-9a-f]{64}", manifest["sha256"])
     ):
         raise ReleaseError("The launcher release manifest is invalid or uses an unsupported format.")
-    if _version(__version__) < _version(manifest.get("min_cli_version")):
-        raise ReleaseError(
-            f"Launcher {version} needs AeroTizen CLI {manifest['min_cli_version']} or newer. "
-            f"Your CLI is {__version__}; update it first."
-        )
-    data = _read_url(_asset_url(release, repository, name), MAX_PACKAGE_BYTES)
-    if hashlib.sha256(data).hexdigest() != manifest["sha256"]:
-        raise ReleaseError("Launcher checksum mismatch. The package was not installed; try again later.")
-    _check_package(data, version)
-    path = Path(destination) / name
-    path.write_bytes(data)
-    return DownloadedLauncher(path=path, version=version)
+    version_key(manifest.get("min_cli_version"))
+    return LauncherRelease(
+        version=version,
+        min_cli_version=manifest["min_cli_version"],
+        asset_url=_asset_url(release, repository, name),
+        sha256=manifest["sha256"],
+    )
+
+
+def download_launcher(destination, *, version=None, repository=DEFAULT_REPOSITORY):
+    """Download a stable release, verify it, then write an unsigned widget to destination."""
+    return resolve_launcher(version=version, repository=repository).download(destination)

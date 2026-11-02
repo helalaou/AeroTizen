@@ -50,6 +50,7 @@ def installation(tmp_path, monkeypatch):
     class TV:
         output = COMPLETED
         applist_output = f"app_id={APP} app_version={VERSION}"
+        before_update = None
         closed = False
 
         def __enter__(self):
@@ -75,6 +76,8 @@ def installation(tmp_path, monkeypatch):
 
         def applist(self):
             events.append("applist")
+            if self.before_update is not None and "install" not in events:
+                return self.before_update
             return self.applist_output
 
     tv = TV()
@@ -280,3 +283,163 @@ def test_install_help_explains_release_and_local_sources(monkeypatch, capsys):
     assert "./launcher" in output
     assert "--version X.Y.Z" in output
     assert "--release-repo OWNER/REPO" in output
+
+
+@pytest.fixture
+def updating(installation, monkeypatch):
+    installation.tv.before_update = f"app_id={APP} app_version=2.1.0"
+    repositories = []
+
+    def resolve(*, repository):
+        installation.events.append("resolve")
+        repositories.append(repository)
+        return SimpleNamespace(
+            version=VERSION,
+            min_cli_version="2.2.0",
+            download=lambda destination: releases.download_launcher(
+                destination, version=VERSION, repository=repository
+            ),
+        )
+
+    monkeypatch.setattr(releases, "resolve_launcher", resolve)
+    installation.repositories = repositories
+    return installation
+
+
+def update_args(**overrides):
+    return argparse.Namespace(
+        **{"target": "launcher", "tv": "tv", "check": False, "release_repo": None, **overrides}
+    )
+
+
+def test_update_uses_one_session_and_the_saved_signing_profile(updating, capsys):
+    cli.cmd_update(update_args())
+    assert updating.events == [
+        "resolve",
+        "connect",
+        "applist",
+        "download",
+        "sign",
+        "push-profile",
+        "install",
+        "applist",
+    ]
+    assert updating.downloads[0][1:] == (VERSION, releases.DEFAULT_REPOSITORY)
+    assert not updating.downloads[0][0].parent.exists()
+    assert not updating.signed_paths[0].exists()
+    assert updating.tv.closed
+    output = capsys.readouterr().out
+    assert "Installed launcher: 2.1.0" in output
+    assert f"Latest stable launcher: {VERSION}" in output
+    assert "update is available" in output
+    assert f"version {VERSION} verified" in output
+
+
+def test_update_check_needs_no_certificates_and_downloads_no_widget(updating, monkeypatch, capsys):
+    (updating.cdir / "distributor.p12").unlink()
+    monkeypatch.setattr("sys.argv", ["aerotizen", "--tv", "tv", "update", "launcher", "--check"])
+    cli.main()
+    assert updating.events == ["resolve", "connect", "applist"]
+    assert not updating.downloads
+    assert updating.tv.closed
+    assert "update is available" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("version", [VERSION, "2.10.0"])
+def test_update_skips_current_and_newer_versions_without_certificates(updating, version, capsys):
+    updating.tv.before_update = f"app_id={APP} app_version={version}"
+    (updating.cdir / "distributor.p12").unlink()
+    cli.cmd_update(update_args())
+    assert updating.events == ["resolve", "connect", "applist"]
+    assert updating.tv.closed
+    assert "No changes made" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("inventory", [APP, f"app_id={APP} app_version=invalid"])
+def test_unknown_version_stops_and_directs_to_install(updating, inventory, capsys):
+    updating.tv.before_update = inventory
+    with pytest.raises(SystemExit, match="aerotizen install launcher"):
+        cli.cmd_update(update_args())
+    assert updating.events == ["resolve", "connect", "applist"]
+    assert updating.tv.closed
+    assert "update cannot be confirmed" in capsys.readouterr().out
+
+
+def test_unknown_version_check_reports_uncertainty_without_installing(updating, capsys):
+    updating.tv.before_update = APP
+    cli.cmd_update(update_args(check=True))
+    output = capsys.readouterr().out
+    assert "version unavailable" in output
+    assert "update cannot be confirmed" in output
+    assert "up to date" not in output
+    assert updating.events == ["resolve", "connect", "applist"]
+    assert updating.tv.closed
+
+
+@pytest.mark.parametrize("inventory", ["DclHome001.Watcher", "", f"{APP}\n{APP}"])
+def test_update_requires_one_installed_launcher(updating, inventory):
+    updating.tv.before_update = inventory
+    with pytest.raises(SystemExit, match=r"not installed|unexpected launcher package"):
+        cli.cmd_update(update_args())
+    assert updating.events == ["resolve", "connect", "applist"]
+    assert updating.tv.closed
+
+
+def test_update_selects_fork_for_metadata_and_exact_download(updating, monkeypatch):
+    monkeypatch.setattr(
+        "sys.argv", ["aerotizen", "--tv", "tv", "update", "launcher", "--release-repo", "example/AeroTizen"]
+    )
+    cli.main()
+    assert updating.repositories == ["example/AeroTizen"]
+    assert updating.downloads[0][1:] == (VERSION, "example/AeroTizen")
+
+
+def test_update_rejects_failed_install_even_if_target_version_is_listed(updating):
+    updating.tv.output = f"app_id[{APP}] install failed"
+    with pytest.raises(SystemExit, match="installation error"):
+        cli.cmd_update(update_args())
+    assert updating.tv.closed
+    assert not updating.downloads[0][0].parent.exists()
+
+
+def test_update_rejects_stale_version_after_install(updating):
+    updating.tv.applist_output = f"app_id={APP} app_version=2.1.0"
+    with pytest.raises(SystemExit, match=r"expected 2\.2\.0"):
+        cli.cmd_update(update_args())
+    assert updating.tv.closed
+
+
+def test_update_metadata_error_does_not_connect_to_tv(updating, monkeypatch):
+    def fail(**kwargs):
+        raise releases.ReleaseError("Invalid release metadata")
+
+    monkeypatch.setattr(releases, "resolve_launcher", fail)
+    with pytest.raises(SystemExit, match="Invalid release metadata"):
+        cli.cmd_update(update_args())
+    assert not updating.events
+
+
+def test_update_download_error_releases_session_and_removes_partial_widget(updating, monkeypatch):
+    paths = []
+
+    def fail(destination, **kwargs):
+        paths.append(destination)
+        (destination / "partial.wgt").write_bytes(b"partial")
+        raise releases.ReleaseError("Checksum mismatch")
+
+    monkeypatch.setattr(releases, "download_launcher", fail)
+    with pytest.raises(SystemExit, match="Checksum mismatch"):
+        cli.cmd_update(update_args())
+    assert updating.tv.closed
+    assert not paths[0].exists()
+    assert "install" not in updating.events
+
+
+@pytest.mark.parametrize("flags", [["--force"], ["--check", "--force"]])
+@pytest.mark.parametrize("target", ["launcher", "cli"])
+def test_update_rejects_force_before_any_device_or_release_access(updating, monkeypatch, flags, target):
+    monkeypatch.setattr("sys.argv", ["aerotizen", "update", target, *flags])
+    with pytest.raises(SystemExit) as exc:
+        cli.main()
+    assert exc.value.code == 2
+    assert not updating.events

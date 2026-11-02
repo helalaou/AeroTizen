@@ -1,0 +1,186 @@
+/* global module, process, require */
+// Bounded diagnostics shared by the UI and service. No console interception or app payloads.
+(function (root) {
+  'use strict';
+  var LIMIT = 200, MAX_CHARACTERS = 60000, BATCH_SIZE = 24, MAX_BATCH_CHARACTERS = 4000;
+  var createPrivacy = typeof module !== 'undefined' && module.exports ? require('./diagnostics-privacy') : root.AeroDiagnosticsPrivacy;
+  function create(source, options) {
+    options = options || {};
+    var privacy = createPrivacy();
+    var later = options.later || function (fn, ms) { return typeof root.setTimeout === 'function' ? root.setTimeout(fn, ms) : setTimeout(fn, ms); };
+    var records = [], total = 0, store = null, serial = 0;
+    var discarded = 0, invalid = 0, writeFailures = 0, readFailures = 0, writes = 0, storageState = 'unavailable', pendingErrors = 0;
+    var mono = options.now || (root.performance && root.performance.now ? function () { return root.performance.now(); } :
+      typeof process !== 'undefined' && process.hrtime ? function () { var time = process.hrtime(); return time[0] * 1000 + time[1] / 1000000; } : Date.now);
+    var origin = mono(), elapsed = 0;
+    var revision = 0, saved = 0, loading = false, saving = false, saveTimer = null;
+    var session = privacy.session;
+    function scheduleSave(delay) {
+      if (!store || loading || saving || saveTimer !== null || revision === saved) { return; }
+      saveTimer = later(persist, typeof delay === 'number' ? delay : 500);
+      // Optional logs must not hold a Node service open during shutdown.
+      if (saveTimer && saveTimer.unref) { saveTimer.unref(); }
+    }
+    function persist() {
+      saveTimer = null;
+      if (!store || loading || saving || revision === saved) { return; }
+      var target = store, writing = revision, complete = false;
+      saving = true; storageState = 'saving';
+      function done(error) {
+        if (complete) { return; } complete = true; saving = false;
+        if (error) { store = null; storageState = 'failed'; writeFailures += 1; return; }
+        storageState = 'ready'; writes += 1; saved = writing; scheduleSave();
+      }
+      try { target.save(JSON.stringify(records), done); } catch (e) { done(e); }
+    }
+    function ingest(incoming) {
+      if (!Array.isArray(incoming) || incoming.length > LIMIT) { return false; }
+      var changed = false;
+      incoming.forEach(function (item) {
+        if (!item || (item.source !== 'ui' && item.source !== 'service') ||
+            typeof item.id !== 'string' || !/^[a-z0-9-]{1,64}$/.test(item.id) ||
+            typeof item.at !== 'number' || !isFinite(item.at) ||
+            typeof item.event !== 'string' || !/^[a-zA-Z0-9_.-]{1,64}$/.test(item.event)) { invalid += 1; return; }
+        var id = privacy.value(item.id, 'id'), name = privacy.event(item.event);
+        if (records.some(function (entry) { return entry.id === id; })) { return; }
+        var entry = { id: id, at: item.at, source: item.source, event: name, data: name === 'diagnostic.unknown' ? {} : privacy.details(item.data) };
+        if (typeof item.session === 'string' && /^[a-z0-9-]{1,64}$/.test(item.session)) { entry.session = privacy.value(item.session, 'session'); }
+        if (typeof item.sequence === 'number' && isFinite(item.sequence) && item.sequence > 0 && Math.floor(item.sequence) === item.sequence) { entry.sequence = item.sequence; }
+        if (typeof item.elapsed_ms === 'number' && isFinite(item.elapsed_ms) && item.elapsed_ms >= 0) { entry.elapsed_ms = item.elapsed_ms; }
+        records.push(entry); total += JSON.stringify(entry).length; changed = true;
+        while (records.length > LIMIT || total > MAX_CHARACTERS) { total -= JSON.stringify(records.shift()).length; discarded += 1; }
+      });
+      if (changed) { revision += 1; scheduleSave(); }
+      return true;
+    }
+    function stamp(name, data) {
+      elapsed = Math.max(elapsed, Math.round(mono() - origin));
+      return { id: session + '-' + (++serial), session: session, sequence: serial,
+        at: Date.now(), elapsed_ms: elapsed, source: source, event: privacy.event(name), data: data };
+    }
+    function record(name, data) {
+      try { var entry = stamp(name, data); ingest([entry]); return entry.id; } catch (e) { return null; }
+    }
+    function health() {
+      return { session: session, buffered: records.length, discarded: discarded, invalid: invalid,
+        pending_errors: pendingErrors, storage: storageState, unsaved: revision !== saved,
+        saving: saving, writes: writes, write_failures: writeFailures, read_failures: readFailures,
+        clock: mono === Date.now ? 'wall_fallback' : 'monotonic' };
+    }
+    return {
+      record: record,
+      captureError: function (name, error, context) {
+        if (pendingErrors >= 16) { discarded += 1; return; }
+        var entry = stamp(name, privacy.details(context)); pendingErrors += 1;
+        later(function () {
+          pendingErrors -= 1;
+          try {
+            var data = entry.data;
+            data.error = error && typeof error.name === 'string' ? error.name : 'Error';
+            data.message = error && typeof error.message === 'string' ? error.message : typeof error === 'string' ? error : 'Error details unavailable';
+            data.stack = error && typeof error.stack === 'string' ? error.stack : '';
+            entry.data = data; ingest([entry]);
+          } catch (e) { invalid += 1; }
+        }, 0);
+      },
+      health: health,
+      ingest: ingest,
+      snapshot: function () { return { schema_version: 1, health: health(), records: JSON.parse(JSON.stringify(records)) }; },
+      flushStorage: function () { scheduleSave(0); },
+      attach: function (storage, ready) {
+        if (!storage || loading || saving) { return; }
+        store = storage; loading = true; storageState = 'loading';
+        function loaded(error, value) {
+          if (!loading || store !== storage) { return; }
+          if (error) { loading = false; store = null; storageState = 'failed'; readFailures += 1; if (ready) { ready(); } return; }
+          var recent = records;
+          try {
+            var previous = value ? JSON.parse(value) : [];
+            records = []; total = 0; if (!ingest(previous)) { invalid += 1; } ingest(recent);
+          } catch (e) { invalid += 1; records = recent; total = records.reduce(function (sum, item) { return sum + JSON.stringify(item).length; }, 0); }
+          loading = false; storageState = 'ready'; revision += 1; scheduleSave();
+          if (ready) { ready(); }
+        }
+        try { storage.load(loaded); } catch (e) { loaded(e); }
+      }
+    };
+  }
+  if (typeof module !== 'undefined' && module.exports) { module.exports = create; return; }
+  var logger = root.AeroDiagnostics = create('ui'), packetPrivacy = createPrivacy(), busy = false, sent = {};
+  var sendTimer = null;
+  var retryTimer = null, retries = 0, retryDelays = [1000, 3000, 10000];
+  var delivery = { state: 'idle', last_status: null };
+  function cancelRetry() {
+    if (retryTimer !== null) { root.clearTimeout(retryTimer); retryTimer = null; }
+  }
+  function retry() {
+    if (root.document.hidden || retryTimer !== null || retries >= retryDelays.length) { return; }
+    retryTimer = root.setTimeout(function () { retryTimer = null; flush(); }, retryDelays[retries++]);
+  }
+  try {
+    if (typeof root.AeroDiagnosticsStorage === 'function') {
+      root.AeroDiagnosticsStorage(function (storage) { if (storage) { logger.attach(storage, flush); } });
+    }
+  } catch (e) { /* unavailable async storage keeps an in-memory log */ }
+  // Callers only queue work. Snapshot encoding and HTTP sends run in a later task.
+  function flush() {
+    if (busy || sendTimer !== null || retryTimer !== null || !root.tizen || !root.XMLHttpRequest || root.document.hidden) { return; }
+    sendTimer = root.setTimeout(function () { sendTimer = null; send(); }, 0);
+  }
+  function send() {
+    if (busy || root.document.hidden) { return; }
+    var batch = [];
+    logger.snapshot().records.filter(function (item) { return !sent[item.id]; }).slice(0, BATCH_SIZE).forEach(function (item) {
+      if (JSON.stringify(batch.concat([item])).length <= MAX_BATCH_CHARACTERS) { batch.push(item); }
+    });
+    if (!batch.length) { return; }
+    busy = true;
+    try {
+      var request = new root.XMLHttpRequest();
+      request.open('POST', 'http://127.0.0.1:47790/diagnostics/events', true);
+      request.setRequestHeader('Content-Type', 'text/plain'); request.timeout = 1500;
+      request.onerror = request.ontimeout = function () { busy = false; delivery.state = 'unavailable'; delivery.last_status = null; retry(); };
+      request.onload = function () {
+        busy = false; delivery.last_status = request.status; delivery.state = 'rejected';
+        if (request.status !== 200) { if (request.status >= 500 || request.status === 408) { retry(); } return; }
+        // An older service returns 200 for unknown paths. Keep the events queued
+        // unless the diagnostics endpoint acknowledges this exact batch.
+        var acknowledgement;
+        try { acknowledgement = JSON.parse(request.responseText); } catch (e) { return; }
+        if (!acknowledgement || acknowledgement.schema_version !== 1 || acknowledgement.accepted !== batch.length) { return; }
+        delivery.state = 'acknowledged'; cancelRetry(); retries = 0;
+        batch.forEach(function (item) { sent[item.id] = true; });
+        var keep = {}; logger.snapshot().records.forEach(function (item) { if (sent[item.id]) { keep[item.id] = true; } }); sent = keep;
+        flush();
+      };
+      var build = {};
+      ['version', 'build_id', 'commit', 'dirty'].forEach(function (key) { build[key] = packetPrivacy.value((root.AeroBuildInfo || {})[key], key); });
+      request.send(JSON.stringify({ schema_version: 1, records: batch, health: logger.health(),
+        build: build, version: packetPrivacy.value(version, 'version'), delivery: { state: delivery.state, retries: retries, last_status: delivery.last_status }, queued: logger.snapshot().records.filter(function (item) { return !sent[item.id]; }).length }));
+    } catch (e) { busy = false; delivery.state = 'unavailable'; retry(); }
+  }
+  logger.flush = flush;
+  root.addEventListener('pagehide', function () { logger.flushStorage(); });
+  var version = 'unknown';
+  try { version = root.tizen.application.getAppInfo().version; } catch (e) { /* desktop or older API */ }
+  logger.record('ui.start', { component: 'launcher', version: version, build_id: root.AeroBuildInfo && root.AeroBuildInfo.build_id, commit: root.AeroBuildInfo && root.AeroBuildInfo.commit });
+  root.addEventListener('error', function (event) {
+    logger.captureError('ui.error', event.error || { name: 'ScriptError', message: event.message }, { file: event.filename, line: event.lineno || 0, column: event.colno || 0 }); flush();
+  });
+  root.addEventListener('unhandledrejection', function (event) {
+    logger.captureError('ui.rejection', event.reason || { name: 'UnhandledRejection' }); flush();
+  });
+  root.addEventListener('load', function () { logger.record('ui.loaded'); flush(); });
+  root.addEventListener('appcontrol', function () {
+    var operation = '';
+    try { var requested = root.tizen.application.getCurrentApplication().getRequestedAppControl(); operation = requested.appControl.operation; } catch (e) { /* unavailable */ }
+    logger.record('ui.appcontrol', { operation: operation }); flush();
+  });
+  root.document.addEventListener('visibilitychange', function () {
+    logger.record('ui.visibility', { hidden: root.document.hidden });
+    cancelRetry(); retries = 0;
+    if (sendTimer !== null) { root.clearTimeout(sendTimer); sendTimer = null; }
+    logger.flushStorage();
+    if (!root.document.hidden) { flush(); }
+  });
+})(typeof window !== 'undefined' ? window : this);
