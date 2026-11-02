@@ -14,18 +14,6 @@ body:not(.s90c-clock-classic) .topbar-right {
   margin-left: auto;
   gap: 0;
 }
-body:not(.s90c-clock-classic) .topbar-right > #weather,
-body:not(.s90c-clock-classic) .topbar-right > #date,
-body:not(.s90c-clock-classic) .topbar-right > #time {
-  position: absolute !important;
-  overflow: hidden !important;
-  width: 0 !important;
-  height: 0 !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
 /* Centre navigation independently of the wider custom clock and status content. */
 body:not(.s90c-clock-classic) header.topbar > .view-tabs {
   position: absolute;

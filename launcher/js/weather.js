@@ -16,41 +16,41 @@ window.Weather = (function () {
     return {};
   };
 
-  // WMO weather codes -> simple icon shapes.
-  var ICONS = {
-    sun: '<circle cx="12" cy="12" r="4.5" fill="#ffd34d"/><g stroke="#ffd34d" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.5v2.5M12 19v2.5M2.5 12h2.5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></g>',
-    partly:
-      '<circle cx="9" cy="9" r="3.6" fill="#ffd34d"/><path fill="#e8ecf2" d="M8 19h9.5a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6 1.2A3 3 0 0 0 8 19z"/>',
-    cloud: '<path fill="#d5dbe4" d="M7 19h11a4 4 0 0 0 .5-8 6 6 0 0 0-11.6 1.6A3.3 3.3 0 0 0 7 19z"/>',
-    fog: '<g stroke="#c9cfd8" stroke-width="2" stroke-linecap="round"><path d="M4 9h16M6 13h12M4 17h16"/></g>',
-    rain: '<path fill="#d5dbe4" d="M7 15h11a4 4 0 0 0 .5-8 6 6 0 0 0-11.6 1.6A3.3 3.3 0 0 0 7 15z"/><g stroke="#6cb6ff" stroke-width="1.8" stroke-linecap="round"><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/></g>',
-    snow: '<path fill="#d5dbe4" d="M7 15h11a4 4 0 0 0 .5-8 6 6 0 0 0-11.6 1.6A3.3 3.3 0 0 0 7 15z"/><g fill="#fff"><circle cx="8" cy="19" r="1.2"/><circle cx="12" cy="20.5" r="1.2"/><circle cx="16" cy="19" r="1.2"/></g>',
-    storm:
-      '<path fill="#b9c0cc" d="M7 14h11a4 4 0 0 0 .5-8 6 6 0 0 0-11.6 1.6A3.3 3.3 0 0 0 7 14z"/><path fill="#ffd34d" d="M12.5 13l-3 5h2.5l-1.5 4.5 4.5-6h-2.6l1.6-3.5z"/>',
-  };
-  function icon(code) {
-    if (code === 0 || code === 1) {
-      return ICONS.sun;
+  var listeners = [],
+    snapshot = null;
+  function getSnapshot() {
+    var opt = options(),
+      w = validReading(reading, opt) ? reading : null;
+    var temperature = w ? w.temp : null;
+    if (w && w.unit !== opt.unit) {
+      temperature = opt.unit === "F" ? (temperature * 9) / 5 + 32 : ((temperature - 32) * 5) / 9;
     }
-    if (code === 2) {
-      return ICONS.partly;
+    var city = w && opt.visible && opt.showLocation ? String(w.city || "") : "";
+    var visible = Boolean(w && opt.visible),
+      code = w ? w.code : null;
+    if (
+      !snapshot ||
+      snapshot.temperature !== temperature ||
+      snapshot.city !== city ||
+      snapshot.visible !== visible ||
+      snapshot.code !== code ||
+      snapshot.showLocation !== opt.showLocation
+    ) {
+      snapshot = Object.freeze({
+        temperature: temperature,
+        city: city,
+        code: code,
+        visible: visible,
+        showLocation: opt.showLocation,
+      });
     }
-    if (code === 3) {
-      return ICONS.cloud;
-    }
-    if (code === 45 || code === 48) {
-      return ICONS.fog;
-    }
-    if ((code >= 71 && code <= 77) || code === 85 || code === 86) {
-      return ICONS.snow;
-    }
-    if (code >= 95) {
-      return ICONS.storm;
-    }
-    if (code >= 51) {
-      return ICONS.rain;
-    }
-    return ICONS.cloud;
+    return snapshot;
+  }
+  function publish() {
+    getSnapshot();
+    listeners.slice().forEach(function (listener) {
+      listener();
+    });
   }
 
   function getJSON(url, cb, automatic) {
@@ -197,34 +197,6 @@ window.Weather = (function () {
     return "";
   }
 
-  function render() {
-    var w = reading,
-      opt = options();
-    var el = document.getElementById("weather");
-    if (window.AeroTizen && window.AeroTizen.photoWeather) {
-      window.AeroTizen.photoWeather.update();
-    }
-    if (!el) {
-      return;
-    }
-    if (!opt.visible || !validReading(w, opt)) {
-      el.textContent = "";
-      el.hidden = true;
-      return;
-    }
-    el.innerHTML =
-      '<svg viewBox="0 0 24 24">' + icon(w.code) + "</svg><b></b>" + (opt.showLocation ? "<span></span>" : "");
-    var temp = w.temp;
-    if (w.unit !== opt.unit) {
-      temp = opt.unit === "F" ? (temp * 9) / 5 + 32 : ((temp - 32) * 5) / 9;
-    }
-    el.querySelector("b").textContent = Math.round(temp) + "°";
-    if (opt.showLocation) {
-      el.querySelector("span").textContent = w.city || "";
-    }
-    el.hidden = false;
-  }
-
   function parseSolar(daily) {
     var result = [];
     if (!daily || !Array.isArray(daily.sunrise) || !Array.isArray(daily.sunset)) {
@@ -248,7 +220,7 @@ window.Weather = (function () {
     cancelRequests();
     var version = requestVersion,
       opt = options();
-    render(); // Convert a matching cached reading while fetching the selected unit.
+    publish(); // Convert a matching cached reading while fetching the selected unit.
     if (!opt.fetch) {
       stopTimer();
       return;
@@ -295,7 +267,7 @@ window.Weather = (function () {
           try {
             localStorage.setItem(CACHE, JSON.stringify(reading));
           } catch (e) {}
-          render();
+          publish();
         },
         true
       );
@@ -353,7 +325,7 @@ window.Weather = (function () {
       stopTimer();
       cancelRequests();
     }
-    render();
+    publish();
     if (opt.fetch) {
       var now = Date.now();
       var pending =
@@ -396,9 +368,19 @@ window.Weather = (function () {
   }
 
   return {
+    getSnapshot: getSnapshot,
+    subscribe: function (listener) {
+      listeners.push(listener);
+      return function () {
+        var index = listeners.indexOf(listener);
+        if (index >= 0) {
+          listeners.splice(index, 1);
+        }
+      };
+    },
     start: start,
     refresh: refresh,
-    updateDisplay: render,
+    updateDisplay: publish,
     updateVisibility: updateVisibility,
     searchLocations: searchLocations,
     solarPhase: solarPhase,

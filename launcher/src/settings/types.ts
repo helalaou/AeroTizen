@@ -3,7 +3,7 @@ import type { RefObject } from "preact";
 import type {
   AppPresentation,
   BackgroundOption,
-  Clock,
+  ClockFormatter,
   ContinueSource,
   InputOption,
   InstalledApp,
@@ -44,7 +44,7 @@ export interface SettingsServices {
   applyWeatherVisibility(): void;
   backgrounds: readonly BackgroundOption[];
   clearHomeFocus(): void;
-  clock: Omit<Clock, "tick">;
+  clock: ClockFormatter;
   config: LauncherConfig;
   describeApp(app: InstalledApp): AppPresentation;
   finishEditing(): void;

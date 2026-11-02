@@ -2,6 +2,7 @@ import type { RefObject } from "preact";
 
 import type { AppPresentation, ContinueItem, HomeBridge, InputSource, InstalledApp } from "../contracts/launcher";
 import type { SettingsSnapshot, SettingsStore } from "../contracts/preferences";
+import type { StatusStores } from "../contracts/status";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import type { MutableStore, Store } from "../shared/state/createStore";
 export interface Inventory {
@@ -35,5 +36,6 @@ export interface HomeEnvironment {
   settings: SettingsStore;
   showPage(page: Page): void;
   state: MutableStore<HomeState>;
+  status: StatusStores;
   translate(value: string): string;
 }

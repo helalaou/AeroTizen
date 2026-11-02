@@ -20,7 +20,9 @@ test("custom clock styles preserve upstream date/time preferences, visibility an
     await closeSettings(page);
     await expect(page.locator("#aero-v991-widget")).toBeVisible();
     expect(await page.locator(".aero-v991-digits").getAttribute("aria-label")).toBe(
-      await page.locator("#time").textContent(),
+      await page.evaluate(() =>
+        AeroTizen.clock.formatTime(new Date(AeroTizen.clock.getSnapshot()), AeroTizen.settings.timeFormat),
+      ),
     );
     await page.screenshot({ path: info.outputPath("clock-" + style + ".png") });
     await page.locator("#gear").click();

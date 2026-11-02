@@ -1,3 +1,5 @@
+import type { Store } from "../shared/state/createStore";
+
 import type { DateFormat, SettingsValues, TemperatureUnit, TimeFormat } from "./preferences";
 
 export interface InputSource {
@@ -34,15 +36,20 @@ export interface Background {
 export interface BackgroundOption extends Background {
   preview: string;
 }
-export interface Clock {
+export interface ClockService extends Store<number> {
   DATE_FORMATS: ReadonlyArray<{ id: DateFormat; format(date: Date): string }>;
   dateStyle(format: SettingsValues["dateFormat"]): DateFormat;
   formatDate(date: Date, format: SettingsValues["dateFormat"]): string;
   formatTime(date: Date, format: TimeFormat): string;
   formatTimeParts?(date: Date, format: TimeFormat): { hour: string; minute: string; dayPeriod: string } | null;
+  measureTime(format: TimeFormat, font: string, measureText: (value: string) => number): number;
   subscribe(listener: () => void): () => void;
   tick(): void;
 }
+export type ClockFormatter = Pick<
+  ClockService,
+  "dateStyle" | "formatDate" | "formatTime" | "subscribe" | "DATE_FORMATS"
+>;
 export interface LauncherConfig {
   CARD_COLUMNS: Record<string, number>;
   DEFAULTS: Omit<SettingsValues, "home" | "tempUnit" | "timeFormat"> & {

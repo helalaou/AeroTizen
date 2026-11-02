@@ -5,61 +5,27 @@
   var tz = A.tizen,
     started = false,
     serial = 0;
-  var ICONS = {
-    ethernet: '<path fill="currentColor" d="M8 3h8v4h3v6h-3v3h-2v5h-4v-5H8v-3H5V7h3zm2 2v4H7v2h10V9h-3V5z"/>',
-    unknown:
-      '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 12h18M12 3v18" fill="none" stroke="currentColor" stroke-width="1.5"/>',
-    offline:
-      '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M3 3l18 18M8.5 16.5a5 5 0 0 1 7 0M5 12.6a10 10 0 0 1 3.6-2.2M12 7.5a14 14 0 0 1 9 3.6M2 9.1a14 14 0 0 1 3-1.9"/>',
-  };
-
-  // Wi-Fi bars: the lit arcs follow signal strength (0..1).
-  function wifi(strength) {
-    var arcs = [
-      "M12 18.5a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6z",
-      "M5.6 13.4l1.8 1.8a6.5 6.5 0 0 1 9.2 0l1.8-1.8a9 9 0 0 0-12.8 0z",
-      "M2 9.8l1.8 1.8a11.6 11.6 0 0 1 16.4 0L22 9.8a14.1 14.1 0 0 0-20 0z",
-    ];
-    var lit = strength === undefined ? 3 : strength > 0.66 ? 3 : strength > 0.33 ? 2 : 1;
-    // Centre the artwork within the shared 24-unit icon box.
-    return (
-      '<g transform="translate(0 -2)">' +
-      arcs
-        .map(function (d, i) {
-          return '<path fill="currentColor" opacity="' + (i < lit ? 1 : 0.28) + '" d="' + d + '"/>';
-        })
-        .join("") +
-      "</g>"
-    );
-  }
-
-  function show(kind, strength) {
-    var el = A.$("network");
-    el.innerHTML = kind === "wifi" ? wifi(strength) : ICONS[kind] || ICONS.unknown;
-    el.setAttribute("data-net-kind", kind);
-    el.setAttribute("data-net-level", strength === undefined ? "unknown" : String(strength));
-    var label =
-      kind === "ethernet"
-        ? "Ethernet"
-        : kind === "offline"
-          ? "Offline"
-          : kind === "wifi"
-            ? strength === undefined
-              ? "Wi-Fi (signal unavailable)"
-              : "Wi-Fi"
-            : "Network status unavailable";
-    el.setAttribute("aria-label", A.i18n ? A.i18n.t(label) : label);
-    el.classList.toggle("offline", kind === "offline");
-  }
-
-  function updateVisibility() {
-    var el = A.$("network");
-    // SVG elements do not expose the HTML hidden property on every TV.
-    if (A.settings.showNetwork === false) {
-      el.setAttribute("hidden", "");
-    } else {
-      el.removeAttribute("hidden");
+  var listeners = [],
+    snapshot = null,
+    kind = "unknown",
+    strength = null;
+  function getSnapshot() {
+    var visible = A.settings.showNetwork !== false;
+    if (!snapshot || snapshot.kind !== kind || snapshot.strength !== strength || snapshot.visible !== visible) {
+      snapshot = Object.freeze({ kind: kind, strength: strength, visible: visible });
     }
+    return snapshot;
+  }
+  function publish() {
+    getSnapshot();
+    listeners.slice().forEach(function (listener) {
+      listener();
+    });
+  }
+  function show(nextKind, nextStrength) {
+    kind = nextKind;
+    strength = nextStrength === undefined ? null : nextStrength;
+    publish();
   }
 
   function refresh() {
@@ -141,14 +107,24 @@
   }
 
   A.network = {
-    updateVisibility: updateVisibility,
+    getSnapshot: getSnapshot,
+    subscribe: function (listener) {
+      listeners.push(listener);
+      return function () {
+        var index = listeners.indexOf(listener);
+        if (index >= 0) {
+          listeners.splice(index, 1);
+        }
+      };
+    },
+    updateVisibility: publish,
     refresh: refresh,
     start: function () {
       if (started) {
         return;
       }
       started = true;
-      updateVisibility();
+      publish();
       refresh();
       if (tz && tz.systeminfo) {
         try {

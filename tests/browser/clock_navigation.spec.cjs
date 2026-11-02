@@ -59,7 +59,11 @@ for (const scenario of [
       await expect(page.locator("#aero-v991-hours")).toHaveText(scenario.hour);
       await expect(page.locator("#aero-v991-minutes")).toContainText(scenario.minute);
       const label = await page.locator(".aero-v991-digits").getAttribute("aria-label");
-      expect(label).toBe(await page.locator("#time").textContent());
+      expect(label).toBe(
+        await page.evaluate(() =>
+          AeroTizen.clock.formatTime(new Date(AeroTizen.clock.getSnapshot()), AeroTizen.settings.timeFormat),
+        ),
+      );
       expect(await page.locator("#aero-v991-minutes small").textContent()).toContain(
         scenario.format === "12" ? "오후" : "",
       );

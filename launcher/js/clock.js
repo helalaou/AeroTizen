@@ -262,50 +262,37 @@
     } // Older TVs retain the formatted-string fallback.
   }
 
-  function sizeTime(el, id) {
-    if (!el.style || typeof window.getComputedStyle !== "function") {
-      return;
-    }
-    var style = window.getComputedStyle(el);
-    var font = style.fontWeight + " " + style.fontSize + " " + style.fontFamily;
+  function measureTime(id, font, measureText) {
     var key = timeLocaleKey(id) + ":" + font;
     if (timeWidths[key] === undefined) {
-      var context = document.createElement("canvas").getContext("2d");
-      if (!context) {
-        return;
-      }
-      context.font = font;
       // Keep the header still for the whole day, including local digits and AM/PM.
       // Measure once per locale/font/format; retain the original 8ch/5ch minimum.
-      var width = context.measureText("0").width * (id === "24" ? 5 : 8);
+      var width = measureText("0") * (id === "24" ? 5 : 8);
       var sample = new Date(2000, 0, 1),
         formatter = timeFormatter(id);
       for (var minute = 0; minute < 24 * 60; minute++) {
         sample.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
-        width = Math.max(width, context.measureText(timeText(sample, id, formatter)).width + 1);
+        width = Math.max(width, measureText(timeText(sample, id, formatter)) + 1);
       }
       timeWidths[key] = Math.ceil(width);
     }
-    el.style.width = timeWidths[key] + "px";
+    return timeWidths[key];
   }
 
+  var currentTime = new Date().getTime(),
+    started = false;
   function tick() {
-    var d = new Date(),
-      dateEl = A.$("date"),
-      timeEl = A.$("time");
-    dateEl.textContent = formatDate(d, A.settings.dateFormat);
-    dateEl.hidden = A.settings.dateFormat === "none";
-    timeEl.hidden = A.settings.showTime === false;
-    timeEl.parentNode.classList.toggle("weather-only", timeEl.hidden && dateEl.hidden);
-    timeEl.setAttribute("data-format", A.settings.timeFormat === "24" ? "24" : "12");
-    timeEl.textContent = formatTime(d, A.settings.timeFormat);
-    sizeTime(timeEl, A.settings.timeFormat);
+    currentTime = new Date().getTime();
     listeners.slice().forEach(function (listener) {
       listener();
     });
   }
 
   A.clock = {
+    getSnapshot: function () {
+      return currentTime;
+    },
+    measureTime: measureTime,
     subscribe: function (listener) {
       listeners.push(listener);
       return function () {
@@ -323,6 +310,10 @@
     formatTimeParts: formatTimeParts,
     tick: tick,
     start: function () {
+      if (started) {
+        return;
+      }
+      started = true;
       tick();
       setInterval(tick, 10000);
     },

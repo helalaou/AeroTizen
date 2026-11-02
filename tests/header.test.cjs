@@ -71,6 +71,7 @@ function harness({ settings = {}, tizen, online = true } = {}) {
   for (const file of ["clock.js", "network.js"]) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "launcher/js", file), "utf8"), context);
   }
+  vm.runInContext(fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"), context);
   return { A, elements, intervals };
 }
 

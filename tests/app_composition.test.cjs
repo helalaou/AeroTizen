@@ -30,7 +30,18 @@ const harness = () => {
   const settingsBridge = {};
   const previousHome = {};
   const previousSettings = {};
+  const statusListeners = [new Set(), new Set(), new Set()];
+  const statusSource = (snapshot, listeners) => ({
+    getSnapshot: () => snapshot,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  });
+  const platform = { weather: statusSource({}, statusListeners[2]) };
   const runtime = {
+    clock: statusSource(0, statusListeners[0]),
+    network: statusSource({}, statusListeners[1]),
     settings: source,
     config: { DEFAULTS: {} },
     homeScreen: previousHome,
@@ -51,6 +62,8 @@ const harness = () => {
   };
   return {
     runtime,
+    platform,
+    statusListeners,
     source,
     hosts,
     views,
@@ -71,7 +84,7 @@ const harness = () => {
 
 test("Home and Settings share one preference source and release it once", () => {
   const h = harness();
-  const app = createLauncherApp(h.runtime, {}, h.hosts, h.views);
+  const app = createLauncherApp(h.runtime, h.platform, h.hosts, h.views);
   assert.equal(h.listeners.size, 1, "there is one source subscription for the whole app");
   assert.equal(h.homeSettings, h.editorSettings);
   h.homeSettings.update({ home: ["two"] });
@@ -84,6 +97,10 @@ test("Home and Settings share one preference source and release it once", () => 
   app.dispose();
   app.dispose();
   assert.equal(h.listeners.size, 0);
+  assert.equal(
+    h.statusListeners.reduce((size, listeners) => size + listeners.size, 0),
+    0,
+  );
   assert.equal(h.events.size, 0);
   assert.deepEqual(h.calls.slice(2), ["dispose settings", "dispose home"]);
   assert.equal(h.runtime.homeScreen, h.previousHome);
@@ -95,8 +112,12 @@ test("failed view assembly releases the settings source and already mounted Home
   h.views.settings = () => {
     throw new Error("mount failed");
   };
-  assert.throws(() => createLauncherApp(h.runtime, {}, h.hosts, h.views), /mount failed/);
+  assert.throws(() => createLauncherApp(h.runtime, h.platform, h.hosts, h.views), /mount failed/);
   assert.equal(h.listeners.size, 0);
+  assert.equal(
+    h.statusListeners.reduce((size, listeners) => size + listeners.size, 0),
+    0,
+  );
   assert.equal(h.events.size, 0);
   assert.deepEqual(h.calls, ["dispose home"]);
   assert.equal(h.runtime.homeScreen, h.previousHome);
@@ -106,7 +127,7 @@ test("failed view assembly releases the settings source and already mounted Home
 test("repeated app replacement does not retain source or visibility listeners", () => {
   const h = harness();
   for (let i = 0; i < 3; i++) {
-    const app = createLauncherApp(h.runtime, {}, h.hosts, h.views);
+    const app = createLauncherApp(h.runtime, h.platform, h.hosts, h.views);
     let updates = 0;
     h.editorSettings.subscribe(() => updates++);
     assert.equal(h.listeners.size, 1);
@@ -119,6 +140,10 @@ test("repeated app replacement does not retain source or visibility listeners", 
     h.source.save();
     assert.equal(updates, 1, "disposed views receive no further source changes");
     assert.equal(h.listeners.size, 0);
+    assert.equal(
+      h.statusListeners.reduce((size, listeners) => size + listeners.size, 0),
+      0,
+    );
     assert.equal(h.events.size, 0);
   }
 });

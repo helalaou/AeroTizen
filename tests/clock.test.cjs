@@ -4,7 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
-function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = false, measure } = {}) {
+function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = false, measure, view = true } = {}) {
   const storage = new Map([[legacy ? "hearth.home.v1" : "aerotizen.settings.v1", JSON.stringify(saved)]]);
   const elements = {
     date: {},
@@ -19,8 +19,10 @@ function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = fal
     elements.time.style = {};
   }
   const A = { $: (id) => elements[id] };
+  const timers = [];
   const context = vm.createContext({
     window: {
+      setInterval: (fn) => timers.push(fn),
       AeroTizen: A,
       navigator: { languages: [locale], language: locale },
       Intl: intl,
@@ -28,6 +30,7 @@ function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = fal
       getComputedStyle: measure ? () => ({ fontWeight: "700", fontSize: "36px", fontFamily: "Arial" }) : undefined,
     },
     document: measure ? { createElement: () => ({ getContext: () => ({ measureText: measure }) }) } : undefined,
+    setInterval: (fn) => timers.push(fn),
     AeroTizen: A,
     localStorage: {
       getItem: (key) => storage.get(key),
@@ -37,8 +40,13 @@ function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = fal
   for (const file of ["config.js", "settings.js", "clock.js"]) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, "../launcher/js", file), "utf8"), context);
   }
+  if (view)
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"),
+      context,
+    );
   A.settings.load();
-  return { A, elements, storage };
+  return { A, elements, storage, timers };
 }
 
 const sample = new Date(2026, 9, 21, 17, 4);
@@ -378,4 +386,26 @@ test("custom clock fields preserve locale digits, separators and leading day per
   const { A } = runtime({ intl: {} });
   assert.equal(A.clock.formatTimeParts(sample, "24"), null);
   assert.equal(A.clock.formatTime(sample, "24"), "17:04");
+});
+
+test("clock publication does not query view hosts and starts one shared timer", () => {
+  const { A, elements, timers } = runtime({ view: false });
+  A.$ = () => {
+    throw new Error("Clock publication must not query DOM hosts");
+  };
+  let updates = 0;
+  const unsubscribe = A.clock.subscribe(() => updates++);
+  const initial = A.clock.getSnapshot();
+  assert.equal(typeof initial, "number");
+  assert.equal(A.clock.getSnapshot(), initial);
+  A.clock.start();
+  A.clock.start();
+  assert.equal(timers.length, 1);
+  assert.equal(updates, 1);
+  A.clock.tick();
+  assert.equal(updates, 2);
+  unsubscribe();
+  A.clock.tick();
+  assert.equal(updates, 2);
+  assert.equal(elements.time.textContent, undefined);
 });

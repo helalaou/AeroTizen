@@ -2,6 +2,8 @@ import { useLayoutEffect } from "preact/hooks";
 
 import { useStore } from "../shared/hooks/useStore";
 import { FlameIcon } from "../shared/icons/FlameIcon";
+import { HeaderStatus } from "../status/HeaderStatus";
+import { NetworkStatus } from "../status/NetworkStatus";
 
 import { AppCard } from "./components/AppCard";
 import { ContinueCard } from "./components/ContinueCard";
@@ -72,7 +74,6 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
               />
             </svg>
           </HomeControl>
-          {/* Existing status services own only the contents of these stable hosts. */}
           <HomeControl
             env={env}
             id="samsung-home-shortcut"
@@ -84,7 +85,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
               <path fill="none" stroke="currentColor" stroke-width="1.6" d="M3 11 12 3l9 8v10h-6v-7H9v7H3Z" />
             </svg>
           </HomeControl>
-          <svg id="network" class="status-icon" viewBox="0 0 24 24" aria-label="Network" />
+          <NetworkStatus status={env.status} translate={env.translate} />
         </div>
         <nav class="view-tabs" aria-label="App views">
           <HeaderPlate env={env} tabs />
@@ -109,12 +110,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
             {env.translate("All apps")}
           </HomeControl>
         </nav>
-        <div class="topbar-right">
-          <div id="custom-clock-root" />
-          <span id="weather" class="weather" hidden />
-          <span id="date" class="date" />
-          <span id="time" class="time" />
-        </div>
+        <HeaderStatus settings={env.settings} status={env.status} clock={env.runtime.clock} translate={env.translate} />
       </header>
       <div class="content-viewport" aria-hidden={!active}>
         <div class="content-mask">

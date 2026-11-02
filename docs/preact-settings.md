@@ -48,8 +48,8 @@ CSS behaviour or physical TV compatibility.
 
 - `app/createLauncherApp.ts` owns one shared preference store, bridge registration,
   visibility handling and teardown. The entry point passes the existing runtime and
-  platform services explicitly. Home mounts before Settings; Settings and its clock
-  unmount before Home. Partial assembly releases already mounted views and the store.
+  platform services explicitly. Home mounts before Settings; Settings unmounts before
+  Home. Status bindings are released with the preference source. Partial assembly releases already mounted views and the store.
 - `settings/index.tsx` mounts the Settings provider, actions, view state and navigation.
   It receives the shared store and platform services, then returns a bridge and disposer.
   It does not create a second preference source or register globals itself.
@@ -63,7 +63,7 @@ CSS behaviour or physical TV compatibility.
 - `settings/services/createSettingsInventory.ts` subscribes to app discovery and input
   changes. It publishes cached immutable lists, so a late TV callback or hot-plug update
   reaches the open or cached Settings form without a preference change. Matching lists
-  retain identity; the composition root disposes both subscriptions on replacement.
+  retain identity; the composition root disposes its subscriptions on replacement.
 - `settings/services/createSettingsServices.ts` adapts the existing TV and launcher
   operations using explicitly supplied runtime and platform dependencies. It exposes
   data and commands, including data-only app branding. Only
@@ -245,3 +245,8 @@ hardware proof.
 
 Keep this first change limited to Settings. Migrate Home, shared tiles and dialogs in
 separate changes after the build and hardware checks are complete.
+
+The Settings form controls shared preferences and invokes the existing status-service
+commands. It does not mount the clock. Home composes the shared status views, including
+one Clock with layout variants. Weather and network presentation use typed snapshots;
+there is no weather-markup observer or duplicated forecast client.

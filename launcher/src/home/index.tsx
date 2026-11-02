@@ -2,16 +2,26 @@ import { createRef, render } from "preact";
 import { flushSync } from "preact/compat";
 
 import type { SettingsStore } from "../contracts/preferences";
+import type { StatusStores } from "../contracts/status";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 
 import { Home } from "./Home";
 import { createHomeController } from "./state/createHomeController";
 import { createHomeInventory } from "./state/createHomeInventory";
 
-export const mountHome = (runtime: LauncherRuntime, settings: SettingsStore, mount: HTMLElement) => {
+export const mountHome = (
+  runtime: LauncherRuntime,
+  settings: SettingsStore,
+  mount: HTMLElement,
+  status: StatusStores,
+) => {
   const document = mount.ownerDocument;
   // Apply shell mode before any Home focus geometry is measured.
-  const syncShell = () => document.body.classList.toggle("glass-ui", settings.getSnapshot().glassSettings);
+  const syncShell = () => {
+    const values = settings.getSnapshot();
+    document.body.classList.toggle("glass-ui", values.glassSettings);
+    document.body.classList.toggle("s90c-clock-classic", values.clockLayout !== "custom");
+  };
   syncShell();
   const unsubscribeShell = settings.subscribe(syncShell);
   const inventory = createHomeInventory(runtime, settings, flushSync);
@@ -21,6 +31,7 @@ export const mountHome = (runtime: LauncherRuntime, settings: SettingsStore, mou
       runtime,
       settings,
       inventory,
+      status,
       rows,
       nodes: new Map(),
       translate: (value) => runtime.i18n?.t(value) || value,
@@ -42,7 +53,7 @@ export const mountHome = (runtime: LauncherRuntime, settings: SettingsStore, mou
     render(null, mount);
     inventory.dispose();
     unsubscribeShell();
-    document.body.classList.remove("glass-ui");
+    document.body.classList.remove("glass-ui", "s90c-clock-classic");
   };
   try {
     render(<Home env={environment} />, mount);

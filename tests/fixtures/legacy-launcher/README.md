@@ -1,6 +1,6 @@
 # Legacy launcher fixtures
 
-These Home, Settings, feed, input and clock renderers support regression and comparison
+These Home, Settings, feed, input and status renderers support regression and comparison
 tests. They are not production entry points or release assets. Change active views
 in `launcher/src/` and production markup in `launcher/index.html`.
 
@@ -13,3 +13,9 @@ out of production. The old clock renderer is used by Node tests only; the page d
 
 Keep these fixtures until their comparison tests have equivalent active-view
 coverage. Do not copy them back into the launcher or package output.
+
+`status-view.js` preserves the old clock, weather and network markup for comparison
+and presentation tests. It subscribes to the same data services as production. Pure
+service tests also run without it and reject attempts to query view hosts. The active
+clock is `launcher/src/status/Clock.tsx`; the old clock-layout renderer remains only
+for legacy regression coverage.

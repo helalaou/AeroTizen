@@ -11,8 +11,8 @@ HTML declares Home and Settings hosts directly. Legacy views live in
 `tests/fixtures/legacy-launcher/`; development and compiled HTML use the same active
 views, and release packages reject the old renderers. Existing app discovery, native
 handoffs, input switching, weather, clock, network and watcher operations stay behind
-typed adapters. Stable header status hosts remain owned by their existing services;
-Preact owns the surrounding header, controls, grids, action menu and feed cards.
+typed adapters. Preact owns the header status, controls, grids, action menu and feed
+cards. Status services publish data and do not inspect or change view markup.
 
 Remote transactions preserve short/held OK, move/drop persistence, app menu actions,
 Home/All apps tabs, Back, per-row navigation, nearest visible feed-card navigation,
@@ -77,5 +77,20 @@ Composition owns the visibility listener and restores only the bridges it still 
 
 The entry point accepts development updates and releases the previous app instance.
 Legacy boot and service timers run once; remounting views repaints their status hosts
-without restarting those services. Shared status data and clock rendering are the next
-migration stage.
+without restarting those services. Status subscriptions are also released during
+replacement; service timers keep their single boot-owned lifecycle.
+
+### Shared status data
+
+`services/createStatusStores.ts` binds the clock, weather and network services once.
+Clock ticks recheck weather cache expiry; preference changes update effective status
+visibility and unit conversion. These bindings do not start timers or fetch forecasts.
+The existing weather cache, request cancellation, retry cadence and solar policy stay
+in the weather service. PhotoWeather subscribes to weather updates directly.
+
+`status/HeaderStatus.tsx` composes `Clock` and `WeatherStatus` from shared data.
+`Clock` accepts compact, vertical, horizontal, minimal and bold layouts with one
+formatting path and timer source. Weather rendering and network rendering are separate
+components. Status views do not scrape another view or observe its markup. Compact
+time width uses a ref and cached font/locale measurements to keep the header stable.
+Saved clock settings and existing CSS IDs are retained.

@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const test = require("node:test");
 const vm = require("node:vm");
 const source = fs.readFileSync(require("node:path").join(__dirname, "../launcher/js/network.js"), "utf8");
-function setup(level, standard, online = true) {
+function setup(level, standard, online = true, view = true) {
   const attrs = {},
     requests = [],
     timers = [];
@@ -28,7 +28,7 @@ function setup(level, standard, online = true) {
       },
     },
   };
-  vm.runInNewContext(source, {
+  const context = {
     window: {
       AeroTizen: A,
       webapis: {
@@ -42,7 +42,13 @@ function setup(level, standard, online = true) {
     },
     navigator: { onLine: online },
     setInterval: (fn) => timers.push(fn),
-  });
+  };
+  vm.runInNewContext(source, context);
+  if (view)
+    vm.runInNewContext(
+      fs.readFileSync(require("node:path").join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"),
+      context,
+    );
   A.network.start();
   return {
     A,
@@ -99,4 +105,29 @@ test("late Wi-Fi callbacks cannot overwrite a newer Ethernet report; start is id
   assert.equal(h.attrs["data-net-kind"], "ethernet");
   h.A.network.start();
   assert.equal(h.timers.length, 1);
+});
+
+test("network snapshots publish without DOM access and retain identity for unchanged data", () => {
+  const h = setup(3, undefined, true, false);
+  h.A.$ = () => {
+    throw new Error("Network detection must not query DOM hosts");
+  };
+  const initial = h.A.network.getSnapshot();
+  assert.equal(h.A.network.getSnapshot(), initial);
+  let updates = 0;
+  const unsubscribe = h.A.network.subscribe(() => updates++);
+  h.wifi();
+  const wifi = h.A.network.getSnapshot();
+  assert.equal(wifi.kind, "wifi");
+  assert.equal(wifi.strength, 0.5);
+  assert.equal(Object.isFrozen(wifi), true);
+  assert.equal(initial.kind, "unknown");
+  h.A.settings.showNetwork = false;
+  h.A.network.updateVisibility();
+  assert.equal(h.A.network.getSnapshot().visible, false);
+  assert.equal(updates, 2);
+  unsubscribe();
+  h.A.network.updateVisibility();
+  assert.equal(updates, 2);
+  assert.deepEqual(h.attrs, {});
 });

@@ -1,10 +1,10 @@
-import type { Clock } from "../../contracts/launcher";
+import type { ClockFormatter } from "../../contracts/launcher";
 import { Choice } from "../components/Choice";
 import { Pill } from "../components/Pill";
 import type { SettingsSectionProps } from "../types";
 
 interface Props extends SettingsSectionProps {
-  clock: Omit<Clock, "tick">;
+  clock: ClockFormatter;
   openedAt: number;
   section?: "appearance" | "status" | "sources";
 }

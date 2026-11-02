@@ -18,7 +18,7 @@ const london = {
 const boston = { name: "Boston", latitude: 42.3584, longitude: -71.0598, country_code: "US" };
 const conditions = (temp = 12) => ({ current: { temperature_2m: temp, weather_code: 3 } });
 
-function harness({ saved, settings = {}, blockedStorage = false, now = NOW } = {}) {
+function harness({ saved, settings = {}, blockedStorage = false, now = NOW, view = true } = {}) {
   const requests = [],
     intervals = new Map(),
     storage = new Map();
@@ -100,6 +100,11 @@ function harness({ saved, settings = {}, blockedStorage = false, now = NOW } = {
     },
   });
   vm.runInContext(source, context);
+  if (view)
+    vm.runInContext(
+      fs.readFileSync(path.join(root, "tests/fixtures/legacy-launcher/js/status-view.js"), "utf8"),
+      context,
+    );
   const weather = context.window.Weather;
   return {
     weather,
@@ -1106,4 +1111,36 @@ test("solar-day validation uses epochs across UTC midnight and does not depend o
   }
   const now = Date.parse("2026-10-29T02:00Z");
   assert.equal(h.weather.solarPhase({ at: now, solar: [{ sunrise, sunset }] }, now), "");
+});
+
+test("weather snapshots convert matching cache data and expire without reading or writing markup", () => {
+  const h = harness({ saved: cached(), view: false });
+  h.context.document.getElementById = () => {
+    throw new Error("Weather data must not query view hosts");
+  };
+  let updates = 0;
+  const unsubscribe = h.weather.subscribe(() => updates++);
+  h.start();
+  const initial = h.weather.getSnapshot();
+  assert.equal(initial.temperature, 12);
+  assert.equal(initial.city, "London");
+  assert.equal(initial.visible, true);
+  assert.equal(Object.isFrozen(initial), true);
+  assert.equal(h.weather.getSnapshot(), initial);
+  h.preferences.tempUnit = "F";
+  h.weather.updateDisplay();
+  assert.equal(h.weather.getSnapshot().temperature, 53.6);
+  assert.equal(initial.temperature, 12);
+  assert.equal(h.requests.length, 0);
+  h.advance(2 * 3600000 + 1);
+  const expired = h.weather.getSnapshot();
+  assert.equal(expired.visible, false);
+  assert.equal(expired.temperature, null);
+  assert.equal(h.weather.getSnapshot(), expired);
+  unsubscribe();
+  const before = updates;
+  h.weather.updateDisplay();
+  assert.equal(updates, before);
+  assert.equal(h.requests.length, 0);
+  assert.deepEqual(h.el.nodes, {});
 });

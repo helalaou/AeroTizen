@@ -1,7 +1,6 @@
 import { createRef, render } from "preact";
 import { flushSync } from "preact/compat";
 
-import { CustomClock } from "../clock/CustomClock";
 import type { SettingsStore } from "../contracts/preferences";
 import type { LauncherPlatform, LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import { createNavigation } from "../shared/navigation/createNavigation";
@@ -21,7 +20,6 @@ export const mountSettings = (
   platform: LauncherPlatform,
   settings: SettingsStore,
   mount: HTMLElement,
-  clockMount: HTMLElement | null,
 ) => {
   const view = createStore<ViewState>({
     open: false,
@@ -72,9 +70,6 @@ export const mountSettings = (
     glassScroll,
   };
   const dispose = () => {
-    if (clockMount) {
-      render(null, clockMount);
-    }
     render(null, mount);
     inventory.dispose();
   };
@@ -85,9 +80,6 @@ export const mountSettings = (
       </SettingsProvider>,
       mount,
     );
-    if (clockMount) {
-      render(<CustomClock settings={settings} clock={runtime.clock} />, clockMount);
-    }
     return { bridge, dispose };
   } catch (error) {
     dispose();

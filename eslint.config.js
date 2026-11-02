@@ -125,7 +125,7 @@ module.exports = [
         {
           patterns: [
             {
-              group: ["**/app/**", "**/home/**", "**/settings/**"],
+              group: ["**/app/**", "**/home/**", "**/settings/**", "**/status/**"],
               message: "Shared contracts, services and platform adapters must not import screens or app composition.",
             },
           ],

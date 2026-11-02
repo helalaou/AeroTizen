@@ -1,3 +1,5 @@
+import { flushSync } from "preact/compat";
+
 import { createLauncherApp } from "./app/createLauncherApp";
 import { mountHome } from "./home/index";
 import { mountSettings } from "./settings/index";
@@ -9,15 +11,13 @@ if (!home || !settings) {
 }
 const runtime = window.AeroTizen;
 const platform = { backgrounds: window.Backgrounds, weather: window.Weather };
-const app = createLauncherApp(runtime, platform, { home, settings }, { home: mountHome, settings: mountSettings });
-// The legacy services keep their lifecycle during a development view remount.
-// Repaint their cached status into the new hosts without restarting their timers.
-if (runtime.apps.ready) {
-  runtime.clock.tick();
-  platform.weather.updateDisplay();
-  runtime.network.updateVisibility();
-  runtime.network.refresh();
-}
+const app = createLauncherApp(
+  runtime,
+  platform,
+  { home, settings },
+  { home: mountHome, settings: mountSettings },
+  flushSync,
+);
 if (import.meta.hot) {
   import.meta.hot.accept();
   import.meta.hot.dispose(app.dispose);

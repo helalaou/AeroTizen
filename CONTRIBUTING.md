@@ -84,7 +84,8 @@ screens or app composition; ESLint enforces this dependency rule.
 | `launcher/src/index.ts`           | Shared Home and Settings bundle entry                                                           |
 | `launcher/src/app/`               | Application assembly, shared preference ownership and UI teardown                               |
 | `launcher/src/contracts/`         | Screen-independent preferences, app/input/feed types and bridge protocols                       |
-| `launcher/src/services/`          | Shared preference snapshots and persistence adapter                                             |
+| `launcher/src/status/`            | Shared status views and hooks; one Clock with compact and expanded layouts                      |
+| `launcher/src/services/`          | Shared preference/status snapshots and persistence adapter                                      |
 | `launcher/src/platform/tizen/`    | Typed boundary for the existing TV and browser services                                         |
 | `launcher/src/dev.ts`             | Development entry that loads the same views before boot                                         |
 | `launcher/src/settings/`          | TypeScript/TSX Settings components, state, actions and service adapters                         |
@@ -107,6 +108,11 @@ and the clock. Feature mount functions return bridges and disposers. Composition
 owns visibility handling and tears down the views before releasing the shared
 source subscription. Input discovery publishes data through `inputs.refresh()`;
 production services do not render input tiles or replace a renderer at startup.
+Clock, weather and network services publish immutable snapshots. The application
+binds each status source once; views add no polling timers or forecast requests.
+`Clock` owns time/date presentation and uses layout variants. `WeatherStatus` and
+`NetworkStatus` own their markup. Existing CSS IDs stay in place until the naming
+and style cleanup stage.
 
 ## Working on the launcher
 

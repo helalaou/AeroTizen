@@ -55,7 +55,14 @@ def build_launcher(root, output, tag=None):
         raise ValueError("Compiled launcher is missing; run npm ci and npm run build first")
     if (launcher / "config.xml").read_bytes() != (source / "config.xml").read_bytes():
         raise ValueError("Compiled launcher config.xml is stale; run npm run build again")
-    for name in ("clock-layouts.js", "continue-row.js", "home-screen.js", "settings-ui.js", "inputs-view.js"):
+    for name in (
+        "clock-layouts.js",
+        "continue-row.js",
+        "home-screen.js",
+        "settings-ui.js",
+        "inputs-view.js",
+        "status-view.js",
+    ):
         if (launcher / "js" / name).exists():
             raise ValueError(f"Compiled launcher contains legacy renderer {name}; run npm run build again")
     files = [launcher / name for name in ("config.xml", "index.html", "icon.png", "licenses/preact.txt")]

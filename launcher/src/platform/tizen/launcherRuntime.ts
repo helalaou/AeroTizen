@@ -1,7 +1,7 @@
 import type {
   AppPresentation,
   Background,
-  Clock,
+  ClockService,
   ContinueItem,
   ContinueSource,
   HomeBridge,
@@ -11,6 +11,8 @@ import type {
   SettingsBridge,
 } from "../../contracts/launcher";
 import type { SettingsSource, WeatherLocation } from "../../contracts/preferences";
+import type { NetworkSnapshot, WeatherSnapshot } from "../../contracts/status";
+import type { Store } from "../../shared/state/createStore";
 
 // The unmigrated TV services are accessed through this boundary, not a screen's types.
 export interface LauncherRuntime {
@@ -25,7 +27,7 @@ export interface LauncherRuntime {
     subscribe(listener: () => void): () => void;
   };
   clearFocus(): void;
-  clock: Clock;
+  clock: ClockService;
   config: LauncherConfig;
   continueWatching: {
     items: ContinueItem[];
@@ -49,7 +51,7 @@ export interface LauncherRuntime {
     show(source: InputSource): void;
     subscribe(listener: () => void): () => void;
   };
-  network: { updateVisibility(): void; refresh(): void };
+  network: Store<NetworkSnapshot> & { updateVisibility(): void; refresh(): void };
   settings: SettingsSource;
   settingsUi?: SettingsBridge;
   tiles: { ICONS: Record<string, string>; describe(app: InstalledApp): AppPresentation };
@@ -62,7 +64,7 @@ export interface LauncherPlatform {
     preview(background: Background): string;
     setSpeed(speed: number): void;
   };
-  weather: {
+  weather: Store<WeatherSnapshot> & {
     updateVisibility(): void;
     updateDisplay(): void;
     refresh(): void;

@@ -193,7 +193,15 @@ def test_launcher_rejects_legacy_settings_markup(launcher, tmp_path):
 
 
 @pytest.mark.parametrize(
-    "name", ["clock-layouts.js", "continue-row.js", "home-screen.js", "settings-ui.js", "inputs-view.js"]
+    "name",
+    [
+        "clock-layouts.js",
+        "continue-row.js",
+        "home-screen.js",
+        "settings-ui.js",
+        "inputs-view.js",
+        "status-view.js",
+    ],
 )
 def test_launcher_rejects_legacy_renderer_assets(launcher, tmp_path, name):
     (launcher / "dist/launcher/js" / name).write_text("obsolete renderer")

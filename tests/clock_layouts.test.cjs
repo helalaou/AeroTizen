@@ -90,6 +90,7 @@ function runtime(saved = {}, cache) {
     const directory = name === "clock-layouts.js" ? "fixtures/legacy-launcher/js" : "../launcher/js";
     vm.runInContext(fs.readFileSync(path.join(__dirname, directory, name), "utf8"), context);
   }
+  vm.runInContext(fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"), context);
   A.settings.load();
   return { A, elements, values, document };
 }

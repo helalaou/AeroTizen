@@ -181,6 +181,10 @@
     update();
   }
 
+  if (window.Weather && window.Weather.subscribe) {
+    window.Weather.subscribe(update);
+  }
+
   A.photoWeather = {
     update: update,
     hide: hide,
