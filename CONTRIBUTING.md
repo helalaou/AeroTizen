@@ -60,6 +60,17 @@ and diagnostic privacy schema have a dedicated formatting override: their data o
 must remain valid JSON because Python reads them directly. Legacy JavaScript keeps
 ES5 syntax; compiled output retains the Chromium 69 and ES2018 checks.
 
+Prettier uses double quotes, semicolons, a 120-column print width, two-space indentation,
+LF line endings, parenthesised arrow parameters and trailing commas wherever supported.
+Legacy ES5 scripts limit trailing commas to objects and arrays. The two Python-readable
+data files use quoted property names and no trailing commas.
+
+TypeScript uses the recommended type-aware ESLint checks, unused-import detection,
+import/export sorting and natural interface-member sorting. Import groups preserve
+side-effect import order. Runtime objects and class members retain their order. The
+typed rules use the launcher project; Vite uses its Node-specific TypeScript configuration.
+The existing zero-warning CI gate also applies to rules configured as warnings.
+
 ## Project layout
 
 | Path                              | What                                                                                            |
