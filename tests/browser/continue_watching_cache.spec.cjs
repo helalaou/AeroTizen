@@ -69,7 +69,7 @@ test('a cached response for one app cannot replace another app’s feed', async 
   try {
     await page.goto(feed.url);
     await expect(page.locator('#items p')).toHaveText(['Prime programme']);
-    await page.evaluate(() => select(['prime', 'youtube']));
+    await page.evaluate(() => window.select(['prime', 'youtube']));
     await expect(page.locator('#items p')).toHaveText(['Prime programme', 'YouTube programme']);
     expect(feed.requests.some(request => request.id === '456')).toBe(true);
     expect(new Set(feed.requests.map(request => request.url)).size).toBe(feed.requests.length);
@@ -81,7 +81,7 @@ test('an empty response cached during startup cannot hide later records', async 
   const feed = await fixture(page, () => []);
   try {
     await page.goto(feed.url);
-    await page.waitForFunction(() => completed === 1);
+    await page.waitForFunction(() => window.completed === 1);
     feed.setRecords(id => [record(id)]);
     await page.clock.fastForward(2000);
     await expect(page.locator('#items p')).toHaveText(['Prime programme']);

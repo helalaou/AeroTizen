@@ -11,7 +11,7 @@ git clone https://github.com/helalaou/AeroTizen
 cd AeroTizen
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"     # the aerotizen CLI + pytest + ruff
-npm ci                      # launcher build and lint tools
+npm ci                      # launcher build, lint and formatting tools
 ```
 
 Use the .NET 6 SDK to build the native Home query, Home control, and root runtime helpers.
@@ -35,6 +35,7 @@ Checks (CI runs the same):
 ```bash
 ruff check . && ruff format --check .
 pytest
+npm run format:check # checks frontend source, tests and tooling without writing
 npm run lint
 npm run typecheck  # strict TypeScript checks for Settings and Vite config
 npm run build      # type checks, then compiled Settings in dist/launcher
@@ -46,6 +47,18 @@ npm run test:browser # compiled Settings and legacy comparison, with managed loc
 Use Node.js 22.12 or newer, or Node 20.19+ within the 20.x series, as required by Vite.
 CI uses the latest Node 20.x. The watcher tests use mock clocks and network replies to cover the Art Mode protocol, status checks,
 relaunch cancellation and app visibility, without contacting a TV.
+
+Run `npm run format` to apply the shared Prettier rules before committing frontend
+changes. Formatting covers launcher JavaScript, TypeScript, TSX, CSS, HTML and JSON;
+JavaScript tests; root frontend configuration; the launcher build script; this guide;
+and the CI workflow. ESLint covers launcher code, tests and frontend tooling. The
+TypeScript checks also reject unused locals and parameters. CI rejects formatting
+differences, lint warnings and errors, and type errors.
+
+Generated logos and build/test output are excluded from formatting. The catalogue
+has a dedicated formatting override: its object must remain valid JSON because
+`tools/fetch_logos.py` reads it directly. Legacy JavaScript keeps ES5 syntax; compiled
+output retains the Chromium 69 and ES2018 checks.
 
 ## Project layout
 

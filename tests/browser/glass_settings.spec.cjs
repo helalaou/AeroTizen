@@ -34,8 +34,8 @@ test('Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   for(const filter of ['photo','solid','gradient','animated']) await page.locator(`[data-key="wallpaper-categories:${filter}"]`).click();
   expect(await page.evaluate(()=>JSON.stringify(AeroTizen.settings))).toBe(before);
   await page.locator('[data-key="section:apps"]').click();
-  await page.evaluate(()=>{window.escapeCount=0;AeroTizen.homewatch.openSamsungHome=()=>escapeCount++;});
-  await page.locator('#escape').click(); expect(await page.evaluate(()=>escapeCount)).toBe(1);
+  await page.evaluate(()=>{window.escapeCount=0;AeroTizen.homewatch.openSamsungHome=()=>window.escapeCount++;});
+  await page.locator('#escape').click(); expect(await page.evaluate(()=>window.escapeCount)).toBe(1);
   await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
   await expect(page.locator('#editor')).toBeHidden();
   await page.reload(); expect(await page.evaluate(()=>AeroTizen.settings.glassSettings)).toBe(true);

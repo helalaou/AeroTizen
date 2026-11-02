@@ -28,7 +28,7 @@ for (const correctClock of [false, true]) {
         return open.call(this, method, url, ...args);
       };
       XMLHttpRequest.prototype.send = function (...args) {
-        if (this.startupFeed) this.addEventListener('loadend', () => { completedFeeds++; });
+        if (this.startupFeed) this.addEventListener('loadend', () => { window.completedFeeds++; });
         return send.apply(this, args);
       };
       window.tizen = { application: {
@@ -38,7 +38,7 @@ for (const correctClock of [false, true]) {
           if (correctClock) window.releaseInventory = () => done(inventory); else done(inventory);
         },
         getAppMetaData: () => [{ key: 'http://samsung.com/tv/metadata/app_support_continue_watching', value: 'true' }],
-        launchAppControl: (...args) => providerLaunches.push(args)
+        launchAppControl: (...args) => window.providerLaunches.push(args)
       } };
     }, { prime, youtube, correctClock });
     await page.goto('/');
@@ -46,25 +46,25 @@ for (const correctClock of [false, true]) {
       await page.waitForFunction(() => typeof releaseInventory === 'function');
       await page.clock.fastForward(15445);
       await page.clock.setSystemTime(new Date('2026-10-26T20:00:00Z'));
-      await page.evaluate(() => releaseInventory());
+      await page.evaluate(() => window.releaseInventory());
     }
-    await page.waitForFunction(() => completedFeeds === 2);
+    await page.waitForFunction(() => window.completedFeeds === 2);
     await expect(page.locator('.continue-card')).toHaveCount(1);
     await page.evaluate(() => {
       window.firstCard = document.querySelector('.continue-card');
-      window.firstIcon = firstCard.querySelector('.continue-app-icon');
+      window.firstIcon = window.firstCard.querySelector('.continue-app-icon');
     });
     for (const [index, delay] of [2000, 5000, 15000, 30000, 60000, 60000, 60000, 60000].entries()) {
       await page.clock.fastForward(delay);
-      await page.waitForFunction(expected => completedFeeds === expected, index + 3, { timeout: 5000 });
+      await page.waitForFunction(expected => window.completedFeeds === expected, index + 3, { timeout: 5000 });
     }
     await expect(page.locator('.continue-card')).toHaveCount(2);
     await expect(page.locator('.continue-card').last()).toContainText('Late Prime programme');
-    expect(await page.evaluate(() => firstCard === document.querySelector('.continue-card') &&
-      firstIcon === firstCard.querySelector('.continue-app-icon'))).toBe(true);
+    expect(await page.evaluate(() => window.firstCard === document.querySelector('.continue-card') &&
+      window.firstIcon === window.firstCard.querySelector('.continue-app-icon'))).toBe(true);
     await page.clock.fastForward(120000);
     expect(reads).toEqual({ prime: 9, youtube: 1 });
-    expect(await page.evaluate(() => providerLaunches)).toEqual([]);
+    expect(await page.evaluate(() => window.providerLaunches)).toEqual([]);
     expect(errors).toEqual([]);
   });
 }
@@ -103,7 +103,7 @@ test('settled cards reorder on the existing clock tick without rereading feeds',
   await page.evaluate(() => { window.correctedCards = [...document.querySelectorAll('.continue-card')]; });
   await page.clock.fastForward(30000);
   expect(reads).toHaveLength(2);
-  expect(await page.evaluate(() => correctedCards.every((card, index) => card === document.querySelectorAll('.continue-card')[index]))).toBe(true);
+  expect(await page.evaluate(() => window.correctedCards.every((card, index) => card === document.querySelectorAll('.continue-card')[index]))).toBe(true);
   await page.screenshot({ path: info.outputPath('clock-corrected-order.png') });
   expect(errors).toEqual([]);
 });

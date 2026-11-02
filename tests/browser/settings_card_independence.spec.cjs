@@ -27,6 +27,6 @@ test('Home card shape and columns never change standard Settings icons or artwor
     await page.locator('[data-key="home-card-columns:4"]').click();
     await category('apps');
     expect(await page.locator('#all-apps > .tile').evaluateAll(nodes=>nodes.map(n=>[n.offsetWidth,n.offsetHeight]))).toEqual(before);
-    expect(await page.evaluate(()=>settingsIconNodes.every((node,i)=>node===document.querySelectorAll('#all-apps > .tile')[i]))).toBe(true);
+    expect(await page.evaluate(()=>window.settingsIconNodes.every((node,i)=>node===document.querySelectorAll('#all-apps > .tile')[i]))).toBe(true);
   }
 });

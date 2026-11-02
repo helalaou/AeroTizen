@@ -43,13 +43,13 @@ const runSettingsResources = async page => {
     [...timers.values()].forEach(expire => expire());
   });
   await page.waitForFunction(() => [...document.querySelectorAll('#all-apps .app-artwork')]
-    .every(image => image.src.endsWith('/second')) && artworkTimers.size === AeroTizen.apps.all.length);
+    .every(image => image.src.endsWith('/second')) && window.artworkTimers.size === AeroTizen.apps.all.length);
   await page.evaluate(() => {
-    [...artworkTimers.values()].forEach(expire => expire());
+    [...window.artworkTimers.values()].forEach(expire => expire());
   });
   await page.waitForFunction(() => !document.querySelector('#all-apps .app-artwork'));
   const result = await page.evaluate(() => {
-    if (artworkTimers.size) throw new Error('Exhausted artwork retained deadlines');
+    if (window.artworkTimers.size) throw new Error('Exhausted artwork retained deadlines');
     if ([...document.querySelectorAll('#all-apps .app-fallback')].some(element => element.hidden)) {
       throw new Error('Failed artwork hid the brand fallback');
     }

@@ -25,7 +25,7 @@ test('diagnostics persist across reload without changing launcher navigation or 
   await page.goto('/');
   await expect(page).toHaveTitle(/AeroTizen/);
   await expect(page.locator('#grid > .tile').first()).toBeVisible();
-  const first = await page.evaluate(() => AeroDiagnostics.snapshot().records.find(item => item.event === 'ui.start').id);
+  const first = await page.evaluate(() => window.AeroDiagnostics.snapshot().records.find(item => item.event === 'ui.start').id);
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('#grid > .tile.focused')).toHaveCount(1);
   await page.evaluate(() => AeroTizen.settingsUi.open());
@@ -35,8 +35,8 @@ test('diagnostics persist across reload without changing launcher navigation or 
   await expect.poll(async () => (await persistedEvents(page)).some(item => item.id === first)).toBe(true);
   await page.reload();
   await expect(page.locator('#grid > .tile').first()).toBeVisible();
-  await expect.poll(() => page.evaluate(id => AeroDiagnostics.snapshot().records.some(item => item.id === id), first)).toBe(true);
-  expect(await page.evaluate(() => AeroDiagnostics.snapshot().records.filter(item => item.event === 'ui.start').length)).toBe(2);
+  await expect.poll(() => page.evaluate(id => window.AeroDiagnostics.snapshot().records.some(item => item.id === id), first)).toBe(true);
+  expect(await page.evaluate(() => window.AeroDiagnostics.snapshot().records.filter(item => item.event === 'ui.start').length)).toBe(2);
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   expect(serviceRequests).toEqual([]); expect(errors).toEqual([]);
 });
@@ -136,7 +136,7 @@ for (const unavailable of [false, true]) {
     });
     await page.keyboard.press('Enter');
     await expect.poll(() => page.evaluate(() => window.launches)).toEqual(['test.app']);
-    expect(await page.evaluate(() => AeroDiagnostics.snapshot().records.some(item => item.event === 'app.launch_requested'))).toBe(true);
+    expect(await page.evaluate(() => window.AeroDiagnostics.snapshot().records.some(item => item.event === 'app.launch_requested'))).toBe(true);
     expect(await page.evaluate(() => window.inputStorageCalls)).toBe(0);
     if (!unavailable) await expect.poll(() => page.evaluate(() => window.logWrites)).toBeGreaterThan(0);
     await expect(page.locator('vite-error-overlay')).toHaveCount(0); expect(errors).toEqual([]);
@@ -165,17 +165,17 @@ test('personal text is excluded before IndexedDB persistence and loopback delive
   await page.goto('/');
   await expect(page.locator('#grid > .tile').first()).toBeVisible();
   await page.evaluate(poison => {
-    AeroBuildInfo.owner = poison;
-    AeroDiagnostics.record('app.launch_requested', { app_id: poison, message: poison, payload: poison });
+    window.AeroBuildInfo.owner = poison;
+    window.AeroDiagnostics.record('app.launch_requested', { app_id: poison, message: poison, payload: poison });
     window.dispatchEvent(new ErrorEvent('error', { error: new Error(poison), filename: 'file:///opt/' + poison + '.js', lineno: 9 }));
-    AeroDiagnostics.flush();
+    window.AeroDiagnostics.flush();
   }, poison);
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('#grid > .tile.focused')).toHaveCount(1);
   await expect.poll(async () => (await persistedEvents(page)).some(item => item.event === 'app.launch_requested')).toBe(true);
   await expect.poll(() => delivered.some(packet => packet.records.some(item => item.event === 'app.launch_requested'))).toBe(true);
   const raw = JSON.stringify({ saved: await persistedEvents(page), uploads: delivered,
-    memory: await page.evaluate(() => AeroDiagnostics.snapshot()) });
+    memory: await page.evaluate(() => window.AeroDiagnostics.snapshot()) });
   for (const value of poison.split(' ').concat(['private-person'])) expect(raw).not.toContain(value);
   await expect.poll(() => page.evaluate(() => localStorage.getItem('aerotizen.diagnostics.v1'))).toBe(null);
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);

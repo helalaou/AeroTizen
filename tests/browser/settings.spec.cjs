@@ -214,19 +214,19 @@ test('late TV inventory and hot-plug updates reach Settings without a preference
   await openSettings(page, false);
   await expect(page.locator('#input-names input')).toHaveCount(0);
   const saved = await page.evaluate(() => localStorage.getItem(AeroTizen.config.STORAGE_KEY));
-  await page.evaluate(() => testTv.apps.shift()([{ id: 'review-one', name: 'First app', packageId: '1234567890' }]));
+  await page.evaluate(() => window.testTv.apps.shift()([{ id: 'review-one', name: 'First app', packageId: '1234567890' }]));
   await expect(page.locator('[data-key="app:review-one"]')).toHaveAttribute('aria-label', 'First app');
-  await page.evaluate(() => testTv.inputs.shift()({ connected: [{ type: 'HDMI', number: 1, editName: 'Console' }], disconnected: [] }));
+  await page.evaluate(() => window.testTv.inputs.shift()({ connected: [{ type: 'HDMI', number: 1, editName: 'Console' }], disconnected: [] }));
   await openCategory(page,'sources');
   const input = page.getByRole('textbox', { name: 'HDMI 1 name', exact: true });
   await input.fill('Unsaved draft');
   await page.evaluate(() => {
     window.originalInput = document.querySelector('[data-key="name:HDMI 1"] input');
-    testTv.listeners.VIDEOSOURCE();
-    testTv.inputs.shift()({ connected: [{ type: 'HDMI', number: 1, editName: 'New device' },
+    window.testTv.listeners.VIDEOSOURCE();
+    window.testTv.inputs.shift()({ connected: [{ type: 'HDMI', number: 1, editName: 'New device' },
       { type: 'HDMI', number: 2, editName: 'PC' }], disconnected: [] });
     AeroTizen.apps.load(() => {});
-    testTv.apps.shift()([{ id: 'review-one', name: 'Renamed app', packageId: '1234567890' },
+    window.testTv.apps.shift()([{ id: 'review-one', name: 'Renamed app', packageId: '1234567890' },
       { id: 'review-two', name: 'Second app', packageId: 'abcdefghij' }]);
   });
   await expect(page.locator('#input-names input')).toHaveCount(2);
@@ -253,14 +253,14 @@ test('weather wallpapers are opt-in, use hidden-header weather, persist and rest
   await page.evaluate(() => {
     Object.assign(AeroTizen.settings, { background: 'snow', speed: 1.3, showWeather: false,
       weatherLocation: { name: 'Fixture city', latitude: 1, longitude: 2 } });
-    AeroTizen.settings.save(); AeroTizen.applyBackground(); Weather.updateVisibility();
+    AeroTizen.settings.save(); AeroTizen.applyBackground(); window.Weather.updateVisibility();
   });
   await control.getByRole('button', { name: 'Automatic (weather)', exact: true }).click();
   await expect(page.locator('#weather-photo')).toBeVisible();
   await expect(page.locator('#weather')).toBeHidden();
   await expect(page.locator('#bg')).toBeHidden();
   expect(images).toHaveLength(1); expect(images[0]).toContain('/sun.jpg');
-  await page.evaluate(() => Backgrounds.setSpeed(1.3));
+  await page.evaluate(() => window.Backgrounds.setSpeed(1.3));
   await expect(page.locator('#bg')).toBeHidden();
   expect(await page.locator('#bg canvas').count()).toBe(0);
   await page.reload();
@@ -284,7 +284,7 @@ test('turning weather wallpaper off while its image is pending cannot hide the f
     release = async () => { await route.continue(); resolve(); };
   }));
   await openSettings(page);
-  await page.evaluate(() => { Weather.currentReading = () => ({ code: 0, day: 1, at: Date.now(), solar: [{sunrise: Date.parse('2026-10-28T06:00Z'), sunset: Date.parse('2026-10-28T18:00Z')}] }); });
+  await page.evaluate(() => { window.Weather.currentReading = () => ({ code: 0, day: 1, at: Date.now(), solar: [{sunrise: Date.parse('2026-10-28T06:00Z'), sunset: Date.parse('2026-10-28T18:00Z')}] }); });
   const control = page.getByRole('group', { name: 'Dynamic weather wallpapers', exact: true });
   await control.getByRole('button', { name: 'Automatic (weather)', exact: true }).click();
   await expect.poll(() => typeof release).toBe('function');

@@ -14,7 +14,7 @@ for(const glassSettings of [false,true]) {
     await expect(page.locator('#grid > .tile').first()).toHaveClass(/focused/);
     await page.keyboard.press('Escape');
     await expect(page.locator('.home-page-surface')).toHaveCSS('animation-name','aero-page-home');
-    expect(await page.evaluate(()=>savedHomeCard===document.querySelector('#grid > .tile'))).toBe(true);
+    expect(await page.evaluate(()=>window.savedHomeCard===document.querySelector('#grid > .tile'))).toBe(true);
     for(let i=0;i<3;i++){
       await page.locator('#apps-tab').click();await page.keyboard.press('Escape');
     }
@@ -22,8 +22,8 @@ for(const glassSettings of [false,true]) {
     await expect(page.locator('#grid > .tile')).toHaveCount(4);
     await page.keyboard.press('ArrowLeft');
     await expect(page.locator('#samsung-home-shortcut')).toHaveClass(/focused/);
-    await page.evaluate(()=>{window.samsungEscapes=0;AeroTizen.homewatch.openSamsungHome=()=>{samsungEscapes++;};});
-    await page.keyboard.press('Enter');expect(await page.evaluate(()=>samsungEscapes)).toBe(1);
+    await page.evaluate(()=>{window.samsungEscapes=0;AeroTizen.homewatch.openSamsungHome=()=>{window.samsungEscapes++;};});
+    await page.keyboard.press('Enter');expect(await page.evaluate(()=>window.samsungEscapes)).toBe(1);
     await page.emulateMedia({reducedMotion:'reduce'});
     await page.locator('#apps-tab').click();
     await expect(page.locator('.home-page-surface')).toHaveCSS('animation-name','none');

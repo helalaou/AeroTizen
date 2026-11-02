@@ -233,7 +233,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     if (field !== find('name:HDMI 1').querySelector('input')) throw new Error('Reopen rebuilt the cached form');
     // A pending reply delivered after close + reopen must remain cancelled.
     const replies = [];
-    Weather.searchLocations = (query, done) => replies.push(done);
+    window.Weather.searchLocations = (query, done) => replies.push(done);
     const query = find('weather:query').querySelector('input');
     query.value = 'Pending'; query.dispatchEvent(new Event('input', { bubbles: true }));
     find('weather:search').click(); A.settingsUi.close(); A.settingsUi.open();

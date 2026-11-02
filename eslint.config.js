@@ -6,6 +6,7 @@ const react = require('eslint-plugin-react');
 const reactHooks = require('eslint-plugin-react-hooks');
 const tsParser = require('@typescript-eslint/parser');
 const tsPlugin = require('@typescript-eslint/eslint-plugin');
+const prettier = require('eslint-config-prettier');
 
 module.exports = [
   { ignores: ['launcher/js/logos.js'] },
@@ -14,8 +15,8 @@ module.exports = [
     rules: {
       // ES5 has no optional catch binding, so `catch (e) {}` is the idiom.
       'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
-      'no-empty': ['error', { allowEmptyCatch: true }]
-    }
+      'no-empty': ['error', { allowEmptyCatch: true }],
+    },
   },
   {
     files: ['launcher/js/**/*.js'],
@@ -23,15 +24,18 @@ module.exports = [
       ecmaVersion: 5,
       sourceType: 'script',
       globals: {
-        ...globals.browser, AeroTizen: 'writable', tizen: 'readonly', webapis: 'readonly',
-        Uint8Array: 'readonly', Uint8ClampedArray: 'readonly'
-      }
+        ...globals.browser,
+        AeroTizen: 'writable',
+        tizen: 'readonly',
+        webapis: 'readonly',
+        Uint8Array: 'readonly',
+        Uint8ClampedArray: 'readonly',
+      },
     },
     rules: {
       eqeqeq: 'error',
-      curly: 'error',
-      'no-var': 'off'
-    }
+      'no-var': 'off',
+    },
   },
   {
     files: ['launcher/src/**/*.{ts,tsx}', 'vite.config.mts'],
@@ -40,7 +44,7 @@ module.exports = [
       ecmaVersion: 2020,
       sourceType: 'module',
       parserOptions: { ecmaFeatures: { jsx: true } },
-      globals: { ...globals.browser }
+      globals: { ...globals.browser },
     },
     plugins: { react, 'react-hooks': reactHooks, '@typescript-eslint': tsPlugin },
     // Use React 16 component detection for Preact; React is not a dependency.
@@ -55,27 +59,53 @@ module.exports = [
       'react-hooks/exhaustive-deps': 'error',
       'react/no-multi-comp': 'error',
       'react/function-component-definition': ['error', { namedComponents: 'arrow-function' }],
-      'no-restricted-syntax': ['error', {
-        selector: 'ExportNamedDeclaration > FunctionDeclaration',
-        message: 'Export functions as const arrow functions.'
-      }, {
-        selector: 'ExportNamedDeclaration > VariableDeclaration[kind!="const"]',
-        message: 'Use const for named exports.'
-      }],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ExportNamedDeclaration > FunctionDeclaration',
+          message: 'Export functions as const arrow functions.',
+        },
+        {
+          selector: 'ExportNamedDeclaration > VariableDeclaration[kind!="const"]',
+          message: 'Use const for named exports.',
+        },
+      ],
       eqeqeq: 'error',
-      curly: 'error'
-    }
+    },
   },
   {
     files: ['tools/build-launcher.mjs'],
-    languageOptions: { sourceType: 'module', globals: { ...globals.node } }
+    languageOptions: { sourceType: 'module', globals: { ...globals.node } },
+  },
+  {
+    files: ['tests/**/*.cjs', 'eslint.config.js', 'playwright.config.cjs'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
+      globals: { ...globals.node },
+    },
+  },
+  {
+    // Playwright callbacks run in the page; the surrounding test runs in Node.
+    files: ['tests/browser/**/*.cjs', 'tests/*.browser.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
+      globals: { ...globals.node, ...globals.browser, AeroTizen: 'readonly' },
+    },
   },
   {
     files: ['launcher/service/**/*.js'],
     languageOptions: {
       ecmaVersion: 2018,
       sourceType: 'commonjs',
-      globals: { ...globals.node, tizen: 'readonly' }
-    }
-  }
+      globals: { ...globals.node, tizen: 'readonly' },
+    },
+  },
+  prettier,
+  {
+    files: ['launcher/js/**/*.js', 'launcher/src/**/*.{ts,tsx}', 'vite.config.mts'],
+    // Keep required braces. The "all" option is compatible with Prettier.
+    rules: { curly: ['error', 'all'] },
+  },
 ];

@@ -36,7 +36,7 @@ test('opt-in discovery, selection, merged row, remote navigation, launch and res
         getAppMetaData: id => [{ key: 'http://samsung.com/tv/metadata/' +
           (id === 'prime.hidden.service' ? 'use.continue_watching' : id === 'bbc.app' ? 'use.preview' : 'app_support_continue_watching'),
         value: id === 'prime.hidden.service' ? 'bg_service' : id === prime ? 'false' : 'true' }],
-        launchAppControl: (control, id) => testLaunches.push({ control, id })
+        launchAppControl: (control, id) => window.testLaunches.push({ control, id })
       },
       ApplicationControl: function (operation, uri, mime, category, data) { Object.assign(this, { operation, data }); },
       ApplicationControlData: function (key, value) { Object.assign(this, { key, value }); }
@@ -93,23 +93,23 @@ test('opt-in discovery, selection, merged row, remote navigation, launch and res
   expect(await episodeTitle.evaluate(n => n.clientWidth)).toBe(382);
   await page.evaluate(() => {
     window.savedCards = [...document.querySelectorAll('.continue-card')];
-    window.savedIcons = savedCards.map(n => n.querySelector('.continue-app-icon .app-artwork'));
+    window.savedIcons = window.savedCards.map(n => n.querySelector('.continue-app-icon .app-artwork'));
     AeroTizen.continueWatching.refresh();
   });
   await expect(page.locator('.continue-card')).toHaveCount(7);
   // Exercise both bounded empty-feed retries using the installed browser clock.
   await page.clock.runFor(4500);
   await expect.poll(() => page.evaluate(() => AeroTizen.continueWatching.sources.find(s => s.name === 'Channel 4').status)).toBe('No items available');
-  expect(await page.evaluate(() => savedCards.every((n, i) => n === document.querySelectorAll('.continue-card')[i] && savedIcons[i] === n.querySelector('.continue-app-icon .app-artwork')))).toBe(true);
+  expect(await page.evaluate(() => window.savedCards.every((n, i) => n === document.querySelectorAll('.continue-card')[i] && window.savedIcons[i] === n.querySelector('.continue-app-icon .app-artwork')))).toBe(true);
   const settledReads = reads.length;
   await page.clock.fastForward(35000);
   expect(reads.length).toBe(settledReads);
   primePlayback = 90;
   await page.evaluate(() => AeroTizen.continueWatching.refresh());
   await expect.poll(() => video.locator('.continue-progress-fill').evaluate(n => n.clientWidth)).toBe(124);
-  expect(await page.evaluate(() => savedCards.slice(0, -1).every((n, i) => n === document.querySelectorAll('.continue-card')[i] && savedIcons[i] === n.querySelector('.continue-app-icon .app-artwork')))).toBe(true);
+  expect(await page.evaluate(() => window.savedCards.slice(0, -1).every((n, i) => n === document.querySelectorAll('.continue-card')[i] && window.savedIcons[i] === n.querySelector('.continue-app-icon .app-artwork')))).toBe(true);
   // Preact updates the changed keyed record in place; progress above verifies fresh data.
-  expect(await page.evaluate(() => savedCards[6] === document.querySelectorAll('.continue-card')[6])).toBe(true);
+  expect(await page.evaluate(() => window.savedCards[6] === document.querySelectorAll('.continue-card')[6])).toBe(true);
   await page.keyboard.press('ArrowDown'); // app row -> Continue Watching
   await expect(page.locator('.continue-card').nth(2)).toHaveClass(/focused/);
   await page.keyboard.press('ArrowLeft');
@@ -122,7 +122,7 @@ test('opt-in discovery, selection, merged row, remote navigation, launch and res
   await expect.poll(async () => { const rect = await last.boundingBox(); return rect.x + rect.width; }).toBeLessThanOrEqual(1870);
   await page.screenshot({ path: info.outputPath('continue-watching-home.png') });
   await page.keyboard.press('Enter');
-  expect(await page.evaluate(() => testLaunches.at(-1))).toMatchObject({ id: prime,
+  expect(await page.evaluate(() => window.testLaunches.at(-1))).toMatchObject({ id: prime,
     control: { data: [{ key: 'PAYLOAD', value: [JSON.stringify({ values: 'watch?id=p1' })] }] } });
   await page.locator('#apps-tab').click();
   await expect(page.locator('#continue-section')).toBeHidden();

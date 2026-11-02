@@ -1,0 +1,16 @@
+{
+  "singleQuote": true,
+  "printWidth": 100,
+  "trailingComma": "es5",
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": "launcher/js/app-catalog.js",
+      "options": {
+        "singleQuote": false,
+        "quoteProps": "preserve",
+        "trailingComma": "none"
+      }
+    }
+  ]
+}

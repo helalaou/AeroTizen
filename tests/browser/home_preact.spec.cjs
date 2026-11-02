@@ -31,7 +31,7 @@ test('Home and All apps retain keyed artwork nodes and Back returns to Home', as
   await expect(page.locator('#grid > .tile').first()).toHaveClass(/focused/);
   await page.keyboard.press('Escape');
   await expect(page.locator('#grid > .tile')).toHaveCount(4);
-  expect(await page.evaluate(() => originalHome === document.querySelector('#grid > .tile'))).toBe(true);
+  expect(await page.evaluate(() => window.originalHome === document.querySelector('#grid > .tile'))).toBe(true);
   await expect(page.locator('#home-tab')).toHaveClass(/focused/);
 });
 test('compiled Home preserves legacy geometry and artwork source selection at 1080p', async ({ page, browser }, info) => {
