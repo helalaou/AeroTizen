@@ -114,3 +114,9 @@ def fake_tv():
     yield make
     for tv in made:
         tv.close()
+
+
+@pytest.fixture(autouse=True)
+def isolated_cli_logs(monkeypatch, tmp_path):
+    """Do not write test command logs into the user profile."""
+    monkeypatch.setenv("AEROTIZEN_LOG_DIR", str(tmp_path / "cli-logs"))
