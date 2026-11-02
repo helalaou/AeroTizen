@@ -1,5 +1,5 @@
-import { AddIcon } from '../../../shared/icons/AddIcon';
-import { RemoteControl } from '../../components/RemoteControl';
+import { AddIcon } from "../../../shared/icons/AddIcon";
+import { RemoteControl } from "../../components/RemoteControl";
 
 export const AddAppsTile = ({ onSelect }: { onSelect(): void }) => (
   <RemoteControl class="tile addapps" focusKey="add" role="button" onClick={onSelect}>

@@ -1,6 +1,6 @@
 // Shared lookups over app-catalog.js. Keep identity separate from display names.
 (function (A) {
-  'use strict';
+  "use strict";
 
   var catalog = A.catalog,
     byId = Object.create(null),
@@ -24,16 +24,16 @@
     if (byId[app.id]) {
       return byId[app.id];
     }
-    var name = (app.name || '').toLowerCase();
-    if (purpose === 'artwork') {
-      name = name.replace(/ - .*/, '').trim();
+    var name = (app.name || "").toLowerCase();
+    if (purpose === "artwork") {
+      name = name.replace(/ - .*/, "").trim();
     }
-    var field = purpose === 'artwork' ? 'artworkNames' : 'brandPrefixes';
+    var field = purpose === "artwork" ? "artworkNames" : "brandPrefixes";
     for (var i = 0; i < catalog.apps.length; i++) {
       var entry = catalog.apps[i],
         names = (entry.legacy && entry.legacy[field]) || [];
       for (var j = 0; j < names.length; j++) {
-        if (purpose === 'artwork' ? name === names[j] : name.indexOf(names[j]) === 0) {
+        if (purpose === "artwork" ? name === names[j] : name.indexOf(names[j]) === 0) {
           return {
             entry: entry,
             storeId: entry.variants.length ? entry.variants[0].storeId || null : null,
@@ -45,11 +45,11 @@
   }
 
   catalog.artworkStoreId = function (app) {
-    var match = find(app, 'artwork');
+    var match = find(app, "artwork");
     return match ? match.storeId : null;
   };
   catalog.brand = function (app) {
-    var match = find(app, 'brand');
+    var match = find(app, "brand");
     return match ? match.entry.fallback || null : null;
   };
   catalog.storeId = function (appId) {

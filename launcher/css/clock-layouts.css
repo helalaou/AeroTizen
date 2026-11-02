@@ -61,7 +61,7 @@ body.s90c-clock-classic #aero-v991-widget,
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  font-family: 'SamsungOne', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: "SamsungOne", "Roboto", "Helvetica Neue", Arial, sans-serif;
   font-size: 114px;
   font-weight: 300;
   font-variant-numeric: tabular-nums;
@@ -121,11 +121,11 @@ body.s90c-clock-classic #aero-v991-widget,
 
 /* The source project's four clock variants, in original styling. */
 #aero-v991-widget .aero-v991-digits {
-  font-family: 'SamsungOne', 'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
+  font-family: "SamsungOne", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
   font-variant-numeric: tabular-nums lining-nums;
   font-feature-settings:
-    'tnum' 1,
-    'lnum' 1;
+    "tnum" 1,
+    "lnum" 1;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -149,13 +149,13 @@ body.s90c-clock-classic #aero-v991-widget,
   flex-direction: row;
   align-items: baseline;
   font-size: 110px;
-  font-family: 'SamsungOne', 'Helvetica Neue', Arial, sans-serif;
+  font-family: "SamsungOne", "Helvetica Neue", Arial, sans-serif;
   font-weight: 300;
   line-height: 1.05;
   letter-spacing: -5px;
 }
 #aero-v991-widget.style-horizontal #aero-v991-hours::after {
-  content: ':';
+  content: ":";
   margin-left: 2px;
   margin-right: 5px;
   opacity: 0.77;
@@ -172,7 +172,7 @@ body.s90c-clock-classic #aero-v991-widget,
 /* Thin */
 #aero-v991-widget.style-minimal .aero-v991-digits {
   flex-direction: column;
-  font-family: 'Helvetica Neue', 'SamsungOne', 'Segoe UI', Arial, sans-serif;
+  font-family: "Helvetica Neue", "SamsungOne", "Segoe UI", Arial, sans-serif;
   font-size: 82px;
   font-weight: 100;
   letter-spacing: 7px;
@@ -203,7 +203,7 @@ body.s90c-clock-classic #aero-v991-widget,
 /* Bold */
 #aero-v991-widget.style-bold .aero-v991-digits {
   flex-direction: column;
-  font-family: 'Arial Black', 'SamsungOne', 'Segoe UI', Arial, sans-serif;
+  font-family: "Arial Black", "SamsungOne", "Segoe UI", Arial, sans-serif;
   font-size: 126px;
   font-weight: 900;
   letter-spacing: -11px;
@@ -216,7 +216,7 @@ body.s90c-clock-classic #aero-v991-widget,
   min-width: 0;
 }
 #aero-v991-widget.style-bold .aero-v991-date {
-  font-family: 'SamsungOne', 'Segoe UI', Arial, sans-serif;
+  font-family: "SamsungOne", "Segoe UI", Arial, sans-serif;
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 1.7px;
@@ -265,28 +265,28 @@ body.s90c-clock-classic #aero-v991-widget,
 #clock-styles .clock-preview {
   white-space: pre-line;
   text-align: center;
-  font-family: 'SamsungOne', 'Helvetica Neue', Arial, sans-serif;
+  font-family: "SamsungOne", "Helvetica Neue", Arial, sans-serif;
   font-size: 37px;
   font-weight: 300;
   letter-spacing: -3px;
   line-height: 0.78;
 }
-#clock-styles [data-key='clock-style:horizontal'] .clock-preview {
+#clock-styles [data-key="clock-style:horizontal"] .clock-preview {
   font-size: 30px;
   font-weight: 300;
   letter-spacing: -2px;
   line-height: 1.05;
 }
-#clock-styles [data-key='clock-style:minimal'] .clock-preview {
-  font-family: 'Helvetica Neue', 'SamsungOne', Arial, sans-serif;
+#clock-styles [data-key="clock-style:minimal"] .clock-preview {
+  font-family: "Helvetica Neue", "SamsungOne", Arial, sans-serif;
   font-size: 30px;
   font-weight: 100;
   letter-spacing: 3px;
   line-height: 1.02;
   color: rgba(246, 249, 255, 0.9);
 }
-#clock-styles [data-key='clock-style:bold'] .clock-preview {
-  font-family: 'Arial Black', 'SamsungOne', Arial, sans-serif;
+#clock-styles [data-key="clock-style:bold"] .clock-preview {
+  font-family: "Arial Black", "SamsungOne", Arial, sans-serif;
   font-size: 39px;
   font-weight: 900;
   letter-spacing: -4px;

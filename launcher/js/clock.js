@@ -1,40 +1,40 @@
 // Localised date styles and system time in the top bar.
 (function (A) {
-  'use strict';
+  "use strict";
 
-  var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  var DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   var MONTHS = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   var timeWidths = {},
     listeners = [];
 
   function pad(n) {
-    return (n < 10 ? '0' : '') + n;
+    return (n < 10 ? "0" : "") + n;
   }
 
   function systemFormat(method, short) {
     try {
       var time = window.tizen && window.tizen.time;
-      if (time && typeof time[method] === 'function') {
+      if (time && typeof time[method] === "function") {
         return time[method](short);
       }
     } catch (e) {
       /* older TVs may not expose the system format */
     }
-    return '';
+    return "";
   }
 
   function localFormatter(options) {
@@ -48,13 +48,13 @@
 
   function numericDate(d, omitYear) {
     // Tizen short-date tokens: d = day, m = month, y = year.
-    var pattern = systemFormat('getDateFormat', true);
-    var options = { month: '2-digit', day: '2-digit' };
+    var pattern = systemFormat("getDateFormat", true);
+    var options = { month: "2-digit", day: "2-digit" };
     if (!omitYear) {
-      options.year = /\byy\b/.test(pattern) ? '2-digit' : 'numeric';
+      options.year = /\byy\b/.test(pattern) ? "2-digit" : "numeric";
     }
     if (
-      typeof pattern === 'string' &&
+      typeof pattern === "string" &&
       /^[dmy\s/.,-]+$/.test(pattern) &&
       /d/.test(pattern) &&
       /m/.test(pattern) &&
@@ -62,19 +62,14 @@
     ) {
       if (omitYear) {
         // Remove the year and its adjacent separator, keeping local day/month order.
-        pattern = pattern
-          .replace(/^[\s/.,-]*y+[\s/.,-]*|[\s/.,-]*y+[\s/.,-]*$/g, '')
-          .replace(/y+[\s/.,-]*/g, '');
+        pattern = pattern.replace(/^[\s/.,-]*y+[\s/.,-]*|[\s/.,-]*y+[\s/.,-]*$/g, "").replace(/y+[\s/.,-]*/g, "");
       }
       try {
         var formatter = localFormatter(options),
           parts = {};
         // TV patterns describe Gregorian fields. Other calendars can require eras
         // or named months, so keep their complete locale format intact.
-        if (
-          typeof formatter.formatToParts !== 'function' ||
-          formatter.resolvedOptions().calendar !== 'gregory'
-        ) {
+        if (typeof formatter.formatToParts !== "function" || formatter.resolvedOptions().calendar !== "gregory") {
           return formatter.format(d);
         }
         formatter.formatToParts(d).forEach(function (part) {
@@ -82,9 +77,7 @@
         });
         if (parts.day && parts.month && !parts.era && (omitYear || parts.year)) {
           return pattern.replace(/d+|m+|y+/g, function (token) {
-            return parts[
-              token.charAt(0) === 'd' ? 'day' : token.charAt(0) === 'm' ? 'month' : 'year'
-            ];
+            return parts[token.charAt(0) === "d" ? "day" : token.charAt(0) === "m" ? "month" : "year"];
           });
         }
         return formatter.format(d);
@@ -92,10 +85,10 @@
         /* no locale support: keep the system pattern readable */
       }
       return pattern.replace(/d+|m+|y+/g, function (token) {
-        if (token.charAt(0) === 'd') {
+        if (token.charAt(0) === "d") {
           return pad(d.getDate());
         }
-        if (token.charAt(0) === 'm') {
+        if (token.charAt(0) === "m") {
           return pad(d.getMonth() + 1);
         }
         return token.length === 2 ? pad(d.getFullYear() % 100) : String(d.getFullYear());
@@ -104,16 +97,14 @@
     try {
       return localFormat(d, options);
     } catch (e) {
-      return (
-        pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + (omitYear ? '' : '/' + d.getFullYear())
-      );
+      return pad(d.getDate()) + "/" + pad(d.getMonth() + 1) + (omitYear ? "" : "/" + d.getFullYear());
     }
   }
 
   function readableDate(d, style) {
-    var options = { day: 'numeric', month: style === 'long' ? 'long' : 'short' };
-    if (style !== 'compact') {
-      options.weekday = style === 'long' ? 'long' : 'short';
+    var options = { day: "numeric", month: style === "long" ? "long" : "short" };
+    if (style !== "compact") {
+      options.weekday = style === "long" ? "long" : "short";
     }
     try {
       return localFormat(d, options);
@@ -121,81 +112,81 @@
       // Older TVs without Intl keep readable labels and the system's date order.
       var month = MONTHS[d.getMonth()],
         weekday = DAYS[d.getDay()];
-      if (style !== 'long') {
+      if (style !== "long") {
         month = month.slice(0, 3);
         weekday = weekday.slice(0, 3);
       }
-      var pattern = systemFormat('getDateFormat', true);
-      var monthFirst = typeof pattern === 'string' && /m.*d/.test(pattern);
-      var date = monthFirst ? month + ' ' + d.getDate() : d.getDate() + ' ' + month;
-      return style === 'compact' ? date : weekday + ', ' + date;
+      var pattern = systemFormat("getDateFormat", true);
+      var monthFirst = typeof pattern === "string" && /m.*d/.test(pattern);
+      var date = monthFirst ? month + " " + d.getDate() : d.getDate() + " " + month;
+      return style === "compact" ? date : weekday + ", " + date;
     }
   }
 
   function dateStyle(id) {
     // Keep saved choices from earlier versions selected in the new style list.
-    if (id === 'auto' || id === 'weekday') {
-      return 'short';
+    if (id === "auto" || id === "weekday") {
+      return "short";
     }
-    if (id === 'dmy' || id === 'mdy') {
-      return 'numeric';
+    if (id === "dmy" || id === "mdy") {
+      return "numeric";
     }
     return id;
   }
 
   function defaultTimeFormat() {
-    var pattern = systemFormat('getTimeFormat');
-    if (typeof pattern === 'string' && /h/.test(pattern) && /m/.test(pattern)) {
-      return /ap/.test(pattern) ? '12' : '24';
+    var pattern = systemFormat("getTimeFormat");
+    if (typeof pattern === "string" && /h/.test(pattern) && /m/.test(pattern)) {
+      return /ap/.test(pattern) ? "12" : "24";
     }
     try {
-      var options = localFormatter({ hour: 'numeric', minute: '2-digit' }).resolvedOptions();
-      if (typeof options.hour12 === 'boolean') {
-        return options.hour12 ? '12' : '24';
+      var options = localFormatter({ hour: "numeric", minute: "2-digit" }).resolvedOptions();
+      if (typeof options.hour12 === "boolean") {
+        return options.hour12 ? "12" : "24";
       }
     } catch (e) {
       /* no locale support: retain the original 12-hour default */
     }
-    return '12';
+    return "12";
   }
 
   // Styles control detail; the locale controls language, order, and punctuation.
   var DATE_FORMATS = [
     {
-      id: 'compact',
+      id: "compact",
       format: function (d) {
-        return readableDate(d, 'compact');
+        return readableDate(d, "compact");
       },
     },
     {
-      id: 'short',
+      id: "short",
       format: function (d) {
-        return readableDate(d, 'short');
+        return readableDate(d, "short");
       },
     },
     {
-      id: 'long',
+      id: "long",
       format: function (d) {
-        return readableDate(d, 'long');
+        return readableDate(d, "long");
       },
     },
     {
-      id: 'numeric-short',
+      id: "numeric-short",
       format: function (d) {
         return numericDate(d, true);
       },
     },
-    { id: 'numeric', format: numericDate },
+    { id: "numeric", format: numericDate },
     {
-      id: 'iso',
+      id: "iso",
       format: function (d) {
-        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
       },
     },
     {
-      id: 'none',
+      id: "none",
       format: function () {
-        return '';
+        return "";
       },
     },
   ];
@@ -207,20 +198,20 @@
         return DATE_FORMATS[i].format(d);
       }
     }
-    return readableDate(d, 'short');
+    return readableDate(d, "short");
   }
 
   function timeLocaleKey(id) {
     var nav = window.navigator || {};
-    return id + ':' + String(nav.languages || nav.language || '');
+    return id + ":" + String(nav.languages || nav.language || "");
   }
 
   function timeFormatter(id) {
     try {
-      var cycle = id === '24' ? 'h23' : 'h12';
+      var cycle = id === "24" ? "h23" : "h12";
       var formatter = localFormatter({
-        hour: id === '24' ? '2-digit' : 'numeric',
-        minute: '2-digit',
+        hour: id === "24" ? "2-digit" : "numeric",
+        minute: "2-digit",
         hourCycle: cycle,
       });
       if (formatter.resolvedOptions().hourCycle === cycle) {
@@ -240,12 +231,10 @@
     } catch (e) {
       /* unavailable formatting: use the legacy clock */
     }
-    if (id === '24') {
-      return pad(d.getHours()) + ':' + pad(d.getMinutes());
+    if (id === "24") {
+      return pad(d.getHours()) + ":" + pad(d.getMinutes());
     }
-    return (
-      (d.getHours() % 12 || 12) + ':' + pad(d.getMinutes()) + (d.getHours() < 12 ? ' am' : ' pm')
-    );
+    return (d.getHours() % 12 || 12) + ":" + pad(d.getMinutes()) + (d.getHours() < 12 ? " am" : " pm");
   }
 
   function formatTime(d, id) {
@@ -257,13 +246,13 @@
   // whether a day period precedes the hour. Reuse the existing time formatter.
   function formatTimeParts(d, id) {
     var formatter = timeFormatter(id),
-      result = { hour: '', minute: '', dayPeriod: '' };
+      result = { hour: "", minute: "", dayPeriod: "" };
     try {
-      if (!formatter || typeof formatter.formatToParts !== 'function') {
+      if (!formatter || typeof formatter.formatToParts !== "function") {
         return null;
       }
       formatter.formatToParts(d).forEach(function (part) {
-        if (part.type === 'hour' || part.type === 'minute' || part.type === 'dayPeriod') {
+        if (part.type === "hour" || part.type === "minute" || part.type === "dayPeriod") {
           result[part.type] = part.value;
         }
       });
@@ -274,21 +263,21 @@
   }
 
   function sizeTime(el, id) {
-    if (!el.style || typeof window.getComputedStyle !== 'function') {
+    if (!el.style || typeof window.getComputedStyle !== "function") {
       return;
     }
     var style = window.getComputedStyle(el);
-    var font = style.fontWeight + ' ' + style.fontSize + ' ' + style.fontFamily;
-    var key = timeLocaleKey(id) + ':' + font;
+    var font = style.fontWeight + " " + style.fontSize + " " + style.fontFamily;
+    var key = timeLocaleKey(id) + ":" + font;
     if (timeWidths[key] === undefined) {
-      var context = document.createElement('canvas').getContext('2d');
+      var context = document.createElement("canvas").getContext("2d");
       if (!context) {
         return;
       }
       context.font = font;
       // Keep the header still for the whole day, including local digits and AM/PM.
       // Measure once per locale/font/format; retain the original 8ch/5ch minimum.
-      var width = context.measureText('0').width * (id === '24' ? 5 : 8);
+      var width = context.measureText("0").width * (id === "24" ? 5 : 8);
       var sample = new Date(2000, 0, 1),
         formatter = timeFormatter(id);
       for (var minute = 0; minute < 24 * 60; minute++) {
@@ -297,18 +286,18 @@
       }
       timeWidths[key] = Math.ceil(width);
     }
-    el.style.width = timeWidths[key] + 'px';
+    el.style.width = timeWidths[key] + "px";
   }
 
   function tick() {
     var d = new Date(),
-      dateEl = A.$('date'),
-      timeEl = A.$('time');
+      dateEl = A.$("date"),
+      timeEl = A.$("time");
     dateEl.textContent = formatDate(d, A.settings.dateFormat);
-    dateEl.hidden = A.settings.dateFormat === 'none';
+    dateEl.hidden = A.settings.dateFormat === "none";
     timeEl.hidden = A.settings.showTime === false;
-    timeEl.parentNode.classList.toggle('weather-only', timeEl.hidden && dateEl.hidden);
-    timeEl.setAttribute('data-format', A.settings.timeFormat === '24' ? '24' : '12');
+    timeEl.parentNode.classList.toggle("weather-only", timeEl.hidden && dateEl.hidden);
+    timeEl.setAttribute("data-format", A.settings.timeFormat === "24" ? "24" : "12");
     timeEl.textContent = formatTime(d, A.settings.timeFormat);
     sizeTime(timeEl, A.settings.timeFormat);
     listeners.slice().forEach(function (listener) {

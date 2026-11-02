@@ -1,23 +1,18 @@
-import { useCallback, useContext, useLayoutEffect, useRef } from 'preact/hooks';
-import { flushSync } from 'preact/compat';
-import type { JSX } from 'preact';
-import { focusControl } from '../../shared/navigation/focusControl';
-import { FocusedControlContext } from '../context';
-import { useSettingsEnvironment } from '../hooks/useSettingsEnvironment';
+import type { JSX } from "preact";
+import { flushSync } from "preact/compat";
+import { useCallback, useContext, useLayoutEffect, useRef } from "preact/hooks";
 
-interface Props extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'class' | 'ref'> {
-  focusKey: string;
+import { focusControl } from "../../shared/navigation/focusControl";
+import { FocusedControlContext } from "../context";
+import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
+
+interface Props extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "class" | "ref"> {
   class?: string;
+  focusKey: string;
 }
 
 // Focus is rendered from state. Refs supply nodes for measurement and browser focus.
-export const RemoteControl = ({
-  focusKey,
-  class: className = '',
-  onClick,
-  onFocusCapture,
-  ...props
-}: Props) => {
+export const RemoteControl = ({ focusKey, class: className = "", onClick, onFocusCapture, ...props }: Props) => {
   const { navigation } = useSettingsEnvironment();
   const focused = useContext(FocusedControlContext) === focusKey;
   const ref = useRef<HTMLDivElement>(null);
@@ -26,7 +21,7 @@ export const RemoteControl = ({
       ref.current = node;
       navigation.register(focusKey, node);
     },
-    [navigation, focusKey]
+    [navigation, focusKey],
   );
   useLayoutEffect(() => {
     if (focused) {
@@ -48,7 +43,7 @@ export const RemoteControl = ({
         select();
         onFocusCapture?.(event);
       }}
-      class={className + (focused ? ' focused' : '')}
+      class={className + (focused ? " focused" : "")}
     />
   );
 };

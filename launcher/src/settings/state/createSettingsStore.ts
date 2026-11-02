@@ -1,11 +1,8 @@
-import { createStore } from '../../shared/state/createStore';
-import { equalRecord } from '../../shared/state/equalRecord';
-import type { SettingsSnapshot, SettingsSource, SettingsStore, SettingsValues } from '../types';
+import { createStore } from "../../shared/state/createStore";
+import { equalRecord } from "../../shared/state/equalRecord";
+import type { SettingsSnapshot, SettingsSource, SettingsStore, SettingsValues } from "../types";
 
-export const createSettingsStore = (
-  source: SettingsSource,
-  defaults: SettingsValues
-): SettingsStore => {
+export const createSettingsStore = (source: SettingsSource, defaults: SettingsValues): SettingsStore => {
   const read = (previous?: SettingsSnapshot): SettingsSnapshot => {
     const values = { ...defaults };
     (Object.keys(defaults) as (keyof SettingsValues)[]).forEach((key) => {

@@ -1,17 +1,11 @@
-import type { MutableStore } from '../../shared/state/createStore';
-import type {
-  SettingsActions,
-  SettingsServices,
-  SettingsStore,
-  SettingsValues,
-  ViewState,
-} from '../types';
+import type { MutableStore } from "../../shared/state/createStore";
+import type { SettingsActions, SettingsServices, SettingsStore, SettingsValues, ViewState } from "../types";
 
 export const createSettingsActions = (
   settings: SettingsStore,
   services: SettingsServices,
   view: MutableStore<ViewState>,
-  transaction: (action: () => void) => void
+  transaction: (action: () => void) => void,
 ): SettingsActions => {
   const commit = (patch: Partial<SettingsValues>, after?: () => void) =>
     transaction(() => {
@@ -30,9 +24,7 @@ export const createSettingsActions = (
     toggleContinueApp(id) {
       const selected = settings.getSnapshot().continueWatchingApps;
       commit({
-        continueWatchingApps: selected.includes(id)
-          ? selected.filter((app) => app !== id)
-          : [...selected, id],
+        continueWatchingApps: selected.includes(id) ? selected.filter((app) => app !== id) : [...selected, id],
       });
     },
     setBackground(background) {
@@ -45,8 +37,7 @@ export const createSettingsActions = (
       });
     },
     setWeatherVisible: (showWeather) => commit({ showWeather }, services.applyWeatherVisibility),
-    setLocationVisible: (weatherShowLocation) =>
-      commit({ weatherShowLocation }, services.applyLocationVisibility),
+    setLocationVisible: (weatherShowLocation) => commit({ weatherShowLocation }, services.applyLocationVisibility),
     setTempUnit: (tempUnit) => commit({ tempUnit }, services.refreshWeather),
     setClockLayout: (clockLayout) => commit({ clockLayout }, services.applyClock),
     setClockStyle: (aeroClockStyle) => commit({ aeroClockStyle }, services.applyClock),
@@ -56,29 +47,20 @@ export const createSettingsActions = (
     setCardSize: (cardSize) => commit({ cardSize }, services.applyCardSize),
     setHomeCardMode: (homeCardMode) => commit({ homeCardMode }, services.applyCardSize),
     setHomeCardColumns: (homeCardColumns) => commit({ homeCardColumns }, services.applyCardSize),
-    setHdmiVisibility: (hideDisconnectedHdmi) =>
-      commit({ hideDisconnectedHdmi }, services.applyInputs),
+    setHdmiVisibility: (hideDisconnectedHdmi) => commit({ hideDisconnectedHdmi }, services.applyInputs),
     setHdmiKeepVisible: (port, keep) =>
-      commit(
-        { hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } },
-        services.applyInputs
-      ),
+      commit({ hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } }, services.applyInputs),
     setTimeFormat: (format) =>
-      commit(
-        format === 'none' ? { showTime: false } : { showTime: true, timeFormat: format },
-        services.applyClock
-      ),
+      commit(format === "none" ? { showTime: false } : { showTime: true, timeFormat: format }, services.applyClock),
     setLocation: (weatherLocation) => commit({ weatherLocation }, services.refreshWeather),
     setSpeed(direction) {
       const { MIN, MAX, STEP } = services.config.SPEED;
       const speed =
-        Math.round(
-          Math.max(MIN, Math.min(MAX, settings.getSnapshot().speed + direction * STEP)) * 100
-        ) / 100;
+        Math.round(Math.max(MIN, Math.min(MAX, settings.getSnapshot().speed + direction * STEP)) * 100) / 100;
       commit({ speed }, () => services.applySpeed(speed));
     },
     saveInputName(port, value) {
-      if ((settings.getSnapshot().inputNames[port] || '') === value) {
+      if ((settings.getSnapshot().inputNames[port] || "") === value) {
         return;
       }
       const inputNames = { ...settings.getSnapshot().inputNames };

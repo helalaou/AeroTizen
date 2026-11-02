@@ -1,37 +1,20 @@
-import { useImageSequence } from '../../shared/hooks/useImageSequence';
-import { AppLogoIcon } from '../../shared/icons/AppLogoIcon';
-import type { InstalledApp, AppPresentation } from '../../settings/types';
+import type { AppPresentation, InstalledApp } from "../../settings/types";
+import { useImageSequence } from "../../shared/hooks/useImageSequence";
+import { AppLogoIcon } from "../../shared/icons/AppLogoIcon";
 
-export const AppArtwork = ({
-  app,
-  brand,
-  active,
-}: {
-  app: InstalledApp;
-  brand: AppPresentation;
-  active: boolean;
-}) => {
+export const AppArtwork = ({ app, brand, active }: { app: InstalledApp; brand: AppPresentation; active: boolean }) => {
   const artwork = useImageSequence(brand.artwork, active);
   const icon = useImageSequence(brand.useAppIcon && app.icon ? [app.icon] : [], active);
   return (
     <>
       <div
-        class={
-          'app-fallback' + (!brand.label ? ' logo-only' : '') + (brand.largeLogo ? ' logo-big' : '')
-        }
+        class={"app-fallback" + (!brand.label ? " logo-only" : "") + (brand.largeLogo ? " logo-big" : "")}
         hidden={artwork.loaded}
       >
         {brand.logoPath ? (
           <AppLogoIcon path={brand.logoPath} colour={brand.logoColour} />
         ) : icon.src ? (
-          <img
-            key={icon.src}
-            class="logo"
-            alt=""
-            src={icon.src}
-            onLoad={icon.onLoad}
-            onError={icon.onError}
-          />
+          <img key={icon.src} class="logo" alt="" src={icon.src} onLoad={icon.onLoad} onError={icon.onError} />
         ) : null}
         {brand.label || !brand.logoPath ? (
           <div class="name" style={{ color: brand.textColour }}>
@@ -46,7 +29,7 @@ export const AppArtwork = ({
           alt=""
           src={artwork.src}
           hidden={!artwork.loaded}
-          style={{ display: artwork.loaded ? undefined : 'none' }}
+          style={{ display: artwork.loaded ? undefined : "none" }}
           onLoad={artwork.onLoad}
           onError={artwork.onError}
         />

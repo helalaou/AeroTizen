@@ -1,7 +1,9 @@
-import type { ComponentChildren } from 'preact';
-import { useStore } from '../shared/hooks/useStore';
-import { FocusedControlContext, SettingsContext } from './context';
-import type { SettingsEnvironment } from './types';
+import type { ComponentChildren } from "preact";
+
+import { useStore } from "../shared/hooks/useStore";
+
+import { FocusedControlContext, SettingsContext } from "./context";
+import type { SettingsEnvironment } from "./types";
 
 export const SettingsProvider = ({
   environment,

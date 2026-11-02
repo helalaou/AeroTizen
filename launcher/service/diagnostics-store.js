@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 // Optional async log storage, separate from the durable Home routing receipt.
-var fs = require('fs');
+var fs = require("fs");
 var MAX_BYTES = 256 * 1024;
 module.exports = function (tz, ready) {
   if (!tz || !tz.filesystem || !tz.filesystem.resolve) {
@@ -9,16 +9,15 @@ module.exports = function (tz, ready) {
   }
   try {
     tz.filesystem.resolve(
-      'wgt-private',
+      "wgt-private",
       function (directory) {
         try {
           var uri = directory.toURI();
-          if (uri.indexOf('file:///') !== 0) {
+          if (uri.indexOf("file:///") !== 0) {
             ready(null);
             return;
           }
-          var file =
-            decodeURIComponent(uri.slice(7)).replace(/\/$/, '') + '/aerotizen-diagnostics-v1.json';
+          var file = decodeURIComponent(uri.slice(7)).replace(/\/$/, "") + "/aerotizen-diagnostics-v1.json";
           ready({
             load: function (done) {
               fs.stat(file, function (error, stat) {
@@ -26,26 +25,23 @@ module.exports = function (tz, ready) {
                   done(null, null);
                   return;
                 }
-                fs.readFile(file, 'utf8', function (failure, value) {
-                  done(
-                    failure,
-                    !failure && Buffer.byteLength(value, 'utf8') <= MAX_BYTES ? value : null
-                  );
+                fs.readFile(file, "utf8", function (failure, value) {
+                  done(failure, !failure && Buffer.byteLength(value, "utf8") <= MAX_BYTES ? value : null);
                 });
               });
             },
             save: function (value, done) {
-              if (Buffer.byteLength(value, 'utf8') > MAX_BYTES) {
-                done(new Error('Log size limit'));
+              if (Buffer.byteLength(value, "utf8") > MAX_BYTES) {
+                done(new Error("Log size limit"));
                 return;
               }
-              var temporary = file + '.tmp';
+              var temporary = file + ".tmp";
               function failed(error) {
                 fs.unlink(temporary, function () {
                   done(error);
                 });
               }
-              fs.writeFile(temporary, value, { encoding: 'utf8', mode: 384 }, function (error) {
+              fs.writeFile(temporary, value, { encoding: "utf8", mode: 384 }, function (error) {
                 if (error) {
                   failed(error);
                   return;
@@ -67,7 +63,7 @@ module.exports = function (tz, ready) {
       function () {
         ready(null);
       },
-      'rw'
+      "rw",
     );
   } catch (e) {
     ready(null);

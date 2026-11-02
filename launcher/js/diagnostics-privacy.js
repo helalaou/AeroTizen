@@ -315,9 +315,7 @@
     return list.indexOf(value) >= 0;
   }
   function finite(value) {
-    return typeof value === "number" && isFinite(value) && value >= 0 && value <= 10000000000000000
-      ? value
-      : null;
+    return typeof value === "number" && isFinite(value) && value >= 0 && value <= 10000000000000000 ? value : null;
   }
   function errorCode(value) {
     var text = typeof value === "string" ? value.slice(0, 1024).toLowerCase() : "";
@@ -413,9 +411,7 @@
         if (
           has(schema.reasons, input) ||
           (typeof input === "string" &&
-            /^(?:(?:fresh )?Art status: (on|off|unknown)|HomeWatcher HTTP [1-5][0-9]{2})$/.test(
-              input
-            ))
+            /^(?:(?:fresh )?Art status: (on|off|unknown)|HomeWatcher HTTP [1-5][0-9]{2})$/.test(input))
         ) {
           return input;
         }
@@ -437,17 +433,13 @@
           : null;
       }
       if (key === "version" || key === "tizen") {
-        return typeof input === "string" && /^[0-9]{1,3}(?:\.[0-9]{1,3}){1,3}$/.test(input)
-          ? input
-          : null;
+        return typeof input === "string" && /^[0-9]{1,3}(?:\.[0-9]{1,3}){1,3}$/.test(input) ? input : null;
       }
       if (key === "build_id" || key === "commit") {
         return typeof input === "string" && /^[a-f0-9]{40,64}$/.test(input) ? input : null;
       }
       if (key === "firmware") {
-        return typeof input === "string" &&
-          /^[A-Z0-9][A-Z0-9_.-]{1,127}$/.test(input) &&
-          /[0-9]/.test(input)
+        return typeof input === "string" && /^[A-Z0-9][A-Z0-9_.-]{1,127}$/.test(input) && /[0-9]/.test(input)
           ? input
           : null;
       }

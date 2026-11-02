@@ -1,6 +1,6 @@
 // Home and All apps share a grid and remote navigation. Only Home tiles can be moved.
 (function (A) {
-  'use strict';
+  "use strict";
 
   var cfg = A.config,
     COLS = 3;
@@ -8,20 +8,20 @@
     row = 1,
     col = [],
     scrollY = 0;
-  var page = 'home';
+  var page = "home";
   var tabCache = { home: null, apps: null };
   var moving = null,
     tileMenu = null;
   var refreshPending = false;
   var CHEVRONS = {
-    left: 'M15 5l-7 7 7 7',
-    right: 'M9 5l7 7-7 7',
-    up: 'M5 15l7-7 7 7',
-    down: 'M5 9l7 7 7-7',
+    left: "M15 5l-7 7 7 7",
+    right: "M9 5l7 7-7 7",
+    up: "M5 15l7-7 7 7",
+    down: "M5 9l7 7 7-7",
   };
 
   function gridTiles() {
-    return [].slice.call(A.$('grid').children);
+    return [].slice.call(A.$("grid").children);
   }
 
   function render(fromTabSwitch) {
@@ -32,20 +32,20 @@
     if (tileMenu) {
       closeTileMenu(false);
     }
-    var grid = A.$('grid'),
+    var grid = A.$("grid"),
       home = A.settings.home || [cfg.FIREPLACE_ID],
-      size = A.settings.cardSize === 'small' ? 'small' : 'big';
+      size = A.settings.cardSize === "small" ? "small" : "big";
     var count = Number(A.settings.homeCardColumns);
     COLS = count === 3 || count === 4 || count === 5 ? count : cfg.CARD_COLUMNS[size];
     grid.className =
-      'app-grid cards-' +
+      "app-grid cards-" +
       size +
-      ' cards-' +
-      (A.settings.homeCardMode === 'rectangle' ? 'rectangle' : 'square') +
-      ' cols-' +
+      " cards-" +
+      (A.settings.homeCardMode === "rectangle" ? "rectangle" : "square") +
+      " cols-" +
       COLS;
-    grid.textContent = '';
-    if (page === 'home') {
+    grid.textContent = "";
+    if (page === "home") {
       if (A.apps.ready) {
         home = home.filter(function (id) {
           return id === cfg.FIREPLACE_ID || A.apps.byId(id);
@@ -57,13 +57,13 @@
         return app.id;
       });
     }
-    A.$('apps-empty').hidden = page === 'home' || home.length > 0;
-    grid.setAttribute('aria-label', page === 'home' ? 'Home apps' : 'All apps');
-    ['home', 'apps'].forEach(function (name) {
-      var tab = A.$(name + '-tab'),
-        selected = (name === 'home') === (page === 'home');
-      tab.classList.toggle('active', selected);
-      tab.setAttribute('aria-pressed', String(selected));
+    A.$("apps-empty").hidden = page === "home" || home.length > 0;
+    grid.setAttribute("aria-label", page === "home" ? "Home apps" : "All apps");
+    ["home", "apps"].forEach(function (name) {
+      var tab = A.$(name + "-tab"),
+        selected = (name === "home") === (page === "home");
+      tab.classList.toggle("active", selected);
+      tab.setAttribute("aria-pressed", String(selected));
     });
     if (fromTabSwitch && tabCache[page]) {
       grid.appendChild(tabCache[page]);
@@ -75,15 +75,15 @@
     home.forEach(function (id) {
       var tile;
       if (id === cfg.FIREPLACE_ID) {
-        tile = A.el('div', 'tile fire');
-        tile.setAttribute('role', 'button');
-        tile.setAttribute('aria-label', 'Fireplace');
-        tile.title = 'Fireplace';
+        tile = A.el("div", "tile fire");
+        tile.setAttribute("role", "button");
+        tile.setAttribute("aria-label", "Fireplace");
+        tile.title = "Fireplace";
         tile.innerHTML = A.tiles.ICONS.flame;
         tile.onclick = A.apps.playFireplace;
       } else {
         var app = A.apps.byId(id);
-        tile = A.tiles.app(app, '', function () {
+        tile = A.tiles.app(app, "", function () {
           A.apps.launch(app);
         });
       }
@@ -95,14 +95,14 @@
   }
 
   function buildRows() {
-    rows = [[A.$('gear'), A.$('home-tab'), A.$('apps-tab')]].concat(A.chunk(gridTiles(), COLS));
-    var continueTiles = A.continueRow ? A.continueRow.render(page === 'home') : [];
+    rows = [[A.$("gear"), A.$("home-tab"), A.$("apps-tab")]].concat(A.chunk(gridTiles(), COLS));
+    var continueTiles = A.continueRow ? A.continueRow.render(page === "home") : [];
     if (continueTiles.length) {
       rows.push(continueTiles);
     }
-    var inputTiles = [].slice.call(A.$('inputs').children);
-    A.$('inputs-section').hidden = page !== 'home' || inputTiles.length === 0;
-    if (!A.$('inputs-section').hidden) {
+    var inputTiles = [].slice.call(A.$("inputs").children);
+    A.$("inputs-section").hidden = page !== "home" || inputTiles.length === 0;
+    if (!A.$("inputs-section").hidden) {
       rows.push(inputTiles);
     }
     for (var r = 0; r < rows.length; r++) {
@@ -124,13 +124,13 @@
     }
     col[row] = Math.max(0, Math.min(col[row] || 0, rows[row].length - 1));
     var el = rows[row][col[row]];
-    el.classList.add('focused');
+    el.classList.add("focused");
     if (A.continueRow) {
       A.continueRow.focus(el);
     }
     // Keep the focused row on screen (only matters with more than 6 apps). Measured on screen,
     // since offsetTop is relative to the nearest positioned parent.
-    var main = A.$('rows'),
+    var main = A.$("rows"),
       rect = el.getBoundingClientRect(),
       mainTop = main.getBoundingClientRect().top;
     // Use the unscrolled position so rapid key repeats cannot compound an active transition.
@@ -144,19 +144,17 @@
     } else if (top - scrollY < 140) {
       scrollY = Math.max(0, top - 140);
     }
-    A.$('rows').style.transform = 'translate3d(0,' + -scrollY + 'px,0)';
+    A.$("rows").style.transform = "translate3d(0," + -scrollY + "px,0)";
   }
 
   function isContinueCard(el) {
-    return el && el.parentNode === A.$('continue-items');
+    return el && el.parentNode === A.$("continue-items");
   }
 
   function nearestColumn(items, from) {
     var origin = from.getBoundingClientRect(),
       x = (origin.left + origin.right) / 2;
-    var clip = isContinueCard(items[0])
-      ? A.$('continue-items').parentNode.getBoundingClientRect()
-      : null;
+    var clip = isContinueCard(items[0]) ? A.$("continue-items").parentNode.getBoundingClientRect() : null;
     var best = 0,
       distance = Infinity;
     items.forEach(function (item, index) {
@@ -194,7 +192,7 @@
     }
     // Returning to the header selects the current page, regardless of the app column.
     row = r;
-    col[row] = row === 0 ? (page === 'home' ? 1 : 2) : c;
+    col[row] = row === 0 ? (page === "home" ? 1 : 2) : c;
     focus();
   }
 
@@ -214,7 +212,7 @@
     if (page === next) {
       return;
     }
-    var grid = A.$('grid'),
+    var grid = A.$("grid"),
       parked = document.createDocumentFragment();
     while (grid.firstChild) {
       parked.appendChild(grid.firstChild);
@@ -222,30 +220,30 @@
     tabCache[page] = parked;
     page = next;
     row = 0;
-    col = [page === 'home' ? 1 : 2];
+    col = [page === "home" ? 1 : 2];
     scrollY = 0;
-    A.$('rows').style.transform = 'translate3d(0,0,0)';
+    A.$("rows").style.transform = "translate3d(0,0,0)";
     render(true);
   }
 
   // Holding OK opens actions without modifying favourites until the user confirms.
   // The same menu works for both Home and All apps (issue #22).
   function isAppTile(el) {
-    return !!(el && el.parentNode === A.$('grid') && el.dataset && el.dataset.id);
+    return !!(el && el.parentNode === A.$("grid") && el.dataset && el.dataset.id);
   }
 
   function menuChoices(id) {
-    if (page === 'home') {
+    if (page === "home") {
       return [
-        { action: 'move', label: 'Move' },
-        { action: 'remove', label: 'Remove from Home' },
+        { action: "move", label: "Move" },
+        { action: "remove", label: "Remove from Home" },
       ];
     }
     var alreadyHome = A.settings.home.indexOf(id) >= 0;
     return [
       {
-        action: alreadyHome ? 'remove' : 'add',
-        label: alreadyHome ? 'Remove from Home' : 'Add to Home',
+        action: alreadyHome ? "remove" : "add",
+        label: alreadyHome ? "Remove from Home" : "Add to Home",
       },
     ];
   }
@@ -256,20 +254,20 @@
       add: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/>',
       remove: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 12h8"/>',
     };
-    return '<svg viewBox="0 0 24 24" aria-hidden="true">' + path[action] + '</svg>';
+    return '<svg viewBox="0 0 24 24" aria-hidden="true">' + path[action] + "</svg>";
   }
 
   function updateTileMenu() {
     if (!tileMenu) {
       return;
     }
-    var actions = tileMenu.element.querySelectorAll('.tile-actions-option');
+    var actions = tileMenu.element.querySelectorAll(".tile-actions-option");
     for (var i = 0; i < actions.length; i++) {
       var selected = i === tileMenu.selected;
-      actions[i].classList.toggle('selected', selected);
-      actions[i].setAttribute('aria-selected', String(selected));
+      actions[i].classList.toggle("selected", selected);
+      actions[i].setAttribute("aria-selected", String(selected));
     }
-    tileMenu.glider.style.transform = 'translate3d(0,' + tileMenu.selected * 64 + 'px,0)';
+    tileMenu.glider.style.transform = "translate3d(0," + tileMenu.selected * 64 + "px,0)";
   }
 
   function removeMenuElements(menu, backdrop) {
@@ -287,10 +285,10 @@
     }
     var old = tileMenu;
     tileMenu = null;
-    old.element.classList.remove('is-open');
-    old.element.classList.add('is-closing');
-    old.backdrop.classList.remove('is-open');
-    old.backdrop.classList.add('is-closing');
+    old.element.classList.remove("is-open");
+    old.element.classList.add("is-closing");
+    old.backdrop.classList.remove("is-open");
+    old.backdrop.classList.add("is-closing");
     setTimeout(function () {
       removeMenuElements(old.element, old.backdrop);
     }, 150);
@@ -304,9 +302,7 @@
       return false;
     }
     // Clean up an exiting menu if the user opens another immediately.
-    var stale = document.querySelectorAll(
-      '.tile-actions-menu.is-closing, .tile-actions-backdrop.is-closing'
-    );
+    var stale = document.querySelectorAll(".tile-actions-menu.is-closing, .tile-actions-backdrop.is-closing");
     for (var i = 0; i < stale.length; i++) {
       if (stale[i].parentNode) {
         stale[i].parentNode.removeChild(stale[i]);
@@ -314,26 +310,24 @@
     }
     var id = el.dataset.id,
       choices = menuChoices(id);
-    var backdrop = A.el('div', 'tile-actions-backdrop');
-    backdrop.setAttribute('aria-hidden', 'true');
+    var backdrop = A.el("div", "tile-actions-backdrop");
+    backdrop.setAttribute("aria-hidden", "true");
     backdrop.onclick = function () {
       closeTileMenu(true);
     };
-    var menu = A.el('div', 'tile-actions-menu');
-    menu.setAttribute('role', 'menu');
-    menu.setAttribute('aria-label', A.i18n ? A.i18n.t('App actions') : 'App actions');
-    var glider = A.el('div', 'tile-actions-glider');
-    glider.setAttribute('aria-hidden', 'true');
+    var menu = A.el("div", "tile-actions-menu");
+    menu.setAttribute("role", "menu");
+    menu.setAttribute("aria-label", A.i18n ? A.i18n.t("App actions") : "App actions");
+    var glider = A.el("div", "tile-actions-glider");
+    glider.setAttribute("aria-hidden", "true");
     menu.appendChild(glider);
     choices.forEach(function (choice, index) {
-      var option = A.el('div', 'tile-actions-option');
-      var icon = A.el('span', 'tile-actions-icon');
+      var option = A.el("div", "tile-actions-option");
+      var icon = A.el("span", "tile-actions-icon");
       icon.innerHTML = actionIcon(choice.action);
       option.appendChild(icon);
-      option.appendChild(
-        A.el('span', 'tile-actions-label', A.i18n ? A.i18n.t(choice.label) : choice.label)
-      );
-      option.setAttribute('role', 'menuitem');
+      option.appendChild(A.el("span", "tile-actions-label", A.i18n ? A.i18n.t(choice.label) : choice.label));
+      option.setAttribute("role", "menuitem");
       option.onclick = function () {
         chooseTileMenuAction(index);
       };
@@ -350,8 +344,8 @@
     if (left + width > ww - 24) {
       left = rect.left - width - 20;
     }
-    menu.style.left = Math.max(24, Math.min(ww - width - 24, left)) + 'px';
-    menu.style.top = Math.max(24, Math.min(wh - height - 24, rect.top + 10)) + 'px';
+    menu.style.left = Math.max(24, Math.min(ww - width - 24, left)) + "px";
+    menu.style.top = Math.max(24, Math.min(wh - height - 24, rect.top + 10)) + "px";
     tileMenu = {
       element: menu,
       backdrop: backdrop,
@@ -362,18 +356,16 @@
       selected: 0,
     };
     updateTileMenu();
-    el.classList.add('focused');
+    el.classList.add("focused");
     function show() {
       if (tileMenu && tileMenu.element === menu) {
-        backdrop.classList.add('is-open');
-        menu.classList.add('is-open');
+        backdrop.classList.add("is-open");
+        menu.classList.add("is-open");
       }
     }
     var reducedMotion = false;
     try {
-      reducedMotion = !!(
-        window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      );
+      reducedMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     } catch (e) {
       reducedMotion = false;
     }
@@ -401,16 +393,16 @@
       })
       .indexOf(id);
     closeTileMenu(false);
-    if (action === 'move') {
+    if (action === "move") {
       startMove();
       return;
     }
     var home = A.settings.home.slice();
-    if (action === 'add') {
+    if (action === "add") {
       if (home.indexOf(id) < 0) {
         home.push(id);
       }
-    } else if (action === 'remove') {
+    } else if (action === "remove") {
       home = home.filter(function (appId) {
         return appId !== id;
       });
@@ -418,15 +410,15 @@
     A.settings.home = home;
     A.settings.save();
     render();
-    if (origin === 'home' && action === 'remove') {
+    if (origin === "home" && action === "remove") {
       var remaining = gridTiles().length;
       if (remaining) {
         var next = Math.min(Math.max(oldIndex, 0), remaining - 1);
         row = 1 + Math.floor(next / COLS);
         col[row] = next % COLS;
       } else {
-        var inputTiles = [].slice.call(A.$('inputs').children);
-        if (!A.$('inputs-section').hidden && inputTiles.length) {
+        var inputTiles = [].slice.call(A.$("inputs").children);
+        if (!A.$("inputs-section").hidden && inputTiles.length) {
           row = rows.length - 1;
           col[row] = 0;
         } else {
@@ -434,7 +426,7 @@
           col[0] = 1; // Home tab
         }
       }
-    } else if (origin === 'apps') {
+    } else if (origin === "apps") {
       var allIndex = gridTiles()
         .map(function (el) {
           return el.dataset.id;
@@ -450,7 +442,7 @@
 
   // ---- hold OK to move ---------------------------------------------------------
   function showArrows() {
-    var old = document.querySelectorAll('.move-arrow');
+    var old = document.querySelectorAll(".move-arrow");
     for (var i = 0; i < old.length; i++) {
       old[i].parentNode.removeChild(old[i]);
     }
@@ -465,7 +457,7 @@
       if (!can[dir]) {
         return;
       }
-      var arrow = A.el('div', 'move-arrow ' + dir);
+      var arrow = A.el("div", "move-arrow " + dir);
       arrow.innerHTML =
         '<svg viewBox="0 0 24 24"><path fill="none" stroke="#111" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="' +
         CHEVRONS[dir] +
@@ -476,13 +468,13 @@
 
   function startMove() {
     var el = current();
-    if (page !== 'home' || !el || el.parentNode !== A.$('grid')) {
+    if (page !== "home" || !el || el.parentNode !== A.$("grid")) {
       return false;
     }
     moving = el;
-    moving.classList.add('moving');
+    moving.classList.add("moving");
     showArrows();
-    A.toast('Use the arrows to move it, OK to drop');
+    A.toast("Use the arrows to move it, OK to drop");
     return true;
   }
 
@@ -493,13 +485,13 @@
     if (to === from) {
       return;
     }
-    var grid = A.$('grid');
+    var grid = A.$("grid");
     grid.removeChild(moving);
     grid.insertBefore(moving, gridTiles()[to] || null);
     row = 1 + Math.floor(to / COLS);
     col[row] = to % COLS;
     buildRows();
-    moving.classList.add('moving');
+    moving.classList.add("moving");
     showArrows();
   }
 
@@ -507,7 +499,7 @@
     A.settings.home = gridTiles().map(function (t) {
       return t.dataset.id;
     });
-    moving.classList.remove('moving');
+    moving.classList.remove("moving");
     moving = null;
     showArrows();
     A.settings.save();
@@ -533,10 +525,7 @@
       if (k === KEY.UP || k === KEY.DOWN || k === KEY.LEFT || k === KEY.RIGHT) {
         e.preventDefault();
         var change = k === KEY.UP || k === KEY.LEFT ? -1 : 1;
-        tileMenu.selected = Math.max(
-          0,
-          Math.min(tileMenu.choices.length - 1, tileMenu.selected + change)
-        );
+        tileMenu.selected = Math.max(0, Math.min(tileMenu.choices.length - 1, tileMenu.selected + change));
         updateTileMenu();
         return;
       }
@@ -604,8 +593,8 @@
       moveFocus(1);
     } else if (k === KEY.BACK || k === KEY.ESC) {
       e.preventDefault();
-      if (page !== 'home') {
-        showPage('home');
+      if (page !== "home") {
+        showPage("home");
       }
     }
   }
@@ -625,7 +614,7 @@
       return;
     }
     var el = current();
-    if (el === A.$('gear')) {
+    if (el === A.$("gear")) {
       A.settingsUi.open();
     } else if (el && el.onclick) {
       el.onclick();
@@ -664,16 +653,16 @@
       focus();
     });
   }
-  A.$('gear').onclick = function () {
+  A.$("gear").onclick = function () {
     if (moving) {
       endMove();
     }
     A.settingsUi.open();
   };
-  A.$('home-tab').onclick = function () {
-    showPage('home');
+  A.$("home-tab").onclick = function () {
+    showPage("home");
   };
-  A.$('apps-tab').onclick = function () {
-    showPage('apps');
+  A.$("apps-tab").onclick = function () {
+    showPage("apps");
   };
 })(window.AeroTizen);

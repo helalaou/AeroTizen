@@ -1,47 +1,47 @@
 import type {
-  ContinueSource,
   AppPresentation,
   Background,
   Clock,
+  ContinueSource,
   InstalledApp,
   LauncherConfig,
   SettingsBridge,
   SettingsSource,
   WeatherLocation,
-} from '../types';
+} from "../types";
 
 export interface InputSource {
-  type: string;
-  number?: number;
   editName?: string;
+  number?: number;
+  type: string;
 }
 
 export interface LauncherRuntime {
-  i18n?: { t(value: string): string };
-  config: LauncherConfig;
-  settings: SettingsSource;
+  applyBackground(): void;
+  apps: { all: InstalledApp[]; openStore(): void; subscribe(listener: () => void): () => void };
+  clearFocus(): void;
   clock: Clock;
-  network: { updateVisibility(): void };
+  config: LauncherConfig;
+  continueWatching?: {
+    sources: ContinueSource[];
+    message: string;
+    subscribe(listener: () => void): () => void;
+  };
+  hideToast(): void;
+  homeScreen: { render(): void; blur?(): void; focus?(): void };
+  homewatch: { useSamsungHome(): void; openSamsungHome?(): void };
+  i18n?: { t(value: string): string };
   inputs: {
     sources: InputSource[];
     portName(source: InputSource): string;
     render(): void;
     subscribe(listener: () => void): () => void;
   };
-  continueWatching?: {
-    sources: ContinueSource[];
-    message: string;
-    subscribe(listener: () => void): () => void;
-  };
-  homeScreen: { render(): void; blur?(): void; focus?(): void };
-  apps: { all: InstalledApp[]; openStore(): void; subscribe(listener: () => void): () => void };
-  homewatch: { useSamsungHome(): void; openSamsungHome?(): void };
-  tiles: { describe(app: InstalledApp): AppPresentation };
+  network: { updateVisibility(): void };
+  settings: SettingsSource;
   settingsUi: SettingsBridge;
-  clearFocus(): void;
+  tiles: { describe(app: InstalledApp): AppPresentation };
   toast(message: string): void;
-  hideToast(): void;
-  applyBackground(): void;
 }
 declare global {
   interface Window {

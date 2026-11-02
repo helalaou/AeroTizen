@@ -1,15 +1,16 @@
-import type { ComponentChildren } from 'preact';
-import { useStore } from '../../shared/hooks/useStore';
-import { RemoteControl } from '../components/RemoteControl';
-import { useSettingsEnvironment } from '../hooks/useSettingsEnvironment';
-import { FocusPlate } from './FocusPlate';
-import { categories } from './categories';
-import type { Category } from './categories';
+import type { ComponentChildren } from "preact";
+
+import { useStore } from "../../shared/hooks/useStore";
+import { RemoteControl } from "../components/RemoteControl";
+import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
+
+import type { Category } from "./categories";
+import { categories } from "./categories";
+import { FocusPlate } from "./FocusPlate";
 
 // Categories and remote behaviour are shared by both appearance themes.
 export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChildren> }) => {
-  const { glass, glassMenu, glassContent, glassScroll, bridge, services } =
-    useSettingsEnvironment();
+  const { glass, glassMenu, glassContent, glassScroll, bridge, services } = useSettingsEnvironment();
   const state = useStore(glass);
   const text = services.translate;
   return (
@@ -17,18 +18,15 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
       <aside class="aero-settings-sidebar">
         <div class="aero-settings-head">
           <div class="aero-settings-kicker">AEROTIZEN</div>
-          <h2>{text('Settings')}</h2>
+          <h2>{text("Settings")}</h2>
         </div>
         <div class="aero-settings-menu" ref={glassMenu}>
           <FocusPlate container={glassMenu} sidebar />
           {categories.map((category) => (
             <RemoteControl
               key={category.id}
-              class={
-                'aero-section-entry' +
-                (state.category === category.id ? ' aero-current-section' : '')
-              }
-              focusKey={'section:' + category.id}
+              class={"aero-section-entry" + (state.category === category.id ? " aero-current-section" : "")}
+              focusKey={"section:" + category.id}
               role="button"
               aria-label={text(category.title)}
               aria-expanded={state.category === category.id && state.expanded}
@@ -47,19 +45,19 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
             </RemoteControl>
           ))}
         </div>
-        <div class="aero-settings-help">{text('↑↓ Section   → Open   ← Back')}</div>
+        <div class="aero-settings-help">{text("↑↓ Section   → Open   ← Back")}</div>
       </aside>
       <div class="aero-settings-main" ref={glassContent}>
         <div class="aero-settings-content-head">
-          <span class="aero-settings-content-kicker">{text('CUSTOMISATION')}</span>
+          <span class="aero-settings-content-kicker">{text("CUSTOMISATION")}</span>
           <h2 class="aero-settings-active-title">
-            {text(categories.find((category) => category.id === state.category)?.title || '')}
+            {text(categories.find((category) => category.id === state.category)?.title || "")}
           </h2>
           <RemoteControl
             class="aero-settings-close"
             focusKey="settings-close"
             role="button"
-            aria-label={text('Close settings')}
+            aria-label={text("Close settings")}
             onClick={bridge.close}
           >
             ×

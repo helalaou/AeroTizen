@@ -1,23 +1,23 @@
-import { AppTile } from './AppTile';
-import { AddAppsTile } from './AddAppsTile';
-import { FireplaceTile } from './FireplaceTile';
-import type { InstalledApp, SettingsActions, SettingsServices } from '../../types';
+import type { InstalledApp, SettingsActions, SettingsServices } from "../../types";
+
+import { AddAppsTile } from "./AddAppsTile";
+import { AppTile } from "./AppTile";
+import { FireplaceTile } from "./FireplaceTile";
 
 interface Props {
-  home: readonly string[];
-  apps: readonly InstalledApp[];
   actions: SettingsActions;
-  describeApp: SettingsServices['describeApp'];
-  fireplaceId: string;
   active: boolean;
+  apps: readonly InstalledApp[];
+  describeApp: SettingsServices["describeApp"];
+  fireplaceId: string;
+  home: readonly string[];
 }
 
 export const AppMenu = ({ home, apps, actions, describeApp, fireplaceId, active }: Props) => (
   <>
     <h3>Show in app menu</h3>
     <p class="hint">
-      Press OK to show or hide a tile on the home screen. On the home screen, hold OK on a tile to
-      move it.
+      Press OK to show or hide a tile on the home screen. On the home screen, hold OK on a tile to move it.
     </p>
     <div id="all-apps" class="grid">
       <AddAppsTile onSelect={actions.openStore} />

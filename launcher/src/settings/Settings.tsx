@@ -1,15 +1,17 @@
-import { SettingsDrawer } from './glass/GlassSettings';
-import { RemoteControl } from './components/RemoteControl';
-import { useMemo } from 'preact/hooks';
-import { useStore } from '../shared/hooks/useStore';
-import { BackgroundSettings } from './sections/BackgroundSettings';
-import { WeatherSettings } from './sections/weather/WeatherSettings';
-import { ContinueWatchingSettings } from './sections/ContinueWatchingSettings';
-import { DisplaySettings } from './sections/DisplaySettings';
-import { InputSettings } from './sections/inputs/InputSettings';
-import { AppMenu } from './sections/apps/AppMenu';
-import { useSettingsEnvironment } from './hooks/useSettingsEnvironment';
-import { useSettingsNavigation } from './hooks/useSettingsNavigation';
+import { useMemo } from "preact/hooks";
+
+import { useStore } from "../shared/hooks/useStore";
+
+import { RemoteControl } from "./components/RemoteControl";
+import { SettingsDrawer } from "./glass/GlassSettings";
+import { useSettingsEnvironment } from "./hooks/useSettingsEnvironment";
+import { useSettingsNavigation } from "./hooks/useSettingsNavigation";
+import { AppMenu } from "./sections/apps/AppMenu";
+import { BackgroundSettings } from "./sections/BackgroundSettings";
+import { ContinueWatchingSettings } from "./sections/ContinueWatchingSettings";
+import { DisplaySettings } from "./sections/DisplaySettings";
+import { InputSettings } from "./sections/inputs/InputSettings";
+import { WeatherSettings } from "./sections/weather/WeatherSettings";
 
 export const Settings = ({
   active,
@@ -24,7 +26,7 @@ export const Settings = ({
   const settings = useStore(store);
   const { apps, inputs, continueSources, continueMessage } = useStore(inventory);
   const animated = services.backgrounds.some(
-    (background) => background.id === settings.background && Boolean(background.anim)
+    (background) => background.id === settings.background && Boolean(background.anim),
   );
   const locationLabel = settings.weatherLocation?.label || settings.weatherLocation?.name;
   useSettingsNavigation(active, previewing, {
@@ -48,7 +50,7 @@ export const Settings = ({
         fireplaceId={services.config.FIREPLACE_ID}
       />
     ),
-    [settings.home, apps, actions, active, services]
+    [settings.home, apps, actions, active, services],
   );
   return (
     <SettingsDrawer
@@ -73,14 +75,8 @@ export const Settings = ({
               active={active}
               describeApp={services.describeApp}
             />
-            <RemoteControl
-              id="escape"
-              class="escape"
-              focusKey="escape"
-              role="button"
-              onClick={actions.useSamsungHome}
-            >
-              {services.translate('Use Samsung Home instead')}
+            <RemoteControl id="escape" class="escape" focusKey="escape" role="button" onClick={actions.useSamsungHome}>
+              {services.translate("Use Samsung Home instead")}
             </RemoteControl>
           </>
         ),

@@ -1,9 +1,9 @@
 // Weather from Open-Meteo, using a saved location or an approximate IP location.
 // Refresh every 20 minutes; keep matching readings for up to two hours while offline.
 window.Weather = (function () {
-  'use strict';
+  "use strict";
 
-  var CACHE = 'aerotizen.weather.v2';
+  var CACHE = "aerotizen.weather.v2";
   var REFRESH = 20 * 60 * 1000;
   var MAX_AGE = 2 * 60 * 60 * 1000;
   var reading = null,
@@ -21,8 +21,7 @@ window.Weather = (function () {
     sun: '<circle cx="12" cy="12" r="4.5" fill="#ffd34d"/><g stroke="#ffd34d" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.5v2.5M12 19v2.5M2.5 12h2.5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></g>',
     partly:
       '<circle cx="9" cy="9" r="3.6" fill="#ffd34d"/><path fill="#e8ecf2" d="M8 19h9.5a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6 1.2A3 3 0 0 0 8 19z"/>',
-    cloud:
-      '<path fill="#d5dbe4" d="M7 19h11a4 4 0 0 0 .5-8 6 6 0 0 0-11.6 1.6A3.3 3.3 0 0 0 7 19z"/>',
+    cloud: '<path fill="#d5dbe4" d="M7 19h11a4 4 0 0 0 .5-8 6 6 0 0 0-11.6 1.6A3.3 3.3 0 0 0 7 19z"/>',
     fog: '<g stroke="#c9cfd8" stroke-width="2" stroke-linecap="round"><path d="M4 9h16M6 13h12M4 17h16"/></g>',
     rain: '<path fill="#d5dbe4" d="M7 15h11a4 4 0 0 0 .5-8 6 6 0 0 0-11.6 1.6A3.3 3.3 0 0 0 7 15z"/><g stroke="#6cb6ff" stroke-width="1.8" stroke-linecap="round"><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/></g>',
     snow: '<path fill="#d5dbe4" d="M7 15h11a4 4 0 0 0 .5-8 6 6 0 0 0-11.6 1.6A3.3 3.3 0 0 0 7 15z"/><g fill="#fff"><circle cx="8" cy="19" r="1.2"/><circle cx="12" cy="20.5" r="1.2"/><circle cx="16" cy="19" r="1.2"/></g>',
@@ -99,7 +98,7 @@ window.Weather = (function () {
       automaticRequests.push(cancel);
     }
     try {
-      x.open('GET', url);
+      x.open("GET", url);
       x.timeout = 8000;
       x.send();
     } catch (e) {
@@ -126,7 +125,7 @@ window.Weather = (function () {
   }
 
   function number(value) {
-    return typeof value === 'number' && isFinite(value);
+    return typeof value === "number" && isFinite(value);
   }
 
   function validLocation(geo) {
@@ -143,15 +142,13 @@ window.Weather = (function () {
   function options() {
     var s = settingsOf(),
       geo = s.weatherLocation;
-    if (!validLocation(geo) || typeof geo.name !== 'string' || !geo.name.trim()) {
+    if (!validLocation(geo) || typeof geo.name !== "string" || !geo.name.trim()) {
       geo = null;
     }
     return {
-      unit: s.tempUnit === 'F' ? 'F' : 'C',
+      unit: s.tempUnit === "F" ? "F" : "C",
       geo: geo,
-      source: geo
-        ? JSON.stringify([geo.latitude, geo.longitude, geo.name, geo.country_code])
-        : 'auto',
+      source: geo ? JSON.stringify([geo.latitude, geo.longitude, geo.name, geo.country_code]) : "auto",
       visible: s.showWeather !== false,
       wallpaper: s.weatherPhoto === true,
       fetch: s.showWeather !== false || s.weatherPhoto === true,
@@ -165,7 +162,7 @@ window.Weather = (function () {
       number(w.temp) &&
       number(w.code) &&
       number(w.at) &&
-      (w.unit === 'C' || w.unit === 'F') &&
+      (w.unit === "C" || w.unit === "F") &&
       w.source === opt.source &&
       Date.now() >= w.at &&
       Date.now() - w.at <= MAX_AGE
@@ -175,15 +172,8 @@ window.Weather = (function () {
   // A solar pair describes the day centered on its solar noon, not an arbitrary
   // TV timezone. Do not extrapolate yesterday's or tomorrow's daylight into today.
   function solarPhase(w, now) {
-    if (
-      !w ||
-      !number(w.at) ||
-      !number(now) ||
-      now < w.at ||
-      now - w.at > MAX_AGE ||
-      !Array.isArray(w.solar)
-    ) {
-      return '';
+    if (!w || !number(w.at) || !number(now) || now < w.at || now - w.at > MAX_AGE || !Array.isArray(w.solar)) {
+      return "";
     }
     for (var i = 0; i < w.solar.length; i++) {
       var day = w.solar[i] || {},
@@ -197,20 +187,20 @@ window.Weather = (function () {
         continue;
       }
       if (now >= set - 45 * 60000 && now < set + 20 * 60000) {
-        return 'sunset';
+        return "sunset";
       }
       if (now >= rise - 10 * 60000 && now < set - 45 * 60000) {
-        return 'day';
+        return "day";
       }
-      return 'night';
+      return "night";
     }
-    return '';
+    return "";
   }
 
   function render() {
     var w = reading,
       opt = options();
-    var el = document.getElementById('weather');
+    var el = document.getElementById("weather");
     if (window.AeroTizen && window.AeroTizen.photoWeather) {
       window.AeroTizen.photoWeather.update();
     }
@@ -218,22 +208,19 @@ window.Weather = (function () {
       return;
     }
     if (!opt.visible || !validReading(w, opt)) {
-      el.textContent = '';
+      el.textContent = "";
       el.hidden = true;
       return;
     }
     el.innerHTML =
-      '<svg viewBox="0 0 24 24">' +
-      icon(w.code) +
-      '</svg><b></b>' +
-      (opt.showLocation ? '<span></span>' : '');
+      '<svg viewBox="0 0 24 24">' + icon(w.code) + "</svg><b></b>" + (opt.showLocation ? "<span></span>" : "");
     var temp = w.temp;
     if (w.unit !== opt.unit) {
-      temp = opt.unit === 'F' ? (temp * 9) / 5 + 32 : ((temp - 32) * 5) / 9;
+      temp = opt.unit === "F" ? (temp * 9) / 5 + 32 : ((temp - 32) * 5) / 9;
     }
-    el.querySelector('b').textContent = Math.round(temp) + '°';
+    el.querySelector("b").textContent = Math.round(temp) + "°";
     if (opt.showLocation) {
-      el.querySelector('span').textContent = w.city || '';
+      el.querySelector("span").textContent = w.city || "";
     }
     el.hidden = false;
   }
@@ -244,12 +231,12 @@ window.Weather = (function () {
       return result;
     }
     for (var i = 0; i < Math.min(daily.sunrise.length, daily.sunset.length); i++) {
-      var a = String(daily.sunrise[i] || '');
-      var b = String(daily.sunset[i] || '');
+      var a = String(daily.sunrise[i] || "");
+      var b = String(daily.sunset[i] || "");
       // The API request uses timezone=UTC; convert timestamps to epochs
       // before checking sunset, independent of the TV's own time zone.
-      var sunrise = Date.parse(a + (/[zZ]|[+-]\d\d:\d\d$/.test(a) ? '' : 'Z'));
-      var sunset = Date.parse(b + (/[zZ]|[+-]\d\d:\d\d$/.test(b) ? '' : 'Z'));
+      var sunrise = Date.parse(a + (/[zZ]|[+-]\d\d:\d\d$/.test(a) ? "" : "Z"));
+      var sunset = Date.parse(b + (/[zZ]|[+-]\d\d:\d\d$/.test(b) ? "" : "Z"));
       if (isFinite(sunrise) && isFinite(sunset) && sunset > sunrise) {
         result.push({ sunrise: sunrise, sunset: sunset });
       }
@@ -270,25 +257,20 @@ window.Weather = (function () {
     lastRefresh = { source: opt.source, unit: opt.unit, at: Date.now() };
     function current() {
       var now = options();
-      return (
-        now.fetch &&
-        version === requestVersion &&
-        now.source === opt.source &&
-        now.unit === opt.unit
-      );
+      return now.fetch && version === requestVersion && now.source === opt.source && now.unit === opt.unit;
     }
     function forecast(geo) {
       if (!current() || !validLocation(geo)) {
         return;
       }
-      var f = opt.unit === 'F';
+      var f = opt.unit === "F";
       getJSON(
-        'https://api.open-meteo.com/v1/forecast?latitude=' +
+        "https://api.open-meteo.com/v1/forecast?latitude=" +
           geo.latitude +
-          '&longitude=' +
+          "&longitude=" +
           geo.longitude +
-          '&current=temperature_2m,weather_code,is_day&daily=sunrise,sunset&timezone=UTC&forecast_days=2' +
-          (f ? '&temperature_unit=fahrenheit' : ''),
+          "&current=temperature_2m,weather_code,is_day&daily=sunrise,sunset&timezone=UTC&forecast_days=2" +
+          (f ? "&temperature_unit=fahrenheit" : ""),
         function (m) {
           if (
             !current() ||
@@ -303,7 +285,7 @@ window.Weather = (function () {
           reading = {
             temp: m.current.temperature_2m,
             code: m.current.weather_code,
-            city: geo.name || geo.city || '',
+            city: geo.name || geo.city || "",
             day: m.current.is_day,
             solar: parseSolar(m.daily),
             unit: opt.unit,
@@ -321,7 +303,7 @@ window.Weather = (function () {
     if (opt.geo) {
       forecast(opt.geo);
     } else {
-      getJSON('https://ipapi.co/json/', forecast, true);
+      getJSON("https://ipapi.co/json/", forecast, true);
     }
   }
 
@@ -332,9 +314,9 @@ window.Weather = (function () {
       return;
     }
     getJSON(
-      'https://geocoding-api.open-meteo.com/v1/search?name=' +
+      "https://geocoding-api.open-meteo.com/v1/search?name=" +
         encodeURIComponent(query) +
-        '&count=5&language=en&format=json',
+        "&count=5&language=en&format=json",
       function (data) {
         if (!data || data.error || (data.results && !Array.isArray(data.results))) {
           cb(null);
@@ -343,21 +325,21 @@ window.Weather = (function () {
         cb(
           (data.results || [])
             .filter(function (geo) {
-              return validLocation(geo) && typeof geo.name === 'string' && geo.name.trim();
+              return validLocation(geo) && typeof geo.name === "string" && geo.name.trim();
             })
             .map(function (geo) {
               var parts = [geo.name];
               [geo.admin2, geo.admin1, geo.country].forEach(function (part) {
-                if (typeof part === 'string' && part && parts.indexOf(part) < 0) {
+                if (typeof part === "string" && part && parts.indexOf(part) < 0) {
                   parts.push(part);
                 }
               });
               return {
                 name: geo.name,
-                label: parts.join(', '),
+                label: parts.join(", "),
                 latitude: geo.latitude,
                 longitude: geo.longitude,
-                country_code: geo.country_code || '',
+                country_code: geo.country_code || "",
               };
             })
         );
@@ -389,8 +371,7 @@ window.Weather = (function () {
         now < lastRefresh.at ||
         now - lastRefresh.at >= REFRESH;
       var stale =
-        timer === null &&
-        (!validReading(reading, opt) || reading.unit !== opt.unit || now - reading.at >= REFRESH);
+        timer === null && (!validReading(reading, opt) || reading.unit !== opt.unit || now - reading.at >= REFRESH);
       if (!pending && (stale || needsSolar) && (!opt.wallpaper || retryDue)) {
         refresh();
       }

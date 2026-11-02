@@ -1,7 +1,7 @@
 // Native Samsung Home and Live TV transitions, adapted from the tested
 // AeroTizen handoff. The physical Home-key watcher and service are untouched.
 (function (A) {
-  'use strict';
+  "use strict";
   if (!A || !A.homewatch) {
     return;
   }
@@ -20,8 +20,8 @@
     if (reason) {
       data.reason = reason;
     }
-    var id = log.record('handoff.' + name, data);
-    if (name !== 'request' && log.flush) {
+    var id = log.record("handoff." + name, data);
+    if (name !== "request" && log.flush) {
       log.flush();
     }
     return id;
@@ -33,7 +33,7 @@
     }
     try {
       var xhr = new XMLHttpRequest();
-      xhr.open('GET', cfg.SERVICE_URL + '/home', true);
+      xhr.open("GET", cfg.SERVICE_URL + "/home", true);
       xhr.timeout = 1500;
       xhr.send();
     } catch (ignored) {
@@ -56,25 +56,25 @@
     }
     try {
       xhr = new XMLHttpRequest();
-      xhr.open('GET', cfg.SERVICE_URL + '/leave', true);
+      xhr.open("GET", cfg.SERVICE_URL + "/leave", true);
       xhr.timeout = 1500;
       xhr.onload = function () {
         if (settled) {
           return;
         }
         if (xhr.status < 200 || xhr.status >= 300) {
-          fail('HomeWatcher HTTP ' + xhr.status);
+          fail("HomeWatcher HTTP " + xhr.status);
           return;
         }
         settled = true;
         onReady();
       };
       xhr.onerror = xhr.ontimeout = function () {
-        fail('HomeWatcher unavailable');
+        fail("HomeWatcher unavailable");
       };
       xhr.send();
     } catch (error) {
-      fail('HomeWatcher request failed');
+      fail("HomeWatcher request failed");
     }
   }
 
@@ -88,39 +88,39 @@
       return;
     }
     if (!tz || !tz.application || !tz.ApplicationControl) {
-      A.toast('Samsung Home is unavailable on this device');
+      A.toast("Samsung Home is unavailable on this device");
       return;
     }
-    var operation = report('request', 'samsung_home');
+    var operation = report("request", "samsung_home");
     homePending = true;
     function failed(reason) {
       homePending = false;
-      report('failed', 'samsung_home', operation, reason);
+      report("failed", "samsung_home", operation, reason);
       rearmWatcher();
-      A.toast('Could not open Samsung Home: ' + reason);
+      A.toast("Could not open Samsung Home: " + reason);
     }
     function succeeded() {
       homePending = false;
-      report('accepted', 'samsung_home', operation);
+      report("accepted", "samsung_home", operation);
       // Leave HomeWatcher paused while native Samsung Home is visible.
     }
     function controlFallback() {
       try {
         tz.application.launchAppControl(
-          new tz.ApplicationControl('http://tizen.org/appcontrol/operation/main'),
-          'com.samsung.tv.csfs',
+          new tz.ApplicationControl("http://tizen.org/appcontrol/operation/main"),
+          "com.samsung.tv.csfs",
           succeeded,
           function (error) {
-            failed((error && (error.name || error.message)) || 'launch denied');
+            failed((error && (error.name || error.message)) || "launch denied");
           }
         );
       } catch (error) {
-        failed((error && (error.name || error.message)) || 'AppControl failed');
+        failed((error && (error.name || error.message)) || "AppControl failed");
       }
     }
     function nativeLaunch() {
       try {
-        tz.application.launch('com.samsung.tv.csfs', succeeded, controlFallback);
+        tz.application.launch("com.samsung.tv.csfs", succeeded, controlFallback);
       } catch (error) {
         controlFallback();
       }
@@ -134,11 +134,11 @@
     if (livePending) {
       return true;
     }
-    if (!tz || !tz.application || typeof tz.application.launch !== 'function') {
+    if (!tz || !tz.application || typeof tz.application.launch !== "function") {
       // Older devices keep the upstream embedded TVWindow behaviour.
       return false;
     }
-    var operation = report('request', 'live_tv');
+    var operation = report("request", "live_tv");
     livePending = true;
     var finished = false;
     function failed(reason) {
@@ -147,9 +147,9 @@
       }
       finished = true;
       livePending = false;
-      report('failed', 'live_tv', operation, reason);
+      report("failed", "live_tv", operation, reason);
       rearmWatcher();
-      A.toast('Could not open Live TV: ' + reason);
+      A.toast("Could not open Live TV: " + reason);
     }
     function accepted() {
       if (finished) {
@@ -157,14 +157,14 @@
       }
       finished = true;
       livePending = false;
-      report('accepted', 'live_tv', operation);
+      report("accepted", "live_tv", operation);
       // A Tizen launch success callback only confirms that launch was
       // accepted. It does not guarantee the native viewer took focus.
       window.setTimeout(function () {
         if (!document.hidden) {
-          report('visibility_unconfirmed', 'live_tv', operation);
+          report("visibility_unconfirmed", "live_tv", operation);
           rearmWatcher();
-          A.toast('Live TV did not take focus');
+          A.toast("Live TV did not take focus");
         }
       }, 2100);
     }
@@ -173,25 +173,25 @@
         return;
       }
       if (!tz.ApplicationControl || !tz.application.launchAppControl) {
-        failed('AppControl is unavailable');
+        failed("AppControl is unavailable");
         return;
       }
       try {
         tz.application.launchAppControl(
-          new tz.ApplicationControl('http://tizen.org/appcontrol/operation/main'),
-          'org.tizen.tv-viewer',
+          new tz.ApplicationControl("http://tizen.org/appcontrol/operation/main"),
+          "org.tizen.tv-viewer",
           accepted,
           function (error) {
-            failed((error && (error.name || error.message)) || 'launch denied');
+            failed((error && (error.name || error.message)) || "launch denied");
           }
         );
       } catch (error) {
-        failed((error && (error.name || error.message)) || 'AppControl failed');
+        failed((error && (error.name || error.message)) || "AppControl failed");
       }
     }
     function launchViewer() {
       try {
-        tz.application.launch('org.tizen.tv-viewer', accepted, appControlFallback);
+        tz.application.launch("org.tizen.tv-viewer", accepted, appControlFallback);
       } catch (error) {
         appControlFallback();
       }
@@ -207,15 +207,12 @@
           videoSource,
           launchViewer,
           function (error) {
-            failed(
-              'TV tuner selection failed: ' +
-                ((error && (error.name || error.message)) || 'source error')
-            );
+            failed("TV tuner selection failed: " + ((error && (error.name || error.message)) || "source error"));
           },
-          'MAIN'
+          "MAIN"
         );
       } catch (error) {
-        failed('TV tuner selection is unavailable');
+        failed("TV tuner selection is unavailable");
       }
     }
     leaveBeforeLaunch(selectTuner, failed);
@@ -233,6 +230,6 @@
   // can reload the page without a visibilitychange event. The existing
   // upstream service must then leave its paused /leave state.
   if (window.addEventListener) {
-    window.addEventListener('load', rearmWatcher);
+    window.addEventListener("load", rearmWatcher);
   }
 })(window.AeroTizen);

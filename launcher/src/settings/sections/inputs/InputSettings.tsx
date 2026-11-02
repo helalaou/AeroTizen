@@ -1,6 +1,7 @@
-import { Choice } from '../../components/Choice';
-import { InputName } from './InputName';
-import type { InputOption, SettingsSectionProps } from '../../types';
+import { Choice } from "../../components/Choice";
+import type { InputOption, SettingsSectionProps } from "../../types";
+
+import { InputName } from "./InputName";
 
 interface Props extends SettingsSectionProps {
   inputs: readonly InputOption[];
@@ -15,15 +16,14 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => (
       label="HDMI visibility"
       value={settings.hideDisconnectedHdmi}
       options={[
-        [false, 'Show all'],
-        [true, 'Hide disconnected'],
+        [false, "Show all"],
+        [true, "Hide disconnected"],
       ]}
       onSelect={actions.setHdmiVisibility}
     />
     <h3>Keep HDMI ports visible</h3>
     <p class="hint">
-      Recognised standby devices stay visible automatically. Use an override only for an
-      unidentified device.
+      Recognised standby devices stay visible automatically. Use an override only for an unidentified device.
     </p>
     <div id="hdmi-keep-visible">
       {inputs
@@ -33,12 +33,12 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => (
           return (
             <Choice
               key={input.port}
-              id={'hdmi-keep:' + number}
-              label={input.port + ' standby visibility'}
+              id={"hdmi-keep:" + number}
+              label={input.port + " standby visibility"}
               value={settings.hdmiKeepVisible[number] === true}
               options={[
-                [false, input.port + ': Automatic'],
-                [true, input.port + ': Always show'],
+                [false, input.port + ": Automatic"],
+                [true, input.port + ": Always show"],
               ]}
               onSelect={(keep) => actions.setHdmiKeepVisible(number, keep)}
             />
@@ -48,12 +48,7 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => (
     <h3>Input names</h3>
     <div id="input-names" class="units">
       {inputs.map((input) => (
-        <InputName
-          key={input.port}
-          {...input}
-          name={settings.inputNames[input.port]}
-          actions={actions}
-        />
+        <InputName key={input.port} {...input} name={settings.inputNames[input.port]} actions={actions} />
       ))}
     </div>
   </>

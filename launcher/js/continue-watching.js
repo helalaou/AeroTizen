@@ -1,14 +1,14 @@
 // Optional, read-only Samsung Continue Watching feeds. No root or account login.
 (function (A) {
-  'use strict';
+  "use strict";
 
-  var cw = (A.continueWatching = { sources: [], items: [], message: '' });
+  var cw = (A.continueWatching = { sources: [], items: [], message: "" });
   var listeners = [],
     requests = [],
     timers = [],
     generation = 0,
     started = false,
-    signature = '';
+    signature = "";
   var feeds = Object.create(null),
     startupUntil = 0,
     clockWall = 0,
@@ -16,8 +16,8 @@
   var CLOCK_CHANGE_MS = 1000;
   var STARTUP_RETRIES = [2000, 5000, 15000, 30000, 60000, 60000, 60000, 60000],
     REFRESH_RETRIES = [2000, 2000];
-  var PREFIX = 'http://samsung.com/tv/metadata/';
-  var ENDPOINT = 'http://localhost:9013/?module=EBHelper&func=GetItems';
+  var PREFIX = "http://samsung.com/tv/metadata/";
+  var ENDPOINT = "http://localhost:9013/?module=EBHelper&func=GetItems";
 
   // A cold TV can correct its date after launch. Retry limits use elapsed time.
   function retryTime() {
@@ -77,8 +77,8 @@
           metadata.some(function (entry) {
             return (
               entry &&
-              ((entry.key === PREFIX + 'app_support_continue_watching' && entry.value === 'true') ||
-                (entry.key === PREFIX + 'use.continue_watching' && entry.value === 'bg_service'))
+              ((entry.key === PREFIX + "app_support_continue_watching" && entry.value === "true") ||
+                (entry.key === PREFIX + "use.continue_watching" && entry.value === "bg_service"))
             );
           });
       } catch (e) {
@@ -104,9 +104,9 @@
       found.push({
         id: app.id,
         name: A.tiles.shortName(app.name),
-        icon: app.iconPath || '',
-        storeId: storeId || '',
-        status: storeId ? 'Not selected' : 'App ID unavailable',
+        icon: app.iconPath || "",
+        storeId: storeId || "",
+        status: storeId ? "Not selected" : "App ID unavailable",
       });
     });
     return found.sort(function (a, b) {
@@ -115,10 +115,10 @@
   };
 
   function text(value, limit) {
-    return typeof value === 'string' ? value.slice(0, limit) : '';
+    return typeof value === "string" ? value.slice(0, limit) : "";
   }
   function nonnegative(value) {
-    return typeof value === 'number' && isFinite(value) && value >= 0 ? value : 0;
+    return typeof value === "number" && isFinite(value) && value >= 0 ? value : 0;
   }
   function activity(value) {
     value = nonnegative(value);
@@ -130,7 +130,7 @@
   }
   cw.normalize = function (source, records) {
     if (!Array.isArray(records)) {
-      throw new Error('Invalid feed');
+      throw new Error("Invalid feed");
     }
     var byId = Object.create(null),
       result = [];
@@ -141,20 +141,14 @@
       var title = text(record.content_title, 300),
         id = text(record.content_id, 500),
         payload = text(record.payload, 16000);
-      if (
-        !title ||
-        !id ||
-        !payload ||
-        record.content_id.length > 500 ||
-        record.payload.length > 16000
-      ) {
+      if (!title || !id || !payload || record.content_id.length > 500 || record.payload.length > 16000) {
         return;
       }
       var item = {
-        key: source.id + ':' + id,
+        key: source.id + ":" + id,
         sourceId: source.id,
         sourceName: source.name,
-        sourceIcon: source.icon || '',
+        sourceIcon: source.icon || "",
         title: title,
         season: nonnegative(record.season),
         episode: nonnegative(record.episode),
@@ -162,7 +156,7 @@
         duration: nonnegative(record.duration),
         playback: nonnegative(record.playback),
         timestamp: activity(record.timestamp),
-        image: /^https?:\/\//i.test(record.image_url) ? text(record.image_url, 4000) : '',
+        image: /^https?:\/\//i.test(record.image_url) ? text(record.image_url, 4000) : "",
       };
       var previous = byId[id];
       if (!previous) {
@@ -248,32 +242,28 @@
         attempt < delays.length &&
         (!warmup || retryTime() < startupUntil)
       ) {
-        source.status = 'Checking for items';
+        source.status = "Checking for items";
         publish();
-        var delay = warmup
-          ? Math.min(delays[attempt], startupUntil - retryTime())
-          : delays[attempt];
+        var delay = warmup ? Math.min(delays[attempt], startupUntil - retryTime()) : delays[attempt];
         later(function () {
           read(source, token, attempt + 1, warmup);
         }, delay);
         return;
       }
       if (error) {
-        source.status = 'Unavailable';
+        source.status = "Unavailable";
         feeds[source.id] = [];
         merge();
         return;
       }
       feeds[source.id] = records.slice(0, 200);
-      source.status = data.length
-        ? data.length + (data.length === 1 ? ' item' : ' items')
-        : 'No items available';
+      source.status = data.length ? data.length + (data.length === 1 ? " item" : " items") : "No items available";
       merge();
     }
     xhr.onload = function () {
       try {
         if (xhr.status !== 200 || xhr.responseText.length > 2000000) {
-          throw new Error('Unavailable feed');
+          throw new Error("Unavailable feed");
         }
         var records = JSON.parse(xhr.responseText);
         finish(null, cw.normalize(source, records), records);
@@ -289,10 +279,10 @@
     };
     try {
       // app_id alone is not a cache key. Keep each source and retry fresh.
-      var key = source.storeId + '-' + Date.now() + '-' + token + '-' + attempt;
-      xhr.open('GET', ENDPOINT + '&_aerotizen=' + encodeURIComponent(key), true);
+      var key = source.storeId + "-" + Date.now() + "-" + token + "-" + attempt;
+      xhr.open("GET", ENDPOINT + "&_aerotizen=" + encodeURIComponent(key), true);
       xhr.timeout = 5000;
-      xhr.setRequestHeader('app_id', source.storeId);
+      xhr.setRequestHeader("app_id", source.storeId);
       xhr.send();
     } catch (e) {
       finish(true);
@@ -302,7 +292,7 @@
   cw.refresh = function () {
     cancel();
     cw.sources = [];
-    cw.message = '';
+    cw.message = "";
     if (A.settings.continueWatching !== true) {
       feeds = Object.create(null);
       cw.items = [];
@@ -312,16 +302,16 @@
     if (!A.tizen || !A.tizen.application || !A.tizen.application.getAppMetaData) {
       feeds = Object.create(null);
       cw.items = [];
-      cw.message = 'App discovery is available on a Samsung TV.';
+      cw.message = "App discovery is available on a Samsung TV.";
       publish();
       return;
     }
     cw.sources = cw.discover(A.apps.inventory || []);
     cw.message = !A.apps.ready
-      ? 'Finding installed apps…'
+      ? "Finding installed apps…"
       : !cw.sources.length
-        ? 'No installed apps declare Continue Watching support.'
-        : '';
+        ? "No installed apps declare Continue Watching support."
+        : "";
     var token = generation,
       warmup = retryTime() < startupUntil,
       selected = cw.sources.filter(function (source) {
@@ -337,7 +327,7 @@
       }
     });
     selected.forEach(function (source) {
-      source.status = 'Checking for items';
+      source.status = "Checking for items";
     });
     merge();
     // Refresh on app discovery, source selection and return to AeroTizen.
@@ -359,11 +349,9 @@
       return;
     }
     try {
-      var data = [
-        new A.tizen.ApplicationControlData('PAYLOAD', [JSON.stringify({ values: item.payload })]),
-      ];
+      var data = [new A.tizen.ApplicationControlData("PAYLOAD", [JSON.stringify({ values: item.payload })])];
       var control = new A.tizen.ApplicationControl(
-        'http://tizen.org/appcontrol/operation/view',
+        "http://tizen.org/appcontrol/operation/view",
         null,
         null,
         null,
@@ -371,10 +359,10 @@
       );
       A.homewatch.watch(item.sourceId);
       A.tizen.application.launchAppControl(control, item.sourceId, null, function () {
-        A.toast('Could not open ' + item.title);
+        A.toast("Could not open " + item.title);
       });
     } catch (e) {
-      A.toast('Could not open ' + item.title);
+      A.toast("Could not open " + item.title);
     }
   };
   cw.start = function () {
@@ -396,7 +384,7 @@
         cw.refresh();
       }
     });
-    document.addEventListener('visibilitychange', function () {
+    document.addEventListener("visibilitychange", function () {
       if (document.hidden) {
         cancel();
       } else {

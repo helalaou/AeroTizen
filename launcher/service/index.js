@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 // Background watcher that makes the launcher behave like the TV's home screen.
 // Hidden web apps are frozen on retail TVs, so this runs as a Tizen web service started at
@@ -9,8 +9,8 @@
 // needs two fresh "Art Mode off" replies and a recheck of the screen. Other TVs keep the
 // fast path (short grace period, direct relaunch). The launcher talks to this service over
 // http://127.0.0.1:47790.
-var http = require('http');
-var createArtMode = require('./artmode');
+var http = require("http");
+var createArtMode = require("./artmode");
 var diagnostics = {
   record: function () {},
   flushStorage: function () {},
@@ -23,7 +23,7 @@ var diagnostics = {
   },
 };
 try {
-  diagnostics = require('../js/diagnostics')('service');
+  diagnostics = require("../js/diagnostics")("service");
 } catch (e) {
   /* optional diagnostics */
 }
@@ -35,11 +35,11 @@ var diagnosticContext = {
   },
 };
 try {
-  diagnosticContext = require('./diagnostics-context')();
+  diagnosticContext = require("./diagnostics-context")();
 } catch (e) {
   /* optional metadata */
 }
-var SELF = 'DclHome001.Home';
+var SELF = "DclHome001.Home";
 var HIDDEN_GRACE = 250; // non-Frame: Samsung Home appears almost at once
 var FRAME_HIDDEN_GRACE = 1500; // Frame: give Art Mode time to report before reclaiming
 var APP_GRACE = 2500;
@@ -75,22 +75,22 @@ var state = {
   epoch: 0,
   heartbeats: 0,
   guard: {
-    capability: 'unknown',
-    artMode: 'unknown',
+    capability: "unknown",
+    artMode: "unknown",
     pending: null,
     lastBlocked: null,
     launchCalls: 0,
     history: [],
   },
 };
-var createHomeMode = require('./home-mode');
+var createHomeMode = require("./home-mode");
 var homeMode = createHomeMode(null, updateMode, true);
 function watcherEnabled() {
-  return !stopped && homeMode.read().mode === 'watcher';
+  return !stopped && homeMode.read().mode === "watcher";
 }
 
 function record(kind, detail) {
-  diagnostics.record('watcher.' + kind, { reason: detail });
+  diagnostics.record("watcher." + kind, { reason: detail });
   state.guard.history.push({ at: Date.now(), kind: kind, detail: detail });
   if (state.guard.history.length > 100) {
     state.guard.history.shift();
@@ -98,7 +98,7 @@ function record(kind, detail) {
 }
 function block(reason) {
   if (state.guard.lastBlocked !== reason) {
-    record('blocked', reason);
+    record("blocked", reason);
   }
   state.guard.lastBlocked = reason;
 }
@@ -106,7 +106,7 @@ function invalidate(reason) {
   state.epoch += 1;
   if (pending) {
     clearTimeout(pending.timer);
-    record('cancelled', reason);
+    record("cancelled", reason);
   }
   pending = null;
   state.guard.pending = null;
@@ -135,15 +135,15 @@ var art = createArtMode({
   onChange: function (value, reason) {
     var previous = state.guard.artMode;
     state.guard.artMode = value;
-    if (value !== 'off' || previous !== 'off') {
-      invalidate('Art status: ' + value);
+    if (value !== "off" || previous !== "off") {
+      invalidate("Art status: " + value);
       if (value !== previous) {
         resetHiddenTiming();
-        record('art-status', value);
+        record("art-status", value);
       }
     }
-    if (value !== 'off') {
-      block('Art status: ' + value + ' (' + reason + ')');
+    if (value !== "off") {
+      block("Art status: " + value + " (" + reason + ")");
     }
   },
 });
@@ -166,19 +166,19 @@ function get(path, cb) {
     cb(value, unavailable);
   }
   try {
-    req = http.get({ host: '127.0.0.1', port: 8001, path: path }, function (res) {
-      var body = '';
-      res.on('data', function (chunk) {
+    req = http.get({ host: "127.0.0.1", port: 8001, path: path }, function (res) {
+      var body = "";
+      res.on("data", function (chunk) {
         body += chunk;
         if (body.length > 65536) {
           finish(null, false);
           req.destroy();
         }
       });
-      res.on('error', function () {
+      res.on("error", function () {
         finish(null, false);
       });
-      res.on('end', function () {
+      res.on("end", function () {
         if (res.statusCode === 404) {
           finish(null, true);
           return;
@@ -196,7 +196,7 @@ function get(path, cb) {
         finish(value, false);
       });
     });
-    req.on('error', function () {
+    req.on("error", function () {
       finish(null, false);
     });
   } catch (e) {
@@ -204,8 +204,8 @@ function get(path, cb) {
   }
 }
 function appStatus(id, cb) {
-  get('/api/v2/applications/' + encodeURIComponent(id), function (value, unavailable) {
-    var valid = value && typeof value.running === 'boolean' && typeof value.visible === 'boolean';
+  get("/api/v2/applications/" + encodeURIComponent(id), function (value, unavailable) {
+    var valid = value && typeof value.running === "boolean" && typeof value.visible === "boolean";
     cb(valid ? value : null, unavailable);
   });
 }
@@ -247,15 +247,15 @@ function standAside(result, knownApp) {
   if (!id) {
     return false;
   }
-  invalidate('another app is active');
+  invalidate("another app is active");
   state.watched = id;
   state.seen = result.visible === id;
   resetWatchedTiming();
-  state.last = 'stand aside: ' + id;
+  state.last = "stand aside: " + id;
   return true;
 }
 function isFrame() {
-  return state.guard.capability === 'frame';
+  return state.guard.capability === "frame";
 }
 function hiddenGrace() {
   return isFrame() ? FRAME_HIDDEN_GRACE : HIDDEN_GRACE;
@@ -272,19 +272,19 @@ function launchNow(why) {
   state.seen = false;
   state.guard.lastBlocked = null;
   state.guard.launchCalls += 1;
-  record('launch', why);
+  record("launch", why);
   try {
     tizen.application.launch(
       SELF,
       function () {
-        state.last = 'relaunched: ' + why;
+        state.last = "relaunched: " + why;
       },
       function (e) {
-        state.last = 'relaunch failed: ' + (e && e.message);
-      }
+        state.last = "relaunch failed: " + (e && e.message);
+      },
     );
   } catch (e) {
-    state.last = 'relaunch threw: ' + e.message;
+    state.last = "relaunch threw: " + e.message;
   }
 }
 // Open the launcher once at boot on non-Frame TVs. Frame TVs leave this to the guarded
@@ -301,40 +301,40 @@ function bootLaunch() {
       if (!watcherEnabled() || state.leaving) {
         return;
       }
-      if (state.guard.capability === 'unknown') {
-        launchNow('boot (TV type unknown)');
+      if (state.guard.capability === "unknown") {
+        launchNow("boot (TV type unknown)");
       } else if (!isFrame()) {
-        launchSelf('boot');
+        launchSelf("boot");
       }
     },
-    Math.max(0, bootUntil - Date.now())
+    Math.max(0, bootUntil - Date.now()),
   );
 }
 function permitted() {
   if (!watcherEnabled()) {
-    block('Native Home or handoff mode');
+    block("Native Home or handoff mode");
     return false;
   }
-  if (state.guard.capability === 'non-frame' || state.guard.capability === 'not-advertised') {
+  if (state.guard.capability === "non-frame" || state.guard.capability === "not-advertised") {
     return true;
   }
-  if (state.guard.capability !== 'frame') {
-    block('TV capability unknown');
+  if (state.guard.capability !== "frame") {
+    block("TV capability unknown");
     return false;
   }
-  if (state.guard.artMode !== 'off') {
-    block('Art status: ' + state.guard.artMode);
+  if (state.guard.artMode !== "off") {
+    block("Art status: " + state.guard.artMode);
     return false;
   }
   return true;
 }
 function freshOff(cb) {
-  if (state.guard.capability === 'non-frame' || state.guard.capability === 'not-advertised') {
-    cb('off');
+  if (state.guard.capability === "non-frame" || state.guard.capability === "not-advertised") {
+    cb("off");
     return;
   }
-  if (state.guard.capability !== 'frame') {
-    cb('unknown');
+  if (state.guard.capability !== "frame") {
+    cb("unknown");
     return;
   }
   art.fresh(cb);
@@ -357,16 +357,16 @@ function cancel(candidate, reason) {
 }
 function recheck(candidate, cb) {
   function ready() {
-    if (state.guard.capability !== 'frame') {
+    if (state.guard.capability !== "frame") {
       cb();
       return;
     }
-    get('/api/v2/', function (info) {
+    get("/api/v2/", function (info) {
       if (!current(candidate)) {
         return;
       }
-      if (!info || !info.device || info.device.PowerState !== 'on') {
-        cancel(candidate, 'TV power state unavailable or not on');
+      if (!info || !info.device || info.device.PowerState !== "on") {
+        cancel(candidate, "TV power state unavailable or not on");
         return;
       }
       cb();
@@ -377,7 +377,7 @@ function recheck(candidate, cb) {
       return;
     }
     if (!me || me.visible) {
-      cancel(candidate, 'launcher visible or status unavailable');
+      cancel(candidate, "launcher visible or status unavailable");
       return;
     }
     if (candidate.watched) {
@@ -386,7 +386,7 @@ function recheck(candidate, cb) {
           return;
         }
         if (!watched || watched.visible || !state.seen) {
-          cancel(candidate, 'watched app visible or status unavailable');
+          cancel(candidate, "watched app visible or status unavailable");
           return;
         }
         // Also check other apps: a cast can start while a watched app closes.
@@ -395,7 +395,7 @@ function recheck(candidate, cb) {
             return;
           }
           if (!result.complete) {
-            cancel(candidate, 'app inventory unavailable');
+            cancel(candidate, "app inventory unavailable");
             return;
           }
           if (standAside(result, candidate.watched)) {
@@ -410,7 +410,7 @@ function recheck(candidate, cb) {
           return;
         }
         if (!result.complete) {
-          cancel(candidate, 'app inventory unavailable');
+          cancel(candidate, "app inventory unavailable");
           return;
         }
         if (standAside(result)) {
@@ -435,17 +435,17 @@ function launchSelf(why) {
   var candidate = { epoch: state.epoch, watched: state.watched, reason: why, timer: null };
   pending = candidate;
   state.guard.pending = { reason: why, at: Date.now() };
-  record('checking', why);
+  record("checking", why);
   candidate.timer = setTimeout(function () {
-    cancel(candidate, 'guard deadline');
+    cancel(candidate, "guard deadline");
   }, 6000);
   // First read protects the app checks; a second read authorizes the launch itself.
   freshOff(function (value) {
     if (!current(candidate)) {
       return;
     }
-    if (value !== 'off') {
-      cancel(candidate, 'fresh Art status: ' + value);
+    if (value !== "off") {
+      cancel(candidate, "fresh Art status: " + value);
       return;
     }
     recheck(candidate, function () {
@@ -456,8 +456,8 @@ function launchSelf(why) {
         if (!current(candidate)) {
           return;
         }
-        if (finalValue !== 'off' || !permitted()) {
-          cancel(candidate, 'final Art check blocked');
+        if (finalValue !== "off" || !permitted()) {
+          cancel(candidate, "final Art check blocked");
           return;
         }
         // Let a veto frame already buffered after this reply cancel the candidate.
@@ -473,19 +473,19 @@ function launchSelf(why) {
           state.seen = false;
           state.guard.lastBlocked = null;
           state.guard.launchCalls += 1;
-          record('launch', why);
+          record("launch", why);
           try {
             tizen.application.launch(
               SELF,
               function () {
-                state.last = 'relaunched: ' + why;
+                state.last = "relaunched: " + why;
               },
               function (e) {
-                state.last = 'relaunch failed: ' + (e && e.message);
-              }
+                state.last = "relaunch failed: " + (e && e.message);
+              },
             );
           } catch (e) {
-            state.last = 'relaunch threw: ' + e.message;
+            state.last = "relaunch threw: " + e.message;
           }
         }, 0);
       });
@@ -495,14 +495,7 @@ function launchSelf(why) {
 
 function tick() {
   state.heartbeats += 1;
-  if (
-    !watcherEnabled() ||
-    state.leaving ||
-    busy ||
-    pending ||
-    Date.now() < bootUntil ||
-    !permitted()
-  ) {
+  if (!watcherEnabled() || state.leaving || busy || pending || Date.now() < bootUntil || !permitted()) {
     return;
   }
   busy = true;
@@ -521,13 +514,7 @@ function tick() {
     }
   }
   function valid() {
-    return (
-      !finished &&
-      watcherEnabled() &&
-      !state.leaving &&
-      epoch === state.epoch &&
-      number === scanNumber
-    );
+    return !finished && watcherEnabled() && !state.leaving && epoch === state.epoch && number === scanNumber;
   }
   appStatus(SELF, function (me) {
     if (!valid() || !me) {
@@ -583,7 +570,7 @@ function tick() {
             state.watchedHiddenSince = Date.now();
           }
           if (!isFrame() || Date.now() - state.watchedHiddenSince >= FRAME_HIDDEN_GRACE) {
-            launchSelf('home pressed in ' + id);
+            launchSelf("home pressed in " + id);
           }
         } else if (watched.running) {
           state.watchedRan = true;
@@ -595,7 +582,7 @@ function tick() {
             state.unseenScanAt = Date.now();
             snapshot(function (result) {
               if (valid() && state.watched === id && result.visible && result.visible !== id) {
-                record('unseen', id + ' never reported visible; following ' + result.visible);
+                record("unseen", id + " never reported visible; following " + result.visible);
                 standAside(result, id);
               }
               done();
@@ -609,7 +596,7 @@ function tick() {
             state.watchedStoppedSince = Date.now();
           }
           if (Date.now() - state.watchedStoppedSince >= WATCH_STOP_GRACE) {
-            record('unwatched', id + ' stopped running');
+            record("unwatched", id + " stopped running");
             state.watched = null;
             state.watchedHiddenSince = 0;
           }
@@ -630,7 +617,7 @@ function tick() {
       // A failed status reads as "not running" except on Frame TVs, where any gap blocks a
       // relaunch. The TV's API can stall for seconds while Samsung Home loads.
       if ((result.complete || !isFrame()) && !standAside(result)) {
-        launchSelf('covered without an app');
+        launchSelf("covered without an app");
       }
       done();
     });
@@ -641,7 +628,7 @@ function discoverCapability() {
   if (!watcherEnabled()) {
     return;
   }
-  get('/api/v2/', function (info) {
+  get("/api/v2/", function (info) {
     if (!watcherEnabled()) {
       return;
     }
@@ -651,39 +638,39 @@ function discoverCapability() {
     // it keeps the normal watcher; a failed or malformed response does not.
     var validDevice =
       device &&
-      typeof device === 'object' &&
+      typeof device === "object" &&
       !Array.isArray(device) &&
-      ((typeof device.modelName === 'string' && device.modelName.length > 0) ||
-        (typeof device.model === 'string' && device.model.length > 0) ||
-        device.PowerState === 'on' ||
-        device.PowerState === 'standby' ||
-        device.PowerState === 'off');
-    var omitted = validDevice && !Object.prototype.hasOwnProperty.call(device, 'FrameTVSupport');
+      ((typeof device.modelName === "string" && device.modelName.length > 0) ||
+        (typeof device.model === "string" && device.model.length > 0) ||
+        device.PowerState === "on" ||
+        device.PowerState === "standby" ||
+        device.PowerState === "off");
+    var omitted = validDevice && !Object.prototype.hasOwnProperty.call(device, "FrameTVSupport");
     var capability =
-      flag === true || flag === 'true'
-        ? 'frame'
-        : flag === false || flag === 'false'
-          ? 'non-frame'
+      flag === true || flag === "true"
+        ? "frame"
+        : flag === false || flag === "false"
+          ? "non-frame"
           : omitted
-            ? 'not-advertised'
-            : 'unknown';
+            ? "not-advertised"
+            : "unknown";
     state.guard.capability = capability;
-    record('capability', capability);
-    if (capability === 'frame') {
+    record("capability", capability);
+    if (capability === "frame") {
       art.start();
       bootLaunch();
-    } else if (capability === 'non-frame' || capability === 'not-advertised') {
-      state.guard.artMode = 'not-supported';
+    } else if (capability === "non-frame" || capability === "not-advertised") {
+      state.guard.artMode = "not-supported";
       bootLaunch();
     } else {
-      block('TV capability unknown');
+      block("TV capability unknown");
       capabilityRetry = setTimeout(discoverCapability, 5000);
     }
   });
 }
 function updateMode() {
-  diagnostics.record('service.mode', { mode: homeMode.read().mode });
-  invalidate('Home routing mode changed');
+  diagnostics.record("service.mode", { mode: homeMode.read().mode });
+  invalidate("Home routing mode changed");
   resetTracking();
   scanNumber += 1;
   busy = false;
@@ -709,44 +696,44 @@ function updateMode() {
 }
 function controlHome(req, res) {
   function reply(code, value) {
-    res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.writeHead(code, { "Content-Type": "application/json", "Cache-Control": "no-store" });
     res.end(JSON.stringify(value));
   }
   var headers = req.headers || {};
-  if (req.method !== 'POST') {
-    reply(405, { error: 'POST required' });
+  if (req.method !== "POST") {
+    reply(405, { error: "POST required" });
     return;
   }
-  if (headers.origin || headers['x-aerotizen-home'] !== '1') {
-    reply(403, { error: 'Local native control required' });
+  if (headers.origin || headers["x-aerotizen-home"] !== "1") {
+    reply(403, { error: "Local native control required" });
     return;
   }
-  if (headers['content-type'] !== 'application/json') {
-    reply(415, { error: 'JSON required' });
+  if (headers["content-type"] !== "application/json") {
+    reply(415, { error: "JSON required" });
     return;
   }
-  var body = '',
+  var body = "",
     finished = false;
   if (req.setEncoding) {
-    req.setEncoding('utf8');
+    req.setEncoding("utf8");
   }
-  req.on('data', function (chunk) {
+  req.on("data", function (chunk) {
     if (finished) {
       return;
     }
     body += chunk;
     if (body.length > 4096) {
       finished = true;
-      reply(413, { error: 'Request too large' });
+      reply(413, { error: "Request too large" });
     }
   });
-  req.on('error', function () {
+  req.on("error", function () {
     if (!finished) {
       finished = true;
-      reply(400, { error: 'Request failed' });
+      reply(400, { error: "Request failed" });
     }
   });
-  req.on('end', function () {
+  req.on("end", function () {
     if (finished) {
       return;
     }
@@ -761,76 +748,69 @@ function controlHome(req, res) {
 function diagnosticRequest(req, res, pathname) {
   var headers = req.headers || {};
   function reply(code, data) {
-    var responseHeaders = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
-    if (headers.origin === 'null' || headers.origin === 'file://') {
-      responseHeaders['Access-Control-Allow-Origin'] = headers.origin;
+    var responseHeaders = { "Content-Type": "application/json", "Cache-Control": "no-store" };
+    if (headers.origin === "null" || headers.origin === "file://") {
+      responseHeaders["Access-Control-Allow-Origin"] = headers.origin;
     }
     res.writeHead(code, responseHeaders);
     res.end(JSON.stringify(data));
   }
-  if (pathname === '/diagnostics/logs') {
-    if (req.method !== 'GET' || headers.origin || headers['x-aerotizen-diagnostics'] !== '1') {
-      reply(403, { error: 'Developer connection required' });
+  if (pathname === "/diagnostics/logs") {
+    if (req.method !== "GET" || headers.origin || headers["x-aerotizen-diagnostics"] !== "1") {
+      reply(403, { error: "Developer connection required" });
       return;
     }
     reply(200, diagnosticContext.enrich(diagnostics.snapshot(), homeMode.read(), state));
     return;
   }
-  if (
-    req.method !== 'POST' ||
-    (headers.origin && headers.origin !== 'null' && headers.origin !== 'file://')
-  ) {
-    reply(403, { error: 'Local launcher events required' });
+  if (req.method !== "POST" || (headers.origin && headers.origin !== "null" && headers.origin !== "file://")) {
+    reply(403, { error: "Local launcher events required" });
     return;
   }
-  var body = '',
+  var body = "",
     finished = false;
   if (req.setEncoding) {
-    req.setEncoding('utf8');
+    req.setEncoding("utf8");
   }
-  req.on('data', function (chunk) {
+  req.on("data", function (chunk) {
     if (finished) {
       return;
     }
     body += chunk;
     if (body.length > 16384) {
       finished = true;
-      reply(413, { error: 'Event batch too large' });
+      reply(413, { error: "Event batch too large" });
     }
   });
-  req.on('error', function () {
+  req.on("error", function () {
     if (!finished) {
       finished = true;
-      reply(400, { error: 'Event batch failed' });
+      reply(400, { error: "Event batch failed" });
     }
   });
-  req.on('end', function () {
+  req.on("end", function () {
     if (finished) {
       return;
     }
     finished = true;
     try {
       var packet = JSON.parse(body);
-      var events = Array.isArray(packet)
-        ? packet
-        : packet && packet.schema_version === 1
-          ? packet.records
-          : null;
+      var events = Array.isArray(packet) ? packet : packet && packet.schema_version === 1 ? packet.records : null;
       if (
         !Array.isArray(events) ||
         events.length > 24 ||
         events.some(function (item) {
-          return !item || item.source !== 'ui';
+          return !item || item.source !== "ui";
         }) ||
         !diagnostics.ingest(events)
       ) {
-        reply(400, { error: 'Invalid event batch' });
+        reply(400, { error: "Invalid event batch" });
         return;
       }
       diagnosticContext.accept(packet);
       reply(200, { schema_version: 1, accepted: events.length });
     } catch (e) {
-      reply(400, { error: 'Invalid event batch' });
+      reply(400, { error: "Invalid event batch" });
     }
   });
 }
@@ -839,12 +819,12 @@ module.exports.onStart = function () {
     return;
   }
   started = true;
-  diagnostics.record('service.start');
+  diagnostics.record("service.start");
   setTimeout(function () {
     diagnosticContext.start();
   }, 0);
   try {
-    require('./diagnostics-store')(typeof tizen !== 'undefined' ? tizen : null, function (storage) {
+    require("./diagnostics-store")(typeof tizen !== "undefined" ? tizen : null, function (storage) {
       if (storage) {
         diagnostics.attach(storage);
       }
@@ -853,68 +833,59 @@ module.exports.onStart = function () {
     /* optional log storage */
   }
   server = http.createServer(function (req, res) {
-    var url = require('url').parse(req.url, true),
+    var url = require("url").parse(req.url, true),
       query = url.query;
-    if (url.pathname === '/diagnostics/logs' || url.pathname === '/diagnostics/events') {
+    if (url.pathname === "/diagnostics/logs" || url.pathname === "/diagnostics/events") {
       diagnosticRequest(req, res, url.pathname);
       return;
     }
-    if (['/home', '/leave', '/watch'].indexOf(url.pathname) >= 0) {
-      diagnostics.record('service.request', { action: url.pathname.slice(1) });
+    if (["/home", "/leave", "/watch"].indexOf(url.pathname) >= 0) {
+      diagnostics.record("service.request", { action: url.pathname.slice(1) });
     }
-    if (url.pathname === '/control/home') {
+    if (url.pathname === "/control/home") {
       controlHome(req, res);
       return;
     }
-    if (
-      url.pathname === '/startup' &&
-      typeof query.data === 'string' &&
-      query.data.length <= 4096
-    ) {
+    if (url.pathname === "/startup" && typeof query.data === "string" && query.data.length <= 4096) {
       try {
         var trace = JSON.parse(query.data);
-        if (
-          trace &&
-          typeof trace.script_at === 'number' &&
-          Array.isArray(trace.marks) &&
-          trace.marks.length <= 32
-        ) {
+        if (trace && typeof trace.script_at === "number" && Array.isArray(trace.marks) && trace.marks.length <= 32) {
           state.startup = trace;
         }
       } catch (e) {
         /* Ignore malformed diagnostics. */
       }
     }
-    if (url.pathname === '/watch' && watcherEnabled()) {
-      invalidate('app launch requested');
+    if (url.pathname === "/watch" && watcherEnabled()) {
+      invalidate("app launch requested");
       state.watched = query.id || null;
       state.seen = false;
       state.leaving = false;
       resetWatchedTiming();
       state.watchAt = Date.now();
-    } else if (url.pathname === '/apps') {
-      invalidate('app inventory changed');
-      state.apps = (query.ids || '').split(',').filter(Boolean);
+    } else if (url.pathname === "/apps") {
+      invalidate("app inventory changed");
+      state.apps = (query.ids || "").split(",").filter(Boolean);
       state.snapAt = 0; // re-read what is running before Home can be pressed
-    } else if (url.pathname === '/leave') {
-      invalidate('Samsung Home escape');
+    } else if (url.pathname === "/leave") {
+      invalidate("Samsung Home escape");
       state.leaving = true;
       resetTracking();
-    } else if (url.pathname === '/home') {
-      invalidate('launcher returned');
+    } else if (url.pathname === "/home") {
+      invalidate("launcher returned");
       state.leaving = false;
       resetTracking();
     }
     var response = Object.assign({}, state, { art: art.getState(), homeControl: homeMode.read() });
     res.writeHead(200, {
-      'Access-Control-Allow-Origin': '*',
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-store',
+      "Access-Control-Allow-Origin": "*",
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
     });
     res.end(JSON.stringify(response));
   });
-  server.listen(47790, '127.0.0.1');
-  require('./home-store')(typeof tizen !== 'undefined' ? tizen : null, function (storage, failed) {
+  server.listen(47790, "127.0.0.1");
+  require("./home-store")(typeof tizen !== "undefined" ? tizen : null, function (storage, failed) {
     if (stopped) {
       return;
     }
@@ -924,10 +895,10 @@ module.exports.onStart = function () {
 };
 module.exports.onRequest = function () {};
 module.exports.onExit = function () {
-  diagnostics.record('service.exit');
+  diagnostics.record("service.exit");
   diagnostics.flushStorage();
   stopped = true;
-  invalidate('service exit');
+  invalidate("service exit");
   scanNumber += 1;
   clearInterval(interval);
   clearTimeout(capabilityRetry);

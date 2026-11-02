@@ -1,7 +1,8 @@
-import { useLayoutEffect, useState } from 'preact/hooks';
-import type { RefObject } from 'preact';
-import { useStore } from '../../shared/hooks/useStore';
-import { useSettingsEnvironment } from '../hooks/useSettingsEnvironment';
+import type { RefObject } from "preact";
+import { useLayoutEffect, useState } from "preact/hooks";
+
+import { useStore } from "../../shared/hooks/useStore";
+import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 
 export const FocusPlate = ({
   container,
@@ -14,10 +15,10 @@ export const FocusPlate = ({
     key = useStore(navigation),
     state = useStore(glass);
   const [style, setStyle] = useState({
-    transform: '',
-    width: '0px',
-    height: '0px',
-    borderRadius: '17px',
+    transform: "",
+    width: "0px",
+    height: "0px",
+    borderRadius: "17px",
   });
   const [visible, setVisible] = useState(false);
   useLayoutEffect(() => {
@@ -31,13 +32,13 @@ export const FocusPlate = ({
       parent = host.getBoundingClientRect();
     setStyle({
       transform:
-        'translate3d(' +
+        "translate3d(" +
         (rect.left - parent.left + host.scrollLeft) +
-        'px,' +
+        "px," +
         (rect.top - parent.top + host.scrollTop) +
-        'px,0)',
-      width: rect.width + 'px',
-      height: rect.height + 'px',
+        "px,0)",
+      width: rect.width + "px",
+      height: rect.height + "px",
       borderRadius: getComputedStyle(target).borderRadius,
     });
     setVisible(Boolean(rect.width && rect.height));
@@ -45,9 +46,7 @@ export const FocusPlate = ({
   return (
     <div
       aria-hidden="true"
-      class={
-        (sidebar ? 'aero-settings-glider' : 'aero-content-glider') + (visible ? ' is-visible' : '')
-      }
+      class={(sidebar ? "aero-settings-glider" : "aero-content-glider") + (visible ? " is-visible" : "")}
       style={style}
     />
   );

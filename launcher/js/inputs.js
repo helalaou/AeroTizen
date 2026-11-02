@@ -1,7 +1,7 @@
 // TV inputs, named by the user or the TV, with visibility settings for Live TV and HDMI ports.
 // Selected inputs are shown full screen inside the launcher.
 (function (A) {
-  'use strict';
+  "use strict";
 
   var tz = A.tizen,
     ICONS = A.tiles.ICONS;
@@ -26,7 +26,7 @@
   }
 
   inputs.portName = function (s) {
-    return s.type === 'TV' ? 'Live TV' : s.type + ' ' + s.number;
+    return s.type === "TV" ? "Live TV" : s.type + " " + s.number;
   };
 
   inputs.label = function (s) {
@@ -34,7 +34,7 @@
   };
 
   function iconFor(s, label) {
-    if (s.type === 'TV') {
+    if (s.type === "TV") {
       return ICONS.tv;
     }
     var n = label.toLowerCase();
@@ -53,17 +53,17 @@
   // A configured device can appear in VIDEOSOURCE.disconnected while asleep.
   // Use the TV-provided editName, never a custom AeroTizen input name, as evidence.
   inputs.hasRecognizedDevice = function (s) {
-    if (!s || s.type !== 'HDMI' || typeof s.editName !== 'string') {
+    if (!s || s.type !== "HDMI" || typeof s.editName !== "string") {
       return false;
     }
-    var name = s.editName.replace(/\s+/g, ' ').trim();
+    var name = s.editName.replace(/\s+/g, " ").trim();
     if (!name) {
       return false;
     }
     var ordinary = name
       .toLowerCase()
-      .replace(/[_.-]+/g, ' ')
-      .replace(/\s+/g, ' ')
+      .replace(/[_.-]+/g, " ")
+      .replace(/\s+/g, " ")
       .trim();
     // The exact placeholder filter used in the reference HDMI implementation.
     if (
@@ -77,31 +77,22 @@
   };
 
   inputs.alwaysVisible = function (s) {
-    return !!(
-      s &&
-      s.type === 'HDMI' &&
-      (A.settings.hdmiKeepVisible || {})[String(s.number)] === true
-    );
+    return !!(s && s.type === "HDMI" && (A.settings.hdmiKeepVisible || {})[String(s.number)] === true);
   };
 
   inputs.isVisible = function (s) {
-    if (s.type === 'TV') {
+    if (s.type === "TV") {
       return A.settings.showLiveTv !== false;
     }
-    if (s.type !== 'HDMI' || A.settings.hideDisconnectedHdmi !== true) {
+    if (s.type !== "HDMI" || A.settings.hideDisconnectedHdmi !== true) {
       return true;
     }
-    return (
-      s.connected === true ||
-      s.active === true ||
-      inputs.hasRecognizedDevice(s) ||
-      inputs.alwaysVisible(s)
-    );
+    return s.connected === true || s.active === true || inputs.hasRecognizedDevice(s) || inputs.alwaysVisible(s);
   };
 
   inputs.render = function () {
-    var row = A.$('inputs');
-    row.textContent = '';
+    var row = A.$("inputs");
+    row.textContent = "";
     inputs.sources.forEach(function (s) {
       // Keep TV-recognised HDMI devices visible while in standby; empty ports
       // still follow the existing Hide disconnected setting.
@@ -113,17 +104,12 @@
       var tile = A.tiles.card(label, iconFor(s, label), function () {
         inputs.show(s);
       });
-      if (label !== port && s.type !== 'TV') {
-        tile.querySelector('.name').appendChild(A.el('div', 'sub', port));
+      if (label !== port && s.type !== "TV") {
+        tile.querySelector(".name").appendChild(A.el("div", "sub", port));
       }
       // A sleeping, recognised device is reachable: do not label it as empty.
-      if (
-        s.connected === false &&
-        !s.active &&
-        !inputs.hasRecognizedDevice(s) &&
-        !inputs.alwaysVisible(s)
-      ) {
-        tile.classList.add('off');
+      if (s.connected === false && !s.active && !inputs.hasRecognizedDevice(s) && !inputs.alwaysVisible(s)) {
+        tile.classList.add("off");
       }
       row.appendChild(tile);
     });
@@ -135,23 +121,23 @@
     if (!tz || !tz.systeminfo) {
       // desktop browser preview
       inputs.sources = [
-        { type: 'HDMI', number: 1, editName: 'Xbox', connected: true },
-        { type: 'HDMI', number: 2, connected: false },
-        { type: 'HDMI', number: 3, editName: 'PC', connected: false },
-        { type: 'TV', number: 1, connected: true },
+        { type: "HDMI", number: 1, editName: "Xbox", connected: true },
+        { type: "HDMI", number: 2, connected: false },
+        { type: "HDMI", number: 3, editName: "PC", connected: false },
+        { type: "TV", number: 1, connected: true },
       ];
       return publish();
     }
     try {
       tz.systeminfo.getPropertyValue(
-        'VIDEOSOURCE',
+        "VIDEOSOURCE",
         function (info) {
           // A selected HDMI may be reported disconnected while the TV is
           // switching sources. Reading the selected source does not imply a cable.
           var current = null;
           try {
             if (tz.tvwindow && tz.tvwindow.getSource) {
-              current = tz.tvwindow.getSource('MAIN');
+              current = tz.tvwindow.getSource("MAIN");
             }
           } catch (e) {
             /* firmware may deny this while no video window is active */
@@ -159,13 +145,13 @@
           function tag(list, connected) {
             return (list || [])
               .filter(function (s) {
-                return s.type !== 'MEDIA';
+                return s.type !== "MEDIA";
               })
               .map(function (s) {
                 var active = !!(
                   current &&
-                  s.type === 'HDMI' &&
-                  current.type === 'HDMI' &&
+                  s.type === "HDMI" &&
+                  current.type === "HDMI" &&
                   Number(current.number) === Number(s.number)
                 );
                 return {
@@ -183,7 +169,7 @@
           var discovered = tag(info.connected, true).concat(tag(info.disconnected, false));
           var unique = {};
           discovered.forEach(function (s) {
-            var id = String(s.type) + ':' + String(s.number),
+            var id = String(s.type) + ":" + String(s.number),
               prior = unique[id];
             if (!prior) {
               unique[id] = s;
@@ -202,7 +188,7 @@
             })
             .sort(function (a, b) {
               return (
-                (a.type === 'TV') - (b.type === 'TV') ||
+                (a.type === "TV") - (b.type === "TV") ||
                 Number(b.connected) - Number(a.connected) ||
                 a.number - b.number
               );
@@ -221,15 +207,15 @@
     // upstream embedded TVWindow. If unsupported, preserve TVWindow fallback.
     if (
       s &&
-      s.type === 'TV' &&
+      s.type === "TV" &&
       A.homewatch &&
-      typeof A.homewatch.openNativeLiveTV === 'function' &&
+      typeof A.homewatch.openNativeLiveTV === "function" &&
       A.homewatch.openNativeLiveTV(s.raw || s) !== false
     ) {
       return;
     }
     if (!tz || !tz.tvwindow) {
-      return A.toast('Would switch to ' + inputs.label(s));
+      return A.toast("Would switch to " + inputs.label(s));
     }
     try {
       tz.tvwindow.setSource(
@@ -238,36 +224,36 @@
           tz.tvwindow.show(
             function () {
               inputs.watching = true;
-              document.body.classList.add('tv');
-              document.documentElement.style.background = 'transparent';
+              document.body.classList.add("tv");
+              document.documentElement.style.background = "transparent";
               window.Backgrounds.hide();
             },
             function () {
-              A.toast('Could not show ' + inputs.label(s));
+              A.toast("Could not show " + inputs.label(s));
             },
-            ['0px', '0px', '1920px', '1080px'],
-            'MAIN'
+            ["0px", "0px", "1920px", "1080px"],
+            "MAIN"
           );
         },
         function () {
-          A.toast('Could not switch input');
+          A.toast("Could not switch input");
         },
-        'MAIN'
+        "MAIN"
       );
     } catch (e) {
-      A.toast('Could not switch input');
+      A.toast("Could not switch input");
     }
   };
 
   inputs.leave = function () {
     inputs.watching = false;
-    document.body.classList.remove('tv');
+    document.body.classList.remove("tv");
     A.applyBackground();
     try {
       tz.tvwindow.hide(
         function () {},
         function () {},
-        'MAIN'
+        "MAIN"
       );
     } catch (e) {
       /* already hidden */
@@ -276,7 +262,7 @@
 
   // Native Home can target this already-running app while its embedded HDMI
   // window is visible. Closing that window is separate from foregrounding us.
-  window.addEventListener('appcontrol', function () {
+  window.addEventListener("appcontrol", function () {
     if (!inputs.watching || !tz || !tz.application) {
       return;
     }
@@ -285,7 +271,7 @@
       if (
         request &&
         request.appControl &&
-        request.appControl.operation === 'http://tizen.org/appcontrol/operation/main'
+        request.appControl.operation === "http://tizen.org/appcontrol/operation/main"
       ) {
         inputs.leave();
       }
@@ -296,7 +282,7 @@
 
   // Some firmware resumes an existing Home without an appcontrol event.
   var inputWasHidden = false;
-  document.addEventListener('visibilitychange', function () {
+  document.addEventListener("visibilitychange", function () {
     if (document.hidden) {
       inputWasHidden = inputs.watching;
       return;
@@ -309,7 +295,7 @@
 
   if (tz && tz.systeminfo) {
     try {
-      tz.systeminfo.addPropertyValueChangeListener('VIDEOSOURCE', inputs.load);
+      tz.systeminfo.addPropertyValueChangeListener("VIDEOSOURCE", inputs.load);
     } catch (e) {
       /* not supported */
     }

@@ -1,8 +1,9 @@
-import { RemoteControl } from '../../components/RemoteControl';
-import { Choice } from '../../components/Choice';
-import { Pill } from '../../components/Pill';
-import { useWeatherLocation } from './useWeatherLocation';
-import type { SettingsSectionProps } from '../../types';
+import { Choice } from "../../components/Choice";
+import { Pill } from "../../components/Pill";
+import { RemoteControl } from "../../components/RemoteControl";
+import type { SettingsSectionProps } from "../../types";
+
+import { useWeatherLocation } from "./useWeatherLocation";
 
 interface Props extends SettingsSectionProps {
   active: boolean;
@@ -18,29 +19,21 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
         label="Weather visibility"
         value={settings.showWeather !== false}
         options={[
-          [true, 'Show weather'],
-          [false, 'Hide weather'],
+          [true, "Show weather"],
+          [false, "Hide weather"],
         ]}
         onSelect={actions.setWeatherVisible}
       />
       <p id="weather-location-summary" class="hint">
         {settings.weatherLocation
-          ? 'Location: ' + (settings.weatherLocation.label || settings.weatherLocation.name)
-          : 'Automatic location uses your internet address and can be inaccurate. Search for your town, city or postcode to set it.'}
+          ? "Location: " + (settings.weatherLocation.label || settings.weatherLocation.name)
+          : "Automatic location uses your internet address and can be inaccurate. Search for your town, city or postcode to set it."}
       </p>
       <div id="weather-location" class="units">
-        <Pill
-          id="weather:auto"
-          selected={!settings.weatherLocation}
-          onSelect={() => search.selectLocation(null)}
-        >
+        <Pill id="weather:auto" selected={!settings.weatherLocation} onSelect={() => search.selectLocation(null)}>
           Automatic
         </Pill>
-        <RemoteControl
-          class="pill unit name-pill weather-search"
-          focusKey="weather:query"
-          onClick={search.focusQuery}
-        >
+        <RemoteControl class="pill unit name-pill weather-search" focusKey="weather:query" onClick={search.focusQuery}>
           <input
             ref={search.inputRef}
             type="text"
@@ -61,8 +54,8 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
       <div id="weather-results" class="weather-results" hidden={!search.results.length}>
         {search.results.map((location, index) => (
           <Pill
-            key={location.label + ':' + index}
-            id={'weather:result:' + index}
+            key={location.label + ":" + index}
+            id={"weather:result:" + index}
             onSelect={() => search.selectLocation(location)}
           >
             {location.label}
@@ -74,8 +67,8 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
         label="Weather location visibility"
         value={settings.weatherShowLocation}
         options={[
-          [true, 'Show location'],
-          [false, 'Hide location'],
+          [true, "Show location"],
+          [false, "Hide location"],
         ]}
         onSelect={actions.setLocationVisible}
       />
@@ -85,8 +78,8 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
         label="Temperature unit"
         value={settings.tempUnit}
         options={[
-          ['F', '°F  Fahrenheit'],
-          ['C', '°C  Celsius'],
+          ["F", "°F  Fahrenheit"],
+          ["C", "°C  Celsius"],
         ]}
         onSelect={actions.setTempUnit}
       />

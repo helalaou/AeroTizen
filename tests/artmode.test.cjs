@@ -1,11 +1,11 @@
-'use strict';
+"use strict";
 // Focused protocol and lifecycle tests. No network sockets or TV access.
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
-const crypto = require('node:crypto');
-const { EventEmitter } = require('node:events');
-const source = fs.readFileSync(__dirname + '/../launcher/service/artmode.js', 'utf8');
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const vm = require("node:vm");
+const crypto = require("node:crypto");
+const { EventEmitter } = require("node:events");
+const source = fs.readFileSync(__dirname + "/../launcher/service/artmode.js", "utf8");
 
 function harness(options = {}) {
   let clock = 1000000;
@@ -55,19 +55,19 @@ function harness(options = {}) {
     module: { exports: {} },
     Buffer,
     Date: { now: () => clock },
-    process: { versions: { node: 'test-runtime' } },
+    process: { versions: { node: "test-runtime" } },
     require(name) {
       imports.push(name);
-      if (name === 'http') return http;
-      if (name === 'crypto' && !options.noCrypto) return crypto;
-      throw new Error('Module unavailable: ' + name);
+      if (name === "http") return http;
+      if (name === "crypto" && !options.noCrypto) return crypto;
+      throw new Error("Module unavailable: " + name);
     },
     setTimeout: (fn, ms) => timer(fn, ms, 0),
     clearTimeout: (id) => timers.delete(id),
     setInterval: (fn, ms) => timer(fn, ms, ms),
     clearInterval: (id) => timers.delete(id),
   };
-  vm.runInNewContext(source, context, { filename: 'artmode.js' });
+  vm.runInNewContext(source, context, { filename: "artmode.js" });
   const api = context.module.exports({
     onChange: (value, reason) => changes.push({ value, reason }),
   });
@@ -83,21 +83,21 @@ function harness(options = {}) {
     };
     sockets.push(socket);
     const accept = crypto
-      .createHash('sha1')
-      .update(req.options.headers['Sec-WebSocket-Key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')
-      .digest('base64');
+      .createHash("sha1")
+      .update(req.options.headers["Sec-WebSocket-Key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+      .digest("base64");
     req.emit(
-      'upgrade',
+      "upgrade",
       {
         statusCode: 101,
         headers: {
-          upgrade: 'websocket',
-          connection: 'keep-alive, Upgrade',
-          'sec-websocket-accept': valid ? accept : 'wrong',
+          upgrade: "websocket",
+          connection: "keep-alive, Upgrade",
+          "sec-websocket-accept": valid ? accept : "wrong",
         },
       },
       socket,
-      Buffer.alloc(0)
+      Buffer.alloc(0),
     );
     return socket;
   }
@@ -127,7 +127,7 @@ function text(value) {
   return frame(1, JSON.stringify(value));
 }
 function decoded(buffer) {
-  assert.ok(buffer[1] & 128, 'client frames must be masked');
+  assert.ok(buffer[1] & 128, "client frames must be masked");
   const length = buffer[1] & 127;
   const size = length === 126 ? buffer.readUInt16BE(2) : length;
   const maskAt = length === 126 ? 4 : 2;
@@ -138,25 +138,25 @@ function decoded(buffer) {
 function ready(h) {
   h.api.start();
   const socket = h.upgrade();
-  socket.emit('data', text({ event: 'ms.channel.ready' }));
+  socket.emit("data", text({ event: "ms.channel.ready" }));
   return socket;
 }
 function query(socket) {
   const packet = JSON.parse(decoded(socket.writes[socket.writes.length - 1]).payload.toString());
-  assert.equal(packet.method, 'ms.channel.emit');
-  assert.equal(packet.params.event, 'art_app_request');
-  assert.equal(packet.params.to, 'broadcast');
+  assert.equal(packet.method, "ms.channel.emit");
+  assert.equal(packet.params.event, "art_app_request");
+  assert.equal(packet.params.to, "broadcast");
   const request = JSON.parse(packet.params.data);
-  assert.equal(request.request, 'get_artmode_status');
-  assert.deepEqual(Object.keys(request).sort(), ['id', 'request', 'request_id']);
+  assert.equal(request.request, "get_artmode_status");
+  assert.deepEqual(Object.keys(request).sort(), ["id", "request", "request_id"]);
   assert.equal(request.id, request.request_id);
   return request;
 }
 function reply(id, value) {
   return {
-    event: 'd2d_service_message',
+    event: "d2d_service_message",
     data: JSON.stringify({
-      event: 'get_artmode_status',
+      event: "get_artmode_status",
       request_id: id,
       value,
     }),
@@ -167,97 +167,91 @@ function test(name, fn) {
   tests.push([name, fn]);
 }
 
-test('imports are lazy and transport uses only fixed loopback Art status queries', () => {
+test("imports are lazy and transport uses only fixed loopback Art status queries", () => {
   const h = harness();
   assert.equal(h.requests.length, 0);
   assert.deepEqual(h.imports, []);
   h.api.start();
   h.api.start();
   assert.equal(h.requests.length, 1);
-  assert.deepEqual(h.imports, ['http', 'crypto']);
-  assert.equal(h.requests[0].options.host, '127.0.0.1');
+  assert.deepEqual(h.imports, ["http", "crypto"]);
+  assert.equal(h.requests[0].options.host, "127.0.0.1");
   assert.equal(h.requests[0].options.port, 8001);
-  assert.equal(h.requests[0].options.method, 'GET');
-  assert.equal(
-    h.requests[0].options.path,
-    '/api/v2/channels/com.samsung.art-app?name=QWVyb1RpemVu'
-  );
+  assert.equal(h.requests[0].options.method, "GET");
+  assert.equal(h.requests[0].options.path, "/api/v2/channels/com.samsung.art-app?name=QWVyb1RpemVu");
   const socket = h.upgrade();
-  socket.emit('data', text({ event: 'ms.channel.ready' }));
+  socket.emit("data", text({ event: "ms.channel.ready" }));
   query(socket);
   assert.equal(h.state().sentQueries, 1);
 });
-test('upgrade validation rejects an incorrect accept value and backs off four seconds', () => {
+test("upgrade validation rejects an incorrect accept value and backs off four seconds", () => {
   const h = harness();
   h.api.start();
   const socket = h.upgrade(0, false);
   assert.equal(socket.destroyed, true);
   assert.equal(socket.writes.length, 0);
-  assert.equal(h.state().artMode, 'unknown');
+  assert.equal(h.state().artMode, "unknown");
   h.advance(3999);
   assert.equal(h.requests.length, 1);
   h.advance(1);
   assert.equal(h.requests.length, 2);
 });
-test('only correlated replies authorize off, including split and fragmented frames', () => {
+test("only correlated replies authorize off, including split and fragmented frames", () => {
   const h = harness();
   const socket = ready(h);
   const request = query(socket);
-  socket.emit('data', text({ event: 'art_app_request', data: { id: request.id, value: 'off' } }));
-  socket.emit('data', text(reply('wrong-id', 'off')));
+  socket.emit("data", text({ event: "art_app_request", data: { id: request.id, value: "off" } }));
+  socket.emit("data", text(reply("wrong-id", "off")));
   socket.emit(
-    'data',
+    "data",
     text({
-      event: 'd2d_service_message',
+      event: "d2d_service_message",
       data: {
-        event: 'unknown_event',
+        event: "unknown_event",
         request_id: request.id,
-        value: 'off',
+        value: "off",
       },
-    })
+    }),
   );
   assert.equal(h.state().matchedReplies, 0);
-  assert.equal(h.state().artMode, 'unknown');
-  const json = Buffer.from(JSON.stringify(reply(request.id, 'off')));
-  const fragmented = Buffer.concat([
-    frame(1, json.subarray(0, 23), false),
-    frame(0, json.subarray(23)),
-  ]);
-  socket.emit('data', fragmented.subarray(0, 3));
-  socket.emit('data', fragmented.subarray(3));
-  assert.equal(h.state().artMode, 'off');
+  assert.equal(h.state().artMode, "unknown");
+  const json = Buffer.from(JSON.stringify(reply(request.id, "off")));
+  const fragmented = Buffer.concat([frame(1, json.subarray(0, 23), false), frame(0, json.subarray(23))]);
+  socket.emit("data", fragmented.subarray(0, 3));
+  socket.emit("data", fragmented.subarray(3));
+  assert.equal(h.state().artMode, "off");
   assert.equal(h.state().matchedReplies, 1);
   assert.equal(h.state().latest.requestId, request.id);
 });
-test('ping gets a masked pong with the same payload', () => {
+test("ping gets a masked pong with the same payload", () => {
   const h = harness();
   const socket = ready(h);
-  socket.emit('data', frame(9, 'probe'));
+  socket.emit("data", frame(9, "probe"));
   const pong = decoded(socket.writes[1]);
   assert.equal(pong.opcode, 10);
-  assert.equal(pong.payload.toString(), 'probe');
+  assert.equal(pong.payload.toString(), "probe");
   assert.equal(h.state().sentQueries, 1);
 });
-test('reply timeout becomes unknown and a later query may report Art on', () => {
+test("reply timeout becomes unknown and a later query may report Art on", () => {
   const h = harness();
   const socket = ready(h);
   const first = query(socket);
   h.advance(2000);
-  assert.equal(h.state().artMode, 'unknown');
-  assert.equal(h.state().latest.reason, 'reply-timeout');
+  assert.equal(h.state().artMode, "unknown");
+  assert.equal(h.state().latest.reason, "reply-timeout");
   h.advance(1000);
   const second = query(socket);
   assert.notEqual(second.id, first.id);
-  socket.emit('data', text(reply(first.id, 'off')));
+  socket.emit("data", text(reply(first.id, "off")));
   assert.equal(h.state().matchedReplies, 0);
-  socket.emit('data', text(reply(second.id, 'on')));
-  assert.equal(h.state().artMode, 'on');
+  socket.emit("data", text(reply(second.id, "on")));
+  assert.equal(h.state().artMode, "on");
 });
-test('fresh callbacks cannot use cached off and simultaneous callers share a new query', () => {
+test("fresh callbacks cannot use cached off and simultaneous callers share a new query", () => {
   const h = harness();
   const socket = ready(h);
   const initial = query(socket);
-  socket.emit('data', text(reply(initial.id, 'off')));
+  socket.emit("data", text(reply(initial.id, "off")));
   const a = [];
   const b = [];
   h.api.fresh((value) => a.push(value));
@@ -268,17 +262,17 @@ test('fresh callbacks cannot use cached off and simultaneous callers share a new
   const fresh = query(socket);
   assert.notEqual(fresh.id, initial.id);
   assert.equal(h.state().sentQueries, 2);
-  socket.emit('data', text(reply(initial.id, 'off')));
+  socket.emit("data", text(reply(initial.id, "off")));
   assert.deepEqual(a, []);
-  socket.emit('data', text(reply(fresh.id, 'off')));
-  assert.deepEqual(a, ['off']);
-  assert.deepEqual(b, ['off']);
+  socket.emit("data", text(reply(fresh.id, "off")));
+  assert.deepEqual(a, ["off"]);
+  assert.deepEqual(b, ["off"]);
   assert.deepEqual(
     h.changes.map((item) => item.value),
-    ['off', 'off']
+    ["off", "off"],
   );
 });
-test('fresh caller queues behind an existing query and requires its own new reply', () => {
+test("fresh caller queues behind an existing query and requires its own new reply", () => {
   const h = harness();
   const socket = ready(h);
   const periodic = query(socket);
@@ -286,18 +280,18 @@ test('fresh caller queues behind an existing query and requires its own new repl
   h.api.fresh((value) => values.push(value));
   h.advance(0);
   assert.equal(h.state().sentQueries, 1);
-  socket.emit('data', text(reply(periodic.id, 'off')));
+  socket.emit("data", text(reply(periodic.id, "off")));
   assert.deepEqual(values, []);
   h.advance(0);
   const fresh = query(socket);
   assert.notEqual(fresh.id, periodic.id);
-  socket.emit('data', text(reply(fresh.id, 'on')));
-  assert.deepEqual(values, ['on']);
+  socket.emit("data", text(reply(fresh.id, "on")));
+  assert.deepEqual(values, ["on"]);
 });
-test('a fresh call during another fresh request requires another new request', () => {
+test("a fresh call during another fresh request requires another new request", () => {
   const h = harness();
   const socket = ready(h);
-  socket.emit('data', text(reply(query(socket).id, 'off')));
+  socket.emit("data", text(reply(query(socket).id, "off")));
   const first = [];
   const second = [];
   h.api.fresh((value) => first.push(value));
@@ -305,16 +299,16 @@ test('a fresh call during another fresh request requires another new request', (
   const request = query(socket);
   h.api.fresh((value) => second.push(value));
   h.advance(0);
-  socket.emit('data', text(reply(request.id, 'off')));
-  assert.deepEqual(first, ['off']);
+  socket.emit("data", text(reply(request.id, "off")));
+  assert.deepEqual(first, ["off"]);
   assert.deepEqual(second, []);
   h.advance(0);
   const next = query(socket);
   assert.notEqual(next.id, request.id);
-  socket.emit('data', text(reply(next.id, 'off')));
-  assert.deepEqual(second, ['off']);
+  socket.emit("data", text(reply(next.id, "off")));
+  assert.deepEqual(second, ["off"]);
 });
-test('fresh deadline is at most 2500 ms even when queued behind an older request', () => {
+test("fresh deadline is at most 2500 ms even when queued behind an older request", () => {
   const h = harness();
   const socket = ready(h);
   const values = [];
@@ -326,100 +320,100 @@ test('fresh deadline is at most 2500 ms even when queued behind an older request
   h.advance(499);
   assert.deepEqual(values, []);
   h.advance(1);
-  assert.deepEqual(values, ['unknown']);
-  assert.equal(h.state().artMode, 'unknown');
-  assert.equal(h.state().latest.reason, 'fresh-timeout');
-  socket.emit('data', text(reply(last.id, 'off')));
-  assert.equal(h.state().artMode, 'unknown');
-  assert.deepEqual(values, ['unknown']);
+  assert.deepEqual(values, ["unknown"]);
+  assert.equal(h.state().artMode, "unknown");
+  assert.equal(h.state().latest.reason, "fresh-timeout");
+  socket.emit("data", text(reply(last.id, "off")));
+  assert.equal(h.state().artMode, "unknown");
+  assert.deepEqual(values, ["unknown"]);
 });
-test('Art-on events cancel a pending fresh off reply; unsolicited off grants nothing', () => {
+test("Art-on events cancel a pending fresh off reply; unsolicited off grants nothing", () => {
   const h = harness();
   const socket = ready(h);
-  socket.emit('data', text(reply(query(socket).id, 'off')));
+  socket.emit("data", text(reply(query(socket).id, "off")));
   const values = [];
   h.api.fresh((value) => values.push(value));
   h.advance(0);
   const request = query(socket);
   socket.emit(
-    'data',
+    "data",
     text({
-      event: 'd2d_service_message',
+      event: "d2d_service_message",
       data: {
-        event: 'artmode_status',
-        value: 'on',
+        event: "artmode_status",
+        value: "on",
       },
-    })
+    }),
   );
-  assert.equal(h.state().artMode, 'on');
-  assert.deepEqual(values, ['on']);
-  socket.emit('data', text(reply(request.id, 'off')));
+  assert.equal(h.state().artMode, "on");
+  assert.deepEqual(values, ["on"]);
+  socket.emit("data", text(reply(request.id, "off")));
   socket.emit(
-    'data',
+    "data",
     text({
-      event: 'd2d_service_message',
+      event: "d2d_service_message",
       data: {
-        event: 'artmode_status',
-        value: 'off',
+        event: "artmode_status",
+        value: "off",
       },
-    })
+    }),
   );
-  assert.equal(h.state().artMode, 'on');
-  assert.deepEqual(values, ['on']);
+  assert.equal(h.state().artMode, "on");
+  assert.deepEqual(values, ["on"]);
 });
-test('standby cancels pending work and invalidates the prior off status immediately', () => {
+test("standby cancels pending work and invalidates the prior off status immediately", () => {
   const h = harness();
   const socket = ready(h);
-  socket.emit('data', text(reply(query(socket).id, 'off')));
+  socket.emit("data", text(reply(query(socket).id, "off")));
   const values = [];
   h.api.fresh((value) => values.push(value));
   h.advance(0);
   const request = query(socket);
-  socket.emit('data', text({ event: 'd2d_service_message', data: { event: 'go_to_standby' } }));
-  assert.equal(h.state().artMode, 'unknown');
-  assert.deepEqual(values, ['unknown']);
-  socket.emit('data', text(reply(request.id, 'off')));
-  assert.equal(h.state().artMode, 'unknown');
+  socket.emit("data", text({ event: "d2d_service_message", data: { event: "go_to_standby" } }));
+  assert.equal(h.state().artMode, "unknown");
+  assert.deepEqual(values, ["unknown"]);
+  socket.emit("data", text(reply(request.id, "off")));
+  assert.equal(h.state().artMode, "unknown");
 });
-test('connection loss invalidates valid off and all pending callbacks before retry', () => {
+test("connection loss invalidates valid off and all pending callbacks before retry", () => {
   const h = harness();
   const socket = ready(h);
-  socket.emit('data', text(reply(query(socket).id, 'off')));
+  socket.emit("data", text(reply(query(socket).id, "off")));
   const values = [];
   h.api.fresh((value) => values.push(value));
   h.advance(0);
-  socket.emit('error', new Error('offline'));
-  assert.equal(h.state().artMode, 'unknown');
-  assert.deepEqual(values, ['unknown']);
+  socket.emit("error", new Error("offline"));
+  assert.equal(h.state().artMode, "unknown");
+  assert.deepEqual(values, ["unknown"]);
   assert.equal(socket.destroyed, true);
   h.advance(3999);
   assert.equal(h.requests.length, 1);
   h.advance(1);
   assert.equal(h.requests.length, 2);
 });
-test('oversized, masked, and invalid control server frames close safely', () => {
+test("oversized, masked, and invalid control server frames close safely", () => {
   const h = harness();
   const socket = ready(h);
   const header = Buffer.alloc(10);
   header[0] = 129;
   header[1] = 127;
   header.writeUInt32BE(131073, 6);
-  socket.emit('data', header);
+  socket.emit("data", header);
   assert.equal(socket.destroyed, true);
   const j = harness();
   const other = ready(j);
-  other.emit('data', Buffer.from([129, 128]));
+  other.emit("data", Buffer.from([129, 128]));
   assert.equal(other.destroyed, true);
   const k = harness();
   const invalid = ready(k);
-  invalid.emit('data', frame(9, 'x', false));
+  invalid.emit("data", frame(9, "x", false));
   assert.equal(invalid.destroyed, true);
 });
-test('polling continues beyond ten minutes and diagnostics stay bounded and copied', () => {
+test("polling continues beyond ten minutes and diagnostics stay bounded and copied", () => {
   const h = harness();
   const socket = ready(h);
   h.advance(660000);
-  assert.equal(h.state().phase, 'querying');
+  assert.equal(h.state().phase, "querying");
   assert.ok(socket.writes.length > 200);
   assert.ok(h.state().samples.length <= 64);
   assert.ok(h.state().events.length <= 64);
@@ -431,26 +425,26 @@ test('polling continues beyond ten minutes and diagnostics stay bounded and copi
   h.api.stop();
   const count = socket.writes.length;
   h.advance(60000);
-  socket.emit('data', frame(9, 'late'));
-  assert.equal(h.state().phase, 'stopped');
+  socket.emit("data", frame(9, "late"));
+  assert.equal(h.state().phase, "stopped");
   assert.equal(socket.destroyed, true);
   assert.equal(socket.writes.length, count);
 });
-test('unavailable crypto and stopped client fail closed without outbound traffic', () => {
+test("unavailable crypto and stopped client fail closed without outbound traffic", () => {
   const h = harness({ noCrypto: true });
   assert.deepEqual(h.imports, []);
   const values = [];
   h.api.fresh((value) => values.push(value));
   h.api.start();
   h.api.fresh((value) => values.push(value));
-  assert.deepEqual(values, ['unknown', 'unknown']);
+  assert.deepEqual(values, ["unknown", "unknown"]);
   assert.equal(h.requests.length, 0);
   assert.equal(h.state().runtime.crypto, false);
-  assert.equal(h.state().phase, 'unavailable');
+  assert.equal(h.state().phase, "unavailable");
 });
 
 for (const [name, fn] of tests) {
   fn();
-  process.stdout.write('PASS ' + name + '\n');
+  process.stdout.write("PASS " + name + "\n");
 }
-process.stdout.write(tests.length + ' tests passed\n');
+process.stdout.write(tests.length + " tests passed\n");

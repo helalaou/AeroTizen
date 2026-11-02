@@ -2,7 +2,7 @@
 // Samsung Home. Hidden web apps are frozen on retail TVs, so the watching happens there;
 // the launcher only reports what it opens and when it's back in front.
 (function (A) {
-  'use strict';
+  "use strict";
 
   var cfg = A.config,
     tz = A.tizen;
@@ -13,13 +13,13 @@
       return;
     }
     var x = new XMLHttpRequest();
-    x.open('GET', cfg.SERVICE_URL + path);
+    x.open("GET", cfg.SERVICE_URL + path);
     x.timeout = 1500;
     x.onerror = x.ontimeout = function () {
       if (window.AeroDiagnostics) {
-        window.AeroDiagnostics.record('service.unavailable', {
-          action: path.split('?')[0],
-          error: 'RequestFailed',
+        window.AeroDiagnostics.record("service.unavailable", {
+          action: path.split("?")[0],
+          error: "RequestFailed",
         });
       }
       (failed || start)();
@@ -50,11 +50,11 @@
       return;
     }
     if (window.AeroDiagnostics) {
-      window.AeroDiagnostics.record('service.launch_requested');
+      window.AeroDiagnostics.record("service.launch_requested");
     }
     try {
       tz.application.launchAppControl(
-        new tz.ApplicationControl('http://tizen.org/appcontrol/operation/service'),
+        new tz.ApplicationControl("http://tizen.org/appcontrol/operation/service"),
         cfg.SERVICE_ID,
         null,
         null
@@ -68,41 +68,41 @@
     start: start,
     // The launcher is about to open `appId`; Home inside it should come back here.
     watch: function (appId) {
-      tell('/watch?id=' + encodeURIComponent(A.catalog.preloadedStoreId(appId) || appId));
+      tell("/watch?id=" + encodeURIComponent(A.catalog.preloadedStoreId(appId) || appId));
     },
     // Every real app, so the service can tell a cast/launch from elsewhere apart from Home.
     reportApps: function (ids) {
-      tell('/apps?ids=' + ids.map(encodeURIComponent).join(','));
+      tell("/apps?ids=" + ids.map(encodeURIComponent).join(","));
     },
     // Diagnostic data only; this cannot enable polling or launch an application.
     reportStartup: function (trace) {
-      tell('/startup?data=' + encodeURIComponent(JSON.stringify(trace)), null, function () {});
+      tell("/startup?data=" + encodeURIComponent(JSON.stringify(trace)), null, function () {});
     },
     // Launch Samsung Home explicitly: exiting a native Home app can route back to itself.
     useSamsungHome: function () {
       if (!tz) {
-        A.toast('Would open Samsung Home');
+        A.toast("Would open Samsung Home");
         return;
       }
       leaving = true;
       function failed() {
         leaving = false;
-        A.toast('Samsung Home is unavailable. Try again.');
+        A.toast("Samsung Home is unavailable. Try again.");
       }
       tell(
-        '/leave',
+        "/leave",
         function (status) {
           if (!status || status.leaving !== true) {
             failed();
             return;
           }
           try {
-            tz.application.launch('com.samsung.tv.csfs', null, function () {
-              tell('/home');
+            tz.application.launch("com.samsung.tv.csfs", null, function () {
+              tell("/home");
               failed();
             });
           } catch (e) {
-            tell('/home');
+            tell("/home");
             failed();
           }
         },
@@ -114,10 +114,10 @@
     },
   };
 
-  document.addEventListener('visibilitychange', function () {
+  document.addEventListener("visibilitychange", function () {
     if (!document.hidden) {
       leaving = false;
-      tell('/home');
+      tell("/home");
     }
   });
 })(window.AeroTizen);

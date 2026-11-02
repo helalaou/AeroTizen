@@ -1,20 +1,20 @@
-import { focusControl } from '../../shared/navigation/focusControl';
-import { createStore } from '../../shared/state/createStore';
-import type { HomeEnvironment, HomeState, Page } from '../types';
+import { focusControl } from "../../shared/navigation/focusControl";
+import { createStore } from "../../shared/state/createStore";
+import type { HomeEnvironment, HomeState, Page } from "../types";
 
 // Remote transactions publish state synchronously; Preact owns every rendered node.
 // No app/service commands are reimplemented here.
 export const createHomeController = (
   env: Omit<
     HomeEnvironment,
-    'bridge' | 'state' | 'select' | 'activate' | 'showPage' | 'choose' | 'dismiss' | 'menuChoices'
+    "bridge" | "state" | "select" | "activate" | "showPage" | "choose" | "dismiss" | "menuChoices"
   >,
-  transaction: (action: () => void) => void
+  transaction: (action: () => void) => void,
 ) => {
   const { runtime: A, settings, inventory, nodes } = env;
   const state = createStore<HomeState>({
-    page: 'home',
-    selected: '',
+    page: "home",
+    selected: "",
     active: true,
     moving: null,
     draft: null,
@@ -34,11 +34,7 @@ export const createHomeController = (
   const update = (patch: Partial<HomeState>) =>
     transaction(() => {
       const before = state.getSnapshot();
-      if (
-        Object.keys(patch).some(
-          (key) => before[key as keyof HomeState] !== patch[key as keyof HomeState]
-        )
-      ) {
+      if (Object.keys(patch).some((key) => before[key as keyof HomeState] !== patch[key as keyof HomeState])) {
         state.set({ ...before, ...patch });
       }
     });
@@ -49,28 +45,23 @@ export const createHomeController = (
         ? settings.getSnapshot().home
         : [A.config.FIREPLACE_ID]);
     // Movement must address the same visible IDs as the grid, not stale saved apps.
-    return saved.filter(
-      (id) => id === A.config.FIREPLACE_ID || !inventory.getSnapshot().ready || A.apps.byId(id)
-    );
+    return saved.filter((id) => id === A.config.FIREPLACE_ID || !inventory.getSnapshot().ready || A.apps.byId(id));
   };
   const ids = () =>
-    state.getSnapshot().page === 'home'
-      ? homeIds().filter(
-          (id) => id === A.config.FIREPLACE_ID || !inventory.getSnapshot().ready || A.apps.byId(id)
-        )
+    state.getSnapshot().page === "home"
+      ? homeIds().filter((id) => id === A.config.FIREPLACE_ID || !inventory.getSnapshot().ready || A.apps.byId(id))
       : inventory.getSnapshot().apps.map((app) => app.id);
-  const sourceKey = (source: { type: string; number?: number }) =>
-    'input:' + source.type + ':' + source.number;
+  const sourceKey = (source: { type: string; number?: number }) => "input:" + source.type + ":" + source.number;
   const rows = (): string[][] => {
     const columns = env.columns(settings.getSnapshot()),
       all = ids(),
-      result = [['gear', 'samsung-home-shortcut', 'home-tab', 'apps-tab']];
+      result = [["gear", "samsung-home-shortcut", "home-tab", "apps-tab"]];
     for (let i = 0; i < all.length; i += columns) {
-      result.push(all.slice(i, i + columns).map((id) => 'app:' + id));
+      result.push(all.slice(i, i + columns).map((id) => "app:" + id));
     }
-    if (state.getSnapshot().page === 'home') {
+    if (state.getSnapshot().page === "home") {
       if (settings.getSnapshot().continueWatching && inventory.getSnapshot().items.length) {
-        result.push(inventory.getSnapshot().items.map((item) => 'continue:' + item.key));
+        result.push(inventory.getSnapshot().items.map((item) => "continue:" + item.key));
       }
       const sources = inventory.getSnapshot().inputs;
       if (sources.length) {
@@ -97,11 +88,7 @@ export const createHomeController = (
     const list = rows(),
       old = state.getSnapshot().selected;
     const selected =
-      !started && list[1]?.[0]
-        ? list[1][0]
-        : list.some((row) => row.includes(old))
-          ? old
-          : list[1]?.[0] || 'home-tab';
+      !started && list[1]?.[0] ? list[1][0] : list.some((row) => row.includes(old)) ? old : list[1]?.[0] || "home-tab";
     if (list[1]?.length) {
       started = true;
     }
@@ -116,19 +103,16 @@ export const createHomeController = (
     }
     focusControl(node);
     const listNode = node.parentElement;
-    if (selected.startsWith('continue:') && listNode) {
+    if (selected.startsWith("continue:") && listNode) {
       const viewport = listNode.parentElement;
       if (viewport) {
         const previous = Number(listNode.dataset.offset || 0);
         const offset = Math.max(
           0,
-          Math.min(
-            Math.max(previous, node.offsetLeft + node.offsetWidth - listNode.clientWidth),
-            node.offsetLeft
-          )
+          Math.min(Math.max(previous, node.offsetLeft + node.offsetWidth - listNode.clientWidth), node.offsetLeft),
         );
         listNode.dataset.offset = String(offset);
-        listNode.style.transform = 'translate3d(' + -offset + 'px,0,0)';
+        listNode.style.transform = "translate3d(" + -offset + "px,0,0)";
       }
     }
     const rect = node.getBoundingClientRect(),
@@ -143,8 +127,8 @@ export const createHomeController = (
     } else if (y - scroll < origin + 128) {
       scroll = Math.max(0, y - origin - 128);
     }
-    main.closest('.content-viewport')?.classList.toggle('is-scrolled', scroll > 0);
-    main.style.transform = 'translate3d(0,' + -scroll + 'px,0)';
+    main.closest(".content-viewport")?.classList.toggle("is-scrolled", scroll > 0);
+    main.style.transform = "translate3d(0," + -scroll + "px,0)";
   };
   const select = (selected: string) => {
     if (state.getSnapshot().selected !== selected) {
@@ -169,22 +153,22 @@ export const createHomeController = (
     cancelPress();
     endMove();
     scroll = 0;
-    update({ page, menu: null, selected: page === 'home' ? 'home-tab' : 'apps-tab' });
+    update({ page, menu: null, selected: page === "home" ? "home-tab" : "apps-tab" });
     focus();
   };
   const activate = (key: string) => {
-    if (key === 'gear') {
+    if (key === "gear") {
       endMove();
       A.settingsUi.open();
-    } else if (key === 'samsung-home-shortcut') {
+    } else if (key === "samsung-home-shortcut") {
       if (A.homewatch.openSamsungHome) {
         A.homewatch.openSamsungHome();
       } else {
         A.homewatch.useSamsungHome();
       }
-    } else if (key === 'home-tab' || key === 'apps-tab') {
-      showPage(key === 'home-tab' ? 'home' : 'apps');
-    } else if (key.startsWith('app:')) {
+    } else if (key === "home-tab" || key === "apps-tab") {
+      showPage(key === "home-tab" ? "home" : "apps");
+    } else if (key.startsWith("app:")) {
       const id = key.slice(4),
         app = A.apps.byId(id);
       if (id === A.config.FIREPLACE_ID) {
@@ -192,7 +176,7 @@ export const createHomeController = (
       } else if (app) {
         A.apps.launch(app);
       }
-    } else if (key.startsWith('continue:')) {
+    } else if (key.startsWith("continue:")) {
       const item = inventory.getSnapshot().items.find((item) => item.key === key.slice(9));
       if (item) {
         A.continueWatching.open(item);
@@ -205,17 +189,15 @@ export const createHomeController = (
     }
   };
   const menuChoices = () =>
-    state.getSnapshot().page === 'home'
+    state.getSnapshot().page === "home"
       ? [
-          { action: 'move', label: 'Move' },
-          { action: 'remove', label: 'Remove from Home' },
+          { action: "move", label: "Move" },
+          { action: "remove", label: "Remove from Home" },
         ]
       : [
           {
-            action: homeIds().includes(state.getSnapshot().menu?.id || '') ? 'remove' : 'add',
-            label: homeIds().includes(state.getSnapshot().menu?.id || '')
-              ? 'Remove from Home'
-              : 'Add to Home',
+            action: homeIds().includes(state.getSnapshot().menu?.id || "") ? "remove" : "add",
+            label: homeIds().includes(state.getSnapshot().menu?.id || "") ? "Remove from Home" : "Add to Home",
           },
         ];
   const choose = (index: number) => {
@@ -225,31 +207,31 @@ export const createHomeController = (
       return;
     }
     update({ menu: null });
-    if (choice.action === 'move') {
+    if (choice.action === "move") {
       update({ moving: menu.id, draft: [...homeIds()] });
-      A.toast(env.translate('Use the arrows to move it, OK to drop'));
+      A.toast(env.translate("Use the arrows to move it, OK to drop"));
       return;
     }
     const before = ids(),
       at = before.indexOf(menu.id),
       home = [...homeIds()];
     settings.update({
-      home: choice.action === 'add' ? [...home, menu.id] : home.filter((id) => id !== menu.id),
+      home: choice.action === "add" ? [...home, menu.id] : home.filter((id) => id !== menu.id),
     });
-    if (state.getSnapshot().page === 'home') {
+    if (state.getSnapshot().page === "home") {
       const after = ids();
       update({
         selected: after.length
-          ? 'app:' + after[Math.min(Math.max(at, 0), after.length - 1)]
+          ? "app:" + after[Math.min(Math.max(at, 0), after.length - 1)]
           : inventory.getSnapshot().inputs.length
             ? sourceKey(inventory.getSnapshot().inputs[0])
-            : 'home-tab',
+            : "home-tab",
       });
     }
     focus();
   };
   const K = A.config.KEY;
-  const keydown = (code: number, event: Pick<KeyboardEvent, 'preventDefault'>) =>
+  const keydown = (code: number, event: Pick<KeyboardEvent, "preventDefault">) =>
     transaction(() => {
       const current = state.getSnapshot();
       const delta = code === K.LEFT || code === K.UP ? -1 : 1;
@@ -269,10 +251,7 @@ export const createHomeController = (
           update({
             menu: {
               ...current.menu,
-              selected: Math.max(
-                0,
-                Math.min(menuChoices().length - 1, current.menu.selected + delta)
-              ),
+              selected: Math.max(0, Math.min(menuChoices().length - 1, current.menu.selected + delta)),
             },
           });
         }
@@ -304,15 +283,15 @@ export const createHomeController = (
         const selected = current.selected;
         timer = window.setTimeout(() => {
           timer = undefined;
-          if (enterDown && selected.startsWith('app:')) {
+          if (enterDown && selected.startsWith("app:")) {
             update({ menu: { id: selected.slice(4), selected: 0 } });
           }
         }, A.config.LONG_PRESS_MS);
         return;
       }
       if (code === K.BACK || code === K.ESC) {
-        if (current.page !== 'home') {
-          showPage('home');
+        if (current.page !== "home") {
+          showPage("home");
         }
         return;
       }
@@ -334,22 +313,17 @@ export const createHomeController = (
           column = 0;
         }
         if (target === 0) {
-          column = all[0].indexOf(current.page === 'home' ? 'home-tab' : 'apps-tab');
-        } else if (
-          current.selected.startsWith('continue:') ||
-          all[target][0]?.startsWith('continue:')
-        ) {
+          column = all[0].indexOf(current.page === "home" ? "home-tab" : "apps-tab");
+        } else if (current.selected.startsWith("continue:") || all[target][0]?.startsWith("continue:")) {
           const from = nodes.get(current.selected)?.getBoundingClientRect();
           if (from) {
             let distance = Infinity;
-            const viewport = document
-              .getElementById('continue-items')
-              ?.parentElement?.getBoundingClientRect();
+            const viewport = document.getElementById("continue-items")?.parentElement?.getBoundingClientRect();
             all[target].forEach((key, i) => {
               const rect = nodes.get(key)?.getBoundingClientRect();
               if (
                 !rect ||
-                (key.startsWith('continue:') &&
+                (key.startsWith("continue:") &&
                   viewport &&
                   (rect.right <= viewport.left || rect.left >= viewport.right))
               ) {

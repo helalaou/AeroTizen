@@ -1,13 +1,14 @@
-import type { ComponentChildren } from 'preact';
-import { useCallback, useRef } from 'preact/hooks';
-import { useStore } from '../../shared/hooks/useStore';
-import type { HomeEnvironment } from '../types';
+import type { ComponentChildren } from "preact";
+import { useCallback, useRef } from "preact/hooks";
+
+import { useStore } from "../../shared/hooks/useStore";
+import type { HomeEnvironment } from "../types";
 
 export const HomeControl = ({
   env,
   controlKey,
   children,
-  className = '',
+  className = "",
   id,
   title,
   dataId,
@@ -45,13 +46,13 @@ export const HomeControl = ({
         env.nodes.set(controlKey, node);
       }
     },
-    [env, controlKey, registered]
+    [env, controlKey, registered],
   );
   return (
     <div
       ref={register}
       id={id}
-      class={className + (focused ? ' focused' : '')}
+      class={className + (focused ? " focused" : "")}
       role="button"
       aria-label={title}
       title={title}

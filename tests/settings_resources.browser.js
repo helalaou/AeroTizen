@@ -2,19 +2,15 @@
 // artwork's two-second deadline to test retries and cleanup without real delays.
 const runSettingsResources = async (page) => {
   const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
-  await page.route('https://**/*', (route) =>
-    route.fulfill({ contentType: 'application/json', body: '{}' })
-  );
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.route("https://**/*", (route) => route.fulfill({ contentType: "application/json", body: "{}" }));
   const routes = [];
-  await page.route('https://pending-artwork.test/**', (route) => {
+  await page.route("https://pending-artwork.test/**", (route) => {
     routes.push(route);
   });
   await page.reload();
   await page.waitForFunction(() => AeroTizen.apps.all.length > 0);
-  await page.evaluate(
-    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
-  );
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
     const A = AeroTizen;
     const nativeSet = window.setTimeout,
@@ -47,41 +43,32 @@ const runSettingsResources = async (page) => {
       timers.delete(id);
       nativeClear(id);
     };
-    A.artwork.sources = () => [
-      'https://pending-artwork.test/first',
-      'https://pending-artwork.test/second',
-    ];
+    A.artwork.sources = () => ["https://pending-artwork.test/first", "https://pending-artwork.test/second"];
     A.settingsUi.open();
-    window.oldArtwork = document.querySelector('#all-apps .app-artwork');
-    if (timers.size !== A.apps.all.length)
-      throw new Error('Expected one deadline per pending artwork');
+    window.oldArtwork = document.querySelector("#all-apps .app-artwork");
+    if (timers.size !== A.apps.all.length) throw new Error("Expected one deadline per pending artwork");
     A.settingsUi.close();
-    if (timers.size) throw new Error('Closed Settings retained image deadlines');
-    if (document.querySelector('#all-apps .app-artwork'))
-      throw new Error('Closed Settings retained a pending image');
+    if (timers.size) throw new Error("Closed Settings retained image deadlines");
+    if (document.querySelector("#all-apps .app-artwork")) throw new Error("Closed Settings retained a pending image");
     A.settingsUi.open();
-    window.oldArtwork.dispatchEvent(new Event('load'));
-    if (document.querySelector('#all-apps .has-artwork'))
-      throw new Error('Detached image changed reopened Settings');
+    window.oldArtwork.dispatchEvent(new Event("load"));
+    if (document.querySelector("#all-apps .has-artwork")) throw new Error("Detached image changed reopened Settings");
     // Expire all first candidates. Each tile must try its second candidate.
     [...timers.values()].forEach((expire) => expire());
   });
   await page.waitForFunction(
     () =>
-      [...document.querySelectorAll('#all-apps .app-artwork')].every((image) =>
-        image.src.endsWith('/second')
-      ) && window.artworkTimers.size === AeroTizen.apps.all.length
+      [...document.querySelectorAll("#all-apps .app-artwork")].every((image) => image.src.endsWith("/second")) &&
+      window.artworkTimers.size === AeroTizen.apps.all.length,
   );
   await page.evaluate(() => {
     [...window.artworkTimers.values()].forEach((expire) => expire());
   });
-  await page.waitForFunction(() => !document.querySelector('#all-apps .app-artwork'));
+  await page.waitForFunction(() => !document.querySelector("#all-apps .app-artwork"));
   const result = await page.evaluate(() => {
-    if (window.artworkTimers.size) throw new Error('Exhausted artwork retained deadlines');
-    if (
-      [...document.querySelectorAll('#all-apps .app-fallback')].some((element) => element.hidden)
-    ) {
-      throw new Error('Failed artwork hid the brand fallback');
+    if (window.artworkTimers.size) throw new Error("Exhausted artwork retained deadlines");
+    if ([...document.querySelectorAll("#all-apps .app-fallback")].some((element) => element.hidden)) {
+      throw new Error("Failed artwork hid the brand fallback");
     }
     AeroTizen.settingsUi.close();
     window.restoreTimers();
@@ -95,7 +82,7 @@ const runSettingsResources = async (page) => {
   // Complete the detached requests without intentional network-error console noise.
   for (const route of routes)
     await route.fulfill({
-      contentType: 'image/svg+xml',
+      contentType: "image/svg+xml",
       body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" />',
     });
   if (errors.length) throw new Error(JSON.stringify(errors));

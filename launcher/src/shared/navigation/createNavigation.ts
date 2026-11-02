@@ -1,22 +1,22 @@
-import { createStore } from '../state/createStore';
-import type { Store } from '../state/createStore';
+import type { Store } from "../state/createStore";
+import { createStore } from "../state/createStore";
 
-export type Direction = 'left' | 'right' | 'up' | 'down';
+export type Direction = "left" | "right" | "up" | "down";
 export interface Navigation extends Store<string | undefined> {
-  setScope?(element: HTMLElement | null): void;
-  register(key: string, node: HTMLElement | null): void;
-  focus(): HTMLElement | undefined;
   clear(): void;
-  invalidate(): void;
-  select(key: string | undefined): void;
-  reset(key: string): void;
   current(): HTMLElement | undefined;
+  focus(): HTMLElement | undefined;
+  invalidate(): void;
   move(direction: Direction): void;
+  register(key: string, node: HTMLElement | null): void;
+  reset(key: string): void;
+  select(key: string | undefined): void;
+  setScope?(element: HTMLElement | null): void;
 }
 interface Target {
   key: string;
-  node: HTMLElement;
   left: number;
+  node: HTMLElement;
 }
 
 // Ref callbacks register controls. Geometry is read only when the layout changes;
@@ -118,16 +118,16 @@ export const createNavigation = (onFocus: (element: HTMLElement) => void): Navig
     move: (direction) => {
       currentTarget();
       selected = undefined;
-      if (direction === 'left') {
+      if (direction === "left") {
         column--;
       }
-      if (direction === 'right') {
+      if (direction === "right") {
         column++;
       }
-      if (direction === 'up') {
+      if (direction === "up") {
         row--;
       }
-      if (direction === 'down') {
+      if (direction === "down") {
         row++;
       }
       focus();

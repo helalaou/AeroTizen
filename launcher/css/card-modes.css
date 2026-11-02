@@ -155,13 +155,7 @@
 
 /* Fireplace is still a first-class item in both modes. */
 .app-grid.cards-rectangle .tile.fire {
-  background: radial-gradient(
-    110% 120% at 50% 110%,
-    #ff8a1e 0%,
-    #c2380d 35%,
-    #3a0d04 70%,
-    #120402 100%
-  );
+  background: radial-gradient(110% 120% at 50% 110%, #ff8a1e 0%, #c2380d 35%, #3a0d04 70%, #120402 100%);
 }
 .app-grid.cards-rectangle .tile.fire svg.flame {
   flex: 0 0 34%;
@@ -191,19 +185,14 @@
   transition: transform 0.17s cubic-bezier(0.2, 0.72, 0.25, 1) !important;
 }
 .app-grid.cards-rectangle .tile::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   display: block;
   pointer-events: none;
   z-index: 2;
   border-radius: inherit;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.075) 0%,
-    transparent 34%,
-    rgba(0, 0, 0, 0.07) 100%
-  );
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.075) 0%, transparent 34%, rgba(0, 0, 0, 0.07) 100%);
 }
 .app-grid.cards-rectangle .tile.focused {
   transform: translate3d(0, -7px, 0) scale(1.065) !important;

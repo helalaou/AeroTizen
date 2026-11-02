@@ -1,8 +1,8 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 
 interface Attempt {
-  token: object;
   settle(loaded: boolean): void;
+  token: object;
 }
 const IMAGE_TIMEOUT_MS = 2000;
 
@@ -15,7 +15,7 @@ export const useImageSequence = (sources: readonly string[], active: boolean) =>
   const source = sources[current.index];
   const token = useMemo(
     () => ({ key, index: current.index, loaded: current.loaded, active }),
-    [key, current.index, current.loaded, active]
+    [key, current.index, current.loaded, active],
   );
   const attempt = useRef<Attempt | null>(null);
   useLayoutEffect(() => {

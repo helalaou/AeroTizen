@@ -1,5 +1,6 @@
-import type { SettingsServices } from '../types';
-import type { LauncherRuntime } from './launcherRuntime';
+import type { SettingsServices } from "../types";
+
+import type { LauncherRuntime } from "./launcherRuntime";
 
 // All dependencies on unmigrated modules are kept at this boundary. Components
 // receive data/commands; none can call the legacy tile DOM constructors.
@@ -57,6 +58,6 @@ export const createSettingsServices = (runtime: LauncherRuntime): SettingsServic
     runtime.homeScreen.blur?.();
     runtime.clearFocus();
   },
-  showPreviewMessage: () => runtime.toast('Previewing. Press any key to return'),
+  showPreviewMessage: () => runtime.toast("Previewing. Press any key to return"),
   hidePreviewMessage: () => runtime.hideToast(),
 });

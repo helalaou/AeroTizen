@@ -1,5 +1,5 @@
 /* Preact renders focus state; native focus must not add a second outline. */
-#home-root [role='button']:focus {
+#home-root [role="button"]:focus {
   outline: none;
 }
 #custom-clock-root:empty {
@@ -86,10 +86,10 @@
 }
 /* One-shot reveals keep cached artwork and remote transactions synchronous.
    Separate names restart cleanly on rapid Home/All apps changes, without timers. */
-.home-page-surface[data-page='home'] {
+.home-page-surface[data-page="home"] {
   animation: aero-page-home 0.24s ease-out both;
 }
-.home-page-surface[data-page='apps'] {
+.home-page-surface[data-page="apps"] {
   animation: aero-page-apps 0.24s ease-out both;
 }
 @keyframes aero-page-home {
@@ -152,7 +152,7 @@
   min-width: 155px;
   height: 60px;
   padding: 0 25px;
-  font-family: 'SamsungOne', 'Roboto', Arial, sans-serif;
+  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
   font-size: 25px;
   font-weight: 500;
   border: 1px solid transparent;

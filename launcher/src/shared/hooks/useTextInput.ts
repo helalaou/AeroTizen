@@ -1,5 +1,5 @@
-import { useRef, useState } from 'preact/hooks';
-import type { JSX } from 'preact';
+import type { JSX } from "preact";
+import { useRef, useState } from "preact/hooks";
 
 // null means no edit is in progress: display the current saved value directly.
 export const useTextInput = (value: string, commit: (value: string) => void) => {
@@ -10,8 +10,7 @@ export const useTextInput = (value: string, commit: (value: string) => void) => 
     value: draft ?? value,
     focus: () => ref.current?.focus(),
     onFocus: () => setDraft((previous) => previous ?? value),
-    onInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) =>
-      setDraft(event.currentTarget.value),
+    onInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => setDraft(event.currentTarget.value),
     onBlur: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => {
       const next = event.currentTarget.value.trim();
       setDraft(null);

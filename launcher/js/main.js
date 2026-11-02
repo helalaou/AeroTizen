@@ -1,7 +1,7 @@
 // Boot and key routing. Each layer gets keys in priority order: text entry, fireplace,
 // full-screen input, settings, then the home screen.
 (function (A) {
-  'use strict';
+  "use strict";
 
   var KEY = A.config.KEY;
 
@@ -13,18 +13,12 @@
     window.Backgrounds.apply(A.settings.background);
   };
 
-  document.addEventListener('keydown', function (e) {
+  document.addEventListener("keydown", function (e) {
     var k = e.keyCode,
       active = document.activeElement;
     // Text entry: the on-screen keyboard owns the keys; OK/Done/Back finish.
-    if (active && active.tagName === 'INPUT') {
-      if (
-        k === KEY.ENTER ||
-        k === KEY.BACK ||
-        k === KEY.ESC ||
-        k === KEY.IME_DONE ||
-        k === KEY.IME_CANCEL
-      ) {
+    if (active && active.tagName === "INPUT") {
+      if (k === KEY.ENTER || k === KEY.BACK || k === KEY.ESC || k === KEY.IME_DONE || k === KEY.IME_CANCEL) {
         e.preventDefault();
         active.blur();
         A.settingsUi.focus();
@@ -55,14 +49,14 @@
     A.homeScreen.keydown(k, e);
   });
 
-  document.addEventListener('keyup', function (e) {
+  document.addEventListener("keyup", function (e) {
     if (A.settingsUi.isOpen() || A.inputs.watching || window.Fireplace.isOpen()) {
       return;
     }
     A.homeScreen.keyup(e.keyCode);
   });
 
-  document.addEventListener('visibilitychange', function () {
+  document.addEventListener("visibilitychange", function () {
     if (!document.hidden) {
       A.clock.tick();
       A.inputs.load();
@@ -72,7 +66,7 @@
   // ---- boot ----------------------------------------------------------------------
   var startup = window.AeroStartup;
   A.settings.load();
-  startup.mark('settings-loaded');
+  startup.mark("settings-loaded");
   A.applyBackground();
   A.clock.start();
   if (A.photoWeather) {
@@ -80,7 +74,7 @@
   }
   A.apps.restore();
   A.homeScreen.render();
-  startup.mark('home-rendered');
+  startup.mark("home-rendered");
   function discover() {
     startup.captureLaunch();
     A.continueWatching.start();
@@ -93,9 +87,9 @@
     setTimeout(function () {
       A.homewatch.reportStartup(startup.trace);
     }, 1500);
-    startup.mark('apps-requested');
+    startup.mark("apps-requested");
     A.apps.load(function (success) {
-      startup.mark(success ? 'apps-loaded' : 'apps-unavailable');
+      startup.mark(success ? "apps-loaded" : "apps-unavailable");
       if (success) {
         if (A.settings.home === null) {
           A.settings.home = A.apps.defaultHome();
@@ -108,12 +102,12 @@
       }
       A.homewatch.reportStartup(startup.trace);
     });
-    startup.mark('apps-call-returned');
+    startup.mark("apps-call-returned");
   }
   // Allow a frame to draw before crossing into the TV's package APIs.
   window.requestAnimationFrame(function () {
     window.requestAnimationFrame(function () {
-      startup.mark('frame-ready');
+      startup.mark("frame-ready");
       startup.afterLoad(discover);
     });
   });

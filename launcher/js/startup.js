@@ -1,10 +1,10 @@
 // Local diagnostic marks only. No app launches, Art checks or polling.
 (function (w) {
-  'use strict';
+  "use strict";
   var started = Date.now(),
     p = w.performance,
     tick = p && p.now ? p.now() : null;
-  var loaded = document.readyState === 'complete',
+  var loaded = document.readyState === "complete",
     pending = [];
   var trace = {
     script_at: started,
@@ -19,12 +19,12 @@
         var request = api.getCurrentApplication().getRequestedAppControl();
         var control = request && request.appControl;
         if (control) {
-          launch.operation = String(control.operation || '').slice(0, 96);
+          launch.operation = String(control.operation || "").slice(0, 96);
           launch.data = {};
           // Record routing flags only. Other payloads can contain private app data.
           (control.data || []).forEach(function (item) {
             if (
-              ['entry_point', '__K_BG_LAUNCH', 'init', 'SkipReload'].indexOf(item.key) >= 0 &&
+              ["entry_point", "__K_BG_LAUNCH", "init", "SkipReload"].indexOf(item.key) >= 0 &&
               item.value &&
               item.value.length
             ) {
@@ -34,7 +34,7 @@
         }
       }
     } catch (e) {
-      launch.error = String(e.name || 'unavailable').slice(0, 32);
+      launch.error = String(e.name || "unavailable").slice(0, 32);
     }
     if (!trace.launch) {
       trace.launch = launch;
@@ -46,7 +46,7 @@
   w.AeroStartup = {
     trace: trace,
     captureLaunch: function () {
-      captureLaunch('launch-request');
+      captureLaunch("launch-request");
     },
     afterLoad: function (callback) {
       if (loaded) {
@@ -66,34 +66,34 @@
         });
       }
       try {
-        localStorage.setItem('aerotizen.startup.v1', JSON.stringify(trace));
+        localStorage.setItem("aerotizen.startup.v1", JSON.stringify(trace));
       } catch (e) {
         /* diagnostics are optional */
       }
     },
   };
-  w.AeroStartup.mark('first-script');
-  document.addEventListener('DOMContentLoaded', function () {
-    w.AeroStartup.mark('dom-ready');
+  w.AeroStartup.mark("first-script");
+  document.addEventListener("DOMContentLoaded", function () {
+    w.AeroStartup.mark("dom-ready");
   });
-  w.addEventListener('load', function () {
-    w.AeroStartup.mark('page-loaded');
+  w.addEventListener("load", function () {
+    w.AeroStartup.mark("page-loaded");
     loaded = true;
     pending.forEach(function (callback) {
       setTimeout(callback, 0);
     });
     pending = [];
   });
-  document.addEventListener('visibilitychange', function () {
-    w.AeroStartup.mark(document.hidden ? 'hidden' : 'visible');
+  document.addEventListener("visibilitychange", function () {
+    w.AeroStartup.mark(document.hidden ? "hidden" : "visible");
   });
-  w.addEventListener('focus', function () {
-    w.AeroStartup.mark('focus');
+  w.addEventListener("focus", function () {
+    w.AeroStartup.mark("focus");
   });
-  w.addEventListener('blur', function () {
-    w.AeroStartup.mark('blur');
+  w.addEventListener("blur", function () {
+    w.AeroStartup.mark("blur");
   });
-  w.addEventListener('appcontrol', function () {
-    captureLaunch('appcontrol');
+  w.addEventListener("appcontrol", function () {
+    captureLaunch("appcontrol");
   });
 })(window);

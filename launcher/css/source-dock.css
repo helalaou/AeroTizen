@@ -5,7 +5,7 @@ body.glass-ui .inputs-wrap {
   margin-bottom: 12px;
 }
 body.glass-ui .inputs-wrap > h2 {
-  font-family: 'SamsungOne', 'Roboto', Arial, sans-serif;
+  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
   font-size: 21px !important;
   font-weight: 500;
   letter-spacing: 2.5px;
@@ -46,7 +46,7 @@ body.glass-ui #inputs.row.small {
     0 13px 32px rgba(0, 0, 0, 0.27);
 }
 body.glass-ui #inputs.row.small::before {
-  content: '';
+  content: "";
   position: absolute;
   z-index: 0;
   pointer-events: none;
@@ -84,7 +84,7 @@ body.glass-ui #inputs .tile.aero-source-card {
     transform 0.15s ease !important;
 }
 body.glass-ui #inputs .tile.aero-source-card:not(:last-child)::after {
-  content: '';
+  content: "";
   position: absolute;
   right: 0;
   top: 30px;
@@ -120,7 +120,7 @@ body.glass-ui #inputs .tile.aero-source-card .name {
   width: 100%;
   max-width: none !important;
   min-width: 0;
-  font-family: 'SamsungOne', 'Roboto', Arial, sans-serif;
+  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
   font-size: 22px !important;
   font-weight: 500;
   line-height: 1.13;
@@ -230,8 +230,8 @@ body.glass-ui #inputs .tile.aero-source-card .aero-source-status {
   background: rgba(0, 0, 0, 0.25);
   color: rgba(255, 255, 255, 0.87);
   font:
-    600 12px/1.1 'SamsungOne',
-    'Roboto',
+    600 12px/1.1 "SamsungOne",
+    "Roboto",
     Arial,
     sans-serif;
   letter-spacing: 0.45px;
@@ -239,7 +239,7 @@ body.glass-ui #inputs .tile.aero-source-card .aero-source-status {
   pointer-events: none;
 }
 body.glass-ui #inputs .tile.aero-source-card .aero-source-status::before {
-  content: '';
+  content: "";
   display: inline-block;
   width: 6px;
   height: 6px;
@@ -250,11 +250,7 @@ body.glass-ui #inputs .tile.aero-source-card .aero-source-status::before {
 body.glass-ui #inputs .tile.aero-source-card.aero-source-connected:not(.focused),
 body.glass-ui #inputs .tile.aero-source-card.aero-source-active:not(.focused) {
   border-color: rgba(106, 239, 201, 0.45) !important;
-  background: linear-gradient(
-    165deg,
-    rgba(97, 217, 182, 0.18),
-    rgba(255, 255, 255, 0.04) 73%
-  ) !important;
+  background: linear-gradient(165deg, rgba(97, 217, 182, 0.18), rgba(255, 255, 255, 0.04) 73%) !important;
   box-shadow:
     inset 0 1px rgba(184, 255, 235, 0.18),
     0 4px 14px rgba(0, 0, 0, 0.12) !important;
@@ -267,11 +263,7 @@ body.glass-ui #inputs .tile.aero-source-card.aero-source-active .aero-source-sta
 }
 body.glass-ui #inputs .tile.aero-source-card.aero-source-recognised:not(.focused) {
   border-color: rgba(245, 210, 145, 0.4) !important;
-  background: linear-gradient(
-    165deg,
-    rgba(210, 159, 85, 0.14),
-    rgba(255, 255, 255, 0.035) 76%
-  ) !important;
+  background: linear-gradient(165deg, rgba(210, 159, 85, 0.14), rgba(255, 255, 255, 0.035) 76%) !important;
 }
 body.glass-ui #inputs .tile.aero-source-card.aero-source-recognised .aero-source-status {
   color: #f3d69b;

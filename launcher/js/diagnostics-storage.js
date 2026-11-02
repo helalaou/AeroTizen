@@ -1,7 +1,7 @@
 /* global module */
 // Async UI log storage. Existing localStorage logs are read once in an idle task.
 (function (root) {
-  'use strict';
+  "use strict";
   function open(host, ready) {
     var request,
       settled = false,
@@ -17,9 +17,9 @@
         finish(null);
         return;
       }
-      request = host.indexedDB.open('aerotizen.diagnostics.v1', 1);
+      request = host.indexedDB.open("aerotizen.diagnostics.v1", 1);
       request.onupgradeneeded = function () {
-        request.result.createObjectStore('logs');
+        request.result.createObjectStore("logs");
       };
       request.onerror = request.onblocked = function () {
         finish(null);
@@ -39,17 +39,17 @@
             function legacy() {
               var value = null;
               try {
-                value = host.localStorage.getItem('aerotizen.diagnostics.v1');
+                value = host.localStorage.getItem("aerotizen.diagnostics.v1");
               } catch (e) {
                 /* optional legacy read */
               }
-              done(null, typeof value === 'string' && value.length <= 131072 ? value : null);
+              done(null, typeof value === "string" && value.length <= 131072 ? value : null);
             }
             try {
-              transaction = database.transaction('logs', 'readonly');
-              read = transaction.objectStore('logs').get('current');
+              transaction = database.transaction("logs", "readonly");
+              read = transaction.objectStore("logs").get("current");
               transaction.oncomplete = function () {
-                if (typeof read.result === 'string' && read.result.length <= 131072) {
+                if (typeof read.result === "string" && read.result.length <= 131072) {
                   done(null, read.result);
                 } else if (host.requestIdleCallback) {
                   host.requestIdleCallback(legacy, { timeout: 1000 });
@@ -58,7 +58,7 @@
                 }
               };
               transaction.onabort = function () {
-                done(transaction.error || new Error('Log read failed'));
+                done(transaction.error || new Error("Log read failed"));
               };
             } catch (e) {
               done(e);
@@ -66,15 +66,15 @@
           },
           save: function (value, done) {
             try {
-              var transaction = database.transaction('logs', 'readwrite');
-              transaction.objectStore('logs').put(value, 'current');
+              var transaction = database.transaction("logs", "readwrite");
+              transaction.objectStore("logs").put(value, "current");
               transaction.oncomplete = function () {
                 done(null);
                 if (!legacyRemoved) {
                   legacyRemoved = true;
                   var remove = function () {
                     try {
-                      host.localStorage.removeItem('aerotizen.diagnostics.v1');
+                      host.localStorage.removeItem("aerotizen.diagnostics.v1");
                     } catch (e) {
                       /* optional old log cleanup */
                     }
@@ -87,7 +87,7 @@
                 }
               };
               transaction.onabort = function () {
-                done(transaction.error || new Error('Log write failed'));
+                done(transaction.error || new Error("Log write failed"));
               };
             } catch (e) {
               done(e);
@@ -99,11 +99,11 @@
       finish(null);
     }
   }
-  if (typeof module !== 'undefined' && module.exports) {
+  if (typeof module !== "undefined" && module.exports) {
     module.exports = open;
   } else {
     root.AeroDiagnosticsStorage = function (ready) {
       open(root, ready);
     };
   }
-})(typeof window !== 'undefined' ? window : this);
+})(typeof window !== "undefined" ? window : this);

@@ -1,10 +1,10 @@
-import type { HomeEnvironment } from '../types';
-import { useStore } from '../../shared/hooks/useStore';
+import { useStore } from "../../shared/hooks/useStore";
+import type { HomeEnvironment } from "../types";
 const paths = {
-  left: 'M15 5l-7 7 7 7',
-  right: 'M9 5l7 7-7 7',
-  up: 'M5 15l7-7 7 7',
-  down: 'M5 9l7 7 7-7',
+  left: "M15 5l-7 7 7 7",
+  right: "M9 5l7 7-7 7",
+  up: "M5 15l7-7 7 7",
+  down: "M5 9l7 7 7-7",
 };
 export const MoveArrows = ({ env, id }: { env: HomeEnvironment; id: string }) => {
   const { draft } = useStore(env.state),
@@ -23,7 +23,7 @@ export const MoveArrows = ({ env, id }: { env: HomeEnvironment; id: string }) =>
       {(Object.keys(paths) as (keyof typeof paths)[])
         .filter((direction) => allowed[direction])
         .map((direction) => (
-          <div key={direction} class={'move-arrow ' + direction} aria-hidden="true">
+          <div key={direction} class={"move-arrow " + direction} aria-hidden="true">
             <svg viewBox="0 0 24 24">
               <path
                 fill="none"

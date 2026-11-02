@@ -1,6 +1,6 @@
 // Small DOM helpers shared by every module.
 (function (A) {
-  'use strict';
+  "use strict";
 
   A.$ = function (id) {
     return document.getElementById(id);
@@ -18,7 +18,7 @@
   };
 
   A.toast = function (text) {
-    var t = A.$('toast');
+    var t = A.$("toast");
     t.textContent = text;
     t.hidden = false;
     clearTimeout(A.toast.timer);
@@ -27,13 +27,13 @@
     }, 2500);
   };
   A.hideToast = function () {
-    A.$('toast').hidden = true;
+    A.$("toast").hidden = true;
   };
 
   A.clearFocus = function () {
-    var prev = document.querySelectorAll('.focused');
+    var prev = document.querySelectorAll(".focused");
     for (var i = 0; i < prev.length; i++) {
-      prev[i].classList.remove('focused');
+      prev[i].classList.remove("focused");
     }
   };
 

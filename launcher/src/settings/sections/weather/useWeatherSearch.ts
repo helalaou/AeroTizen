@@ -1,18 +1,16 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { flushSync } from 'preact/compat';
-import type { SettingsServices, WeatherLocation } from '../../types';
+import { flushSync } from "preact/compat";
+import { useCallback, useLayoutEffect, useRef, useState } from "preact/hooks";
+
+import type { SettingsServices, WeatherLocation } from "../../types";
 
 interface SearchState {
+  message: string;
   query: string;
   results: WeatherLocation[];
-  message: string;
 }
 
-export const useWeatherSearch = (
-  searchLocations: SettingsServices['searchLocations'],
-  active: boolean
-) => {
-  const [state, setState] = useState<SearchState>({ query: '', results: [], message: '' });
+export const useWeatherSearch = (searchLocations: SettingsServices["searchLocations"], active: boolean) => {
+  const [state, setState] = useState<SearchState>({ query: "", results: [], message: "" });
   const cancel = useRef<(() => void) | undefined>(undefined);
   const version = useRef(0);
   const enabled = useRef(active);
@@ -23,7 +21,7 @@ export const useWeatherSearch = (
   }, []);
   const clear = useCallback(() => {
     cancelSearch();
-    setState((previous) => ({ ...previous, results: [], message: '' }));
+    setState((previous) => ({ ...previous, results: [], message: "" }));
   }, [cancelSearch]);
   useLayoutEffect(() => {
     enabled.current = active;
@@ -37,7 +35,7 @@ export const useWeatherSearch = (
     clear,
     setQuery: (next: string) => {
       clear();
-      flushSync(() => setState({ query: next, results: [], message: '' }));
+      flushSync(() => setState({ query: next, results: [], message: "" }));
     },
     search: () => {
       clear();
@@ -45,8 +43,7 @@ export const useWeatherSearch = (
         request = version.current;
       setState((previous) => ({
         ...previous,
-        message:
-          text.length < 2 ? 'Enter at least two characters, then select Search.' : 'Searching…',
+        message: text.length < 2 ? "Enter at least two characters, then select Search." : "Searching…",
       }));
       if (text.length < 2) {
         return;
@@ -61,11 +58,11 @@ export const useWeatherSearch = (
             results: results || [],
             message:
               results === null
-                ? 'Could not search. Check your connection and try again.'
+                ? "Could not search. Check your connection and try again."
                 : results.length
-                  ? 'Select your location. Add a region or country to the search if needed.'
-                  : 'No locations found. Try a nearby town or add a region or country.',
-          }))
+                  ? "Select your location. Add a region or country to the search if needed."
+                  : "No locations found. Try a nearby town or add a region or country.",
+          })),
         );
       });
     },

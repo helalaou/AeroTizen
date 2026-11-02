@@ -1,6 +1,6 @@
 // Optional AI-generated weather scenes. Reuses Weather; images stay local.
 (function (A) {
-  'use strict';
+  "use strict";
 
   var SCENES = {
     sun: 1,
@@ -13,10 +13,10 @@
     night: 1,
     sunset: 1,
   };
-  var layer = document.getElementById('weather-photo');
-  var scene = '',
-    pending = '',
-    failed = '',
+  var layer = document.getElementById("weather-photo");
+  var scene = "",
+    pending = "",
+    failed = "",
     image = null,
     timer = null,
     generation = 0,
@@ -25,50 +25,48 @@
   function localPhoto(code) {
     var c = Number(code);
     if (c === 0 || c === 1) {
-      return 'sun';
+      return "sun";
     }
     if (c === 2) {
-      return 'partly';
+      return "partly";
     }
     if (c === 3) {
-      return 'cloud';
+      return "cloud";
     }
     if (c === 45 || c === 48) {
-      return 'fog';
+      return "fog";
     }
     if ((c >= 71 && c <= 77) || c === 85 || c === 86) {
-      return 'snow';
+      return "snow";
     }
     if (c === 95 || c === 96 || c === 99) {
-      return 'storm';
+      return "storm";
     }
     if ((c >= 51 && c <= 67) || (c >= 80 && c <= 82)) {
-      return 'rain';
+      return "rain";
     }
-    return 'cloud';
+    return "cloud";
   }
 
   function solarPhase(reading, now) {
-    return window.Weather && window.Weather.solarPhase
-      ? window.Weather.solarPhase(reading, now)
-      : '';
+    return window.Weather && window.Weather.solarPhase ? window.Weather.solarPhase(reading, now) : "";
   }
 
   function sceneFor(reading, now) {
-    if (!reading || typeof reading.code !== 'number' || !isFinite(reading.code)) {
-      return '';
+    if (!reading || typeof reading.code !== "number" || !isFinite(reading.code)) {
+      return "";
     }
     var phase = solarPhase(reading, now);
     // Old is_day values (or a missing value) cannot reliably describe the current
     // phase. Keep the selected background until the shared forecast supplies it.
     if (!phase) {
-      return '';
+      return "";
     }
-    if (phase === 'night') {
-      return 'night';
+    if (phase === "night") {
+      return "night";
     }
-    if (phase === 'sunset' && (reading.code === 0 || reading.code === 1 || reading.code === 2)) {
-      return 'sunset';
+    if (phase === "sunset" && (reading.code === 0 || reading.code === 1 || reading.code === 2)) {
+      return "sunset";
     }
     // Solar timestamps supersede an old is_day reading, but only when
     // the forecast contains trustworthy data for the current location.
@@ -81,7 +79,7 @@
       image.onload = image.onerror = null;
     }
     image = null;
-    pending = '';
+    pending = "";
   }
 
   function stopTimer() {
@@ -93,13 +91,13 @@
 
   function hide() {
     cancelImage();
-    scene = '';
-    failed = '';
+    scene = "";
+    failed = "";
     if (!layer) {
       return;
     }
-    layer.style.backgroundImage = '';
-    layer.className = 'weather-photo';
+    layer.style.backgroundImage = "";
+    layer.className = "weather-photo";
     layer.hidden = true;
   }
 
@@ -110,15 +108,14 @@
     } else if (started && timer === null) {
       timer = setInterval(update, 60000);
     }
-    if (!enabled || (document.body.classList && document.body.classList.contains('tv'))) {
+    if (!enabled || (document.body.classList && document.body.classList.contains("tv"))) {
       hide();
       return false;
     }
     if (document.hidden) {
       return Boolean(scene);
     }
-    var reading =
-      window.Weather && window.Weather.currentReading && window.Weather.currentReading();
+    var reading = window.Weather && window.Weather.currentReading && window.Weather.currentReading();
     var next = sceneFor(reading, Date.now());
     if (!next || !SCENES[next]) {
       var wasActive = Boolean(scene);
@@ -142,11 +139,11 @@
         return;
       }
       image = null;
-      pending = '';
-      failed = '';
+      pending = "";
+      failed = "";
       scene = next;
       layer.style.backgroundImage = 'url("assets/weather/' + next + '.jpg")';
-      layer.className = 'weather-photo active scene-' + next;
+      layer.className = "weather-photo active scene-" + next;
       layer.hidden = false;
       // Suspend only after decode succeeds: missing assets retain the chosen background.
       if (window.Backgrounds && window.Backgrounds.suspend) {
@@ -163,7 +160,7 @@
         A.applyBackground();
       }
     };
-    requested.src = 'assets/weather/' + next + '.jpg';
+    requested.src = "assets/weather/" + next + ".jpg";
     return Boolean(scene);
   }
 
@@ -172,7 +169,7 @@
       return;
     }
     started = true;
-    document.addEventListener('visibilitychange', function () {
+    document.addEventListener("visibilitychange", function () {
       // Discard in-flight callbacks while hidden; refresh solar phase on return.
       if (document.hidden) {
         cancelImage();

@@ -1,18 +1,19 @@
-import { useMemo } from 'preact/hooks';
-import { useImageSequence } from '../../../shared/hooks/useImageSequence';
-import { AppLogoIcon } from '../../../shared/icons/AppLogoIcon';
-import { RemoteControl } from '../../components/RemoteControl';
-import type { InstalledApp, SettingsServices } from '../../types';
+import { useMemo } from "preact/hooks";
+
+import { useImageSequence } from "../../../shared/hooks/useImageSequence";
+import { AppLogoIcon } from "../../../shared/icons/AppLogoIcon";
+import { RemoteControl } from "../../components/RemoteControl";
+import type { InstalledApp, SettingsServices } from "../../types";
 
 interface Props {
-  app: InstalledApp;
-  selected: boolean;
   active: boolean;
-  focusKey?: string;
+  app: InstalledApp;
   className?: string;
+  describeApp: SettingsServices["describeApp"];
   disabled?: boolean;
+  focusKey?: string;
   onSelect(): void;
-  describeApp: SettingsServices['describeApp'];
+  selected: boolean;
 }
 
 export const AppTile = ({
@@ -22,25 +23,17 @@ export const AppTile = ({
   onSelect,
   describeApp,
   focusKey,
-  className = '',
+  className = "",
   disabled = false,
 }: Props) => {
   const brand = useMemo(() => describeApp(app), [app, describeApp]);
   const artwork = useImageSequence(brand.artwork, active);
-  const icons = useMemo(
-    () => (brand.useAppIcon && app.icon ? [app.icon] : []),
-    [brand.useAppIcon, app.icon]
-  );
+  const icons = useMemo(() => (brand.useAppIcon && app.icon ? [app.icon] : []), [brand.useAppIcon, app.icon]);
   const icon = useImageSequence(icons, active);
   return (
     <RemoteControl
-      class={
-        'tile app-tile ' +
-        className +
-        (selected ? ' on' : '') +
-        (artwork.loaded ? ' has-artwork' : '')
-      }
-      focusKey={focusKey || 'app:' + app.id}
+      class={"tile app-tile " + className + (selected ? " on" : "") + (artwork.loaded ? " has-artwork" : "")}
+      focusKey={focusKey || "app:" + app.id}
       role="button"
       aria-label={brand.title}
       title={brand.title}
@@ -51,25 +44,16 @@ export const AppTile = ({
           onSelect();
         }
       }}
-      style={{ background: artwork.loaded ? 'transparent' : brand.background }}
+      style={{ background: artwork.loaded ? "transparent" : brand.background }}
     >
       <div
-        class={
-          'app-fallback' + (!brand.label ? ' logo-only' : '') + (brand.largeLogo ? ' logo-big' : '')
-        }
+        class={"app-fallback" + (!brand.label ? " logo-only" : "") + (brand.largeLogo ? " logo-big" : "")}
         hidden={artwork.loaded}
       >
         {brand.logoPath ? (
           <AppLogoIcon path={brand.logoPath} colour={brand.logoColour} />
         ) : icon.src ? (
-          <img
-            key={icon.src}
-            class="logo"
-            alt=""
-            src={icon.src}
-            onLoad={icon.onLoad}
-            onError={icon.onError}
-          />
+          <img key={icon.src} class="logo" alt="" src={icon.src} onLoad={icon.onLoad} onError={icon.onError} />
         ) : null}
         {brand.label || !brand.logoPath ? (
           <div class="name" style={{ color: brand.textColour }}>
@@ -84,7 +68,7 @@ export const AppTile = ({
           alt=""
           src={artwork.src}
           hidden={!artwork.loaded}
-          style={{ display: artwork.loaded ? undefined : 'none' }}
+          style={{ display: artwork.loaded ? undefined : "none" }}
           onLoad={artwork.onLoad}
           onError={artwork.onError}
         />

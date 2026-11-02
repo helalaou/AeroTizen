@@ -5,15 +5,15 @@ const compareHeaderPixels = async (page, before, after, height) =>
     async ({ images, width, height }) => {
       const pixels = async (data) => {
         const image = new Image();
-        image.src = 'data:image/png;base64,' + data;
+        image.src = "data:image/png;base64," + data;
         await new Promise((resolve, reject) => {
           image.onload = resolve;
           image.onerror = reject;
         });
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
-        const context = canvas.getContext('2d');
+        const context = canvas.getContext("2d");
         context.drawImage(image, 0, 0);
         return context.getImageData(0, 0, width, height).data;
       };
@@ -33,10 +33,10 @@ const compareHeaderPixels = async (page, before, after, height) =>
       return { changedPixels, maxChannelDelta };
     },
     {
-      images: [before.toString('base64'), after.toString('base64')],
+      images: [before.toString("base64"), after.toString("base64")],
       width: page.viewportSize().width,
       height,
-    }
+    },
   );
 
 module.exports = { compareHeaderPixels };

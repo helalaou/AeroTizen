@@ -1,6 +1,6 @@
 interface Props {
-  path: string;
   colour: string;
+  path: string;
 }
 
 export const AppLogoIcon = ({ path, colour }: Props) => (

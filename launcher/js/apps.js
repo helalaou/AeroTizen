@@ -1,6 +1,6 @@
 // Installed apps: discovery, launching, the app store, and the Fireplace tile.
 (function (A) {
-  'use strict';
+  "use strict";
 
   var cfg = A.config,
     tz = A.tizen;
@@ -23,24 +23,24 @@
     });
     done(success);
   }
-  var CACHE_KEY = 'aerotizen.apps.v1';
+  var CACHE_KEY = "aerotizen.apps.v1";
 
   // Cached labels make saved Home tiles usable while package discovery is busy.
   // A failed discovery must never remove the user's favourites.
   apps.restore = function () {
     try {
-      var cached = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
+      var cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]");
       if (!Array.isArray(cached) || cached.length > 1000) {
         return;
       }
       apps.all = cached.filter(function (app) {
         return (
           app &&
-          typeof app.id === 'string' &&
+          typeof app.id === "string" &&
           app.id &&
-          typeof app.name === 'string' &&
+          typeof app.name === "string" &&
           app.name &&
-          typeof app.icon === 'string'
+          typeof app.icon === "string"
         );
       });
     } catch (e) {
@@ -49,33 +49,25 @@
   };
 
   function isRealApp(a) {
-    return (
-      a.show !== false &&
-      (cfg.STORE_PACKAGE.test(a.packageId || '') || !!A.catalog.preloadedStoreId(a.id))
-    );
+    return a.show !== false && (cfg.STORE_PACKAGE.test(a.packageId || "") || !!A.catalog.preloadedStoreId(a.id));
   }
 
   function hbbtvLink(appId) {
     try {
       if (!tz.application.getAppMetaData) {
-        return '';
+        return "";
       }
       var metadata = tz.application.getAppMetaData(appId);
       for (var i = 0; metadata && i < metadata.length; i++) {
         var item = metadata[i];
-        if (
-          item &&
-          item.key === cfg.HBBTV_LINK_METADATA &&
-          typeof item.value === 'string' &&
-          item.value.trim()
-        ) {
+        if (item && item.key === cfg.HBBTV_LINK_METADATA && typeof item.value === "string" && item.value.trim()) {
           return item.value;
         }
       }
     } catch (e) {
       /* older TVs may not expose metadata for another app */
     }
-    return '';
+    return "";
   }
 
   apps.load = function (done) {
@@ -83,34 +75,34 @@
       // desktop browser preview
       // Keep the original IDs stable; extra samples exercise long lists and a partial last row.
       apps.all = [
-        'YouTube',
-        'Netflix',
-        'Stremio',
-        'Prime Video',
-        'Spotify - Music and Podcasts',
-        'TizenBrew',
-        'Disney+',
-        'Plex',
-        'Apple TV',
-        'BBC iPlayer',
-        'Channel 4',
-        'Crunchyroll',
-        'DAZN',
-        'discovery+',
-        'Hulu',
-        'ITVX',
-        'Jellyfin',
-        'Max',
-        'My5',
-        'NOW',
-        'Paramount+',
-        'Rakuten TV',
-        'Samsung TV Plus',
-        'Tubi',
-        'Twitch',
+        "YouTube",
+        "Netflix",
+        "Stremio",
+        "Prime Video",
+        "Spotify - Music and Podcasts",
+        "TizenBrew",
+        "Disney+",
+        "Plex",
+        "Apple TV",
+        "BBC iPlayer",
+        "Channel 4",
+        "Crunchyroll",
+        "DAZN",
+        "discovery+",
+        "Hulu",
+        "ITVX",
+        "Jellyfin",
+        "Max",
+        "My5",
+        "NOW",
+        "Paramount+",
+        "Rakuten TV",
+        "Samsung TV Plus",
+        "Tubi",
+        "Twitch",
       ]
         .map(function (name, i) {
-          return { id: 'demo' + i, name: name, icon: '' };
+          return { id: "demo" + i, name: name, icon: "" };
         })
         .sort(function (a, b) {
           return a.name.localeCompare(b.name);
@@ -142,12 +134,10 @@
           });
         apps.all = list
           .filter(function (a) {
-            return (
-              isRealApp(a) && a.name && !cfg.HIDDEN_APPS.test(a.id) && !cfg.HIDDEN_APPS.test(a.name)
-            );
+            return isRealApp(a) && a.name && !cfg.HIDDEN_APPS.test(a.id) && !cfg.HIDDEN_APPS.test(a.name);
           })
           .map(function (a) {
-            return { id: a.id, name: a.name, icon: a.iconPath || '' };
+            return { id: a.id, name: a.name, icon: a.iconPath || "" };
           })
           .sort(function (a, b) {
             return a.name.localeCompare(b.name);
@@ -171,7 +161,7 @@
         return apps.all[i];
       }
     }
-    return apps.ready ? null : { id: id, name: id, icon: '' };
+    return apps.ready ? null : { id: id, name: id, icon: "" };
   };
 
   apps.defaultHome = function () {
@@ -188,43 +178,43 @@
 
   apps.launch = function (app) {
     var log = window.AeroDiagnostics;
-    var operation = log ? log.record('app.launch_requested', { app_id: app.id }) : null;
+    var operation = log ? log.record("app.launch_requested", { app_id: app.id }) : null;
     function outcome(status, error) {
       if (!log) {
         return;
       }
       var data = { app_id: app.id, operation_id: operation, status: status };
       if (error) {
-        log.captureError('app.launch_failed', error, data);
+        log.captureError("app.launch_failed", error, data);
       } else {
-        log.record('app.launch_' + status, data);
+        log.record("app.launch_" + status, data);
       }
       if (log.flush) {
         log.flush();
       }
     }
     function accepted() {
-      outcome('accepted');
+      outcome("accepted");
     }
     function failed(error) {
-      outcome('failed', error || { name: 'LaunchError', message: 'Launch denied' });
-      A.toast('Could not open ' + label);
+      outcome("failed", error || { name: "LaunchError", message: "Launch denied" });
+      A.toast("Could not open " + label);
     }
     var label = A.tiles.shortName(app.name);
     if (!tz || !tz.application) {
-      outcome('unavailable');
-      return A.toast('Would open ' + label);
+      outcome("unavailable");
+      return A.toast("Would open " + label);
     }
     var link = hbbtvLink(app.id);
     if (link) {
       try {
         var data = [
-          new tz.ApplicationControlData('tizenid', [app.id]),
-          new tz.ApplicationControlData('hbbtv', [link]),
-          new tz.ApplicationControlData('deeplink', ['true']),
+          new tz.ApplicationControlData("tizenid", [app.id]),
+          new tz.ApplicationControlData("hbbtv", [link]),
+          new tz.ApplicationControlData("deeplink", ["true"]),
         ];
         var control = new tz.ApplicationControl(
-          'http://tizen.org/appcontrol/operation/default',
+          "http://tizen.org/appcontrol/operation/default",
           null,
           null,
           null,
@@ -240,22 +230,22 @@
     // Samsung's preloaded Cobalt YouTube sometimes reports visible=false.
     // The V992.56 device-tested fix waits for /leave acknowledgement before
     // launching; otherwise HomeWatcher can immediately reclaim the screen.
-    var isYouTube = /^youtube$/i.test(String(app.name || '').trim());
+    var isYouTube = /^youtube$/i.test(String(app.name || "").trim());
     if (isYouTube && A.homewatch && A.homewatch.suspendForExternal) {
       function youtubeFailed(reason, error) {
-        outcome('failed', error || { name: 'HandoffError', message: reason || 'Launch failed' });
+        outcome("failed", error || { name: "HandoffError", message: reason || "Launch failed" });
         if (A.homewatch.resume) {
           A.homewatch.resume();
         }
-        A.toast('Could not open ' + label + (reason ? ': ' + reason : ''));
+        A.toast("Could not open " + label + (reason ? ": " + reason : ""));
       }
       A.homewatch.suspendForExternal(function () {
         try {
           tz.application.launch(app.id, accepted, function (error) {
-            youtubeFailed('launch denied', error);
+            youtubeFailed("launch denied", error);
           });
         } catch (error) {
-          youtubeFailed('launch failed', error);
+          youtubeFailed("launch failed", error);
         }
       }, youtubeFailed);
       return;
@@ -272,13 +262,13 @@
 
   apps.openStore = function () {
     if (!tz || !tz.application) {
-      return A.toast('Would open the Samsung app store');
+      return A.toast("Would open the Samsung app store");
     }
     var ids = cfg.STORE_APP_IDS.slice();
     (function next() {
       var id = ids.shift();
       if (!id) {
-        return A.toast('Could not open the app store');
+        return A.toast("Could not open the app store");
       }
       A.homewatch.watch(id);
       tz.application.launch(id, null, next);
@@ -298,19 +288,9 @@
     }
     A.homewatch.watch(yt.id);
     try {
-      var data = [
-        new tz.ApplicationControlData('PAYLOAD', [
-          JSON.stringify({ values: 'v=' + cfg.FIREPLACE_VIDEO }),
-        ]),
-      ];
+      var data = [new tz.ApplicationControlData("PAYLOAD", [JSON.stringify({ values: "v=" + cfg.FIREPLACE_VIDEO })])];
       tz.application.launchAppControl(
-        new tz.ApplicationControl(
-          'http://tizen.org/appcontrol/operation/view',
-          null,
-          null,
-          null,
-          data
-        ),
+        new tz.ApplicationControl("http://tizen.org/appcontrol/operation/view", null, null, null, data),
         yt.id,
         null,
         function () {

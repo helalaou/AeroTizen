@@ -1,11 +1,11 @@
-import { Choice } from '../components/Choice';
-import { Pill } from '../components/Pill';
-import type { Clock, SettingsSectionProps } from '../types';
+import { Choice } from "../components/Choice";
+import { Pill } from "../components/Pill";
+import type { Clock, SettingsSectionProps } from "../types";
 
 interface Props extends SettingsSectionProps {
-  section?: 'appearance' | 'status' | 'sources';
-  clock: Omit<Clock, 'tick'>;
+  clock: Omit<Clock, "tick">;
   openedAt: number;
+  section?: "appearance" | "status" | "sources";
 }
 
 export const DisplaySettings = ({ settings, actions, clock, openedAt, section }: Props) => {
@@ -13,7 +13,7 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt, section }:
   const dateStyle = clock.dateStyle(settings.dateFormat);
   return (
     <>
-      {!section || section === 'status' ? (
+      {!section || section === "status" ? (
         <>
           <h3>Clock layout</h3>
           <Choice
@@ -21,43 +21,39 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt, section }:
             label="Clock layout"
             value={settings.clockLayout}
             options={[
-              ['classic', 'Compact clock'],
-              ['custom', 'Custom clock'],
+              ["classic", "Compact clock"],
+              ["custom", "Custom clock"],
             ]}
             onSelect={actions.setClockLayout}
           />
-          <div hidden={settings.clockLayout !== 'custom'}>
+          <div hidden={settings.clockLayout !== "custom"}>
             <h3>Clock style</h3>
             <Choice
               id="clock-styles"
               label="Clock style"
               value={settings.aeroClockStyle}
               options={[
-                ['vertical', 'Large Vertical'],
-                ['horizontal', 'Horizontal'],
-                ['minimal', 'Thin'],
-                ['bold', 'Bold'],
+                ["vertical", "Large Vertical"],
+                ["horizontal", "Horizontal"],
+                ["minimal", "Thin"],
+                ["bold", "Bold"],
               ]}
               onSelect={actions.setClockStyle}
             />
           </div>
           <h3>Date &amp; time</h3>
           <div id="time-formats" class="units">
-            {(['12', '24'] as const).map((format) => (
+            {(["12", "24"] as const).map((format) => (
               <Pill
                 key={format}
-                id={'time:' + format}
+                id={"time:" + format}
                 selected={settings.showTime !== false && settings.timeFormat === format}
                 onSelect={() => actions.setTimeFormat(format)}
               >
-                {clock.formatTime(now, format) + '  (' + format + '-hour)'}
+                {clock.formatTime(now, format) + "  (" + format + "-hour)"}
               </Pill>
             ))}
-            <Pill
-              id="time:none"
-              selected={settings.showTime === false}
-              onSelect={() => actions.setTimeFormat('none')}
-            >
+            <Pill id="time:none" selected={settings.showTime === false} onSelect={() => actions.setTimeFormat("none")}>
               No time
             </Pill>
           </div>
@@ -65,17 +61,17 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt, section }:
             {clock.DATE_FORMATS.map((format) => (
               <Pill
                 key={format.id}
-                id={'date:' + format.id}
+                id={"date:" + format.id}
                 selected={dateStyle === format.id}
                 onSelect={() => actions.setDateFormat(format.id)}
               >
-                {format.id === 'none' ? 'No date' : format.format(now)}
+                {format.id === "none" ? "No date" : format.format(now)}
               </Pill>
             ))}
           </div>
         </>
       ) : null}
-      {!section || section === 'appearance' ? (
+      {!section || section === "appearance" ? (
         <>
           <h3>Interface appearance</h3>
           <Choice
@@ -83,8 +79,8 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt, section }:
             label="Interface appearance"
             value={settings.glassSettings === true}
             options={[
-              [false, 'Classic'],
-              [true, 'Glass'],
+              [false, "Classic"],
+              [true, "Glass"],
             ]}
             onSelect={actions.setGlassSettings}
           />
@@ -94,14 +90,14 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt, section }:
             label="Network indicator visibility"
             value={settings.showNetwork !== false}
             options={[
-              [true, 'Show'],
-              [false, 'Hide'],
+              [true, "Show"],
+              [false, "Hide"],
             ]}
             onSelect={actions.setNetworkVisible}
           />
         </>
       ) : null}
-      {!section || section === 'sources' ? (
+      {!section || section === "sources" ? (
         <>
           <h3>Live TV</h3>
           <p class="hint">Show the Live TV tile in Inputs.</p>
@@ -110,14 +106,14 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt, section }:
             label="Live TV visibility"
             value={settings.showLiveTv}
             options={[
-              [true, 'Show'],
-              [false, 'Hide'],
+              [true, "Show"],
+              [false, "Hide"],
             ]}
             onSelect={actions.setLiveTvVisible}
           />
         </>
       ) : null}
-      {!section || section === 'appearance' ? (
+      {!section || section === "appearance" ? (
         <>
           <h3>App cards</h3>
           <Choice
@@ -125,33 +121,31 @@ export const DisplaySettings = ({ settings, actions, clock, openedAt, section }:
             label="Home tile layout"
             value={settings.homeCardMode}
             options={[
-              ['square', 'Square'],
-              ['rectangle', 'Rectangle'],
+              ["square", "Square"],
+              ["rectangle", "Rectangle"],
             ]}
             onSelect={actions.setHomeCardMode}
           />
           <Choice
             id="home-card-columns"
             label="Apps per row"
-            value={String(settings.homeCardColumns || 'auto')}
+            value={String(settings.homeCardColumns || "auto")}
             options={[
-              ['auto', 'Follow card size'],
-              ['3', '3'],
-              ['4', '4'],
-              ['5', '5'],
+              ["auto", "Follow card size"],
+              ["3", "3"],
+              ["4", "4"],
+              ["5", "5"],
             ]}
-            onSelect={(value) =>
-              actions.setHomeCardColumns(value === 'auto' ? null : Number(value))
-            }
+            onSelect={(value) => actions.setHomeCardColumns(value === "auto" ? null : Number(value))}
           />
           {!settings.homeCardColumns ? (
             <Choice
               id="card-sizes"
               label="App card size"
-              value={settings.cardSize || 'big'}
+              value={settings.cardSize || "big"}
               options={[
-                ['big', 'Big'],
-                ['small', 'Small'],
+                ["big", "Big"],
+                ["small", "Small"],
               ]}
               onSelect={actions.setCardSize}
             />

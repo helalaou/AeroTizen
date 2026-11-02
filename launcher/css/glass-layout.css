@@ -85,7 +85,7 @@ body.glass-ui .topbar > .view-tabs .view-tab {
   height: 60px;
   box-sizing: border-box;
   padding: 0 25px;
-  font-family: 'SamsungOne', 'Roboto', Arial, sans-serif;
+  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
   font-size: 25px;
   font-weight: 500;
   color: rgba(234, 239, 247, 0.78);
@@ -190,7 +190,7 @@ body.editing:not(.previewing) #home-root main {
     inset 0 1px rgba(255, 255, 255, 0.24),
     0 12px 28px rgba(0, 0, 0, 0.4);
   color: #f7f8fa;
-  font-family: 'SamsungOne', 'Roboto', Arial, sans-serif;
+  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
   animation: aero-glass-enter 0.2s ease-out both;
 }
 @keyframes aero-glass-enter {

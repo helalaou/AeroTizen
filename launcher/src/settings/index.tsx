@@ -1,28 +1,30 @@
-import { CustomClock } from '../clock/CustomClock';
-import { createRef, render } from 'preact';
-import { flushSync } from 'preact/compat';
-import { createStore } from '../shared/state/createStore';
-import { createNavigation } from '../shared/navigation/createNavigation';
-import { focusControl } from '../shared/navigation/focusControl';
-import { createSettingsStore } from './state/createSettingsStore';
-import { createSettingsServices } from './services/createSettingsServices';
-import { createSettingsInventory } from './services/createSettingsInventory';
-import { createSettingsActions } from './state/createSettingsActions';
-import { createSettingsBridge } from './services/createSettingsBridge';
-import { SettingsProvider } from './SettingsProvider';
-import { SettingsRoot } from './SettingsRoot';
-import type { SettingsEnvironment, ViewState } from './types';
+import { createRef, render } from "preact";
+import { flushSync } from "preact/compat";
+
+import { CustomClock } from "../clock/CustomClock";
+import { createNavigation } from "../shared/navigation/createNavigation";
+import { focusControl } from "../shared/navigation/focusControl";
+import { createStore } from "../shared/state/createStore";
+
+import { createSettingsBridge } from "./services/createSettingsBridge";
+import { createSettingsInventory } from "./services/createSettingsInventory";
+import { createSettingsServices } from "./services/createSettingsServices";
+import { SettingsProvider } from "./SettingsProvider";
+import { SettingsRoot } from "./SettingsRoot";
+import { createSettingsActions } from "./state/createSettingsActions";
+import { createSettingsStore } from "./state/createSettingsStore";
+import type { SettingsEnvironment, ViewState } from "./types";
 
 const runtime = window.AeroTizen;
-const mount = document.getElementById('settings-root');
+const mount = document.getElementById("settings-root");
 if (!mount) {
-  throw new Error('Settings mount point is missing.');
+  throw new Error("Settings mount point is missing.");
 }
 const settings = createSettingsStore(runtime.settings, {
   ...runtime.config.DEFAULTS,
   home: [],
-  tempUnit: 'C',
-  timeFormat: '12',
+  tempUnit: "C",
+  timeFormat: "12",
 });
 const view = createStore<ViewState>({
   open: false,
@@ -36,8 +38,8 @@ const services = createSettingsServices(runtime);
 const actions = createSettingsActions(settings, services, view, flushSync);
 const bridge = createSettingsBridge(settings, view, services, flushSync);
 const root = createRef<HTMLDivElement>();
-const glass = createStore<import('./glass/categories').GlassState>({
-  category: 'appearance',
+const glass = createStore<import("./glass/categories").GlassState>({
+  category: "appearance",
   expanded: false,
 });
 const glassMenu = createRef<HTMLDivElement>(),
@@ -77,7 +79,7 @@ render(
   <SettingsProvider environment={environment}>
     <SettingsRoot />
   </SettingsProvider>,
-  mount
+  mount,
 );
 
 if (import.meta.hot) {
@@ -92,7 +94,7 @@ if (import.meta.hot) {
 }
 
 // The clock is an optional presentation of existing shared status services.
-const clockMount = document.getElementById('custom-clock-root');
+const clockMount = document.getElementById("custom-clock-root");
 if (clockMount) {
   render(<CustomClock settings={settings} clock={runtime.clock} />, clockMount);
 }

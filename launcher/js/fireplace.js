@@ -1,7 +1,7 @@
 // Fireplace: procedural fire (low-res heat map, upscaled) + synthesized crackle audio.
 // No media files, so it stays tiny and runs smoothly on TV hardware.
 window.Fireplace = (function () {
-  'use strict';
+  "use strict";
 
   var W = 192,
     H = 108; // simulation grid, upscaled by CSS to full screen
@@ -43,10 +43,10 @@ window.Fireplace = (function () {
   }
 
   function setup() {
-    canvas = document.getElementById('fire-canvas');
+    canvas = document.getElementById("fire-canvas");
     canvas.width = W;
     canvas.height = H;
-    ctx = canvas.getContext('2d');
+    ctx = canvas.getContext("2d");
     img = ctx.createImageData(W, H);
     heat = new Uint8Array(W * H);
     palette = buildPalette();
@@ -61,10 +61,7 @@ window.Fireplace = (function () {
     for (var x = 0; x < W; x++) {
       var t = frame * 0.02,
         d = Math.abs(x - W / 2) / (W / 2);
-      var logs =
-        Math.max(0, 1 - d * 1.35) +
-        0.25 * Math.sin(x * 0.11 + t) +
-        0.2 * Math.sin(x * 0.05 - t * 1.7);
+      var logs = Math.max(0, 1 - d * 1.35) + 0.25 * Math.sin(x * 0.11 + t) + 0.2 * Math.sin(x * 0.05 - t * 1.7);
       var v = logs > 0.25 ? MAX : logs > 0 ? (MAX * logs * 3) | 0 : 0;
       heat[(H - 1) * W + x] = Math.random() < 0.85 ? v : v >> 1;
     }
@@ -133,7 +130,7 @@ window.Fireplace = (function () {
     roar.buffer = buf;
     roar.loop = true;
     var lp = ac.createBiquadFilter();
-    lp.type = 'lowpass';
+    lp.type = "lowpass";
     lp.frequency.value = 420;
     var roarGain = ac.createGain();
     roarGain.gain.value = 0.55;
@@ -155,7 +152,7 @@ window.Fireplace = (function () {
       var s = ac.createBufferSource();
       s.buffer = burst;
       var bp = ac.createBiquadFilter();
-      bp.type = 'bandpass';
+      bp.type = "bandpass";
       bp.frequency.value = 1500 + Math.random() * 4500;
       bp.Q.value = 1.5;
       var g = ac.createGain();
@@ -186,12 +183,12 @@ window.Fireplace = (function () {
     if (audio) {
       audio.master.gain.value = volume;
     }
-    var bar = document.getElementById('fire-volume');
-    bar.textContent = volume === 0 ? 'Muted' : 'Volume ' + Math.round(volume * 10);
-    bar.classList.add('show');
+    var bar = document.getElementById("fire-volume");
+    bar.textContent = volume === 0 ? "Muted" : "Volume " + Math.round(volume * 10);
+    bar.classList.add("show");
     clearTimeout(setVolume.t);
     setVolume.t = setTimeout(function () {
-      bar.classList.remove('show');
+      bar.classList.remove("show");
     }, 1500);
   }
 
@@ -200,7 +197,7 @@ window.Fireplace = (function () {
       if (!canvas) {
         setup();
       }
-      document.getElementById('fireplace').hidden = false;
+      document.getElementById("fireplace").hidden = false;
       running = true;
       raf = requestAnimationFrame(loop);
       startAudio();
@@ -211,7 +208,7 @@ window.Fireplace = (function () {
         cancelAnimationFrame(raf);
       }
       stopAudio();
-      document.getElementById('fireplace').hidden = true;
+      document.getElementById("fireplace").hidden = true;
     },
     isOpen: function () {
       return running;
