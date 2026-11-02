@@ -200,6 +200,7 @@ def test_cli_tag_must_match_before_build_starts(tmp_path):
         ("update", "--help"),
         ("inspect", "--help"),
         ("home", "status", "--help"),
+        ("home", "diagnose-runtime", "--help"),
         ("home", "backup", "--help"),
         ("home", "apply", "--help"),
         ("home", "restore", "--help"),

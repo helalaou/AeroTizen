@@ -146,6 +146,7 @@ def smoke_binaries(binaries, version):
                 ("inspect", "--help"),
                 ("home", "status", "--help"),
                 ("home", "probe", "--help"),
+                ("home", "diagnose-runtime", "--help"),
                 ("home", "backup", "--help"),
                 ("home", "apply", "--help"),
                 ("home", "restore", "--help"),

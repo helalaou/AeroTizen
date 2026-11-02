@@ -19,6 +19,7 @@ DIRECTORY = "/home/owner/share/tmp/sdk_tools"
 CLEANUP_MARKER = "AEROTIZEN_SDK_CLEANED"
 EXIT_PREFIX = "AEROTIZEN_SDK_EXIT="
 DOTNET_UNAVAILABLE_MARKER = "AEROTIZEN_SDK_DOTNET_UNAVAILABLE"
+PROBE_LAUNCHERS = ("/usr/bin/dotnet-launcher", "/usr/bin/dotnet-launcher-inhouse")
 
 
 def build_script(files, entrypoint, args, callback, port, token):
@@ -110,6 +111,53 @@ def run_shell(session, script):
     if not isinstance(script, str) or not script or len(script.encode()) > 32768:
         raise DeviceSessionError("Invalid SDK probe script size.")
     return _run(session, {}, lambda *transport: _build_script({}, script, *transport))
+
+
+def build_standalone_probe(files, entrypoint, launcher, callback, port, token):
+    """Separate diagnostic route; never used as a Home query/writer fallback."""
+    if launcher not in PROBE_LAUNCHERS or entrypoint not in files:
+        raise ValueError("Invalid diagnostic launcher or entrypoint")
+    lines = [
+        f"if [ ! -x {launcher} ]; then",
+        "  printf 'AEROTIZEN_RUNTIME_LAUNCHER=missing\\n'",
+        "  exit 127",
+        "fi",
+        "printf 'AEROTIZEN_RUNTIME_LAUNCHER=available\\n'",
+    ]
+    for name, data in files.items():
+        lines.append(
+            f"printf '%s  %s\\n' {hashlib.sha256(data).hexdigest()} "
+            f"{shlex.quote(_path(token, name))} | sha256sum -c - >/dev/null"
+        )
+    lines.extend(
+        [
+            # Bound startup as well as getters. Retail TVs need not have `timeout`.
+            f"{launcher} --standalone {shlex.quote(_path(token, entrypoint))} &",
+            "probe_pid=$!",
+            "(",
+            "  sleep 12 >/dev/null 2>&1 3>&-",
+            '  kill -0 "$probe_pid" 2>/dev/null || exit 0',
+            "  printf 'AEROTIZEN_RUNTIME_TIMEOUT=1\\n'",
+            '  kill -TERM "$probe_pid" 2>/dev/null || true',
+            "  sleep 2 >/dev/null 2>&1 3>&-",
+            '  kill -KILL "$probe_pid" 2>/dev/null || true',
+            ") &",
+            "watchdog_pid=$!",
+            'result=0; wait "$probe_pid" || result=$?',
+            'kill "$watchdog_pid" 2>/dev/null || true',
+            'wait "$watchdog_pid" 2>/dev/null || true',
+            'exit "$result"',
+        ]
+    )
+    return _build_script(files, "\n".join(lines), callback, port, token)
+
+
+def run_standalone_probe(session, files, entrypoint, launcher):
+    if not files or sum(map(len, files.values())) > 2 * 1024 * 1024:
+        raise DeviceSessionError("Invalid SDK diagnostic payload size.")
+    return _run(
+        session, files, lambda *transport: build_standalone_probe(files, entrypoint, launcher, *transport)
+    )
 
 
 def _run(session, files, build):
