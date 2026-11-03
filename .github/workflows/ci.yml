@@ -11,7 +11,11 @@ on:
         type: string
         required: true
       release_tag:
-        description: Distinguishes release calls in the same workflow run
+        description: Release tag to validate and use for the artifact name
+        type: string
+        required: true
+      release_component:
+        description: Component to test and package for this release
         type: string
         required: true
 
@@ -24,7 +28,7 @@ concurrency:
 
 jobs:
   changes:
-    # A release call runs the full suite against its exact tag commit.
+    # A release call selects tests by component and checks out its exact tag commit.
     if: inputs.ref == ''
     runs-on: ubuntu-latest
     outputs:
@@ -72,7 +76,7 @@ jobs:
                   print(f"{name}={value}")
 
   # GitHub skips a matrix before expanding it. Use fixed names for required checks.
-  # Missing change outputs (including on release calls) enable the full suite.
+  # Missing change outputs enable all checks for the selected component.
   python-310:
     name: python (3.10)
     needs: changes
@@ -130,7 +134,7 @@ jobs:
 
   root-contracts:
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.cli != 'false' }}
+    if: ${{ !cancelled() && inputs.release_component != 'launcher' && needs.changes.outputs.cli != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -162,7 +166,7 @@ jobs:
 
   launcher:
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.launcher != 'false' }}
+    if: ${{ !cancelled() && inputs.release_component != 'cli' && needs.changes.outputs.launcher != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -178,9 +182,27 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
+      - run: npx playwright test
+      - uses: actions/setup-python@v5
+        if: inputs.release_component == 'launcher'
+        with:
+          python-version: "3.12"
       - name: Check compiled launcher release packaging
-        run: python tools/build_release.py launcher --output dist/release-check
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          args=(launcher --output dist/release-check)
+          if [[ -n "$RELEASE_TAG" ]]; then
+            args+=(--tag "$RELEASE_TAG")
+          fi
+          python tools/build_release.py "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: inputs.release_component == 'launcher'
+        with:
+          name: release-${{ inputs.release_tag }}-launcher
+          path: dist/release-check/*
+          if-no-files-found: error
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -216,7 +238,7 @@ jobs:
   cli-update:
     name: CLI update (${{ matrix.runner }})
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.cli != 'false' }}
+    if: ${{ !cancelled() && inputs.release_component != 'launcher' && needs.changes.outputs.cli != 'false' }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
