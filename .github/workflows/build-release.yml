@@ -91,6 +91,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: ${{ matrix.runner == 'macos-15-intel' && 'pip' || '' }}
+          cache-dependency-path: |
+            pyproject.toml
+            cli/pyproject.toml
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 6.0.428
