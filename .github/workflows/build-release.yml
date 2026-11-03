@@ -65,6 +65,7 @@ jobs:
     with:
       ref: ${{ needs.prepare.outputs.sha }}
       release_tag: ${{ inputs.tag }}
+      release_component: ${{ inputs.component }}
 
   cli:
     needs: [prepare, tests]
@@ -109,41 +110,13 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  launcher:
-    needs: [prepare, tests]
-    if: inputs.component == 'launcher'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.sha }}
-          persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci --no-audit --no-fund
-      - run: npm run build
-      - name: Build unsigned launcher package
-        env:
-          RELEASE_TAG: ${{ inputs.tag }}
-        run: python tools/build_release.py launcher --output dist/releases/launcher --tag "$RELEASE_TAG"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release-${{ inputs.tag }}-launcher
-          path: dist/releases/launcher/*
-          if-no-files-found: error
-          retention-days: 7
-
   publish:
-    needs: [prepare, tests, cli, launcher]
+    needs: [prepare, tests, cli]
     if: >-
       always() && !cancelled() &&
       needs.prepare.result == 'success' && needs.tests.result == 'success' &&
-      ((needs.cli.result == 'success' && needs.launcher.result == 'skipped') ||
-      (needs.launcher.result == 'success' && needs.cli.result == 'skipped'))
+      ((inputs.component == 'cli' && needs.cli.result == 'success') ||
+      (inputs.component == 'launcher' && needs.cli.result == 'skipped'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
