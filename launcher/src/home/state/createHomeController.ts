@@ -4,12 +4,12 @@ import type { HomeEnvironment, HomeMenuChoice, HomeState, Page } from "../types"
 
 const HEADER_KEYS = ["gear", "samsung-home-shortcut", "home-tab", "apps-tab"] as const;
 const HOME_MENU_CHOICES = [
-  { action: "move", label: "Move" },
-  { action: "remove", label: "Remove from Home" },
+  { action: "move", label: "home.move" },
+  { action: "remove", label: "home.removeFromHome" },
 ] as const;
 const APP_MENU_CHOICES = {
-  add: { action: "add", label: "Add to Home" },
-  remove: { action: "remove", label: "Remove from Home" },
+  add: { action: "add", label: "home.addToHome" },
+  remove: { action: "remove", label: "home.removeFromHome" },
 } as const;
 
 type Rows = readonly (readonly string[])[];
@@ -298,7 +298,7 @@ export const createHomeController = (
     update({ menu: null });
     if (choice.action === "move") {
       update({ moving: menu.id, draft: [...homeIds()] });
-      runtime.toast(env.translate("Use the arrows to move it, OK to drop"));
+      env.showMoveInstructions();
       return;
     }
     const before = ids();

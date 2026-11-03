@@ -1,6 +1,7 @@
 import { useMemo } from "preact/hooks";
 
 import { useStore } from "../shared/hooks/useStore";
+import { useTranslation } from "../shared/i18n/useTranslation";
 
 import { SettingsControl } from "./components/SettingsControl";
 import { useSettingsEnvironment } from "./hooks/useSettingsEnvironment";
@@ -12,6 +13,7 @@ import { BackgroundSettings } from "./sections/BackgroundSettings";
 import { ClockSettings } from "./sections/ClockSettings";
 import { ContinueWatchingSettings } from "./sections/ContinueWatchingSettings";
 import { InputSettings } from "./sections/inputs/InputSettings";
+import { LanguageSettings } from "./sections/LanguageSettings";
 import { WeatherSettings } from "./sections/weather/WeatherSettings";
 
 export const SettingsContent = ({
@@ -23,6 +25,7 @@ export const SettingsContent = ({
   previewing: boolean;
   openedAt: number;
 }) => {
+  const { t } = useTranslation();
   const { settings: store, inventory, services, actions } = useSettingsEnvironment();
   const settings = useStore(store);
   const { apps, inputs, continueSources, continueMessage } = useStore(inventory);
@@ -79,7 +82,7 @@ export const SettingsContent = ({
               role="button"
               onClick={actions.useSamsungHome}
             >
-              {services.translate("Use Samsung Home instead")}
+              {t("common.samsungHome")}
             </SettingsControl>
           </>
         ),
@@ -99,6 +102,7 @@ export const SettingsContent = ({
           </>
         ),
         sources: <InputSettings settings={settings} actions={actions} inputs={inputs} />,
+        language: <LanguageSettings language={settings.language} />,
       }}
     />
   );

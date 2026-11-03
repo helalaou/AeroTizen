@@ -3,6 +3,8 @@ import { flushSync } from "preact/compat";
 
 import type { SettingsStore } from "../contracts/preferences";
 import type { LauncherPlatform, LauncherRuntime } from "../platform/tizen/launcherRuntime";
+import type { Translations } from "../shared/i18n/createTranslations";
+import { TranslationContext } from "../shared/i18n/useTranslation";
 import { createNavigation } from "../shared/navigation/createNavigation";
 import { focusControl } from "../shared/navigation/focusControl";
 import { createStore } from "../shared/state/createStore";
@@ -20,6 +22,7 @@ export const mountSettings = (
   platform: LauncherPlatform,
   settings: SettingsStore,
   mount: HTMLElement,
+  translations: Translations,
 ) => {
   const view = createStore<ViewState>({
     open: false,
@@ -76,9 +79,11 @@ export const mountSettings = (
   };
   try {
     render(
-      <SettingsProvider environment={environment}>
-        <SettingsRoot />
-      </SettingsProvider>,
+      <TranslationContext.Provider value={translations}>
+        <SettingsProvider environment={environment}>
+          <SettingsRoot />
+        </SettingsProvider>
+      </TranslationContext.Provider>,
       mount,
     );
     return { bridge, dispose };

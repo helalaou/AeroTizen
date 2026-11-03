@@ -58,6 +58,7 @@ AeroTizen.config = {
     weatherLocation: null,
     weatherShowLocation: true,
     dateFormat: "short",
+    language: "auto",
     // Existing installs continue using the unchanged compact header.
     clockLayout: "classic",
     aeroClockStyle: "vertical",

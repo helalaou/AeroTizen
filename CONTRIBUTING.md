@@ -82,6 +82,19 @@ explicit owners.
 Shared contracts, services, platform adapters and shared utilities cannot import
 screens or app composition; ESLint enforces this dependency rule.
 
+## Launcher translations
+
+The [English catalogue](launcher/src/shared/i18n/en.json) defines the message keys
+for Home labels, header status, and the Settings menu. To add a language, copy
+this file, keep its keys, and translate the values. Keep any interpolation names
+such as `{{name}}` the same. Register the file and the language's native name in
+[catalogues.ts](launcher/src/shared/i18n/catalogues.ts) under its BCP 47 language
+tag. The launcher bundles registered catalogues for offline use.
+
+Call `useTranslation()` in Preact views and translate full phrases with `t(key)`.
+Keep app names, custom input names, and other user data as provided. Test the
+language in both themes, including remote navigation and longer labels.
+
 ## Project layout
 
 | Path                              | What                                                                                            |

@@ -21,6 +21,7 @@ const widgetAssets: Plugin = {
     });
     await mkdir(path.join(output, "licenses"), { recursive: true });
     await cp(path.join(root, "node_modules/preact/LICENSE"), path.join(output, "licenses/preact.txt"));
+    await cp(path.join(root, "node_modules/i18next/LICENSE"), path.join(output, "licenses/i18next.txt"));
     // Includes Lucide's ISC terms and the inherited Feather MIT notice.
     await cp(path.join(root, "node_modules/lucide-preact/LICENSE"), path.join(output, "licenses/lucide-preact.txt"));
   },

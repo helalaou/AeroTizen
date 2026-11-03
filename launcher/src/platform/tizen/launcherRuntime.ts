@@ -39,7 +39,6 @@ export interface LauncherRuntime {
   hideToast(): void;
   homeScreen?: HomeBridge;
   homewatch: { useSamsungHome(): void; openSamsungHome?(): void };
-  i18n?: { t(value: string): string };
   inputs: {
     sources: InputSource[];
     alwaysVisible?(source: InputSource): boolean;

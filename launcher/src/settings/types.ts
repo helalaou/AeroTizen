@@ -55,7 +55,6 @@ export interface SettingsServices {
   refreshWeather(): void;
   searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): () => void;
   showPreviewMessage(): void;
-  translate(value: string): string;
   useSamsungHome(): void;
 }
 export interface SettingsActions {

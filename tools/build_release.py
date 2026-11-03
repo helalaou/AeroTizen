@@ -73,6 +73,7 @@ def build_launcher(root, output, tag=None):
             "config.xml",
             "index.html",
             "icon.png",
+            "licenses/i18next.txt",
             "licenses/preact.txt",
             "licenses/lucide-preact.txt",
         )

@@ -1,13 +1,13 @@
 import type { NetworkSnapshot } from "../../contracts/status";
 
 const NETWORK_STATES = {
-  ethernet: { symbol: "ethernet", label: "Ethernet" },
-  offline: { symbol: "offline", label: "Offline" },
-  unknown: { symbol: "unknown", label: "Network status unavailable" },
-  wifiUnknown: { symbol: "wifi", label: "Wi-Fi (signal unavailable)" },
-  wifiHigh: { symbol: "wifi", label: "Wi-Fi" },
-  wifiMedium: { symbol: "wifiHigh", label: "Wi-Fi" },
-  wifiLow: { symbol: "wifiLow", label: "Wi-Fi" },
+  ethernet: { symbol: "ethernet", label: "network.ethernet" },
+  offline: { symbol: "offline", label: "network.offline" },
+  unknown: { symbol: "unknown", label: "network.unavailable" },
+  wifiUnknown: { symbol: "wifi", label: "network.signalUnavailable" },
+  wifiHigh: { symbol: "wifi", label: "network.wifi" },
+  wifiMedium: { symbol: "wifiHigh", label: "network.wifi" },
+  wifiLow: { symbol: "wifiLow", label: "network.wifi" },
 } as const;
 
 export const getNetworkPresentation = ({ kind, strength }: NetworkSnapshot) => {

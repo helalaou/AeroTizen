@@ -1,6 +1,7 @@
 import { useLayoutEffect } from "preact/hooks";
 
 import { useStore } from "../shared/hooks/useStore";
+import { useTranslation } from "../shared/i18n/useTranslation";
 
 import { AppActionsMenu } from "./components/AppActionsMenu";
 import { AppGrid } from "./components/AppGrid";
@@ -10,6 +11,7 @@ import { InputDock } from "./components/InputDock";
 import type { HomeEnvironment } from "./types";
 
 export const Home = ({ env }: { env: HomeEnvironment }) => {
+  const { t } = useTranslation();
   const settings = useStore(env.settings);
   const { page, active, draft, scroll } = useStore(env.state);
   const { apps, inputs, items, ready } = useStore(env.inventory);
@@ -36,7 +38,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
                 page="home"
                 shown={page === "home"}
                 active={active}
-                label="Home apps"
+                label={t("home.homeApps")}
               />
               <AppGrid
                 env={env}
@@ -46,10 +48,10 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
                 page="apps"
                 shown={page === "apps"}
                 active={active}
-                label="All apps"
+                label={t("home.allApps")}
               />
               <p id="apps-empty" class="apps-empty" hidden={page === "home" || apps.length > 0}>
-                {env.translate("No apps found.")}
+                {t("home.emptyApps")}
               </p>
               <ContinueWatchingRow env={env} items={items} visible={page === "home" && settings.continueWatching} />
               <InputDock env={env} inputs={inputs} visible={page === "home"} glass={settings.glassSettings} />

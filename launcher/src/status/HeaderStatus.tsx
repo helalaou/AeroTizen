@@ -12,16 +12,14 @@ export const HeaderStatus = ({
   settings: store,
   status,
   clock,
-  translate,
 }: {
   settings: SettingsStore;
   status: StatusStores;
   clock: ClockService;
-  translate(value: string): string;
 }) => {
   const settings = useStore(store);
   const value = useClock(status.time, clock, settings);
-  const weather = useWeather(status.weather, translate);
+  const weather = useWeather(status.weather);
   const layout = settings.clockLayout === "custom" ? settings.aeroClockStyle : "compact";
   return (
     <div class={"topbar-right" + (!settings.showTime && settings.dateFormat === "none" ? " weather-only" : "")}>

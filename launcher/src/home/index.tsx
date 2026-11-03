@@ -4,6 +4,8 @@ import { flushSync } from "preact/compat";
 import type { SettingsStore } from "../contracts/preferences";
 import type { StatusStores } from "../contracts/status";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
+import type { Translations } from "../shared/i18n/createTranslations";
+import { TranslationContext } from "../shared/i18n/useTranslation";
 
 import { Home } from "./Home";
 import { createHomeController } from "./state/createHomeController";
@@ -14,6 +16,7 @@ export const mountHome = (
   settings: SettingsStore,
   mount: HTMLElement,
   status: StatusStores,
+  translations: Translations,
 ) => {
   const document = mount.ownerDocument;
   // Apply shell mode before any Home focus geometry is measured.
@@ -36,7 +39,7 @@ export const mountHome = (
       continueItems: createRef<HTMLDivElement>(),
       continueViewport: createRef<HTMLDivElement>(),
       nodes: new Map(),
-      translate: (value) => runtime.i18n?.t(value) || value,
+      showMoveInstructions: () => runtime.toast(translations.getSnapshot().t("home.moveInstructions")),
       describe: (app) => runtime.tiles.describe(app),
       columns: (values) =>
         [3, 4, 5].includes(Number(values.homeCardColumns))
@@ -58,7 +61,12 @@ export const mountHome = (
     document.body.classList.remove("glass-ui", "clock-layout-compact");
   };
   try {
-    render(<Home env={environment} />, mount);
+    render(
+      <TranslationContext.Provider value={translations}>
+        <Home env={environment} />
+      </TranslationContext.Provider>,
+      mount,
+    );
     return { bridge, dispose };
   } catch (error) {
     dispose();
