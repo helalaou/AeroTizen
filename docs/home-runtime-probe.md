@@ -37,6 +37,10 @@ alternative runtime execution, key-rule changes and restore testing are separate
 work. The reporter's model can be supplied separately with the report; the probe
 does not query the TV's HTTP identity endpoint.
 
+For the separate, explicit managed startup/getter test, see the
+[.NET 3.0 runtime diagnostic](home-dotnet30-diagnostic.md). It executes one selected
+runtime launcher; `home probe` continues to perform file inventory only.
+
 ## Test the PR code from source
 
 The probe needs Python 3.10 or newer on the computer. For a source install, it also

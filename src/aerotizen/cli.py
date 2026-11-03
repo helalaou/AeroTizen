@@ -594,6 +594,30 @@ def cmd_home(args):
         sys.exit(f"Home {args.home_command} failed: {exc}")
 
 
+def cmd_home_runtime_probe(args):
+    from aerotizen import home_probe, home_runtime_probe
+
+    try:
+        output = args.output.expanduser()
+        if os.path.lexists(output):
+            raise ValueError("Report already exists; choose another --output path.")
+        if not output.parent.is_dir():
+            raise ValueError("The report's parent folder must already exist.")
+        home_runtime_probe.load_helper()  # Refuse bad package data before contacting the TV.
+        host = pick_tv(args)
+        with require_sdb(host) as session:
+            report = home_runtime_probe.collect(session, args.launcher)
+        home_probe.save_report(report, output)
+        if args.json:
+            print(json.dumps(report, indent=2))
+        else:
+            print(f"Saved runtime diagnostic: {output}")
+            print(f"Execution: {report['execution']['state']}. Review the report before sharing it.")
+            print("This report is not a Home backup and does not establish Native Home support.")
+    except (OSError, SdbError, ValueError) as error:
+        sys.exit(f"Home runtime diagnostic failed: {error}")
+
+
 def cmd_logs(args):
     try:
         if args.logs_command == "open":
@@ -735,6 +759,21 @@ def main():
     )
     command.add_argument("--json", action="store_true", help="also print the report as JSON")
     command.set_defaults(fn=cmd_home_probe)
+    command = commands.add_parser("diagnose-runtime", help="run the read-only .NET 3.0 diagnostic")
+    command.add_argument(
+        "--launcher",
+        choices=["dotnet-launcher", "dotnet-launcher-inhouse"],
+        default="dotnet-launcher",
+        help="run only this launcher; no automatic fallback",
+    )
+    command.add_argument(
+        "--output",
+        type=Path,
+        default=Path("home-runtime-diagnostic.json"),
+        help="new local report; never overwritten",
+    )
+    command.add_argument("--json", action="store_true", help="also print the report as JSON")
+    command.set_defaults(fn=cmd_home_runtime_probe)
     for name in ("status", "backup", "apply", "restore"):
         command = commands.add_parser(name)
         if name in ("status", "backup"):
