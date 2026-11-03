@@ -81,13 +81,13 @@
     // Launch Samsung Home explicitly: exiting a native Home app can route back to itself.
     useSamsungHome: function () {
       if (!tz) {
-        A.toast("Would open Samsung Home");
+        A.toast(A.translate("handoff.wouldOpenHome"));
         return;
       }
       leaving = true;
       function failed() {
         leaving = false;
-        A.toast("Samsung Home is unavailable. Try again.");
+        A.toast(A.translate("handoff.homeTryAgain"));
       }
       tell(
         "/leave",

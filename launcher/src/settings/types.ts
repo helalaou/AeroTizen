@@ -21,13 +21,14 @@ import type {
   TimeFormat,
   WeatherLocation,
 } from "../contracts/preferences";
+import type { MessageKey } from "../shared/i18n/catalogues";
 import type { Navigation } from "../shared/navigation/createNavigation";
 import type { MutableStore, Store } from "../shared/state/createStore";
 
 import type { Category, SettingsDrawerState } from "./layout/categories";
 export interface SettingsInventorySnapshot {
   readonly apps: readonly Readonly<InstalledApp>[];
-  readonly continueMessage: string;
+  readonly continueMessage: MessageKey | "";
   readonly continueSources: readonly ContinueSource[];
   readonly inputs: readonly InputOption[];
 }

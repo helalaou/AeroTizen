@@ -184,7 +184,10 @@ window.Fireplace = (function () {
       audio.master.gain.value = volume;
     }
     var bar = document.getElementById("fire-volume");
-    bar.textContent = volume === 0 ? "Muted" : "Volume " + Math.round(volume * 10);
+    bar.textContent =
+      volume === 0
+        ? window.AeroTizen.translate("fireplace.muted")
+        : window.AeroTizen.translate("fireplace.volume", { level: Math.round(volume * 10) });
     bar.classList.add("show");
     clearTimeout(setVolume.t);
     setVolume.t = setTimeout(function () {

@@ -31,6 +31,7 @@ const harness = () => {
   const settingsBridge = {};
   const previousHome = {};
   const previousSettings = {};
+  const previousTranslate = () => "previous";
   const statusListeners = [new Set(), new Set(), new Set()];
   const statusSource = (snapshot, listeners) => ({
     getSnapshot: () => snapshot,
@@ -47,6 +48,7 @@ const harness = () => {
     config: { DEFAULTS: {} },
     homeScreen: previousHome,
     settingsUi: previousSettings,
+    translate: previousTranslate,
   };
   const hosts = { home: { ownerDocument: document, querySelector: () => null }, settings: {} };
   let homeSettings, editorSettings, homeTranslations, editorTranslations;
@@ -76,6 +78,7 @@ const harness = () => {
     document,
     previousHome,
     previousSettings,
+    previousTranslate,
     get homeTranslations() {
       return homeTranslations;
     },
@@ -98,6 +101,7 @@ test("Home and Settings share one preference source and release it once", () => 
   assert.equal(h.homeSettings, h.editorSettings);
   assert.equal(h.homeTranslations, h.editorTranslations);
   assert.equal(h.homeTranslations.getSnapshot().t("common.settings"), "Settings");
+  assert.equal(h.runtime.translate("apps.openFailed", { name: "A & B <HD>" }), "Could not open A & B <HD>");
   h.homeSettings.update({ home: ["two"] });
   assert.deepEqual(h.editorSettings.getSnapshot().home, ["two"]);
   h.document.hidden = true;
@@ -116,6 +120,7 @@ test("Home and Settings share one preference source and release it once", () => 
   assert.deepEqual(h.calls.slice(2), ["dispose settings", "dispose home"]);
   assert.equal(h.runtime.homeScreen, h.previousHome);
   assert.equal(h.runtime.settingsUi, h.previousSettings);
+  assert.equal(h.runtime.translate, h.previousTranslate);
 });
 
 test("failed view assembly releases the settings source and already mounted Home", () => {
@@ -133,6 +138,7 @@ test("failed view assembly releases the settings source and already mounted Home
   assert.deepEqual(h.calls, ["dispose home"]);
   assert.equal(h.runtime.homeScreen, h.previousHome);
   assert.equal(h.runtime.settingsUi, h.previousSettings);
+  assert.equal(h.runtime.translate, h.previousTranslate);
 });
 
 test("repeated app replacement does not retain source or visibility listeners", () => {

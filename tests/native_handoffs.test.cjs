@@ -1,4 +1,5 @@
-"use strict";
+const { translateEnglish } = require("./helpers/translate_english.cjs");
+("use strict");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -108,6 +109,7 @@ function harness(options = {}) {
     documentElement: { style: {} },
   };
   const A = {
+    translate: translateEnglish,
     tizen: tz,
     config: {
       SERVICE_URL: "http://127.0.0.1:47790",

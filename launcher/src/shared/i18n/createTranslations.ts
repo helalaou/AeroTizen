@@ -7,9 +7,11 @@ import { createStore } from "../state/createStore";
 import type { MessageKey } from "./catalogues";
 import { catalogues, fallbackLanguage } from "./catalogues";
 
+export type Translate = (key: MessageKey, values?: Readonly<Record<string, string | number>>) => string;
+
 interface TranslationSnapshot {
   readonly language: string;
-  readonly t: (key: MessageKey) => string;
+  readonly t: Translate;
 }
 
 export type Translations = Store<TranslationSnapshot>;
@@ -26,12 +28,13 @@ export const createTranslations = (initialLanguage: string) => {
     lng: initialLanguage,
     fallbackLng: fallbackLanguage,
     keySeparator: false,
+    interpolation: { escapeValue: false }, // All consumers write text or Preact attributes.
     resources,
   });
-  const snapshot = (language: string): TranslationSnapshot => ({
-    language,
-    t: engine.getFixedT(language),
-  });
+  const snapshot = (language: string): TranslationSnapshot => {
+    const translate = engine.getFixedT(language);
+    return { language, t: (key, values) => translate(key, { replace: values }) };
+  };
   const store = createStore(snapshot(initialLanguage));
   return {
     getSnapshot: store.getSnapshot,

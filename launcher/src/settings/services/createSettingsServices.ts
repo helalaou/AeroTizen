@@ -59,6 +59,6 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
     runtime.homeScreen?.blur();
     runtime.clearFocus();
   },
-  showPreviewMessage: () => runtime.toast("Previewing. Press any key to return"),
+  showPreviewMessage: () => runtime.toast(runtime.translate("wallpaper.previewing")),
   hidePreviewMessage: () => runtime.hideToast(),
 });

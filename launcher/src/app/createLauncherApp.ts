@@ -49,6 +49,7 @@ export const createLauncherApp = (
   const status = createStatusStores(runtime, platform, transaction, settings);
   const previousHome = runtime.homeScreen;
   const previousSettings = runtime.settingsUi;
+  const previousTranslate = runtime.translate;
   const document = hosts.home.ownerDocument;
   const window = document.defaultView;
   const html = document.documentElement;
@@ -62,6 +63,7 @@ export const createLauncherApp = (
     );
   };
   const translations = createTranslations(language());
+  const translate: typeof runtime.translate = (key, values) => translations.getSnapshot().t(key, values);
   const syncLanguage = () => {
     const next = language();
     if (html.lang !== next) {
@@ -95,8 +97,12 @@ export const createLauncherApp = (
     }
     status.dispose();
     settings.dispose();
+    if (runtime.translate === translate) {
+      runtime.translate = previousTranslate;
+    }
   };
   try {
+    runtime.translate = translate;
     home = views.home(runtime, settings, hosts.home, status, translations);
     runtime.homeScreen = home.bridge;
     editor = views.settings(runtime, platform, settings, hosts.settings, translations);

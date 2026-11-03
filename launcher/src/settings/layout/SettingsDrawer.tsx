@@ -21,7 +21,12 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
     <div class="settings-drawer__frame">
       <aside class="settings-drawer__sidebar">
         <div class="settings-drawer__head">
-          <div class="settings-drawer__kicker">AEROTIZEN</div>
+          <div class="settings-drawer__kicker">
+            {
+              // eslint-disable-next-line launcher-i18n/translated-copy -- Product name.
+              "AEROTIZEN"
+            }
+          </div>
           <h2>{t("common.settings")}</h2>
         </div>
         <div class="settings-drawer__menu" ref={categoryMenu}>

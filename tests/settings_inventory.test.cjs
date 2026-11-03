@@ -56,7 +56,7 @@ test("feed status updates reach Settings and release their subscription", () => 
     inputs: { sources: [], subscribe: () => () => {} },
     continueWatching: {
       sources: [{ id: "app", name: "Video", storeId: "123", status: "Not selected" }],
-      message: "",
+      messageKey: "",
       subscribe(fn) {
         listeners.add(fn);
         return () => listeners.delete(fn);

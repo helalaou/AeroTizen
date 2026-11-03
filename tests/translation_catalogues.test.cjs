@@ -8,6 +8,7 @@ const placeholders = (text) => [...text.matchAll(/\{\{\s*([^}, ]+)/g)].map((matc
 
 test("registered translations cover English message keys and preserve placeholders", () => {
   for (const [language, { messages }] of Object.entries(catalogues)) {
+    assert.equal(Intl.getCanonicalLocales(language)[0], language, "use canonical catalogue tags");
     assert.deepEqual(Object.keys(messages).sort(), Object.keys(english).sort(), language);
     for (const [key, text] of Object.entries(messages)) {
       assert.ok(typeof text === "string" && text.trim(), `${language}: ${key} is empty`);

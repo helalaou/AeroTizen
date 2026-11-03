@@ -1,3 +1,4 @@
+import type { MessageKey } from "../shared/i18n/catalogues";
 import type { Store } from "../shared/state/createStore";
 
 import type { DateFormat, SettingsValues, TemperatureUnit, TimeFormat } from "./preferences";
@@ -28,10 +29,11 @@ export interface ContinueSource {
   readonly status: string;
   readonly storeId: string;
 }
+type BackgroundId = Extract<MessageKey, `scene.${string}`> extends `scene.${infer Id}` ? Id : never;
+
 export interface Background {
   readonly anim?: string;
-  readonly id: string;
-  readonly name: string;
+  readonly id: BackgroundId;
 }
 export interface BackgroundOption extends Background {
   readonly preview: string;

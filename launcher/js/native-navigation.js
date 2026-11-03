@@ -46,13 +46,13 @@
   function leaveBeforeLaunch(onReady, onFailure) {
     var xhr,
       settled = false;
-    function fail(reason) {
+    function fail(reason, detail) {
       if (settled) {
         return;
       }
       settled = true;
       // The caller owns the rearm and user-facing failure report.
-      onFailure(reason);
+      onFailure(reason, detail);
     }
     try {
       xhr = new XMLHttpRequest();
@@ -63,18 +63,18 @@
           return;
         }
         if (xhr.status < 200 || xhr.status >= 300) {
-          fail("HomeWatcher HTTP " + xhr.status);
+          fail("HomeWatcher HTTP " + xhr.status, A.translate("handoff.watcherHttp", { status: xhr.status }));
           return;
         }
         settled = true;
         onReady();
       };
       xhr.onerror = xhr.ontimeout = function () {
-        fail("HomeWatcher unavailable");
+        fail("HomeWatcher unavailable", A.translate("handoff.watcherUnavailable"));
       };
       xhr.send();
     } catch (error) {
-      fail("HomeWatcher request failed");
+      fail("HomeWatcher request failed", A.translate("handoff.watcherRequestFailed"));
     }
   }
 
@@ -88,16 +88,16 @@
       return;
     }
     if (!tz || !tz.application || !tz.ApplicationControl) {
-      A.toast("Samsung Home is unavailable on this device");
+      A.toast(A.translate("handoff.homeUnavailable"));
       return;
     }
     var operation = report("request", "samsung_home");
     homePending = true;
-    function failed(reason) {
+    function failed(reason, detail) {
       homePending = false;
       report("failed", "samsung_home", operation, reason);
       rearmWatcher();
-      A.toast("Could not open Samsung Home: " + reason);
+      A.toast(A.translate("handoff.homeFailed", { reason: detail || reason }));
     }
     function succeeded() {
       homePending = false;
@@ -111,11 +111,13 @@
           "com.samsung.tv.csfs",
           succeeded,
           function (error) {
-            failed((error && (error.name || error.message)) || "launch denied");
+            var reason = error && (error.name || error.message);
+            failed(reason || "launch denied", reason || A.translate("handoff.launchDenied"));
           }
         );
       } catch (error) {
-        failed((error && (error.name || error.message)) || "AppControl failed");
+        var reason = error && (error.name || error.message);
+        failed(reason || "AppControl failed", reason || A.translate("handoff.appControlFailed"));
       }
     }
     function nativeLaunch() {
@@ -141,7 +143,7 @@
     var operation = report("request", "live_tv");
     livePending = true;
     var finished = false;
-    function failed(reason) {
+    function failed(reason, detail) {
       if (finished) {
         return;
       }
@@ -149,7 +151,7 @@
       livePending = false;
       report("failed", "live_tv", operation, reason);
       rearmWatcher();
-      A.toast("Could not open Live TV: " + reason);
+      A.toast(A.translate("handoff.liveTvFailed", { reason: detail || reason }));
     }
     function accepted() {
       if (finished) {
@@ -164,7 +166,7 @@
         if (!document.hidden) {
           report("visibility_unconfirmed", "live_tv", operation);
           rearmWatcher();
-          A.toast("Live TV did not take focus");
+          A.toast(A.translate("handoff.liveTvNoFocus"));
         }
       }, 2100);
     }
@@ -173,7 +175,7 @@
         return;
       }
       if (!tz.ApplicationControl || !tz.application.launchAppControl) {
-        failed("AppControl is unavailable");
+        failed("AppControl is unavailable", A.translate("handoff.appControlUnavailable"));
         return;
       }
       try {
@@ -182,11 +184,13 @@
           "org.tizen.tv-viewer",
           accepted,
           function (error) {
-            failed((error && (error.name || error.message)) || "launch denied");
+            var reason = error && (error.name || error.message);
+            failed(reason || "launch denied", reason || A.translate("handoff.launchDenied"));
           }
         );
       } catch (error) {
-        failed((error && (error.name || error.message)) || "AppControl failed");
+        var reason = error && (error.name || error.message);
+        failed(reason || "AppControl failed", reason || A.translate("handoff.appControlFailed"));
       }
     }
     function launchViewer() {
@@ -207,12 +211,16 @@
           videoSource,
           launchViewer,
           function (error) {
-            failed("TV tuner selection failed: " + ((error && (error.name || error.message)) || "source error"));
+            var reason = error && (error.name || error.message);
+            failed(
+              "TV tuner selection failed: " + (reason || "source error"),
+              A.translate("handoff.tunerFailed", { reason: reason || A.translate("handoff.sourceError") })
+            );
           },
           "MAIN"
         );
       } catch (error) {
-        failed("TV tuner selection is unavailable");
+        failed("TV tuner selection is unavailable", A.translate("handoff.tunerUnavailable"));
       }
     }
     leaveBeforeLaunch(selectTuner, failed);

@@ -1,3 +1,4 @@
+import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../../components/ChoiceGroup";
 import { ChoiceOption } from "../../components/ChoiceOption";
 import { SettingsControl } from "../../components/SettingsControl";
@@ -6,18 +7,18 @@ import type { SettingsSectionProps } from "../../types";
 import { useWeatherLocation } from "./useWeatherLocation";
 
 const WEATHER_VISIBILITY_OPTIONS = [
-  { value: true, label: "Show weather" },
-  { value: false, label: "Hide weather" },
+  { value: true, labelKey: "weather.show" },
+  { value: false, labelKey: "weather.hide" },
 ] as const;
 
 const LOCATION_VISIBILITY_OPTIONS = [
-  { value: true, label: "Show location" },
-  { value: false, label: "Hide location" },
+  { value: true, labelKey: "weather.showLocation" },
+  { value: false, labelKey: "weather.hideLocation" },
 ] as const;
 
 const TEMPERATURE_UNIT_OPTIONS = [
-  { value: "F", label: "°F  Fahrenheit" },
-  { value: "C", label: "°C  Celsius" },
+  { value: "F", labelKey: "weather.fahrenheit" },
+  { value: "C", labelKey: "weather.celsius" },
 ] as const;
 
 interface Props extends SettingsSectionProps {
@@ -25,21 +26,22 @@ interface Props extends SettingsSectionProps {
 }
 
 export const WeatherSettings = ({ settings, actions, active }: Props) => {
+  const { t } = useTranslation();
   const search = useWeatherLocation(active, actions);
   return (
     <>
-      <h3>Weather</h3>
+      <h3>{t("weather.title")}</h3>
       <ChoiceGroup
         id="weather-display"
-        label="Weather visibility"
+        label={t("weather.visibility")}
         value={settings.showWeather !== false}
         options={WEATHER_VISIBILITY_OPTIONS}
         onSelect={actions.setWeatherVisible}
       />
       <p id="weather-location-summary" class="hint">
         {settings.weatherLocation
-          ? "Location: " + (settings.weatherLocation.label || settings.weatherLocation.name)
-          : "Automatic location uses your internet address and can be inaccurate. Search for your town, city or postcode to set it."}
+          ? t("weather.location", { location: settings.weatherLocation.label || settings.weatherLocation.name })
+          : t("weather.autoLocation")}
       </p>
       <div id="weather-location" class="units">
         <ChoiceOption
@@ -47,7 +49,7 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
           selected={!settings.weatherLocation}
           onSelect={() => search.selectLocation(null)}
         >
-          Automatic
+          {t("common.automatic")}
         </ChoiceOption>
         <SettingsControl
           class="pill unit name-pill weather-search"
@@ -59,17 +61,17 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
             type="text"
             maxLength={80}
             value={search.query}
-            placeholder="Town, city or postcode"
-            aria-label="Weather location"
+            placeholder={t("weather.searchPlaceholder")}
+            aria-label={t("weather.locationLabel")}
             onInput={search.onQueryInput}
           />
         </SettingsControl>
         <ChoiceOption id="weather:search" onSelect={search.search}>
-          Search
+          {t("weather.search")}
         </ChoiceOption>
       </div>
       <p id="weather-search-status" class="hint" role="status" hidden={!search.message}>
-        {search.message}
+        {search.message && t(search.message)}
       </p>
       <div id="weather-results" class="weather-results" hidden={!search.results.length}>
         {search.results.map((location, index) => (
@@ -84,15 +86,15 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
       </div>
       <ChoiceGroup
         id="weather-visibility"
-        label="Weather location visibility"
+        label={t("weather.locationVisibility")}
         value={settings.weatherShowLocation}
         options={LOCATION_VISIBILITY_OPTIONS}
         onSelect={actions.setLocationVisible}
       />
-      <h3>Temperature</h3>
+      <h3>{t("weather.temperature")}</h3>
       <ChoiceGroup
         id="units"
-        label="Temperature unit"
+        label={t("weather.unit")}
         value={settings.tempUnit}
         options={TEMPERATURE_UNIT_OPTIONS}
         onSelect={actions.setTempUnit}

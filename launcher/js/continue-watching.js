@@ -2,7 +2,7 @@
 (function (A) {
   "use strict";
 
-  var cw = (A.continueWatching = { sources: [], items: [], message: "" });
+  var cw = (A.continueWatching = { sources: [], items: [], messageKey: "" });
   var listeners = [],
     requests = [],
     timers = [],
@@ -292,7 +292,7 @@
   cw.refresh = function () {
     cancel();
     cw.sources = [];
-    cw.message = "";
+    cw.messageKey = "";
     if (A.settings.continueWatching !== true) {
       feeds = Object.create(null);
       cw.items = [];
@@ -302,16 +302,12 @@
     if (!A.tizen || !A.tizen.application || !A.tizen.application.getAppMetaData) {
       feeds = Object.create(null);
       cw.items = [];
-      cw.message = "App discovery is available on a Samsung TV.";
+      cw.messageKey = "continue.tvOnly";
       publish();
       return;
     }
     cw.sources = cw.discover(A.apps.inventory || []);
-    cw.message = !A.apps.ready
-      ? "Finding installed apps…"
-      : !cw.sources.length
-        ? "No installed apps declare Continue Watching support."
-        : "";
+    cw.messageKey = !A.apps.ready ? "continue.findingApps" : !cw.sources.length ? "continue.noApps" : "";
     var token = generation,
       warmup = retryTime() < startupUntil,
       selected = cw.sources.filter(function (source) {
@@ -359,10 +355,10 @@
       );
       A.homewatch.watch(item.sourceId);
       A.tizen.application.launchAppControl(control, item.sourceId, null, function () {
-        A.toast("Could not open " + item.title);
+        A.toast(A.translate("apps.openFailed", { name: item.title }));
       });
     } catch (e) {
-      A.toast("Could not open " + item.title);
+      A.toast(A.translate("apps.openFailed", { name: item.title }));
     }
   };
   cw.start = function () {

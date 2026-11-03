@@ -84,16 +84,22 @@ screens or app composition; ESLint enforces this dependency rule.
 
 ## Launcher translations
 
-The [English catalogue](launcher/src/shared/i18n/en.json) defines the message keys
-for Home labels, header status, and the Settings menu. To add a language, copy
-this file, keep its keys, and translate the values. Keep any interpolation names
-such as `{{name}}` the same. Register the file and the language's native name in
-[catalogues.ts](launcher/src/shared/i18n/catalogues.ts) under its BCP 47 language
-tag. The launcher bundles registered catalogues for offline use.
+The [English catalogue](launcher/src/shared/i18n/en.json) defines the keys for
+launcher text, including accessibility labels, placeholders, status, and error
+messages. To add a language, copy the file and translate the values. Keep the keys
+and placeholder names such as `{{name}}`. Register the file and the language's
+native name in [catalogues.ts](launcher/src/shared/i18n/catalogues.ts) using a
+canonical BCP 47 tag. Registered catalogues ship in the offline TV package.
 
-Call `useTranslation()` in Preact views and translate full phrases with `t(key)`.
-Keep app names, custom input names, and other user data as provided. Test the
-language in both themes, including remote navigation and longer labels.
+Use `useTranslation()` in Preact views and `A.translate()` at legacy display
+points. Translate full phrases and pass their variable parts as placeholders.
+Product names, hardware port IDs, diagnostics, and text supplied by apps, the TV,
+or users keep their original values.
+
+CI checks UI literals and catalogue keys in ESLint and checks catalogue parity and
+placeholders in the Node suite. Playwright checks the production HTML shell and
+uses a test-only pseudo locale across all Settings panes, Home, empty states, and
+errors in both themes. Use that test to cover new UI paths.
 
 ## Project layout
 

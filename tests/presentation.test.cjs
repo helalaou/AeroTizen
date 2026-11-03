@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { test } = require("node:test");
 
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
-const { getInputPresentation } = loadTypeScript("launcher/src/home/presentation/inputs.ts");
+const { getInputPresentation: getInputState } = loadTypeScript("launcher/src/home/presentation/inputs.ts");
 const { getNetworkPresentation: getNetworkState } = loadTypeScript("launcher/src/status/presentation/network.ts");
 const { getWeatherPresentation: getWeatherState } = loadTypeScript("launcher/src/status/presentation/weather.ts");
 
@@ -17,8 +17,10 @@ const getWeatherPresentation = (...args) => {
   return { ...state, condition: english[state.condition] };
 };
 
-const input = (source, label = "HDMI 1", capabilities = {}) =>
-  getInputPresentation(source, label, { pinned: false, recognized: false, ...capabilities });
+const input = (source, label = "HDMI 1", capabilities = {}) => {
+  const state = getInputState(source, label, { pinned: false, recognized: false, ...capabilities });
+  return { ...state, statusLabel: english[state.statusLabel] };
+};
 
 test("Live TV keeps its own artwork and status regardless of its label or capabilities", () => {
   const source = Object.freeze({ type: "TV", active: true, connected: true });
