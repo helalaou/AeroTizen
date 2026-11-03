@@ -98,6 +98,7 @@ data, autorun) and [DNS blocklists](dns/) if you run Pi-hole, AdGuard Home or Ne
 | Samsung 65" Crystal UHD DU7200 (UN65DU7200FXZA) | 2024 | Tizen 9.0 | |
 | Samsung 85" Crystal UHD DU7179 (GU85DU7179UXZG) | 2024 | Tizen 8.0 | Native Home and boot work; Steam Link on HDMI shows black ([#103](../../issues/103)) |
 | Samsung 65" The Frame LS03D (QE65LS03DAUXXU) | 2024 | Tizen 9.0 | |
+| Samsung 98" Neo QLED 8K QN990C (QA98QN990CUXZN) | 2023 | | |
 | Samsung 70" Crystal UHD CU7000 (UN70CU7000DXZA) | 2023 | Tizen 9.0 | |
 | Samsung 65" Crystal UHD CU7000 (UN65CU7000DXZA) | 2023 | Tizen 9.0 | Native Home works; Add apps fix in [#81](../../pull/81) |
 | Samsung 65" Crystal UHD CU7172 (UE65CU7172UXXH) | 2023 | Tizen 9.0 | Native Home works |
