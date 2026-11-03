@@ -240,6 +240,44 @@ For accurate weather, open **Settings → Weather** and search for your town or 
 To look at or remove installed apps, run `./aerotizen apps` and `./aerotizen debloat`. To remove AeroTizen itself, run
 `./aerotizen uninstall launcher`.
 
+### Let an AI assistant do it
+
+If you use an AI coding assistant that can run terminal commands, it can do most of the setup
+for you. A few steps still need you:
+
+- turning on Developer Mode with the remote and unplugging the TV (step 2);
+- signing in to your Samsung account in the browser (step 3);
+- pressing buttons or checking what's on screen.
+
+Review commands that change the TV before you approve them: `debloat`, `uninstall`,
+`home apply`, `home restore` and `root`. Those commands preview first and only make changes
+with `--yes`.
+
+Paste this to get started, and change the last line to what you want:
+
+```text
+Help me set up AeroTizen, a custom launcher for my Samsung Tizen TV:
+https://github.com/helalaou/AeroTizen
+
+Read the README first, especially Setup, "Choose how Home works" and Limits, and follow it.
+
+- I'm on [macOS / Windows / Linux]. My TV is a [model and year], and its IP address is
+  [TV IP, or "please find it"].
+- Download the latest CLI release (cli-v...) for my computer, extract it into a new folder
+  and run commands from there. Don't build from source unless I ask.
+- Stop and tell me exactly what to do when a step needs me: Developer Mode on the TV,
+  unplugging the TV, signing in to Samsung, or checking the screen.
+- Run read-only commands (discover, status, apps, home status) freely. Before any command
+  that changes the TV (debloat, uninstall, home apply/restore, root, or anything with
+  --yes), show me the preview and wait for my OK.
+- Run "home backup" before opening AeroTizen for the first time.
+- If something fails, show me the exact error and check the README and the open GitHub
+  issues before trying workarounds.
+
+Goal: install the launcher and [keep the default watcher / set up native Home / remove
+some preinstalled apps].
+```
+
 ## Continue Watching (experimental)
 
 In **Settings → Apps → Continue Watching**, select **On**, then choose the apps to include.
