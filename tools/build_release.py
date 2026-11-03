@@ -55,7 +55,28 @@ def build_launcher(root, output, tag=None):
         raise ValueError("Compiled launcher is missing; run npm ci and npm run build first")
     if (launcher / "config.xml").read_bytes() != (source / "config.xml").read_bytes():
         raise ValueError("Compiled launcher config.xml is stale; run npm run build again")
-    files = [launcher / name for name in ("config.xml", "index.html", "icon.png", "licenses/preact.txt")]
+    for name in (
+        "clock-layouts.js",
+        "continue-row.js",
+        "home-screen.js",
+        "settings-ui.js",
+        "inputs-view.js",
+        "status-view.js",
+        "brands-view.js",
+        "wave-background.js",
+    ):
+        if (launcher / "js" / name).exists():
+            raise ValueError(f"Compiled launcher contains legacy renderer {name}; run npm run build again")
+    files = [
+        launcher / name
+        for name in (
+            "config.xml",
+            "index.html",
+            "icon.png",
+            "licenses/preact.txt",
+            "licenses/lucide-preact.txt",
+        )
+    ]
     for directory, suffix in (("css", ".css"), ("js", ".js"), ("service", ".js")):
         files.extend((launcher / directory).rglob(f"*{suffix}"))
     if (launcher / "js/photo-weather.js").is_file():
@@ -66,7 +87,7 @@ def build_launcher(root, output, tag=None):
         files.extend(weather / f"{scene}.jpg" for scene in scenes)
         files.extend(weather / name for name in ("CREDITS.md", "MANIFEST.json"))
     for name in (
-        "js/settings-ui.js",
+        "js/launcher-ui.js",
         "service/index.js",
         "service/artmode.js",
         "service/home-mode.js",
@@ -77,8 +98,12 @@ def build_launcher(root, output, tag=None):
     for source in files:
         if not source.is_file() or source.resolve() != source.absolute():
             raise ValueError(f"Runtime file must be a regular file without symlinks: {source}")
-    if 'id="settings-root"' not in (launcher / "index.html").read_text(encoding="utf-8"):
-        raise ValueError("Compiled launcher is missing the Preact Settings mount")
+    html = (launcher / "index.html").read_text(encoding="utf-8")
+    for view, host in (("Home", "home-root"), ("Settings", "settings-root")):
+        if f'id="{host}"' not in html:
+            raise ValueError(f"Compiled launcher is missing the Preact {view} mount")
+    if 'src="js/launcher-ui.js"' not in html:
+        raise ValueError("Compiled launcher is missing the shared UI script")
 
     output.mkdir(parents=True, exist_ok=True)
     package = output / f"aerotizen-launcher-{version}.wgt"

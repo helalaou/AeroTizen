@@ -14,12 +14,16 @@ export const createStore = <T>(initial: T): MutableStore<T> => {
     getSnapshot: () => snapshot,
     subscribe(listener) {
       listeners.add(listener);
-      return () => { listeners.delete(listener); };
+      return () => {
+        listeners.delete(listener);
+      };
     },
     set(next) {
-      if (Object.is(snapshot, next)) { return; }
+      if (Object.is(snapshot, next)) {
+        return;
+      }
       snapshot = next;
-      [...listeners].forEach(listener => listener());
-    }
+      [...listeners].forEach((listener) => listener());
+    },
   };
 };

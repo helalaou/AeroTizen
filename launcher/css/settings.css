@@ -1,0 +1,712 @@
+#editor .grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 26px 22px;
+  width: 1792px;
+}
+#editor .settings-drawer__pane [data-key].focused {
+  z-index: 2;
+}
+/* settings: component-owned styles. */
+#editor .swatch span {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  font-size: 22px;
+  color: #fff;
+  text-shadow: 0 1px 4px #000;
+}
+#editor .swatch.focused span {
+  font-size: 26px;
+  font-weight: 700;
+}
+
+#editor .escape {
+  display: inline-block;
+  margin-top: 56px;
+  padding: 10px 14px;
+  font-size: 22px;
+  color: #55555c;
+  border-radius: 8px;
+}
+#editor .escape.focused {
+  transform: none;
+  color: #b8b8c0;
+  box-shadow: 0 0 0 3px #3a3a40;
+}
+body.previewing #editor.settings-drawer {
+  visibility: hidden;
+}
+#editor .pill.preview-btn {
+  margin-left: 30px;
+  background: #2c2c30;
+}
+#editor .fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 5px;
+  background: var(--focus);
+}
+#editor .thumb {
+  position: absolute;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+#editor .slider-hint {
+  font-size: 20px;
+  color: var(--muted);
+  opacity: 0;
+  min-width: 130px;
+}
+#editor .slider.focused .slider-hint {
+  opacity: 1;
+}
+#editor .slider.focused .thumb {
+  transform: scale(1.2);
+}
+#editor .slider.adjusting {
+  box-shadow:
+    0 0 0 4px #000,
+    0 0 0 8px var(--focus);
+}
+#editor .slider.adjusting .thumb {
+  transform: scale(1.35);
+}
+#editor .name-pill .port {
+  color: var(--muted);
+  font-size: 22px;
+}
+#editor .name-pill input::placeholder {
+  color: #77777f;
+}
+#editor .name-pill.focused input {
+  border-bottom-color: var(--focus);
+}
+#editor .name-pill input:focus {
+  border-bottom-color: var(--focus);
+}
+#editor .weather-search input {
+  width: 520px;
+}
+#editor .weather-results {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 40px;
+}
+#editor .weather-results .pill {
+  max-width: 1680px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#editor .continue-apps {
+  gap: 22px;
+  margin-bottom: 32px;
+}
+#editor .continue-apps .tile {
+  width: 176px;
+  height: 176px;
+}
+#editor .continue-apps .app-fallback {
+  padding: 14px;
+  gap: 12px;
+}
+#editor .continue-apps .app-fallback .logo {
+  width: 100px;
+  height: 100px;
+}
+#editor .continue-apps .app-fallback .name {
+  font-size: 22px;
+}
+#editor .continue-apps .tile[aria-disabled="true"] {
+  opacity: 0.35;
+}
+@keyframes settings-drawer-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+#editor .settings-drawer__sidebar {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  flex: 0 0 330px;
+  min-width: 330px;
+  height: 100%;
+  padding: 29px 13px 25px;
+  background: transparent;
+  border-right: 1px solid var(--border-control);
+}
+#editor .settings-drawer__head {
+  padding: 0 10px 5px 21px;
+}
+#editor .settings-drawer__kicker {
+  font-size: 12px;
+  color: var(--settings-muted);
+  letter-spacing: 2.8px;
+  font-weight: 600;
+}
+#editor .settings-drawer__sidebar h2 {
+  font-size: 31px;
+  font-weight: 500;
+  margin: 7px 0 22px;
+}
+#editor .settings-drawer__menu {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  isolation: isolate;
+  padding: 10px 4px 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+#editor .settings-category {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 78px;
+  align-items: center;
+  margin: 0 0 7px;
+  padding: 10px;
+  gap: 11px;
+  border: 2px solid transparent;
+  border-radius: 17px;
+  background: transparent;
+  color: var(--settings-category-text);
+  box-shadow: none;
+  transform: none;
+  transition: color 0.1s linear;
+}
+#editor .settings-category.focused {
+  color: #fff;
+  outline: none;
+  box-shadow: none;
+  border-color: transparent;
+}
+#editor .settings-category.is-current {
+  color: #fff;
+  outline: none;
+  box-shadow: none;
+  border-color: transparent;
+}
+#editor .settings-category__label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+#editor .settings-category__label strong {
+  font-size: 20px;
+  font-weight: 500;
+  color: inherit;
+  white-space: nowrap;
+}
+#editor .settings-category__label small {
+  font-size: 12px;
+  line-height: 1.15;
+  color: var(--settings-subtitle);
+  white-space: nowrap;
+}
+#editor .settings-focus-indicator--sidebar.is-visible {
+  opacity: 1;
+}
+#editor .settings-drawer__help {
+  border-top: 1px solid var(--border-control);
+  padding: 16px 2px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--settings-muted);
+  white-space: nowrap;
+}
+#editor .settings-drawer__content-head {
+  position: relative;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--settings-heading-divider);
+  padding-bottom: 18px;
+}
+#editor .settings-drawer__content-kicker {
+  font-size: 13px;
+  color: var(--settings-kicker);
+  letter-spacing: 2px;
+}
+#editor .settings-drawer__active-title {
+  margin: 6px 0 0;
+  font-size: 37px;
+  font-weight: 500;
+}
+#editor .settings-drawer__close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  font-size: 32px;
+  color: #fff;
+  background: var(--settings-close-surface);
+}
+#editor .settings-drawer__scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px 9px 25px 4px;
+}
+#editor h3 {
+  margin: 5px 0 15px;
+  font-size: 24px;
+  font-weight: 500;
+}
+#editor .hint {
+  color: var(--muted);
+  margin: -6px 0 26px;
+  font-size: 20px;
+  line-height: 1.3;
+}
+#editor .slider.focused {
+  border-color: transparent;
+  outline: none;
+  outline-offset: 0;
+  box-shadow: none;
+  transform: none;
+  color: #fff;
+  transition:
+    color 0.1s linear,
+    background-color 0.1s linear;
+}
+#editor [data-key].focused {
+  border-color: transparent;
+  outline: none;
+  outline-offset: 0;
+  box-shadow: none;
+  transform: none;
+  color: #fff;
+  transition:
+    color 0.1s linear,
+    background-color 0.1s linear;
+}
+#editor .swatches {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+  width: 100%;
+  gap: 15px;
+}
+#editor .swatch {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px var(--border-control);
+  transition: transform 0.15s ease-out;
+  width: 168px;
+  height: 96px;
+  max-width: calc(20% - 12px);
+}
+#editor #all-apps {
+  width: 100%;
+  gap: 18px;
+}
+#editor #escape {
+  margin: 0 0 20px;
+  padding: 20px;
+  max-width: 800px;
+  width: 100%;
+  font-size: 21px;
+  text-align: left;
+  border-radius: 17px;
+  background: var(--surface-control);
+}
+#editor .settings-focus-indicator--content.is-visible {
+  opacity: 1;
+}
+#editor .name-pill.focused {
+  border-color: transparent;
+  outline: none;
+  outline-offset: 0;
+  box-shadow: none;
+  transform: none;
+  color: #fff;
+  transition:
+    color 0.1s linear,
+    background-color 0.1s linear;
+  background: var(--settings-focused-surface);
+}
+#editor .grid .tile.focused {
+  border-color: transparent;
+  outline: none;
+  outline-offset: 0;
+  box-shadow: none;
+  transform: none;
+  color: #fff;
+  transition:
+    color 0.1s linear,
+    background-color 0.1s linear;
+  background: var(--settings-focused-surface);
+}
+#editor .swatch.focused {
+  z-index: 3;
+  border-color: transparent;
+  outline: none;
+  outline-offset: 0;
+  box-shadow: none;
+  transform: none;
+  color: #fff;
+  transition:
+    color 0.1s linear,
+    background-color 0.1s linear;
+  background-blend-mode: normal;
+}
+@media (prefers-reduced-motion: reduce) {
+  #editor .settings-focus-indicator--sidebar {
+    animation: none !important;
+    transition: none !important;
+  }
+  #editor .settings-focus-indicator--content {
+    animation: none !important;
+    transition: none !important;
+  }
+  #editor .settings-drawer__frame {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+#editor.settings-drawer--collapsed .settings-drawer__frame {
+  width: 390px;
+}
+#editor.settings-drawer--collapsed .settings-drawer__sidebar {
+  flex: 1 1 auto;
+  border-right: 0;
+}
+#editor.settings-drawer--collapsed .settings-drawer__main {
+  display: none;
+}
+#editor .settings-drawer__close.focused {
+  outline: 2px solid #fff;
+  box-shadow: none;
+  transform: none;
+}
+#editor .settings-drawer__frame {
+  position: absolute;
+  top: 112px;
+  left: 60px;
+  box-sizing: border-box;
+  display: flex;
+  width: 1440px;
+  height: 850px;
+  max-width: calc(100% - 120px);
+  max-height: calc(100% - 146px);
+  border: 1px solid var(--settings-border);
+  overflow: hidden;
+  color: var(--settings-text);
+  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
+  animation: settings-drawer-enter 0.2s ease-out both;
+  background: var(--settings-surface);
+  border-color: var(--settings-border);
+  border-radius: var(--settings-radius);
+  box-shadow: var(--settings-shadow);
+}
+#editor .settings-drawer__main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 100%;
+  padding: 30px 35px 36px 38px;
+  background: var(--settings-main-surface);
+}
+#editor .settings-focus-indicator--sidebar {
+  position: absolute;
+  top: 0;
+  z-index: 0;
+  width: calc(100% - 8px);
+  height: 76px;
+  box-sizing: border-box;
+  border: 2px solid var(--settings-focus-border);
+  border-radius: 17px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 0.15s ease-out,
+    opacity 0.1s linear;
+  left: 0;
+  border-color: var(--settings-focus-border);
+  background: var(--settings-sidebar-focus-surface);
+  box-shadow: var(--settings-sidebar-focus-shadow);
+}
+#editor .settings-focus-indicator--content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 12;
+  width: 1px;
+  height: 1px;
+  box-sizing: border-box;
+  border: 2px solid var(--settings-focus-border);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 0.15s ease-out,
+    opacity 0.1s linear,
+    border-radius 0.12s ease-out;
+  border-radius: 17px;
+  border-color: var(--settings-focus-border);
+  background: var(--settings-content-focus-surface);
+  box-shadow: var(--settings-content-focus-shadow);
+}
+#editor .pill.unit.on {
+  background: var(--choice-selected-surface);
+  color: #fff;
+}
+#editor .pill.unit.focused {
+  border-color: transparent;
+  outline: none;
+  outline-offset: 0;
+  box-shadow: none;
+  transform: none;
+  transition:
+    color 0.1s linear,
+    background-color 0.1s linear;
+  background: var(--choice-focused-surface);
+  color: #fff;
+}
+#editor .pill.unit {
+  border: 2px solid var(--border-control);
+  border-radius: 17px;
+  color: #fff;
+  background: var(--surface-control);
+  transform: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 200px;
+  min-width: 160px;
+  max-width: 100%;
+  min-height: 64px;
+  padding: 10px 16px;
+  margin-left: 0;
+  font-size: 20px;
+  line-height: 24px;
+  white-space: normal;
+  text-align: center;
+}
+#editor .units {
+  margin-bottom: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+  margin: 0 0 30px;
+  gap: 12px;
+  align-items: stretch;
+}
+#editor .name-pill {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  border: 2px solid var(--border-control);
+  color: #fff;
+  background: var(--surface-control);
+  transform: none;
+  min-height: 64px;
+  font-size: 20px;
+  border-radius: 17px;
+}
+#editor .name-pill input {
+  font: inherit;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid #4a4a50;
+  outline: none;
+  padding: 4px 2px;
+  width: 210px;
+  max-width: 100%;
+  font-size: 20px;
+}
+#editor .speed-row {
+  display: flex;
+  align-items: center;
+  margin: -14px 0 40px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+#editor .slider {
+  display: flex;
+  align-items: center;
+  background: #1c1c1e;
+  min-height: 64px;
+  padding: 10px 16px;
+  border-radius: 17px;
+  gap: 16px;
+}
+#editor .slider-label {
+  font-size: 20px;
+}
+#editor .slider-value {
+  font-weight: 700;
+  min-width: 80px;
+  font-size: 20px;
+}
+#editor .track {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+  background: #3a3a40;
+  width: 260px;
+}
+#editor .grid .tile {
+  flex: 0 0 160px;
+  width: 160px;
+  height: 160px;
+  min-width: 160px;
+  border-radius: 17px;
+}
+#editor .grid .tile .app-fallback {
+  padding: 12px;
+  gap: 8px;
+}
+#editor .grid .tile .logo {
+  width: 92px;
+  height: 92px;
+}
+#editor .grid .tile .app-fallback.logo-only .logo {
+  width: 136px;
+  height: 112px;
+}
+#editor .grid .tile .name {
+  font-size: 18px;
+  line-height: 21px;
+  max-width: 100%;
+  text-align: center;
+}
+/* Home membership cards retain their slightly larger labels. */
+#editor .home-apps-settings .tile .name {
+  font-size: 19px;
+}
+
+#editor .grid .tile .app-artwork {
+  object-fit: contain;
+}
+#editor .grid .tile.addapps {
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+#editor .grid .tile.fire {
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+#editor .grid .tile > svg {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 76px;
+}
+#editor .grid .tile .sub {
+  font-size: 13px;
+}
+#editor #input-names .name-pill {
+  flex: 0 1 360px;
+  min-width: 0;
+  justify-content: flex-start;
+  text-align: left;
+}
+#editor #input-names .port {
+  flex: 0 0 auto;
+  font-size: 20px;
+  white-space: nowrap;
+}
+#editor #input-names input {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0;
+  max-width: 100%;
+}
+#editor.settings-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 0;
+  margin: 0;
+  background: var(--settings-overlay);
+  overflow: hidden;
+  z-index: 100;
+}
+#editor .settings-category__icon {
+  flex: 0 0 35px;
+  width: 35px;
+  text-align: center;
+  font-size: 27px;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+}
+#editor .settings-category__chevron {
+  margin-left: auto;
+  font-size: 27px;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+}
+#editor .settings-category__icon > .ui-icon {
+  width: 27px;
+  height: 27px;
+}
+
+#editor .selection-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--selection-surface);
+  color: #fff;
+}
+#editor .selection-indicator > svg.ui-icon {
+  width: 26px;
+  height: 26px;
+}
+#editor .swatch > .selection-indicator {
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+}
+#editor .swatch > .selection-indicator > svg.ui-icon {
+  width: 22px;
+  height: 22px;
+}

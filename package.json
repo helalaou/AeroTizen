@@ -1,14 +1,18 @@
 {
   "name": "aerotizen-launcher",
   "private": true,
-  "description": "AeroTizen launcher tooling and Preact Settings build.",
+  "description": "AeroTizen launcher build, lint, format, and test tooling.",
   "scripts": {
-    "lint": "eslint launcher vite.config.mts tools/build-launcher.mjs",
+    "lint": "npm run lint:js && npm run lint:css",
+    "format": "prettier --write \"launcher/**/*.{js,ts,tsx,css,html,json}\" \"tests/**/*.{js,cjs,html,md}\" \"*.{js,cjs,mjs,mts,json}\" tools/build-launcher.mjs .github/workflows/ci.yml CONTRIBUTING.md launcher/AGENTS.md",
+    "format:check": "prettier --check \"launcher/**/*.{js,ts,tsx,css,html,json}\" \"tests/**/*.{js,cjs,html,md}\" \"*.{js,cjs,mjs,mts,json}\" tools/build-launcher.mjs .github/workflows/ci.yml CONTRIBUTING.md launcher/AGENTS.md",
     "build": "npm run typecheck && node tools/build-launcher.mjs",
     "dev": "vite",
     "test": "node --test tests/*.test.cjs",
     "test:browser": "npm run build && playwright test",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "lint:js": "eslint launcher tests eslint.config.js playwright.config.cjs vite.config.mts tools/build-launcher.mjs stylelint.config.cjs --max-warnings=0",
+    "lint:css": "stylelint \"launcher/css/**/*.css\" --max-warnings 0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
@@ -20,13 +24,20 @@
     "@typescript-eslint/parser": "8.72.0",
     "acorn": "8.19.0",
     "eslint": "^9.39.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-perfectionist": "5.13.0",
     "eslint-plugin-react": "7.37.5",
     "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-simple-import-sort": "14.0.0",
+    "eslint-plugin-unused-imports": "4.4.1",
     "globals": "^16.5.0",
+    "prettier": "3.9.10",
+    "stylelint": "17.16.0",
     "typescript": "6.0.3",
     "vite": "8.3.5"
   },
   "dependencies": {
+    "lucide-preact": "1.66.0",
     "preact": "10.29.8"
   },
   "engines": {

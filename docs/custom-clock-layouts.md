@@ -1,25 +1,23 @@
-# Optional clock layouts
+# Clock layouts
 
-Updates PR #28 on current upstream without rewriting shared history. Classic is
-the unchanged default. The optional Preact clock preserves Large Vertical,
-Horizontal, Thin and Bold typography from AeroTizen Custom and the original
-`clockLayout` / `aeroClockStyle` settings. Date and time formatting remain upstream
-operations, including localization, saved 12/24-hour choices and visibility.
-The widget subscribes to the existing clock and weather host; it creates no timer
-or forecast client. Older firmware without MutationObserver updates on clock ticks.
+The shared Preact `Clock` renders one selected layout: compact, vertical, horizontal,
+minimal or bold. Compact remains the default. Expanded variants preserve the Large
+Vertical, Horizontal, Thin and Bold typography and the existing `clockLayout` and
+`aeroClockStyle` settings.
 
-Settings controls live in Preact `DisplaySettings`. Browser tests exercise all four
-styles, visibility, saved date/time choices and reload persistence, with screenshots.
-Existing formatter/locale and weather unit tests remain applicable. The modernized
-build has not been physically tested on the S90C; reference-version testing does
-not establish acceptance of this adaptation or performance on older TVs.
+`status/HeaderStatus.tsx` composes time/date and weather presentation. `useClock`
+reads one shared time store and reuses the existing locale formatter. `WeatherStatus`
+renders the shared weather snapshot. Views add no timer or forecast client, and do
+not scrape weather markup or use a MutationObserver. The existing service owns
+weather requests, matching caches, unit conversion, cancellation and solar policy.
 
-Parity review follow-up: changing clock layout invalidates Settings navigation
-geometry immediately. CustomClock reads optional structured hour/minute/day-period
-fields from the existing formatter, preserving Finnish separators, Korean leading
-periods and Arabic digits; older Intl retains the formatted-string fallback.
-Compiled D-pad and locale regressions cover these cases without an extra timer.
+Settings controls live in `settings/sections/ClockSettings.tsx`. Browser coverage includes all layouts,
+12/24-hour and date choices, visibility, persistence, remote navigation and locale
+fields. Clock uses structured hour/minute/day-period fields where available, retaining
+the formatted-string fallback for older Intl implementations. Compact width reserves
+cached font/locale measurements through a ref.
 
-The custom-clock content padding targets `main#rows` within the viewport, including
-the core renderer's nested animated mask. This preserves the existing 24 px
-clearance without changing clock layout or persisted formatting preferences.
+Clock styles use component classes such as `clock__time` and `clock--horizontal`;
+weather uses its own `weather-status__*` classes. Historical model/version selectors
+are confined to comparison fixtures. Expanded layouts keep the 24 px content clearance. TV testing of the completed cleanup is deferred;
+reference-version results do not establish older-TV compatibility.

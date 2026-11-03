@@ -10,9 +10,10 @@ state and navigation patterns and the cutover does not require another port.
 
 ## Current scope
 
-`npm run build` copies runtime files into `dist/launcher/`, replaces only the Settings
-markup and renderer, and includes Preact's license. It excludes TypeScript/TSX source. App IDs,
-the watcher, Home, CSS, persistence keys and TV APIs remain the same. Preact 10.29.8 is
+`npm run build` copies the explicit production HTML and runtime files into `dist/launcher/`,
+bundles Home and Settings into `js/launcher-ui.js`, and includes Preact's license.
+It excludes TypeScript/TSX source and legacy comparison views. App IDs,
+the watcher, CSS, persistence keys and TV APIs remain the same. Preact 10.29.8 is
 pinned with the lockfile. All code is bundled locally; no CDN or runtime module loader
 is required.
 
@@ -20,9 +21,10 @@ The build uses Vite with the official `@preact/preset-vite`, following the
 [Preact Vite setup](https://preactjs.com/guide/v10/getting-started/#create-a-vite-powered-preact-app).
 This integrates the documented preset into the existing repository rather than generating
 a new application over the launcher. Vite library mode emits a single classic-script IIFE
-for the Settings entry point; the production widget has no Vite client or development entry.
+for the shared `src/index.ts` entry point; the production widget has no Vite client or development entry.
 Two small Vite plugins retain the widget assets and load the existing boot script after
-the development Settings entry point. The dev server uses the preset's hot refresh support.
+the development `src/dev.ts` entry point. Both use the same Home and Settings views.
+The dev server uses the preset's hot refresh support.
 
 All new Settings code is TypeScript. `tsconfig.json` uses `strict: true`,
 `jsx: "react-jsx"` and `jsxImportSource: "preact"`, as documented in the
@@ -31,9 +33,11 @@ runtime interfaces, events and refs are typed. The existing global JavaScript mo
 are described by a small interface; this does not type-check their implementations.
 `npm run typecheck` checks the browser source and Vite config. Builds and CI include it.
 
-The source `launcher/` retains the legacy Settings comparison baseline. Release packages
-contain only the compiled renderer. Install `dist/launcher/` to test local changes;
-installing the source directory tests the baseline. Release users do not need Node.
+The old Home, Settings, feed and clock renderers are isolated in
+`tests/fixtures/legacy-launcher/`. Their tests load shared services and styles from
+the current launcher. Release packages reject these renderer files. Install
+`dist/launcher/` to test local changes; the source directory requires Vite development
+and is not an installable build. Release users do not need Node.
 
 The build targets Chromium 69 and also checks every shipped script against ES2018.
 [Samsung's engine table](https://developer.samsung.com/smarttv/develop/specifications/web-engine-specifications.html)
@@ -42,20 +46,27 @@ CSS behaviour or physical TV compatibility.
 
 ## Code boundaries
 
-- `settings/index.tsx` is the composition root. It creates the stores, services,
-  actions and remote-key bridge once, then mounts a provider and the Settings root.
-  Components use typed context or props; they do not read the launcher global.
-- `settings/state/createSettingsStore.ts` publishes immutable snapshots of the existing
+- `app/createLauncherApp.ts` owns one shared preference store, bridge registration,
+  visibility handling and teardown. The entry point passes the existing runtime and
+  platform services explicitly. Home mounts before Settings; Settings unmounts before
+  Home. Status bindings are released with the preference source. Partial assembly releases already mounted views and the store.
+- `settings/index.tsx` mounts the Settings provider, actions, view state and navigation.
+  It receives the shared store and platform services, then returns a bridge and disposer.
+  It does not create a second preference source or register globals itself.
+- `services/createSettingsStore.ts` publishes immutable snapshots of the existing
   `A.settings` object. That object remains the source of persisted preferences.
-  Its small `subscribe` API publishes saves and loads, including changes made by legacy
-  modules. Unchanged snapshots and nested values retain their identity. Actions use
+  `contracts/preferences.ts` owns the shared snapshot and storage types. The derived
+  `homeInitialized` flag distinguishes unset favourites from an explicitly saved empty list
+  without changing persisted keys. Its small `subscribe` API publishes saves and loads,
+  including changes made by legacy modules. Unchanged snapshots and nested values retain their identity. Actions use
   named commands and replace arrays/maps; components do not write storage.
 - `settings/services/createSettingsInventory.ts` subscribes to app discovery and input
   changes. It publishes cached immutable lists, so a late TV callback or hot-plug update
   reaches the open or cached Settings form without a preference change. Matching lists
-  retain identity; the composition root disposes both subscriptions on replacement.
+  retain identity; the composition root disposes its subscriptions on replacement.
 - `settings/services/createSettingsServices.ts` adapts the existing TV and launcher
-  operations. It exposes data and commands, including data-only app branding. Only
+  operations using explicitly supplied runtime and platform dependencies. It exposes
+  data and commands, including data-only app branding. Only
   this boundary calls unmigrated services. The weather adapter can cancel callback
   delivery; the existing search client cannot abort an active request.
 - `settings/services/createSettingsBridge.ts` retains the existing key-router interface. It changes open/closed
@@ -67,7 +78,7 @@ CSS behaviour or physical TV compatibility.
 - `shared/` contains the small store, navigation engine and hooks for external store
   subscriptions, input drafts and image retries. Store subscriptions use Preact's
   documented `useSyncExternalStore` hook.
-- `settings/components/RemoteControl.tsx` renders the focused class and tab position
+- `settings/components/SettingsControl.tsx` renders the focused class and tab position
   from the selected key in context. Its ref callback registers the control with the
   navigation engine. Layout reads these registered nodes, including wrapped and hidden
   controls; there are no DOM selector lists or imperative focus-class repairs.
@@ -100,24 +111,25 @@ CSS behaviour or physical TV compatibility.
   Exported helpers also use `const`. ESLint enforces these conventions.
 
 Keep these boundaries when adding Settings controls. Promote a helper to `shared/` only
-when it expresses a reusable behavior. Home and other screens keep their current DOM
-ownership until their own migration; this change adds no second rendering path there.
+when it expresses a reusable behavior. Home owns its components and uses the same shared preference/status stores. See
+[component ownership](component-structure.md) for screen and style boundaries.
 
 ## Directory layout
 
 ```text
 launcher/src/
   settings/
-    index.tsx, dev.ts              # Build/development entry points
-    SettingsRoot.tsx, Settings.tsx # Shell and screen composition
+    index.tsx                     # Mount and teardown
+    SettingsRoot.tsx, SettingsContent.tsx # Shell and screen composition
     SettingsProvider.tsx, context.ts
     types.ts                      # Feature contracts
     components/                   # Declarative remote-control host and section controls
     sections/
-      BackgroundSettings.tsx, DisplaySettings.tsx
-      apps/                       # App menu and its tile components
+      BackgroundSettings.tsx, AppearanceSettings.tsx, ClockSettings.tsx
+      apps/                       # Home membership and app-store options
       inputs/                     # Input controls and names
       weather/                    # Weather UI and location/search hooks
+    layout/                       # Shared category drawer and focus indicator
     hooks/                        # Screen lifecycle and navigation hooks
     state/                        # Settings snapshots and named actions
     services/                     # Legacy runtime types, adapters and key-router bridge
@@ -153,13 +165,14 @@ npm run dev
 ```
 
 Open `http://localhost:8019` at 1920×1080. The network URL is printed at startup.
-Vite watches source files and supplies hot refresh for Settings components.
-Use `dist/launcher/` when testing the compiled app. An installation of `launcher/` tests
-the legacy baseline. Use a modern desktop browser for Vite development; use the production
+Vite watches source files and supplies hot refresh for Home and Settings components.
+Use `dist/launcher/` when testing the compiled app. Use a modern desktop browser for Vite development; use the production
 build for TV compatibility checks.
 
 `npm run test:browser` builds the launcher and runs the pinned Playwright runner.
-It starts and stops baseline/production static servers on loopback ports 8170/8171.
+It starts and stops baseline/production static servers on loopback ports 8170/8171
+and a Vite development server on port 8172. The baseline URL is
+`http://127.0.0.1:8170/tests/fixtures/legacy-launcher/`.
 Each test gets a separate browser context at 1920×1080. CI installs Chromium with its
 OS dependencies and runs the same command. Failure screenshots and traces are saved
 under ignored `test-results/` and uploaded by CI; comparison screenshots are test artifacts.
@@ -168,7 +181,7 @@ The separate performance sample remains a manual desktop comparison. Start these
 servers in separate terminals after building:
 
 ```sh
-python3 -m http.server 8020 --bind 127.0.0.1 --directory launcher
+python3 -m http.server 8020 --bind 127.0.0.1
 python3 -m http.server 8032 --bind 127.0.0.1 --directory dist/launcher
 npx --package @playwright/cli playwright-cli -s=settings open http://127.0.0.1:8032
 npx --package @playwright/cli playwright-cli -s=settings resize 1920 1080
@@ -233,3 +246,14 @@ hardware proof.
 
 Keep this first change limited to Settings. Migrate Home, shared tiles and dialogs in
 separate changes after the build and hardware checks are complete.
+
+The Settings form controls shared preferences and invokes the existing status-service
+commands. It does not mount the clock. Home composes the shared status views, including
+one Clock with layout variants. Weather and network presentation use typed snapshots;
+there is no weather-markup observer or duplicated forecast client.
+
+The category drawer and its state live in `settings/layout/`; both Classic and Glass
+use them. `ChoiceGroup` and `ChoiceOption` express selection rather than visual shape.
+`AppearanceSettings` owns appearance/card choices, `ClockSettings` owns date/time and
+layout choices, and `InputSettings` owns both Live TV and HDMI controls. Pane refs
+and registered controls determine entry focus without CSS selector lookups.

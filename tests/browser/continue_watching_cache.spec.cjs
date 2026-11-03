@@ -1,25 +1,34 @@
-const { test, expect } = require('@playwright/test');
-const http = require('node:http');
-const fs = require('node:fs/promises');
-const path = require('node:path');
+const { test, expect } = require("@playwright/test");
+const http = require("node:http");
+const fs = require("node:fs/promises");
+const path = require("node:path");
 
 // Do not use page.route here: routing disables the browser's HTTP cache.
 async function fixture(page, initialRecords) {
-  const source = await fs.readFile(path.join(__dirname, '../../launcher/js/continue-watching.js'), 'utf8');
+  const source = await fs.readFile(path.join(__dirname, "../../launcher/js/continue-watching.js"), "utf8");
   const requests = [];
-  let origin, records = initialRecords;
+  let origin,
+    records = initialRecords;
   const server = http.createServer((request, response) => {
     const url = new URL(request.url, origin);
-    if (url.pathname === '/feed') {
+    if (url.pathname === "/feed") {
       const id = request.headers.app_id;
       requests.push({ id, url: request.url });
-      response.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' });
+      response.writeHead(200, {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=600",
+      });
       response.end(JSON.stringify(records(id)));
-    } else if (url.pathname === '/reader.js') {
-      response.writeHead(200, { 'Content-Type': 'text/javascript' });
-      response.end(source.replace('http://localhost:9013/?module=EBHelper&func=GetItems', origin + '/feed?module=EBHelper&func=GetItems'));
+    } else if (url.pathname === "/reader.js") {
+      response.writeHead(200, { "Content-Type": "text/javascript" });
+      response.end(
+        source.replace(
+          "http://localhost:9013/?module=EBHelper&func=GetItems",
+          origin + "/feed?module=EBHelper&func=GetItems",
+        ),
+      );
     } else {
-      response.writeHead(200, { 'Content-Type': 'text/html' });
+      response.writeHead(200, { "Content-Type": "text/html" });
       response.end(`<!doctype html><title>Continue Watching cache regression</title><div id="items"></div><script>
         var listeners = [], completed = 0;
         var send = XMLHttpRequest.prototype.send;
@@ -51,41 +60,55 @@ async function fixture(page, initialRecords) {
       </script>`);
     }
   });
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  origin = 'http://127.0.0.1:' + server.address().port;
-  return { requests, url: origin, setRecords: next => { records = next; },
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  origin = "http://127.0.0.1:" + server.address().port;
+  return {
+    requests,
+    url: origin,
+    setRecords: (next) => {
+      records = next;
+    },
     async close() {
       await page.evaluate(() => stop()).catch(() => {});
       server.closeAllConnections();
-      await new Promise(resolve => server.close(resolve));
-    }
+      await new Promise((resolve) => server.close(resolve));
+    },
   };
 }
-const record = id => ({ app_id: id, content_id: 'item-' + id, content_title: id === '123' ? 'Prime programme' : 'YouTube programme',
-  payload: 'launch-data', timestamp: 1000 });
-
-test('a cached response for one app cannot replace another app’s feed', async ({ page }) => {
-  const feed = await fixture(page, id => [record(id)]);
-  try {
-    await page.goto(feed.url);
-    await expect(page.locator('#items p')).toHaveText(['Prime programme']);
-    await page.evaluate(() => select(['prime', 'youtube']));
-    await expect(page.locator('#items p')).toHaveText(['Prime programme', 'YouTube programme']);
-    expect(feed.requests.some(request => request.id === '456')).toBe(true);
-    expect(new Set(feed.requests.map(request => request.url)).size).toBe(feed.requests.length);
-  } finally { await feed.close(); }
+const record = (id) => ({
+  app_id: id,
+  content_id: "item-" + id,
+  content_title: id === "123" ? "Prime programme" : "YouTube programme",
+  payload: "launch-data",
+  timestamp: 1000,
 });
 
-test('an empty response cached during startup cannot hide later records', async ({ page }) => {
+test("a cached response for one app cannot replace another app’s feed", async ({ page }) => {
+  const feed = await fixture(page, (id) => [record(id)]);
+  try {
+    await page.goto(feed.url);
+    await expect(page.locator("#items p")).toHaveText(["Prime programme"]);
+    await page.evaluate(() => window.select(["prime", "youtube"]));
+    await expect(page.locator("#items p")).toHaveText(["Prime programme", "YouTube programme"]);
+    expect(feed.requests.some((request) => request.id === "456")).toBe(true);
+    expect(new Set(feed.requests.map((request) => request.url)).size).toBe(feed.requests.length);
+  } finally {
+    await feed.close();
+  }
+});
+
+test("an empty response cached during startup cannot hide later records", async ({ page }) => {
   await page.clock.install();
   const feed = await fixture(page, () => []);
   try {
     await page.goto(feed.url);
-    await page.waitForFunction(() => completed === 1);
-    feed.setRecords(id => [record(id)]);
+    await page.waitForFunction(() => window.completed === 1);
+    feed.setRecords((id) => [record(id)]);
     await page.clock.fastForward(2000);
-    await expect(page.locator('#items p')).toHaveText(['Prime programme']);
+    await expect(page.locator("#items p")).toHaveText(["Prime programme"]);
     expect(feed.requests).toHaveLength(2);
     expect(feed.requests[0].url).not.toBe(feed.requests[1].url);
-  } finally { await feed.close(); }
+  } finally {
+    await feed.close();
+  }
 });

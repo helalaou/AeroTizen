@@ -1,0 +1,178 @@
+/* HomeHeader and its ref-measured focus indicators. */
+body {
+  --header-height: 112px;
+  --header-min-height: 0px;
+  --header-padding-top: 0px;
+  --header-padding-bottom: 0px;
+  --header-align: center;
+  --header-shortcuts-offset: 0px;
+  --header-status-gap: 28px;
+  --header-status-margin: 0px;
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: var(--header-align);
+  height: var(--header-height);
+  min-height: var(--header-min-height);
+  padding: var(--header-padding-top) 64px var(--header-padding-bottom);
+}
+#home-root > .topbar {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 4;
+}
+.topbar-left,
+.topbar-right {
+  display: flex;
+  align-items: center;
+}
+.topbar-left {
+  position: relative;
+  gap: 0;
+  margin-top: var(--header-shortcuts-offset);
+}
+.topbar-right {
+  gap: var(--header-status-gap);
+  margin-left: var(--header-status-margin);
+}
+.icon-btn {
+  position: relative;
+  z-index: 1;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  margin-right: 18px;
+  border: var(--header-gear-border) solid transparent;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg);
+  background: transparent;
+}
+.samsung-home-shortcut {
+  border: 2px solid transparent;
+  transition: color 0.1s linear;
+}
+.icon-btn svg {
+  width: 40px;
+  height: 40px;
+}
+#network {
+  display: block;
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  padding: 12px;
+  color: var(--fg);
+}
+#network.offline {
+  color: var(--network-offline);
+}
+.view-tabs {
+  position: absolute;
+  left: 50%;
+  top: 24px;
+  transform: translate3d(-50%, 0, 0);
+  display: flex;
+  flex-shrink: 0;
+  align-items: stretch;
+  gap: 0;
+  padding: 7px;
+  height: 76px;
+  min-height: 76px;
+  border: 1px solid var(--header-tab-border);
+  border-radius: 28px;
+  background: var(--header-tab-surface);
+  box-shadow: var(--header-tab-shadow);
+}
+body.glass-ui .view-tabs {
+  isolation: isolate;
+}
+.view-tab {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 155px;
+  height: 60px;
+  padding: 0 25px;
+  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
+  font-size: 25px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  transform: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--header-tab-text);
+  cursor: pointer;
+  transition: color 0.15s ease-out;
+}
+body.glass-ui .view-tab {
+  gap: 12px;
+}
+.view-tab:last-child {
+  min-width: 205px;
+}
+.view-tab.active,
+.view-tab.focused {
+  color: var(--fg);
+}
+.view-tab:focus,
+.icon-btn:focus {
+  outline: none;
+}
+.view-tab.focused,
+.icon-btn.focused {
+  transform: none;
+  background: transparent;
+  box-shadow: none;
+}
+.header-focus-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  pointer-events: none;
+  border: 2px solid var(--focus);
+  background: var(--header-focus-surface);
+  box-shadow: var(--header-focus-shadow);
+  transition:
+    transform 0.18s cubic-bezier(0.2, 0.72, 0.25, 1),
+    opacity 0.15s ease-out;
+}
+.header-focus-indicator.no-motion {
+  transition: none;
+}
+.header-focus-indicator--shortcuts {
+  opacity: 0;
+  border-radius: 50%;
+}
+.header-focus-indicator--shortcuts.is-visible {
+  opacity: 1;
+}
+.header-focus-indicator--tabs {
+  border-color: transparent;
+  border-radius: 19px;
+}
+.header-focus-indicator--tabs.is-focused {
+  border-color: var(--focus);
+}
+body.tv .topbar,
+body.previewing .topbar {
+  visibility: hidden;
+}
+/* Settings dims Home even when native mode also supplies a visibility rule. */
+body.editing:not(.previewing) #home-root .topbar {
+  visibility: visible !important;
+  opacity: 0.48;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .header-focus-indicator {
+    transition: none;
+  }
+}

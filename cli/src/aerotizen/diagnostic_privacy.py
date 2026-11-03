@@ -517,6 +517,7 @@ SOURCE_FILES = {
     "photo-weather.js",
     "app-lookup.js",
     "settings-ui.js",
+    "launcher-ui.js",
     "index.js",
     "artmode.js",
     "certs.py",

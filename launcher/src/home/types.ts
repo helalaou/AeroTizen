@@ -1,30 +1,49 @@
-import type { RefObject } from 'preact';
-import type { MutableStore } from '../shared/state/createStore';
-import type { InstalledApp, AppPresentation, SettingsSnapshot, SettingsStore } from '../settings/types';
-import type { LauncherRuntime, InputSource } from '../settings/services/launcherRuntime';
+import type { RefObject } from "preact";
 
-export interface Source extends InputSource { connected?: boolean; active?: boolean; raw?: unknown }
-export interface ContinueItem {
-  key: string; title: string; sourceName: string; sourceId: string; sourceIcon?: string;
-  season: number; episode: number; image?: string; duration: number; playback: number;
+import type { AppPresentation, ContinueItem, HomeBridge, InputSource, InstalledApp } from "../contracts/launcher";
+import type { SettingsSnapshot, SettingsStore } from "../contracts/preferences";
+import type { StatusStores } from "../contracts/status";
+import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
+import type { MutableStore, Store } from "../shared/state/createStore";
+export interface Inventory {
+  readonly apps: readonly InstalledApp[];
+  readonly inputs: readonly InputSource[];
+  readonly items: readonly ContinueItem[];
+  readonly ready: boolean;
 }
-export interface HomeRuntime extends Omit<LauncherRuntime, 'apps' | 'inputs' | 'continueWatching' | 'homeScreen' | 'config'> {
-  config: LauncherRuntime['config'] & { CARD_COLUMNS: Record<string, number>; LONG_PRESS_MS: number };
-  apps: LauncherRuntime['apps'] & { ready: boolean; byId(id: string): InstalledApp | null; launch(app: InstalledApp): void; playFireplace(): void };
-  inputs: Omit<LauncherRuntime['inputs'], 'sources'> & { sources: Source[]; label(source: Source): string; show(source: Source): void; isVisible?(source: Source): boolean; hasRecognizedDevice?(source: Source): boolean; alwaysVisible?(source: Source): boolean };
-  continueWatching: NonNullable<LauncherRuntime['continueWatching']> & { items: ContinueItem[]; open(item: ContinueItem): void };
-  homeScreen: HomeBridge;
-  i18n?: { t(value: string): string };
+export type Page = "home" | "apps";
+export interface HomeMenuChoice {
+  readonly action: "add" | "remove" | "move";
+  readonly label: string;
 }
-export interface HomeBridge { render(): void; buildRows(): void; refreshApps(): void; focus(): void; blur(): void; keydown(code: number, event: Pick<KeyboardEvent, 'preventDefault'>): void; keyup(code: number): void }
-export interface Inventory { apps: readonly InstalledApp[]; inputs: readonly Source[]; items: readonly ContinueItem[]; ready: boolean }
-export type Page = 'home' | 'apps';
-export interface HomeState { page: Page; selected: string; active: boolean; moving: string | null; draft: readonly string[] | null; menu: { id: string; selected: number } | null }
+export interface HomeState {
+  readonly active: boolean;
+  readonly continueOffset: number;
+  readonly draft: readonly string[] | null;
+  readonly menu: Readonly<{ id: string; selected: number }> | null;
+  readonly moving: string | null;
+  readonly page: Page;
+  readonly scroll: number;
+  readonly selected: string;
+}
 export interface HomeEnvironment {
-  runtime: HomeRuntime; settings: SettingsStore; inventory: MutableStore<Inventory>; state: MutableStore<HomeState>;
-  nodes: Map<string, HTMLElement>; rows: RefObject<HTMLElement>; bridge: HomeBridge;
-  describe(app: InstalledApp): AppPresentation; translate(value: string): string;
-  select(key: string): void; activate(key: string): void; showPage(page: Page): void; choose(index: number): void; dismiss(): void;
-  menuChoices(): readonly { action: string; label: string }[];
+  activate(key: string): void;
+  bridge: HomeBridge;
+  choose(index: number): void;
   columns(settings: SettingsSnapshot): number;
+  continueItems: RefObject<HTMLDivElement>;
+  continueViewport: RefObject<HTMLDivElement>;
+  describe(app: InstalledApp): AppPresentation;
+  dismiss(): void;
+  inventory: Store<Inventory>;
+  menuChoices(): readonly HomeMenuChoice[];
+  nodes: Map<string, HTMLElement>;
+  rows: RefObject<HTMLElement>;
+  runtime: LauncherRuntime;
+  select(key: string): void;
+  settings: SettingsStore;
+  showPage(page: Page): void;
+  state: MutableStore<HomeState>;
+  status: StatusStores;
+  translate(value: string): string;
 }

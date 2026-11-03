@@ -1,0 +1,57 @@
+/* runtime: component-owned styles. */
+
+.fireplace {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+}
+.fireplace canvas {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1920px;
+  height: 1080px;
+  filter: blur(2.5px) saturate(1.15);
+}
+.hearth {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 120px;
+  background: linear-gradient(to top, #050302 30%, rgba(5, 3, 2, 0));
+}
+.fire-volume {
+  position: absolute;
+  top: 60px;
+  right: 80px;
+  padding: 14px 28px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 26px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.fire-volume.show {
+  opacity: 1;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 60px;
+  transform: translateX(-50%);
+  padding: 18px 34px;
+  border-radius: 12px;
+  background: #1c1c1e;
+  font-size: 26px;
+}
+#fireplace {
+  z-index: 100;
+}
+#toast {
+  z-index: 100;
+}
