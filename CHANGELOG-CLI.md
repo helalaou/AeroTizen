@@ -1,5 +1,31 @@
 # Changelog
 
+## [2.6.0](https://github.com/helalaou/AeroTizen/compare/cli-v2.5.0...cli-v2.6.0) (2026-11-03)
+
+
+### Features
+
+* **cli:** add launcher and standalone CLI updates ([#92](https://github.com/helalaou/AeroTizen/issues/92)) ([a26dfae](https://github.com/helalaou/AeroTizen/commit/a26dfaed51c3a693e0069904da75dc398af3a63d))
+* **cli:** add read-only Home runtime probe ([#95](https://github.com/helalaou/AeroTizen/issues/95)) ([c731ac5](https://github.com/helalaou/AeroTizen/commit/c731ac59bc928d08a32de8e4edc0e992379c7220))
+* **cli:** add untethered root setup and authenticated TV access ([#85](https://github.com/helalaou/AeroTizen/issues/85)) ([c282d25](https://github.com/helalaou/AeroTizen/commit/c282d2516c4f174810f87bf67adb127547d42b38))
+* **diagnostics:** add CLI and TV diagnostic reports ([#78](https://github.com/helalaou/AeroTizen/issues/78)) ([5ce548b](https://github.com/helalaou/AeroTizen/commit/5ce548b3acec07a54d8c38ea38503d5d13e0dde7))
+
+
+### Bug Fixes
+
+* **cli:** assign startup IDs during native boot setup ([#100](https://github.com/helalaou/AeroTizen/issues/100)) ([56292a1](https://github.com/helalaou/AeroTizen/commit/56292a1e34851303801cfa3740814e20b917efda))
+* **cli:** check TV runtime before native Home helpers ([#94](https://github.com/helalaou/AeroTizen/issues/94)) ([d577046](https://github.com/helalaou/AeroTizen/commit/d577046d969e094cf90eb9bdcf88178febcfda0d))
+* **release:** exclude documentation from CLI release detection ([#97](https://github.com/helalaou/AeroTizen/issues/97)) ([a07be4b](https://github.com/helalaou/AeroTizen/commit/a07be4bd6e3163e2d5d54f52a63232a4983980ec))
+
+
+### Documentation
+
+* add the DU7179 and The Serif to the tested TVs ([#104](https://github.com/helalaou/AeroTizen/issues/104)) ([79ba919](https://github.com/helalaou/AeroTizen/commit/79ba9198d63002fbfa5ad620a6abfedebd33cdc5))
+* add the QN990C to the tested TVs ([#111](https://github.com/helalaou/AeroTizen/issues/111)) ([6c7a185](https://github.com/helalaou/AeroTizen/commit/6c7a1851bfa2f21fafad0fed1ddfbed1a0b225c3))
+* add the U8000F to the tested TVs ([#89](https://github.com/helalaou/AeroTizen/issues/89)) ([6457422](https://github.com/helalaou/AeroTizen/commit/64574228cee973095af590cd9ff387467e84d3b7))
+* ask for screenshots on UI pull requests ([#96](https://github.com/helalaou/AeroTizen/issues/96)) ([62d616f](https://github.com/helalaou/AeroTizen/commit/62d616f1fed54b6c9192703551acc06c748ca595))
+* update contributors ([#109](https://github.com/helalaou/AeroTizen/issues/109)) ([24e1451](https://github.com/helalaou/AeroTizen/commit/24e14519bc527df31e14583ab1cd4ede4e74845d))
+
 ## [2.5.0](https://github.com/helalaou/AeroTizen/compare/cli-v2.4.0...cli-v2.5.0) (2026-10-29)
 
 
