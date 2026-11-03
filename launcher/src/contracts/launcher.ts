@@ -35,6 +35,7 @@ export interface Background {
 }
 export interface BackgroundOption extends Background {
   readonly preview: string;
+  readonly requiresWebGL: boolean;
 }
 export interface ClockService extends Store<number> {
   DATE_FORMATS: ReadonlyArray<{ id: DateFormat; format(date: Date): string }>;

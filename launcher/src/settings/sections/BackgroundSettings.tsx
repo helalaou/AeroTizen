@@ -1,5 +1,5 @@
 import { flushSync } from "preact/compat";
-import { useState } from "preact/hooks";
+import { useLayoutEffect, useState } from "preact/hooks";
 
 import type { BackgroundOption, LauncherConfig } from "../../contracts/launcher";
 import { useStore } from "../../shared/hooks/useStore";
@@ -25,6 +25,7 @@ const WEATHER_PHOTO_OPTIONS = [
 interface Props extends SettingsSectionProps {
   backgrounds: readonly BackgroundOption[];
   config: LauncherConfig;
+  webGL?: boolean;
 }
 
 const getInitialCategory = (settings: SettingsSectionProps["settings"], animated: boolean) => {
@@ -37,13 +38,23 @@ const getInitialCategory = (settings: SettingsSectionProps["settings"], animated
   return settings.background === "black" ? "solid" : "gradient";
 };
 
-export const BackgroundSettings = ({ settings, actions, config, backgrounds: list }: Props) => {
+export const BackgroundSettings = ({ settings, actions, config, backgrounds: list, webGL }: Props) => {
   const selected = list.find((background) => background.id === settings.background);
-  const animated = Boolean(selected && selected.anim);
+  const unavailable = webGL === false && selected?.requiresWebGL === true;
+  const animated = Boolean(selected?.anim) && !unavailable;
   const percent = ((settings.speed - config.SPEED.MIN) / (config.SPEED.MAX - config.SPEED.MIN)) * 100;
-  const { view, navigation } = useSettingsEnvironment();
+  const { view, drawer, navigation, services } = useSettingsEnvironment();
+  const { category, expanded } = useStore(drawer);
+  useLayoutEffect(() => {
+    if (category === "wallpaper" && expanded) {
+      services.backgroundWebGL.check();
+    }
+  }, [category, expanded, services.backgroundWebGL]);
+  useLayoutEffect(() => {
+    navigation.invalidate();
+  }, [navigation, webGL]);
   const { adjusting } = useStore(view);
-  const [filter, setFilter] = useState(() => getInitialCategory(settings, animated));
+  const [filter, setFilter] = useState(() => getInitialCategory(settings, Boolean(selected?.anim)));
   const show = (category: string) => filter === category;
   // OK toggles adjusting, so Left/Right can still reach Preview from the slider.
   const toggleAdjusting = () =>
@@ -51,7 +62,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
 
   const swatches = (isAnimated: boolean) => {
     return list
-      .filter((background) => Boolean(background.anim) === isAnimated)
+      .filter((background) => Boolean(background.anim) === isAnimated && (!background.requiresWebGL || webGL !== false))
       .map((background) => (
         <SettingsControl
           key={background.id}
@@ -96,6 +107,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
       </div>
       <div hidden={!show("animated")}>
         <h3>Animated backgrounds</h3>
+        {unavailable && <p class="hint">Your saved wallpaper is shown without animation on this device.</p>}
         <div id="bg-anim" class="swatches">
           {swatches(true)}
         </div>

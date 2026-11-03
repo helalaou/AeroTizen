@@ -26,8 +26,12 @@ export const SettingsContent = ({
   const { settings: store, inventory, services, actions } = useSettingsEnvironment();
   const settings = useStore(store);
   const { apps, inputs, continueSources, continueMessage } = useStore(inventory);
+  const webGL = useStore(services.backgroundWebGL);
   const animated = services.backgrounds.some(
-    (background) => background.id === settings.background && Boolean(background.anim),
+    (background) =>
+      background.id === settings.background &&
+      Boolean(background.anim) &&
+      (!background.requiresWebGL || webGL !== false),
   );
   const locationLabel = settings.weatherLocation?.label || settings.weatherLocation?.name;
   useSettingsNavigation(active, previewing, {
@@ -85,6 +89,7 @@ export const SettingsContent = ({
             actions={actions}
             config={services.config}
             backgrounds={services.backgrounds}
+            webGL={webGL}
           />
         ),
         status: (

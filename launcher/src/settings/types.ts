@@ -1,5 +1,6 @@
 import type { RefObject } from "preact";
 
+import type { BackgroundGraphics } from "../contracts/backgrounds";
 import type {
   AppPresentation,
   BackgroundOption,
@@ -43,6 +44,7 @@ export interface SettingsServices {
   applySpeed(speed: number): void;
   applyWeatherVisibility(): void;
   backgrounds: readonly BackgroundOption[];
+  backgroundWebGL: BackgroundGraphics;
   clearHomeFocus(): void;
   clock: ClockFormatter;
   config: LauncherConfig;

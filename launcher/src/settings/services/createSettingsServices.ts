@@ -1,3 +1,4 @@
+import { needsWebGL } from "../../contracts/backgrounds";
 import type { LauncherPlatform, LauncherRuntime } from "../../platform/tizen/launcherRuntime";
 import type { SettingsServices } from "../types";
 
@@ -16,7 +17,9 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
   backgrounds: platform.backgrounds.list.map((background) => ({
     ...background,
     preview: platform.backgrounds.preview(background),
+    requiresWebGL: needsWebGL(background),
   })),
+  backgroundWebGL: platform.backgrounds.webGL,
   describeApp: (app) => runtime.tiles.describe(app),
   searchLocations(query, done) {
     let cancelled = false;

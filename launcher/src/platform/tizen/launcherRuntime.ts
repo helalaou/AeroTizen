@@ -1,7 +1,6 @@
-import type { WaveBackgroundRenderer } from "../../contracts/backgrounds";
+import type { BackgroundBridge } from "../../contracts/backgrounds";
 import type {
   AppPresentation,
-  Background,
   ClockService,
   ContinueItem,
   ContinueSource,
@@ -60,12 +59,7 @@ export interface LauncherRuntime {
 }
 
 export interface LauncherPlatform {
-  backgrounds: {
-    list: Background[];
-    preview(background: Background): string;
-    registerWaveRenderer(renderer: WaveBackgroundRenderer): () => void;
-    setSpeed(speed: number): void;
-  };
+  backgrounds: BackgroundBridge;
   weather: Store<WeatherSnapshot> & {
     updateVisibility(): void;
     updateDisplay(): void;

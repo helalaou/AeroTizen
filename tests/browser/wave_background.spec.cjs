@@ -83,7 +83,7 @@ test("wave selection, speed and scene switching persist without retaining old an
   await page.reload();
   await expect(page.locator("#bg .bg-wave")).toHaveCount(2);
   expect(await durations(page)).toEqual(changed);
-  await page.evaluate(() => window.Backgrounds.hide());
+  await page.evaluate(() => window.Backgrounds.suspend());
   await expect(page.locator("#bg")).toBeHidden();
   await page.evaluate(() => AeroTizen.applyBackground());
   await expect(page.locator("#bg")).toBeVisible();
@@ -116,4 +116,46 @@ test("weather photos unmount waves and restore them at the selected speed", asyn
   await expect(page.locator("#bg")).toBeVisible();
   await expect(page.locator("#bg .bg-wave")).toHaveCount(2);
   expect(await durations(page)).toEqual([28, 18]);
+});
+
+async function disableWebGL(page) {
+  await page.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+      if (type === "webgl") {
+        throw new Error("WebGL unavailable");
+      }
+      return getContext.call(this, type, ...args);
+    };
+  });
+}
+
+test("wallpaper settings hide only WebGL scenes when the context probe fails", async ({ page }) => {
+  await disableWebGL(page);
+  await open(page, "black");
+  await page.locator("#gear").click();
+  await openCategory(page, "wallpaper");
+  await page.locator('[data-key="wallpaper-categories:animated"]').click();
+  for (const scene of ["starfield", "nebula", "rain", "snow", "fireflies"]) {
+    await expect(page.locator('[data-key="bg:' + scene + '"]')).toHaveCount(0);
+  }
+  await expect(page.locator('[data-key="bg:aurora"]')).toBeVisible();
+  await page.locator('[data-key="bg:waves"]').click();
+  await expect(page.locator("#bg .bg-wave")).toHaveCount(2);
+  await expect(page.getByRole("slider", { name: "Background speed" })).toBeVisible();
+});
+
+test("an unavailable saved WebGL scene keeps its base and saved preference", async ({ page }) => {
+  await disableWebGL(page);
+  await open(page, "nebula");
+  await expect(page.locator("#bg canvas")).toHaveCount(0);
+  await expect(page.locator("#bg .bg-blob")).toHaveCount(0);
+  await expect(page.locator("html")).toHaveCSS("background-color", "rgb(5, 4, 12)");
+  await page.locator("#gear").click();
+  await openCategory(page, "wallpaper");
+  await expect(page.getByText("Your saved wallpaper is shown without animation on this device.")).toBeVisible();
+  await expect(page.getByRole("slider", { name: "Background speed" })).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator("#bg canvas")).toHaveCount(0);
+  expect(await page.evaluate(() => AeroTizen.settings.background)).toBe("nebula");
 });

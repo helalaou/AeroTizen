@@ -353,7 +353,7 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
   expect(images).toEqual([]);
   await page.evaluate(() => {
     Object.assign(AeroTizen.settings, {
-      background: "snow",
+      background: "aurora",
       speed: 1.3,
       showWeather: false,
       weatherLocation: { name: "Fixture city", latitude: 1, longitude: 2 },
@@ -370,7 +370,7 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
   expect(images[0]).toContain("/sun.jpg");
   await page.evaluate(() => window.Backgrounds.setSpeed(1.3));
   await expect(page.locator("#bg")).toBeHidden();
-  expect(await page.locator("#bg canvas").count()).toBe(0);
+  await expect(page.locator("#bg .bg-blob")).toHaveCount(0);
   await page.reload();
   await page.waitForFunction(() => AeroTizen.settings.weatherPhoto === true);
   await expect(page.locator("#weather-photo")).toBeVisible();
@@ -385,8 +385,8 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
       background: AeroTizen.settings.background,
       speed: AeroTizen.settings.speed,
     })),
-  ).toEqual({ background: "snow", speed: 1.3 });
-  await expect(page.locator("#bg canvas")).toHaveCount(1);
+  ).toEqual({ background: "aurora", speed: 1.3 });
+  await expect(page.locator("#bg .bg-blob")).toHaveCount(4);
 });
 
 test("turning weather wallpaper off while its image is pending cannot hide the fallback", async ({ page }) => {
