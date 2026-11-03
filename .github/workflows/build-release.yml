@@ -91,7 +91,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: ${{ matrix.runner == 'macos-15-intel' && 'pip' || '' }}
+          cache: ${{ (matrix.runner == 'macos-15-intel' || matrix.runner == 'windows-2022') && 'pip' || '' }}
           cache-dependency-path: |
             pyproject.toml
             cli/pyproject.toml
