@@ -93,7 +93,7 @@ screens or app composition; ESLint enforces this dependency rule.
 | `launcher/src/index.ts`           | Shared Home and Settings bundle entry                                                           |
 | `launcher/src/app/`               | Application assembly, shared preference ownership and UI teardown                               |
 | `launcher/src/contracts/`         | Screen-independent preferences, app/input/feed types and bridge protocols                       |
-| `launcher/src/backgrounds/`       | Wave artwork component and mount/disposal boundary                                              |
+| `launcher/src/backgrounds/`       | Wallpaper scenes, background bridge and canvas animation                                        |
 | `launcher/src/status/`            | Shared status views and hooks; one Clock with compact and expanded layouts                      |
 | `launcher/src/services/`          | Shared preference/status snapshots and persistence adapter                                      |
 | `launcher/src/platform/tizen/`    | Typed boundary for the existing TV and browser services                                         |

@@ -16,7 +16,8 @@ function harness(options = {}) {
     inputs = [],
     embedded = [],
     toasts = [],
-    timers = [];
+    timers = [],
+    backgrounds = [];
   const listeners = {},
     documentListeners = {},
     watch = [],
@@ -138,7 +139,7 @@ function harness(options = {}) {
       ICONS: { tv: "tv", hdmi: "hdmi", box: "box", pc: "pc", game: "game" },
     },
     toast: (message) => toasts.push(message),
-    applyBackground() {},
+    applyBackground: () => backgrounds.push("restored"),
   };
   const window = {
     AeroTizen: A,
@@ -149,7 +150,7 @@ function harness(options = {}) {
     setTimeout(fn, ms) {
       timers.push({ fn, ms });
     },
-    Backgrounds: { hide() {} },
+    Backgrounds: { suspend: () => backgrounds.push("suspended") },
   };
   const context = { window, document, XMLHttpRequest: Request };
   vm.runInNewContext(nativeSource, context, { filename: "native-navigation.js" });
@@ -157,6 +158,7 @@ function harness(options = {}) {
   vm.runInNewContext(appsSource, context, { filename: "apps.js" });
   return {
     A,
+    backgrounds,
     tz,
     requests,
     launches,
@@ -402,6 +404,7 @@ test("Native Home closes an embedded HDMI window in the existing launcher", () =
   h.listeners.appcontrol();
   assert.equal(h.A.inputs.watching, false);
   assert.deepEqual(h.embedded, ["shown", "hidden"]);
+  assert.deepEqual(h.backgrounds, ["suspended", "restored"]);
   assert.equal(h.launches.length, 0, "no watcher or foreground relaunch needed");
 });
 

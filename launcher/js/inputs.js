@@ -183,7 +183,7 @@
               inputs.watching = true;
               document.body.classList.add("tv");
               document.documentElement.style.background = "transparent";
-              window.Backgrounds.hide();
+              window.Backgrounds.suspend();
             },
             function () {
               A.toast("Could not show " + inputs.label(s));

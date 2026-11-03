@@ -9,8 +9,7 @@
     if (A.photoWeather && A.photoWeather.update()) {
       return;
     }
-    window.Backgrounds.setSpeed(A.settings.speed);
-    window.Backgrounds.apply(A.settings.background);
+    window.Backgrounds.apply(A.settings.background, A.settings.speed);
   };
 
   document.addEventListener("keydown", function (e) {

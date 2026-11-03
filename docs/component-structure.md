@@ -6,7 +6,7 @@ screens need the same behavior, rather than because they have a similar shape.
 
 | Component                                                            | Responsibility                                                                  | Data and commands                                                            |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `backgrounds/WaveBackground`                                         | Render decorative wave SVG layers at the selected speed                         | Background renderer supplies mount/speed; app owns registration and disposal |
+| `backgrounds/BackgroundSceneView`                                    | Render decorative gradients, waves and particle canvas                          | Background bridge provides scenes and speed. The app mounts and disposes it. |
 | `home/Home`                                                          | Compose the screen and refresh focus when its inventory or layout changes       | Shared settings/inventory and Home controller                                |
 | `HomeHeader`                                                         | Shortcuts, page tabs and status placement                                       | Home navigation and shared status stores                                     |
 | `HeaderFocusIndicator`                                               | Measure a registered shortcut/tab and render its focus position                 | Explicit `shortcuts` or `tabs` group                                         |
@@ -14,7 +14,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `AppCard`, `FireplaceCard`                                           | Launchable Home app and fireplace presentation                                  | Existing app commands through `HomeControl`                                  |
 | `ContinueWatchingRow`, `ContinueWatchingCard`                        | Feed clipping/offset and item presentation                                      | Immutable feed items; live launch records stay in the service                |
 | `InputDock`, `InputCard`                                             | Input collection and one input's label, artwork and connection state            | Existing input service capabilities and commands                             |
-| `shared/components/AppFallback`                                    | Shared app logo/icon and label fallback for Home and Settings                    | App presentation, image lifetime and visibility                              |
+| `shared/components/AppFallback`                                      | Shared app logo/icon and label fallback for Home and Settings                   | App presentation, image lifetime and visibility                              |
 | `AppActionsMenu`, `ReorderControls`                                  | App actions and move/drop controls                                              | Home controller actions; menu positioning is rendered from state             |
 | `status/Clock`                                                       | One time/date view with compact, vertical, horizontal, minimal and bold layouts | Shared time snapshot and formatter; no timer                                 |
 | `WeatherStatus`, `NetworkStatus`                                     | Render status data                                                              | Shared snapshots; no requests or DOM scraping                                |
@@ -41,7 +41,7 @@ Private geometry buffers and DOM ref registries remain local to navigation.
 
 ## DOM and style ownership
 
-Only `src/index.ts` discovers the Home and Settings mount hosts. Components register their own
+Only `src/index.ts` discovers the Home, Settings and background mount hosts. Components register their own
 nodes with refs. Home scroll and carousel offsets are state; Preact renders the
 transforms and scrolled class. Settings enters a category through registered controls
 inside that pane, rather than a document/CSS query. Native focus, geometry reads and
@@ -77,16 +77,21 @@ CSS checks and Chromium 69 constraints.
 See [interface icons](icons.md) for named imports, accessibility, custom artwork and
 third-party notices.
 
-## Wave background boundary
+## Background boundary
 
-`backgrounds/WaveBackground` owns the wave SVG markup. `mountWaveBackground` mounts
-it into the background layer supplied by the existing runtime. App composition
-registers that renderer and releases it on teardown or hot replacement. The runtime
-unmounts the view before clearing the layer for another scene or a weather photo.
-The current wave selection and speed survive renderer replacement; a suspended or
-hidden background stays suspended or hidden.
+App composition mounts and disposes the background view. The background bridge
+handles scene selection, the root colour, speed, and visibility. Boot, Settings,
+embedded inputs and weather photos keep their existing commands and preferences.
 
-The SVG paths, colours and CSS transform animation are retained. Wave markup uses
-JSX instead of SVG strings or `innerHTML`. The old string renderer is a test fixture
-for fixed-phase pixel comparisons. The other global runtime services are deferred;
-this adapter does not require a broader service rewrite.
+Preact owns the scene markup. The canvas component starts the particle loop when
+it mounts and stops it on unmount. Scene changes replace the previous view, and
+weather photos suspend it.
+
+Starfield, Nebula, Snow, Fireflies and Rain use WebGL 1. Each scene submits
+its particles in one batch. Canvas 2D creates glow textures once at startup
+for the sprite effects. Rain draws its streaks directly in the shader.
+
+The wallpaper pane checks for WebGL when it opens. A failed setup or lost
+context hides the WebGL choices and leaves the saved wallpaper's static
+base in place. The preference is retained for the next launch. CSS wallpapers
+and weather photos remain available.
