@@ -62,7 +62,7 @@ def test_cli_preview_never_discovers_or_connects(monkeypatch, action, capsys):
 def test_control_payload_matches_current_sources():
     manifest = json.loads(home_control.PAYLOAD_PATH.read_text())
     sources = b"\0".join(
-        (ROOT / "native/home-control" / name).read_bytes()
+        (ROOT / "cli/native/home-control" / name).read_bytes()
         for name in (
             "HomeControl.cs",
             "ControlPolicy.cs",

@@ -6,7 +6,7 @@
     <StartupObject>AeroTizen.UntetheredProbe.ProbeTests</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../../native/untethered-probe/*.cs" Link="Probe/%(Filename)%(Extension)" />
-    <Compile Include="../../native/root-helper/RootProofController.cs" Link="RootProofController.cs" />
+    <Compile Include="../../cli/native/untethered-probe/*.cs" Link="Probe/%(Filename)%(Extension)" />
+    <Compile Include="../../cli/native/root-helper/RootProofController.cs" Link="RootProofController.cs" />
   </ItemGroup>
 </Project>

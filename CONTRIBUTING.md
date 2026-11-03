@@ -14,17 +14,18 @@ pip install -e ".[dev]"     # the aerotizen CLI + pytest + ruff
 npm ci                      # launcher build and lint tools
 ```
 
-The separate native Home query and control helpers require the .NET 6 SDK:
+Use the .NET 6 SDK to build the native Home query, Home control, and root runtime helpers.
 
 ```bash
-python tools/build_home_query.py
-python tools/build_home_control.py
+python cli/tools/build_home_query.py
+python cli/tools/build_home_control.py
+python cli/tools/build_root_runtime.py
 ```
 
-Build both before running the full Python suite or building a standalone CLI. CI
-uses SDK 6.0.428. Standalone CLI releases include both payloads; users do not need
-a .NET SDK. Home commands use the SDK user by default; temporary root is an
-explicit option for reads only. See [inspection](docs/home-read-only.md) and
+Build these helpers before running the full Python suite or building a standalone CLI. CI
+uses SDK 6.0.428. Standalone CLI releases include all three payloads, so users do not need
+a .NET SDK. Home commands use the SDK user by default and offer temporary root for
+read-only operations. See [inspection](docs/home-read-only.md) and
 [apply/restore](docs/home-apply-restore.md). The policy test harness runs on the
 host without loading any Tizen library. Set `AEROTIZEN_DOTNET` if the SDK is not on
 `PATH`. Tests use mocks or localhost servers; they do not contact a real TV.
@@ -50,7 +51,9 @@ relaunch cancellation and app visibility, without contacting a TV.
 
 | Path | What |
 |---|---|
-| `src/aerotizen/` | Python CLI: sdb client, certificates, package signing, debloat |
+| `cli/src/aerotizen/` | Python CLI: sdb client, certificates, package signing, debloat |
+| `cli/pyproject.toml` | CLI package metadata; root pip installs use this same definition |
+| `cli/native/`, `cli/tools/` | Native Home helpers, root runtime, and CLI build tools |
 | `launcher/` | TV runtime files and the legacy Settings baseline |
 | `launcher/src/settings/` | TypeScript/TSX Settings components, state, actions and service adapters |
 | `launcher/src/settings/sections/` | Settings sections with their own controls and hooks |

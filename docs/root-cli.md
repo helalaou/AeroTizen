@@ -77,9 +77,9 @@ The release includes the generated managed runtime; end users do not need .NET
 or a Tizen compiler. From source, build package data before using the commands:
 
 ```sh
-python tools/build_home_query.py
-python tools/build_home_control.py
-python tools/build_root_runtime.py
+python cli/tools/build_home_query.py
+python cli/tools/build_home_control.py
+python cli/tools/build_root_runtime.py
 ```
 
 The root build uses the pinned official `Tizen.NET` compile-reference package.
