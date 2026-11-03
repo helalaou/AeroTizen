@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns="http://tizen.org/ns/packages" package="org.aerotizen.roothelper" api-version="6.0" version="0.1.0">
+  <profile name="tv-samsung" />
+  <service-application appid="org.aerotizen.roothelper" exec="AeroTizenRootHelper.dll" type="dotnet" multiple="false" taskmanage="false" nodisplay="true" on-boot="true" auto-restart="false">
+    <label>AeroTizen Root Helper</label><icon>root-helper.png</icon>
+  </service-application>
+  <privileges><privilege>http://tizen.org/privilege/internet</privilege></privileges>
+</manifest>
