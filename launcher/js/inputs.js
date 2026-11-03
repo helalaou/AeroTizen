@@ -146,6 +146,27 @@
     try { tz.tvwindow.hide(function () {}, function () {}, 'MAIN'); } catch (e) { /* already hidden */ }
   };
 
+  // Native Home can target this already-running app while its embedded HDMI
+  // window is visible. Closing that window is separate from foregrounding us.
+  window.addEventListener('appcontrol', function () {
+    if (!inputs.watching || !tz || !tz.application) { return; }
+    try {
+      var request = tz.application.getCurrentApplication().getRequestedAppControl();
+      if (request && request.appControl &&
+          request.appControl.operation === 'http://tizen.org/appcontrol/operation/main') {
+        inputs.leave();
+      }
+    } catch (e) { /* Other launch requests must not interrupt HDMI playback. */ }
+  });
+
+  // Some firmware resumes an existing Home without an appcontrol event.
+  var inputWasHidden = false;
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { inputWasHidden = inputs.watching; return; }
+    if (inputWasHidden && inputs.watching) { inputs.leave(); }
+    inputWasHidden = false;
+  });
+
   if (tz && tz.systeminfo) {
     try { tz.systeminfo.addPropertyValueChangeListener('VIDEOSOURCE', inputs.load); } catch (e) { /* not supported */ }
   }
