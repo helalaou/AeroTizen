@@ -231,3 +231,20 @@ body:not(.clock-layout-compact) {
 .clock--expanded.clock--bold .weather-status__temperature {
   font-weight: 700;
 }
+
+/* Right-to-left languages: the clock sits on the left edge, so align it there.
+   Hours and minutes keep their numeric order in every style. */
+[dir="rtl"] .weather {
+  margin-right: 0;
+  margin-left: 18px;
+}
+[dir="rtl"] .topbar-right.weather-only .weather {
+  margin-left: 0;
+}
+[dir="rtl"] .clock--expanded {
+  text-align: left;
+}
+[dir="rtl"] .clock--expanded .clock__time {
+  direction: ltr;
+  align-items: flex-start;
+}
