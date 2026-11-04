@@ -83,6 +83,7 @@ window.AeroTizen.catalog = {
       "name": "Spotify",
       "variants": [
         {
+          "appId": "rJeHak5zRg.Spotify",
           "storeId": "3202007021175"
         }
       ],
