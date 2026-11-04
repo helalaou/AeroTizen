@@ -4,10 +4,15 @@ import { createHash } from "node:crypto";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
 import { build } from "vite";
 
+import { markDevBuild } from "./dev-build-badge.mjs";
+
 const root = fileURLToPath(new URL("../", import.meta.url));
-const output = path.join(root, "dist/launcher");
+const { values } = parseArgs({ options: { dev: { type: "boolean" } } });
+const name = values.dev ? "launcher-dev" : "launcher";
+const output = path.join(root, "dist", name);
 
 async function verifyScripts(directory) {
   for (const item of await readdir(directory, { withFileTypes: true })) {
@@ -21,7 +26,10 @@ async function verifyScripts(directory) {
   }
 }
 
-const result = await build({ configFile: path.join(root, "vite.config.mts") });
+const result = await build({
+  configFile: path.join(root, "vite.config.mts"),
+  mode: values.dev ? "tv-dev" : "production",
+});
 // Record rendered modules outside the TV runtime, so CI can verify tree shaking.
 const rendered = new Set();
 for (const buildResult of Array.isArray(result) ? result : [result]) {
@@ -37,7 +45,7 @@ const iconRoot = path.join(root, "node_modules/lucide-preact");
 const iconPackage = JSON.parse(await readFile(path.join(iconRoot, "package.json"), "utf8"));
 const available = (await readdir(path.join(iconRoot, "dist/esm/icons"))).filter((file) => file.endsWith(".mjs")).length;
 await writeFile(
-  path.join(root, "dist/launcher-icons.json"),
+  path.join(root, "dist", `${name}-icons.json`),
   JSON.stringify(
     {
       package: iconPackage.name,
@@ -94,5 +102,9 @@ await writeFile(
     JSON.stringify(metadata) +
     ';if(typeof module!=="undefined"&&module.exports){module.exports=value;}else{root.AeroBuildInfo=value;}})(typeof window!=="undefined"?window:this);\n',
 );
+if (values.dev) {
+  const label = await markDevBuild(output, metadata.build_id);
+  console.log(`TV app name: ${label}`);
+}
 await verifyScripts(output);
 console.log(`Built ${output} for Chromium 69; shipped scripts parse as ES2018.`);

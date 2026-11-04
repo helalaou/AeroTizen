@@ -42,6 +42,66 @@ test("held OK is cancelled if the app loses visibility before its release", asyn
   await expect(page.locator("#toast")).toContainText("Would open YouTube");
 });
 
+for (const trigger of ["visibilitychange", "appcontrol", "failed launch"]) {
+  test(`uninstalled apps disappear after ${trigger}`, async ({ page }) => {
+    await page.addInitScript(() => {
+      const tv = (window.testTv = {
+        installed: [
+          { id: "demo0", name: "Removed app", packageId: "1234567890" },
+          { id: "demo1", name: "Other app", packageId: "abcdefghij" },
+        ],
+        requests: [],
+      });
+      window.tizen = {
+        application: {
+          getAppsInfo(done, fail) {
+            tv.requests.push({ done, fail, installed: tv.installed });
+          },
+          launch(id, done, fail) {
+            fail({ name: "NotFoundError" });
+          },
+        },
+      };
+    });
+    await page.goto("/");
+    await page.waitForFunction(() => window.testTv.requests.length === 1);
+    await page.evaluate(() => {
+      const { done, installed } = window.testTv.requests.shift();
+      done(installed);
+    });
+    const removed = page.locator('#grid [data-id="demo0"]');
+    const other = page.locator('#grid [data-id="demo1"]');
+    await expect(removed).toBeVisible();
+    await page.evaluate((event) => {
+      const tv = window.testTv;
+      // Keep an older read pending so its result can arrive after the refresh.
+      AeroTizen.apps.load(() => {});
+      tv.installed = tv.installed.slice(1);
+      if (event === "visibilitychange") {
+        Object.defineProperty(document, "hidden", { configurable: true, value: true });
+        document.dispatchEvent(new Event(event));
+        Object.defineProperty(document, "hidden", { configurable: true, value: false });
+        document.dispatchEvent(new Event(event));
+      } else if (event === "appcontrol") {
+        window.dispatchEvent(new Event(event));
+      }
+    }, trigger);
+    if (trigger === "failed launch") {
+      await page.keyboard.press("Enter");
+      await expect(page.locator("#toast")).toHaveText("Could not open Removed app");
+    }
+    await page.waitForFunction(() => window.testTv.requests.length === 2);
+    await page.evaluate(() => {
+      const [older, refresh] = window.testTv.requests.splice(0);
+      refresh.done(refresh.installed);
+      older.done(older.installed);
+    });
+    await expect(removed).toHaveCount(0);
+    await expect(other).toBeVisible();
+    expect(await page.evaluate(() => AeroTizen.settings.home)).toEqual(["demo0", "demo1", "demo2"]);
+  });
+}
+
 test("moving visible favourites ignores stale uninstalled IDs in saved settings", async ({ page }) => {
   await page.addInitScript(() =>
     localStorage.setItem(
