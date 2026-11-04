@@ -136,7 +136,7 @@ for (const glassSettings of [false, true]) {
     await page.route("**/src/shared/i18n/catalogues.ts*", async (route) => {
       const response = await route.fetch();
       const catalogue = JSON.stringify({ name: pseudoCatalogueName, messages });
-      // Inject only into the development response. The shipped IIFE includes English alone.
+      // Inject only into the development response so Pseudo is absent from the shipped bundle.
       await route.fulfill({
         response,
         body: (await response.text()) + "\ncatalogues[" + JSON.stringify(pseudoLanguage) + "] = " + catalogue + ";",
@@ -163,18 +163,30 @@ for (const glassSettings of [false, true]) {
     const englishWidth = await homeTab.evaluate((element) => element.getBoundingClientRect().width);
     await page.locator("#gear").click();
     await openCategory(page, "language");
-    const pseudo = page.getByRole("button", { name: pseudoCatalogueName, exact: true });
-    // Pseudo is always the last option, after "auto" and every registered language. The
-    // list wraps into rows, so step right and drop to the next row once a step stops moving.
-    const focusedKey = () => page.evaluate(() => document.activeElement?.getAttribute("data-key"));
-    let key = await focusedKey();
-    for (let i = 0; i < 20 && key !== "language:en-XA"; i++) {
+    const languageOption = (key) => page.locator(`#language [data-key="${key}"]`);
+    const pseudoKey = `language:${pseudoLanguage}`;
+    const pseudo = languageOption(pseudoKey);
+    await expect(languageOption("language:auto")).toBeFocused();
+    await expect(pseudo).toHaveAccessibleName(pseudoCatalogueName);
+    const pseudoRow = await pseudo.evaluate((option) => option.offsetTop);
+    const languageOptions = await page
+      .locator('#language [data-key^="language:"]')
+      .evaluateAll((options) => options.map((option) => ({ key: option.dataset.key, row: option.offsetTop })));
+    const optionsThroughPseudo = languageOptions.slice(
+      0,
+      languageOptions.findIndex(({ key }) => key === pseudoKey) + 1,
+    );
+    // Move down the first column when options wrap, then right along the target row.
+    const rowStarts = optionsThroughPseudo.filter(
+      ({ row }, index) => index > 0 && row !== optionsThroughPseudo[index - 1].row,
+    );
+    for (const { key } of rowStarts) {
+      await page.keyboard.press("ArrowDown");
+      await expect(languageOption(key)).toBeFocused();
+    }
+    for (const { key } of optionsThroughPseudo.filter(({ row }) => row === pseudoRow).slice(1)) {
       await page.keyboard.press("ArrowRight");
-      const moved = await focusedKey();
-      if (moved === key) {
-        await page.keyboard.press("ArrowDown");
-      }
-      key = await focusedKey();
+      await expect(languageOption(key)).toBeFocused();
     }
     await expect(pseudo).toBeFocused();
     await page.keyboard.press("Enter");
