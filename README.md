@@ -104,6 +104,7 @@ data, autorun) and [DNS blocklists](dns/) if you run Pi-hole, AdGuard Home or Ne
 | Samsung 65" OLED S90C (QE65S90CATXZT) | 2023 | Tizen 7.0 / 9.0 | |
 | Samsung 55" OLED S90C (TQ55S90CATXXC) | 2023 | Tizen 9.0 | Native Home works ([#118](../../issues/118)) |
 | Samsung 75" QLED Q60B (QE75Q60BAUXXC) | 2022 | Tizen 6.5 | |
+| Samsung 55" QLED Q60B (QE55Q60BAUXZT) | 2022 | Tizen 6.5 | Native Home and cold boot work ([#115](../../issues/115)) |
 | Samsung 55" OLED S95B (QE55S95BATXXC) | 2022 | Tizen 6.5 | Cold boot issue ([#47](../../issues/47)) |
 | Samsung 55" QLED Q80B (QE55Q80BATXXC) | 2022 | | Watcher works; native Home apply fixed in [#79](../../pull/79) |
 | Samsung 50" The Serif LS01B (QE50LS01BAUXXH) | 2022 | Tizen 6.5 | Native Home works |
