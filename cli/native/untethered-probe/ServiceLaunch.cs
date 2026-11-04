@@ -22,7 +22,8 @@ namespace AeroTizen.UntetheredProbe
             Operation = value.GetProperty("operation").GetString();
             Installation = value.GetProperty("installation_id").GetString();
             SetupStage = value.GetProperty("setup_stage").GetString();
-            if (!Regex.IsMatch(Installation ?? "", "\\A[a-f0-9]{32}\\z") || (Operation != "install" && Operation != "serve" && Operation != "remove")
+            if (!Regex.IsMatch(Installation ?? "", "\\A[a-f0-9]{32}\\z")
+                || (Operation != "install" && Operation != "upgrade" && Operation != "serve" && Operation != "remove")
                 || (Operation == "serve" && SetupStage != null)
                 || (Operation != "serve" && !Regex.IsMatch(SetupStage ?? "", "\\A/home/owner/share/tmp/sdk_tools/arsetup-[a-f0-9]{16}\\z")))
                 throw new InvalidDataException("Invalid fixed root service operation");
@@ -45,15 +46,15 @@ namespace AeroTizen.UntetheredProbe
                 lines.Add("test ! -L " + Bundle.Quote(path));
                 lines.Add("printf '%s  %s\\n' " + Bundle.Quote(Hashes[name]) + " " + Bundle.Quote(path) + " | sha256sum -c - >/dev/null");
             }
-            if (Operation == "install")
-                lines.Add("exec /usr/bin/dotnet " + Bundle.Quote(Bin + Managed[0]) + " --install " + Bundle.Quote(SetupStage)
-                    + " " + Bundle.Quote(Installation) + " " + Bundle.Quote(nonce));
-            else if (Operation == "remove")
-                lines.Add("exec /usr/bin/dotnet " + Bundle.Quote(bin + Managed[0]) + " --cleanup " + Bundle.Quote(SetupStage)
-                    + " " + Bundle.Quote(Installation) + " " + Bundle.Quote(nonce));
-            else
+            if (Operation == "serve")
                 lines.Add("/usr/bin/dotnet " + Bundle.Quote(Bin + Managed[0]) + " --serve " + Bundle.Quote(Installation)
                     + " " + Bundle.Quote(nonce) + " boot </dev/null >/dev/null 2>&1 3>&- &");
+            else
+            {
+                string command = Operation == "install" ? "--install" : Operation == "upgrade" ? "--repair-startup" : "--cleanup";
+                lines.Add("exec /usr/bin/dotnet " + Bundle.Quote(bin + Managed[0]) + " " + command + " " + Bundle.Quote(SetupStage)
+                    + " " + Bundle.Quote(Installation) + " " + Bundle.Quote(nonce));
+            }
             return string.Join("\n", lines) + "\n";
         }
     }

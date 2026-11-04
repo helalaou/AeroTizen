@@ -6,6 +6,9 @@ import type { HomeEnvironment } from "../types";
 
 import { AppArtwork } from "./AppArtwork";
 import { HomeControl } from "./HomeControl";
+
+const MIN_PLAYBACK_SECONDS = 1;
+
 export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item: ContinueItem }) => {
   const { t } = useTranslation();
   const app = useMemo(
@@ -15,7 +18,14 @@ export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item
   const brand = useMemo(() => env.describe(app), [env, app]);
   const episode =
     item.season > 0 && item.episode > 0 ? t("continue.episode", { season: item.season, episode: item.episode }) : "";
-  const { failed: imageFailed, onError } = useImageFailure(item.image);
+  const thumbnail = useArtwork(item.thumbnailImage);
+  const background = useArtwork(item.backgroundImage);
+  const poster = useArtwork(item.image);
+  const artwork = [thumbnail, background, poster].find((candidate) => candidate.src);
+  const progress =
+    item.duration > 0 && item.playback >= MIN_PLAYBACK_SECONDS
+      ? Math.min(100, (item.playback / item.duration) * 100)
+      : 0;
   return (
     <HomeControl
       env={env}
@@ -29,18 +39,21 @@ export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item
       }
     >
       <div class="continue-image-wrap">
-        {item.image && !imageFailed ? <img class="continue-image" alt="" src={item.image} onError={onError} /> : null}
+        {artwork && (
+          <img
+            key={artwork.src}
+            class={artwork === poster ? "continue-image" : "continue-image continue-image--landscape"}
+            alt=""
+            src={artwork.src}
+            onError={artwork.onError}
+          />
+        )}
         <div class="tile app-tile continue-app-icon" aria-hidden="true" style={{ background: brand.background }}>
           <AppArtwork app={app} brand={brand} active />
         </div>
       </div>
-      <div class={"continue-progress" + (item.duration > 0 && item.playback > 0 ? "" : " empty")} aria-hidden="true">
-        {item.duration > 0 && item.playback > 0 ? (
-          <div
-            class="continue-progress-fill"
-            style={{ width: Math.min(100, (item.playback / item.duration) * 100) + "%" }}
-          />
-        ) : null}
+      <div class={"continue-progress" + (progress > 0 ? "" : " empty")} aria-hidden="true">
+        {progress > 0 && <div class="continue-progress-fill" style={{ width: progress + "%" }} />}
       </div>
       <div class="continue-label">
         <div class="continue-details">
@@ -52,7 +65,7 @@ export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item
   );
 };
 // Artwork errors are local to each keyed feed item; changing its URL permits retry.
-const useImageFailure = (url?: string) => {
+const useArtwork = (url?: string) => {
   const [failed, setFailed] = useState<string | undefined>();
-  return { failed: Boolean(url && failed === url), onError: () => setFailed(url) };
+  return { src: url === failed ? undefined : url, onError: () => setFailed(url) };
 };

@@ -23,7 +23,7 @@ from cryptography.hazmat.primitives.serialization import pkcs12
 from cryptography.x509.oid import NameOID
 
 from aerotizen import signer, untethered_probe
-from aerotizen.root_state import APP_ID, VERSION
+from aerotizen.root_state import APP_ID, RUNTIME_VERSION, VERSION
 
 MANAGED = {
     (
@@ -61,13 +61,15 @@ def runtime_files(path=None):
     data = json.loads(raw)
     if data.get("schema_version") != 1 or data.get("version") != VERSION or set(data["files"]) != MANAGED:
         raise ValueError("Unsupported root runtime")
+    xml = data["manifest"].encode()
+    validate_manifest(xml)
     values = {}
     for name, item in data["files"].items():
         value = base64.b64decode(item["base64"], validate=True)
         if not 0 < len(value) <= 1024 * 1024 or digest(value) != item["sha256"]:
             raise ValueError("Root runtime checksum differs")
         values[name] = value
-    return values, data["manifest"].encode(), base64.b64decode(data["icon"], validate=True)
+    return values, xml, base64.b64decode(data["icon"], validate=True)
 
 
 def upstream_payloads(cache, *, release=None):
@@ -151,12 +153,18 @@ def public_config(receipt, managed):
     }
 
 
+def config_bytes(config):
+    return (json.dumps(config, indent=2) + "\n").encode()
+
+
 def validate_manifest(xml):
     root = ET.fromstring(xml)
+    if root.get("version") != RUNTIME_VERSION:
+        raise ValueError("Root helper version does not match this CLI. Rebuild the root runtime.")
     application = root.find("t:service-application", NS)
     if (
         root.tag != "{" + NS["t"] + "}manifest"
-        or root.attrib != {"package": APP_ID, "api-version": "6.0", "version": VERSION}
+        or root.attrib != {"package": APP_ID, "api-version": "6.0", "version": RUNTIME_VERSION}
         or [node.tag.rsplit("}", 1)[-1] for node in root] != ["profile", "service-application", "privileges"]
         or application is None
         or application.attrib
@@ -244,7 +252,7 @@ def package_helper(output, receipt, managed, upstream, xml, icon, certificates):
             **{"res/payload/" + name: data for name, data in upstream.items()},
             "tizen-manifest.xml": xml,
             "shared/res/root-helper.png": icon,
-            "bin/root.json": (json.dumps(config, indent=2) + "\n").encode(),
+            "bin/root.json": config_bytes(config),
         }
         for name, data in values.items():
             path = root / name
@@ -284,12 +292,14 @@ def service_script(descriptor, nonce):
             [f"test ! -L '{path}'", f"printf '%s  %s\\n' '{value}' '{path}' | sha256sum -c - >/dev/null"]
         )
     dll = f"'/opt/usr/apps/{APP_ID}/bin/AeroTizenRootBridge.dll'"
-    if descriptor["operation"] in ("install", "remove") and re.fullmatch(
+    if descriptor["operation"] in ("install", "upgrade", "remove") and re.fullmatch(
         r"/home/owner/share/tmp/sdk_tools/arsetup-[a-f0-9]{16}", descriptor["setup_stage"] or ""
     ):
         if descriptor["operation"] == "remove":
             dll = f"'{descriptor['setup_stage']}/AeroTizenRootBridge.dll'"
-        operation = "--install" if descriptor["operation"] == "install" else "--cleanup"
+        operation = {"install": "--install", "upgrade": "--repair-startup", "remove": "--cleanup"}[
+            descriptor["operation"]
+        ]
         lines.append(
             f"exec /usr/bin/dotnet {dll} {operation} '{descriptor['setup_stage']}' '{installation}' '{nonce}'"
         )

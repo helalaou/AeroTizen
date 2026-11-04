@@ -90,6 +90,7 @@ export interface SettingsBridge {
   register(handlers: NavigationHandlers): () => void;
 }
 export interface ContinueItem {
+  readonly backgroundImage?: string;
   readonly duration: number;
   readonly episode: number;
   readonly image?: string;
@@ -99,6 +100,7 @@ export interface ContinueItem {
   readonly sourceIcon?: string;
   readonly sourceId: string;
   readonly sourceName: string;
+  readonly thumbnailImage?: string;
   readonly title: string;
 }
 export interface HomeBridge {

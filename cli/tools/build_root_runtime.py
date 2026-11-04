@@ -10,6 +10,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from build_release import cli_version
+
 ROOT = Path(__file__).resolve().parents[1]
 PROJECTS = {
     "AeroTizenRootHelper": ("native/root-helper/RootHelper.csproj", "bin"),
@@ -29,6 +31,10 @@ def main():
     args = parser.parse_args()
     if not args.dotnet:
         parser.error("Install .NET SDK 6 or pass --dotnet PATH")
+    version = cli_version(ROOT)
+    template = (ROOT / "native/root-helper/tizen-manifest.xml").read_text(encoding="utf-8")
+    if "@CLI_VERSION@" not in template:
+        raise ValueError("The root helper manifest must use @CLI_VERSION@")
     values = {}
     with tempfile.TemporaryDirectory(prefix="aerotizen-root-runtime-") as temporary:
         for name, (project, destination) in PROJECTS.items():
@@ -44,6 +50,7 @@ def main():
                 "--nologo",
                 "-v:q",
                 "-p:UseSharedCompilation=false",
+                f"-p:Version={version}",
             ]
             if args.framework and name == "AeroTizenRootHelper":
                 command.append("-p:TvFrameworkDir=" + str(args.framework.resolve()))
@@ -58,7 +65,7 @@ def main():
         "schema_version": 1,
         "version": "0.1.0",
         "files": values,
-        "manifest": (ROOT / "native/root-helper/tizen-manifest.xml").read_text(),
+        "manifest": template.replace("@CLI_VERSION@", version),
         "icon": base64.b64encode((ROOT / "native/root-helper/icon.png").read_bytes()).decode(),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

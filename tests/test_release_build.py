@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from aerotizen import releases
+from aerotizen import releases, root_package, root_state
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("build_release", ROOT / "tools/build_release.py")
@@ -291,6 +291,27 @@ def test_cli_release_requires_the_home_helper_before_freezing(tmp_path):
     source.mkdir(parents=True)
     (source / "__init__.py").write_text('__version__ = "2.2.0"\n')
     with pytest.raises(ValueError, match="Home helper"):
+        cli_build.build_cli(tmp_path, tmp_path / "output")
+    assert not (tmp_path / "output").exists()
+
+
+def test_cli_release_rejects_root_runtime_from_a_different_version(tmp_path):
+    helpers = tmp_path / "src/aerotizen/helpers"
+    helpers.mkdir(parents=True)
+    (helpers.parent / "__init__.py").write_text(f'__version__ = "{root_state.RUNTIME_VERSION}"\n')
+    for name in ("home-query.json", "home-control.json"):
+        (helpers / name).touch()
+    (helpers / "root-runtime.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "version": root_state.VERSION,
+                "files": dict.fromkeys(root_package.MANAGED),
+                "manifest": '<manifest version="0.0.0"/>',
+            }
+        )
+    )
+    with pytest.raises(ValueError, match="Root helper version does not match this CLI"):
         cli_build.build_cli(tmp_path, tmp_path / "output")
     assert not (tmp_path / "output").exists()
 

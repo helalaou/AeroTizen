@@ -1,8 +1,8 @@
 # Root CLI and per-boot helper
 
-The commands manage `org.aerotizen.roothelper`, a separate hidden .NET service.
+The commands manage `org.aerotizen.roothelper`, a hidden .NET service.
 They do not write Home assignments, launcher startup values or Art Mode settings.
-Launcher UI and app-specific integrations are outside this feature.
+The root process also hosts the optional Stremio Continue Watching reader.
 
 ## User flow
 
@@ -26,6 +26,32 @@ replies are recovered from matching live evidence without another root attempt.
 Removal also works with normal PC access if the bridge stopped or the helper was
 already uninstalled. A later setup preserves the removed record in private history.
 
+## Upgrade a paired TV
+
+The root helper uses the version of the CLI that built it. Run `root status --json`
+to see the installed helper version in `runtime_version`.
+
+Use the updated CLI on the computer with the TV's private root receipt and its
+original signing certificates. Keep Developer Mode Host PC IP at `127.0.0.1`
+and check that `root status` reports a live automatic root boot. Then run:
+
+```sh
+aerotizen --tv TV_IP root upgrade --yes
+```
+
+Restart the TV when prompted. Run the same command again to verify the new
+runtime on an automatic boot with the saved pairing. Omit `--yes` to preview.
+The CLI installs a signed replacement of the same TV package through the
+paired SDB connection. It restores the service's own startup flag if the
+installer resets it. The installation ID, pairing token and TLS certificate
+stay the same.
+
+If interrupted, rerun the same command with the same CLI build. If the TV
+restarted before the startup flag could be restored and the bridge is absent,
+temporarily restore Developer Mode Host PC IP to the saved computer address
+and restart. Rerun the upgrade with the saved receipt. The command then guides
+you back to `127.0.0.1` and verifies the existing pairing on the next boot.
+
 If a computer's address changes, enter its current address in the TV's Developer
 Mode menu before using normal SDB. The saved address is the actual setup-time value,
 not a hardcoded default for a model. After restoring access, pass a copied private
@@ -44,6 +70,12 @@ receipt with `--receipt PATH` when needed. Keep its directory private.
   root-owned private directory and offers three operations: status, SDB relay and
   removal. It has no shell-command endpoint. SDB relay always targets the TV's own
   `127.0.0.1:26101`.
+- **Stremio reader:** the same process serves a read-only feed on IPv4 loopback.
+  If the launcher detects Stremio and needs a credential, it requests one from
+  the reader. The reader checks that Stremio is installed and writes the per-boot
+  credential to the launcher's private data directory. The launcher checks for
+  live root and a readable Stremio cache. It reads viewing records only when
+  the user selects Stremio. The feed has no access to PC pairing operations.
 - **Bridge:** TLS 1.2 or newer, exact certificate pin checked before token transfer,
   then a 256-bit pairing token. Replies include a fresh client nonce, installation
   and device identity, current kernel boot ID and live UID/EUID/GID. The listener
