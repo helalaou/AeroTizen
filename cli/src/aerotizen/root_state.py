@@ -8,10 +8,12 @@ import re
 import secrets
 from pathlib import Path
 
-from aerotizen import remote
+from aerotizen import __version__, remote
 
 APP_ID = "org.aerotizen.roothelper"
+# The pairing format stays compatible while the signed TV package is upgraded.
 VERSION = "0.1.0"
+RUNTIME_VERSION = __version__
 BRIDGE_PORT = 26104
 PHASES = {"prepared", "installed", "root_requested", "waiting_boot", "active", "removing", "removed"}
 

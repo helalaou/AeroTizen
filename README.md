@@ -247,10 +247,10 @@ background services. It does not open the apps. An empty source stays selectable
 adds no cards. Missing app-ID mappings remain disabled. Settings uses smaller versions
 of the TV app icons, with a check mark for selected apps.
 
-Everything runs on the TV. This reader needs no root, PC connection or separate
+Everything runs on the TV. Samsung feeds need no root, PC connection or separate
 login. YouTube and Prime Video populated automatically in a clean cold-boot test
 on a 2024 Frame running Tizen 9.0. BBC iPlayer's installed version did not expose
-a shared feed. Stremio support is a separate follow-up.
+a shared feed.
 
 The row refreshes at startup, when you return to AeroTizen and when you change source
 choices. Empty lists get two short retries on ordinary refreshes. During startup,
@@ -261,7 +261,7 @@ Cards show full 16:9 artwork with a TV app icon in the top-right corner. Progres
 programme details sit below the image. Unchanged cards keep their loaded artwork.
 Viewing records stay in memory; only your choices are saved. Providers can return old
 records or approximate activity times. Unknown times sort last. Distinct episodes stay
-separate. Selecting a card sends its original launch data to the source app; correct
+separate. Samsung cards send their original launch data to the source app. Correct
 programme opening still needs physical confirmation for each provider.
 
 Known limits on the tested Frame: ITVX returns five saved records while its own row
@@ -269,6 +269,12 @@ shows only S38 E12 of The Only Way Is Essex. Its background service only reads t
 saved store; it does not refresh it from the current in-app list. Channel 4 returns
 an empty shared list even with root, despite showing Continue Watching in its app.
 Neither source is confirmed as an accurate mirror of its in-app row.
+
+### Stremio on rooted TVs
+
+To see Stremio in Continue Watching, root your TV with `aerotizen --tv TV_IP root setup`,
+then select Stremio under **Settings → Apps → Continue Watching**.
+See [root setup and upgrades](docs/root-cli.md).
 
 ## Choose how Home works
 
@@ -379,7 +385,7 @@ file locations, limits and troubleshooting.
 
 ## Optional untethered root
 
-`root setup`, `root status` and `root remove` manage a separate background helper.
+`root setup`, `root status`, `root upgrade` and `root remove` manage the background root service.
 Root is opt-in and is not needed for either Home option or Samsung Continue Watching.
 Home and Art Mode settings stay unchanged.
 
@@ -409,6 +415,7 @@ The TV attempts root once per full boot, without a PC. Standby and Art Mode wake
 do not repeat it.
 
 Paired CLI commands use the authenticated TLS bridge while localhost is enabled.
+To update an existing pairing, follow the [root upgrade steps](docs/root-cli.md#upgrade-a-paired-tv).
 Existing `home ... --root` commands use an external root tool and still
 require normal PC-authorised SDB; ordinary Home commands work through the bridge.
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
@@ -87,9 +88,10 @@ namespace AeroTizen.Root
             string[] lines = raw.Split('\n', StringSplitOptions.RemoveEmptyEntries);
             if (lines.Length > 1) throw new IOException("Duplicate root helper registration");
             string[] row = lines.Length == 1 ? lines[0].TrimEnd('\r').Split('|') : null;
-            string identity = File.Exists(RootPaths.Config) ? RootSettings.Load().Installation : null;
+            var settings = File.Exists(RootPaths.Config) ? RootSettings.Load() : null;
             string other = Sql("SELECT * FROM package_app_info WHERE app_id<>'" + RootPaths.AppId + "' ORDER BY app_id;");
-            return new Dictionary<string, object> { ["row"] = row, ["installation_id"] = identity,
+            return new Dictionary<string, object> { ["row"] = row, ["installation_id"] = settings?.Installation,
+                ["configuration_sha256"] = settings?.ConfigurationSha256,
                 ["other_rows_sha256"] = Bundle.Digest(Encoding.UTF8.GetBytes(other)) };
         }
         private static void Ready(string nonce)
@@ -201,6 +203,40 @@ namespace AeroTizen.Root
                     throw new IOException("Existing certificate differs");
             }
             else RootPaths.WriteNew(RootPaths.Private + "/server.pfx", pfx);
+            EnableStartup(pairing);
+            if (File.Exists(RootPaths.Data + "/disabled")) File.Delete(RootPaths.Data + "/disabled");
+            // Close the SDK shell's callback fd before starting the CLR in the detached child.
+            var server = new ProcessStartInfo("/bin/sh") { UseShellExecute = false };
+            server.ArgumentList.Add("-c");
+            server.ArgumentList.Add(SetupLaunch(installation, nonce));
+            using (var child = Process.Start(server)) { if (child == null) throw new IOException("Bridge did not start"); }
+        }
+        private static void RepairStartup(string stage, string installation, string nonce)
+        {
+            if (!Regex.IsMatch(stage ?? "", "\\A/home/owner/share/tmp/sdk_tools/arsetup-[a-f0-9]{16}\\z"))
+                throw new IOException("Invalid upgrade stage");
+            var settings = RootSettings.Load();
+            settings.VerifyFiles();
+            var expected = new RootSettings(RootPaths.PrivateFile(stage + "/root.json", 901, 16384));
+            if (settings.Installation != installation || settings.ConfigurationSha256 != expected.ConfigurationSha256
+                || File.Exists(RootPaths.Data + "/disabled"))
+                throw new IOException("The installed root package does not match this upgrade");
+            RootPaths.PrivateDirectory(RootPaths.Private, 0);
+            if (Encoding.ASCII.GetString(RootPaths.PrivateFile(RootPaths.Private + "/installation", 0, 64)) != installation)
+                throw new IOException("The root pairing belongs to a different installation");
+            var pairing = new Pairing(RootPaths.PrivateFile(RootPaths.Private + "/pairing.json", 0, 4096));
+            var supplied = new Pairing(RootPaths.PrivateFile(stage + "/pairing.json", 901, 4096));
+            if (pairing.Installation != installation || supplied.Installation != installation
+                || pairing.DatabaseUid != supplied.DatabaseUid || pairing.DatabaseGid != supplied.DatabaseGid
+                || !CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(pairing.Token), Encoding.ASCII.GetBytes(supplied.Token))
+                || !CryptographicOperations.FixedTimeEquals(RootPaths.PrivateFile(RootPaths.Private + "/server.pfx", 0, 32768),
+                    RootPaths.PrivateFile(stage + "/server.pfx", 901, 32768)))
+                throw new IOException("The saved root credentials do not match the TV");
+            EnableStartup(pairing);
+            Ready(nonce);
+        }
+        private static void EnableStartup(Pairing pairing)
+        {
             using (var file = File.OpenRead("/opt/dbspace/.pkgmgr_parser.db"))
             {
                 var owner = RootPaths.Metadata(file);
@@ -220,12 +256,6 @@ namespace AeroTizen.Root
                 if (process.ExitCode != 0) throw new IOException("Startup registration failed: " + error.GetAwaiter().GetResult());
                 output.GetAwaiter().GetResult();
             }
-            if (File.Exists(RootPaths.Data + "/disabled")) File.Delete(RootPaths.Data + "/disabled");
-            // Close the SDK shell's callback fd before starting the CLR in the detached child.
-            var server = new ProcessStartInfo("/bin/sh") { UseShellExecute = false };
-            server.ArgumentList.Add("-c");
-            server.ArgumentList.Add(SetupLaunch(installation, nonce));
-            using (var child = Process.Start(server)) { if (child == null) throw new IOException("Bridge did not start"); }
         }
         internal static string SetupLaunch(string installation, string nonce)
         {
@@ -283,6 +313,7 @@ namespace AeroTizen.Root
                 }
                 RootPaths.RequireTv(true);
                 if (args.Length == 4 && args[0] == "--install") { Configure(args[1], RootSettings.Hex(args[2], 32), RootSettings.Hex(args[3], 32)); return 0; }
+                if (args.Length == 4 && args[0] == "--repair-startup") { RepairStartup(args[1], RootSettings.Hex(args[2], 32), RootSettings.Hex(args[3], 32)); return 0; }
                 if (args.Length == 4 && args[0] == "--cleanup")
                 {
                     if (!Regex.IsMatch(args[1], "\\A/home/owner/share/tmp/sdk_tools/arsetup-[a-f0-9]{16}\\z")) throw new IOException("Invalid cleanup stage");
@@ -303,9 +334,14 @@ namespace AeroTizen.Root
                 using (var server = new BridgeServer(settings, certificate, pairing.Token, () => {
                     var value = Identity(); value["origin"] = args[3]; value["launch_nonce"] = nonce; return value;
                 }, () => Remove(settings, pairing.Token), diagnostic: (phase, error) => Diagnostic(nonce, phase, error)))
+                using (var stremio = args[3] == "boot" ? new StremioFeed() : null)
                 {
                     Detach();
-                    server.Run(() => { ServerLifetime.Record(settings); Ready(nonce); }).GetAwaiter().GetResult();
+                    server.Run(() => {
+                        ServerLifetime.Record(settings);
+                        Ready(nonce);
+                        stremio?.Start();
+                    }).GetAwaiter().GetResult();
                 }
                 return 0;
             }

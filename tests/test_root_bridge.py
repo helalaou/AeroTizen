@@ -39,6 +39,7 @@ def native_root(tmp_path_factory):
             "--nologo",
             "-v:q",
             "-p:UseSharedCompilation=false",
+            f"-p:Version={root_state.RUNTIME_VERSION}",
         ],
         check=True,
         capture_output=True,
@@ -131,6 +132,7 @@ def test_actual_native_tls_status_and_sdb_relay(bridge_server):
     receipt, fixture, _ = bridge_server
     status = BridgeClient("127.0.0.1", receipt).request()
     assert status["boot_id"] == fixture["boot_id"] and status["uid"] == 0
+    assert status["runtime_version"] == root_state.RUNTIME_VERSION
     assert receipt["token"] not in json.dumps(status)
     with BridgeSdb("127.0.0.1", receipt) as session:
         assert session.duid() == "paired-tv"

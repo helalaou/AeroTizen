@@ -106,8 +106,12 @@ def build_cli(root, output, tag=None):
         raise ValueError("Build the read-only Home helper with python cli/tools/build_home_query.py first")
     if not (root / "src/aerotizen/helpers/home-control.json").is_file():
         raise ValueError("Build the guarded Home writer with python cli/tools/build_home_control.py first")
-    if not (root / "src/aerotizen/helpers/root-runtime.json").is_file():
+    root_runtime = root / "src/aerotizen/helpers/root-runtime.json"
+    if not root_runtime.is_file():
         raise ValueError("Build the root runtime with python cli/tools/build_root_runtime.py first")
+    from aerotizen.root_package import runtime_files
+
+    runtime_files(root_runtime)
     target = platform_name()
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="aerotizen-build-") as temporary:

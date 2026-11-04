@@ -1,4 +1,4 @@
-"""Resumable root setup/status/remove. Home and Art settings are never written."""
+"""Resumable root setup, status, upgrade and removal."""
 
 import base64
 import hashlib
@@ -109,7 +109,7 @@ def _same_device(session, receipt, info):
     return status
 
 
-def _bootstrap(session, path, receipt, managed, upstream, operation):
+def _bootstrap(session, path, receipt, managed, upstream, operation, *, configuration=None):
     stage = sdk.DIRECTORY + "/arsetup-" + secrets.token_hex(8)
     values, manifest = root_package.setup_bundle(receipt, managed, upstream, stage, operation=operation)
     request = {
@@ -125,7 +125,7 @@ def _bootstrap(session, path, receipt, managed, upstream, operation):
             }
         ),
         "server_pfx": receipt["server_pfx"],
-        "root_json": json.dumps(receipt["public_config"]),
+        "root_json": root_package.config_bytes(configuration or receipt["public_config"]).decode(),
         "bridge_files": {
             name: base64.b64encode(value).decode()
             for name, value in _managed(managed, "bin/AeroTizenRootBridge").items()
@@ -134,7 +134,8 @@ def _bootstrap(session, path, receipt, managed, upstream, operation):
     }
     attempt = {"nonce": manifest["nonce"], "operation": operation, "requested_at": time.time()}
     receipt.setdefault("attempts", []).append(attempt)
-    receipt["phase"] = "root_requested" if operation == "install" else "removing"
+    if operation != "upgrade":
+        receipt["phase"] = "root_requested" if operation == "install" else "removing"
     root_state.save(path, receipt)  # Durable PC intent before a root operation.
     result = _parse(
         root_transfer.run(
@@ -146,7 +147,9 @@ def _bootstrap(session, path, receipt, managed, upstream, operation):
         ),
         "AEROTIZEN_ROOT_BOOTSTRAP=",
     )
-    expected = "bridge_ready" if operation == "install" else "cleanup_verified"
+    expected = {"install": "bridge_ready", "upgrade": "startup_repaired", "remove": "cleanup_verified"}[
+        operation
+    ]
     if (
         result.get("passed") is not True
         or result.get("protected_proof_verified") is not True
@@ -190,6 +193,7 @@ def status(host, *, receipt_path=None, wait=0, state_dir=None):
                     and reply["boot_id"] != receipt["baseline_boot_id"],
                     "bootstrap_completed": reply.get("bootstrap_completed") is True,
                     "installed": reply.get("helper_installed") is True,
+                    "runtime_version": reply.get("runtime_version", root_state.VERSION),
                 }
                 if reply.get("startup_error"):
                     result["startup_error"] = reply["startup_error"]
@@ -232,14 +236,21 @@ def setup(host, *, state_dir=None, receipt_path=None, runtime=None, release=None
             and checked.get("automatic_startup_enabled")
         ):
             with DeviceSession(host, bridge_receipt=receipt) as session:
+                receipt = root_state.load(path)
+                if receipt["phase"] not in ("waiting_boot", "active"):
+                    raise DeviceSessionError("The root setup state changed; retry the command")
                 current = _same_device(session, receipt, _info(host))
                 registry = _registry(session, managed)
-                if not registry.get("row") or registry["row"][4] != "true":
+                if (
+                    current["boot"]["id"] != checked["current_boot_id"]
+                    or not registry.get("row")
+                    or registry["row"][4] != "true"
+                ):
                     raise DeviceSessionError("Dedicated automatic startup is not enabled")
-            receipt["phase"] = "active"
-            receipt["verified_boot_id"] = checked["current_boot_id"]
-            root_state.save(path, receipt)
-            root_state.remember(host, path, state_dir)
+                receipt["phase"] = "active"
+                receipt["verified_boot_id"] = checked["current_boot_id"]
+                root_state.save(path, receipt)
+                root_state.remember(host, path, state_dir)
             return {
                 **checked,
                 "phase": "active",
@@ -330,15 +341,7 @@ def setup(host, *, state_dir=None, receipt_path=None, runtime=None, release=None
             try:
                 output = session.install_native(package.read_bytes(), upload_name)
             finally:
-                _parse(
-                    sdk.run(
-                        session,
-                        _managed(managed, "bin/AeroTizenRootBridge"),
-                        "AeroTizenRootBridge.dll",
-                        ("--clean-upload", upload_name, receipt["package_sha256"]),
-                    ),
-                    "AEROTIZEN_ROOT_UPLOAD=",
-                )
+                _clean_upload(session, managed, upload_name, receipt["package_sha256"])
             if "install completed" not in output and "key[end] val[ok]" not in output:
                 raise DeviceSessionError("TV did not confirm root helper installation")
             receipt["phase"] = "installed"
@@ -377,16 +380,179 @@ def setup(host, *, state_dir=None, receipt_path=None, runtime=None, release=None
     }
 
 
+def _boot_ready(reply, boot):
+    return (
+        reply.get("boot_id") == boot
+        and reply.get("origin") == "boot"
+        and reply.get("automatic_startup_enabled") is True
+        and reply.get("bootstrap_completed") is True
+        and reply.get("helper_installed") is True
+    )
+
+
+def _clean_upload(session, managed, name, checksum):
+    _parse(
+        sdk.run(
+            session,
+            _managed(managed, "bin/AeroTizenRootBridge"),
+            "AeroTizenRootBridge.dll",
+            ("--clean-upload", name, checksum),
+        ),
+        "AEROTIZEN_ROOT_UPLOAD=",
+    )
+
+
+def upgrade(host, *, state_dir=None, receipt_path=None, runtime=None, release=None):
+    path = Path(receipt_path) if receipt_path else root_state.selected_path(host, state_dir)
+    if not path.exists():
+        raise DeviceSessionError("Complete root setup before upgrading the helper")
+    managed, xml, icon = root_package.runtime_files(runtime)
+    # Load the receipt under the device lock. A concurrent upgrade may have updated it.
+    with DeviceSession(host).ownership() as session:
+        receipt = root_state.load(path)
+        if receipt["phase"] != "active":
+            raise DeviceSessionError("Complete root setup before upgrading the helper")
+        pending = receipt.get("upgrade")
+        config = root_package.public_config(receipt, managed)
+        target = root_package.digest(root_package.config_bytes(config))
+        if pending and pending["configuration_sha256"] != target:
+            raise DeviceSessionError("Resume the pending root upgrade with the CLI build that started it")
+        info = _info(host)
+        recovery = info.get("developerIP") != "127.0.0.1"
+        if recovery:
+            if not pending:
+                raise DeviceSessionError("Connect through the paired root service before upgrading")
+            session.direct = True
+            session.source_address = _source(info)
+        else:
+            session.bridge_receipt = receipt
+        session.connect()
+        live = {} if recovery else BridgeClient(host, receipt).request()
+        before = _same_device(session, receipt, info)
+        boot = before["boot"]["id"]
+        registry = _registry(session, managed)
+        original = root_package.digest(root_package.config_bytes(receipt["public_config"]))
+        installed = registry.get("configuration_sha256")
+        if (
+            not registry.get("row")
+            or registry.get("installation_id") != receipt["installation_id"]
+            or installed not in (original, target)
+        ):
+            raise DeviceSessionError("Installed root helper does not match the saved pairing and upgrade")
+
+        archive = path.parent / "upgrade.tpk"
+        if not pending:
+            if not _boot_ready(live, boot):
+                raise DeviceSessionError("Verify an automatic root boot before upgrading")
+            version = live.get("runtime_version", root_state.VERSION)
+            if version == root_state.RUNTIME_VERSION:
+                if installed != target or live.get("configuration_sha256") != target:
+                    raise DeviceSessionError(
+                        "The installed root runtime has the same version but does not match this build. "
+                        "Use a newer CLI release to upgrade."
+                    )
+                return {
+                    **root_state.public_status(receipt),
+                    "root_available": True,
+                    "runtime_version": root_state.RUNTIME_VERSION,
+                    "upgrade_complete": True,
+                }
+            if (
+                not isinstance(version, str)
+                or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version)
+                or tuple(map(int, version.split(".")))
+                >= tuple(map(int, root_state.RUNTIME_VERSION.split(".")))
+            ):
+                raise DeviceSessionError("The root runtime version is unknown or newer than this CLI")
+            upstream = root_package.upstream_payloads(
+                Path(state_dir or remote.CONFIG_DIR) / "root-cache", release=release
+            )
+            certificates = Path(state_dir or remote.CONFIG_DIR) / "certs" / session.duid()
+            if not (certificates / "distributor.p12").is_file():
+                raise DeviceSessionError("Restore the TV's original signing certificates before upgrading")
+            root_package.package_helper(archive, receipt, managed, upstream, xml, icon, certificates)
+            pending = {
+                "from_boot_id": boot,
+                "configuration_sha256": target,
+                "package_sha256": root_package.digest(archive.read_bytes()),
+            }
+            receipt["upgrade"] = pending
+            root_state.save(path, receipt)
+
+        upload = "aerotizen-root-" + receipt["installation_id"] + ".tpk"
+        checksum = pending["package_sha256"]
+        if installed != target:
+            data = archive.read_bytes()
+            if root_package.digest(data) != checksum:
+                raise DeviceSessionError("Saved signed root upgrade package checksum differs")
+            try:
+                session.install_native(data, upload)
+            finally:
+                _clean_upload(session, managed, upload, checksum)
+        else:
+            # The installer may have committed before an earlier reply was lost.
+            _clean_upload(session, managed, upload, checksum)
+        current = _registry(session, managed)
+        if (
+            not current.get("row")
+            or current.get("installation_id") != receipt["installation_id"]
+            or current.get("configuration_sha256") != target
+        ):
+            raise DeviceSessionError("TV did not confirm the signed root upgrade")
+        if current["row"][4] != "true":
+            upstream = root_package.upstream_payloads(
+                Path(state_dir or remote.CONFIG_DIR) / "root-cache", release=release
+            )
+            _bootstrap(session, path, receipt, managed, upstream, "upgrade", configuration=config)
+            current = _registry(session, managed)
+        after = _same_device(session, receipt, info)
+        if (
+            not current.get("row")
+            or current["row"][4] != "true"
+            or current.get("installation_id") != receipt["installation_id"]
+            or current.get("configuration_sha256") != target
+            or registry["other_rows_sha256"] != current["other_rows_sha256"]
+            or before["home"] != after["home"]
+            or after["boot"]["id"] != boot
+        ):
+            raise DeviceSessionError("Root upgrade could not verify startup and preservation")
+        complete = (
+            boot != pending["from_boot_id"]
+            and _boot_ready(live, boot)
+            and live.get("runtime_version") == root_state.RUNTIME_VERSION
+            and live.get("configuration_sha256") == target
+        )
+        if complete:
+            receipt["public_config"] = config
+            receipt["package_sha256"] = checksum
+            receipt["verified_boot_id"] = boot
+            del receipt["upgrade"]
+            root_state.save(path, receipt)
+        result = {
+            **root_state.public_status(receipt),
+            "root_available": bool(live),
+            "upgrade_complete": complete,
+            "runtime_version": live.get("runtime_version", root_state.VERSION) if live else None,
+        }
+        if not complete:
+            result["next_step"] = (
+                "Set Developer Mode Host PC IP back to 127.0.0.1, restart the TV, "
+                if recovery
+                else "Restart the TV, "
+            ) + "then rerun root upgrade --yes to verify the upgrade with the same pairing."
+        return result
+
+
 def remove(host, *, state_dir=None, receipt_path=None, runtime=None, release=None):
     path = Path(receipt_path) if receipt_path else root_state.selected_path(host, state_dir)
-    receipt = root_state.load(path)
-    if receipt["phase"] == "removed":
-        return {**root_state.public_status(receipt), "removed": True}
-    managed, _, _ = root_package.runtime_files(runtime)
-    receipt["phase"] = "removing"
-    root_state.save(path, receipt)
-    if not receipt.get("private_state_removed"):
-        with DeviceSession(host).ownership():
+    with DeviceSession(host).ownership():
+        receipt = root_state.load(path)
+        if receipt["phase"] == "removed":
+            return {**root_state.public_status(receipt), "removed": True}
+        managed, _, _ = root_package.runtime_files(runtime)
+        receipt["phase"] = "removing"
+        root_state.save(path, receipt)
+        if not receipt.get("private_state_removed"):
             try:
                 reply = BridgeClient(host, receipt).request("remove")
                 if reply.get("prepared_for_removal") is not True:

@@ -90,7 +90,7 @@ function harness() {
     this.aborted = true;
     this.onabort?.();
   };
-  vm.runInNewContext(fs.readFileSync("launcher/js/continue-watching.js", "utf8"), {
+  const context = vm.createContext({
     window: { AeroTizen: A, performance: { now: () => elapsed } },
     document,
     XMLHttpRequest,
@@ -101,6 +101,9 @@ function harness() {
     },
     clearTimeout: (id) => timers.delete(id),
   });
+  for (const script of ["continue-watching.js", "samsung-continue.js"]) {
+    vm.runInContext(fs.readFileSync("launcher/js/" + script, "utf8"), context);
+  }
   const cw = A.continueWatching;
   return {
     A,
@@ -182,11 +185,13 @@ test("source discovery groups hidden services by package and ignores preview-onl
     { id: source.id, packageId: "pkg", name: "Renamed app - promotional text" },
     { id: "other.app", packageId: "other", name: "Video" },
   ];
-  assert.deepEqual(plain(h.cw.discover(inventory)), [
-    { ...source, name: "Renamed app", icon: "", status: "Not selected" },
-  ]);
+  h.A.apps.inventory = inventory;
+  h.A.settings.continueWatching = true;
+  h.cw.start();
+  assert.deepEqual(plain(h.cw.sources), [{ ...source, name: "Renamed app", icon: "", status: "Not selected" }]);
   h.A.catalog.storeId = () => null;
-  assert.equal(h.cw.discover(inventory)[0].status, "App ID unavailable");
+  h.cw.refresh();
+  assert.equal(h.cw.sources[0].status, "App ID unavailable");
 });
 test("normalization keeps zero progress and distinct episodes, rejects other apps, deduplicates and orders true activity", () => {
   const h = harness();
