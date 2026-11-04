@@ -31,9 +31,7 @@ def load_helper():
         ) from exc
 
 
-def preview(action, backup=None, *, boot=False):
-    if boot and action != "apply":
-        raise home.HomeError("--boot applies only to Home apply.")
+def preview(action, backup=None):
     result = {
         "action": action,
         "will_write": False,
@@ -43,13 +41,12 @@ def preview(action, backup=None, *, boot=False):
         if action == "apply"
         else "watcher if AeroTizen is installed; otherwise absent",
         "startup": (
-            "Try to assign both startup app IDs to AeroTizen and preserve Smart Hub autostart. "
-            "If the TV rejects an ID, try to keep Home with the saved startup IDs."
+            "Assign both startup app IDs to AeroTizen, then enable Smart Hub autostart (1). "
+            "If the TV rejects startup setup, try to keep Home with the saved startup settings."
         ),
     }
-    if boot:
+    if action == "apply":
         result["boot"] = True
-        result["startup"] = "Enable Smart Hub autostart (1) and assign AeroTizen startup and boot-backup IDs."
     elif action == "restore":
         result["startup"] = (
             "Restore all saved startup values, including autostart; recover boot using its matching receipt."
@@ -104,7 +101,7 @@ def parse_result(output, action, exit_code):
             or document["action"] != action
             or type(result["Success"]) is not bool
             or type(result["RolledBack"]) is not bool
-            or type(result.get("StartupIdsRestored", False)) is not bool
+            or type(result.get("StartupSettingsRestored", False)) is not bool
             or (result["Success"] and result["RolledBack"])
             or (result.get("Error") is not None and not isinstance(result["Error"], str))
             or result["Success"] != (exit_code == 0)
@@ -121,7 +118,8 @@ def _receipt_request(path, token, raw, digest):
     try:
         if path.stat().st_size > MAX_RECEIPT_BYTES:
             return None
-        request = json.loads(path.read_text())["request"]
+        receipt = json.loads(path.read_text())
+        request = receipt["request"]
         if (
             type(request.get("schema_version")) is not int
             or request["schema_version"] != 1
@@ -129,6 +127,15 @@ def _receipt_request(path, token, raw, digest):
             or request["baseline_sha256"] != digest
             or base64.b64decode(request["baseline_base64"], validate=True) != raw
         ):
+            return None
+        result = receipt.get("native_result")
+        if (
+            request.get("action") == "apply"
+            and isinstance(result, dict)
+            and result.get("Success") is True
+            and result.get("StartupSettingsRestored") is True
+        ):
+            # The apply verified the saved autostart value before it committed Home.
             return None
         return request
     except (OSError, AttributeError, KeyError, TypeError, ValueError):
@@ -236,11 +243,9 @@ def _check_compatibility(status):
         raise home.HomeError("Required typed native Home settings are unavailable.") from exc
 
 
-def change(session, info, action, *, backup=None, state_dir=None, boot=False):
+def change(session, info, action, *, backup=None, state_dir=None):
     if action not in ("apply", "restore"):
         raise home.HomeError("Unknown Home action.")
-    if type(boot) is not bool or (boot and action != "apply"):
-        raise home.HomeError("--boot applies only to Home apply.")
     files = load_helper()
     status = home.read_status(session, None, info)
     identity = status["device"]["identity_sha256"]
@@ -282,7 +287,8 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False):
         "baseline_sha256": digest,
         "baseline_base64": base64.b64encode(raw).decode(),
     }
-    if boot:
+    if action == "apply":
+        # Keep the receipt field used to authorise restoring autostart after apply.
         request["boot"] = True
     if action == "restore":
         if not installed:
@@ -303,7 +309,7 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False):
     diagnostics.event(
         "home.prepared",
         action=action,
-        boot=boot,
+        boot=action == "apply",
         transaction=token,
         model=device["model"],
         firmware=device["firmware_build"],
@@ -351,22 +357,17 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False):
         final = home.read_status(session, None, info)
         expected = original["home"]["default_app"] if action == "restore" else home.releases.APP_ID
         expected_settings = {key: dict(value) for key, value in original["home"]["settings"].items()}
-        startup_ids_restored = result.get("StartupIdsRestored", False)
+        startup_settings_restored = result.get("StartupSettingsRestored", False)
         if action == "apply":
             expected_settings[home.HOME_KEY]["value"] = home.releases.APP_ID
-            if not boot and not startup_ids_restored:
+            if not startup_settings_restored:
                 for key in home.STARTUP_KEYS:
                     expected_settings[key]["value"] = home.releases.APP_ID
+                expected_settings[home.AUTOSTART_KEY]["value"] = 1
         observed = {
             key: {"type": value["type"], "value": value["value"]}
             for key, value in final["home"]["settings"].items()
         }
-        if boot:
-            expected_settings[home.AUTOSTART_KEY]["value"] = 1
-            for key in home.STARTUP_KEYS:
-                value = observed[key]
-                if value["type"] == "string" and value["value"] == home.releases.APP_ID:
-                    expected_settings[key]["value"] = home.releases.APP_ID
         control = final["watcher"].get("control", {})
         watcher_valid = (
             (
@@ -405,7 +406,7 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False):
             "backup": str(backup),
             "receipt": str(receipt_path),
             "status": final,
-            **({"startup_ids_restored": startup_ids_restored} if action == "apply" and not boot else {}),
+            **({"startup_settings_restored": startup_settings_restored} if action == "apply" else {}),
         }
     except BaseException as exc:
         receipt["error"] = str(exc) or type(exc).__name__

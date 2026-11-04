@@ -66,11 +66,10 @@ The original is saved once in the PC's
 Before the native writer runs, its request and baseline bytes are durably saved
 under the adjacent `transactions/` directory. Apply needs no TV backup endpoint.
 Apply sets both Home bindings, then tries to assign both startup app IDs to AeroTizen.
-It skips any ID the TV has already assigned. If the TV rejects a startup ID, apply
-keeps the Home bindings only if it can verify both original startup IDs. Plain apply
-preserves the saved Smart Hub autostart setting. The `--boot` option also enables
-that setting for firmware that uses it to decide whether to show the Home app at
-power-on. Restore an existing native assignment before changing options.
+It skips any ID the TV has already assigned. After both IDs match, apply enables
+Smart Hub autostart and checks the settings again. If the TV rejects startup setup,
+apply keeps the Home bindings only if it can verify both original startup IDs and
+the saved autostart setting. The receipt records the result.
 After apply or restore, disconnect TV/One Connect power for 60 seconds, then restart.
 In the Frame profile comparison above, AeroTizen took about 30 seconds to appear
 with Home and boot enabled. This was an estimate from the screen; browser render

@@ -52,14 +52,14 @@ namespace AeroTizen.Home
             if (expected.Main != observed.Main) differences["operation/main"] = new ValueDifference { Expected = expected.Main, Observed = observed.Main };
             foreach (string key in Policy.Keys)
                 if (expected.Strings[key] != observed.Strings[key]) differences[key] = new ValueDifference { Expected = expected.Strings[key], Observed = observed.Strings[key] };
-            if (expected.AutoStart != observed.AutoStart) differences["db/menu/smart_hub/ontvsetting/auto_start"] = new ValueDifference { Expected = expected.AutoStart, Observed = observed.AutoStart };
+            if (expected.AutoStart != observed.AutoStart) differences[Policy.AutoStartKey] = new ValueDifference { Expected = expected.AutoStart, Observed = observed.AutoStart };
             Failure = new VerificationFailure { Phase = phase, Expected = expected.Copy(), Observed = observed.Copy(), Differences = differences };
         }
     }
     public sealed class Result
     {
         public VerificationFailure Failure { get; set; }
-        public bool StartupIdsRestored { get; set; }
+        public bool StartupSettingsRestored { get; set; }
         public bool Success { get; set; }
         public bool RolledBack { get; set; }
         public string Error { get; set; }
@@ -85,6 +85,7 @@ namespace AeroTizen.Home
         public const string HomeKey = "db/appfw/home_appid";
         private const string StartupKey = "db/appfw/startup_appid";
         private const string BootBackupKey = "db/appfw/booting_appid_backup";
+        internal const string AutoStartKey = "db/menu/smart_hub/ontvsetting/auto_start";
         private static readonly string[] StartupKeys = { StartupKey, BootBackupKey };
         public static readonly string[] Keys = {
             HomeKey, StartupKey, BootBackupKey, "db/first_screen/type"
@@ -128,14 +129,6 @@ namespace AeroTizen.Home
                     throw new Exception("Unrelated setting changed; restore refused: " + key);
             if (current.AutoStart != original.AutoStart && !(restoreBoot && current.AutoStart == 1))
                 throw new Exception("Autostart changed; a matching boot transaction is required for restore.");
-        }
-        public static bool BootReady(Snapshot current, Snapshot original)
-        {
-            if (current.Main != Target || current.Strings[HomeKey] != Target || current.AutoStart != 1 ||
-                current.Strings["db/first_screen/type"] != original.Strings["db/first_screen/type"]) return false;
-            foreach (string key in Keys)
-                if (current.Strings[key] != original.Strings[key] && current.Strings[key] != Target) return false;
-            return true;
         }
         private static Watcher CheckWatcher(Watcher value)
         {
@@ -191,10 +184,12 @@ namespace AeroTizen.Home
         }
         private static bool StartupRejected(VerificationFailure failure, Snapshot original)
         {
-            if (failure.Phase != "final" && Array.IndexOf(StartupKeys, failure.Phase) < 0) return false;
+            if (failure.Phase != "final" && failure.Phase != "boot" && Array.IndexOf(StartupKeys, failure.Phase) < 0) return false;
             if (failure.Differences.Count == 0) return false;
             foreach (string key in failure.Differences.Keys)
             {
+                if (key == AutoStartKey && failure.Phase == "boot" && failure.Observed.AutoStart == original.AutoStart)
+                    continue;
                 if (Array.IndexOf(StartupKeys, key) < 0 || failure.Observed.Strings[key] != original.Strings[key])
                     return false;
             }
@@ -265,32 +260,35 @@ namespace AeroTizen.Home
                     foreach (string key in StartupKeys) desired.Strings[key] = Target;
                 }
                 nativeStarted = true;
-                bool startupIdsRestored = false;
+                bool startupSettingsRestored = false;
                 Snapshot after;
-                try { after = Write(platform, desired); }
-                catch (ReadbackException error) when (request.Action == "apply" && !request.Boot && StartupRejected(error.Failure, request.Original))
+                try
                 {
-                    // Keep Home only if both original startup IDs can be verified with it.
-                    foreach (string key in StartupKeys) desired.Strings[key] = request.Original.Strings[key];
                     after = Write(platform, desired);
-                    startupIdsRestored = true;
-                }
-                if (request.Boot)
-                {
-                    if (platform.Read().AutoStart != 1) platform.SetAutoStart(1);
-                    after = platform.Read();
-                    if (!BootReady(after, request.Original))
+                    if (request.Boot && after.AutoStart != 1)
                     {
-                        var expected = desired.Copy(); expected.AutoStart = 1;
-                        foreach (string key in StartupKeys)
-                            if (after.Strings[key] == Target) expected.Strings[key] = Target;
-                        throw new ReadbackException("Native boot readback failed.", "boot", expected, after);
+                        desired.AutoStart = 1;
+                        try { platform.SetAutoStart(1); }
+                        catch (Exception error)
+                        {
+                            throw new ReadbackException("Autostart write failed.", "boot", desired, platform.Read(), error);
+                        }
+                        after = platform.Read();
+                        if (!Same(after, desired)) throw new ReadbackException("Native boot readback failed.", "boot", desired, after);
                     }
+                }
+                catch (ReadbackException error) when (request.Action == "apply" && StartupRejected(error.Failure, request.Original))
+                {
+                    // Keep Home only after verifying the saved startup settings with it.
+                    foreach (string key in StartupKeys) desired.Strings[key] = request.Original.Strings[key];
+                    desired.AutoStart = request.Original.AutoStart;
+                    after = Write(platform, desired);
+                    startupSettingsRestored = true;
                 }
                 watcher = Change(platform, watcher, request.Action == "apply" ? "native" : "watcher",
                     request.Action == "apply" ? request.Transaction : null,
                     request.Action == "apply" ? request.BaselineHash : null);
-                return new Result { Success = true, StartupIdsRestored = startupIdsRestored, After = after, Watcher = watcher };
+                return new Result { Success = true, StartupSettingsRestored = startupSettingsRestored, After = after, Watcher = watcher };
             }
             catch (Exception error)
             {
