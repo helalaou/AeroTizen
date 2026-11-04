@@ -18,12 +18,13 @@ from aerotizen.root import SUPPORTED_VERSION
 
 OPERATION = "http://tizen.org/appcontrol/operation/main"
 HOME_KEY = "db/appfw/home_appid"
+STARTUP_KEYS = ("db/appfw/startup_appid", "db/appfw/booting_appid_backup")
+AUTOSTART_KEY = "db/menu/smart_hub/ontvsetting/auto_start"
 SETTINGS = {
     HOME_KEY: "string",
-    "db/appfw/startup_appid": "string",
-    "db/appfw/booting_appid_backup": "string",
+    **dict.fromkeys(STARTUP_KEYS, "string"),
     "db/first_screen/type": "string",
-    "db/menu/smart_hub/ontvsetting/auto_start": "int",
+    AUTOSTART_KEY: "int",
 }
 PAYLOAD_PATH = Path(__file__).parent / "helpers/home-query.json"
 HELPER_FILES = ("AeroTizenHomeQuery.dll", "AeroTizenHomeQuery.runtimeconfig.json")
