@@ -28,6 +28,16 @@ Built with help from these contributors. [Join them](CONTRIBUTING.md): testing o
 Screenshots show the Glass appearance with five square app cards per row in the browser preview.
 The apps and programmes are sample data.
 
+## About
+
+AeroTizen gives Samsung Tizen TVs a clean, ad-free home screen, plus a small CLI to set it up and
+clear out preinstalled apps from your computer. It started because the stock Samsung Home is
+mostly ads and tracking, and there was no easy way to replace it.
+
+It's free and open source under the [MIT license](LICENSE), and community driven: features, fixes,
+translations and TV test reports all come from people using it. Contributions of any size are very
+welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
+
 ## Motivation
 
 The default home screen on recent Samsung TVs is mostly ads. The "Top Picks for You" row can't be
