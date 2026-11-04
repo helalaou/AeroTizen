@@ -109,6 +109,15 @@ for (const glass of [false, true]) {
     );
     await openCategory(page, "wallpaper");
     await expect(page.locator('[data-key="bg:black"] .selection-indicator')).toBeVisible();
+    await expect(page.locator(".settings-drawer__help svg[aria-hidden=true]")).toHaveCount(3);
+    await page.locator('[data-key="wallpaper-categories:animated"]').click();
+    await page.locator('[data-key="bg:aurora"]').click();
+    const preview = page.getByRole("button", { name: "Preview", exact: true });
+    await expect(preview.locator(".lucide-play")).toHaveAttribute("aria-hidden", "true");
+    const speed = page.getByRole("slider", { name: "Background speed", exact: true });
+    await speed.click();
+    await expect(speed.locator(".slider-hint svg[aria-hidden=true]")).toHaveCount(2);
+    await speed.click();
     await closeSettings(page);
     await expect(page.locator("#grid > .tile")).toHaveCount(1);
     await expect(page.locator("vite-error-overlay")).toHaveCount(0);

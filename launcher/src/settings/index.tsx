@@ -46,13 +46,17 @@ export const mountSettings = (
   const navigation = createNavigation((element) => {
     // A command can restore browser focus without changing the selected key (IME Done).
     focusControl(element);
-    if (categoryScroll.current?.contains(element)) {
+    let scroll = categoryScroll.current;
+    if (!scroll?.contains(element)) {
+      scroll = categoryMenu.current;
+    }
+    if (scroll?.contains(element)) {
       const item = element.getBoundingClientRect();
-      const clip = categoryScroll.current.getBoundingClientRect();
+      const clip = scroll.getBoundingClientRect();
       if (item.bottom > clip.bottom - 30) {
-        categoryScroll.current.scrollTop += item.bottom - clip.bottom + 30;
+        scroll.scrollTop += item.bottom - clip.bottom + 30;
       } else if (item.top < clip.top + 10) {
-        categoryScroll.current.scrollTop += item.top - clip.top - 10;
+        scroll.scrollTop += item.top - clip.top - 10;
       }
     } else if (root.current) {
       root.current.scrollTop = Math.max(0, element.offsetTop - 640);

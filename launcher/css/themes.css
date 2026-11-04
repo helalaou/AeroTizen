@@ -77,7 +77,8 @@ body.glass-ui {
   --settings-content-focus-surface: rgba(236, 242, 255, 0.055);
   --settings-sidebar-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.2);
   --settings-content-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.19);
-  --choice-selected-surface: rgba(236, 242, 255, 0.14);
+  --choice-selected-surface: rgba(189, 218, 255, 0.24);
+  --choice-selected-border: rgba(201, 225, 255, 0.55);
   --choice-focused-surface: rgba(236, 242, 255, 0.15);
   --selection-surface: #475269;
   --input-icon-badge: transparent;

@@ -1,9 +1,7 @@
 import { useMemo } from "preact/hooks";
 
 import { useStore } from "../shared/hooks/useStore";
-import { useTranslation } from "../shared/i18n/useTranslation";
 
-import { SettingsControl } from "./components/SettingsControl";
 import { useSettingsEnvironment } from "./hooks/useSettingsEnvironment";
 import { useSettingsNavigation } from "./hooks/useSettingsNavigation";
 import { SettingsDrawer } from "./layout/SettingsDrawer";
@@ -25,7 +23,6 @@ export const SettingsContent = ({
   previewing: boolean;
   openedAt: number;
 }) => {
-  const { t } = useTranslation();
   const { settings: store, inventory, services, actions } = useSettingsEnvironment();
   const settings = useStore(store);
   const { apps, inputs, continueSources, continueMessage } = useStore(inventory);
@@ -45,7 +42,6 @@ export const SettingsContent = ({
     continueEnabled: settings.continueWatching,
     animated,
     locationLabel,
-    clockLayout: settings.clockLayout,
   });
   const homeApps = useMemo(
     () => (
@@ -75,15 +71,6 @@ export const SettingsContent = ({
               active={active}
               describeApp={services.describeApp}
             />
-            <SettingsControl
-              id="escape"
-              class="escape"
-              focusKey="escape"
-              role="button"
-              onClick={actions.useSamsungHome}
-            >
-              {t("common.samsungHome")}
-            </SettingsControl>
           </>
         ),
         wallpaper: (
@@ -95,12 +82,8 @@ export const SettingsContent = ({
             webGL={webGL}
           />
         ),
-        status: (
-          <>
-            <WeatherSettings settings={settings} actions={actions} active={active} />
-            <ClockSettings settings={settings} actions={actions} clock={services.clock} openedAt={openedAt} />
-          </>
-        ),
+        status: <ClockSettings settings={settings} actions={actions} clock={services.clock} openedAt={openedAt} />,
+        weather: <WeatherSettings settings={settings} actions={actions} active={active} />,
         sources: <InputSettings settings={settings} actions={actions} inputs={inputs} />,
         language: <LanguageSettings language={settings.language} />,
       }}

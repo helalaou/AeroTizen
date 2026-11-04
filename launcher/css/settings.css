@@ -21,25 +21,20 @@
   font-weight: 700;
 }
 
-#editor .escape {
-  display: inline-block;
-  margin-top: 56px;
-  padding: 10px 14px;
-  font-size: 22px;
-  color: #55555c;
-  border-radius: 8px;
-}
-#editor .escape.focused {
-  transform: none;
-  color: #b8b8c0;
-  box-shadow: 0 0 0 3px #3a3a40;
-}
 body.previewing #editor.settings-drawer {
   visibility: hidden;
 }
-#editor .pill.preview-btn {
-  margin-left: 30px;
-  background: #2c2c30;
+#editor .choice-option > span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: break-word;
+}
+#editor .choice-option .ui-icon {
+  margin-right: 8px;
+  vertical-align: middle;
 }
 #editor .fill {
   position: absolute;
@@ -64,6 +59,9 @@ body.previewing #editor.settings-drawer {
   color: var(--muted);
   opacity: 0;
   min-width: 130px;
+}
+#editor .slider-hint .ui-icon {
+  vertical-align: middle;
 }
 #editor .slider.focused .slider-hint {
   opacity: 1;
@@ -92,8 +90,37 @@ body.previewing #editor.settings-drawer {
 #editor .name-pill input:focus {
   border-bottom-color: var(--focus);
 }
+#editor .weather-location-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  margin: 0 0 30px;
+}
+#editor .weather-search {
+  display: flex;
+  align-items: stretch;
+  min-height: 64px;
+  border: 2px solid var(--border-control);
+  border-radius: 17px;
+  background: var(--surface-control);
+}
+#editor .weather-search:focus-within {
+  border-color: var(--settings-focus-border);
+}
 #editor .weather-search input {
-  width: 520px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 18px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 20px;
+}
+#editor .weather-search input::placeholder {
+  color: var(--settings-subtitle);
 }
 #editor .weather-results {
   display: flex;
@@ -144,8 +171,8 @@ body.previewing #editor.settings-drawer {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  flex: 0 0 330px;
-  min-width: 330px;
+  flex: 0 0 var(--settings-sidebar-width);
+  min-width: 0;
   height: 100%;
   padding: 29px 13px 25px;
   background: transparent;
@@ -167,6 +194,8 @@ body.previewing #editor.settings-drawer {
 }
 #editor .settings-drawer__menu {
   position: relative;
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
   isolation: isolate;
@@ -180,7 +209,8 @@ body.previewing #editor.settings-drawer {
   display: flex;
   box-sizing: border-box;
   width: 100%;
-  min-height: 78px;
+  flex: 0 0 auto;
+  min-height: 72px;
   align-items: center;
   margin: 0 0 7px;
   padding: 10px;
@@ -226,13 +256,40 @@ body.previewing #editor.settings-drawer {
 #editor .settings-focus-indicator--sidebar.is-visible {
   opacity: 1;
 }
+#editor .settings-drawer__return {
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-control);
+}
+#editor .settings-drawer__return .settings-category {
+  min-height: 64px;
+  margin-bottom: 0;
+}
+#editor .settings-drawer__return strong {
+  font-size: 20px;
+  font-weight: 500;
+}
 #editor .settings-drawer__help {
   border-top: 1px solid var(--border-control);
   padding: 16px 2px 0;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
   font-size: 13px;
   color: var(--settings-muted);
-  white-space: nowrap;
+}
+#editor .settings-drawer__help > span {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 6px;
+}
+#editor .settings-drawer__help .ui-icon {
+  width: 15px;
+  height: 15px;
+}
+#editor .settings-drawer__help .ui-icon:last-of-type {
+  margin-right: 3px;
 }
 #editor .settings-drawer__content-head {
   position: relative;
@@ -272,10 +329,22 @@ body.previewing #editor.settings-drawer {
   overflow-x: hidden;
   padding: 24px 9px 25px 4px;
 }
-#editor h3 {
+#editor [data-section-pane="apps"] .settings-section + .settings-section {
+  margin-top: 30px;
+}
+#editor .settings-section__header {
   margin: 5px 0 15px;
+}
+#editor .settings-section__header h3 {
+  margin: 0;
   font-size: 24px;
   font-weight: 500;
+}
+#editor .settings-section__header p {
+  margin: 6px 0 0;
+  color: var(--settings-subtitle);
+  font-size: 20px;
+  line-height: 1.3;
 }
 #editor .hint {
   color: var(--muted);
@@ -325,16 +394,6 @@ body.previewing #editor.settings-drawer {
 #editor #all-apps {
   width: 100%;
   gap: 18px;
-}
-#editor #escape {
-  margin: 0 0 20px;
-  padding: 20px;
-  max-width: 800px;
-  width: 100%;
-  font-size: 21px;
-  text-align: left;
-  border-radius: 17px;
-  background: var(--surface-control);
 }
 #editor .settings-focus-indicator--content.is-visible {
   opacity: 1;
@@ -391,11 +450,10 @@ body.previewing #editor.settings-drawer {
   }
 }
 #editor.settings-drawer--collapsed .settings-drawer__frame {
-  width: 390px;
+  width: calc(var(--settings-sidebar-width) + 2px);
 }
 #editor.settings-drawer--collapsed .settings-drawer__sidebar {
-  flex: 1 1 auto;
-  border-right: 0;
+  border-right-color: transparent;
 }
 #editor.settings-drawer--collapsed .settings-drawer__main {
   display: none;
@@ -406,6 +464,8 @@ body.previewing #editor.settings-drawer {
   transform: none;
 }
 #editor .settings-drawer__frame {
+  --settings-sidebar-width: 330px;
+
   position: absolute;
   top: 112px;
   left: 60px;
@@ -477,10 +537,6 @@ body.previewing #editor.settings-drawer {
   background: var(--settings-content-focus-surface);
   box-shadow: var(--settings-content-focus-shadow);
 }
-#editor .pill.unit.on {
-  background: var(--choice-selected-surface);
-  color: #fff;
-}
 #editor .pill.unit.focused {
   border-color: transparent;
   outline: none;
@@ -505,13 +561,19 @@ body.previewing #editor.settings-drawer {
   flex: 0 1 200px;
   min-width: 160px;
   max-width: 100%;
-  min-height: 64px;
+  height: 72px;
   padding: 10px 16px;
   margin-left: 0;
   font-size: 20px;
   line-height: 24px;
   white-space: normal;
   text-align: center;
+}
+#editor .pill.unit[aria-pressed="true"] {
+  background: var(--choice-selected-surface);
+}
+body.glass-ui #editor .pill.unit[aria-pressed="true"]:not(.focused) {
+  border-color: var(--choice-selected-border);
 }
 #editor .units {
   margin-bottom: 40px;
@@ -521,6 +583,10 @@ body.previewing #editor.settings-drawer {
   margin: 0 0 30px;
   gap: 12px;
   align-items: stretch;
+}
+#editor #clock-layouts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 #editor .name-pill {
   display: flex;
@@ -558,7 +624,7 @@ body.previewing #editor.settings-drawer {
   display: flex;
   align-items: center;
   background: #1c1c1e;
-  min-height: 64px;
+  min-height: 72px;
   padding: 10px 16px;
   border-radius: 17px;
   gap: 16px;

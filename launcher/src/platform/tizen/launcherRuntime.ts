@@ -36,6 +36,7 @@ export interface LauncherRuntime {
     messageKey: MessageKey | "";
     sources: ContinueSource[];
     open(item: ContinueItem): void;
+    start(): void;
     subscribe(listener: () => void): () => void;
   };
   hideToast(): void;

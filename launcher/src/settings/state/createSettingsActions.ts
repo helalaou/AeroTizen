@@ -40,8 +40,11 @@ export const createSettingsActions = (
     setWeatherVisible: (showWeather) => commit({ showWeather }, services.applyWeatherVisibility),
     setLocationVisible: (weatherShowLocation) => commit({ weatherShowLocation }, services.applyLocationVisibility),
     setTempUnit: (tempUnit) => commit({ tempUnit }, services.refreshWeather),
-    setClockLayout: (clockLayout) => commit({ clockLayout }, services.applyClock),
-    setClockStyle: (aeroClockStyle) => commit({ aeroClockStyle }, services.applyClock),
+    setClockLayout: (layout) =>
+      commit(
+        layout === "classic" ? { clockLayout: "classic" } : { clockLayout: "custom", aeroClockStyle: layout },
+        services.applyClock,
+      ),
     setDateFormat: (dateFormat) => commit({ dateFormat }, services.applyClock),
     setNetworkVisible: (showNetwork) => commit({ showNetwork }, services.applyNetworkVisibility),
     setLiveTvVisible: (showLiveTv) => commit({ showLiveTv }, services.applyInputs),

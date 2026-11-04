@@ -260,16 +260,18 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
           "Back leaves the slider, not Settings",
         );
       }
-      if (variant === "preact") find("app:" + A.apps.all[0].id).click();
+      if (variant === "preact") {
+        find("app:" + A.apps.all[0].id).click();
+        for (let i = 0; i < 60; i++) key(K.DOWN);
+        assert(document.querySelector(".settings-drawer__scroll").scrollTop > 0, "focus scrolls apps into view");
+        key(K.ESC);
+      }
       for (let i = 0; i < 60; i++) key(K.DOWN);
       assert(document.querySelector("#editor .focused").textContent.includes("Samsung Home"), "bottom row reachable");
-      assert(
-        (variant === "preact" ? document.querySelector(".settings-drawer__scroll") : document.querySelector("#editor"))
-          .scrollTop > 0,
-        "focus scrolls into view",
-      );
+      if (variant === "baseline") {
+        assert(document.querySelector("#editor").scrollTop > 0, "focus scrolls into view");
+      }
       key(K.ESC);
-      if (variant === "preact") key(K.ESC);
       assert(!A.settingsUi.isOpen(), "Back closes Settings");
       A.settings.home = [];
       A.settings.save();
@@ -379,6 +381,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     // A pending reply delivered after close + reopen must remain cancelled.
     const replies = [];
     window.Weather.searchLocations = (query, done) => replies.push(done);
+    document.querySelector('[data-key="section:weather"]').click();
     const query = find("weather:query").querySelector("input");
     query.value = "Pending";
     query.dispatchEvent(new Event("input", { bubbles: true }));

@@ -2,6 +2,7 @@ import type { ContinueSource } from "../../contracts/launcher";
 import type { MessageKey } from "../../shared/i18n/catalogues";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../components/ChoiceGroup";
+import { SettingsSection } from "../components/SettingsSection";
 import type { SettingsSectionProps, SettingsServices } from "../types";
 
 import { AppOption } from "./apps/AppOption";
@@ -21,9 +22,7 @@ interface Props extends SettingsSectionProps {
 export const ContinueWatchingSettings = ({ settings, actions, sources, message, active, describeApp }: Props) => {
   const { t } = useTranslation();
   return (
-    <section aria-label={t("continue.settings")}>
-      <h3>{t("home.continueWatching")}</h3>
-      <p class="hint">{t("continue.hint")}</p>
+    <SettingsSection title={t("home.continueWatching")} description={t("continue.hint")} label={t("continue.settings")}>
       <ChoiceGroup
         id="continue-watching"
         label={t("home.continueWatching")}
@@ -33,7 +32,7 @@ export const ContinueWatchingSettings = ({ settings, actions, sources, message, 
       />
       {settings.continueWatching && (
         <>
-          <p class="hint">{t("continue.chooseApps")}</p>
+          {sources.length > 0 && <p class="hint">{t("continue.chooseApps")}</p>}
           {message && (
             <p class="hint" role="status">
               {t(message)}
@@ -56,6 +55,6 @@ export const ContinueWatchingSettings = ({ settings, actions, sources, message, 
           </div>
         </>
       )}
-    </section>
+    </SettingsSection>
   );
 };

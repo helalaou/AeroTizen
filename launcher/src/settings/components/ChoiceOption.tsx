@@ -12,13 +12,13 @@ interface Props {
 export const ChoiceOption = ({ id, selected = false, onSelect, children }: Props) => {
   return (
     <SettingsControl
-      class={"pill unit choice-option" + (selected ? " on" : "")}
+      class="pill unit choice-option"
       focusKey={id}
       role="button"
       aria-pressed={selected}
       onClick={onSelect}
     >
-      {children}
+      <span>{children}</span>
     </SettingsControl>
   );
 };

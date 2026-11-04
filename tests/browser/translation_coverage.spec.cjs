@@ -194,6 +194,7 @@ for (const glassSettings of [false, true]) {
       await expectTranslatedScreen(page, `wallpaper ${group}`);
     }
     await visit("status", "clock.layout");
+    await visit("weather", "weather.visibility");
     const search = page.getByPlaceholder(pseudoText("weather.searchPlaceholder"));
     await expect(search).toHaveAccessibleName(pseudoText("weather.locationLabel"));
     await page.locator('[data-key="weather:search"]').click();

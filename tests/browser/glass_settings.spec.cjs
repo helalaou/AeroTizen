@@ -44,9 +44,23 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   await expect(page.locator('[data-key="section:apps"]')).toHaveClass(/focused/);
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-section-pane="apps"]')).toBeVisible();
+  const paneScroll = page.locator(".settings-drawer__scroll");
+  const scrollToEnd = (node) => (node.scrollTop = node.scrollHeight);
+  expect(await paneScroll.evaluate(scrollToEnd)).toBeGreaterThan(0);
+  await page.locator('[data-key="section:sources"]').click();
+  await expect(paneScroll).toHaveJSProperty("scrollTop", 0);
+  await page.locator('[data-key="section:wallpaper"]').click();
+  await expect(paneScroll).toHaveJSProperty("scrollTop", 0);
+  await page.locator('[data-key="section:apps"]').click();
+  await expect(paneScroll).toHaveJSProperty("scrollTop", 0);
+  await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", "add");
+  expect(await paneScroll.evaluate(scrollToEnd)).toBeGreaterThan(0);
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("ArrowRight");
+  await expect(paneScroll).toHaveJSProperty("scrollTop", 0);
   await page.keyboard.press("Escape");
   await expect(page.locator("#editor")).toHaveClass(/settings-drawer--collapsed/);
-  for (const category of ["appearance", "apps", "wallpaper", "status", "sources"]) {
+  for (const category of ["appearance", "apps", "wallpaper", "status", "weather", "sources"]) {
     await page.locator(`[data-key="section:${category}"]`).click();
     await expect(page.locator(`[data-section-pane="${category}"]`)).toBeVisible();
     await expect(page.locator("#editor .focused")).toHaveCount(1);
@@ -123,11 +137,23 @@ for (const glass of [false, true])
       expect(bounds.sides).toEqual(["0px", "0px", "0px", "0px"]);
       expect(bounds.width).toBe(height === 720 ? 1280 : 1920);
       expect(bounds.height).toBe(height);
+      const sidebar = page.locator(".settings-drawer__sidebar");
+      const sidebarWidth = (await sidebar.boundingBox()).width;
+      const categoryWidth = (await page.locator('[data-key="section:appearance"]').boundingBox()).width;
       for (let i = 0; i < 8; i++) await page.keyboard.press("ArrowDown");
+      const footer = page.getByRole("button", { name: "Samsung Home", exact: true }).and(page.locator("#escape"));
+      await expect(footer).toBeFocused();
+      await expect(footer).toBeInViewport();
+      await page.keyboard.press("ArrowRight");
+      await expect(footer).toBeFocused();
+      await page.keyboard.press("ArrowUp");
       await expect(page.locator('[data-key="section:language"]')).toHaveClass(/focused/);
       await page.keyboard.press("ArrowUp");
       await expect(page.locator('[data-key="section:sources"]')).toHaveClass(/focused/);
       await page.keyboard.press("ArrowRight");
+      await expect(page.locator('[data-section-pane="sources"]')).toBeVisible();
+      expect((await sidebar.boundingBox()).width).toBe(sidebarWidth);
+      expect((await page.locator('[data-key="section:appearance"]').boundingBox()).width).toBe(categoryWidth);
       for (let i = 0; i < 20; i++) await page.keyboard.press("ArrowDown");
       const visible = await page.locator("#editor .focused").evaluate((el) => {
         const r = el.getBoundingClientRect(),

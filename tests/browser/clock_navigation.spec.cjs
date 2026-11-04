@@ -21,15 +21,19 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-test("clock layout changes update remote navigation before the next directional key", async ({ page }) => {
+test("clock layouts are in one group and keep remote navigation stable on selection", async ({ page }) => {
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.ready);
   await page.locator("#gear").click();
   await openCategory(page, "status");
-  await page.locator('[data-key="clock-layouts:custom"]').click();
-  await page.keyboard.press("ArrowDown");
-  await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", /^clock-styles:/);
-  await page.locator('[data-key="clock-layouts:classic"]').click();
+  await expect(page.locator("#clock-layouts .choice-option:visible")).toHaveCount(5);
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", "clock-layouts:vertical");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#editor .focused")).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("Enter");
+  await expect(page.locator('[data-key="clock-layouts:classic"]')).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("ArrowDown");
   await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", "time:12");
 });

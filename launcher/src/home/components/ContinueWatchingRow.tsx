@@ -6,6 +6,7 @@ import { useTranslation } from "../../shared/i18n/useTranslation";
 import type { HomeEnvironment } from "../types";
 
 import { ContinueWatchingCard } from "./ContinueWatchingCard";
+import { HomeSectionHeading } from "./HomeSectionHeading";
 
 export const ContinueWatchingRow = ({
   env,
@@ -28,8 +29,8 @@ export const ContinueWatchingRow = ({
     }
   }, [env, items, continueOffset]);
   return (
-    <section id="continue-section" class="row-wrap" hidden={!visible || !items.length}>
-      <h2>{t("home.continueWatching")}</h2>
+    <section id="continue-section" hidden={!visible || !items.length}>
+      <HomeSectionHeading title={t("home.continueWatching")} />
       <div class="continue-viewport" ref={env.continueViewport}>
         <div
           id="continue-items"

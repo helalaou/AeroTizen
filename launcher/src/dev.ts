@@ -1,3 +1,4 @@
+import "./devContinueWatching";
 import "./index";
 
 // The legacy boot script must run after the Home and Settings controllers are registered.
