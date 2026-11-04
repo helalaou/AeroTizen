@@ -54,6 +54,7 @@ const findUntranslated = (page) =>
           (languageCode && text === languageNames[languageCode]) ||
           (text === releaseNote && element.matches(".about-release-notes li")) ||
           (text === "aerotizen update launcher" && element.matches(".about-update-command code")) ||
+          (text === "github.com/helalaou/AeroTizen" && element.matches(".about-facts code")) ||
           (dates.includes(text) && element.closest('#date, #date-formats [data-key]:not([data-key="date:none"])'))
         ) {
           return;
