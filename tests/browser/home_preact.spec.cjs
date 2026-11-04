@@ -105,8 +105,14 @@ test("Back to top restores scroll and focus from below a partial app row", async
   const viewportBounds = await page.locator(".content-viewport").boundingBox();
   const buttonBounds = await button.boundingBox();
   expect(viewportBounds.y + viewportBounds.height - buttonBounds.y - buttonBounds.height).toBeCloseTo(80, 0);
+  const fill = await button.evaluate((node) => getComputedStyle(node).background);
   await page.keyboard.press("ArrowUp");
   await expect(tiles.last()).toBeFocused();
+  await expect.poll(async () => (await button.boundingBox()).y).toBeCloseTo(buttonBounds.y, 0);
+  await expect(button).toHaveCSS("background", fill);
+  await page.keyboard.press("ArrowUp");
+  await expect(button).not.toBeInViewport();
+  await page.keyboard.press("ArrowDown");
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
   await expect(tiles.first()).toBeFocused();

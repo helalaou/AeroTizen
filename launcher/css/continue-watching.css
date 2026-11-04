@@ -1,8 +1,8 @@
 /* continue watching: component-owned styles. */
 .continue-viewport {
-  overflow: hidden;
-  margin: -16px;
-  padding: 16px;
+  /* Home's content viewport clips at the screen edges. */
+  margin: 0 calc(-1 * var(--home-side-padding));
+  padding: 0 var(--home-side-padding);
 }
 #continue-items {
   position: relative;
@@ -113,8 +113,4 @@ body.glass-ui .continue-card.focused {
     background: var(--continue-surface);
     box-shadow: var(--continue-shadow);
   }
-}
-#home-root .continue-viewport {
-  margin: -32px;
-  padding: 32px;
 }

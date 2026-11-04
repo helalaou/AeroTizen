@@ -16,7 +16,7 @@ import type { HomeEnvironment } from "./types";
 export const Home = ({ env }: { env: HomeEnvironment }) => {
   const { t } = useTranslation();
   const settings = useStore(env.settings);
-  const { page, active, draft, scroll, selected } = useStore(env.state);
+  const { page, active, appsEndOffset, draft, scroll } = useStore(env.state);
   const { apps, inputs, items, ready } = useStore(env.inventory);
   const home = draft || (settings.homeInitialized ? settings.home : [env.runtime.config.FIREPLACE_ID]);
   const visibleHome = home.filter(
@@ -31,19 +31,21 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
     visibleHome.length > 0 &&
     visibleHome.length <= env.columns(settings);
   const viewportClass = "content-viewport" + (scroll > 0 ? " is-scrolled" : "");
+  const atAppsEnd = page === "apps" && scroll === appsEndOffset;
+  const dockClass = dockInputs ? "rows--dock-inputs" : undefined;
   useLayoutEffect(() => {
     env.bridge.focus();
   }, [env, page, apps, inputs, items, ready, settings.home, settings.homeInitialized, draft, size]);
   return (
     <>
       <HomeHeader env={env} />
-      <div class={viewportClass + (selected === "back-to-top" ? " is-at-apps-end" : "")} aria-hidden={!active}>
+      <div class={viewportClass + (atAppsEnd ? " is-at-apps-end" : "")} aria-hidden={!active}>
         <div class="content-mask">
           <main
             id="rows"
-            class={dockInputs ? "rows--dock-inputs" : undefined}
+            class={page === "apps" ? "rows--apps" : dockClass}
             ref={env.rows}
-            style={{ "--home-offset": -scroll + "px" }}
+            style={{ "--home-offset": -scroll + "px", "--apps-end-offset": appsEndOffset + "px" }}
           >
             <div class="home-page-surface" data-page={page}>
               <AppGrid

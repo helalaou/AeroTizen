@@ -5,9 +5,9 @@ import type { LauncherRuntime } from "./platform/tizen/launcherRuntime";
 const programmes = [
   ["After the Tide", "Netflix", 1, 1, 3, 62, "#142854", "#6e9ba8"],
   ["Paper Moons", "Prime Video", 3, 0, 0, 0, "#241a48", "#d5837c"],
-  ["The Lantern Trail", "Disney+", 6, 2, 1, 83, "#0e3531", "#bbaf63"],
+  ["The Lantern Trail", "YouTube", 0, 2, 1, 83, "#0e3531", "#bbaf63"],
   ["Signal North and the Last Broadcast from the Edge of the World", "Apple TV", 8, 0, 0, 43, "#20345b", "#7baad9"],
-  ["A Quiet Orbit", "BBC iPlayer", 9, 0, 0, 16, "#34233d", "#b998ba"],
+  ["A Quiet Orbit", "Prime Video", 3, 0, 0, 16, "#34233d", "#b998ba"],
 ] as const;
 
 const artwork = (dark: string, light: string, index: number) =>

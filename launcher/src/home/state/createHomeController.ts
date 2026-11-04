@@ -117,6 +117,7 @@ export const createHomeController = (
   const { runtime, settings, inventory, nodes } = env;
   const state = createStore<HomeState>({
     page: "home",
+    appsEndOffset: 0,
     scroll: 0,
     continueOffset: 0,
     selected: "",
@@ -214,27 +215,27 @@ export const createHomeController = (
       }
     }
     const mainTop = main.getBoundingClientRect().top;
-    if (selected === "back-to-top") {
-      const lastApp = nodes.get(list[list.length - 2][0]);
-      const grid = lastApp?.parentElement;
-      if (lastApp && grid) {
-        // The grid edge stays fixed while the last app's focus scale animates.
-        const lastRowTop = grid.getBoundingClientRect().bottom - lastApp.offsetHeight;
-        update({ scroll: Math.max(0, lastRowTop - mainTop - APPS_END_CLEARANCE) });
-        return;
-      }
+    const lastAppRow = pending.page === "apps" ? list[list.length - 2] : undefined;
+    const lastApp = lastAppRow && nodes.get(lastAppRow[0]);
+    const grid = lastApp?.parentElement;
+    // The grid edge stays fixed while the last app's focus scale animates.
+    const lastRowTop = lastApp && grid ? grid.getBoundingClientRect().bottom - lastApp.offsetHeight - mainTop : 0;
+    const appsEndOffset = Math.max(0, Math.round(lastRowTop - APPS_END_CLEARANCE));
+    if (selected === "back-to-top" || (pending.scroll === pending.appsEndOffset && lastAppRow?.includes(selected))) {
+      update({ appsEndOffset, scroll: appsEndOffset });
+      return;
     }
     const rect = node.getBoundingClientRect();
     const origin = main.parentElement?.getBoundingClientRect().top || 0;
     const scroll = getScrollOffset({
       selected,
       rows: list,
-      previous: state.getSnapshot().scroll,
+      previous: pending.scroll,
       top: rect.top - mainTop + origin,
       bottom: rect.bottom - mainTop + origin,
       origin,
     });
-    update({ scroll });
+    update({ appsEndOffset, scroll });
   };
   const select = (selected: string) => {
     if (state.getSnapshot().selected !== selected) {
@@ -258,7 +259,7 @@ export const createHomeController = (
   const showPage = (page: Page) => {
     cancelPress();
     endMove();
-    update({ page, scroll: 0, menu: null, selected: page === "home" ? "home-tab" : "apps-tab" });
+    update({ page, appsEndOffset: 0, scroll: 0, menu: null, selected: page === "home" ? "home-tab" : "apps-tab" });
     focus();
   };
   const activate = (key: string) => {

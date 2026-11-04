@@ -20,6 +20,7 @@ export interface HomeMenuChoice {
 }
 export interface HomeState {
   readonly active: boolean;
+  readonly appsEndOffset: number;
   readonly continueOffset: number;
   readonly draft: readonly string[] | null;
   readonly menu: Readonly<{ id: string; selected: number }> | null;

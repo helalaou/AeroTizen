@@ -28,6 +28,8 @@ body {
   --header-focus-surface: rgba(124, 92, 255, 0.16);
   --header-focus-shadow: none;
   --header-gear-border: 0px;
+  --back-to-top-surface: #30343f;
+  --back-to-top-border: #a1a9ba;
   --settings-surface: #1c1c1e;
   --settings-main-surface: #141416;
   --settings-border: #444448;

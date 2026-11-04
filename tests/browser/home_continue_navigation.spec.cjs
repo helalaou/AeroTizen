@@ -78,6 +78,14 @@ for (const scenario of [
       apps = page.locator("#grid > .tile");
     await expect(cards).toHaveCount(10);
     await expect(apps).toHaveCount(scenario.count);
+    await expect
+      .poll(() =>
+        page.locator(".continue-viewport").evaluate((viewport) => {
+          const { left, right } = viewport.getBoundingClientRect();
+          return [left, right];
+        }),
+      )
+      .toEqual([0, 1920]);
     const lastRow = Math.floor((scenario.count - 1) / scenario.columns),
       start = lastRow * scenario.columns;
     for (let i = 0; i < lastRow; i++) await page.keyboard.press("ArrowDown");
