@@ -26,6 +26,7 @@ GETTERS = (
 CAPABILITIES = ("CapInh", "CapPrm", "CapEff", "CapBnd", "CapAmb")
 CHECKS = (*("library." + name for name in LIBRARIES), *("getter." + name for name in GETTERS))
 STATUSES = {"ok", "absent", "unavailable", "missing_library", "missing_symbol", "skipped", "error"}
+STARTUP_MARKER_PREFIX = "AEROTIZEN_RUNTIME_STARTUP_MARKER="
 
 
 def load_helper():
@@ -47,7 +48,8 @@ def parse_output(result, capabilities, launcher):
         code = result["exit_code"]
         if type(code) is not int or not 0 <= code <= 255 or launcher not in sdk.PROBE_LAUNCHERS:
             raise ValueError("Invalid execution")
-        fields, launchers, timeouts = {}, [], []
+        fields, launchers, timeouts, markers = {}, [], [], []
+        launcher_errors = set()
         allowed = {
             "started",
             "complete",
@@ -67,14 +69,30 @@ def parse_output(result, capabilities, launcher):
                 launchers.append(line.split("=", 1)[1])
             elif line.startswith("AEROTIZEN_RUNTIME_TIMEOUT="):
                 timeouts.append(line.split("=", 1)[1])
+            elif line.startswith(STARTUP_MARKER_PREFIX):
+                markers.append(line[len(STARTUP_MARKER_PREFIX) :])
+            elif line.startswith(sdk.RUNTIME_ERROR_PREFIX):
+                category = line[len(sdk.RUNTIME_ERROR_PREFIX) :]
+                if category in sdk.RUNTIME_ERROR_PATTERNS:
+                    launcher_errors.add(category)
             elif line.startswith(PREFIX):
                 key, value = line[len(PREFIX) :].split("\t")
                 if key not in allowed or key in fields:
                     raise ValueError("Unknown or repeated field")
                 fields[key] = value
+            else:
+                message = line.lower()
+                launcher_errors.update(
+                    category
+                    for category, pattern in sdk.RUNTIME_ERROR_PATTERNS.items()
+                    if re.search(pattern, message)
+                )
         if len(launchers) != 1 or launchers[0] not in ("available", "missing") or timeouts not in ([], ["1"]):
             raise ValueError("Invalid launcher result")
         available = launchers[0] == "available"
+        if markers not in ([], ["written"], ["not_observed"]) or (markers and not available):
+            raise ValueError("Invalid startup marker result")
+        startup_marker = markers[0] if markers else None
         complete = fields.get("complete") == "1"
         if any(fields.get(key, "1") != "1" for key in ("started", "complete")):
             raise ValueError("Invalid completion")
@@ -124,11 +142,12 @@ def parse_output(result, capabilities, launcher):
                 if capabilities.get("cpu_arch") in home_probe.ARCHITECTURES
                 else None,
             },
-            "launcher": {"path": launcher, "available": available},
+            "launcher": {"path": launcher, "available": available, "errors": sorted(launcher_errors)},
             "execution": {
                 "state": state,
                 "exit_code": code,
-                "managed_started": fields.get("started") == "1",
+                "managed_started": startup_marker == "written" or fields.get("started") == "1",
+                "startup_marker": startup_marker,
                 "managed_completed": complete,
                 "target_framework": "netcoreapp3.0",
                 "runtime": runtime,

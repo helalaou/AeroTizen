@@ -20,6 +20,22 @@ CLEANUP_MARKER = "AEROTIZEN_SDK_CLEANED"
 EXIT_PREFIX = "AEROTIZEN_SDK_EXIT="
 DOTNET_UNAVAILABLE_MARKER = "AEROTIZEN_SDK_DOTNET_UNAVAILABLE"
 PROBE_LAUNCHERS = ("/usr/bin/dotnet-launcher", "/usr/bin/dotnet-launcher-inhouse")
+RUNTIME_ERROR_PREFIX = "AEROTIZEN_RUNTIME_LAUNCHER_ERROR="
+# Keep these patterns compatible with both Python re and the TV's awk.
+RUNTIME_ERROR_PATTERNS = {
+    "access_denied": "permission denied|operation not permitted|access denied|eacces|eperm",
+    "app_context_unavailable": "getlaunchedapppackageid.*(fail|error)|failed to get (the )?(app|package) id",
+    "assembly_load_failed": (
+        "failed to (load|execute)( the)? assembly|could not load file or assembly|badimageformatexception"
+    ),
+    "invalid_launcher_option": "(unrecognized|unknown|invalid) option",
+    "missing_dependency": "cannot open shared object file|dllnotfoundexception|undefined symbol",
+    "runtime_load_failed": (
+        "failed to (initialize|load|create) (the )?(coreclr|runtime)|"
+        "framework.*not found|you must install or update [.]net"
+    ),
+    "unhandled_exception": "unhandled exception",
+}
 
 
 def build_script(files, entrypoint, args, callback, port, token):
@@ -53,16 +69,17 @@ def _path(token, name):
     return f"{DIRECTORY}/ah-{token}-{name}"
 
 
-def _build_script(files, body, callback, port, token):
+def _build_script(files, body, callback, port, token, scratch=()):
     ipaddress.IPv4Address(callback)
     if not re.fullmatch(r"[a-f0-9]{12}", token) or not 1 <= port <= 65535:
         raise ValueError("Invalid SDK staging token or callback port")
-    if any(not re.fullmatch(r"[A-Za-z0-9_.-]{1,80}", name) for name in files):
+    if any(not re.fullmatch(r"[A-Za-z0-9_.-]{1,80}", name) for name in (*files, *scratch)):
         raise ValueError("Invalid SDK payload names")
     stage = f"{DIRECTORY}/ah-{token}.s"
     claimed = stage[:-1] + "r"
     paths = {name: _path(token, name) for name in files}
-    cleanup = "rm -f " + " ".join(shlex.quote(path) for path in [stage, claimed, *paths.values()])
+    cleanup_paths = [stage, claimed, *paths.values(), *(_path(token, name) for name in scratch)]
+    cleanup = "rm -f " + " ".join(shlex.quote(path) for path in cleanup_paths)
     script = (
         "set -u\numask 077\n"
         + "trap "
@@ -129,10 +146,19 @@ def build_standalone_probe(files, entrypoint, launcher, callback, port, token):
             f"printf '%s  %s\\n' {hashlib.sha256(data).hexdigest()} "
             f"{shlex.quote(_path(token, name))} | sha256sum -c - >/dev/null"
         )
+    marker = entrypoint + ".started"
+    assembly_path = shlex.quote(_path(token, entrypoint))
+    classify_log = "{ message = tolower($0); " + " ".join(
+        f'if (message ~ /{pattern}/) errors["{category}"] = 1;'
+        for category, pattern in RUNTIME_ERROR_PATTERNS.items()
+    )
+    classify_log += f'}} END {{ for (category in errors) print "{RUNTIME_ERROR_PREFIX}" category }}'
     lines.extend(
         [
+            f"probe_marker={shlex.quote(_path(token, marker))}",
+            '(set -C; printf "0\\n" > "$probe_marker")',
             # Bound startup as well as getters. Retail TVs need not have `timeout`.
-            f"{launcher} --standalone {shlex.quote(_path(token, entrypoint))} &",
+            f"{launcher} --standalone {assembly_path} &",
             "probe_pid=$!",
             "(",
             "  sleep 12 >/dev/null 2>&1 3>&-",
@@ -146,10 +172,26 @@ def build_standalone_probe(files, entrypoint, launcher, callback, port, token):
             'result=0; wait "$probe_pid" || result=$?',
             'kill "$watchdog_pid" 2>/dev/null || true',
             'wait "$watchdog_pid" 2>/dev/null || true',
+            'if [ -f "$probe_marker" ] && [ ! -L "$probe_marker" ] &&',
+            '    read -r -n 1 marker < "$probe_marker"; then',
+            '  if [ "$marker" = 1 ]; then',
+            "    printf '\\nAEROTIZEN_RUNTIME_STARTUP_MARKER=written\\n'",
+            "  else",
+            "    printf '\\nAEROTIZEN_RUNTIME_STARTUP_MARKER=not_observed\\n'",
+            "  fi",
+            "fi",
+            # Some Samsung launchers redirect stderr to a per-process log.
+            'for log in /tmp/dotnet_error."$probe_pid".*.log; do',
+            '  [ -f "$log" ] && [ ! -L "$log" ] && [ -r "$log" ] || continue',
+            f'  [[ "$log" -ot {assembly_path} ]] && continue',
+            '  printf "\\n"',
+            f'  head -c 8192 "$log" 2>/dev/null | awk {shlex.quote(classify_log)} 2>/dev/null || true',
+            "  break",
+            "done",
             'exit "$result"',
         ]
     )
-    return _build_script(files, "\n".join(lines), callback, port, token)
+    return _build_script(files, "\n".join(lines), callback, port, token, scratch=(marker,))
 
 
 def run_standalone_probe(session, files, entrypoint, launcher):

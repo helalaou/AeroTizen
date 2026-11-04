@@ -105,6 +105,14 @@ internal static class RuntimeProbe
 
     public static int Main(string[] args)
     {
+        try
+        {
+            string markerPath = typeof(RuntimeProbe).Assembly.Location + ".started";
+            using (var marker = new FileStream(markerPath, FileMode.Open, FileAccess.Write))
+                marker.WriteByte((byte)'1');
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
         Emit("started", 1);
         if (args.Length != 0) return 2;
         Emit("runtime", RuntimeInformation.FrameworkDescription);

@@ -27,11 +27,17 @@ or if the managed process unexpectedly runs as root.
 Reports contain getter status and numeric return/errno codes, **not setting
 values**. A successful app lookup or an explicit “no such app” result distinguishes
 access from missing registration. Other unavailable values do not imply absence.
-Raw launcher output, exception messages, device IDs, IP addresses, app lists,
-account data and signing material are excluded.
+Reports include fixed launcher error categories for recognised messages, such as
+`runtime_load_failed` and `access_denied`. The probe checks console output and,
+if readable, the first 8 KiB of a current Samsung error log for the launcher PID.
+It leaves the system log in place. Raw messages, device IDs, IP addresses, app
+lists, account data and signing material are excluded from the report.
 
 The command uploads one temporary script, a DLL and its runtime configuration to
-the standard SDK tools folder. A TV-side watchdog attempts to terminate the
+the standard SDK tools folder. The script prepares a temporary startup marker
+that the helper updates as soon as it enters `Main()`. The script reads the
+marker separately from the console and removes it with the other staged files.
+A TV-side watchdog attempts to terminate the
 launcher after 12 seconds, then attempts a forced stop two seconds later. The
 report is saved only after the transport confirms staging cleanup. If the launcher
 changes identity so it cannot be stopped, or the connection fails, the transport
@@ -49,6 +55,13 @@ The output's parent folder must already exist. Review the report before sharing.
 - `missing_launcher`: the selected executable is absent or not executable.
 - `failed`: the executable failed, or no complete managed report was received.
 - `timed_out`: the watchdog reached its time limit.
+- `execution.startup_marker: written` confirms that managed code ran even when
+  the launcher did not forward console output. `not_observed` means the marker
+  stayed unset. `null` means it could not be checked. The marker requires write
+  access from the launched process. `managed_started` is true if either the file
+  or the console shows startup.
+- `launcher.errors` contains recognised error categories. An empty list can also
+  mean the launcher emitted no matching message or its log was unavailable.
 - Getter `ok`: the native getter returned successfully. No value is exported.
 - Getter `absent`: the app-manager getter explicitly reported no AeroTizen app.
 - `missing_library`, `missing_symbol`, `unavailable`, `error` or `skipped`: the

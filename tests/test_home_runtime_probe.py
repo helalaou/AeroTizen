@@ -85,13 +85,15 @@ def test_runtime_and_identity_output_cannot_export_private_data():
     report = probe.parse_output(
         result(
             managed_output(runtime=private, uid=private, gid=private, security_label=private, CapEff=private)
-            + private
+            + f"Could not load file or assembly {private}\n"
+            + f"{sdk.RUNTIME_ERROR_PREFIX}{private}\n"
         ),
         {"duid": private, "cpu_arch": private, "platform_version": private},
         sdk.PROBE_LAUNCHERS[0],
     )
     assert private not in json.dumps(report)
     assert report["execution"]["uid"] is None
+    assert report["launcher"]["errors"] == ["assembly_load_failed"]
 
 
 @pytest.mark.parametrize("alteration", ["cleanup", "duplicate", "unknown", "incomplete", "status", "exit"])
@@ -138,21 +140,25 @@ def test_shipped_payload_is_net30_and_matches_getter_only_source():
     }
 
 
-@pytest.mark.parametrize("mode", ["success", "failure", "missing", "timeout", "ignore_term", "tamper"])
+@pytest.mark.parametrize(
+    "mode", ["success", "marker_only", "failure", "missing", "timeout", "ignore_term", "tamper"]
+)
 def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_path, mode):
     executable = tmp_path / "launcher"
-    executable.write_text(
-        "#!/bin/bash\n"
-        + (
-            "trap '' TERM\nwhile :; do :; done\n"
-            if mode == "ignore_term"
-            else "while :; do :; done\n"
-            if mode == "timeout"
-            else "exit 9\n"
-            if mode == "failure"
-            else "printf '%s\\n' " + shlex.quote(managed_output().split("\n", 1)[1])
-        )
+    log_prefix = str(tmp_path / "dotnet_error.")
+    marker_only = (
+        'printf 1 > "$2.started"\n'
+        "printf '%s\\n' 'Failed to initialize CoreCLR /private/user' "
+        f"'AEROTIZEN_RUNTIME_STARTUP_MARKER=unexpected' > {shlex.quote(log_prefix)}$$.probe.log\n"
+        f"printf '%s\\n' 'Permission denied' > {shlex.quote(log_prefix)}$PPID.other.log\n"
     )
+    body = {
+        "ignore_term": "trap '' TERM\nwhile :; do :; done\n",
+        "timeout": "while :; do :; done\n",
+        "marker_only": marker_only,
+        "failure": "exit 9\n",
+    }.get(mode, "printf '%s\\n' " + shlex.quote(managed_output().split("\n", 1)[1]))
+    executable.write_text("#!/bin/bash\n" + body)
     executable.chmod(0o600 if mode == "missing" else 0o700)
     uploads = []
 
@@ -168,6 +174,7 @@ def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_
                 data = data.decode().replace(sdk.DIRECTORY, str(tmp_path))
                 data = data.replace('test "$(id -u)" = 901', ":")
                 data = data.replace(sdk.PROBE_LAUNCHERS[0], shlex.quote(str(executable)))
+                data = data.replace("/tmp/dotnet_error.", shlex.quote(log_prefix))
                 if mode in ("timeout", "ignore_term"):
                     data = data.replace("sleep 12", "sleep 1").replace("sleep 2", "sleep 0.1")
                 if not shutil.which("sha256sum"):
@@ -191,6 +198,7 @@ def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_
         report["execution"]["state"]
         == {
             "success": "completed",
+            "marker_only": "failed",
             "failure": "failed",
             "missing": "missing_launcher",
             "timeout": "timed_out",
@@ -199,6 +207,15 @@ def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_
         }[mode]
     )
     assert report["transport"]["staging_cleaned"]
+    if mode == "marker_only":
+        assert report["execution"]["managed_started"] is True
+        assert report["execution"]["managed_completed"] is False
+        assert report["execution"]["startup_marker"] == "written"
+        assert report["launcher"]["errors"] == ["runtime_load_failed"]
+        assert "/private/user" not in json.dumps(report)
+    elif mode == "failure":
+        assert report["execution"]["managed_started"] is False
+        assert report["execution"]["startup_marker"] == "not_observed"
     if mode == "ignore_term":
         assert report["execution"]["exit_code"] == 137
 
@@ -292,10 +309,13 @@ def test_compiled_probe_runs_on_host_and_skips_native_checks(tmp_path):
         pytest.skip("Install .NET 6 to run the compiled diagnostic outside Tizen")
     for name, data in probe.load_helper().items():
         (tmp_path / name).write_bytes(data)
+    marker = tmp_path / (probe.FILES[0] + ".started")
+    marker.write_bytes(b"0\n")
     process = subprocess.run(
         [dotnet, str(tmp_path / probe.FILES[0])], capture_output=True, text=True, timeout=15
     )
     assert process.returncode == 0, process.stderr
+    assert marker.read_bytes() == b"1\n"
     report = parse(result("AEROTIZEN_RUNTIME_LAUNCHER=available\n" + process.stdout))
     assert report["execution"]["state"] == "completed"
     assert report["execution"]["runtime"] is not None
