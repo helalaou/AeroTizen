@@ -20,9 +20,11 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
     categoryScroll,
     bridge,
     actions,
+    updates,
     panes: paneRefs,
   } = useSettingsEnvironment();
   const state = useStore(drawer);
+  const { unread } = useStore(updates);
   const { t } = useTranslation();
   const active = categories.find((category) => category.id === state.category);
   return (
@@ -39,28 +41,34 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
         </div>
         <div class="settings-drawer__menu" ref={categoryMenu}>
           <SettingsFocusIndicator container={categoryMenu} sidebar />
-          {categories.map((category) => (
-            <SettingsControl
-              key={category.id}
-              class={"settings-category" + (state.category === category.id ? " is-current" : "")}
-              focusKey={"section:" + category.id}
-              role="button"
-              aria-label={t(category.title)}
-              aria-expanded={state.category === category.id && state.expanded}
-              onClick={() => drawer.set({ category: category.id, expanded: true })}
-            >
-              <span class="settings-category__icon">
-                <Icon icon={category.icon} />
-              </span>
-              <span class="settings-category__label">
-                <strong>{t(category.title)}</strong>
-                <small>{t(category.hint)}</small>
-              </span>
-              <span class="settings-category__chevron">
-                <Icon icon={ChevronRight} />
-              </span>
-            </SettingsControl>
-          ))}
+          {categories.map((category) => {
+            const hasUpdate = category.id === "about" && unread;
+            return (
+              <SettingsControl
+                key={category.id}
+                class={"settings-category" + (state.category === category.id ? " is-current" : "")}
+                focusKey={"section:" + category.id}
+                role="button"
+                aria-label={t(hasUpdate ? "settings.about.sectionNotice" : category.title)}
+                aria-expanded={state.category === category.id && state.expanded}
+                onClick={() => drawer.set({ category: category.id, expanded: true })}
+              >
+                <span class="settings-category__icon">
+                  <Icon icon={category.icon} />
+                </span>
+                <span class="settings-category__label">
+                  <strong>
+                    {t(category.title)}
+                    {hasUpdate && <span class="settings-update-dot" aria-hidden="true" />}
+                  </strong>
+                  <small>{t(hasUpdate ? "settings.about.updateAvailable" : category.hint)}</small>
+                </span>
+                <span class="settings-category__chevron">
+                  <Icon icon={ChevronRight} />
+                </span>
+              </SettingsControl>
+            );
+          })}
           <div class="settings-drawer__return">
             <SettingsControl
               id="escape"
@@ -91,7 +99,9 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
       </aside>
       <div class="settings-drawer__main" ref={categoryContent}>
         <div class="settings-drawer__content-head">
-          <span class="settings-drawer__content-kicker">{t("settings.drawer.customisation")}</span>
+          <span class="settings-drawer__content-kicker">
+            {t(state.category === "about" ? "settings.about.kicker" : "settings.drawer.customisation")}
+          </span>
           <h2 class="settings-drawer__active-title">{active && t(active.title)}</h2>
           <SettingsControl
             class="settings-drawer__close"

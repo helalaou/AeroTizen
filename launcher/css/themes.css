@@ -6,6 +6,7 @@
   --card: #1c1c1e;
   --focus: #7c5cff;
   --focus-glow: rgba(124, 92, 255, 0.23);
+  --update-notice: #ffd34f;
 }
 body {
   --surface-control: rgba(236, 242, 255, 0.08);

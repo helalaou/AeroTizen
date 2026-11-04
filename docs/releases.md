@@ -173,8 +173,17 @@ development build. A missing launcher also needs `aerotizen install launcher`.
 Intentional version selection remains available with
 `aerotizen install launcher --version X.Y.Z`.
 
-Launcher updates do not replace the CLI executable. Update detection inside the TV
-app is separate work.
+Launcher updates do not replace the CLI executable. On the TV, **Settings → About**
+shows the installed launcher version. AeroTizen checks the public launcher releases
+at startup or when it returns to the foreground, at most once per 24 hours. It
+keeps the last result if GitHub is unavailable.
+
+A yellow dot on the Settings icon and the About row marks an unread update.
+Open **About** to clear the dots. The update details stay visible. The dots
+return once a newer launcher is installed and a further update is available.
+**What’s new** shows a short list from the release notes. AeroTizen saves the list
+with the update check so you can read it offline.
+Install updates from your computer with `aerotizen update launcher`.
 
 ### CLI updates
 

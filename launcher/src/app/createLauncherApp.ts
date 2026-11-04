@@ -1,7 +1,9 @@
 import type { HomeBridge, SettingsBridge } from "../contracts/launcher";
 import type { SettingsStore } from "../contracts/preferences";
 import type { StatusStores } from "../contracts/status";
+import type { LauncherUpdateNotice } from "../contracts/updates";
 import type { LauncherPlatform, LauncherRuntime } from "../platform/tizen/launcherRuntime";
+import type { LauncherUpdates } from "../services/createLauncherUpdates";
 import { createSettingsStore } from "../services/createSettingsStore";
 import { createStatusStores } from "../services/createStatusStores";
 import { resolveLanguage } from "../shared/i18n/catalogues";
@@ -20,6 +22,7 @@ export interface LauncherViews {
     mount: HTMLElement,
     status: StatusStores,
     translations: Translations,
+    updates: LauncherUpdateNotice,
   ): MountedView<HomeBridge>;
   settings(
     runtime: LauncherRuntime,
@@ -27,6 +30,7 @@ export interface LauncherViews {
     settings: SettingsStore,
     mount: HTMLElement,
     translations: Translations,
+    updates: LauncherUpdateNotice,
   ): MountedView<SettingsBridge>;
 }
 
@@ -37,6 +41,7 @@ export const createLauncherApp = (
   platform: LauncherPlatform,
   hosts: { home: HTMLElement; settings: HTMLElement },
   views: LauncherViews,
+  updates: LauncherUpdates,
   transaction: (action: () => void) => void = (action) => action(),
 ) => {
   const settings = createSettingsStore(runtime.settings, {
@@ -77,7 +82,14 @@ export const createLauncherApp = (
   let home: MountedView<HomeBridge> | undefined;
   let editor: MountedView<SettingsBridge> | undefined;
   let disposed = false;
-  const visibility = () => (document.hidden ? home?.bridge.blur() : home?.bridge.focus());
+  const visibility = () => {
+    if (document.hidden) {
+      home?.bridge.blur();
+    } else {
+      home?.bridge.focus();
+      void updates.check();
+    }
+  };
   const dispose = () => {
     if (disposed) {
       return;
@@ -87,6 +99,7 @@ export const createLauncherApp = (
     window?.removeEventListener("languagechange", syncLanguage);
     unsubscribeLanguage();
     html.lang = originalLanguage;
+    updates.dispose();
     editor?.dispose();
     home?.dispose();
     if (editor && runtime.settingsUi === editor.bridge) {
@@ -103,11 +116,14 @@ export const createLauncherApp = (
   };
   try {
     runtime.translate = translate;
-    home = views.home(runtime, settings, hosts.home, status, translations);
+    home = views.home(runtime, settings, hosts.home, status, translations, updates);
     runtime.homeScreen = home.bridge;
-    editor = views.settings(runtime, platform, settings, hosts.settings, translations);
+    editor = views.settings(runtime, platform, settings, hosts.settings, translations, updates);
     runtime.settingsUi = editor.bridge;
     document.addEventListener("visibilitychange", visibility);
+    if (!document.hidden) {
+      void updates.check();
+    }
     return { dispose };
   } catch (error) {
     dispose();

@@ -2,6 +2,7 @@ import { createRef, render } from "preact";
 import { flushSync } from "preact/compat";
 
 import type { SettingsStore } from "../contracts/preferences";
+import type { LauncherUpdateNotice } from "../contracts/updates";
 import type { LauncherPlatform, LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import type { Translations } from "../shared/i18n/createTranslations";
 import { TranslationContext } from "../shared/i18n/useTranslation";
@@ -23,6 +24,7 @@ export const mountSettings = (
   settings: SettingsStore,
   mount: HTMLElement,
   translations: Translations,
+  updates: LauncherUpdateNotice,
 ) => {
   const view = createStore<ViewState>({
     open: false,
@@ -68,6 +70,7 @@ export const mountSettings = (
     view,
     services,
     actions,
+    updates,
     bridge,
     navigation,
     root,

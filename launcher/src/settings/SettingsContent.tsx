@@ -5,6 +5,7 @@ import { useStore } from "../shared/hooks/useStore";
 import { useSettingsEnvironment } from "./hooks/useSettingsEnvironment";
 import { useSettingsNavigation } from "./hooks/useSettingsNavigation";
 import { SettingsDrawer } from "./layout/SettingsDrawer";
+import { AboutSettings } from "./sections/AboutSettings";
 import { AppearanceSettings } from "./sections/AppearanceSettings";
 import { HomeAppsSettings } from "./sections/apps/HomeAppsSettings";
 import { BackgroundSettings } from "./sections/BackgroundSettings";
@@ -86,6 +87,7 @@ export const SettingsContent = ({
         weather: <WeatherSettings settings={settings} actions={actions} active={active} />,
         sources: <InputSettings settings={settings} actions={actions} inputs={inputs} />,
         language: <LanguageSettings language={settings.language} />,
+        about: <AboutSettings active={active && !previewing} />,
       }}
     />
   );

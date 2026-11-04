@@ -134,15 +134,12 @@ export const useSettingsNavigation = (
           }
           return;
         }
-        if (
-          (code === K.BACK ||
-            code === K.ESC ||
-            (code === K.LEFT &&
-              current &&
-              current.getBoundingClientRect().left <=
-                (categoryContent.current?.getBoundingClientRect().left || 0) + 64)) &&
-          !view.getSnapshot().adjusting
-        ) {
+        const leftLeavesPane =
+          code === K.LEFT &&
+          current &&
+          (current.getBoundingClientRect().left <= (categoryContent.current?.getBoundingClientRect().left || 0) + 64 ||
+            (current.dataset.key === "settings-close" && !navigation.firstKey(panes.get(category.category))));
+        if ((code === K.BACK || code === K.ESC || leftLeavesPane) && !view.getSnapshot().adjusting) {
           event.preventDefault();
           flushSync(() => drawer.set({ ...category, expanded: false }));
           return;
@@ -183,5 +180,5 @@ export const useSettingsNavigation = (
       window.removeEventListener("resize", resize);
       navigation.clear();
     };
-  }, [active, actions, bridge, navigation, root, services, view, category, drawer, categoryContent, directions]);
+  }, [active, actions, bridge, navigation, root, services, view, category, drawer, categoryContent, directions, panes]);
 };

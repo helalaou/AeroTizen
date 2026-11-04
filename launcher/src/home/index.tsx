@@ -3,6 +3,7 @@ import { flushSync } from "preact/compat";
 
 import type { SettingsStore } from "../contracts/preferences";
 import type { StatusStores } from "../contracts/status";
+import type { LauncherUpdateNotice } from "../contracts/updates";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import type { Translations } from "../shared/i18n/createTranslations";
 import { TranslationContext } from "../shared/i18n/useTranslation";
@@ -17,6 +18,7 @@ export const mountHome = (
   mount: HTMLElement,
   status: StatusStores,
   translations: Translations,
+  updates: LauncherUpdateNotice,
 ) => {
   const document = mount.ownerDocument;
   // Apply shell mode before any Home focus geometry is measured.
@@ -35,6 +37,7 @@ export const mountHome = (
       settings,
       inventory,
       status,
+      updates,
       rows,
       continueItems: createRef<HTMLDivElement>(),
       continueViewport: createRef<HTMLDivElement>(),

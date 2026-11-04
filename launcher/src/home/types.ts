@@ -3,6 +3,7 @@ import type { RefObject } from "preact";
 import type { AppPresentation, ContinueItem, HomeBridge, InputSource, InstalledApp } from "../contracts/launcher";
 import type { SettingsSnapshot, SettingsStore } from "../contracts/preferences";
 import type { StatusStores } from "../contracts/status";
+import type { LauncherUpdateNotice } from "../contracts/updates";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import type { MessageKey } from "../shared/i18n/catalogues";
 import type { MutableStore, Store } from "../shared/state/createStore";
@@ -47,4 +48,5 @@ export interface HomeEnvironment {
   showPage(page: Page): void;
   state: MutableStore<HomeState>;
   status: StatusStores;
+  updates: LauncherUpdateNotice;
 }

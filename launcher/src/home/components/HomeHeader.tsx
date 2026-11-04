@@ -13,19 +13,15 @@ import { HomeControl } from "./HomeControl";
 export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
   const { t } = useTranslation();
   const { page, active } = useStore(env.state);
+  const { unread } = useStore(env.updates);
+  const settingsTitle = t(unread ? "settings.about.homeNotice" : "common.settings");
   return (
     <header class="topbar" aria-hidden={!active}>
       <div class="topbar-left">
         <HeaderFocusIndicator env={env} />
-        <HomeControl
-          env={env}
-          id="gear"
-          controlKey="gear"
-          className="icon-btn"
-          preserveSelection
-          title={t("common.settings")}
-        >
+        <HomeControl env={env} id="gear" controlKey="gear" className="icon-btn" preserveSelection title={settingsTitle}>
           <Icon icon={Settings} />
+          {unread && <span class="home-update-dot" aria-hidden="true" />}
         </HomeControl>
         <HomeControl
           env={env}

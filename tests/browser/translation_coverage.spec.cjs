@@ -1,4 +1,6 @@
 const { test, expect } = require("@playwright/test");
+const { readFileSync } = require("node:fs");
+const path = require("node:path");
 
 const english = require("../../launcher/src/shared/i18n/en.json");
 const { closeSettings, openCategory } = require("./drawer_helpers.cjs");
@@ -16,6 +18,9 @@ const textAttributes = [
   "title",
 ];
 const inputName = "A & B <HD>";
+const installedVersion = readFileSync(path.join(__dirname, "../../launcher/version.txt"), "utf8").trim();
+const releaseVersion = Number(installedVersion.split(".")[0]) + 1 + ".0.0";
+const releaseNote = "Sample launcher release note";
 const symbolise = (text) =>
   text.replace(/\{\{[^}]+\}\}|[\p{L}\p{N}]/gu, (token) => (token.startsWith("{{") ? token : "■"));
 const pseudoText = (key) => symbolise(english[key]);
@@ -27,7 +32,7 @@ const expectTextFits = async (locator) => {
 
 const findUntranslated = (page) =>
   page.evaluate(
-    ({ attributes, inputName }) => {
+    ({ attributes, inputName, releaseNote }) => {
       const clock = AeroTizen.clock;
       const now = new Date();
       const dates = clock.DATE_FORMATS.map((format) => format.format(now));
@@ -39,6 +44,8 @@ const findUntranslated = (page) =>
           (text === "AEROTIZEN" && element.matches(".settings-drawer__kicker")) ||
           (text === "English" && element.closest('[data-key="language:en"]')) ||
           (text === "Pseudo" && element.closest('[data-key="language:en-XA"]')) ||
+          (text === releaseNote && element.matches(".about-release-notes li")) ||
+          (text === "aerotizen update launcher" && element.matches(".about-update-command code")) ||
           (dates.includes(text) && element.closest('#date, #date-formats [data-key]:not([data-key="date:none"])'))
         ) {
           return;
@@ -72,7 +79,7 @@ const findUntranslated = (page) =>
       }
       return leftovers;
     },
-    { attributes: textAttributes, inputName },
+    { attributes: textAttributes, inputName, releaseNote },
   );
 
 const expectTranslatedScreen = async (page, state) => {
@@ -109,6 +116,11 @@ for (const glassSettings of [false, true]) {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.clock.setFixedTime(new Date("2026-06-10T13:05:00Z"));
     await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
+    await page.route("https://api.github.com/repos/helalaou/AeroTizen/releases?*", (route) =>
+      route.fulfill({
+        json: [{ tag_name: "launcher-v" + releaseVersion, draft: false, prerelease: false, body: "* " + releaseNote }],
+      }),
+    );
     await page.route("https://geocoding-api.open-meteo.com/**", (route) => route.fulfill({ status: 503 }));
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ json: {} }));
     const messages = Object.fromEntries(Object.entries(english).map(([key, text]) => [key, symbolise(text)]));
@@ -207,6 +219,14 @@ for (const glassSettings of [false, true]) {
     await visit("sources", "inputs.keepVisible");
     const input = page.getByRole("textbox", { name: pseudoText("inputs.nameLabel").replace("{{port}}", "HDMI 1") });
     await expect(input).toHaveValue(inputName);
+
+    await page.keyboard.press("Escape");
+    await openCategory(page, "about");
+    const about = page.locator('[data-section-pane="about"]');
+    await expect(about.locator(".about-release-notes li")).toHaveText(releaseNote);
+    await expect(about.getByRole("heading", { name: pseudoText("settings.about.whatsNew") })).toBeVisible();
+    await expect(about.locator(".about-update-command")).toContainText(pseudoText("settings.about.runOnComputer"));
+    await expectTranslatedScreen(page, "About");
 
     await closeSettings(page);
     await expect(page.getByRole("button", { name: pseudoText("inputs.liveTv"), exact: true })).toBeVisible();
