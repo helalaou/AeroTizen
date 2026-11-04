@@ -6,6 +6,7 @@ import { SettingsSection } from "../components/SettingsSection";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 
 const updateCommand = "aerotizen update launcher";
+const projectUrl = "github.com/helalaou/AeroTizen";
 
 export const AboutSettings = ({ active }: { active: boolean }) => {
   const { updates, drawer } = useSettingsEnvironment();
@@ -24,6 +25,23 @@ export const AboutSettings = ({ active }: { active: boolean }) => {
         title={t("settings.about.installedVersion", { version: installedVersion })}
         description={latestVersion ? t("settings.about.updateVersion", { version: latestVersion }) : undefined}
       >
+        <div class="about-info">
+          <p class="about-lead">{t("settings.about.tagline")}</p>
+          <p>{t("settings.about.summary")}</p>
+          <dl class="about-facts">
+            <dt>{t("settings.about.licenseLabel")}</dt>
+            <dd>{t("settings.about.licenseValue")}</dd>
+            <dt>{t("settings.about.madeByLabel")}</dt>
+            <dd>{t("settings.about.madeByValue")}</dd>
+            <dt>{t("settings.about.project")}</dt>
+            <dd>
+              <code>{projectUrl}</code>
+            </dd>
+            <dt>{t("settings.about.feedbackLabel")}</dt>
+            <dd>{t("settings.about.feedbackValue")}</dd>
+          </dl>
+          <p class="about-community">{t("settings.about.community")}</p>
+        </div>
         {releaseNotes.length > 0 && (
           <div class="about-release-notes">
             <h4>{t("settings.about.whatsNew")}</h4>

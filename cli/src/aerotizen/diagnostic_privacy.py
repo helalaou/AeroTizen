@@ -276,7 +276,9 @@ def error_code(value):
         ("Final Home readback failed", "final_home_readback_failed"),
         ("Home operation readback failed", "home_operation_readback_failed"),
         ("Setting readback failed", "setting_readback_failed"),
+        ("Setting write failed", "setting_write_failed"),
         ("Autostart readback failed", "autostart_readback_failed"),
+        ("Autostart write failed", "autostart_write_failed"),
         ("Native boot readback failed", "native_boot_readback_failed"),
         ("rollback incomplete", "rollback_incomplete"),
         ("Cannot read", "property_access_failed"),
@@ -422,6 +424,8 @@ class Policy:
         if not isinstance(data, dict):
             return None
         result = self.fields(data, ("Success", "RolledBack"))
+        if type(data.get("StartupSettingsRestored")) is bool:
+            result["StartupSettingsRestored"] = data["StartupSettingsRestored"]
         if "Error" in data:
             result["Error"] = error_code(data["Error"]) if data["Error"] else None
         if "After" in data:

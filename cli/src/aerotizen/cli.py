@@ -524,12 +524,10 @@ def cmd_home(args):
 
     try:
         writing = args.home_command in ("apply", "restore")
+        if getattr(args, "boot", False):
+            print("The --boot option is deprecated. Home apply includes startup setup.", file=sys.stderr)
         if writing and not args.yes:
-            plan = home_control.preview(
-                args.home_command,
-                args.backup,
-                boot=getattr(args, "boot", False),
-            )
+            plan = home_control.preview(args.home_command, args.backup)
             if args.json:
                 print(json.dumps(plan, indent=2))
             else:
@@ -558,7 +556,6 @@ def cmd_home(args):
                     args.home_command,
                     backup=args.backup,
                     state_dir=STATE_DIR,
-                    boot=getattr(args, "boot", False),
                 )
             else:
                 status = home.read_status(session, provider, info)
@@ -567,7 +564,12 @@ def cmd_home(args):
         if args.json:
             print(json.dumps(status, indent=2))
         elif writing:
-            print(f"Home {args.home_command} completed and read back.")
+            if status.get("startup_settings_restored") is True:
+                print("Home applied. Startup settings restored.")
+            else:
+                print(f"Home {args.home_command} completed and read back.")
+                if status.get("startup_settings_restored") is False:
+                    print("Both startup IDs point to AeroTizen. Smart Hub autostart is on.")
             print(f"Original backup: {status['backup']}")
             print(f"Transaction receipt: {status['receipt']}")
             print("Home-button behavior and boot behavior still need separate physical tests.")
@@ -579,10 +581,26 @@ def cmd_home(args):
             )
         else:
             print(f"{status['device']['model']}  native Home mode={status['home']['mode']}")
-            values = {"main operation": status["home"]["main_operation"], **status["home"]["settings"]}
-            for key, item in values.items():
-                value = item["value"] if item["status"] == "ok" else f"unavailable ({item['error']})"
-                print(f"{key}: {value}")
+            settings = status["home"]["settings"]
+            bindings = {
+                "main operation": status["home"]["main_operation"],
+                home.HOME_KEY: settings[home.HOME_KEY],
+            }
+            startup = {key: settings[key] for key in (*home.STARTUP_KEYS, home.AUTOSTART_KEY)}
+            other = {
+                key: item for key, item in settings.items() if key not in bindings and key not in startup
+            }
+            for label, values in (
+                ("Home bindings", bindings),
+                ("Startup settings", startup),
+                ("Other settings", other),
+            ):
+                print(label)
+                for key, item in values.items():
+                    value = item["value"] if item["status"] == "ok" else f"unavailable ({item['error']})"
+                    if key == home.AUTOSTART_KEY and value in (0, 1):
+                        value = f"{'on' if value else 'off'} ({value})"
+                    print(f"  {key}: {value}")
             print(f"watcher: {status['watcher']['state']}")
             diagnostic = status["watcher"].get("error")
             if diagnostic:
@@ -763,7 +781,7 @@ def main():
                 "--output", type=Path, help="new backup path; existing files are never replaced"
             )
         if name == "apply":
-            command.add_argument("--boot", action="store_true", help="also enable native Smart Hub autostart")
+            command.add_argument("--boot", action="store_true", help=argparse.SUPPRESS)
         command.set_defaults(fn=cmd_home)
     p = sub.add_parser("logs", help="open local logs or export a redacted diagnostic report")
     commands = p.add_subparsers(dest="logs_command", required=True)
