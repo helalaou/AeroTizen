@@ -136,7 +136,7 @@ Verified on `QE65LS03DAUXXU`, ARMv7, Tizen 9.0.0, build
 - 188 Python tests, Ruff lint/format, workflow Actionlint, and standalone smoke
   checks passed locally. Hosted CI and other platforms were not exercised here.
 
-[Sanitized TV evidence](home-read-only-tv-20261024.json) records the typed values
+[Sanitized TV evidence](../tests/fixtures/home-read-only-tv-20261024.json) records the typed values
 and checks. Private reports and the baseline retain the device binding; the public
 evidence excludes the network address, device identity hash and local backup path.
 This result does not establish native Home takeover, boot routing or restore.
@@ -155,6 +155,6 @@ app launches, playback controls, Home writes or watcher pause were used. The
 passive app-status API did not identify the visible app, so uninterrupted film
 playback was not independently measured.
 
-[SDK-only TV evidence](home-sdk-read-only-tv-20261024.json) records this result.
+[SDK-only TV evidence](../tests/fixtures/home-sdk-read-only-tv-20261024.json) records this result.
 This proved native reads without root on this TV and firmware. For later native
 assignment, restore and power-on tests, see the [PC-managed flow](home-pc-flow.md).

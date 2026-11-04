@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.fixture
 def status():
-    evidence = json.loads((ROOT / "docs/home-read-only-tv-20261024.json").read_text())
+    evidence = json.loads((Path(__file__).parent / "fixtures/home-read-only-tv-20261024.json").read_text())
     return {
         "schema_version": 1,
         "queried_at": "2026-10-24T18:00:00+00:00",

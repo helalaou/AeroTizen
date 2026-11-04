@@ -100,9 +100,8 @@ def test_missing_or_duplicate_completion_markers_are_rejected(output):
 
 
 def test_read_query_requires_the_selected_uid_and_confirms_sdk_cleanup():
-    evidence = json.loads(
-        (Path(__file__).resolve().parents[1] / "docs/home-sdk-read-only-tv-20261024.json").read_text()
-    )
+    fixture = Path(__file__).parent / "fixtures/home-sdk-read-only-tv-20261024.json"
+    evidence = json.loads(fixture.read_text())
     query = evidence["query"]
     # Historical device evidence predates the installation-state query.
     query["launcher"] = {"installed": True, "error": None}

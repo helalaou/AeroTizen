@@ -44,6 +44,10 @@ npx playwright install chromium # once per Playwright version; CI also installs 
 npm run test:browser # compiled Settings and legacy comparison, with managed local servers
 ```
 
+Changes limited to `README.md`, `CONTRIBUTING.md`, and `docs/` skip the test suites.
+CI still checks README contributor markers and contributor guide formatting when
+those files change. Store data that tests read in `tests/fixtures/`.
+
 Use Node.js 22.12 or newer, or Node 20.19+ within the 20.x series, as required by Vite.
 CI uses the latest Node 20.x. The watcher tests use mock clocks and network replies to cover the Art Mode protocol, status checks,
 relaunch cancellation and app visibility, without contacting a TV.
