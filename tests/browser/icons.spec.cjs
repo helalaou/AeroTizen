@@ -113,7 +113,20 @@ for (const glass of [false, true]) {
     await page.locator('[data-key="wallpaper-categories:animated"]').click();
     await page.locator('[data-key="bg:aurora"]').click();
     const preview = page.getByRole("button", { name: "Preview", exact: true });
-    await expect(preview.locator(".lucide-play")).toHaveAttribute("aria-hidden", "true");
+    const play = preview.locator(".lucide-play");
+    await expect(play).toHaveAttribute("aria-hidden", "true");
+    const layout = await play.evaluate((icon) => {
+      const label = document.createRange();
+      label.selectNode(icon.nextSibling);
+      const iconBox = icon.getBoundingClientRect();
+      const labelBox = label.getBoundingClientRect();
+      return {
+        gap: labelBox.left - iconBox.right,
+        centerOffset: Math.abs(labelBox.top + labelBox.height / 2 - (iconBox.top + iconBox.height / 2)),
+      };
+    });
+    expect(layout.gap).toBeGreaterThan(0);
+    expect(layout.centerOffset).toBeLessThanOrEqual(1);
     const speed = page.getByRole("slider", { name: "Background speed", exact: true });
     await speed.click();
     await expect(speed.locator(".slider-hint svg[aria-hidden=true]")).toHaveCount(2);

@@ -16,11 +16,6 @@
   color: #fff;
   text-shadow: 0 1px 4px #000;
 }
-#editor .swatch.focused span {
-  font-size: 26px;
-  font-weight: 700;
-}
-
 body.previewing #editor.settings-drawer {
   visibility: hidden;
 }
@@ -34,7 +29,6 @@ body.previewing #editor.settings-drawer {
 }
 #editor .choice-option .ui-icon {
   margin-right: 8px;
-  vertical-align: middle;
 }
 #editor .fill {
   position: absolute;
@@ -690,6 +684,10 @@ body.glass-ui #editor .pill.unit[aria-pressed="true"]:not(.focused) {
   margin: -14px 0 40px;
   gap: 12px;
   flex-wrap: wrap;
+}
+#editor .speed-row .choice-option > span {
+  display: flex;
+  align-items: center;
 }
 #editor .slider {
   display: flex;

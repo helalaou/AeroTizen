@@ -1,6 +1,7 @@
 /* Home viewport, page movement and content spacing. */
 body {
   --home-content-padding: 8px;
+  --home-side-padding: 64px;
 }
 
 .content-viewport {
@@ -20,10 +21,13 @@ body {
   justify-content: center;
   width: 64px;
   height: 64px;
-  margin: 64px auto 0;
-  border: 2px solid var(--header-tab-border);
+  position: absolute;
+  bottom: calc(var(--home-bottom-fade) - var(--apps-end-offset));
+  left: 50%;
+  transform: translateX(-50%);
+  border: 2px solid var(--back-to-top-border);
   border-radius: 50%;
-  background: var(--header-tab-surface);
+  background: var(--back-to-top-surface);
   color: var(--fg);
   cursor: pointer;
 }
@@ -32,23 +36,16 @@ body {
   height: 32px;
 }
 .back-to-top.focused {
-  border-color: var(--focus);
-  background: var(--header-focus-surface);
-  box-shadow: var(--header-focus-shadow);
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 5px var(--focus);
 }
-.is-at-apps-end #rows,
+.rows--apps,
 .rows--dock-inputs {
   height: 100%;
 }
-.is-at-apps-end .back-to-top {
-  position: absolute;
-  bottom: calc(var(--home-bottom-fade) + var(--home-offset));
-  left: 50%;
-  margin: 0;
-  transform: translateX(-50%);
-}
 main {
-  padding: var(--home-content-padding) 64px 0;
+  padding: var(--home-content-padding) var(--home-side-padding) 0;
   transition: transform 0.22s ease-out;
   will-change: transform;
 }
