@@ -52,6 +52,7 @@ export const createSettingsActions = (
     setHomeCardMode: (homeCardMode) => commit({ homeCardMode }, services.applyCardSize),
     setHomeCardColumns: (homeCardColumns) => commit({ homeCardColumns }, services.applyCardSize),
     setHdmiVisibility: (hideDisconnectedHdmi) => commit({ hideDisconnectedHdmi }, services.applyInputs),
+    setHdmiNativeViewer: (hdmiNativeViewer) => commit({ hdmiNativeViewer }),
     setHdmiKeepVisible: (port, keep) =>
       commit({ hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } }, services.applyInputs),
     setTimeFormat: (format) =>
