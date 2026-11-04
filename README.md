@@ -111,9 +111,11 @@ data, autorun) and [DNS blocklists](dns/) if you run Pi-hole, AdGuard Home or Ne
 | Samsung 65" The Frame LS03A (QN65LS03AAFXZC) | 2021 | | Runs; Home doesn't return yet ([#65](../../issues/65)) |
 | Samsung 65" Crystal UHD AU7172 (UE65AU7172UXXH) | 2021 | Tizen 6.0 | Home doesn't return yet ([#65](../../issues/65)) |
 | Samsung 43" Crystal UHD AU8000 (UN43AU8000FXZC) | 2021 | | Runs; Home and power-on don't work yet ([#65](../../issues/65)) |
+| Samsung 82" Crystal UHD TU8070 (UE82TU8070UXZT) | 2020 | Tizen 5.5 | Runs; manual IP worked ([#124](../../issues/124)) |
 | Samsung 70" Crystal UHD TU700D (UN70TU700DBXZA) | 2020 | Tizen 5.5 | Runs; Home and auto-start unconfirmed ([#122](../../issues/122)) |
 | Samsung 65" Crystal UHD TU7179 (GU65TU7179UXZG) | 2020 | Tizen 5.5 | Runs; native Home doesn't work yet ([#84](../../issues/84)) |
 | Samsung 32" The Frame LS03T (QE32LS03TCUXZT) | 2020 | Tizen 5.5 | Runs; native Home doesn't work yet ([#75](../../issues/75)) |
+| Samsung 65" UHD RU8000 (UE65RU8000UXZT) | 2019 | Tizen 5.0 | Runs; manual IP worked ([#123](../../issues/123)) |
 
 Other Samsung TVs from 2020 on should work, but these are the only models tested so far. If you try it
 on yours, please [open a model report](../../issues/new?template=model_report.yml).
