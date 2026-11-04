@@ -223,7 +223,16 @@ Python-installed copies report the exact pinned `python -m pip install --upgrade
 command for their interpreter and selected repository. The updater never replaces a
 Python interpreter or changes package-manager installations itself.
 
-See [CLI update validation](cli-updates.md) for the manual checks and native test matrix.
+To test CLI self-update, build the native helpers and install the packaging
+dependencies below. Run the validation script in a new temporary folder:
+
+```sh
+python cli/tools/test_cli_self_update.py --output /absolute/path/to/new-temporary-folder
+```
+
+It tests replacement, rollback and failure cases with temporary binaries and saves
+`report.json` and scenario logs. Use the generated fixtures for manual checks. The
+CI matrix runs the checks on Linux x64, Windows x64, macOS arm64 and macOS Intel.
 
 ## Local checks
 
