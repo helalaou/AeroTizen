@@ -3,6 +3,8 @@ import { createStore } from "../../shared/state/createStore";
 import type { HomeEnvironment, HomeMenuChoice, HomeState, Page } from "../types";
 
 const HEADER_KEYS = ["gear", "samsung-home-shortcut", "home-tab", "apps-tab"] as const;
+const TOP_SCROLL_CLEARANCE = 128;
+const APPS_END_CLEARANCE = 16;
 const HOME_MENU_CHOICES = [
   { action: "move", label: "home.move" },
   { action: "remove", label: "home.removeFromHome" },
@@ -46,8 +48,8 @@ const getScrollOffset = ({
   if (bottom - previous > 1000) {
     return bottom - 1000;
   }
-  if (top - previous < origin + 128) {
-    return Math.max(0, top - origin - 128);
+  if (top - previous < origin + TOP_SCROLL_CLEARANCE) {
+    return Math.max(0, top - origin - TOP_SCROLL_CLEARANCE);
   }
   return previous;
 };
@@ -160,7 +162,7 @@ export const createHomeController = (
     );
     const appLayout = [HEADER_KEYS, ...appRows];
     if (state.getSnapshot().page !== "home") {
-      return appLayout;
+      return all.length ? [...appLayout, ["back-to-top"]] : appLayout;
     }
     const { items, inputs } = inventory.getSnapshot();
     const continueRows =
@@ -211,8 +213,18 @@ export const createHomeController = (
         update({ continueOffset: offset });
       }
     }
-    const rect = node.getBoundingClientRect();
     const mainTop = main.getBoundingClientRect().top;
+    if (selected === "back-to-top") {
+      const lastApp = nodes.get(list[list.length - 2][0]);
+      const grid = lastApp?.parentElement;
+      if (lastApp && grid) {
+        // The grid edge stays fixed while the last app's focus scale animates.
+        const lastRowTop = grid.getBoundingClientRect().bottom - lastApp.offsetHeight;
+        update({ scroll: Math.max(0, lastRowTop - mainTop - APPS_END_CLEARANCE) });
+        return;
+      }
+    }
+    const rect = node.getBoundingClientRect();
     const origin = main.parentElement?.getBoundingClientRect().top || 0;
     const scroll = getScrollOffset({
       selected,
@@ -261,6 +273,11 @@ export const createHomeController = (
       }
     } else if (key === "home-tab" || key === "apps-tab") {
       showPage(key === "home-tab" ? "home" : "apps");
+    } else if (key === "back-to-top") {
+      const first = inventory.getSnapshot().apps[0];
+      if (first) {
+        select("app:" + first.id);
+      }
     } else if (key.startsWith("app:")) {
       const id = key.slice(4);
       const app = runtime.apps.byId(id);

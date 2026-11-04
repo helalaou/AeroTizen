@@ -4,6 +4,8 @@ body {
 }
 
 .content-viewport {
+  --home-bottom-fade: 80px;
+
   height: 968px;
   overflow: hidden;
 }
@@ -11,6 +13,39 @@ body {
   font-size: 34px;
   color: var(--muted);
   padding: 40px 0;
+}
+.back-to-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 64px auto 0;
+  border: 2px solid var(--header-tab-border);
+  border-radius: 50%;
+  background: var(--header-tab-surface);
+  color: var(--fg);
+  cursor: pointer;
+}
+.back-to-top .ui-icon {
+  width: 32px;
+  height: 32px;
+}
+.back-to-top.focused {
+  border-color: var(--focus);
+  background: var(--header-focus-surface);
+  box-shadow: var(--header-focus-shadow);
+}
+.is-at-apps-end #rows,
+.rows--dock-inputs {
+  height: 100%;
+}
+.is-at-apps-end .back-to-top {
+  position: absolute;
+  bottom: calc(var(--home-bottom-fade) + var(--home-offset));
+  left: 50%;
+  margin: 0;
+  transform: translateX(-50%);
 }
 main {
   padding: var(--home-content-padding) 64px 0;
@@ -22,6 +57,15 @@ main {
 }
 .home-page-surface[data-page="home"] > :not([hidden]):not(:empty) ~ section:not([hidden]) {
   margin-top: 40px;
+}
+.rows--dock-inputs > .home-page-surface {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100%;
+  padding-bottom: calc(var(--home-bottom-fade) + 16px);
+}
+.rows--dock-inputs #inputs-section {
+  grid-row: 3;
 }
 .home-section-heading {
   font-family: "SamsungOne", "Roboto", Arial, sans-serif;
@@ -66,7 +110,7 @@ body > .content-viewport {
   -webkit-mask-image: linear-gradient(
     to bottom,
     #000 0,
-    #000 calc(100% - 80px),
+    #000 calc(100% - var(--home-bottom-fade)),
     rgba(0, 0, 0, 0.9) calc(100% - 60px),
     rgba(0, 0, 0, 0.5) calc(100% - 32px),
     rgba(0, 0, 0, 0.1) calc(100% - 10px),
@@ -75,7 +119,7 @@ body > .content-viewport {
   mask-image: linear-gradient(
     to bottom,
     #000 0,
-    #000 calc(100% - 80px),
+    #000 calc(100% - var(--home-bottom-fade)),
     rgba(0, 0, 0, 0.9) calc(100% - 60px),
     rgba(0, 0, 0, 0.5) calc(100% - 32px),
     rgba(0, 0, 0, 0.1) calc(100% - 10px),
@@ -115,11 +159,12 @@ body > .content-viewport {
     -webkit-mask-position 0.32s cubic-bezier(0.2, 0.72, 0.25, 1),
     mask-position 0.32s cubic-bezier(0.2, 0.72, 0.25, 1);
 }
-#home-root .is-scrolled > .content-mask {
+#home-root .is-scrolled:not(.is-at-apps-end) > .content-mask {
   -webkit-mask-position: 0 0;
   mask-position: 0 0;
 }
 #home-root #rows {
+  transform: translate3d(0, var(--home-offset), 0);
   transition: transform 0.32s cubic-bezier(0.2, 0.72, 0.25, 1);
 }
 .home-page-surface[data-page="home"] {

@@ -56,6 +56,84 @@ test("Home and All apps retain keyed artwork nodes and Back returns to Home", as
   expect(await page.evaluate(() => window.originalHome === document.querySelector("#grid > .tile"))).toBe(true);
   await expect(page.locator("#home-tab")).toHaveClass(/focused/);
 });
+test("Back to top restores scroll and focus from below a partial app row", async ({ page }) => {
+  await page.addInitScript(() => {
+    const key = "aerotizen.settings.v1";
+    const settings = JSON.parse(localStorage.getItem(key) || "{}");
+    localStorage.setItem(key, JSON.stringify({ ...settings, homeCardColumns: 4 }));
+  });
+  await page.goto("/");
+  await page.waitForFunction(() => AeroTizen.apps.ready);
+  const button = page.getByRole("button", { name: "Back to top" });
+  await expect(button).toHaveCount(0);
+  await page.locator("#apps-tab").click();
+
+  for (let row = 0; row < 7; row++) {
+    await page.keyboard.press("ArrowDown");
+  }
+  const tiles = page.locator("#grid > .tile");
+  await expect(tiles.last()).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(button).toBeFocused();
+  await expect(button).toBeInViewport();
+  await expect(page.locator(".content-viewport")).toHaveClass(/is-scrolled/);
+  await expect
+    .poll(() =>
+      tiles.last().evaluate((tile) => {
+        const viewport = tile.closest(".content-viewport");
+        return tile.getBoundingClientRect().top - viewport.getBoundingClientRect().top;
+      }),
+    )
+    .toBeCloseTo(16, 0);
+  const viewportBounds = await page.locator(".content-viewport").boundingBox();
+  const buttonBounds = await button.boundingBox();
+  expect(viewportBounds.y + viewportBounds.height - buttonBounds.y - buttonBounds.height).toBeCloseTo(80, 0);
+  await page.keyboard.press("ArrowUp");
+  await expect(tiles.last()).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(tiles.first()).toBeFocused();
+  await expect(page.locator(".content-viewport")).not.toHaveClass(/is-scrolled/);
+  await expect(tiles.first()).toBeInViewport();
+});
+test("Home docks Inputs with one app row and leaves them in flow with two rows", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.evaluate(() => {
+    AeroTizen.settings.home = ["demo0", "demo1", "demo2"];
+    AeroTizen.settings.homeCardColumns = 3;
+    AeroTizen.settings.save();
+  });
+
+  const inputs = page.locator("#inputs-section");
+  const firstApp = page.locator("#grid > .tile").first();
+  const firstInput = inputs.locator(".tile").first();
+  await expect(inputs).toBeVisible();
+  const bottomGap = await inputs.evaluate((section) => {
+    const viewport = section.closest(".content-viewport");
+    return viewport.getBoundingClientRect().bottom - section.getBoundingClientRect().bottom;
+  });
+  expect(bottomGap).toBeCloseTo(96, 0);
+  await page.keyboard.press("ArrowDown");
+  await expect(firstInput).toBeFocused();
+  await expect(page.locator(".content-viewport")).not.toHaveClass(/is-scrolled/);
+  await page.keyboard.press("ArrowUp");
+  await expect(firstApp).toBeFocused();
+
+  await page.evaluate(() => {
+    AeroTizen.settings.home = [...AeroTizen.settings.home, "demo3"];
+    AeroTizen.settings.save();
+  });
+  await expect(page.locator("#grid > .tile")).toHaveCount(4);
+  const rowGap = await inputs.evaluate(
+    (section) => section.getBoundingClientRect().top - document.getElementById("grid").getBoundingClientRect().bottom,
+  );
+  expect(rowGap).toBe(40);
+  await page.keyboard.press("ArrowDown");
+  await expect(page.locator("#grid > .tile").last()).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(firstInput).toBeFocused();
+});
 test("compiled Home preserves legacy geometry and artwork source selection at 1080p", async ({
   page,
   browser,

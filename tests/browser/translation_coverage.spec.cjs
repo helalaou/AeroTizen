@@ -263,9 +263,19 @@ for (const glassSettings of [false, true]) {
     await expectTranslatedScreen(page, "Home");
     await page.locator("#apps-tab").click();
     await expect(page.locator("#apps-empty")).toHaveText(pseudoText("home.emptyApps"));
+    const backToTop = page.getByRole("button", { name: pseudoText("home.backToTop") });
+    await expect(backToTop).toHaveCount(0);
     await page.locator("#samsung-home-shortcut").click();
     await expect(page.locator("#toast")).toHaveText(pseudoText("handoff.homeUnavailable"));
     await expectTranslatedScreen(page, "empty app list and Samsung Home error");
+    await page.evaluate(() => {
+      AeroTizen.tizen.application.getAppsInfo = (done) =>
+        done([{ id: "sampleapp1.App", packageId: "sampleapp1", name: "■■■" }]);
+      AeroTizen.apps.load(() => {});
+    });
+    await expect(backToTop).toBeVisible();
+    await expect(backToTop).toHaveAttribute("title", pseudoText("home.backToTop"));
+    await expectTranslatedScreen(page, "populated app list");
     expect(errors).toEqual([]);
   });
 }
