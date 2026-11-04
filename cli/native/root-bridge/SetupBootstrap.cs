@@ -71,6 +71,7 @@ namespace AeroTizen.Root
                     Proof.Read(bundle, boot, bundle.ProofDirectory + "/bridge.json");
                     report["protected_proof_verified"] = true;
                     report["bridge_ready"] = bundle.Service.Operation == "install";
+                    report["startup_repaired"] = bundle.Service.Operation == "upgrade";
                     report["cleanup_verified"] = bundle.Service.Operation == "remove";
                     report["system_files_unchanged"] = passwd == Bundle.Digest(File.ReadAllBytes("/etc/passwd")) && key == Bundle.Digest(File.ReadAllBytes("/usr/share/sdbd/public.pem"));
                     report["same_boot"] = boot == RootPaths.Boot(); report["boot_id"] = boot; report["nonce"] = bundle.Nonce;

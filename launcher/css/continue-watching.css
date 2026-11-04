@@ -20,6 +20,9 @@
   height: 100%;
   object-fit: contain;
 }
+.continue-image--landscape {
+  object-fit: cover;
+}
 .continue-details {
   flex: 1;
   min-width: 0;

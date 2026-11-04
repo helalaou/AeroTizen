@@ -101,6 +101,8 @@ namespace AeroTizen.Root
                         result["protocol"] = 1; result["authenticated"] = true; result["nonce"] = nonce;
                         result["installation_id"] = settings.Installation; result["device_identity_sha256"] = settings.Identity;
                         result["app_id"] = RootPaths.AppId; result["version"] = RootPaths.Version;
+                        result["runtime_version"] = RootPaths.RuntimeVersion;
+                        result["configuration_sha256"] = settings.ConfigurationSha256;
                         TcpClient sdb = null;
                         bool removalCompleted = false;
                         try

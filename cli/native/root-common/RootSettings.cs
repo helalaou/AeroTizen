@@ -6,12 +6,14 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using AeroTizen.UntetheredProbe;
+using Microsoft.Win32.SafeHandles;
 
 namespace AeroTizen.Root
 {
     internal static class RootPaths
     {
         internal const string AppId = "org.aerotizen.roothelper", Version = "0.1.0";
+        internal static readonly string RuntimeVersion = typeof(RootPaths).Assembly.GetName().Version.ToString(3);
         internal const string Package = "/opt/usr/apps/" + AppId;
         internal const string Data = "/home/owner/apps_rw/" + AppId + "/data";
         internal const string Private = "/opt/usr/share/aerotizen-root-private";
@@ -53,12 +55,13 @@ namespace AeroTizen.Root
                 || (root ? getuid() != 0 || geteuid() != 0 : getuid() == 0 || geteuid() == 0))
                 throw new InvalidOperationException(root ? "Root service requires root on an ARM Tizen TV" : "Bootstrap requires an ordinary ARM Tizen app");
         }
-        internal static (uint uid, uint gid, uint mode, uint links) Metadata(FileStream file)
+        internal static (uint uid, uint gid, uint mode, uint links) Metadata(FileStream file) => Metadata(file.SafeFileHandle);
+        internal static (uint uid, uint gid, uint mode, uint links) Metadata(SafeFileHandle file)
         {
             IntPtr data = Marshal.AllocHGlobal(256);
             try
             {
-                if (statx(file.SafeFileHandle.DangerousGetHandle().ToInt32(), "", 0x1000, 0x31f, data) != 0
+                if (statx(file.DangerousGetHandle().ToInt32(), "", 0x1000, 0x31f, data) != 0
                     || (Marshal.ReadInt32(data) & 0x31f) != 0x31f) throw new IOException("File ownership could not be checked");
                 return ((uint)Marshal.ReadInt32(data, 20), (uint)Marshal.ReadInt32(data, 24),
                     (ushort)Marshal.ReadInt16(data, 28), (uint)Marshal.ReadInt32(data, 16));
@@ -100,7 +103,7 @@ namespace AeroTizen.Root
 
     internal sealed class RootSettings
     {
-        internal readonly string Installation, Identity, Duid, Baseline, Certificate;
+        internal readonly string Installation, Identity, Duid, Baseline, Certificate, ConfigurationSha256;
         internal readonly int Port;
         internal readonly Dictionary<string, string> Files = new Dictionary<string, string>();
         internal RootSettings(byte[] bytes)
@@ -114,6 +117,7 @@ namespace AeroTizen.Root
                 if (!root.EnumerateObject().Select(item => item.Name).OrderBy(item => item).SequenceEqual(expected.OrderBy(item => item))
                     || root.GetProperty("schema_version").GetInt32() != 1 || root.GetProperty("app_id").GetString() != RootPaths.AppId
                     || root.GetProperty("version").GetString() != RootPaths.Version) throw new InvalidDataException("Unsupported root settings");
+                ConfigurationSha256 = Bundle.Digest(bytes);
                 Installation = Hex(root.GetProperty("installation_id").GetString(), 32);
                 Identity = Hex(root.GetProperty("device_identity_sha256").GetString(), 64);
                 Duid = Hex(root.GetProperty("duid_sha256").GetString(), 64);

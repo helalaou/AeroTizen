@@ -26,6 +26,11 @@ def managed():
     return {name: ("managed fixture " + name).encode() for name in package.MANAGED}
 
 
+def helper_manifest():
+    template = (ROOT / "cli/native/root-helper/tizen-manifest.xml").read_text()
+    return template.replace("@CLI_VERSION@", root_state.RUNTIME_VERSION)
+
+
 def test_signed_helper_contains_no_pairing_secrets(tmp_path, monkeypatch):
     values = {name: ("stock fixture " + name).encode() for name in package.UPSTREAM}
     monkeypatch.setattr(package, "UPSTREAM", {name: package.digest(value) for name, value in values.items()})
@@ -36,7 +41,7 @@ def test_signed_helper_contains_no_pairing_secrets(tmp_path, monkeypatch):
         receipt,
         managed(),
         values,
-        (ROOT / "cli/native/root-helper/tizen-manifest.xml").read_bytes(),
+        helper_manifest().encode(),
         b"icon",
         make_certificates(tmp_path),
     )
@@ -51,7 +56,7 @@ def test_signed_helper_contains_no_pairing_secrets(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("change", ["home", "restart", "identity", "privilege"])
 def test_helper_manifest_cannot_take_over_home_or_add_privileges(change):
-    xml = (ROOT / "cli/native/root-helper/tizen-manifest.xml").read_text()
+    xml = helper_manifest()
     if change == "home":
         xml = xml.replace("</service-application>", "<app-control/> </service-application>")
     elif change == "restart":
@@ -73,7 +78,7 @@ def test_corrupt_cached_release_fails_without_network(tmp_path, monkeypatch):
         package.upstream_payloads(tmp_path)
 
 
-@pytest.mark.parametrize("operation", ["install", "remove"])
+@pytest.mark.parametrize("operation", ["install", "upgrade", "remove"])
 def test_native_setup_archive_contract(native_root, tmp_path, operation):
     release = os.environ.get("AEROTIZEN_TEST_ROOT_RELEASE")
     if not release:

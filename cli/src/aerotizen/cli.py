@@ -24,6 +24,7 @@
   aerotizen home restore        preview baseline restore (--yes writes)
   aerotizen root setup          preview untethered root setup (--yes installs)
   aerotizen root status         check the paired root helper
+  aerotizen root upgrade        upgrade the paired root helper (--yes installs)
   aerotizen root remove         preview root helper removal (--yes removes)
 
 Add --tv IP to target a specific TV (otherwise the first one found is used).
@@ -632,7 +633,11 @@ def cmd_root(args):
         if args.root_command == "status":
             result = root_control.status(host, receipt_path=path, wait=args.wait, state_dir=STATE_DIR)
         else:
-            operation = root_control.setup if args.root_command == "setup" else root_control.remove
+            operation = {
+                "setup": root_control.setup,
+                "upgrade": root_control.upgrade,
+                "remove": root_control.remove,
+            }[args.root_command]
             options = {
                 "state_dir": STATE_DIR,
                 "receipt_path": path,
@@ -651,6 +656,8 @@ def cmd_root(args):
             )
             if result.get("setup_complete"):
                 print("Untethered root verified for this boot. The computer can be switched off.")
+            if result.get("upgrade_complete"):
+                print("Root helper upgrade verified with the saved pairing.")
             if result.get("removed"):
                 print("Root helper and its startup registration are removed.")
             if result.get("next_step"):
@@ -769,11 +776,9 @@ def main():
         help="also collect a read-only SDK Home snapshot (may take up to 35 seconds)",
     )
     p.set_defaults(fn=cmd_logs)
-    p = sub.add_parser(
-        "root", help="set up, check or remove untethered root without changing Home or Art settings"
-    )
+    p = sub.add_parser("root", help="set up, check, upgrade or remove untethered root")
     commands = p.add_subparsers(dest="root_command", required=True)
-    for name in ("setup", "status", "remove"):
+    for name in ("setup", "status", "upgrade", "remove"):
         command = commands.add_parser(name)
         command.add_argument(
             "--receipt", type=Path, help="private root recovery receipt (default: this TV's saved receipt)"
