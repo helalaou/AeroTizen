@@ -152,8 +152,9 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
   prints a network URL for another device. Vite supplies hot updates for Home and Settings
   components and serves the legacy runtime files. TV-only features use sample data.
   For README screenshots, open `?demo=1` in a clean browser context at 1920×1080.
-  It loads Glass, sample favourites and a fictional Continue Watching feed. Set
-  **Settings → Appearance → Apps per row** to **5** and add a fifth favourite to Home.
+  It loads Glass, sample favourites and a fictional Continue Watching feed. In
+  **Settings → Appearance**, select **Square** and set **Apps per row** to **5**.
+  Add a fifth favourite to Home.
 - Run `npm run build` for the compiled runtime in `dist/launcher/`.
   Releases package this directory. The explicit production HTML mounts Home and
   Settings from one `js/launcher-ui.js` bundle. Edit the TSX components for view changes.

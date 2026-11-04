@@ -25,7 +25,7 @@ Built with help from these contributors. [Join them](CONTRIBUTING.md): testing o
 
 ![AeroTizen Home with favourite apps, Continue Watching and inputs](docs/screenshots/home.png)
 
-Screenshots show the Glass appearance with five apps per row in the browser preview.
+Screenshots show the Glass appearance with five square app cards per row in the browser preview.
 The apps and programmes are sample data.
 
 ## Motivation
