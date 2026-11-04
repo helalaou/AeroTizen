@@ -20,6 +20,9 @@ Built with help from these contributors. [Join them](CONTRIBUTING.md): testing o
     <td align="center"><a href="https://github.com/tjmcleod8"><img src="https://github.com/tjmcleod8.png?size=100" width="64" height="64" alt="tjmcleod8"><br><sub>tjmcleod8</sub></a></td>
     <td align="center"><a href="https://github.com/jamesmcnicholas"><img src="https://github.com/jamesmcnicholas.png?size=100" width="64" height="64" alt="jamesmcnicholas"><br><sub>jamesmcnicholas</sub></a></td>
   </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/cheack"><img src="https://github.com/cheack.png?size=100" width="64" height="64" alt="cheack"><br><sub>cheack</sub></a></td>
+  </tr>
 </table>
 <!-- contributors:end -->
 
