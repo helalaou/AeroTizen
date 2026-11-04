@@ -21,6 +21,7 @@ import type {
   TimeFormat,
   WeatherLocation,
 } from "../contracts/preferences";
+import type { LauncherUpdateNotice } from "../contracts/updates";
 import type { MessageKey } from "../shared/i18n/catalogues";
 import type { Navigation } from "../shared/navigation/createNavigation";
 import type { MutableStore, Store } from "../shared/state/createStore";
@@ -106,6 +107,7 @@ export interface SettingsEnvironment {
   root: RefObject<HTMLDivElement>;
   services: SettingsServices;
   settings: SettingsStore;
+  updates: LauncherUpdateNotice;
   view: MutableStore<ViewState>;
 }
 export interface SettingsSectionProps {

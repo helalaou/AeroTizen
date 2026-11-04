@@ -147,6 +147,8 @@ for (const glass of [false, true])
       await page.keyboard.press("ArrowRight");
       await expect(footer).toBeFocused();
       await page.keyboard.press("ArrowUp");
+      await expect(page.locator('[data-key="section:about"]')).toHaveClass(/focused/);
+      await page.keyboard.press("ArrowUp");
       await expect(page.locator('[data-key="section:language"]')).toHaveClass(/focused/);
       await page.keyboard.press("ArrowUp");
       await expect(page.locator('[data-key="section:sources"]')).toHaveClass(/focused/);

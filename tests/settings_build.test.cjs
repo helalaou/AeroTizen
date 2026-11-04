@@ -98,5 +98,6 @@ test("TV bundle includes only the selected Lucide icons", () => {
   assert.ok(audit.rendered.includes("settings"));
   assert.ok(audit.rendered.includes("hdmi-port"));
   assert.ok(!audit.rendered.includes("a-arrow-down"), "unused icons are removed");
-  assert.ok(Buffer.byteLength(read(output, "js/launcher-ui.js")) < 160 * 1024, "reject accidental catalogue bundling");
+  // The localized launcher is already 160 KiB before adding the update checker and About pane.
+  assert.ok(Buffer.byteLength(read(output, "js/launcher-ui.js")) < 168 * 1024, "keep the TV UI bundle below 168 KiB");
 });

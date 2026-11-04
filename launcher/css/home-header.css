@@ -59,6 +59,16 @@ body {
   width: 40px;
   height: 40px;
 }
+.home-update-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--update-notice);
+  box-shadow: 0 0 0 2px var(--bg);
+}
 #network {
   display: block;
   flex: 0 0 64px;

@@ -1,9 +1,12 @@
 import { flushSync } from "preact/compat";
 
+import version from "../version.txt?raw";
+
 import { createLauncherApp } from "./app/createLauncherApp";
 import type { BackgroundState } from "./backgrounds/createBackgrounds";
 import { mountBackgrounds } from "./backgrounds/mountBackgrounds";
 import { mountHome } from "./home/index";
+import { createLauncherUpdates } from "./services/createLauncherUpdates";
 import { mountSettings } from "./settings/index";
 
 const backgroundHost = document.getElementById("bg");
@@ -24,6 +27,7 @@ try {
     platform,
     { home, settings },
     { home: mountHome, settings: mountSettings },
+    createLauncherUpdates(version.trim()),
     flushSync,
   );
   if (import.meta.hot && hotData) {
