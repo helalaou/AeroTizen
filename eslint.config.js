@@ -128,7 +128,7 @@ module.exports = [
     },
   },
   {
-    files: ["launcher/src/**/*.{ts,tsx}", "vite.config.mts", "tools/build-launcher.mjs"],
+    files: ["launcher/src/**/*.{ts,tsx}", "vite.config.mts", "tools/*.mjs"],
     plugins: { "simple-import-sort": simpleImportSort },
     rules: {
       "simple-import-sort/imports": ["error", { groups: [["^\\u0000"], ["^@?\\w"], ["^@", "^"], ["^\\./"]] }],
@@ -152,7 +152,7 @@ module.exports = [
     },
   },
   {
-    files: ["launcher/src/**/*.{ts,tsx}", "vite.config.mts", "tools/build-launcher.mjs", "*.config.{js,cjs}"],
+    files: ["launcher/src/**/*.{ts,tsx}", "vite.config.mts", "tools/*.mjs", "*.config.{js,cjs}"],
     rules: {
       "no-var": "error",
       "prefer-const": "error",
@@ -169,7 +169,7 @@ module.exports = [
     },
   },
   {
-    files: ["tools/build-launcher.mjs"],
+    files: ["tools/*.mjs"],
     languageOptions: { sourceType: "module", globals: { ...globals.node } },
   },
   {
