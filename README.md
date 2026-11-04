@@ -283,7 +283,7 @@ Both options run on the TV; your computer can be switched off after setup. Neith
 | Option | How it works |
 |---|---|
 | **Watcher (default)** | A background service detects a return to Samsung Home and reopens AeroTizen. Some apps cannot be detected (see [Limits](#limits)). |
-| **Native Home (opt-in)** | The TV routes Home from other apps to AeroTizen, with optional automatic startup. The watcher is disabled. |
+| **Native Home (opt-in)** | The TV routes Home from other apps to AeroTizen. Setup also tries to open AeroTizen at power-on. The watcher is disabled. |
 
 Native Home is experimental. Other models and firmware can now test if compatibility checks
 pass: a 32-bit ARM Tizen runtime, developer access, required native functions and complete
@@ -304,23 +304,25 @@ backup before opening AeroTizen (replace `TV_IP` with your TV's address):
 ./aerotizen --tv TV_IP home backup
 ```
 
-Then open AeroTizen on the TV to start its control service, and apply Home only:
+Then open AeroTizen on the TV to start its control service and apply Native Home:
 
 ```sh
 ./aerotizen --tv TV_IP home apply --yes
 ```
 
 If you already have a valid original backup, keep it. Some TVs change
-`booting_appid_backup` to `DclHome001.Home` when AeroTizen opens. Apply permits
-only this difference; all other values must match. It restores the saved startup
-values before completing Home-only apply. A new backup still needs original
-values and will refuse an AeroTizen assignment. See [backup guidance](docs/home-read-only.md#backup-behavior).
+`booting_appid_backup` to `DclHome001.Home` when AeroTizen opens. Apply accepts
+this difference from the saved original. A new backup still needs original values.
+See [backup guidance](docs/home-read-only.md#backup-behavior).
 
-Restart fully, then test Home from YouTube, Prime Video and Samsung Home. Run restore and
-check that Samsung Home returns. To test automatic startup separately, restore first, then
-run `./aerotizen --tv TV_IP home apply --boot --yes`. Restore before changing options.
+Apply verifies both Home bindings and tries to assign both startup app IDs. Once the IDs
+match, it enables Smart Hub autostart and checks the settings again. If the TV rejects
+startup setup, apply can keep Home when it verifies the saved startup settings. The
+command reports which result it verified.
+Restart fully and check which app opens. Then test Home from YouTube, Prime Video and
+Samsung Home. Run restore and check that Samsung Home returns.
 If compatibility checks fail, the command stops before changing settings or pausing the watcher.
-Native function availability does not prove write permission; failed writes attempt rollback.
+If apply cannot verify a supported result, it attempts rollback.
 Keep the backup folder and inspect `home status` if a change fails. Status reports service
 query errors; a timeout does not mean the launcher was uninstalled.
 See the [controlled TV tests](docs/home-profile-isolation-tv-20261026.json).

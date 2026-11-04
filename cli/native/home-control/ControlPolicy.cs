@@ -46,19 +46,20 @@ namespace AeroTizen.Home
     internal sealed class ReadbackException : Exception
     {
         internal VerificationFailure Failure { get; }
-        internal ReadbackException(string message, string phase, Snapshot expected, Snapshot observed) : base(message)
+        internal ReadbackException(string message, string phase, Snapshot expected, Snapshot observed, Exception cause = null) : base(message, cause)
         {
             var differences = new Dictionary<string, ValueDifference>();
             if (expected.Main != observed.Main) differences["operation/main"] = new ValueDifference { Expected = expected.Main, Observed = observed.Main };
             foreach (string key in Policy.Keys)
                 if (expected.Strings[key] != observed.Strings[key]) differences[key] = new ValueDifference { Expected = expected.Strings[key], Observed = observed.Strings[key] };
-            if (expected.AutoStart != observed.AutoStart) differences["db/menu/smart_hub/ontvsetting/auto_start"] = new ValueDifference { Expected = expected.AutoStart, Observed = observed.AutoStart };
+            if (expected.AutoStart != observed.AutoStart) differences[Policy.AutoStartKey] = new ValueDifference { Expected = expected.AutoStart, Observed = observed.AutoStart };
             Failure = new VerificationFailure { Phase = phase, Expected = expected.Copy(), Observed = observed.Copy(), Differences = differences };
         }
     }
     public sealed class Result
     {
         public VerificationFailure Failure { get; set; }
+        public bool StartupSettingsRestored { get; set; }
         public bool Success { get; set; }
         public bool RolledBack { get; set; }
         public string Error { get; set; }
@@ -82,8 +83,12 @@ namespace AeroTizen.Home
     {
         public const string Target = "DclHome001.Home";
         public const string HomeKey = "db/appfw/home_appid";
+        private const string StartupKey = "db/appfw/startup_appid";
+        private const string BootBackupKey = "db/appfw/booting_appid_backup";
+        internal const string AutoStartKey = "db/menu/smart_hub/ontvsetting/auto_start";
+        private static readonly string[] StartupKeys = { StartupKey, BootBackupKey };
         public static readonly string[] Keys = {
-            HomeKey, "db/appfw/startup_appid", "db/appfw/booting_appid_backup", "db/first_screen/type"
+            HomeKey, StartupKey, BootBackupKey, "db/first_screen/type"
         };
         public static bool Same(Snapshot left, Snapshot right)
         {
@@ -95,9 +100,8 @@ namespace AeroTizen.Home
         {
             // Opening the launcher can update this derived startup value before
             // apply. Accept only its own ID here; keep the saved original exact.
-            const string bootBackup = "db/appfw/booting_appid_backup";
             var expected = original.Copy();
-            if (current.Strings[bootBackup] == Target) expected.Strings[bootBackup] = Target;
+            if (current.Strings[BootBackupKey] == Target) expected.Strings[BootBackupKey] = Target;
             return Same(current, expected);
         }
         private static void ValidateValues(Snapshot snapshot)
@@ -126,14 +130,6 @@ namespace AeroTizen.Home
             if (current.AutoStart != original.AutoStart && !(restoreBoot && current.AutoStart == 1))
                 throw new Exception("Autostart changed; a matching boot transaction is required for restore.");
         }
-        public static bool BootReady(Snapshot current, Snapshot original)
-        {
-            if (current.Main != Target || current.Strings[HomeKey] != Target || current.AutoStart != 1 ||
-                current.Strings["db/first_screen/type"] != original.Strings["db/first_screen/type"]) return false;
-            foreach (string key in Keys)
-                if (current.Strings[key] != original.Strings[key] && current.Strings[key] != Target) return false;
-            return true;
-        }
         private static Watcher CheckWatcher(Watcher value)
         {
             if (value == null || value.Protocol != 1 || value.AppId != Target || !value.Persistent ||
@@ -152,7 +148,7 @@ namespace AeroTizen.Home
         {
             if (platform.LauncherInstalled()) throw new Exception("AeroTizen is installed; watcher coordination is required.");
         }
-        private static void Write(IPlatform platform, Snapshot desired, bool requireAbsent = false)
+        private static Snapshot Write(IPlatform platform, Snapshot desired, bool requireAbsent = false)
         {
             if (platform.Read().Main != desired.Main)
             {
@@ -161,13 +157,16 @@ namespace AeroTizen.Home
                 var actual = platform.Read();
                 if (actual.Main != desired.Main) throw new ReadbackException("Home operation readback failed.", "home_operation", desired, actual);
             }
-            // The Home operation can have derived startup side effects. Put every
-            // unrelated saved value back. Boot is enabled separately below.
+            // Read each key after assigning Home. Firmware can set startup IDs itself.
             foreach (string key in Keys)
             {
                 if (platform.Read().Strings[key] == desired.Strings[key]) continue;
                 if (requireAbsent) RequireAbsent(platform);
-                platform.SetString(key, desired.Strings[key]);
+                try { platform.SetString(key, desired.Strings[key]); }
+                catch (Exception error)
+                {
+                    throw new ReadbackException("Setting write failed: " + key, key, desired, platform.Read(), error);
+                }
                 var actual = platform.Read();
                 if (actual.Strings[key] != desired.Strings[key]) throw new ReadbackException("Setting readback failed: " + key, key, desired, actual);
             }
@@ -181,6 +180,20 @@ namespace AeroTizen.Home
             var final = platform.Read();
             if (!Same(final, desired)) throw new ReadbackException("Final Home readback failed.", "final", desired, final);
             if (requireAbsent) RequireAbsent(platform);
+            return final;
+        }
+        private static bool StartupRejected(VerificationFailure failure, Snapshot original)
+        {
+            if (failure.Phase != "final" && failure.Phase != "boot" && Array.IndexOf(StartupKeys, failure.Phase) < 0) return false;
+            if (failure.Differences.Count == 0) return false;
+            foreach (string key in failure.Differences.Keys)
+            {
+                if (key == AutoStartKey && failure.Phase == "boot" && failure.Observed.AutoStart == original.AutoStart)
+                    continue;
+                if (Array.IndexOf(StartupKeys, key) < 0 || failure.Observed.Strings[key] != original.Strings[key])
+                    return false;
+            }
+            return true;
         }
         private static Result RestoreAbsent(IPlatform platform, Request request, Snapshot before)
         {
@@ -244,29 +257,38 @@ namespace AeroTizen.Home
                 var desired = request.Original.Copy();
                 if (request.Action == "apply") {
                     desired.Main = Target; desired.Strings[HomeKey] = Target;
-                    // Explicit boot setup assigns both startup IDs. Q7F firmware
-                    // couples these values to Home, so restoring stock startup
-                    // IDs while assigning AeroTizen Home cannot pass readback.
-                    if (request.Boot) {
-                        desired.Strings["db/appfw/startup_appid"] = Target;
-                        desired.Strings["db/appfw/booting_appid_backup"] = Target;
-                    }
+                    foreach (string key in StartupKeys) desired.Strings[key] = Target;
                 }
                 nativeStarted = true;
-                Write(platform, desired);
-                if (request.Boot && platform.Read().AutoStart != 1) platform.SetAutoStart(1);
-                var after = platform.Read();
-                if (request.Boot && !BootReady(after, request.Original))
+                bool startupSettingsRestored = false;
+                Snapshot after;
+                try
                 {
-                    var expected = desired.Copy(); expected.AutoStart = 1;
-                    foreach (string key in new[] { "db/appfw/startup_appid", "db/appfw/booting_appid_backup" })
-                        if (after.Strings[key] == Target) expected.Strings[key] = Target;
-                    throw new ReadbackException("Native boot readback failed.", "boot", expected, after);
+                    after = Write(platform, desired);
+                    if (request.Boot && after.AutoStart != 1)
+                    {
+                        desired.AutoStart = 1;
+                        try { platform.SetAutoStart(1); }
+                        catch (Exception error)
+                        {
+                            throw new ReadbackException("Autostart write failed.", "boot", desired, platform.Read(), error);
+                        }
+                        after = platform.Read();
+                        if (!Same(after, desired)) throw new ReadbackException("Native boot readback failed.", "boot", desired, after);
+                    }
+                }
+                catch (ReadbackException error) when (request.Action == "apply" && StartupRejected(error.Failure, request.Original))
+                {
+                    // Keep Home only after verifying the saved startup settings with it.
+                    foreach (string key in StartupKeys) desired.Strings[key] = request.Original.Strings[key];
+                    desired.AutoStart = request.Original.AutoStart;
+                    after = Write(platform, desired);
+                    startupSettingsRestored = true;
                 }
                 watcher = Change(platform, watcher, request.Action == "apply" ? "native" : "watcher",
                     request.Action == "apply" ? request.Transaction : null,
                     request.Action == "apply" ? request.BaselineHash : null);
-                return new Result { Success = true, After = after, Watcher = watcher };
+                return new Result { Success = true, StartupSettingsRestored = startupSettingsRestored, After = after, Watcher = watcher };
             }
             catch (Exception error)
             {
