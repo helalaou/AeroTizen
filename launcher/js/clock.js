@@ -37,9 +37,19 @@
     return "";
   }
 
+  // Dates follow the TV's languages. A translated launcher language goes first so the
+  // clock matches the rest of the screen; English keeps the TV's own regional formats.
+  function locales() {
+    var nav = window.navigator || {},
+      root = window.document && window.document.documentElement,
+      chosen = root && root.lang,
+      system = nav.languages ? Array.prototype.slice.call(nav.languages) : nav.language ? [nav.language] : [];
+    return chosen && chosen !== "en" ? [chosen].concat(system) : system;
+  }
+
   function localFormatter(options) {
-    var nav = window.navigator || {};
-    return new window.Intl.DateTimeFormat(nav.languages || nav.language || undefined, options);
+    var list = locales();
+    return new window.Intl.DateTimeFormat(list.length ? list : undefined, options);
   }
 
   function localFormat(d, options) {
@@ -202,8 +212,7 @@
   }
 
   function timeLocaleKey(id) {
-    var nav = window.navigator || {};
-    return id + ":" + String(nav.languages || nav.language || "");
+    return id + ":" + String(locales());
   }
 
   function timeFormatter(id) {

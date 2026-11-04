@@ -45,9 +45,6 @@ body:not(.clock-layout-compact) {
   flex-shrink: 0;
   text-align: right;
   white-space: nowrap;
-  /* Keep "5:36 PM" in reading order when the page is right-to-left. */
-  direction: ltr;
-  unicode-bidi: isolate;
 }
 [dir="rtl"] .time {
   text-align: left;
