@@ -165,7 +165,11 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
 - Preview the compiled launcher: `python3 -m http.server -d dist/launcher`, then
   open http://localhost:8000 at 1920×1080. The old comparison page is isolated in
   `tests/fixtures/legacy-launcher/` and is served by the browser test runner.
-- On the TV: `aerotizen install ./dist/launcher`, then `aerotizen inspect launcher`.
+- For TV development, run `npm run build:dev`, then `aerotizen install ./dist/launcher-dev`.
+  The app name and orange icon badge show the first eight characters of the content
+  build ID, for example `AeroTizen Dev 12AB34CD`. The build prints the app name.
+  It keeps the package ID, so installing it replaces a copy with that same ID.
+- Run `aerotizen inspect launcher` to inspect the TV build.
   This restarts the launcher in debug mode and exposes Chrome DevTools at
   http://localhost:9222/json. Press Ctrl+C to stop forwarding.
 - Keep legacy scripts ES5-compatible. Compiled Settings targets Chromium 69, the 2020
@@ -178,8 +182,8 @@ port, use `aerotizen inspect APPID --port 9223`.
 The separate `aerotizen-inspect` Python command has been replaced by `aerotizen inspect`.
 
 `aerotizen install launcher` installs the latest published launcher, even when a
-`launcher` directory exists in the current directory. Build first, then use
-`aerotizen install ./dist/launcher` to test local changes. For a fork's published app, use
+`launcher` directory exists in the current directory. Use `aerotizen install ./dist/launcher`
+for a local build without the badge. For a fork's published app, use
 `aerotizen install launcher --release-repo OWNER/REPO`.
 
 ## Releases
