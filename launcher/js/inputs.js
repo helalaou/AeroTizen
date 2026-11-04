@@ -29,8 +29,9 @@
     return s.type === "TV" ? "Live TV" : s.type + " " + s.number;
   };
 
-  inputs.label = function (s) {
-    return A.settings.inputNames[inputs.portName(s)] || s.editName || inputs.portName(s);
+  inputs.label = function (s, defaultLabel) {
+    var port = inputs.portName(s);
+    return A.settings.inputNames[port] || s.editName || defaultLabel || port;
   };
 
   // A configured device can appear in VIDEOSOURCE.disconnected while asleep.
@@ -159,6 +160,10 @@
     }
   };
 
+  function displayLabel(s) {
+    return inputs.label(s, s.type === "TV" ? A.translate("inputs.liveTv") : undefined);
+  }
+
   inputs.show = function (s) {
     // Native Live TV owns channel selection and remote control, unlike the
     // upstream embedded TVWindow. If unsupported, preserve TVWindow fallback.
@@ -172,7 +177,7 @@
       return;
     }
     if (!tz || !tz.tvwindow) {
-      return A.toast("Would switch to " + inputs.label(s));
+      return A.toast(A.translate("inputs.wouldSwitch", { input: displayLabel(s) }));
     }
     try {
       tz.tvwindow.setSource(
@@ -186,19 +191,19 @@
               window.Backgrounds.suspend();
             },
             function () {
-              A.toast("Could not show " + inputs.label(s));
+              A.toast(A.translate("inputs.couldNotShow", { input: displayLabel(s) }));
             },
             ["0px", "0px", "1920px", "1080px"],
             "MAIN"
           );
         },
         function () {
-          A.toast("Could not switch input");
+          A.toast(A.translate("inputs.switchFailed"));
         },
         "MAIN"
       );
     } catch (e) {
-      A.toast("Could not switch input");
+      A.toast(A.translate("inputs.switchFailed"));
     }
   };
 

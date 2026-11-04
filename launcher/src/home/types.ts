@@ -4,6 +4,7 @@ import type { AppPresentation, ContinueItem, HomeBridge, InputSource, InstalledA
 import type { SettingsSnapshot, SettingsStore } from "../contracts/preferences";
 import type { StatusStores } from "../contracts/status";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
+import type { MessageKey } from "../shared/i18n/catalogues";
 import type { MutableStore, Store } from "../shared/state/createStore";
 export interface Inventory {
   readonly apps: readonly InstalledApp[];
@@ -14,7 +15,7 @@ export interface Inventory {
 export type Page = "home" | "apps";
 export interface HomeMenuChoice {
   readonly action: "add" | "remove" | "move";
-  readonly label: string;
+  readonly label: MessageKey;
 }
 export interface HomeState {
   readonly active: boolean;
@@ -42,8 +43,8 @@ export interface HomeEnvironment {
   runtime: LauncherRuntime;
   select(key: string): void;
   settings: SettingsStore;
+  showMoveInstructions(): void;
   showPage(page: Page): void;
   state: MutableStore<HomeState>;
   status: StatusStores;
-  translate(value: string): string;
 }

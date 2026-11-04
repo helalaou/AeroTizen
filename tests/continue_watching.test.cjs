@@ -1,3 +1,4 @@
+const { translateEnglish } = require("./helpers/translate_english.cjs");
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -31,6 +32,7 @@ function harness() {
     now = Date.now(),
     elapsed = 0;
   const A = {
+    translate: translateEnglish,
     config: { HIDDEN_APPS: /service|companion|dummy/i },
     settings: {
       continueWatching: false,

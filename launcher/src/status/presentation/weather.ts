@@ -1,28 +1,30 @@
+import type { MessageKey } from "../../shared/i18n/catalogues";
+
 export type WeatherSymbol = "sun" | "partly" | "cloud" | "fog" | "rain" | "snow" | "storm";
 interface WeatherPresentation {
-  readonly condition: string;
+  readonly condition: MessageKey;
   readonly symbol: WeatherSymbol;
 }
 
 const CONDITIONS: Readonly<Partial<Record<number, WeatherPresentation>>> = {
-  0: { symbol: "sun", condition: "Clear" },
-  1: { symbol: "sun", condition: "Mainly clear" },
-  2: { symbol: "partly", condition: "Partly cloudy" },
-  3: { symbol: "cloud", condition: "Cloudy" },
-  45: { symbol: "fog", condition: "Fog" },
-  48: { symbol: "fog", condition: "Fog" },
-  85: { symbol: "snow", condition: "Snow" },
-  86: { symbol: "snow", condition: "Snow" },
+  0: { symbol: "sun", condition: "weather.clear" },
+  1: { symbol: "sun", condition: "weather.mainlyClear" },
+  2: { symbol: "partly", condition: "weather.partlyCloudy" },
+  3: { symbol: "cloud", condition: "weather.cloudy" },
+  45: { symbol: "fog", condition: "weather.fog" },
+  48: { symbol: "fog", condition: "weather.fog" },
+  85: { symbol: "snow", condition: "weather.snow" },
+  86: { symbol: "snow", condition: "weather.snow" },
 };
 const CONDITION_RANGES = [
-  { min: 51, max: 57, presentation: { symbol: "rain", condition: "Drizzle" } },
-  { min: 61, max: 67, presentation: { symbol: "rain", condition: "Rain" } },
-  { min: 71, max: 77, presentation: { symbol: "snow", condition: "Snow" } },
-  { min: 80, max: 82, presentation: { symbol: "rain", condition: "Showers" } },
-  { min: 95, max: Infinity, presentation: { symbol: "storm", condition: "Thunderstorm" } },
+  { min: 51, max: 57, presentation: { symbol: "rain", condition: "weather.drizzle" } },
+  { min: 61, max: 67, presentation: { symbol: "rain", condition: "weather.rain" } },
+  { min: 71, max: 77, presentation: { symbol: "snow", condition: "weather.snow" } },
+  { min: 80, max: 82, presentation: { symbol: "rain", condition: "weather.showers" } },
+  { min: 95, max: Infinity, presentation: { symbol: "storm", condition: "weather.thunderstorm" } },
 ] as const;
-const UNAVAILABLE: WeatherPresentation = { symbol: "cloud", condition: "Weather unavailable" };
-const UNAVAILABLE_RAIN: WeatherPresentation = { symbol: "rain", condition: "Weather unavailable" };
+const UNAVAILABLE: WeatherPresentation = { symbol: "cloud", condition: "weather.unavailable" };
+const UNAVAILABLE_RAIN: WeatherPresentation = { symbol: "rain", condition: "weather.unavailable" };
 
 export const getWeatherPresentation = (code: number | null): WeatherPresentation => {
   if (code === null) {

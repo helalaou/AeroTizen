@@ -12,6 +12,8 @@ import type {
 } from "../../contracts/launcher";
 import type { SettingsSource, WeatherLocation } from "../../contracts/preferences";
 import type { NetworkSnapshot, WeatherSnapshot } from "../../contracts/status";
+import type { MessageKey } from "../../shared/i18n/catalogues";
+import type { Translate } from "../../shared/i18n/createTranslations";
 import type { Store } from "../../shared/state/createStore";
 
 // The unmigrated TV services are accessed through this boundary, not a screen's types.
@@ -31,7 +33,7 @@ export interface LauncherRuntime {
   config: LauncherConfig;
   continueWatching: {
     items: ContinueItem[];
-    message: string;
+    messageKey: MessageKey | "";
     sources: ContinueSource[];
     open(item: ContinueItem): void;
     subscribe(listener: () => void): () => void;
@@ -39,13 +41,12 @@ export interface LauncherRuntime {
   hideToast(): void;
   homeScreen?: HomeBridge;
   homewatch: { useSamsungHome(): void; openSamsungHome?(): void };
-  i18n?: { t(value: string): string };
   inputs: {
     sources: InputSource[];
     alwaysVisible?(source: InputSource): boolean;
     hasRecognizedDevice?(source: InputSource): boolean;
     isVisible(source: InputSource): boolean;
-    label(source: InputSource): string;
+    label(source: InputSource, defaultLabel?: string): string;
     portName(source: InputSource): string;
     refresh(): void;
     show(source: InputSource): void;
@@ -56,6 +57,7 @@ export interface LauncherRuntime {
   settingsUi?: SettingsBridge;
   tiles: { describe(app: InstalledApp): AppPresentation };
   toast(message: string): void;
+  translate: Translate;
 }
 
 export interface LauncherPlatform {

@@ -2,6 +2,7 @@ import { useLayoutEffect } from "preact/hooks";
 
 import type { ContinueItem } from "../../contracts/launcher";
 import { useStore } from "../../shared/hooks/useStore";
+import { useTranslation } from "../../shared/i18n/useTranslation";
 import type { HomeEnvironment } from "../types";
 
 import { ContinueWatchingCard } from "./ContinueWatchingCard";
@@ -15,6 +16,7 @@ export const ContinueWatchingRow = ({
   items: readonly ContinueItem[];
   visible: boolean;
 }) => {
+  const { t } = useTranslation();
   const { continueOffset } = useStore(env.state);
   useLayoutEffect(() => {
     const list = env.continueItems.current;
@@ -27,12 +29,12 @@ export const ContinueWatchingRow = ({
   }, [env, items, continueOffset]);
   return (
     <section id="continue-section" class="row-wrap" hidden={!visible || !items.length}>
-      <h2>{env.translate("Continue Watching")}</h2>
+      <h2>{t("home.continueWatching")}</h2>
       <div class="continue-viewport" ref={env.continueViewport}>
         <div
           id="continue-items"
           class="row"
-          aria-label="Continue Watching"
+          aria-label={t("home.continueWatching")}
           ref={env.continueItems}
           data-offset={continueOffset}
           style={{ transform: "translate3d(" + -continueOffset + "px,0,0)" }}

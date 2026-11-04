@@ -2,22 +2,23 @@ import { flushSync } from "preact/compat";
 import { useCallback, useLayoutEffect, useRef, useState } from "preact/hooks";
 
 import type { WeatherLocation } from "../../../contracts/preferences";
+import type { MessageKey } from "../../../shared/i18n/catalogues";
 import type { SettingsServices } from "../../types";
 
 interface SearchState {
-  message: string;
+  message: MessageKey | "";
   query: string;
   results: WeatherLocation[];
 }
 
-const getSearchMessage = (results: WeatherLocation[] | null) => {
+const getSearchMessage = (results: WeatherLocation[] | null): MessageKey => {
   if (results === null) {
-    return "Could not search. Check your connection and try again.";
+    return "weather.searchFailed";
   }
   if (!results.length) {
-    return "No locations found. Try a nearby town or add a region or country.";
+    return "weather.searchEmpty";
   }
-  return "Select your location. Add a region or country to the search if needed.";
+  return "weather.searchResults";
 };
 
 export const useWeatherSearch = (searchLocations: SettingsServices["searchLocations"], active: boolean) => {
@@ -54,7 +55,7 @@ export const useWeatherSearch = (searchLocations: SettingsServices["searchLocati
       const request = version.current;
       setState((previous) => ({
         ...previous,
-        message: text.length < 2 ? "Enter at least two characters, then select Search." : "Searching…",
+        message: text.length < 2 ? "weather.searchTooShort" : "weather.searching",
       }));
       if (text.length < 2) {
         return;

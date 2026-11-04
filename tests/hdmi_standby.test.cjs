@@ -1,3 +1,4 @@
+const { translateEnglish } = require("./helpers/translate_english.cjs");
 // Tizen VIDEOSOURCE standby recognition, port de-duplication and visibility.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -19,6 +20,7 @@ function harness(settings = {}, report = {}, selected = null, legacyView = true)
   };
   let builds = 0;
   const A = {
+    translate: translateEnglish,
     settings: {
       showLiveTv: true,
       hideDisconnectedHdmi: true,

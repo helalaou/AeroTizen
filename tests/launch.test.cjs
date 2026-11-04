@@ -1,3 +1,4 @@
+const { translateEnglish } = require("./helpers/translate_english.cjs");
 const assert = require("node:assert/strict");
 const { EventEmitter } = require("node:events");
 const fs = require("node:fs");
@@ -31,6 +32,7 @@ function appHarness(metadata, options = {}) {
   };
   if (options.noMetadata) delete application.getAppMetaData;
   const A = {
+    translate: translateEnglish,
     tizen: options.preview
       ? null
       : {

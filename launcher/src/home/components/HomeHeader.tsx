@@ -1,6 +1,7 @@
 import { House, Settings } from "lucide-preact";
 
 import { useStore } from "../../shared/hooks/useStore";
+import { useTranslation } from "../../shared/i18n/useTranslation";
 import { Icon } from "../../shared/icons/Icon";
 import { HeaderStatus } from "../../status/HeaderStatus";
 import { NetworkStatus } from "../../status/NetworkStatus";
@@ -10,6 +11,7 @@ import { HeaderFocusIndicator } from "./HeaderFocusIndicator";
 import { HomeControl } from "./HomeControl";
 
 export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
+  const { t } = useTranslation();
   const { page, active } = useStore(env.state);
   return (
     <header class="topbar" aria-hidden={!active}>
@@ -21,7 +23,7 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
           controlKey="gear"
           className="icon-btn"
           preserveSelection
-          title={env.translate("Settings")}
+          title={t("common.settings")}
         >
           <Icon icon={Settings} />
         </HomeControl>
@@ -30,36 +32,36 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
           id="samsung-home-shortcut"
           controlKey="samsung-home-shortcut"
           className="icon-btn samsung-home-shortcut"
-          title={env.translate("Use Samsung Home instead")}
+          title={t("common.samsungHome")}
         >
           <Icon icon={House} />
         </HomeControl>
-        <NetworkStatus status={env.status} translate={env.translate} />
+        <NetworkStatus status={env.status} />
       </div>
-      <nav class="view-tabs" aria-label="App views">
+      <nav class="view-tabs" aria-label={t("home.views")}>
         <HeaderFocusIndicator env={env} group="tabs" />
         <HomeControl
           env={env}
           id="home-tab"
           controlKey="home-tab"
           className={"view-tab" + (page === "home" ? " active" : "")}
-          title={env.translate("Home")}
+          title={t("home.home")}
           pressed={page === "home"}
         >
-          {env.translate("Home")}
+          {t("home.home")}
         </HomeControl>
         <HomeControl
           env={env}
           id="apps-tab"
           controlKey="apps-tab"
           className={"view-tab" + (page === "apps" ? " active" : "")}
-          title={env.translate("All apps")}
+          title={t("home.allApps")}
           pressed={page === "apps"}
         >
-          {env.translate("All apps")}
+          {t("home.allApps")}
         </HomeControl>
       </nav>
-      <HeaderStatus settings={env.settings} status={env.status} clock={env.runtime.clock} translate={env.translate} />
+      <HeaderStatus settings={env.settings} status={env.status} clock={env.runtime.clock} />
     </header>
   );
 };

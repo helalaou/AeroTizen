@@ -26,6 +26,7 @@ export interface SettingsValues {
   homeCardColumns: number | null;
   homeCardMode: "square" | "rectangle";
   inputNames: Record<string, string>;
+  language: string;
   showLiveTv: boolean;
   showNetwork: boolean;
   showTime: boolean;

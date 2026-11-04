@@ -198,12 +198,12 @@
     }
     function failed(error) {
       outcome("failed", error || { name: "LaunchError", message: "Launch denied" });
-      A.toast("Could not open " + label);
+      A.toast(A.translate("apps.openFailed", { name: label }));
     }
     var label = A.tiles.shortName(app.name);
     if (!tz || !tz.application) {
       outcome("unavailable");
-      return A.toast("Would open " + label);
+      return A.toast(A.translate("apps.wouldOpen", { name: label }));
     }
     var link = hbbtvLink(app.id);
     if (link) {
@@ -232,20 +232,20 @@
     // launching; otherwise HomeWatcher can immediately reclaim the screen.
     var isYouTube = /^youtube$/i.test(String(app.name || "").trim());
     if (isYouTube && A.homewatch && A.homewatch.suspendForExternal) {
-      function youtubeFailed(reason, error) {
+      function youtubeFailed(reason, detail, error) {
         outcome("failed", error || { name: "HandoffError", message: reason || "Launch failed" });
         if (A.homewatch.resume) {
           A.homewatch.resume();
         }
-        A.toast("Could not open " + label + (reason ? ": " + reason : ""));
+        A.toast(A.translate("apps.openFailedDetail", { name: label, reason: detail }));
       }
       A.homewatch.suspendForExternal(function () {
         try {
           tz.application.launch(app.id, accepted, function (error) {
-            youtubeFailed("launch denied", error);
+            youtubeFailed("launch denied", A.translate("handoff.launchDenied"), error);
           });
         } catch (error) {
-          youtubeFailed("launch failed", error);
+          youtubeFailed("launch failed", A.translate("handoff.launchFailed"), error);
         }
       }, youtubeFailed);
       return;
@@ -262,13 +262,13 @@
 
   apps.openStore = function () {
     if (!tz || !tz.application) {
-      return A.toast("Would open the Samsung app store");
+      return A.toast(A.translate("apps.wouldOpenStore"));
     }
     var ids = cfg.STORE_APP_IDS.slice();
     (function next() {
       var id = ids.shift();
       if (!id) {
-        return A.toast("Could not open the app store");
+        return A.toast(A.translate("apps.storeFailed"));
       }
       A.homewatch.watch(id);
       tz.application.launch(id, null, next);

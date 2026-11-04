@@ -1,4 +1,5 @@
-"use strict";
+const { translateEnglish } = require("./helpers/translate_english.cjs");
+("use strict");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
@@ -10,6 +11,7 @@ function harness() {
     messages = [],
     events = {};
   const A = {
+    translate: translateEnglish,
     config: { SERVICE_URL: "http://127.0.0.1:47790", SERVICE_ID: "Watcher" },
     tizen: {
       application: {

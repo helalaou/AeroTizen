@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 
 import { useStore } from "../../shared/hooks/useStore";
+import { useTranslation } from "../../shared/i18n/useTranslation";
 import type { HomeEnvironment } from "../types";
 
 const GROUP_KEYS: Record<"tabs" | "shortcuts", readonly string[]> = {
@@ -15,6 +16,7 @@ export const HeaderFocusIndicator = ({
   env: HomeEnvironment;
   group?: "shortcuts" | "tabs";
 }) => {
+  const { language } = useTranslation();
   const tabs = group === "tabs";
   const state = useStore(env.state);
   const keys = GROUP_KEYS[group];
@@ -50,7 +52,7 @@ export const HeaderFocusIndicator = ({
       },
     });
     positioned.current = true;
-  }, [env, key]);
+  }, [env, key, language]);
   return (
     <div
       aria-hidden="true"

@@ -82,6 +82,27 @@ explicit owners.
 Shared contracts, services, platform adapters and shared utilities cannot import
 screens or app composition; ESLint enforces this dependency rule.
 
+## Launcher translations
+
+The [English catalogue](launcher/src/shared/i18n/en.json) defines the keys for
+launcher text, including accessibility labels, placeholders, status, and error
+messages. To add a language, copy the file and translate the values. Keep the keys
+and placeholder names such as `{{name}}`. Register the file and the language's
+native name in [catalogues.ts](launcher/src/shared/i18n/catalogues.ts) using a
+canonical BCP 47 tag. Registered catalogues ship in the offline TV package.
+
+Use `useTranslation()` in Preact views and `A.translate()` at legacy display
+points. Translate full phrases and pass their variable parts as placeholders.
+Product names, hardware port IDs, diagnostics, and text supplied by apps, the TV,
+or users keep their original values.
+
+TypeScript derives valid translation keys from the English catalogue. ESLint
+checks legacy keys and UI literals, and the Node suite checks catalogue parity
+and placeholders. Playwright checks the production HTML shell and uses a test-only
+locale that replaces copy with symbols. It scans visible text and text attributes
+for leftover words in the Home, Settings, empty, and error states it visits in
+both themes. Add coverage here for new UI paths.
+
 ## Project layout
 
 | Path                              | What                                                                                            |

@@ -2,6 +2,7 @@ import { flushSync } from "preact/compat";
 import { useLayoutEffect, useMemo, useRef } from "preact/hooks";
 
 import { useStore } from "../../shared/hooks/useStore";
+import { useTranslation } from "../../shared/i18n/useTranslation";
 import type { Direction } from "../../shared/navigation/createNavigation";
 import { categories } from "../layout/categories";
 import type { SettingsInventorySnapshot } from "../types";
@@ -21,6 +22,7 @@ export const useSettingsNavigation = (
   previewing: boolean,
   { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel, clockLayout }: Layout,
 ) => {
+  const { language } = useTranslation();
   const { navigation, bridge, services, actions, settings, view, root, drawer, categoryMenu, categoryContent, panes } =
     useSettingsEnvironment();
   const directions = useMemo<Partial<Record<number, Direction>>>(() => {
@@ -61,6 +63,7 @@ export const useSettingsNavigation = (
     animated,
     locationLabel,
     clockLayout,
+    language,
     navigation,
     settings,
     category,

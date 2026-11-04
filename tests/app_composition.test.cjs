@@ -9,6 +9,7 @@ const harness = () => {
   const calls = [];
   const document = {
     hidden: false,
+    documentElement: { lang: "en" },
     addEventListener(name, listener) {
       events.set(name, listener);
     },
@@ -30,6 +31,7 @@ const harness = () => {
   const settingsBridge = {};
   const previousHome = {};
   const previousSettings = {};
+  const previousTranslate = () => "previous";
   const statusListeners = [new Set(), new Set(), new Set()];
   const statusSource = (snapshot, listeners) => ({
     getSnapshot: () => snapshot,
@@ -46,15 +48,18 @@ const harness = () => {
     config: { DEFAULTS: {} },
     homeScreen: previousHome,
     settingsUi: previousSettings,
+    translate: previousTranslate,
   };
   const hosts = { home: { ownerDocument: document, querySelector: () => null }, settings: {} };
-  let homeSettings, editorSettings;
+  let homeSettings, editorSettings, homeTranslations, editorTranslations;
   const views = {
-    home(runtime, settings) {
+    home(runtime, settings, mount, status, translations) {
+      homeTranslations = translations;
       homeSettings = settings;
       return { bridge: homeBridge, dispose: () => calls.push("dispose home") };
     },
-    settings(runtime, platform, settings) {
+    settings(runtime, platform, settings, mount, translations) {
+      editorTranslations = translations;
       assert.equal(runtime.homeScreen, homeBridge, "Home is mounted before Settings");
       editorSettings = settings;
       return { bridge: settingsBridge, dispose: () => calls.push("dispose settings") };
@@ -73,6 +78,13 @@ const harness = () => {
     document,
     previousHome,
     previousSettings,
+    previousTranslate,
+    get homeTranslations() {
+      return homeTranslations;
+    },
+    get editorTranslations() {
+      return editorTranslations;
+    },
     get homeSettings() {
       return homeSettings;
     },
@@ -87,6 +99,9 @@ test("Home and Settings share one preference source and release it once", () => 
   const app = createLauncherApp(h.runtime, h.platform, h.hosts, h.views);
   assert.equal(h.listeners.size, 1, "there is one source subscription for the whole app");
   assert.equal(h.homeSettings, h.editorSettings);
+  assert.equal(h.homeTranslations, h.editorTranslations);
+  assert.equal(h.homeTranslations.getSnapshot().t("common.settings"), "Settings");
+  assert.equal(h.runtime.translate("apps.openFailed", { name: "A & B <HD>" }), "Could not open A & B <HD>");
   h.homeSettings.update({ home: ["two"] });
   assert.deepEqual(h.editorSettings.getSnapshot().home, ["two"]);
   h.document.hidden = true;
@@ -105,6 +120,7 @@ test("Home and Settings share one preference source and release it once", () => 
   assert.deepEqual(h.calls.slice(2), ["dispose settings", "dispose home"]);
   assert.equal(h.runtime.homeScreen, h.previousHome);
   assert.equal(h.runtime.settingsUi, h.previousSettings);
+  assert.equal(h.runtime.translate, h.previousTranslate);
 });
 
 test("failed view assembly releases the settings source and already mounted Home", () => {
@@ -122,6 +138,7 @@ test("failed view assembly releases the settings source and already mounted Home
   assert.deepEqual(h.calls, ["dispose home"]);
   assert.equal(h.runtime.homeScreen, h.previousHome);
   assert.equal(h.runtime.settingsUi, h.previousSettings);
+  assert.equal(h.runtime.translate, h.previousTranslate);
 });
 
 test("repeated app replacement does not retain source or visibility listeners", () => {

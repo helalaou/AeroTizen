@@ -7,12 +7,12 @@ const DEVICE_RULES = [
 ] as const;
 
 const STATUS_LABELS = {
-  live: "TV",
-  active: "ACTIVE",
-  connected: "ON",
-  recognized: "RECOGNISED",
-  pinned: "PINNED",
-  empty: "OFF",
+  live: "inputs.status.live",
+  active: "inputs.status.active",
+  connected: "inputs.status.connected",
+  recognized: "inputs.status.recognized",
+  pinned: "inputs.status.pinned",
+  empty: "inputs.status.empty",
 } as const;
 
 export type InputKind = "tv" | "hdmi" | (typeof DEVICE_RULES)[number]["kind"];

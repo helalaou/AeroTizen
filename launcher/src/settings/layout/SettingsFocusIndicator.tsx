@@ -2,6 +2,7 @@ import type { RefObject } from "preact";
 import { useLayoutEffect, useState } from "preact/hooks";
 
 import { useStore } from "../../shared/hooks/useStore";
+import { useTranslation } from "../../shared/i18n/useTranslation";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 
 export const SettingsFocusIndicator = ({
@@ -11,6 +12,7 @@ export const SettingsFocusIndicator = ({
   container: RefObject<HTMLDivElement>;
   sidebar?: boolean;
 }) => {
+  const { language } = useTranslation();
   const { navigation, drawer } = useSettingsEnvironment();
   const key = useStore(navigation);
   const state = useStore(drawer);
@@ -42,7 +44,7 @@ export const SettingsFocusIndicator = ({
       borderRadius: getComputedStyle(target).borderRadius,
     });
     setVisible(Boolean(rect.width && rect.height));
-  }, [container, key, navigation, state]);
+  }, [container, key, navigation, state, language]);
   return (
     <div
       aria-hidden="true"

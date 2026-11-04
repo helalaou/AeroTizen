@@ -9,6 +9,7 @@ const tsPlugin = require("@typescript-eslint/eslint-plugin");
 const prettier = require("eslint-config-prettier");
 const simpleImportSort = require("eslint-plugin-simple-import-sort");
 const perfectionist = require("eslint-plugin-perfectionist");
+const translationLint = require("./tools/translation-lint.cjs");
 const unusedImports = require("eslint-plugin-unused-imports");
 
 module.exports = [
@@ -50,6 +51,11 @@ module.exports = [
       eqeqeq: "error",
       "no-var": "off",
     },
+  },
+  {
+    files: ["launcher/src/**/*.{ts,tsx}", "launcher/js/**/*.js"],
+    plugins: { "launcher-i18n": { rules: { "translated-copy": translationLint } } },
+    rules: { "launcher-i18n/translated-copy": "error" },
   },
   {
     files: ["launcher/src/**/*.{ts,tsx}", "vite.config.mts"],
@@ -167,7 +173,13 @@ module.exports = [
     languageOptions: { sourceType: "module", globals: { ...globals.node } },
   },
   {
-    files: ["tests/**/*.cjs", "eslint.config.js", "playwright.config.cjs", "stylelint.config.cjs"],
+    files: [
+      "tests/**/*.cjs",
+      "tools/translation-lint.cjs",
+      "eslint.config.js",
+      "playwright.config.cjs",
+      "stylelint.config.cjs",
+    ],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "commonjs",

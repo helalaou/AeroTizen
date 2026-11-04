@@ -3,6 +3,7 @@ import { useLayoutEffect, useState } from "preact/hooks";
 
 import type { BackgroundOption, LauncherConfig } from "../../contracts/launcher";
 import { useStore } from "../../shared/hooks/useStore";
+import { useTranslation } from "../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../components/ChoiceGroup";
 import { ChoiceOption } from "../components/ChoiceOption";
 import { SelectionIndicator } from "../components/SelectionIndicator";
@@ -11,15 +12,15 @@ import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 import type { SettingsSectionProps } from "../types";
 
 const WALLPAPER_CATEGORY_OPTIONS = [
-  { value: "photo", label: "Weather photos" },
-  { value: "solid", label: "Solid colour" },
-  { value: "gradient", label: "Gradients" },
-  { value: "animated", label: "Animated backgrounds" },
+  { value: "photo", labelKey: "wallpaper.photos" },
+  { value: "solid", labelKey: "wallpaper.solid" },
+  { value: "gradient", labelKey: "wallpaper.gradients" },
+  { value: "animated", labelKey: "wallpaper.animated" },
 ] as const;
 
 const WEATHER_PHOTO_OPTIONS = [
-  { value: false, label: "Off" },
-  { value: true, label: "Automatic (weather)" },
+  { value: false, labelKey: "common.off" },
+  { value: true, labelKey: "wallpaper.auto" },
 ] as const;
 
 interface Props extends SettingsSectionProps {
@@ -39,6 +40,7 @@ const getInitialCategory = (settings: SettingsSectionProps["settings"], animated
 };
 
 export const BackgroundSettings = ({ settings, actions, config, backgrounds: list, webGL }: Props) => {
+  const { t } = useTranslation();
   const selected = list.find((background) => background.id === settings.background);
   const unavailable = webGL === false && selected?.requiresWebGL === true;
   const animated = Boolean(selected?.anim) && !unavailable;
@@ -74,7 +76,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
           style={{ background: background.preview }}
           onClick={() => actions.setBackground(background.id)}
         >
-          <span>{background.name}</span>
+          <span>{t(`scene.${background.id}`)}</span>
           {background.id === settings.background ? <SelectionIndicator /> : null}
         </SettingsControl>
       ));
@@ -84,7 +86,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
     <>
       <ChoiceGroup
         id="wallpaper-categories"
-        label="Background type"
+        label={t("wallpaper.type")}
         value={filter}
         options={WALLPAPER_CATEGORY_OPTIONS}
         onSelect={(category) => {
@@ -93,21 +95,19 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
         }}
       />
       <div hidden={!show("photo")}>
-        <h3>Dynamic weather wallpapers</h3>
+        <h3>{t("wallpaper.dynamic")}</h3>
         <ChoiceGroup
           id="weather-photo-choice"
           value={settings.weatherPhoto}
-          label="Dynamic weather wallpapers"
+          label={t("wallpaper.dynamic")}
           options={WEATHER_PHOTO_OPTIONS}
           onSelect={actions.setWeatherPhoto}
         />
-        <p class="hint">
-          Nine AI-generated scenes follow the weather and time of day. Off restores your selected background.
-        </p>
+        <p class="hint">{t("wallpaper.photoHint")}</p>
       </div>
       <div hidden={!show("animated")}>
-        <h3>Animated backgrounds</h3>
-        {unavailable && <p class="hint">Your saved wallpaper is shown without animation on this device.</p>}
+        <h3>{t("wallpaper.animated")}</h3>
+        {unavailable && <p class="hint">{t("wallpaper.unavailable")}</p>}
         <div id="bg-anim" class="swatches">
           {swatches(true)}
         </div>
@@ -118,29 +118,29 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
                 class={"slider" + (adjusting ? " adjusting" : "")}
                 focusKey="speed"
                 role="slider"
-                aria-label="Background speed"
+                aria-label={t("wallpaper.speedLabel")}
                 aria-valuemin={config.SPEED.MIN}
                 aria-valuemax={config.SPEED.MAX}
                 aria-valuenow={settings.speed}
                 onClick={toggleAdjusting}
               >
-                <span class="slider-label">Speed</span>
+                <span class="slider-label">{t("wallpaper.speed")}</span>
                 <div class="track">
                   <div class="fill" style={{ width: percent + "%" }} />
                   <div class="thumb" style={{ left: percent + "%" }} />
                 </div>
                 <span class="slider-value">{settings.speed}×</span>
-                <span class="slider-hint">{adjusting ? "◀ ▶" : "OK to adjust"}</span>
+                <span class="slider-hint">{adjusting ? "◀ ▶" : t("wallpaper.adjust")}</span>
               </SettingsControl>
               <ChoiceOption id="preview" onSelect={actions.preview}>
-                {"▶  Preview"}
+                {t("wallpaper.preview")}
               </ChoiceOption>
             </>
           ) : null}
         </div>
       </div>
       <div hidden={filter !== "solid" && filter !== "gradient"}>
-        <h3>Still backgrounds</h3>
+        <h3>{t("wallpaper.still")}</h3>
         <div id="bg-still" class="swatches">
           {swatches(false)}
         </div>
