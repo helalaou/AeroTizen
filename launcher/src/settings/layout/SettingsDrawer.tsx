@@ -1,4 +1,4 @@
-import { ChevronRight, X } from "lucide-preact";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, House, X } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 
 import { useStore } from "../../shared/hooks/useStore";
@@ -13,7 +13,15 @@ import { SettingsFocusIndicator } from "./SettingsFocusIndicator";
 
 // Categories and remote behaviour are shared by both appearance themes.
 export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChildren> }) => {
-  const { drawer, categoryMenu, categoryContent, categoryScroll, bridge, panes: paneRefs } = useSettingsEnvironment();
+  const {
+    drawer,
+    categoryMenu,
+    categoryContent,
+    categoryScroll,
+    bridge,
+    actions,
+    panes: paneRefs,
+  } = useSettingsEnvironment();
   const state = useStore(drawer);
   const { t } = useTranslation();
   const active = categories.find((category) => category.id === state.category);
@@ -41,20 +49,45 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
               aria-expanded={state.category === category.id && state.expanded}
               onClick={() => drawer.set({ category: category.id, expanded: true })}
             >
-              <span class="settings-category__icon" aria-hidden="true">
+              <span class="settings-category__icon">
                 <Icon icon={category.icon} />
               </span>
               <span class="settings-category__label">
                 <strong>{t(category.title)}</strong>
                 <small>{t(category.hint)}</small>
               </span>
-              <span class="settings-category__chevron" aria-hidden="true">
+              <span class="settings-category__chevron">
                 <Icon icon={ChevronRight} />
               </span>
             </SettingsControl>
           ))}
+          <div class="settings-drawer__return">
+            <SettingsControl
+              id="escape"
+              class="settings-category"
+              focusKey="escape"
+              role="button"
+              onClick={actions.useSamsungHome}
+            >
+              <span class="settings-category__icon">
+                <Icon icon={House} />
+              </span>
+              <strong>{t("common.samsungHome")}</strong>
+            </SettingsControl>
+          </div>
         </div>
-        <div class="settings-drawer__help">{t("settings.drawer.help")}</div>
+        <div class="settings-drawer__help">
+          <span>
+            <Icon icon={ChevronUp} />
+            <Icon icon={ChevronDown} />
+            {t("home.move")}
+          </span>
+          <span>{t("settings.drawer.select")}</span>
+          <span>
+            <Icon icon={ChevronLeft} />
+            {t("settings.drawer.back")}
+          </span>
+        </div>
       </aside>
       <div class="settings-drawer__main" ref={categoryContent}>
         <div class="settings-drawer__content-head">

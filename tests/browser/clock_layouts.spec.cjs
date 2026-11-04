@@ -14,9 +14,8 @@ test("custom clock styles preserve upstream date/time preferences, visibility an
   await expect(page.locator(".clock--expanded")).toBeHidden();
   await page.locator("#gear").click();
   await openCategory(page, "status");
-  await page.locator('[data-key="clock-layouts:custom"]').click();
   for (const style of ["vertical", "horizontal", "minimal", "bold"]) {
-    await page.locator(`[data-key="clock-styles:${style}"]`).click();
+    await page.locator(`[data-key="clock-layouts:${style}"]`).click();
     await closeSettings(page);
     await expect(page.locator(".clock--expanded")).toBeVisible();
     expect(await page.locator(".clock__time").getAttribute("aria-label")).toBe(

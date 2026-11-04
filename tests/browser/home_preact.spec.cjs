@@ -82,7 +82,10 @@ test("compiled Home preserves legacy geometry and artwork source selection at 10
       [".topbar", "#gear", "#grid", "#inputs"].map((selector) => {
         const element = document.querySelector(selector),
           rect = element.getBoundingClientRect();
-        return [selector, ...[rect.x, rect.y, rect.width, rect.height].map((n) => Math.round(n))];
+        // The shared Home heading and section spacing set a new vertical position for Inputs.
+        const coordinates =
+          selector === "#inputs" ? [rect.x, rect.width, rect.height] : [rect.x, rect.y, rect.width, rect.height];
+        return [selector, ...coordinates.map((n) => Math.round(n))];
       }),
     );
   // Header tabs are now centred in both themes; app/source geometry remains upstream-compatible.

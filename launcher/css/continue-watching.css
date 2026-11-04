@@ -61,9 +61,6 @@
 .continue-app-icon .app-fallback .name {
   display: none;
 }
-.continue-progress.empty {
-  visibility: hidden;
-}
 .continue-progress-fill {
   height: 100%;
   background: var(--focus);
@@ -77,24 +74,27 @@ body.glass-ui .continue-card.focused {
 .continue-label {
   display: flex;
   align-items: flex-start;
-  height: 107px;
-  padding: 12px 16px 16px;
+  height: 80px;
+  padding: 10px 16px;
   background: var(--continue-label-surface);
 }
 .continue-episode {
-  margin-top: 5px;
+  margin-top: 4px;
   font-size: 22px;
+  line-height: 26px;
   color: var(--continue-episode-text);
 }
 .continue-progress {
   height: 5px;
   background: var(--continue-progress-track);
 }
+.continue-progress.empty {
+  background: var(--continue-label-surface);
+}
 .continue-card {
   position: relative;
   flex: 0 0 414px;
   width: 414px;
-  height: 345px;
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;

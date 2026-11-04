@@ -1,15 +1,11 @@
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../components/ChoiceGroup";
+import { SettingsSection } from "../components/SettingsSection";
 import type { SettingsSectionProps } from "../types";
 
 const APPEARANCE_OPTIONS = [
   { value: false, labelKey: "appearance.classic" },
   { value: true, labelKey: "appearance.glass" },
-] as const;
-
-const NETWORK_VISIBILITY_OPTIONS = [
-  { value: true, labelKey: "common.show" },
-  { value: false, labelKey: "common.hide" },
 ] as const;
 
 const HOME_CARD_MODE_OPTIONS = [
@@ -33,47 +29,40 @@ export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) 
   const { t } = useTranslation();
   return (
     <>
-      <h3>{t("appearance.title")}</h3>
-      <ChoiceGroup
-        id="settings-appearance"
-        label={t("appearance.title")}
-        value={settings.glassSettings === true}
-        options={APPEARANCE_OPTIONS}
-        onSelect={actions.setGlassSettings}
-      />
-      <h3>{t("appearance.network")}</h3>
-      <ChoiceGroup
-        id="network-visibility"
-        label={t("appearance.networkVisibility")}
-        value={settings.showNetwork !== false}
-        options={NETWORK_VISIBILITY_OPTIONS}
-        onSelect={actions.setNetworkVisible}
-      />
-
-      <h3>{t("appearance.cards")}</h3>
-      <ChoiceGroup
-        id="home-card-mode"
-        label={t("appearance.tileLayout")}
-        value={settings.homeCardMode}
-        options={HOME_CARD_MODE_OPTIONS}
-        onSelect={actions.setHomeCardMode}
-      />
-      <ChoiceGroup
-        id="home-card-columns"
-        label={t("appearance.columns")}
-        value={String(settings.homeCardColumns || "auto")}
-        options={HOME_CARD_COLUMNS_OPTIONS}
-        onSelect={(value) => actions.setHomeCardColumns(value === "auto" ? null : Number(value))}
-      />
-      {!settings.homeCardColumns ? (
+      <SettingsSection title={t("appearance.title")}>
         <ChoiceGroup
-          id="card-sizes"
-          label={t("appearance.cardSize")}
-          value={settings.cardSize || "big"}
-          options={CARD_SIZE_OPTIONS}
-          onSelect={actions.setCardSize}
+          id="settings-appearance"
+          label={t("appearance.title")}
+          value={settings.glassSettings === true}
+          options={APPEARANCE_OPTIONS}
+          onSelect={actions.setGlassSettings}
         />
-      ) : null}
+      </SettingsSection>
+      <SettingsSection title={t("appearance.cards")}>
+        <ChoiceGroup
+          id="home-card-mode"
+          label={t("appearance.tileLayout")}
+          value={settings.homeCardMode}
+          options={HOME_CARD_MODE_OPTIONS}
+          onSelect={actions.setHomeCardMode}
+        />
+        <ChoiceGroup
+          id="home-card-columns"
+          label={t("appearance.columns")}
+          value={String(settings.homeCardColumns || "auto")}
+          options={HOME_CARD_COLUMNS_OPTIONS}
+          onSelect={(value) => actions.setHomeCardColumns(value === "auto" ? null : Number(value))}
+        />
+        {!settings.homeCardColumns ? (
+          <ChoiceGroup
+            id="card-sizes"
+            label={t("appearance.cardSize")}
+            value={settings.cardSize || "big"}
+            options={CARD_SIZE_OPTIONS}
+            onSelect={actions.setCardSize}
+          />
+        ) : null}
+      </SettingsSection>
     </>
   );
 };

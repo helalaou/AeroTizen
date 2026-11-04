@@ -72,9 +72,10 @@ test("compiled Settings escape waits for /leave before launching native Samsung 
       }),
   );
   await openSettings(page);
-  await openCategory(page, "apps");
-  const escape = page.getByRole("button", { name: "Use Samsung Home instead", exact: true });
-  await escape.focus();
+  await page.keyboard.press("Escape");
+  const escape = page.locator("#editor").getByRole("button", { name: "Samsung Home", exact: true });
+  for (let step = 0; step < 7; step++) await page.keyboard.press("ArrowDown");
+  await expect(escape).toBeFocused();
   await page.keyboard.press("Enter");
   await expect.poll(() => typeof acknowledge).toBe("function");
   expect(await page.evaluate(() => window.nativeLaunches)).toEqual([]);
@@ -95,7 +96,7 @@ test("compiled Settings retains the original Samsung Home escape without the opt
     };
   });
   await openCategory(page, "apps");
-  await page.getByRole("button", { name: "Use Samsung Home instead", exact: true }).click();
+  await page.locator("#editor").getByRole("button", { name: "Samsung Home", exact: true }).click();
   expect(await page.evaluate(() => window.legacyEscapes)).toBe(1);
 });
 
@@ -203,8 +204,9 @@ test("the first pointer click activates its control; Space activates buttons wit
   await expect(page.locator("body")).toHaveClass(/previewing/);
   await page.keyboard.press("Space");
   await expect(page.locator("body")).not.toHaveClass(/previewing/);
-  await openCategory(page, "status");
+  await openCategory(page, "weather");
   const input = page.getByRole("textbox", { name: "Weather location", exact: true });
+  expect((await input.boundingBox()).width).toBeGreaterThan(300);
   await input.fill("A");
   await page.keyboard.press("Space");
   await expect(input).toHaveValue("A ");
@@ -257,7 +259,7 @@ test("date previews stay stable during an opening and refresh on the next openin
   const time = page.locator('[data-key="time:24"]');
   const original = await time.textContent();
   await page.clock.setFixedTime(new Date("2026-10-24T13:10:00Z"));
-  await openCategory(page, "appearance");
+  await openCategory(page, "status");
   await page.locator('[data-key="network-visibility:false"]').click();
   await expect(page.locator('[data-key="network-visibility:false"]')).toHaveAttribute("aria-pressed", "true");
   await expect(time).toHaveText(original);

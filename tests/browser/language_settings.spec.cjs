@@ -11,7 +11,7 @@ test("language selection uses the English fallback offline and persists through 
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("navigation", { name: "App views" })).toBeVisible();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
-  for (let index = 0; index < 5; index++) await page.keyboard.press("ArrowDown");
+  for (let index = 0; index < 6; index++) await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("button", { name: "Language", exact: true })).toBeFocused();
   await page.keyboard.press("ArrowRight");
 

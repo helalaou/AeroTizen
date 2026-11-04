@@ -66,3 +66,40 @@ for (const [name, url] of [
     expect(errors).toEqual([]);
   });
 }
+
+test("Continue Watching demo is opt-in, local to Vite and uses separate preferences", async ({ page }) => {
+  await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+  await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+  await page.goto("http://127.0.0.1:8172/");
+  await page.waitForFunction(() => AeroTizen.apps.ready && Array.isArray(AeroTizen.settings.home));
+  await expect(page.locator("#continue-section")).toBeHidden();
+  const original = await page.evaluate(() => localStorage.getItem("aerotizen.settings.v1"));
+  await page.goto("http://127.0.0.1:8172/?demo=1");
+  await expect(page.locator("#continue-section")).toBeVisible();
+  await expect(page.locator(".continue-card")).toHaveCount(5);
+  await expect(page.locator(".continue-progress-fill")).toHaveCount(4);
+  const unplayed = page.getByRole("button", { name: "Paper Moons · Prime Video" });
+  await expect(unplayed.locator(".continue-progress-fill")).toHaveCount(0);
+  const labelBackground = await unplayed
+    .locator(".continue-label")
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+  await expect(unplayed.locator(".continue-progress")).toHaveCSS("background-color", labelBackground);
+  const longTitle = page
+    .getByRole("button", { name: /Signal North and the Last Broadcast/ })
+    .locator(".continue-title");
+  expect(await longTitle.evaluate((node) => node.clientHeight === 60 && node.scrollHeight > node.clientHeight)).toBe(
+    true,
+  );
+  const heights = await page.locator(".continue-card").evaluateAll((cards) => cards.map((card) => card.offsetHeight));
+  expect(heights).toEqual(Array(5).fill(318));
+  await expect(page.locator(".continue-image").first()).toHaveJSProperty("complete", true);
+  expect(
+    await page
+      .locator(".continue-image")
+      .first()
+      .evaluate((image) => image.naturalWidth),
+  ).toBeGreaterThan(0);
+  expect(await page.evaluate(() => localStorage.getItem("aerotizen.settings.v1"))).toBe(original);
+  await page.goto("http://127.0.0.1:8171/?demo=1");
+  await expect(page.locator("#continue-section")).toBeHidden();
+});

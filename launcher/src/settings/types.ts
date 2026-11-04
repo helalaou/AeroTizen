@@ -64,8 +64,7 @@ export interface SettingsActions {
   saveInputName(port: string, value: string): void;
   setBackground(background: string): void;
   setCardSize(size: CardSize): void;
-  setClockLayout(layout: SettingsValues["clockLayout"]): void;
-  setClockStyle(style: SettingsValues["aeroClockStyle"]): void;
+  setClockLayout(layout: "classic" | SettingsValues["aeroClockStyle"]): void;
   setContinueWatching(enabled: boolean): void;
   setDateFormat(format: DateFormat): void;
   setGlassSettings(enabled: boolean): void;

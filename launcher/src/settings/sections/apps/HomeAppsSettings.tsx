@@ -1,5 +1,6 @@
 import type { InstalledApp } from "../../../contracts/launcher";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
+import { SettingsSection } from "../../components/SettingsSection";
 import type { SettingsActions, SettingsServices } from "../../types";
 
 import { AppOption } from "./AppOption";
@@ -18,9 +19,7 @@ interface Props {
 export const HomeAppsSettings = ({ home, apps, actions, describeApp, fireplaceId, active }: Props) => {
   const { t } = useTranslation();
   return (
-    <>
-      <h3>{t("apps.show")}</h3>
-      <p class="hint">{t("apps.hint")}</p>
+    <SettingsSection title={t("apps.show")} description={t("apps.hint")}>
       <div id="all-apps" class="grid home-apps-settings">
         <AppStoreOption onSelect={actions.openStore} />
         <FireplaceOption
@@ -39,6 +38,6 @@ export const HomeAppsSettings = ({ home, apps, actions, describeApp, fireplaceId
           />
         ))}
       </div>
-    </>
+    </SettingsSection>
   );
 };

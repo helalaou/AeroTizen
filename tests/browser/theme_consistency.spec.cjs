@@ -39,6 +39,20 @@ for (const glassSettings of [false, true]) {
       AeroTizen.inputs.sources = [{ type: "HDMI", number: 1, connected: true }];
       AeroTizen.homeScreen.refreshApps();
     });
+    const homeLayout = await page.evaluate(() => {
+      const rect = (selector) => document.querySelector(selector).getBoundingClientRect();
+      return {
+        gridGap: rect("#continue-section h2").top - rect("#grid").bottom,
+        continueGap: rect("#inputs-section h2").top - rect("#continue-items").bottom,
+      };
+    });
+    expect(homeLayout).toEqual({ gridGap: 40, continueGap: 40 });
+    const headings = page.locator(".home-section-heading");
+    await expect(headings).toHaveCount(2);
+    for (const heading of await headings.all()) {
+      await expect(heading).toHaveCSS("font-size", "21px");
+      await expect(heading).toHaveCSS("text-transform", "uppercase");
+    }
     const colour = glassSettings ? "rgb(237, 242, 255)" : "rgb(124, 92, 255)";
     expect(await page.locator("#grid .tile.focused").evaluate((n) => getComputedStyle(n).boxShadow)).toContain(colour);
     await page.keyboard.down("Enter");
@@ -79,15 +93,23 @@ for (const glassSettings of [false, true]) {
     );
     expect(choices.length).toBeGreaterThan(3);
     for (const choice of choices) {
-      expect(choice.height).toBeGreaterThanOrEqual(64);
-      expect(choice.height).toBeLessThanOrEqual(76);
+      expect(choice.height).toBe(72);
       expect(choice.font).toBe("20px");
       expect(choice.minWidth).toBe("160px");
     }
     await page.screenshot({ path: info.outputPath("settings-control-scale.png") });
     await page.locator('[data-key="section:status"]').click();
-    const custom = page.locator('[data-key="clock-layouts:custom"]');
-    if (await custom.count()) await custom.click();
+    const compact = page.locator('[data-key="clock-layouts:classic"]');
+    const vertical = page.locator('[data-key="clock-layouts:vertical"]');
+    await expect(compact).toHaveAttribute("aria-pressed", "true");
+    await expect(vertical).toHaveAttribute("aria-pressed", "false");
+    const unselectedFill = await vertical.evaluate((n) => getComputedStyle(n).backgroundColor);
+    await expect(compact).not.toHaveCSS("background-color", unselectedFill);
+    await vertical.click();
+    await expect(vertical).toHaveAttribute("aria-pressed", "true");
+    await expect(compact).toHaveAttribute("aria-pressed", "false");
+    await expect(vertical).not.toHaveCSS("background-color", unselectedFill);
+    await expect(page.locator("#clock-layouts .selection-indicator")).toHaveCount(0);
     const statusChoices = await page.locator('[data-section-pane="status"] .pill.unit').evaluateAll((nodes) =>
       nodes
         .filter((n) => n.getBoundingClientRect().height)
@@ -97,17 +119,30 @@ for (const glassSettings of [false, true]) {
         })),
     );
     for (const choice of statusChoices) {
-      expect(choice.height).toBeGreaterThanOrEqual(64);
-      expect(choice.height).toBeLessThanOrEqual(76);
+      expect(choice.height).toBe(72);
       expect(choice.font).toBe("20px");
     }
     await page.screenshot({ path: info.outputPath("status-control-scale.png") });
     await page.locator('[data-key="section:apps"]').click();
+    const appsGap = await page
+      .locator("#all-apps")
+      .evaluate(
+        (grid) =>
+          document.querySelector('[aria-label="Continue Watching settings"] h3').getBoundingClientRect().top -
+          grid.getBoundingClientRect().bottom,
+      );
+    expect(appsGap).toBe(30);
     const icons = await page
       .locator("#all-apps > .tile")
       .evaluateAll((nodes) => nodes.map((n) => [n.offsetWidth, n.offsetHeight]));
     for (const size of icons) expect(size).toEqual([160, 160]);
     await page.screenshot({ path: info.outputPath("settings-standard-icons.png") });
+    await page.locator('[data-key="section:sources"]').click();
+    const short = page.locator('[data-key="live-tv-visibility:true"]');
+    const wrapped = page.locator('[data-key="hdmi-keep:1:true"]');
+    await expect(short).toHaveCSS("height", "72px");
+    await expect(wrapped).toHaveCSS("height", "72px");
+    await expect(wrapped.locator("span")).toHaveCSS("height", "48px");
     expect(errors).toEqual([]);
   });
 }

@@ -142,6 +142,17 @@ for (const height of [720, 1080])
           expect(widths).toEqual(Array(count).fill(354));
           expect(await page.locator("#inputs").evaluate((node) => node.offsetWidth)).toBeLessThan(1792);
         }
+        if (glass) {
+          const spacing = await page.locator("#inputs").evaluate((dock) => {
+            const cards = Array.from(dock.children, (card) => card.getBoundingClientRect());
+            const bounds = dock.getBoundingClientRect();
+            const left = cards[0].left - bounds.left - dock.clientLeft;
+            const right = bounds.right - dock.clientLeft - cards.at(-1).right;
+            const gaps = cards.slice(1).map((card, index) => card.left - cards[index].right);
+            return [left, ...gaps, right];
+          });
+          for (const gap of spacing) expect(gap).toBeCloseTo(11, 1);
+        }
         await page.keyboard.press("ArrowDown");
         await expect(page.locator("#inputs > .focused")).toHaveCount(1);
         for (let i = 0; i < count; i++) await page.keyboard.press("ArrowLeft");

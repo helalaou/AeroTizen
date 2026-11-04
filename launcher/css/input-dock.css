@@ -9,7 +9,12 @@
 /* input dock: component-owned styles. */
 
 #inputs {
-  gap: 32px;
+  --input-dock-spacing: 32px;
+
+  gap: 0;
+}
+#inputs > .tile + .tile {
+  margin-left: var(--input-dock-spacing);
 }
 .small .tile {
   flex: 1 1 0;
@@ -53,21 +58,6 @@
 .small .tile.off.focused {
   opacity: 0.8;
 }
-body.glass-ui .inputs-wrap {
-  margin-top: 4px;
-  margin-bottom: 12px;
-}
-body.glass-ui .inputs-wrap > h2 {
-  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
-  font-size: 21px;
-  font-weight: 500;
-  letter-spacing: 2.5px;
-  line-height: 1.35;
-  text-transform: uppercase;
-  color: rgba(250, 252, 255, 0.85);
-  text-shadow: 0 2px 9px rgba(0, 0, 0, 0.42);
-  margin: 0 0 17px 9px;
-}
 body.glass-ui #inputs.row.small {
   position: relative;
   display: flex;
@@ -75,8 +65,9 @@ body.glass-ui #inputs.row.small {
   box-sizing: border-box;
   width: 100%;
   min-height: 140px;
-  gap: 0;
-  padding: 9px 11px;
+  --input-dock-spacing: 11px;
+
+  padding: var(--input-dock-spacing);
   overflow: visible;
   isolation: isolate;
   border: 1px solid rgba(255, 255, 255, 0.31);
@@ -114,7 +105,6 @@ body.glass-ui #inputs .tile.input-card {
   max-width: none;
   height: 120px;
   padding: 11px 6px 8px;
-  margin: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -130,16 +120,6 @@ body.glass-ui #inputs .tile.input-card {
   transition:
     background-color 0.15s ease,
     transform 0.15s ease;
-}
-body.glass-ui #inputs .tile.input-card:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  top: 30px;
-  height: 62px;
-  width: 1px;
-  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.27), transparent);
-  pointer-events: none;
 }
 body.glass-ui #inputs .tile.input-card .input-card__icon {
   display: flex;
@@ -208,9 +188,6 @@ body.glass-ui #inputs .tile.input-card.focused {
   transform: translate3d(0, -1px, 0) scale(1.015);
   outline: none;
 }
-body.glass-ui #inputs .tile.input-card.focused::after {
-  opacity: 0;
-}
 body.glass-ui #inputs .tile.input-card.focused .input-card__icon {
   color: #fff;
 }
@@ -253,7 +230,6 @@ body.glass-ui #inputs.row.small.input-dock--compact {
   width: auto;
   max-width: 100%;
   min-height: 140px;
-  padding: 9px 11px;
   border-radius: 37px;
   vertical-align: top;
 }

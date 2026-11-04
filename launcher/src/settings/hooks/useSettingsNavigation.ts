@@ -11,7 +11,6 @@ import { useSettingsEnvironment } from "./useSettingsEnvironment";
 
 interface Layout extends SettingsInventorySnapshot {
   animated: boolean;
-  clockLayout?: string;
   continueEnabled: boolean;
   locationLabel?: string;
 }
@@ -20,33 +19,45 @@ const SPACE_KEY = 32;
 export const useSettingsNavigation = (
   active: boolean,
   previewing: boolean,
-  { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel, clockLayout }: Layout,
+  { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel }: Layout,
 ) => {
   const { language } = useTranslation();
-  const { navigation, bridge, services, actions, settings, view, root, drawer, categoryMenu, categoryContent, panes } =
-    useSettingsEnvironment();
+  const {
+    navigation,
+    bridge,
+    services,
+    actions,
+    settings,
+    view,
+    root,
+    drawer,
+    categoryMenu,
+    categoryContent,
+    categoryScroll,
+    panes,
+  } = useSettingsEnvironment();
   const directions = useMemo<Partial<Record<number, Direction>>>(() => {
     const { KEY } = services.config;
     return { [KEY.LEFT]: "left", [KEY.RIGHT]: "right", [KEY.UP]: "up", [KEY.DOWN]: "down" };
   }, [services.config]);
-  const wasOpen = useRef(false);
-  const previousScope = useRef("");
   const category = useStore(drawer);
+  const previousDrawer = useRef<typeof category>();
   useLayoutEffect(() => {
-    if (active && !wasOpen.current && category.expanded) {
+    if (active && !previousDrawer.current && category.expanded) {
       drawer.set({ ...category, expanded: false });
     }
     navigation.invalidate();
     navigation.setScope?.(category.expanded ? categoryContent.current : categoryMenu.current);
-    const scope = category.category + ":" + category.expanded;
-    if (!wasOpen.current || previousScope.current !== scope) {
+    if (previousDrawer.current !== category) {
+      if (categoryScroll.current) {
+        categoryScroll.current.scrollTop = 0;
+      }
       const key = category.expanded
         ? navigation.firstKey(panes.get(category.category)) || "settings-close"
         : "section:" + category.category;
       navigation.reset(key);
     }
-    previousScope.current = scope;
-    wasOpen.current = active;
+    previousDrawer.current = active ? category : undefined;
     if (active && !previewing) {
       navigation.focus();
     } else {
@@ -62,7 +73,6 @@ export const useSettingsNavigation = (
     continueEnabled,
     animated,
     locationLabel,
-    clockLayout,
     language,
     navigation,
     settings,
@@ -70,6 +80,7 @@ export const useSettingsNavigation = (
     drawer,
     categoryContent,
     categoryMenu,
+    categoryScroll,
     panes,
   ]);
   useLayoutEffect(() => {
@@ -106,12 +117,20 @@ export const useSettingsNavigation = (
           event.preventDefault();
           if (code === K.BACK || code === K.ESC) {
             bridge.close();
+          } else if (code === K.UP || code === K.DOWN) {
+            flushSync(() => {
+              navigation.move(code === K.UP ? "up" : "down");
+              const next = categories.find((item) => navigation.getSnapshot() === "section:" + item.id);
+              if (next && next.id !== category.category) {
+                drawer.set({ category: next.id, expanded: false });
+              }
+            });
+          } else if (current?.id === "escape") {
+            if (code === K.ENTER || code === SPACE_KEY) {
+              current.click();
+            }
           } else if (code === K.RIGHT || code === K.ENTER || code === SPACE_KEY) {
             flushSync(() => drawer.set({ ...category, expanded: true }));
-          } else if (code === K.UP || code === K.DOWN) {
-            const index = categories.findIndex((item) => item.id === category.category);
-            const next = categories[Math.max(0, Math.min(categories.length - 1, index + (code === K.UP ? -1 : 1)))];
-            flushSync(() => drawer.set({ category: next.id, expanded: false }));
           }
           return;
         }

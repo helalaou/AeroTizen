@@ -1,13 +1,16 @@
+import { ChevronLeft, ChevronRight, Play } from "lucide-preact";
 import { flushSync } from "preact/compat";
 import { useLayoutEffect, useState } from "preact/hooks";
 
 import type { BackgroundOption, LauncherConfig } from "../../contracts/launcher";
 import { useStore } from "../../shared/hooks/useStore";
 import { useTranslation } from "../../shared/i18n/useTranslation";
+import { Icon } from "../../shared/icons/Icon";
 import { ChoiceGroup } from "../components/ChoiceGroup";
 import { ChoiceOption } from "../components/ChoiceOption";
 import { SelectionIndicator } from "../components/SelectionIndicator";
 import { SettingsControl } from "../components/SettingsControl";
+import { SettingsSection } from "../components/SettingsSection";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 import type { SettingsSectionProps } from "../types";
 
@@ -84,18 +87,19 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
 
   return (
     <>
-      <ChoiceGroup
-        id="wallpaper-categories"
-        label={t("wallpaper.type")}
-        value={filter}
-        options={WALLPAPER_CATEGORY_OPTIONS}
-        onSelect={(category) => {
-          flushSync(() => setFilter(category));
-          navigation.invalidate();
-        }}
-      />
-      <div hidden={!show("photo")}>
-        <h3>{t("wallpaper.dynamic")}</h3>
+      <SettingsSection title={t("wallpaper.type")}>
+        <ChoiceGroup
+          id="wallpaper-categories"
+          label={t("wallpaper.type")}
+          value={filter}
+          options={WALLPAPER_CATEGORY_OPTIONS}
+          onSelect={(category) => {
+            flushSync(() => setFilter(category));
+            navigation.invalidate();
+          }}
+        />
+      </SettingsSection>
+      <SettingsSection title={t("wallpaper.dynamic")} description={t("wallpaper.photoHint")} hidden={!show("photo")}>
         <ChoiceGroup
           id="weather-photo-choice"
           value={settings.weatherPhoto}
@@ -103,10 +107,8 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
           options={WEATHER_PHOTO_OPTIONS}
           onSelect={actions.setWeatherPhoto}
         />
-        <p class="hint">{t("wallpaper.photoHint")}</p>
-      </div>
-      <div hidden={!show("animated")}>
-        <h3>{t("wallpaper.animated")}</h3>
+      </SettingsSection>
+      <SettingsSection title={t("wallpaper.animated")} hidden={!show("animated")}>
         {unavailable && <p class="hint">{t("wallpaper.unavailable")}</p>}
         <div id="bg-anim" class="swatches">
           {swatches(true)}
@@ -130,21 +132,30 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
                   <div class="thumb" style={{ left: percent + "%" }} />
                 </div>
                 <span class="slider-value">{settings.speed}×</span>
-                <span class="slider-hint">{adjusting ? "◀ ▶" : t("wallpaper.adjust")}</span>
+                <span class="slider-hint">
+                  {adjusting ? (
+                    <>
+                      <Icon icon={ChevronLeft} />
+                      <Icon icon={ChevronRight} />
+                    </>
+                  ) : (
+                    t("wallpaper.adjust")
+                  )}
+                </span>
               </SettingsControl>
               <ChoiceOption id="preview" onSelect={actions.preview}>
+                <Icon icon={Play} />
                 {t("wallpaper.preview")}
               </ChoiceOption>
             </>
           ) : null}
         </div>
-      </div>
-      <div hidden={filter !== "solid" && filter !== "gradient"}>
-        <h3>{t("wallpaper.still")}</h3>
+      </SettingsSection>
+      <SettingsSection title={t("wallpaper.still")} hidden={filter !== "solid" && filter !== "gradient"}>
         <div id="bg-still" class="swatches">
           {swatches(false)}
         </div>
-      </div>
+      </SettingsSection>
     </>
   );
 };
