@@ -4,8 +4,15 @@ const path = require("node:path");
 
 const english = require("../../launcher/src/shared/i18n/en.json");
 const { closeSettings, openCategory } = require("./drawer_helpers.cjs");
+const { loadTypeScript } = require("../helpers/load_typescript.cjs");
 
 const pseudoLanguage = "en-XA";
+const pseudoCatalogueName = "Pseudo";
+// A language's own name (e.g. "Русский") is never translated, so it must be excepted by
+// code rather than hardcoded per language; this stays correct as catalogues are added.
+const { catalogues } = loadTypeScript(path.join(__dirname, "../../launcher/src/shared/i18n/catalogues.ts"));
+const languageNames = Object.fromEntries(Object.entries(catalogues).map(([code, { name }]) => [code, name]));
+languageNames[pseudoLanguage] = pseudoCatalogueName;
 const textAttributes = [
   "alt",
   "aria-description",
@@ -32,7 +39,7 @@ const expectTextFits = async (locator) => {
 
 const findUntranslated = (page) =>
   page.evaluate(
-    ({ attributes, inputName, releaseNote }) => {
+    ({ attributes, inputName, releaseNote, languageNames }) => {
       const clock = AeroTizen.clock;
       const now = new Date();
       const dates = clock.DATE_FORMATS.map((format) => format.format(now));
@@ -40,10 +47,11 @@ const findUntranslated = (page) =>
       const leftovers = [];
       const inspect = (element, field, value) => {
         let text = value.trim();
+        const languageOption = element.closest('[data-key^="language:"]');
+        const languageCode = languageOption?.getAttribute("data-key").slice("language:".length);
         if (
           (text === "AEROTIZEN" && element.matches(".settings-drawer__kicker")) ||
-          (text === "English" && element.closest('[data-key="language:en"]')) ||
-          (text === "Pseudo" && element.closest('[data-key="language:en-XA"]')) ||
+          (languageCode && text === languageNames[languageCode]) ||
           (text === releaseNote && element.matches(".about-release-notes li")) ||
           (text === "aerotizen update launcher" && element.matches(".about-update-command code")) ||
           (dates.includes(text) && element.closest('#date, #date-formats [data-key]:not([data-key="date:none"])'))
@@ -79,7 +87,7 @@ const findUntranslated = (page) =>
       }
       return leftovers;
     },
-    { attributes: textAttributes, inputName, releaseNote },
+    { attributes: textAttributes, inputName, releaseNote, languageNames },
   );
 
 const expectTranslatedScreen = async (page, state) => {
@@ -127,8 +135,8 @@ for (const glassSettings of [false, true]) {
     messages["home.home"] = pseudoText("home.home") + " ■■■■■■■■■■";
     await page.route("**/src/shared/i18n/catalogues.ts*", async (route) => {
       const response = await route.fetch();
-      const catalogue = JSON.stringify({ name: "Pseudo", messages });
-      // Inject only into the development response. The shipped IIFE includes English alone.
+      const catalogue = JSON.stringify({ name: pseudoCatalogueName, messages });
+      // Inject only into the development response so Pseudo is absent from the shipped bundle.
       await route.fulfill({
         response,
         body: (await response.text()) + "\ncatalogues[" + JSON.stringify(pseudoLanguage) + "] = " + catalogue + ";",
@@ -155,9 +163,31 @@ for (const glassSettings of [false, true]) {
     const englishWidth = await homeTab.evaluate((element) => element.getBoundingClientRect().width);
     await page.locator("#gear").click();
     await openCategory(page, "language");
-    const pseudo = page.getByRole("button", { name: "Pseudo", exact: true });
-    await page.keyboard.press("ArrowRight");
-    await page.keyboard.press("ArrowRight");
+    const languageOption = (key) => page.locator(`#language [data-key="${key}"]`);
+    const pseudoKey = `language:${pseudoLanguage}`;
+    const pseudo = languageOption(pseudoKey);
+    await expect(languageOption("language:auto")).toBeFocused();
+    await expect(pseudo).toHaveAccessibleName(pseudoCatalogueName);
+    const pseudoRow = await pseudo.evaluate((option) => option.offsetTop);
+    const languageOptions = await page
+      .locator('#language [data-key^="language:"]')
+      .evaluateAll((options) => options.map((option) => ({ key: option.dataset.key, row: option.offsetTop })));
+    const optionsThroughPseudo = languageOptions.slice(
+      0,
+      languageOptions.findIndex(({ key }) => key === pseudoKey) + 1,
+    );
+    // Move down the first column when options wrap, then right along the target row.
+    const rowStarts = optionsThroughPseudo.filter(
+      ({ row }, index) => index > 0 && row !== optionsThroughPseudo[index - 1].row,
+    );
+    for (const { key } of rowStarts) {
+      await page.keyboard.press("ArrowDown");
+      await expect(languageOption(key)).toBeFocused();
+    }
+    for (const { key } of optionsThroughPseudo.filter(({ row }) => row === pseudoRow).slice(1)) {
+      await page.keyboard.press("ArrowRight");
+      await expect(languageOption(key)).toBeFocused();
+    }
     await expect(pseudo).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(pseudo).toBeFocused();
