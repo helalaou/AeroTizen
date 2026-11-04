@@ -24,14 +24,20 @@ for (const glass of [false, true]) {
     await page.goto("/");
     await page.waitForFunction(() => AeroTizen.apps.ready);
     await expect(page.locator("#gear")).not.toHaveClass(/focused/);
-    // Exercise the actual wallpaper layer without relying on a live forecast.
-    // Enable its hit testing only in this test to detect paint-order occlusion.
     await page.evaluate(() => {
-      const layer = document.getElementById("weather-photo");
-      layer.hidden = false;
-      layer.classList.add("active");
-      layer.style.pointerEvents = "auto";
+      const now = Date.now();
+      window.Weather.currentReading = () => ({
+        code: 3,
+        at: now,
+        solar: [{ sunrise: now - 3600000, sunset: now + 3600000 }],
+      });
+      AeroTizen.settings.weatherPhoto = true;
+      AeroTizen.applyBackground();
     });
+    const photo = page.locator("#weather-photo");
+    await expect(photo).toHaveClass(/scene-cloud/);
+    // Enable hit testing to detect paint-order occlusion.
+    await photo.evaluate((layer) => (layer.style.pointerEvents = "auto"));
     for (const selector of ["#gear", "#network", "#home-tab", "#apps-tab", "#time", ".content-viewport"]) {
       const exposed = await page.locator(selector).evaluate((element) => {
         const r = element.getBoundingClientRect();

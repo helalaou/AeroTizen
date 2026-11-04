@@ -111,6 +111,16 @@ test("weather photos unmount waves and restore them at the selected speed", asyn
   await expect(page.locator("#bg")).toBeHidden();
   await page.evaluate(() => window.Backgrounds.setSpeed(2));
   await expect(page.locator("#bg .bg-wave")).toHaveCount(0);
+
+  await page.route("**/assets/weather/rain.jpg", (route) => route.abort());
+  await page.evaluate(() => {
+    const sun = window.Weather.currentReading();
+    window.Weather.currentReading = () => ({ ...sun, code: 61 });
+    window.Weather.updateDisplay();
+  });
+  await expect(page.locator("#weather-photo")).toBeHidden();
+  await expect(page.locator("#bg .bg-wave")).toHaveCount(2);
+
   await control.getByRole("button", { name: "Off", exact: true }).click();
   await expect(page.locator("#weather-photo")).toBeHidden();
   await expect(page.locator("#bg")).toBeVisible();

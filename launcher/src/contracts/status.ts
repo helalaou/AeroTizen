@@ -4,6 +4,20 @@ import type { SettingsValues } from "./preferences";
 
 export type ClockLayout = "compact" | SettingsValues["aeroClockStyle"];
 
+export type SolarPhase = "" | "day" | "sunset" | "night";
+
+export interface WeatherReading {
+  readonly at: number;
+  readonly code: number;
+  readonly solar?: readonly { readonly sunrise: number; readonly sunset: number }[];
+}
+
+export interface WeatherPhotoSource {
+  currentReading(): WeatherReading | null;
+  solarPhase(reading: WeatherReading | null, now: number): SolarPhase;
+  subscribe(listener: () => void): () => void;
+}
+
 export interface WeatherSnapshot {
   readonly city: string;
   readonly code: number | null;

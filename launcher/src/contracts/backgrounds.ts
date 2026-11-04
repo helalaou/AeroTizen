@@ -19,7 +19,7 @@ export interface BackgroundGraphics extends Store<boolean | undefined> {
 }
 
 export interface BackgroundBridge {
-  apply(id: string, speed?: number): void;
+  apply(id: string | undefined, speed?: number): void;
   readonly list: readonly BackgroundScene[];
   preview(background: BackgroundScene): string;
   setSpeed(speed: number): void;

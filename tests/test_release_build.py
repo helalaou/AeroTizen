@@ -297,7 +297,8 @@ def test_cli_release_requires_the_home_helper_before_freezing(tmp_path):
 
 def add_weather_runtime(launcher):
     runtime = launcher / "dist/launcher"
-    (runtime / "js/photo-weather.js").write_text("local weather scenes")
+    html = runtime / "index.html"
+    html.write_text('<div id="weather-photo-root" aria-hidden="true"></div>' + html.read_text())
     weather = runtime / "assets/weather"
     weather.mkdir(parents=True)
     names = [

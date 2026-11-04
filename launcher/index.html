@@ -27,17 +27,13 @@
   </head>
   <body class="clock-layout-compact">
     <div id="bg" class="bg"></div>
-    <div id="weather-photo" class="weather-photo" aria-hidden="true" hidden></div>
+    <div id="weather-photo-root" aria-hidden="true"></div>
     <div id="home-root"></div>
     <div id="settings-root"></div>
 
-    <div id="fireplace" class="fireplace" hidden>
-      <canvas id="fire-canvas"></canvas>
-      <div class="hearth"></div>
-      <div id="fire-volume" class="fire-volume"></div>
-    </div>
+    <div id="fireplace-root"></div>
 
-    <div id="toast" class="toast" hidden></div>
+    <div id="toast-root"></div>
     <script src="js/config.js"></script>
     <script src="js/app-catalog.js"></script>
     <script src="js/app-lookup.js"></script>
@@ -47,7 +43,6 @@
     <script src="js/logos.js"></script>
     <script src="js/weather.js"></script>
     <script src="js/network.js"></script>
-    <script src="js/fireplace.js"></script>
     <script src="js/artwork.js"></script>
     <script src="js/brands.js"></script>
     <script src="js/homewatch.js"></script>
@@ -56,7 +51,6 @@
     <script src="js/inputs.js"></script>
     <script src="js/continue-watching.js"></script>
     <script src="js/launcher-ui.js"></script>
-    <script src="js/photo-weather.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>

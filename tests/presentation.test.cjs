@@ -5,7 +5,7 @@ const { test } = require("node:test");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { getInputPresentation: getInputState } = loadTypeScript("launcher/src/home/presentation/inputs.ts");
 const { getNetworkPresentation: getNetworkState } = loadTypeScript("launcher/src/status/presentation/network.ts");
-const { getWeatherPresentation: getWeatherState } = loadTypeScript("launcher/src/status/presentation/weather.ts");
+const { getWeatherPresentation: getWeatherState } = loadTypeScript("launcher/src/shared/weather/conditions.ts");
 
 const getNetworkPresentation = (...args) => {
   const state = getNetworkState(...args);

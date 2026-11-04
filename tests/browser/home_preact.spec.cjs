@@ -29,10 +29,12 @@ test("Home short/held OK, action menu, move/drop and Settings focus restoration"
   await expect(page.getByRole("menu")).toBeVisible();
   await page.keyboard.press("Enter");
   await expect(first).toHaveClass(/moving/);
+  await expect(page.locator("#toast")).toHaveText("Use the arrows to move it, OK to drop");
   await page.keyboard.press("ArrowRight");
   expect(await page.evaluate(() => AeroTizen.settings.home[0])).toBe("demo0");
   await page.keyboard.press("Enter");
   expect(await page.evaluate(() => AeroTizen.settings.home.slice(0, 2))).toEqual(["demo1", "demo0"]);
+  await expect(page.locator("#toast")).toBeHidden();
   await page.locator("#gear").click();
   await expect(page.locator("#editor")).toBeVisible();
   await page.keyboard.press("Escape");
@@ -40,6 +42,21 @@ test("Home short/held OK, action menu, move/drop and Settings focus restoration"
   await page.reload();
   await expect(page.locator("#grid > .tile").first()).toHaveAttribute("data-id", "demo1");
   expect(errors).toEqual([]);
+});
+test("replacing the toast restarts its dismissal timer", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("/");
+  await page.waitForFunction(() => AeroTizen.apps.ready);
+  const toast = page.locator("#toast");
+  await expect(toast).toBeHidden();
+  await page.keyboard.press("Enter");
+  await expect(toast).toBeVisible();
+  await page.clock.runFor(1500);
+  await page.keyboard.press("Enter");
+  await page.clock.runFor(1500);
+  await expect(toast).toBeVisible();
+  await page.clock.runFor(1100);
+  await expect(toast).toBeHidden();
 });
 test("Home and All apps retain keyed artwork nodes and Back returns to Home", async ({ page }) => {
   await page.goto("/");
