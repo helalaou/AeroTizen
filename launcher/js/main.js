@@ -48,10 +48,28 @@
     A.homeScreen.keyup(e.keyCode);
   });
 
+  var discoveryStarted = false;
+  var appRefreshPending = false;
+  function refreshAppsOnReturn() {
+    if (!discoveryStarted || !A.tizen || document.hidden || appRefreshPending) {
+      return;
+    }
+    // An existing launcher can receive both events when it comes to the front.
+    appRefreshPending = true;
+    setTimeout(function () {
+      appRefreshPending = false;
+      if (!document.hidden) {
+        A.apps.load();
+      }
+    }, 0);
+  }
+
+  window.addEventListener("appcontrol", refreshAppsOnReturn);
   document.addEventListener("visibilitychange", function () {
     if (!document.hidden) {
       A.clock.tick();
       A.inputs.load();
+      refreshAppsOnReturn();
     }
   });
 
@@ -64,6 +82,24 @@
   A.apps.restore();
   A.homeScreen.render();
   startup.mark("home-rendered");
+
+  var appIds;
+  var reportAppsTimer;
+  function appInventoryChanged() {
+    if (A.settings.home === null) {
+      A.settings.home = A.apps.defaultHome();
+      A.settings.save();
+    }
+    var nextIds = A.apps.realIds.slice().sort().join(",");
+    if (nextIds !== appIds) {
+      appIds = nextIds;
+      clearTimeout(reportAppsTimer);
+      reportAppsTimer = setTimeout(function () {
+        A.homewatch.reportApps(A.apps.realIds);
+      }, 1500);
+    }
+  }
+
   function discover() {
     startup.captureLaunch();
     A.continueWatching.start();
@@ -77,17 +113,12 @@
       A.homewatch.reportStartup(startup.trace);
     }, 1500);
     startup.mark("apps-requested");
+    A.apps.subscribe(appInventoryChanged);
+    discoveryStarted = true;
     A.apps.load(function (success) {
       startup.mark(success ? "apps-loaded" : "apps-unavailable");
       if (success) {
-        if (A.settings.home === null) {
-          A.settings.home = A.apps.defaultHome();
-          A.settings.save();
-        }
         A.homeScreen.refreshApps();
-        setTimeout(function () {
-          A.homewatch.reportApps(A.apps.realIds);
-        }, 1500);
       }
       A.homewatch.reportStartup(startup.trace);
     });

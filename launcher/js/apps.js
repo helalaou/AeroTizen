@@ -6,6 +6,7 @@
     tz = A.tizen;
   var apps = (A.apps = { all: [], inventory: [], realIds: [], ready: false });
   var listeners = [];
+  var latestRequest = 0;
 
   apps.subscribe = function (listener) {
     listeners.push(listener);
@@ -17,11 +18,13 @@
     };
   };
 
-  function publish(done, success) {
+  function publish(done) {
     listeners.slice().forEach(function (listener) {
       listener();
     });
-    done(success);
+    if (done) {
+      done(true);
+    }
   }
   var CACHE_KEY = "aerotizen.apps.v1";
 
@@ -108,19 +111,22 @@
           return a.name.localeCompare(b.name);
         });
       apps.ready = true;
-      return publish(done, true);
+      return publish(done);
     }
+    var request = ++latestRequest;
     var settled = false;
     function failed() {
       if (!settled) {
         settled = true;
-        publish(done, false);
+        if (done) {
+          done(false);
+        }
       }
     }
     try {
       tz.application.getAppsInfo(function (list) {
-        if (settled) {
-          return;
+        if (settled || request !== latestRequest) {
+          return failed();
         }
         settled = true;
         apps.inventory = list;
@@ -148,7 +154,7 @@
         } catch (e) {
           /* cache is optional */
         }
-        publish(done, true);
+        publish(done);
       }, failed);
     } catch (e) {
       failed();
@@ -199,6 +205,7 @@
     function failed(error) {
       outcome("failed", error || { name: "LaunchError", message: "Launch denied" });
       A.toast(A.translate("apps.openFailed", { name: label }));
+      apps.load();
     }
     var label = A.tiles.shortName(app.name);
     if (!tz || !tz.application) {
@@ -238,6 +245,7 @@
           A.homewatch.resume();
         }
         A.toast(A.translate("apps.openFailedDetail", { name: label, reason: detail }));
+        apps.load();
       }
       A.homewatch.suspendForExternal(function () {
         try {
