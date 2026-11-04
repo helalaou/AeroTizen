@@ -210,10 +210,10 @@ body.previewing #editor.settings-drawer {
   box-sizing: border-box;
   width: 100%;
   flex: 0 0 auto;
-  min-height: 72px;
+  min-height: 64px;
   align-items: center;
-  margin: 0 0 7px;
-  padding: 10px;
+  margin: 0 0 4px;
+  padding: 8px 10px;
   gap: 11px;
   border: 2px solid transparent;
   border-radius: 17px;
@@ -292,6 +292,42 @@ body.previewing #editor.settings-drawer {
 }
 #editor .settings-drawer__help .ui-icon:last-of-type {
   margin-right: 3px;
+}
+@media (max-height: 960px) {
+  #editor .settings-drawer__sidebar {
+    padding-top: 16px;
+    padding-bottom: 14px;
+  }
+  #editor .settings-drawer__sidebar h2 {
+    margin: 3px 0 8px;
+    font-size: 26px;
+  }
+  #editor .settings-drawer__menu {
+    padding-top: 6px;
+    padding-bottom: 8px;
+  }
+  #editor .settings-category {
+    min-height: 44px;
+    margin-bottom: 3px;
+    padding: 2px 10px;
+  }
+  #editor .settings-category__label {
+    gap: 1px;
+  }
+  #editor .settings-category__label strong,
+  #editor .settings-drawer__return strong {
+    font-size: 17px;
+    line-height: 20px;
+  }
+  #editor .settings-drawer__return {
+    padding-top: 5px;
+  }
+  #editor .settings-drawer__return .settings-category {
+    min-height: 44px;
+  }
+  #editor .settings-drawer__help {
+    padding-top: 8px;
+  }
 }
 #editor .settings-drawer__content-head {
   position: relative;
