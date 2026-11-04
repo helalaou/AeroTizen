@@ -5,13 +5,6 @@
 
   var KEY = A.config.KEY;
 
-  A.applyBackground = function () {
-    if (A.photoWeather && A.photoWeather.update()) {
-      return;
-    }
-    window.Backgrounds.apply(A.settings.background, A.settings.speed);
-  };
-
   document.addEventListener("keydown", function (e) {
     var k = e.keyCode,
       active = document.activeElement;
@@ -68,9 +61,6 @@
   startup.mark("settings-loaded");
   A.applyBackground();
   A.clock.start();
-  if (A.photoWeather) {
-    A.photoWeather.start();
-  }
   A.apps.restore();
   A.homeScreen.render();
   startup.mark("home-rendered");

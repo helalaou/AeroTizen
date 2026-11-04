@@ -1,7 +1,6 @@
 /* photo weather: component-owned styles. */
 
 #weather-photo.weather-photo {
-  display: none;
   position: fixed;
   top: 0;
   left: 0;
@@ -27,11 +26,4 @@
 /* Native video must hide an active weather layer regardless of its active selector. */
 body.tv #weather-photo {
   display: none !important;
-}
-#weather-photo.weather-photo.active {
-  display: block;
-  transition: none;
-}
-#weather-photo.weather-photo ~ .content-viewport {
-  background: transparent;
 }

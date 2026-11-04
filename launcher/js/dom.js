@@ -17,19 +17,6 @@
     return node;
   };
 
-  A.toast = function (text) {
-    var t = A.$("toast");
-    t.textContent = text;
-    t.hidden = false;
-    clearTimeout(A.toast.timer);
-    A.toast.timer = setTimeout(function () {
-      t.hidden = true;
-    }, 2500);
-  };
-  A.hideToast = function () {
-    A.$("toast").hidden = true;
-  };
-
   A.clearFocus = function () {
     var prev = document.querySelectorAll(".focused");
     for (var i = 0; i < prev.length; i++) {

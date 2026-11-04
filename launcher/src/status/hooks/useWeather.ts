@@ -2,7 +2,7 @@ import type { WeatherSnapshot } from "../../contracts/status";
 import { useStore } from "../../shared/hooks/useStore";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import type { Store } from "../../shared/state/createStore";
-import { getWeatherPresentation } from "../presentation/weather";
+import { getWeatherPresentation } from "../../shared/weather/conditions";
 
 export const useWeather = (store: Store<WeatherSnapshot>) => {
   const { t } = useTranslation();

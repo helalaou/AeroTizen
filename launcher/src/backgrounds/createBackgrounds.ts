@@ -18,9 +18,7 @@ interface BackgroundOptions {
 export const createBackgrounds = (options: BackgroundOptions) => {
   const { layer, previous, renderScene, webGL } = options;
   const document = layer.ownerDocument;
-  let current = previous?.current ?? null;
-  let speed = previous?.speed ?? 1;
-  let suspended = previous?.suspended ?? false;
+  let { current = null, speed = 1, suspended = false } = previous || {};
 
   if (previous) {
     layer.hidden = suspended;
@@ -29,7 +27,7 @@ export const createBackgrounds = (options: BackgroundOptions) => {
     }
   }
 
-  const apply = (id: string, value = speed) => {
+  const apply = (id: string | undefined, value = speed) => {
     speed = value || 1;
     suspended = false;
     current = SCENES.find((scene) => scene.id === id) ?? SCENES[0];

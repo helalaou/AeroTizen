@@ -4,6 +4,9 @@ const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { createWeatherPhoto } = loadTypeScript("launcher/src/backgrounds/createWeatherPhoto.ts");
+
 const root = path.join(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "launcher/js/weather.js"), "utf8");
 const CACHE = "aerotizen.weather.v2";
@@ -853,34 +856,20 @@ const solarForecast = (code = 0, now = ELEVEN_PM) => ({
   },
 });
 const wallpaperRuntime = (h) => {
-  const images = [],
-    layer = { hidden: true, style: {}, className: "" };
-  let restored = 0;
-  const A = {
-    settings: h.preferences,
-    applyBackground() {
-      restored++;
+  const images = [];
+  const photo = createWeatherPhoto(h.weather, () => h.preferences.weatherPhoto === true, {
+    document: { addEventListener() {} },
+    Date: { now: () => vm.runInContext("Date.now()", h.context) },
+    Image: function () {
+      images.push(this);
     },
-  };
-  h.context.document.getElementById = (id) => (id === "weather-photo" ? layer : h.el);
-  h.context.document.body = {
-    classList: {
-      contains() {
-        return false;
-      },
-    },
-  };
-  h.context.window.AeroTizen = A;
-  h.context.Image = function () {
-    images.push(this);
-  };
-  vm.runInContext(fs.readFileSync(path.join(root, "launcher/js/photo-weather.js"), "utf8"), h.context);
+    setInterval: () => 1,
+    clearInterval() {},
+  });
   return {
     images,
-    layer,
-    A,
-    get restored() {
-      return restored;
+    get scene() {
+      return photo.getSnapshot();
     },
   };
 };
@@ -900,13 +889,13 @@ test("enabling wallpapers at 23:00 refreshes a fresh legacy cache immediately an
     assert.equal(h.requests.length, 1);
     assert.equal(h.intervals.size, 1);
     assert.equal(photo.images.length, 0);
-    assert.equal(photo.layer.hidden, true);
+    assert.equal(photo.scene, null);
     h.requests[0].respond(london);
     h.requests[1].respond(solarForecast());
     assert.equal(photo.images.length, 1);
     assert.match(photo.images[0].src, /night.jpg$/);
     photo.images[0].onload();
-    assert.match(photo.layer.className, /scene-night/);
+    assert.equal(photo.scene, "night");
     assert.equal(h.el.nodes.b.textContent, "15°");
   }
 });
@@ -1046,11 +1035,11 @@ test("offline solar cache stays usable until its weather expiry, then falls back
   h.start();
   photo.images[0].onload();
   h.requests[0].onerror();
-  assert.match(photo.layer.className, /scene-night/);
+  assert.equal(photo.scene, "night");
   assert.equal(h.el.hidden, false);
   h.advance(2 * 3600000);
   h.weather.updateDisplay();
-  assert.equal(photo.layer.hidden, true);
+  assert.equal(photo.scene, null);
   assert.equal(h.el.hidden, true);
 });
 

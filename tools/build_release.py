@@ -64,6 +64,8 @@ def build_launcher(root, output, tag=None):
         "status-view.js",
         "brands-view.js",
         "wave-background.js",
+        "photo-weather.js",
+        "fireplace.js",
     ):
         if (launcher / "js" / name).exists():
             raise ValueError(f"Compiled launcher contains legacy renderer {name}; run npm run build again")
@@ -80,8 +82,9 @@ def build_launcher(root, output, tag=None):
     ]
     for directory, suffix in (("css", ".css"), ("js", ".js"), ("service", ".js")):
         files.extend((launcher / directory).rglob(f"*{suffix}"))
-    if (launcher / "js/photo-weather.js").is_file():
-        # PhotoWeather loads these local scenes at runtime. Keep their provenance
+    html = (launcher / "index.html").read_text(encoding="utf-8")
+    if 'id="weather-photo-root"' in html:
+        # The bundled wallpaper view loads these local scenes. Keep their provenance
         # with them, and fail packaging rather than silently publishing a broken WGT.
         scenes = ("sun", "partly", "cloud", "rain", "storm", "snow", "fog", "night", "sunset")
         weather = launcher / "assets/weather"
@@ -99,7 +102,6 @@ def build_launcher(root, output, tag=None):
     for source in files:
         if not source.is_file() or source.resolve() != source.absolute():
             raise ValueError(f"Runtime file must be a regular file without symlinks: {source}")
-    html = (launcher / "index.html").read_text(encoding="utf-8")
     for view, host in (("Home", "home-root"), ("Settings", "settings-root")):
         if f'id="{host}"' not in html:
             raise ValueError(f"Compiled launcher is missing the Preact {view} mount")

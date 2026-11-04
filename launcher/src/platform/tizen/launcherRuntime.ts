@@ -11,7 +11,7 @@ import type {
   SettingsBridge,
 } from "../../contracts/launcher";
 import type { SettingsSource, WeatherLocation } from "../../contracts/preferences";
-import type { NetworkSnapshot, WeatherSnapshot } from "../../contracts/status";
+import type { NetworkSnapshot, WeatherPhotoSource, WeatherSnapshot } from "../../contracts/status";
 import type { MessageKey } from "../../shared/i18n/catalogues";
 import type { Translate } from "../../shared/i18n/createTranslations";
 import type { Store } from "../../shared/state/createStore";
@@ -44,6 +44,7 @@ export interface LauncherRuntime {
   homewatch: { useSamsungHome(): void; openSamsungHome?(): void };
   inputs: {
     sources: InputSource[];
+    watching: boolean;
     alwaysVisible?(source: InputSource): boolean;
     hasRecognizedDevice?(source: InputSource): boolean;
     isVisible(source: InputSource): boolean;
@@ -63,18 +64,26 @@ export interface LauncherRuntime {
 
 export interface LauncherPlatform {
   backgrounds: BackgroundBridge;
-  weather: Store<WeatherSnapshot> & {
-    updateVisibility(): void;
-    updateDisplay(): void;
-    refresh(): void;
-    searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): void;
-  };
+  weather: Store<WeatherSnapshot> &
+    WeatherPhotoSource & {
+      updateVisibility(): void;
+      updateDisplay(): void;
+      refresh(): void;
+      searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): void;
+    };
 }
 
 declare global {
   interface Window {
     AeroTizen: LauncherRuntime;
     Backgrounds: LauncherPlatform["backgrounds"];
+    Fireplace?: {
+      close(): void;
+      isOpen(): boolean;
+      open(): void;
+      volumeDown(): void;
+      volumeUp(): void;
+    };
     Weather: LauncherPlatform["weather"];
   }
 }

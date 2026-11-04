@@ -13,6 +13,7 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
     events = {};
   let reply, reject;
   const A = {
+    applyBackground() {},
     tizen: {
       application: {
         getAppsInfo(done, fail) {

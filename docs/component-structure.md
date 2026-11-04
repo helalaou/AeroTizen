@@ -41,7 +41,8 @@ Private geometry buffers and DOM ref registries remain local to navigation.
 
 ## DOM and style ownership
 
-Only `src/index.ts` discovers the Home, Settings and background mount hosts. Components register their own
+Only `src/index.ts` discovers the Home, Settings, wallpaper, Fireplace and toast mount hosts. Preact renders the
+toast. Its mount owns the dismissal timer and exposes the existing toast commands. Components register their own
 nodes with refs. Home scroll and carousel offsets are state; Preact renders the
 transforms and scrolled class. Settings enters a category through registered controls
 inside that pane, rather than a document/CSS query. Native focus, geometry reads and
@@ -79,9 +80,14 @@ third-party notices.
 
 ## Background boundary
 
-App composition mounts and disposes the background view. The background bridge
-handles scene selection, the root colour, speed, and visibility. Boot, Settings,
-embedded inputs and weather photos keep their existing commands and preferences.
+App composition mounts and disposes the background views. The background bridge
+handles scene selection, the root colour, speed, and visibility. Boot, Settings
+and embedded inputs keep their existing commands and preferences.
+
+The weather photo controller shares the weather code table with the status view.
+It owns the image request, the solar phase timer and visibility handling.
+`WeatherPhotoView` subscribes to the loaded photo, and the background mount
+switches between the photo and the selected wallpaper.
 
 Preact owns the scene markup. The canvas component starts the particle loop when
 it mounts and stops it on unmount. Scene changes replace the previous view, and
@@ -95,3 +101,8 @@ The wallpaper pane checks for WebGL when it opens. A failed setup or lost
 context hides the WebGL choices and leaves the saved wallpaper's static
 base in place. The preference is retained for the next launch. CSS wallpapers
 and weather photos remain available.
+
+The Fireplace view renders the overlay and volume notice from a shared state
+snapshot. Its canvas ref starts the TypeScript animation when the overlay opens.
+The Fireplace bridge starts audio on launch and stops it on close. Native YouTube
+launch and remote key routing use the same bridge as before.
