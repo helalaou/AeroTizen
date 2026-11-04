@@ -28,6 +28,7 @@
   "settings.language.title": "Language",
   "settings.language.hint": "Choose the launcher language",
   "settings.language.auto": "Use TV language",
+  "settings.language.note": "This only changes AeroTizen. Other apps follow the TV's language or their own settings, so change it there to use them in your language.",
   "settings.about.title": "About",
   "settings.about.hint": "Launcher version and updates",
   "settings.about.kicker": "AEROTIZEN",
