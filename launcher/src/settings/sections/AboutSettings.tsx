@@ -26,12 +26,21 @@ export const AboutSettings = ({ active }: { active: boolean }) => {
         description={latestVersion ? t("settings.about.updateVersion", { version: latestVersion }) : undefined}
       >
         <div class="about-info">
-          <p>{t("settings.about.tagline")}</p>
-          <p>{t("settings.about.community")}</p>
-          <p class="about-project">
-            <span>{t("settings.about.project")}</span>
-            <code>{projectUrl}</code>
-          </p>
+          <p class="about-lead">{t("settings.about.tagline")}</p>
+          <p>{t("settings.about.summary")}</p>
+          <dl class="about-facts">
+            <dt>{t("settings.about.licenseLabel")}</dt>
+            <dd>{t("settings.about.licenseValue")}</dd>
+            <dt>{t("settings.about.madeByLabel")}</dt>
+            <dd>{t("settings.about.madeByValue")}</dd>
+            <dt>{t("settings.about.project")}</dt>
+            <dd>
+              <code>{projectUrl}</code>
+            </dd>
+            <dt>{t("settings.about.feedbackLabel")}</dt>
+            <dd>{t("settings.about.feedbackValue")}</dd>
+          </dl>
+          <p class="about-community">{t("settings.about.community")}</p>
         </div>
         {releaseNotes.length > 0 && (
           <div class="about-release-notes">

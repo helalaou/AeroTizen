@@ -71,7 +71,7 @@ test("opening About marks a stable launcher update as seen across restarts", asy
   await expect(categoryDot).toBeVisible();
   await page.keyboard.press("ArrowRight");
   await expect(about).toBeVisible();
-  await expect(about.getByText("AeroTizen " + installed)).toBeVisible();
+  await expect(about.getByText("AeroTizen version: " + installed)).toBeVisible();
   await expect(about.getByText("Update available: " + update)).toBeVisible();
   await expect(notes.locator("li")).toHaveText(["Add a clock layout", "Keep HDMI sources visible"]);
   await expect(notes).toBeVisible();

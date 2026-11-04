@@ -395,16 +395,32 @@ body.previewing #editor.settings-drawer {
 }
 #editor .about-info {
   margin-bottom: 24px;
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1.4;
 }
 #editor .about-info p {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
 }
-#editor .about-project {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
+#editor .about-lead {
+  font-size: 24px;
+  font-weight: 500;
+}
+#editor .about-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 10px 32px;
+  margin: 24px 0;
+  padding: 20px 0;
+  border-top: 1px solid var(--settings-divider);
+  border-bottom: 1px solid var(--settings-divider);
+}
+#editor .about-facts dt {
+  color: var(--settings-subtitle);
+}
+#editor .about-facts dd {
+  margin: 0;
+}
+#editor .about-community {
   color: var(--settings-subtitle);
 }
 #editor .about-release-notes {
