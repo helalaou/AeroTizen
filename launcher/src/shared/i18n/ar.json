@@ -28,7 +28,7 @@
   "settings.language.title": "اللغة",
   "settings.language.hint": "اختر لغة الواجهة",
   "settings.language.auto": "استخدام لغة التلفاز",
-  "settings.language.note": "يغيّر هذا الإعداد لغة AeroTizen فقط. تتبع التطبيقات الأخرى لغة التلفاز أو إعداداتها الخاصة، لذا غيّر اللغة من هناك لاستخدامها بلغتك.",
+  "settings.language.note": "يغيّر هذا الإعداد لغة AeroTizen وحدها. أما التطبيقات الأخرى فتتبع لغة التلفاز أو إعداداتها الخاصة، لذا غيّر اللغة من إعدادات التلفاز أو من داخل التطبيق نفسه لاستخدامه بلغتك.",
   "settings.about.title": "حول التطبيق",
   "settings.about.hint": "الإصدار والتحديثات",
   "settings.about.kicker": "AEROTIZEN",
