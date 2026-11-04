@@ -36,6 +36,7 @@ jobs:
       launcher: ${{ steps.select.outputs.launcher }}
       code: ${{ steps.select.outputs.code }}
       readme_only: ${{ steps.select.outputs.readme_only }}
+      format_contributing: ${{ steps.select.outputs.format_contributing }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,8 +60,7 @@ jobs:
           paths = diff.stdout.split(b"\0")[:-1] if diff.returncode == 0 else []
           code_paths = [
               path for path in paths
-              if path != b"README.md"
-              and not (path.startswith(b"docs/") and path.endswith(b".md"))
+              if path not in (b"README.md", b"CONTRIBUTING.md") and not path.startswith(b"docs/")
           ]
           # Shared or unknown paths, empty diffs, and unavailable history run the full suite.
           shared = not paths or any(
@@ -69,9 +69,15 @@ jobs:
           cli = shared or any(path.startswith(b"cli/") for path in code_paths)
           launcher = shared or any(path.startswith(b"launcher/") for path in code_paths)
           code = cli or launcher
-          readme_only = not code and b"README.md" in paths
+          outputs = {
+              "cli": cli,
+              "launcher": launcher,
+              "code": code,
+              "readme_only": not code and b"README.md" in paths,
+              "format_contributing": not launcher and b"CONTRIBUTING.md" in paths,
+          }
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-              for name, value in (("cli", cli), ("launcher", launcher), ("code", code), ("readme_only", readme_only)):
+              for name, value in outputs.items():
                   print(f"{name}={str(value).lower()}", file=output)
                   print(f"{name}={value}")
 
@@ -166,7 +172,7 @@ jobs:
 
   launcher:
     needs: changes
-    if: ${{ !cancelled() && inputs.release_component != 'cli' && needs.changes.outputs.launcher != 'false' }}
+    if: ${{ !cancelled() && inputs.release_component != 'cli' && (needs.changes.outputs.launcher != 'false' || needs.changes.outputs.format_contributing == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -176,18 +182,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Check contributor guide formatting
+        if: needs.changes.outputs.format_contributing == 'true'
+        run: |
+          prettier_package=$(node -p 'require("./package-lock.json").packages["node_modules/prettier"].resolved')
+          npm exec --yes --ignore-scripts --package "$prettier_package" -- prettier --check CONTRIBUTING.md
       - run: npm ci --no-audit --no-fund
+        if: needs.changes.outputs.launcher != 'false'
       - run: npm run format:check
+        if: needs.changes.outputs.launcher != 'false'
       - run: npm run lint
+        if: needs.changes.outputs.launcher != 'false'
       - run: npm run build
+        if: needs.changes.outputs.launcher != 'false'
       - run: npm test
+        if: needs.changes.outputs.launcher != 'false'
       - run: npx playwright install --with-deps chromium
+        if: needs.changes.outputs.launcher != 'false'
       - run: npx playwright test
+        if: needs.changes.outputs.launcher != 'false'
       - uses: actions/setup-python@v5
         if: inputs.release_component == 'launcher'
         with:
           python-version: "3.12"
       - name: Check compiled launcher release packaging
+        if: needs.changes.outputs.launcher != 'false'
         env:
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
@@ -204,7 +223,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: failure() && needs.changes.outputs.launcher != 'false'
         with:
           name: settings-browser-failures
           path: test-results/
