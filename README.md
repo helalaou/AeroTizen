@@ -23,7 +23,10 @@ Built with help from these contributors. [Join them](CONTRIBUTING.md): testing o
 </table>
 <!-- contributors:end -->
 
-![AeroTizen home screen on a Samsung TV](docs/screenshots/home.png)
+![AeroTizen Home with favourite apps, Continue Watching and inputs](docs/screenshots/home.png)
+
+Screenshots show the Glass appearance with five apps per row in the browser preview.
+The apps and programmes are sample data.
 
 ## Motivation
 
@@ -44,8 +47,8 @@ access aren't needed.
 
 On the TV:
 
-- Your apps as square cards using each app's own artwork from the TV. Pick **Big** (3 across) or
-  **Small** (5 across). Apps without artwork show their icon and name
+- Your apps as square or rectangular cards using each app's own artwork from the TV. Choose
+  3, 4 or 5 apps per row in **Settings → Appearance**. Apps without artwork show their icon and name
 - **Home** and **All apps** tabs: keep favourites on Home and open any installed app from All apps
 - Opens at power-on and comes back when you press Home (see [Home options](#choose-how-home-works)
   and [Limits](#limits))
@@ -53,14 +56,14 @@ On the TV:
 - Opens HbbTV apps such as BBC iPlayer
 - Inputs list every HDMI port and the name of what's plugged in. You can rename them, and hide
   disconnected ports or the Live TV tile
-- 31 backgrounds, 16 of them animated, with a speed slider and preview (for example [Snowfall](docs/screenshots/theme-snowfall.png) and [Lava](docs/screenshots/theme-lava.png))
+- Still and animated backgrounds, including Snowfall and Lava, with a speed slider and preview
 - Optional [dynamic weather wallpapers](docs/dynamic-weather-wallpapers.md): nine local AI-generated scenes follow weather, day/night and sunset. Off by default; [provenance and redistribution](launcher/assets/weather/CREDITS.md) are documented.
 - Time, date and weather in the top bar. Date and time follow the TV's language and 12/24-hour
   setting, and °C or °F is picked from your region. You can change their formats or visibility
   in Settings
 - Weather for a town you search for, or an approximate location from your internet address. The
   place name can be hidden
-- Shows whether the TV is on Ethernet or Wi-Fi. Show or hide it in **Settings → Network indicator**
+- Shows whether the TV is on Ethernet or Wi-Fi. Show or hide it in **Settings → Clock & status**
 - An optional Fireplace tile that plays a fireplace video
 - Works on The Frame: AeroTizen leaves Art Mode alone
 - Settings to choose which apps show up, open the Samsung app store, or go back to Samsung's home screen
@@ -80,13 +83,9 @@ From your computer (`aerotizen`):
 There's also a short [guide to the settings worth turning off](docs/settings.md) (ads, viewing
 data, autorun) and [DNS blocklists](dns/) if you run Pi-hole, AdGuard Home or NextDNS.
 
-| All apps | Hold OK on a tile |
-|---|---|
-| ![All apps](docs/screenshots/all-apps.png) | ![Tile menu](docs/screenshots/tile-menu.png) |
-
-| Settings | More settings |
-|---|---|
-| ![Settings](docs/screenshots/settings.png) | ![Weather, temperature and date settings](docs/screenshots/settings-more.png) |
+| All apps                                        | Settings                                                             |
+| ----------------------------------------------- | -------------------------------------------------------------------- |
+| ![All apps grid](docs/screenshots/all-apps.png) | ![Settings drawer open to Appearance](docs/screenshots/settings.png) |
 
 ## Tested on
 
@@ -176,6 +175,9 @@ You need a computer on the same network as the TV.
    uses your saved certificates and installs in place, keeping launcher settings.
    If the installed version is current or newer, it makes no changes.
 
+   On the TV, **Settings → About** shows the installed launcher version and any
+   available update. Use the CLI on your computer to install it.
+
    Some TVs do not report an app version. The update reports that it cannot compare
    versions and stops. Use `./aerotizen install launcher` to explicitly install the
    latest stable release without a comparison, or to reinstall the current release.
@@ -216,9 +218,10 @@ The launcher is now installed and uses the watcher by default. The gear icon ope
 For the optional native Home setup, see [Home options](#choose-how-home-works).
 
 In **Settings → Weather**, choose **Show weather** or **Hide weather**. Hiding weather
-stops automatic location and forecast requests, while keeping your saved location and
-units. In **Date & time**, choose **No time** or **No date** to hide either item; selecting
-a format shows it again. **Network indicator** has its own **Show** and **Hide** controls.
+stops automatic location and forecast requests if dynamic weather wallpapers are off.
+It keeps your saved location and units. In **Settings → Clock & status**, choose **No time**
+or **No date** to hide either item; selecting a format shows it again. The network indicator
+has its own **Show** and **Hide** controls.
 All three header items are shown by default. Choices apply at once and stay saved after
 a restart.
 
@@ -229,7 +232,7 @@ To look at or remove installed apps, run `./aerotizen apps` and `./aerotizen deb
 
 ## Continue Watching (experimental)
 
-In **Settings → Continue Watching**, select **On**, then choose the apps to include.
+In **Settings → Apps → Continue Watching**, select **On**, then choose the apps to include.
 A combined row appears below your Home apps, sorted by the activity time each app supplies.
 The feature is off by default. Switching it off stops feed reads and hides the row;
 your app choices stay saved.

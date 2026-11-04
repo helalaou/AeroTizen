@@ -2,7 +2,7 @@
 
 These commands inspect the TV's current native Home assignment and preserve the
 original values on the computer. They do not change Home, startup, Art Mode or
-watcher settings. [Apply and restore](home-apply-restore.md) use a separate writer.
+watcher settings. [Apply and restore](home-pc-flow.md) use a separate writer.
 
 ## Requirements
 
@@ -156,7 +156,5 @@ passive app-status API did not identify the visible app, so uninterrupted film
 playback was not independently measured.
 
 [SDK-only TV evidence](home-sdk-read-only-tv-20261024.json) records this result.
-This proved native reads without root on this TV and firmware. The current CLI
-now integrates that transport, with local automated checks. That CLI integration,
-native assignment, restore and power-on behavior have not been retested on the
-TV. The historical evidence files record the commands used at the time.
+This proved native reads without root on this TV and firmware. For later native
+assignment, restore and power-on tests, see the [PC-managed flow](home-pc-flow.md).

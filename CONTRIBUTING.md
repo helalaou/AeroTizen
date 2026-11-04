@@ -26,7 +26,7 @@ Build these helpers before running the full Python suite or building a standalon
 uses SDK 6.0.428. Standalone CLI releases include all three payloads, so users do not need
 a .NET SDK. Home commands use the SDK user by default and offer temporary root for
 read-only operations. See [inspection](docs/home-read-only.md) and
-[apply/restore](docs/home-apply-restore.md). The policy test harness runs on the
+[setup and recovery](docs/home-pc-flow.md). The policy test harness runs on the
 host without loading any Tizen library. Set `AEROTIZEN_DOTNET` if the SDK is not on
 `PATH`. Tests use mocks or localhost servers; they do not contact a real TV.
 
@@ -151,10 +151,12 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
 - Run `npm run dev`, then open http://localhost:8019 at 1920×1080. The server also
   prints a network URL for another device. Vite supplies hot updates for Home and Settings
   components and serves the legacy runtime files. TV-only features use sample data.
+  For README screenshots, open `?demo=1` in a clean browser context at 1920×1080.
+  It loads Glass, sample favourites and a fictional Continue Watching feed. Set
+  **Settings → Appearance → Apps per row** to **5** and add a fifth favourite to Home.
 - Run `npm run build` for the compiled runtime in `dist/launcher/`.
   Releases package this directory. The explicit production HTML mounts Home and
   Settings from one `js/launcher-ui.js` bundle. Edit the TSX components for view changes.
-  See [Preact Settings](docs/preact-settings.md) for scope and validation.
 - Preview the compiled launcher: `python3 -m http.server -d dist/launcher`, then
   open http://localhost:8000 at 1920×1080. The old comparison page is isolated in
   `tests/fixtures/legacy-launcher/` and is served by the browser test runner.

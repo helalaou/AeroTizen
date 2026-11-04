@@ -70,10 +70,9 @@ under the adjacent `transactions/` directory. Apply needs no TV backup endpoint.
 `--boot` enables automatic startup. For Home only, use apply without that flag.
 Restore an existing native assignment before applying different options.
 After apply or restore, disconnect TV/One Connect power for 60 seconds, then restart.
-The latest Home-plus-boot test showed a black screen for about 30 seconds before
-AeroTizen opened automatically. Startup performance remains an open issue; browser
-render marks do not measure the panel's power-to-screen delay. See the
-[startup investigation](home-startup-art-return.md#foreground-investigation-on-25-october).
+In the Frame profile comparison above, AeroTizen took about 30 seconds to appear
+with Home and boot enabled. This was an estimate from the screen; browser render
+marks do not measure the full power-to-screen delay.
 
 Art Mode keeps Samsung's original return target, sleep and sensor settings.
 One Home press from Art opens Samsung's Art page; a second opens AeroTizen.
@@ -134,6 +133,10 @@ The small persistent handoff state on the TV is still needed to keep the watcher
 disabled across restarts. It is separate from the PC's recovery backup. There is
 no app-private backup upload or download command in this flow.
 
+If Samsung's HTTP API on port 8001 is unavailable, Home commands can use model and
+platform metadata from a valid original backup for the connected TV. The CLI still
+checks the device identity, firmware, CPU and native values over SDB. The first
+backup needs live model metadata.
 
 ## Service query diagnostics
 
@@ -150,5 +153,4 @@ changes still require the compatible control protocol. Do not bypass these guard
 
 The S90C contributor found the service unreachable at about 107 seconds of uptime and
 reachable in persistent native mode with the matching transaction at about 197 seconds.
-The cause is unresolved. These diagnostics help a future capture distinguish failure types;
-they do not claim to fix that observation or measure startup time. Live TV remains for PR37.
+The cause is unresolved. These diagnostics help distinguish failure types.
