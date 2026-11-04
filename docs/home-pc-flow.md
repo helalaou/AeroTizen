@@ -35,8 +35,8 @@ For PR testing, use the CLI and signed launcher from the same checkout. Install 
 and `python cli/tools/build_home_control.py` (requires the .NET 6 SDK). Install the signed launcher
 from the same checkout; a released CLI or launcher may lack the new control protocol.
 
-Start with `home apply --yes`, restart fully, test Home from video apps and Samsung menus,
-then restore and confirm Samsung Home works again. Test `--boot` separately after restore.
+Run `home apply --yes`, restart fully, and record what opens. Test Home from video apps
+and Samsung menus, then restore and confirm Samsung Home works again.
 Report the CLI commit, model, firmware and observed results, with private device IDs and paths
 removed. Passing local tests or preflight does not establish support for another TV. Restore
 after uninstall is still awaiting a controlled physical test; restore before normal uninstall.
@@ -59,16 +59,18 @@ aerotizen --tv TV_IP home apply --yes
 
 Keep any existing valid original backup. On some TVs, opening AeroTizen changes
 only `db/appfw/booting_appid_backup` to `DclHome001.Home`. Apply accepts that
-specific difference and restores the saved startup values before completing
-Home-only apply. All other baseline checks remain exact. This exception does
-not allow an AeroTizen value in a new original backup.
+specific difference from the saved original. A new backup requires original values.
 
 The original is saved once in the PC's
 `~/.config/aerotizen/backups/<TV identity>/original-home.json`.
 Before the native writer runs, its request and baseline bytes are durably saved
 under the adjacent `transactions/` directory. Apply needs no TV backup endpoint.
-`--boot` enables automatic startup. For Home only, use apply without that flag.
-Restore an existing native assignment before applying different options.
+Apply sets both Home bindings, then tries to assign both startup app IDs to AeroTizen.
+It skips any ID the TV has already assigned. If the TV rejects a startup ID, apply
+keeps the Home bindings only if it can verify both original startup IDs. Plain apply
+preserves the saved Smart Hub autostart setting. The `--boot` option also enables
+that setting for firmware that uses it to decide whether to show the Home app at
+power-on. Restore an existing native assignment before changing options.
 After apply or restore, disconnect TV/One Connect power for 60 seconds, then restart.
 In the Frame profile comparison above, AeroTizen took about 30 seconds to appear
 with Home and boot enabled. This was an estimate from the screen; browser render

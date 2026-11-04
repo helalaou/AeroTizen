@@ -11,6 +11,7 @@ sealed class Fake : IPlatform
     public string Firmware { get; set; } = "TEST-1";
     public bool Eligible = true, SideEffects, AutoSideEffects, AutoBadScreen, FailAll, SilentMain, LostCommit, ChangeDuringHold;
     public bool ResetHomeOnStartupWrite, CoupleStartupToHome;
+    public bool RejectStartupWrite, ResetStartupOnBackupWrite;
     public bool Installed = true, WatcherUnavailable, InstallationUnavailable, ReinstallOnWrite;
     public string BootBackupDuringHold;
     public int FailWrite, FailFrom, Writes;
@@ -71,7 +72,11 @@ sealed class Fake : IPlatform
         }
     }
     public void SetString(string key, string value) {
+        if (RejectStartupWrite && key == "db/appfw/startup_appid" && value == Policy.Target)
+            throw new Exception("firmware rejected startup write");
         Write(key); Current.Strings[key] = value;
+        if (ResetStartupOnBackupWrite && key == "db/appfw/booting_appid_backup" && value == Policy.Target)
+            Current.Strings["db/appfw/startup_appid"] = "TV.Viewer";
         if (ResetHomeOnStartupWrite && key == "db/appfw/startup_appid") {
             Current.Main = "Firmware.Home"; Current.Strings[Policy.HomeKey] = "Firmware.Home";
             ResetHomeOnStartupWrite = false;
@@ -159,13 +164,14 @@ static class Program
             var fake = new Fake(); var result = Policy.Execute(fake, Request());
             Check(result.Success && fake.Control.Mode == "native"); Check(fake.Events[0] == "mode:hold");
             Check(fake.Current.Main == Policy.Target && fake.Current.AutoStart == 0);
-            Check(fake.Current.Strings["db/appfw/startup_appid"] == "TV.Viewer");
+            Check(fake.Current.Strings["db/appfw/startup_appid"] == Policy.Target);
+            Check(fake.Current.Strings["db/appfw/booting_appid_backup"] == Policy.Target);
         });
         Test("derived startup and autostart side effects are put back", () => {
             var fake = new Fake { SideEffects = true }; Check(Policy.Execute(fake, Request()).Success);
             Check(fake.Current.AutoStart == 0 && fake.Current.Strings["db/first_screen/type"] == "Samsung.Home");
         });
-        Test("launcher boot backup drift permits Home-only and boot apply with the saved startup values", () => {
+        Test("launcher boot backup drift permits plain and explicit boot apply", () => {
             foreach (bool boot in new[] { false, true }) foreach (int autoStart in new[] { 0, 1 }) {
                 var request = Request(); request.Boot = boot; request.Original.AutoStart = autoStart;
                 request.Original.Main = "com.samsung.tv.csfs";
@@ -175,11 +181,9 @@ static class Program
                 fake.Current.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
                 var result = Policy.Execute(fake, request);
                 var desired = original.Copy(); desired.Main = Policy.Target; desired.Strings[Policy.HomeKey] = Policy.Target;
-                if (boot) {
-                    desired.AutoStart = 1;
-                    desired.Strings["db/appfw/startup_appid"] = Policy.Target;
-                    desired.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
-                }
+                if (boot) desired.AutoStart = 1;
+                desired.Strings["db/appfw/startup_appid"] = Policy.Target;
+                desired.Strings["db/appfw/booting_appid_backup"] = Policy.Target;
                 Check(result.Success && Policy.Same(fake.Current, desired));
                 Check(Policy.Same(request.Original, original), "original snapshot must not change");
                 Check(fake.Events[0] == "mode:hold" && fake.Control.Mode == "native");
@@ -239,8 +243,9 @@ static class Program
         for (int index = 1; index <= 5; index++) {
             int failure = index;
             Test("write failure " + index + " restores the complete baseline before watcher", () => {
-                var fake = new Fake { SideEffects = true, FailWrite = failure };
-                var result = Policy.Execute(fake, Request());
+                var fake = new Fake { FailWrite = failure };
+                var request = Request(); request.Boot = true;
+                var result = Policy.Execute(fake, request);
                 Check(!result.Success && result.RolledBack && Policy.Same(fake.Current, Fake.Original()));
                 Check(fake.Events[fake.Events.Count - 1] == "mode:watcher");
             });
@@ -287,12 +292,29 @@ static class Program
             var fake = new Fake { ChangeDuringHold = true }; var result = Policy.Execute(fake, Request());
             Check(!result.Success && fake.Writes == 0 && fake.Current.Main == "Other.Home" && fake.Control.Mode == "hold");
         });
-        Test("coupled Q7F startup refuses Home-only and restores original settings", () => {
+        Test("plain apply skips startup IDs already set by Q7F firmware and can restore", () => {
             var fake = new Fake { CoupleStartupToHome = true };
-            var request = Request(); request.Original.AutoStart = 1; fake.Current.AutoStart = 1;
-            var result = Policy.Execute(fake, request);
-            Check(!result.Success && result.RolledBack);
-            Check(Policy.Same(fake.Current, request.Original) && fake.Control.Mode == "watcher");
+            var result = Policy.Execute(fake, Request());
+            Check(result.Success && !result.StartupIdsRestored && fake.Control.Mode == "native");
+            Check(fake.Writes == 2 && fake.Current.AutoStart == 0);
+            Check(Policy.Execute(fake, Request("restore")).Success && Policy.Same(fake.Current, Fake.Original()));
+        });
+        Test("plain apply keeps Home after an immediate or late startup refusal", () => {
+            foreach (bool late in new[] { false, true }) {
+                var fake = new Fake { RejectStartupWrite = !late, ResetStartupOnBackupWrite = late };
+                var result = Policy.Execute(fake, Request());
+                Check(result.Success && result.StartupIdsRestored && fake.Control.Mode == "native");
+                var expected = Fake.Original(); expected.Main = Policy.Target; expected.Strings[Policy.HomeKey] = Policy.Target;
+                Check(Policy.Same(result.After, expected));
+                Check(Policy.Execute(fake, Request("restore")).Success && Policy.Same(fake.Current, Fake.Original()));
+            }
+        });
+        Test("startup fallback failure rolls back Home and startup together", () => {
+            var fake = new Fake { ResetStartupOnBackupWrite = true, FailWrite = 5 };
+            var result = Policy.Execute(fake, Request());
+            Check(!result.Success && result.RolledBack && fake.Control.Mode == "watcher");
+            Check(Policy.Same(result.After, Fake.Original()));
+            Check(result.Failure.Differences.ContainsKey("db/appfw/booting_appid_backup"));
         });
         Test("explicit boot supports coupled Q7F startup and exact installed restore", () => {
             foreach (int autoStart in new[] { 0, 1 }) {
@@ -552,7 +574,7 @@ static class Program
             }
         });
         Test("final mismatch evidence survives a successful automatic rollback", () => {
-            var fake = new Fake { SideEffects = true, ResetHomeOnStartupWrite = true };
+            var fake = new Fake { ResetHomeOnStartupWrite = true };
             var result = Policy.Execute(fake, Request());
             Check(result.RolledBack && Policy.Same(result.After, Fake.Original()));
             Check(result.Failure != null && result.Failure.Phase == "final");

@@ -42,7 +42,10 @@ def preview(action, backup=None, *, boot=False):
         "watcher_after": "native"
         if action == "apply"
         else "watcher if AeroTizen is installed; otherwise absent",
-        "startup": "Preserve the original startup settings; native boot is a separate phase.",
+        "startup": (
+            "Try to assign both startup app IDs to AeroTizen and preserve Smart Hub autostart. "
+            "If the TV rejects an ID, try to keep Home with the saved startup IDs."
+        ),
     }
     if boot:
         result["boot"] = True
@@ -101,6 +104,7 @@ def parse_result(output, action, exit_code):
             or document["action"] != action
             or type(result["Success"]) is not bool
             or type(result["RolledBack"]) is not bool
+            or type(result.get("StartupIdsRestored", False)) is not bool
             or (result["Success"] and result["RolledBack"])
             or (result.get("Error") is not None and not isinstance(result["Error"], str))
             or result["Success"] != (exit_code == 0)
@@ -226,7 +230,7 @@ def _check_compatibility(status):
             home._value(item, kind)
             if item["status"] != "ok" or (kind == "string" and not item["value"].strip()):
                 raise home.HomeError("Required native Home values are unavailable or empty.")
-        if current["settings"]["db/menu/smart_hub/ontvsetting/auto_start"]["value"] not in (0, 1):
+        if current["settings"][home.AUTOSTART_KEY]["value"] not in (0, 1):
             raise home.HomeError("Native Home needs autostart to be 0 or 1.")
     except (KeyError, TypeError) as exc:
         raise home.HomeError("Required typed native Home settings are unavailable.") from exc
@@ -287,8 +291,8 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False):
         if source:
             request["restore_boot_transaction"] = source
         elif (
-            status["home"]["settings"]["db/menu/smart_hub/ontvsetting/auto_start"]["value"]
-            != original["home"]["settings"]["db/menu/smart_hub/ontvsetting/auto_start"]["value"]
+            status["home"]["settings"][home.AUTOSTART_KEY]["value"]
+            != original["home"]["settings"][home.AUTOSTART_KEY]["value"]
         ):
             proof = None if installed else _uninstalled_boot_request(backup, raw, digest)
             if proof is None:
@@ -333,21 +337,33 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False):
         )
         _write_receipt(receipt_path, receipt)
         if not result["Success"]:
+            failure = result.get("Failure")
+            differing = failure.get("Differences") if isinstance(failure, dict) else None
+            keys = [
+                key
+                for key in ("operation/main", *home.SETTINGS)
+                if isinstance(differing, dict) and key in differing
+            ]
+            details = f" Settings that differed: {', '.join(keys)}." if keys else ""
             raise home.HomeError(
-                (result.get("Error") or "Home control failed.") + f" Receipt: {receipt_path}"
+                (result.get("Error") or "Home control failed.") + details + f" Receipt: {receipt_path}"
             )
         final = home.read_status(session, None, info)
         expected = original["home"]["default_app"] if action == "restore" else home.releases.APP_ID
         expected_settings = {key: dict(value) for key, value in original["home"]["settings"].items()}
+        startup_ids_restored = result.get("StartupIdsRestored", False)
         if action == "apply":
             expected_settings[home.HOME_KEY]["value"] = home.releases.APP_ID
+            if not boot and not startup_ids_restored:
+                for key in home.STARTUP_KEYS:
+                    expected_settings[key]["value"] = home.releases.APP_ID
         observed = {
             key: {"type": value["type"], "value": value["value"]}
             for key, value in final["home"]["settings"].items()
         }
         if boot:
-            expected_settings["db/menu/smart_hub/ontvsetting/auto_start"]["value"] = 1
-            for key in ("db/appfw/startup_appid", "db/appfw/booting_appid_backup"):
+            expected_settings[home.AUTOSTART_KEY]["value"] = 1
+            for key in home.STARTUP_KEYS:
                 value = observed[key]
                 if value["type"] == "string" and value["value"] == home.releases.APP_ID:
                     expected_settings[key]["value"] = home.releases.APP_ID
@@ -370,9 +386,14 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False):
             or final.get("launcher", {}).get("installed") is not installed
             or not watcher_valid
         ):
+            keys = [key for key, value in expected_settings.items() if observed.get(key) != value]
+            if final["home"]["main_operation"]["value"] != expected:
+                keys.insert(0, "operation/main")
+            details = f" Settings that differed: {', '.join(keys)}." if keys else ""
             raise home.HomeError(
-                "The writer completed, but final Home/watcher verification failed. "
-                "Inspect status before retrying."
+                "The writer completed, but final Home/watcher verification failed."
+                + details
+                + " Inspect status before retrying."
             )
         if hashlib.sha256(backup.read_bytes()).hexdigest() != digest:
             raise home.HomeError("Original backup changed; preserve the transaction receipt for recovery.")
@@ -384,6 +405,7 @@ def change(session, info, action, *, backup=None, state_dir=None, boot=False):
             "backup": str(backup),
             "receipt": str(receipt_path),
             "status": final,
+            **({"startup_ids_restored": startup_ids_restored} if action == "apply" and not boot else {}),
         }
     except BaseException as exc:
         receipt["error"] = str(exc) or type(exc).__name__

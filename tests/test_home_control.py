@@ -75,7 +75,7 @@ def test_control_payload_matches_current_sources():
     assert home_control.load_helper()[home_control.HELPER_FILES[0]].startswith(b"MZ")
 
 
-def native_result(action, *, success=True, rolled_back=False):
+def native_result(action, *, success=True, rolled_back=False, startup_ids_restored=False, failure=None):
     return {
         "stdout": home_control.PREFIX
         + json.dumps(
@@ -86,6 +86,8 @@ def native_result(action, *, success=True, rolled_back=False):
                 "result": {
                     "Success": success,
                     "RolledBack": rolled_back,
+                    "StartupIdsRestored": startup_ids_restored,
+                    "Failure": failure,
                     "Error": None if success else "simulated failure",
                 },
             }
@@ -107,6 +109,8 @@ def test_change_journals_before_writer_and_preserves_original(
     if action == "apply":
         final["home"]["main_operation"]["value"] = home.releases.APP_ID
         final["home"]["settings"][home.HOME_KEY]["value"] = home.releases.APP_ID
+        for key in home.STARTUP_KEYS:
+            final["home"]["settings"][key]["value"] = home.releases.APP_ID
         final["watcher"]["control"]["mode"] = "native"
     if launcher_boot_backup:
         status["home"]["settings"]["db/appfw/booting_appid_backup"]["value"] = home.releases.APP_ID
@@ -124,6 +128,8 @@ def test_change_journals_before_writer_and_preserves_original(
     monkeypatch.setattr(sdk, "run", run)
     result = home_control.change(object(), {}, action, state_dir=tmp_path)
     assert result["success"] and backup.read_bytes() == raw
+    if action == "apply":
+        assert result["startup_ids_restored"] is False
     receipt = Path(result["receipt"])
     assert json.loads(receipt.read_text())["state"] == (
         "applied_verified" if action == "apply" else "restored_verified"
@@ -178,6 +184,8 @@ def test_other_models_roundtrip_their_own_original_values(
     native["watcher"]["control"].update(mode="native", baseline_sha256=hashlib.sha256(raw).hexdigest())
     if boot:
         native["home"]["settings"]["db/menu/smart_hub/ontvsetting/auto_start"]["value"] = 1
+    for key in home.STARTUP_KEYS:
+        native["home"]["settings"][key]["value"] = home.releases.APP_ID
     restoring = copy.deepcopy(native)
     restored = copy.deepcopy(status)
     if not installed:
@@ -260,8 +268,14 @@ def test_failed_native_apply_retains_rollback_result_and_original(monkeypatch, t
     saved = home.save_backup(status, state_dir=tmp_path)
     original = Path(saved["path"]).read_bytes()
     monkeypatch.setattr(home, "read_status", lambda *args: status)
-    monkeypatch.setattr(sdk, "run", lambda *args: native_result("apply", success=False, rolled_back=True))
-    with pytest.raises(home.HomeError, match="simulated failure"):
+    monkeypatch.setattr(
+        sdk,
+        "run",
+        lambda *args: native_result(
+            "apply", success=False, rolled_back=True, failure={"Differences": {home.STARTUP_KEYS[0]: {}}}
+        ),
+    )
+    with pytest.raises(home.HomeError, match=r"simulated failure.*db/appfw/startup_appid"):
         home_control.change(object(), {}, "apply", state_dir=tmp_path)
     receipt = json.loads(next(tmp_path.rglob("transactions/*.json")).read_text())
     assert receipt["state"] == "rolled_back" and Path(saved["path"]).read_bytes() == original
@@ -291,6 +305,33 @@ def test_final_readback_cannot_claim_success_on_a_watcher_mismatch(monkeypatch, 
     assert receipt["state"] == "applied" and "error" in receipt
 
 
+@pytest.mark.parametrize("partial_startup", [False, True])
+def test_cli_only_reports_startup_fallback_after_both_ids_are_verified(
+    monkeypatch, tmp_path, status, capsys, partial_startup
+):
+    home.save_backup(status, state_dir=tmp_path)
+    final = copy.deepcopy(status)
+    final["home"]["main_operation"]["value"] = home.releases.APP_ID
+    final["home"]["settings"][home.HOME_KEY]["value"] = home.releases.APP_ID
+    final["watcher"]["control"]["mode"] = "native"
+    if partial_startup:
+        final["home"]["settings"][home.STARTUP_KEYS[1]]["value"] = home.releases.APP_ID
+    reads = iter([status, final])
+    monkeypatch.setattr(home, "read_status", lambda *args: next(reads))
+    monkeypatch.setattr(sdk, "run", lambda *args: native_result("apply", startup_ids_restored=True))
+    monkeypatch.setattr(cli, "STATE_DIR", tmp_path)
+    monkeypatch.setattr(cli, "pick_tv", lambda args: "TV")
+    monkeypatch.setattr(cli, "require_sdb", lambda host: nullcontext(object()))
+    monkeypatch.setattr(home, "device_info", lambda *args, **kwargs: {})
+    monkeypatch.setattr("sys.argv", ["aerotizen", "home", "apply", "--yes"])
+    if partial_startup:
+        with pytest.raises(SystemExit, match=r"final Home/watcher.*db/appfw/booting_appid_backup"):
+            cli.main()
+    else:
+        cli.main()
+        assert "Home applied. Startup IDs restored" in capsys.readouterr().out
+
+
 def test_native_policy_failure_boundaries_run_on_host_without_tizen():
     dotnet = os.environ.get("AEROTIZEN_DOTNET") or shutil.which("dotnet")
     if not dotnet:
@@ -310,7 +351,7 @@ def test_native_policy_failure_boundaries_run_on_host_without_tizen():
         timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "POLICY_TESTS_PASSED=112" in result.stdout
+    assert "POLICY_TESTS_PASSED=114" in result.stdout
 
 
 def test_boot_preview_has_no_device_contact(monkeypatch, capsys):
