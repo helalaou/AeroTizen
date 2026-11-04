@@ -353,6 +353,10 @@ body.previewing #editor.settings-drawer {
   color: #fff;
   background: var(--settings-close-surface);
 }
+[dir="rtl"] #editor .settings-drawer__close {
+  right: auto;
+  left: 0;
+}
 #editor .settings-drawer__scroll {
   position: relative;
   flex: 1 1 auto;

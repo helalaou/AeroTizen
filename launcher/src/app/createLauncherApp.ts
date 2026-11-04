@@ -6,7 +6,7 @@ import type { LauncherPlatform, LauncherRuntime } from "../platform/tizen/launch
 import type { LauncherUpdates } from "../services/createLauncherUpdates";
 import { createSettingsStore } from "../services/createSettingsStore";
 import { createStatusStores } from "../services/createStatusStores";
-import { resolveLanguage } from "../shared/i18n/catalogues";
+import { catalogues, resolveLanguage } from "../shared/i18n/catalogues";
 import type { Translations } from "../shared/i18n/createTranslations";
 import { createTranslations } from "../shared/i18n/createTranslations";
 
@@ -59,6 +59,7 @@ export const createLauncherApp = (
   const window = document.defaultView;
   const html = document.documentElement;
   const originalLanguage = html.lang;
+  const originalDirection = html.dir;
   const language = () => {
     const navigator = window?.navigator;
     const languages = navigator?.languages;
@@ -73,6 +74,10 @@ export const createLauncherApp = (
     const next = language();
     if (html.lang !== next) {
       html.lang = next;
+    }
+    const direction = catalogues[next]?.direction ?? "ltr";
+    if (html.dir !== direction) {
+      html.dir = direction;
     }
     translations.setLanguage(next);
   };
@@ -99,6 +104,7 @@ export const createLauncherApp = (
     window?.removeEventListener("languagechange", syncLanguage);
     unsubscribeLanguage();
     html.lang = originalLanguage;
+    html.dir = originalDirection;
     updates.dispose();
     editor?.dispose();
     home?.dispose();
