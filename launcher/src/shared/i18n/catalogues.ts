@@ -1,3 +1,4 @@
+import ar from "./ar.json";
 import en from "./en.json";
 import it from "./it.json";
 import ru from "./ru.json";
@@ -7,10 +8,14 @@ export type MessageKey = keyof typeof en;
 const english = { name: "English", messages: en };
 const italian = { name: "Italiano", messages: it };
 const russian = { name: "Русский", messages: ru };
-export const catalogues: Readonly<Record<string, { name: string; messages: Partial<Record<MessageKey, string>> }>> = {
+const arabic = { name: "العربية", messages: ar, direction: "rtl" as const };
+export const catalogues: Readonly<
+  Record<string, { name: string; messages: Partial<Record<MessageKey, string>>; direction?: "rtl" }>
+> = {
   en: english,
   it: italian,
   ru: russian,
+  ar: arabic,
 };
 export const fallbackLanguage = "en";
 

@@ -338,7 +338,9 @@ export const createHomeController = (
   const keydown = (code: number, event: Pick<KeyboardEvent, "preventDefault">) =>
     transaction(() => {
       const current = state.getSnapshot();
-      const delta = code === K.LEFT || code === K.UP ? -1 : 1;
+      // Rows run right to left in RTL languages, so Left moves to the next item there.
+      const rtl = window.document?.documentElement.dir === "rtl";
+      const delta = code === K.UP || (code === K.LEFT && !rtl) || (code === K.RIGHT && rtl) ? -1 : 1;
       if (![K.LEFT, K.RIGHT, K.UP, K.DOWN, K.BACK, K.ESC, K.ENTER].includes(code)) {
         return;
       }
