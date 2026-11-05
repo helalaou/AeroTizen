@@ -253,26 +253,38 @@ Review commands that change the TV before you approve them: `debloat`, `uninstal
 `home apply`, `home restore` and `root`. Those commands preview first and only make changes
 with `--yes`.
 
-Paste this to get started, and change the last line to what you want:
+Turn the TV on, make sure it's on the same network as your computer, then paste this. You
+can change the last line to what you want:
 
 ```text
 Help me set up AeroTizen, a custom launcher for my Samsung Tizen TV:
 https://github.com/helalaou/AeroTizen
 
 Read the README first, especially Setup, "Choose how Home works" and Limits, and follow it.
+Work out as much as you can yourself instead of asking me.
 
-- I'm on [macOS / Windows / Linux]. My TV is a [model and year], and its IP address is
-  [TV IP, or "please find it"].
-- Download the latest CLI release (cli-v...) for my computer, extract it into a new folder
-  and run commands from there. Don't build from source unless I ask.
-- Stop and tell me exactly what to do when a step needs me: Developer Mode on the TV,
-  unplugging the TV, signing in to Samsung, or checking the screen.
-- Run read-only commands (discover, status, apps, home status) freely. Before any command
-  that changes the TV (debloat, uninstall, home apply/restore, root, or anything with
-  --yes), show me the preview and wait for my OK.
-- Run "home backup" before opening AeroTizen for the first time.
-- If something fails, show me the exact error and check the README and the open GitHub
-  issues before trying workarounds.
+1. Check my computer: the operating system, CPU (Apple silicon, Intel or x64), and its
+   local IP address on the network the TV uses. Tell me what you found.
+2. Download the latest CLI release (cli-v...) that matches my computer, extract it into a
+   new folder and run commands from there. Don't build from source unless I ask.
+3. Find the TV yourself. Run "aerotizen discover" first. If it finds nothing, scan my local
+   network: list the devices my computer already sees (for example with arp), then check
+   the addresses on my subnet for Samsung TVs, which answer at http://TV_IP:8001/api/v2/.
+   Only look at my own local network, and don't install scanning tools without asking.
+4. Identify the TV from that /api/v2/ answer: model name, year, Tizen version and whether
+   Developer Mode is on. If you find more than one TV, list them and ask which one is mine.
+   Check the model against the README's Limits and tell me if anything won't work on it.
+5. Stop and tell me exactly what to do when a step needs me: turning on Developer Mode
+   (give me the exact Host PC IP to type), unplugging the TV, signing in to Samsung, or
+   checking the screen. After each one, check it worked before moving on (for example,
+   "status" should show developerMode=1).
+6. Run read-only commands (discover, status, apps, home status) freely. Before any command
+   that changes the TV (debloat, uninstall, home apply/restore, root, or anything with
+   --yes), show me the preview and wait for my OK.
+7. Run "home backup" before opening AeroTizen for the first time.
+8. If something fails, show me the exact error and check the README and the open GitHub
+   issues before trying workarounds. If the TV stops answering, look for it again: its IP
+   address may have changed.
 
 Goal: install the launcher and [keep the default watcher / set up native Home / remove
 some preinstalled apps].
