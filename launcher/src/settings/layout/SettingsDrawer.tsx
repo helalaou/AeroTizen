@@ -64,7 +64,7 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
                   <small>{t(hasUpdate ? "settings.about.updateAvailable" : category.hint)}</small>
                 </span>
                 <span class="settings-category__chevron">
-                  <Icon icon={ChevronRight} />
+                  <Icon icon={ChevronRight} class="ui-icon--mirror" />
                 </span>
               </SettingsControl>
             );
@@ -92,7 +92,7 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
           </span>
           <span>{t("settings.drawer.select")}</span>
           <span>
-            <Icon icon={ChevronLeft} />
+            <Icon icon={ChevronLeft} class="ui-icon--mirror" />
             {t("settings.drawer.back")}
           </span>
         </div>

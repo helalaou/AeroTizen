@@ -20,12 +20,17 @@ const NETWORK_VISIBILITY_OPTIONS = [
 
 const TIME_FORMATS = ["12", "24"] as const;
 
+const NUMERAL_OPTIONS = [
+  { value: "latn", labelKey: "clock.digitsWestern" },
+  { value: "arab", labelKey: "clock.digitsArabic" },
+] as const;
+
 interface Props extends SettingsSectionProps {
   clock: ClockFormatter;
   openedAt: number;
 }
 export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const now = new Date(openedAt);
   const dateStyle = clock.dateStyle(settings.dateFormat);
   return (
@@ -72,6 +77,17 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
           ))}
         </div>
       </SettingsSection>
+      {language === "ar" && (
+        <SettingsSection title={t("clock.digits")}>
+          <ChoiceGroup
+            id="numerals"
+            label={t("clock.digits")}
+            value={settings.numerals}
+            options={NUMERAL_OPTIONS}
+            onSelect={actions.setNumerals}
+          />
+        </SettingsSection>
+      )}
       <SettingsSection title={t("appearance.network")}>
         <ChoiceGroup
           id="network-visibility"

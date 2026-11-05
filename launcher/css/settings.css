@@ -353,6 +353,10 @@ body.previewing #editor.settings-drawer {
   color: #fff;
   background: var(--settings-close-surface);
 }
+[dir="rtl"] #editor .settings-drawer__close {
+  right: auto;
+  left: 0;
+}
 #editor .settings-drawer__scroll {
   position: relative;
   flex: 1 1 auto;
@@ -874,4 +878,37 @@ body.glass-ui #editor .pill.unit[aria-pressed="true"]:not(.focused) {
 #editor .swatch > .selection-indicator > svg.ui-icon {
   width: 22px;
   height: 22px;
+}
+
+/* Right-to-left languages: mirror the drawer so it opens from the right edge. */
+[dir="rtl"] #editor .settings-drawer__frame {
+  left: auto;
+  right: 60px;
+}
+[dir="rtl"] #editor .settings-drawer__sidebar {
+  border-right: 0;
+  border-left: 1px solid var(--border-control);
+}
+[dir="rtl"] #editor.settings-drawer--collapsed .settings-drawer__sidebar {
+  border-left-color: transparent;
+}
+[dir="rtl"] #editor .settings-category__chevron {
+  margin-left: 0;
+  margin-right: auto;
+}
+[dir="rtl"] #editor .choice-option .ui-icon {
+  margin-right: 0;
+  margin-left: 8px;
+}
+[dir="rtl"] #editor .swatch span {
+  left: auto;
+  right: 14px;
+}
+[dir="rtl"] #editor .selection-indicator {
+  right: auto;
+  left: 12px;
+}
+[dir="rtl"] #editor .swatch > .selection-indicator {
+  right: auto;
+  left: 10px;
 }
