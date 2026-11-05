@@ -271,8 +271,8 @@ Work out as much as you can yourself instead of asking me.
    network: list the devices my computer already sees (for example with arp), then check
    the addresses on my subnet for Samsung TVs, which answer at http://TV_IP:8001/api/v2/.
    Only look at my own local network, and don't install scanning tools without asking.
-4. Identify the TV from that /api/v2/ answer: model name, year, Tizen version and whether
-   Developer Mode is on. If you find more than one TV, list them and ask which one is mine.
+4. Identify the TV from that /api/v2/ answer: model name, year (the "model" field starts
+   with it, like 24_...) and whether Developer Mode is on. If you find more than one TV, list them and ask which one is mine.
    Check the model against the README's Limits and tell me if anything won't work on it.
 5. Stop and tell me exactly what to do when a step needs me: turning on Developer Mode
    (give me the exact Host PC IP to type), unplugging the TV, signing in to Samsung, or
