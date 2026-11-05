@@ -59,6 +59,7 @@ AeroTizen.config = {
     weatherShowLocation: true,
     dateFormat: "short",
     language: "auto",
+    numerals: "latn", // Arabic only: Western (latn) or Arabic-Indic (arab) digits.
     // Existing installs continue using the unchanged compact header.
     clockLayout: "classic",
     aeroClockStyle: "vertical",
