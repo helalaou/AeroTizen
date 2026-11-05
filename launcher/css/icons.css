@@ -3,3 +3,7 @@
   display: block;
   flex-shrink: 0;
 }
+/* Arrows that point toward the sidebar or content flip with right-to-left layouts. */
+[dir="rtl"] .ui-icon--mirror {
+  transform: scaleX(-1);
+}

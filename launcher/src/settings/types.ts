@@ -77,6 +77,7 @@ export interface SettingsActions {
   setLocation(location: WeatherLocation | null): void;
   setLocationVisible(visible: boolean): void;
   setNetworkVisible(visible: boolean): void;
+  setNumerals(numerals: "latn" | "arab"): void;
   setSpeed(direction: number): void;
   setTempUnit(unit: TemperatureUnit): void;
   setTimeFormat(format: TimeFormat | "none"): void;

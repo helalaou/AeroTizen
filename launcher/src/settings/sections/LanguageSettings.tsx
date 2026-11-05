@@ -10,7 +10,7 @@ export const LanguageSettings = ({ language }: { language: string }) => {
   const { settings } = useSettingsEnvironment();
   const { t } = useTranslation();
   return (
-    <SettingsSection title={t("settings.language.hint")}>
+    <SettingsSection title={t("settings.language.hint")} description={t("settings.language.note")}>
       <ChoiceGroup
         id="language"
         label={t("settings.language.title")}

@@ -93,6 +93,7 @@
       /* corrupt or unavailable storage: keep defaults */
     }
     data.language = typeof data.language === "string" && data.language ? data.language : "auto";
+    data.numerals = data.numerals === "arab" ? "arab" : "latn";
     data.continueWatching = data.continueWatching === true;
     data.continueWatchingApps = Array.isArray(data.continueWatchingApps)
       ? data.continueWatchingApps

@@ -7,10 +7,9 @@ import { defineConfig } from "vite";
 
 const root = fileURLToPath(new URL("./", import.meta.url));
 const source = path.join(root, "launcher");
-const output = path.join(root, "dist/launcher");
 
 // Copy the explicit production page and runtime assets; source views are bundled separately.
-const widgetAssets: Plugin = {
+const widgetAssets = (output: string): Plugin => ({
   name: "aerotizen-widget-assets",
   apply: "build",
   async buildStart() {
@@ -25,7 +24,7 @@ const widgetAssets: Plugin = {
     // Includes Lucide's ISC terms and the inherited Feather MIT notice.
     await cp(path.join(root, "node_modules/lucide-preact/LICENSE"), path.join(output, "licenses/lucide-preact.txt"));
   },
-};
+});
 
 const developmentEntry: Plugin = {
   name: "aerotizen-development-entry",
@@ -40,22 +39,25 @@ const developmentEntry: Plugin = {
   },
 };
 
-export default defineConfig({
-  root: source,
-  base: "./",
-  publicDir: false,
-  plugins: [preact({ devToolsEnabled: false }), widgetAssets, developmentEntry],
-  server: { host: "0.0.0.0", port: 8019, strictPort: true },
-  build: {
-    target: ["chrome69", "es2018"],
-    outDir: path.join(output, "js"),
-    emptyOutDir: false,
-    minify: true,
-    lib: {
-      entry: path.join(source, "src/index.ts"),
-      name: "AeroTizenLauncher",
-      formats: ["iife"],
-      fileName: () => "launcher-ui.js",
+export default defineConfig(({ mode }) => {
+  const output = path.join(root, "dist", mode === "tv-dev" ? "launcher-dev" : "launcher");
+  return {
+    root: source,
+    base: "./",
+    publicDir: false,
+    plugins: [preact({ devToolsEnabled: false }), widgetAssets(output), developmentEntry],
+    server: { host: "0.0.0.0", port: 8019, strictPort: true },
+    build: {
+      target: ["chrome69", "es2018"],
+      outDir: path.join(output, "js"),
+      emptyOutDir: false,
+      minify: true,
+      lib: {
+        entry: path.join(source, "src/index.ts"),
+        name: "AeroTizenLauncher",
+        formats: ["iife"],
+        fileName: () => "launcher-ui.js",
+      },
     },
-  },
+  };
 });

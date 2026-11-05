@@ -46,6 +46,7 @@ export const createSettingsActions = (
         services.applyClock,
       ),
     setDateFormat: (dateFormat) => commit({ dateFormat }, services.applyClock),
+    setNumerals: (numerals) => commit({ numerals }, services.applyClock),
     setNetworkVisible: (showNetwork) => commit({ showNetwork }, services.applyNetworkVisibility),
     setLiveTvVisible: (showLiveTv) => commit({ showLiveTv }, services.applyInputs),
     setCardSize: (cardSize) => commit({ cardSize }, services.applyCardSize),
