@@ -31,12 +31,12 @@ Physical results cover the Tizen 9 Frame and a contributor's Tizen 9 S90C. The
 and installed-app restore. It does not cover absent-app restore or PR37 integration.
 
 For PR testing, use the CLI and signed launcher from the same checkout. Install the CLI with
-`python -m pip install -e .`, then build both helpers with `python tools/build_home_query.py`
-and `python tools/build_home_control.py` (requires the .NET 6 SDK). Install the signed launcher
+`python -m pip install -e .`, then build both helpers with `python cli/tools/build_home_query.py`
+and `python cli/tools/build_home_control.py` (requires the .NET 6 SDK). Install the signed launcher
 from the same checkout; a released CLI or launcher may lack the new control protocol.
 
-Start with `home apply --yes`, restart fully, test Home from video apps and Samsung menus,
-then restore and confirm Samsung Home works again. Test `--boot` separately after restore.
+Run `home apply --yes`, restart fully, and record what opens. Test Home from video apps
+and Samsung menus, then restore and confirm Samsung Home works again.
 Report the CLI commit, model, firmware and observed results, with private device IDs and paths
 removed. Passing local tests or preflight does not establish support for another TV. Restore
 after uninstall is still awaiting a controlled physical test; restore before normal uninstall.
@@ -59,21 +59,21 @@ aerotizen --tv TV_IP home apply --yes
 
 Keep any existing valid original backup. On some TVs, opening AeroTizen changes
 only `db/appfw/booting_appid_backup` to `DclHome001.Home`. Apply accepts that
-specific difference and restores the saved startup values before completing
-Home-only apply. All other baseline checks remain exact. This exception does
-not allow an AeroTizen value in a new original backup.
+specific difference from the saved original. A new backup requires original values.
 
 The original is saved once in the PC's
 `~/.config/aerotizen/backups/<TV identity>/original-home.json`.
 Before the native writer runs, its request and baseline bytes are durably saved
 under the adjacent `transactions/` directory. Apply needs no TV backup endpoint.
-`--boot` enables automatic startup. For Home only, use apply without that flag.
-Restore an existing native assignment before applying different options.
+Apply sets both Home bindings, then tries to assign both startup app IDs to AeroTizen.
+It skips any ID the TV has already assigned. After both IDs match, apply enables
+Smart Hub autostart and checks the settings again. If the TV rejects startup setup,
+apply keeps the Home bindings only if it can verify both original startup IDs and
+the saved autostart setting. The receipt records the result.
 After apply or restore, disconnect TV/One Connect power for 60 seconds, then restart.
-The latest Home-plus-boot test showed a black screen for about 30 seconds before
-AeroTizen opened automatically. Startup performance remains an open issue; browser
-render marks do not measure the panel's power-to-screen delay. See the
-[startup investigation](home-startup-art-return.md#foreground-investigation-on-25-october).
+In the Frame profile comparison above, AeroTizen took about 30 seconds to appear
+with Home and boot enabled. This was an estimate from the screen; browser render
+marks do not measure the full power-to-screen delay.
 
 Art Mode keeps Samsung's original return target, sleep and sensor settings.
 One Home press from Art opens Samsung's Art page; a second opens AeroTizen.
@@ -134,6 +134,10 @@ The small persistent handoff state on the TV is still needed to keep the watcher
 disabled across restarts. It is separate from the PC's recovery backup. There is
 no app-private backup upload or download command in this flow.
 
+If Samsung's HTTP API on port 8001 is unavailable, Home commands can use model and
+platform metadata from a valid original backup for the connected TV. The CLI still
+checks the device identity, firmware, CPU and native values over SDB. The first
+backup needs live model metadata.
 
 ## Service query diagnostics
 
@@ -150,5 +154,4 @@ changes still require the compatible control protocol. Do not bypass these guard
 
 The S90C contributor found the service unreachable at about 107 seconds of uptime and
 reachable in persistent native mode with the matching transaction at about 197 seconds.
-The cause is unresolved. These diagnostics help a future capture distinguish failure types;
-they do not claim to fix that observation or measure startup time. Live TV remains for PR37.
+The cause is unresolved. These diagnostics help distinguish failure types.

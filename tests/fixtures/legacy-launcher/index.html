@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <base href="/launcher/" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>AeroTizen</title>
+    <script src="js/build-info.js"></script>
+    <script src="js/diagnostics-storage.js"></script>
+    <script src="js/diagnostics-privacy.js"></script>
+    <script src="js/diagnostics.js"></script>
+    <script src="js/startup.js"></script>
+    <link rel="icon" href="icon.png" />
+    <link rel="stylesheet" href="/tests/fixtures/legacy-launcher/css/style.css" />
+    <link rel="stylesheet" href="/tests/fixtures/legacy-launcher/css/selection.css" />
+    <link rel="stylesheet" href="/tests/fixtures/legacy-launcher/css/clock-layouts.css" />
+    <link rel="stylesheet" href="/tests/fixtures/legacy-launcher/css/theme-layout.css" />
+    <link rel="stylesheet" href="/tests/fixtures/legacy-launcher/css/source-dock.css" />
+    <link rel="stylesheet" href="/tests/fixtures/legacy-launcher/css/card-modes.css" />
+    <link rel="stylesheet" href="/tests/fixtures/legacy-launcher/css/tile-actions.css" />
+    <link rel="stylesheet" href="/tests/fixtures/legacy-launcher/css/photo-weather.css" />
+  </head>
+  <body class="s90c-clock-classic">
+    <div id="bg" class="bg"></div>
+    <div id="weather-photo" class="weather-photo" aria-hidden="true" hidden></div>
+    <!-- Layout inspired by LTvLauncher (github.com/leanbitlab-org/LtvLauncher); no code shared. -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div id="gear" class="icon-btn" data-row="0" aria-label="Settings">
+          <svg viewBox="0 0 24 24">
+            <path
+              fill="currentColor"
+              d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1L11 21h4l.4-2.9a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5A3.5 3.5 0 1 1 13 8.5a3.5 3.5 0 0 1 0 7z"
+              transform="translate(-1 0)"
+            />
+          </svg>
+        </div>
+        <svg id="network" class="status-icon" viewBox="0 0 24 24" aria-label="Network"></svg>
+      </div>
+      <nav class="view-tabs" aria-label="App views">
+        <button id="home-tab" class="view-tab active" type="button" tabindex="-1" aria-pressed="true">Home</button>
+        <button id="apps-tab" class="view-tab" type="button" tabindex="-1" aria-pressed="false">All apps</button>
+      </nav>
+      <div class="topbar-right">
+        <span id="weather" class="weather" hidden></span>
+        <span id="date" class="date"></span>
+        <span id="time" class="time"></span>
+      </div>
+      <div id="custom-clock-root"></div>
+    </header>
+
+    <div class="content-viewport">
+      <main id="rows">
+        <div id="grid" class="app-grid" aria-label="Home apps"></div>
+        <p id="apps-empty" class="apps-empty" hidden>No apps found.</p>
+        <section id="continue-section" class="row-wrap" hidden>
+          <h2>Continue Watching</h2>
+          <div class="continue-viewport">
+            <div id="continue-items" class="row" aria-label="Continue Watching"></div>
+          </div>
+        </section>
+        <section id="inputs-section" class="row-wrap inputs-wrap" hidden>
+          <h2>Inputs</h2>
+          <div id="inputs" class="row small"></div>
+        </section>
+      </main>
+    </div>
+
+    <div id="editor" class="sheet" hidden>
+      <h2>Settings</h2>
+      <h3>Animated backgrounds</h3>
+      <div id="bg-anim" class="swatches"></div>
+      <div id="speed-row" class="speed-row" hidden></div>
+      <h3>Still backgrounds</h3>
+      <div id="bg-still" class="swatches"></div>
+      <h3>Weather</h3>
+      <div id="weather-display" class="units" role="group" aria-label="Weather visibility"></div>
+      <p id="weather-location-summary" class="hint"></p>
+      <div id="weather-location" class="units"></div>
+      <p id="weather-search-status" class="hint" role="status" hidden></p>
+      <div id="weather-results" class="weather-results" hidden></div>
+      <div id="weather-visibility" class="units"></div>
+      <h3>Temperature</h3>
+      <div id="units" class="units"></div>
+      <h3>Date &amp; time</h3>
+      <div id="time-formats" class="units"></div>
+      <div id="date-formats" class="units"></div>
+      <h3>Network indicator</h3>
+      <div id="network-visibility" class="units" role="group" aria-label="Network indicator visibility"></div>
+      <h3>Live TV</h3>
+      <p class="hint">Show the Live TV tile in Inputs.</p>
+      <div id="live-tv-visibility" class="units"></div>
+      <h3>App cards</h3>
+      <div id="card-sizes" class="units"></div>
+      <h3>HDMI ports</h3>
+      <p class="hint">Choose whether to show HDMI ports that the TV reports as disconnected.</p>
+      <div id="input-visibility" class="units"></div>
+      <h3 data-i18n="HDMI always visible">HDMI always visible</h3>
+      <p class="hint" data-i18n="Optionally keep an unidentified HDMI port visible while disconnected.">
+        Optionally keep an unidentified HDMI port visible while disconnected.
+      </p>
+      <div id="hdmi-force-visibility" class="units" role="group" aria-label="HDMI always visible"></div>
+      <h3>Input names</h3>
+      <div id="input-names" class="units"></div>
+      <h3>Show in app menu</h3>
+      <p class="hint">
+        Press OK to show or hide a tile on the home screen. On the home screen, hold OK on a tile to move it.
+      </p>
+      <div id="all-apps" class="grid"></div>
+      <div id="escape" class="escape">Use Samsung Home instead</div>
+    </div>
+
+    <div id="fireplace" class="fireplace" hidden>
+      <canvas id="fire-canvas"></canvas>
+      <div class="hearth"></div>
+      <div id="fire-volume" class="fire-volume"></div>
+    </div>
+
+    <div id="toast" class="toast" hidden></div>
+    <script src="js/config.js"></script>
+    <script src="js/app-catalog.js"></script>
+    <script src="js/app-lookup.js"></script>
+    <script src="js/dom.js"></script>
+    <script src="/tests/fixtures/legacy-launcher/js/toast.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/clock.js"></script>
+    <script src="js/logos.js"></script>
+    <script src="/tests/fixtures/legacy-launcher/js/backgrounds.js"></script>
+    <script src="/tests/fixtures/legacy-launcher/js/wave-background.js"></script>
+    <script src="js/weather.js"></script>
+    <script src="js/network.js"></script>
+    <script src="/tests/fixtures/legacy-launcher/js/fireplace.js"></script>
+    <script src="js/artwork.js"></script>
+    <script src="js/brands.js"></script>
+    <script src="/tests/fixtures/legacy-launcher/js/brands-view.js"></script>
+    <script src="js/homewatch.js"></script>
+    <script src="js/native-navigation.js"></script>
+    <script src="js/apps.js"></script>
+    <script src="js/inputs.js"></script>
+    <script src="/tests/fixtures/legacy-launcher/js/inputs-view.js"></script>
+    <script src="js/continue-watching.js"></script>
+    <script src="/tests/fixtures/legacy-launcher/js/continue-row.js"></script>
+    <script src="/tests/fixtures/legacy-launcher/js/home-screen.js"></script>
+    <script src="/tests/fixtures/legacy-launcher/js/settings-ui.js"></script>
+    <script src="/tests/fixtures/legacy-launcher/js/photo-weather.js"></script>
+    <script src="/tests/fixtures/legacy-launcher/js/status-view.js"></script>
+    <script src="/tests/fixtures/legacy-launcher/js/main.js"></script>
+  </body>
+</html>

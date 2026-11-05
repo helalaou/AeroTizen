@@ -1,17 +1,11 @@
 """Build unsigned launcher packages or native CLI archives for GitHub releases."""
 
 import argparse
-import ast
 import hashlib
 import json
-import os
-import platform
 import re
-import shutil
 import subprocess
 import sys
-import tarfile
-import tempfile
 import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
@@ -19,7 +13,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
 TIZEN = "{http://tizen.org/ns/widgets}"
-ENTRYPOINTS = {"aerotizen": "cli"}
 
 
 def check_version(value):
@@ -62,18 +55,43 @@ def build_launcher(root, output, tag=None):
         raise ValueError("Compiled launcher is missing; run npm ci and npm run build first")
     if (launcher / "config.xml").read_bytes() != (source / "config.xml").read_bytes():
         raise ValueError("Compiled launcher config.xml is stale; run npm run build again")
-    files = [launcher / name for name in ("config.xml", "index.html", "icon.png", "licenses/preact.txt")]
+    for name in (
+        "clock-layouts.js",
+        "continue-row.js",
+        "home-screen.js",
+        "settings-ui.js",
+        "inputs-view.js",
+        "status-view.js",
+        "brands-view.js",
+        "wave-background.js",
+        "photo-weather.js",
+        "fireplace.js",
+    ):
+        if (launcher / "js" / name).exists():
+            raise ValueError(f"Compiled launcher contains legacy renderer {name}; run npm run build again")
+    files = [
+        launcher / name
+        for name in (
+            "config.xml",
+            "index.html",
+            "icon.png",
+            "licenses/i18next.txt",
+            "licenses/preact.txt",
+            "licenses/lucide-preact.txt",
+        )
+    ]
     for directory, suffix in (("css", ".css"), ("js", ".js"), ("service", ".js")):
         files.extend((launcher / directory).rglob(f"*{suffix}"))
-    if (launcher / "js/photo-weather.js").is_file():
-        # PhotoWeather loads these local scenes at runtime. Keep their provenance
+    html = (launcher / "index.html").read_text(encoding="utf-8")
+    if 'id="weather-photo-root"' in html:
+        # The bundled wallpaper view loads these local scenes. Keep their provenance
         # with them, and fail packaging rather than silently publishing a broken WGT.
         scenes = ("sun", "partly", "cloud", "rain", "storm", "snow", "fog", "night", "sunset")
         weather = launcher / "assets/weather"
         files.extend(weather / f"{scene}.jpg" for scene in scenes)
         files.extend(weather / name for name in ("CREDITS.md", "MANIFEST.json"))
     for name in (
-        "js/settings-ui.js",
+        "js/launcher-ui.js",
         "service/index.js",
         "service/artmode.js",
         "service/home-mode.js",
@@ -84,8 +102,11 @@ def build_launcher(root, output, tag=None):
     for source in files:
         if not source.is_file() or source.resolve() != source.absolute():
             raise ValueError(f"Runtime file must be a regular file without symlinks: {source}")
-    if 'id="settings-root"' not in (launcher / "index.html").read_text(encoding="utf-8"):
-        raise ValueError("Compiled launcher is missing the Preact Settings mount")
+    for view, host in (("Home", "home-root"), ("Settings", "settings-root")):
+        if f'id="{host}"' not in html:
+            raise ValueError(f"Compiled launcher is missing the Preact {view} mount")
+    if 'src="js/launcher-ui.js"' not in html:
+        raise ValueError("Compiled launcher is missing the shared UI script")
 
     output.mkdir(parents=True, exist_ok=True)
     package = output / f"aerotizen-launcher-{version}.wgt"
@@ -112,133 +133,6 @@ def build_launcher(root, output, tag=None):
     return package
 
 
-def cli_version(root):
-    source = ast.parse((root / "src/aerotizen/__init__.py").read_text(encoding="utf-8"))
-    for statement in source.body:
-        if isinstance(statement, ast.Assign) and any(
-            isinstance(target, ast.Name) and target.id == "__version__" for target in statement.targets
-        ):
-            return check_version(ast.literal_eval(statement.value))
-    raise ValueError("Missing CLI __version__")
-
-
-def platform_name():
-    systems = {"Linux": "linux", "Darwin": "macos", "Windows": "windows"}
-    architectures = {"x86_64": "x86_64", "amd64": "x86_64", "aarch64": "arm64", "arm64": "arm64"}
-    try:
-        return f"{systems[platform.system()]}-{architectures[platform.machine().lower()]}"
-    except KeyError as error:
-        raise ValueError(f"Unsupported build platform: {platform.system()} {platform.machine()}") from error
-
-
-def smoke_binaries(binaries, version):
-    """Run copied executables outside the checkout with no Python or source path."""
-    with tempfile.TemporaryDirectory(prefix="aerotizen-smoke-") as temporary:
-        directory = Path(temporary)
-        env = {key: value for key, value in os.environ.items() if not key.startswith("PYTHON")}
-        env["PATH"] = ""
-        for binary in binaries:
-            copied = directory / binary.name
-            shutil.copy2(binary, copied)
-            for arguments in (
-                ("--help",),
-                ("--version",),
-                ("inspect", "--help"),
-                ("home", "status", "--help"),
-                ("home", "backup", "--help"),
-                ("home", "apply", "--help"),
-                ("home", "restore", "--help"),
-                ("home", "apply", "--json"),
-                ("home", "apply", "--boot", "--json"),
-                ("home", "restore", "--json"),
-            ):
-                result = subprocess.run(
-                    [str(copied), *arguments],
-                    cwd=directory,
-                    env=env,
-                    check=False,
-                    capture_output=True,
-                    text=True,
-                    timeout=60,
-                )
-                if result.returncode:
-                    raise ValueError(f"{binary.name} {arguments} failed: {result.stdout}{result.stderr}")
-                if arguments == ("--version",) and version not in result.stdout:
-                    raise ValueError(f"{binary.name} reports the wrong version: {result.stdout!r}")
-
-
-def build_cli(root, output, tag=None):
-    version = cli_version(root)
-    check_tag("cli", version, tag)
-    if not (root / "src/aerotizen/helpers/home-query.json").is_file():
-        raise ValueError("Build the read-only Home helper with python tools/build_home_query.py first")
-    if not (root / "src/aerotizen/helpers/home-control.json").is_file():
-        raise ValueError("Build the guarded Home writer with python tools/build_home_control.py first")
-    target = platform_name()
-    output.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="aerotizen-build-") as temporary:
-        work = Path(temporary)
-        # Frozen OpenSSL must not depend on the build machine's certificate path.
-        tls_hook = work / "tls_roots.py"
-        tls_hook.write_text(
-            'import os\nimport certifi\nos.environ.setdefault("SSL_CERT_FILE", certifi.where())\n',
-            encoding="utf-8",
-        )
-        binaries = []
-        for name, module in ENTRYPOINTS.items():
-            # Do not name the entry script aerotizen.py: it would shadow the package.
-            entry = work / f"run_{module}.py"
-            entry.write_text(f"from aerotizen.{module} import main\n\nmain()\n", encoding="utf-8")
-            subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "PyInstaller",
-                    "--noconfirm",
-                    "--clean",
-                    "--onefile",
-                    "--console",
-                    "--noupx",
-                    "--name",
-                    name,
-                    "--paths",
-                    str(root / "src"),
-                    "--collect-data",
-                    "aerotizen",
-                    "--collect-data",
-                    "certifi",
-                    "--runtime-hook",
-                    str(tls_hook),
-                    "--distpath",
-                    str(work / "bin"),
-                    "--workpath",
-                    str(work / "build" / name),
-                    "--specpath",
-                    str(work),
-                    str(entry),
-                ],
-                cwd=root,
-                check=True,
-            )
-            suffix = ".exe" if platform.system() == "Windows" else ""
-            binaries.append(work / "bin" / f"{name}{suffix}")
-        smoke_binaries(binaries, version)
-        assets = [*binaries, root / "LICENSE"]
-        filename = f"aerotizen-{version}-{target}"
-        if platform.system() == "Windows":
-            package = output / f"{filename}.zip"
-            with zipfile.ZipFile(package, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-                for asset in assets:
-                    archive.write(asset, asset.name)
-        else:
-            package = output / f"{filename}.tar.gz"
-            with tarfile.open(package, "w:gz") as archive:
-                for asset in assets:
-                    archive.add(asset, arcname=asset.name)
-    write_checksums(output / f"{package.name}.sha256", [package])
-    return package
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("component", choices=("launcher", "cli"))
@@ -246,8 +140,18 @@ def main():
     parser.add_argument("--tag", help="Check that the release tag matches the component version")
     args = parser.parse_args()
     try:
-        builder = build_launcher if args.component == "launcher" else build_cli
-        package = builder(ROOT, args.output.resolve(), args.tag)
+        if args.component == "cli":
+            command = [
+                sys.executable,
+                str(ROOT / "cli/tools/build_release.py"),
+                "--output",
+                str(args.output.resolve()),
+            ]
+            if args.tag is not None:
+                command.extend(["--tag", args.tag])
+            subprocess.run(command, check=True)
+            return
+        package = build_launcher(ROOT, args.output.resolve(), args.tag)
     except (KeyError, ValueError, OSError, ET.ParseError, subprocess.SubprocessError) as error:
         parser.exit(1, f"Release build failed: {error}\n")
     print(package)

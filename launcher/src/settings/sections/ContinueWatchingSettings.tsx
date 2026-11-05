@@ -1,26 +1,60 @@
-import { TranslatedText } from '../../shared/TranslatedText';
-import { Choice } from '../components/Choice';
-import { AppTile } from './apps/AppTile';
-import type { ContinueSource, SettingsSectionProps, SettingsServices } from '../types';
+import type { ContinueSource } from "../../contracts/launcher";
+import type { MessageKey } from "../../shared/i18n/catalogues";
+import { useTranslation } from "../../shared/i18n/useTranslation";
+import { ChoiceGroup } from "../components/ChoiceGroup";
+import { SettingsSection } from "../components/SettingsSection";
+import type { SettingsSectionProps, SettingsServices } from "../types";
+
+import { AppOption } from "./apps/AppOption";
+
+const CONTINUE_WATCHING_OPTIONS = [
+  { value: false, labelKey: "common.off" },
+  { value: true, labelKey: "common.on" },
+] as const;
 
 interface Props extends SettingsSectionProps {
-  sources: readonly ContinueSource[]; message: string; active: boolean; describeApp: SettingsServices['describeApp'];
+  active: boolean;
+  describeApp: SettingsServices["describeApp"];
+  message: MessageKey | "";
+  sources: readonly ContinueSource[];
 }
 
-export const ContinueWatchingSettings = ({ settings, actions, sources, message, active, describeApp }: Props) => (
-  <section aria-label="Continue Watching settings">
-    <h3><TranslatedText>Continue Watching</TranslatedText></h3>
-    <p class="hint">Show saved programmes from the apps you choose. Shared lists can differ from the app.</p>
-    <Choice id="continue-watching" label="Continue Watching" value={settings.continueWatching === true}
-      options={[[false, 'Off'], [true, 'On']]} onSelect={actions.setContinueWatching} />
-    {settings.continueWatching && <>
-      <p class="hint">Choose apps below. Lists update when you return to AeroTizen.</p>
-      {message && <p class="hint" role="status">{message}</p>}
-      <div class="grid continue-apps">
-        {sources.map(source => <AppTile key={source.id} app={source} focusKey={'continue-app:' + source.id}
-          className="continue-option" selected={settings.continueWatchingApps.includes(source.id)} active={active}
-          disabled={!source.storeId} onSelect={() => actions.toggleContinueApp(source.id)} describeApp={describeApp} />)}
-      </div>
-    </>}
-  </section>
-);
+export const ContinueWatchingSettings = ({ settings, actions, sources, message, active, describeApp }: Props) => {
+  const { t } = useTranslation();
+  return (
+    <SettingsSection title={t("home.continueWatching")} description={t("continue.hint")} label={t("continue.settings")}>
+      <ChoiceGroup
+        id="continue-watching"
+        label={t("home.continueWatching")}
+        value={settings.continueWatching === true}
+        options={CONTINUE_WATCHING_OPTIONS}
+        onSelect={actions.setContinueWatching}
+      />
+      {settings.continueWatching && (
+        <>
+          {sources.length > 0 && <p class="hint">{t("continue.chooseApps")}</p>}
+          {message && (
+            <p class="hint" role="status">
+              {t(message)}
+            </p>
+          )}
+          <div class="grid continue-apps">
+            {sources.map((source) => (
+              <AppOption
+                key={source.id}
+                app={source}
+                focusKey={"continue-app:" + source.id}
+                className="continue-option"
+                selected={settings.continueWatchingApps.includes(source.id)}
+                active={active}
+                disabled={!source.storeId}
+                onSelect={() => actions.toggleContinueApp(source.id)}
+                describeApp={describeApp}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </SettingsSection>
+  );
+};

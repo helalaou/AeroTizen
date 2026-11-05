@@ -1,0 +1,169 @@
+/* app actions menu: component-owned styles. */
+
+.move-arrow {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  z-index: 4;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: nudge 1s ease-in-out infinite alternate;
+}
+.move-arrow svg {
+  width: 36px;
+  height: 36px;
+}
+.move-arrow.left {
+  left: -34px;
+  top: 50%;
+  margin-top: -32px;
+  --dx: -6px;
+  --dy: 0;
+}
+.move-arrow.right {
+  right: -34px;
+  top: 50%;
+  margin-top: -32px;
+  --dx: 6px;
+  --dy: 0;
+}
+.move-arrow.up {
+  top: -34px;
+  left: 50%;
+  margin-left: -32px;
+  --dx: 0;
+  --dy: -6px;
+}
+.move-arrow.down {
+  bottom: -34px;
+  left: 50%;
+  margin-left: -32px;
+  --dx: 0;
+  --dy: 6px;
+}
+@keyframes nudge {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(var(--dx), var(--dy));
+  }
+}
+.app-grid.cards-rectangle .tile.moving > .move-arrow {
+  display: flex;
+  z-index: 31;
+}
+.app-actions-menu__backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  background: rgba(5, 8, 16, 0.53);
+  opacity: 0;
+  transition: opacity 0.13s ease-out;
+}
+.app-actions-menu__backdrop.is-open {
+  opacity: 1;
+}
+.app-actions-menu {
+  position: fixed;
+  z-index: 1001;
+  box-sizing: border-box;
+  width: 382px;
+  max-width: calc(100% - 48px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  font-family: inherit;
+  border: 1px solid var(--menu-border);
+  border-radius: 24px;
+  background: var(--menu-surface);
+  box-shadow: var(--menu-shadow);
+  opacity: 0;
+  transform: translate3d(0, 7px, 0);
+  transition:
+    opacity 0.14s ease-out,
+    transform 0.14s ease-out;
+}
+.app-actions-menu.is-open {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+.app-actions-menu__focus-indicator {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  top: 16px;
+  left: 12px;
+  right: 12px;
+  height: 60px;
+  box-sizing: border-box;
+  border: 2px solid var(--focus);
+  border-radius: 17px;
+  background: var(--menu-focus-surface);
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.15s ease-out;
+}
+.app-actions-menu__option {
+  display: flex;
+  position: relative;
+  z-index: 1;
+  align-items: center;
+  flex: 0 0 60px;
+  height: 60px;
+  min-height: 60px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+  gap: 12px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 17px;
+  background: transparent;
+  color: rgba(243, 246, 255, 0.79);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  transition: color 0.1s linear;
+}
+.app-actions-menu__option.selected {
+  color: #fff;
+}
+.app-actions-menu__icon {
+  display: block;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+}
+.app-actions-menu__icon svg {
+  display: block;
+  width: 26px;
+  height: 26px;
+}
+.app-actions-menu__label {
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-actions-menu__backdrop {
+    transition: none;
+  }
+  .app-actions-menu {
+    transition: none;
+  }
+  .app-actions-menu__focus-indicator {
+    transition: none;
+  }
+  .app-actions-menu__option {
+    transition: none;
+  }
+}

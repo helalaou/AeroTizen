@@ -1,0 +1,5 @@
+/* icons: component-owned styles. */
+.ui-icon {
+  display: block;
+  flex-shrink: 0;
+}

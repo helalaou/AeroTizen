@@ -14,12 +14,8 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "brandPrefixes": [
-          "youtube"
-        ],
-        "artworkNames": [
-          "youtube"
-        ]
+        "brandPrefixes": ["youtube"],
+        "artworkNames": ["youtube"]
       },
       "fallback": {
         "background": "#ffffff",
@@ -43,9 +39,7 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "brandPrefixes": [
-          "netflix"
-        ]
+        "brandPrefixes": ["netflix"]
       },
       "fallback": {
         "background": "linear-gradient(135deg,#e50914,#8a0610)",
@@ -69,13 +63,8 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "brandPrefixes": [
-          "prime video"
-        ],
-        "artworkNames": [
-          "prime video",
-          "amazon prime video"
-        ]
+        "brandPrefixes": ["prime video"],
+        "artworkNames": ["prime video", "amazon prime video"]
       },
       "fallback": {
         "background": "linear-gradient(135deg,#1a98ff,#0f4c81)",
@@ -94,16 +83,13 @@ window.AeroTizen.catalog = {
       "name": "Spotify",
       "variants": [
         {
+          "appId": "rJeHak5zRg.Spotify",
           "storeId": "3202007021175"
         }
       ],
       "legacy": {
-        "brandPrefixes": [
-          "spotify"
-        ],
-        "artworkNames": [
-          "spotify"
-        ]
+        "brandPrefixes": ["spotify"],
+        "artworkNames": ["spotify"]
       },
       "fallback": {
         "background": "linear-gradient(135deg,#1ed760,#0f8a3c)",
@@ -126,12 +112,8 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "brandPrefixes": [
-          "stremio"
-        ],
-        "artworkNames": [
-          "stremio"
-        ]
+        "brandPrefixes": ["stremio"],
+        "artworkNames": ["stremio"]
       },
       "fallback": {
         "background": "linear-gradient(135deg,#7b5bf5,#2b1d68)",
@@ -149,9 +131,7 @@ window.AeroTizen.catalog = {
       "name": "Max",
       "variants": [],
       "legacy": {
-        "brandPrefixes": [
-          "max"
-        ]
+        "brandPrefixes": ["max"]
       },
       "fallback": {
         "background": "#002be7",
@@ -169,9 +149,7 @@ window.AeroTizen.catalog = {
       "name": "Hulu",
       "variants": [],
       "legacy": {
-        "brandPrefixes": [
-          "hulu"
-        ]
+        "brandPrefixes": ["hulu"]
       },
       "fallback": {
         "background": "#1ce783",
@@ -195,9 +173,7 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "brandPrefixes": [
-          "apple tv"
-        ]
+        "brandPrefixes": ["apple tv"]
       },
       "fallback": {
         "background": "linear-gradient(135deg,#4a4a4f,#1c1c1e)",
@@ -215,9 +191,7 @@ window.AeroTizen.catalog = {
       "name": "Plex",
       "variants": [],
       "legacy": {
-        "brandPrefixes": [
-          "plex"
-        ]
+        "brandPrefixes": ["plex"]
       },
       "fallback": {
         "background": "#1f1f1f",
@@ -235,9 +209,7 @@ window.AeroTizen.catalog = {
       "name": "Twitch",
       "variants": [],
       "legacy": {
-        "brandPrefixes": [
-          "twitch"
-        ]
+        "brandPrefixes": ["twitch"]
       },
       "fallback": {
         "background": "#9146ff",
@@ -255,9 +227,7 @@ window.AeroTizen.catalog = {
       "name": "Crunchyroll",
       "variants": [],
       "legacy": {
-        "brandPrefixes": [
-          "crunchyroll"
-        ]
+        "brandPrefixes": ["crunchyroll"]
       },
       "fallback": {
         "background": "#f47521",
@@ -275,9 +245,7 @@ window.AeroTizen.catalog = {
       "name": "Paramount+",
       "variants": [],
       "legacy": {
-        "brandPrefixes": [
-          "paramount"
-        ]
+        "brandPrefixes": ["paramount"]
       },
       "fallback": {
         "background": "#0064ff",
@@ -295,9 +263,7 @@ window.AeroTizen.catalog = {
       "name": "Tubi",
       "variants": [],
       "legacy": {
-        "brandPrefixes": [
-          "tubi"
-        ]
+        "brandPrefixes": ["tubi"]
       },
       "fallback": {
         "background": "#7408ff",
@@ -315,9 +281,7 @@ window.AeroTizen.catalog = {
       "name": "Jellyfin",
       "variants": [],
       "legacy": {
-        "brandPrefixes": [
-          "jellyfin"
-        ]
+        "brandPrefixes": ["jellyfin"]
       },
       "fallback": {
         "background": "linear-gradient(135deg,#aa5cc3,#00a4dc)",
@@ -340,12 +304,8 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "brandPrefixes": [
-          "disney"
-        ],
-        "artworkNames": [
-          "disney+"
-        ]
+        "brandPrefixes": ["disney"],
+        "artworkNames": ["disney+"]
       },
       "fallback": {
         "background": "linear-gradient(135deg,#1a3fa3,#06102e)",
@@ -360,9 +320,7 @@ window.AeroTizen.catalog = {
       "name": "TizenBrew",
       "variants": [],
       "legacy": {
-        "brandPrefixes": [
-          "tizenbrew"
-        ]
+        "brandPrefixes": ["tizenbrew"]
       },
       "fallback": {
         "background": "linear-gradient(135deg,#ff9e1b,#7a2c00)",
@@ -383,9 +341,7 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "artworkNames": [
-          "bbc iplayer"
-        ]
+        "artworkNames": ["bbc iplayer"]
       }
     },
     {
@@ -398,9 +354,7 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "artworkNames": [
-          "bbc sounds"
-        ]
+        "artworkNames": ["bbc sounds"]
       }
     },
     {
@@ -413,10 +367,7 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "artworkNames": [
-          "itvx",
-          "itv hub"
-        ]
+        "artworkNames": ["itvx", "itv hub"]
       }
     },
     {
@@ -429,10 +380,7 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "artworkNames": [
-          "channel 4",
-          "all 4"
-        ]
+        "artworkNames": ["channel 4", "all 4"]
       }
     },
     {
@@ -445,10 +393,7 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "artworkNames": [
-          "u",
-          "uktv play"
-        ]
+        "artworkNames": ["u", "uktv play"]
       }
     },
     {
@@ -461,10 +406,7 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "artworkNames": [
-          "5",
-          "my5"
-        ]
+        "artworkNames": ["5", "my5"]
       }
     },
     {
@@ -476,9 +418,7 @@ window.AeroTizen.catalog = {
         }
       ],
       "legacy": {
-        "artworkNames": [
-          "samsung tv plus"
-        ]
+        "artworkNames": ["samsung tv plus"]
       }
     }
   ]

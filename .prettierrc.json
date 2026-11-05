@@ -1,0 +1,26 @@
+{
+  "singleQuote": false,
+  "semi": true,
+  "printWidth": 120,
+  "trailingComma": "all",
+  "endOfLine": "lf",
+  "arrowParens": "always",
+  "bracketSpacing": true,
+  "tabWidth": 2,
+  "overrides": [
+    {
+      "files": ["launcher/js/**/*.js", "tests/fixtures/legacy-launcher/js/**/*.js"],
+      "options": {
+        "trailingComma": "es5"
+      }
+    },
+    {
+      "files": ["launcher/js/app-catalog.js", "launcher/js/diagnostics-privacy.js"],
+      "options": {
+        "singleQuote": false,
+        "quoteProps": "preserve",
+        "trailingComma": "none"
+      }
+    }
+  ]
+}

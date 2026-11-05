@@ -12,12 +12,16 @@ from pathlib import Path
 
 import pytest
 
-from aerotizen import releases
+from aerotizen import releases, root_package, root_state
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("build_release", ROOT / "tools/build_release.py")
 build = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(build)
+CLI_ROOT = ROOT / "cli"
+CLI_SPEC = importlib.util.spec_from_file_location("build_cli_release", CLI_ROOT / "tools/build_release.py")
+cli_build = importlib.util.module_from_spec(CLI_SPEC)
+CLI_SPEC.loader.exec_module(cli_build)
 
 
 @pytest.fixture
@@ -55,10 +59,14 @@ def launcher(tmp_path):
         (app / filename).write_text("must not ship")
     runtime = root / "dist/launcher"
     shutil.copytree(app, runtime)
-    (runtime / "index.html").write_text('<div id="settings-root"></div>')
-    (runtime / "js/settings-ui.js").write_text("compiled Settings")
+    (runtime / "index.html").write_text(
+        '<div id="home-root"></div><div id="settings-root"></div><script src="js/launcher-ui.js"></script>'
+    )
+    (runtime / "js/launcher-ui.js").write_text("compiled Home and Settings")
     (runtime / "licenses").mkdir()
+    (runtime / "licenses/i18next.txt").write_text("MIT License")
     (runtime / "licenses/preact.txt").write_text("MIT License")
+    (runtime / "licenses/lucide-preact.txt").write_text("ISC License; inherited Feather MIT notice")
     (runtime / "src/settings").mkdir(parents=True)
     (runtime / "src/settings/index.tsx").write_text("must not ship")
     return root
@@ -76,8 +84,10 @@ def test_launcher_is_unsigned_deterministic_and_has_verified_manifest(launcher, 
             "css/style.css",
             "icon.png",
             "index.html",
+            "js/launcher-ui.js",
             "js/main.js",
-            "js/settings-ui.js",
+            "licenses/i18next.txt",
+            "licenses/lucide-preact.txt",
             "licenses/preact.txt",
             "service/artmode.js",
             "service/home-mode.js",
@@ -171,8 +181,10 @@ def test_launcher_rejects_stale_compiled_manifest(launcher, tmp_path):
     assert not (tmp_path / "assets").exists()
 
 
-@pytest.mark.parametrize("name", ["js/settings-ui.js", "licenses/preact.txt"])
-def test_launcher_requires_preact_runtime_and_license(launcher, tmp_path, name):
+@pytest.mark.parametrize(
+    "name", ["js/launcher-ui.js", "licenses/i18next.txt", "licenses/preact.txt", "licenses/lucide-preact.txt"]
+)
+def test_launcher_requires_ui_runtime_and_licenses(launcher, tmp_path, name):
     (launcher / "dist/launcher" / name).unlink()
     with pytest.raises(ValueError, match=r"(?i)runtime file"):
         build.build_launcher(launcher, tmp_path / "assets")
@@ -181,15 +193,72 @@ def test_launcher_requires_preact_runtime_and_license(launcher, tmp_path, name):
 
 def test_launcher_rejects_legacy_settings_markup(launcher, tmp_path):
     (launcher / "dist/launcher/index.html").write_text('<div id="editor"></div>')
-    with pytest.raises(ValueError, match="Preact Settings mount"):
+    with pytest.raises(ValueError, match="Preact Home mount"):
+        build.build_launcher(launcher, tmp_path / "assets")
+    assert not (tmp_path / "assets").exists()
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "clock-layouts.js",
+        "continue-row.js",
+        "home-screen.js",
+        "settings-ui.js",
+        "inputs-view.js",
+        "status-view.js",
+        "brands-view.js",
+        "wave-background.js",
+    ],
+)
+def test_launcher_rejects_legacy_renderer_assets(launcher, tmp_path, name):
+    (launcher / "dist/launcher/js" / name).write_text("obsolete renderer")
+    with pytest.raises(ValueError, match="contains legacy renderer"):
+        build.build_launcher(launcher, tmp_path / "assets")
+    assert not (tmp_path / "assets").exists()
+
+
+@pytest.mark.parametrize(
+    ("html", "error"),
+    [
+        ('<div id="home-root"></div>', "Preact Settings mount"),
+        ('<div id="home-root"></div><div id="settings-root"></div>', "shared UI script"),
+    ],
+)
+def test_launcher_requires_both_views_and_the_shared_bundle(launcher, tmp_path, html, error):
+    (launcher / "dist/launcher/index.html").write_text(html)
+    with pytest.raises(ValueError, match=error):
         build.build_launcher(launcher, tmp_path / "assets")
     assert not (tmp_path / "assets").exists()
 
 
 def test_cli_tag_must_match_before_build_starts(tmp_path):
     with pytest.raises(ValueError, match="does not match"):
-        build.build_cli(ROOT, tmp_path / "dist", "launcher-v0.0.0")
+        cli_build.build_cli(CLI_ROOT, tmp_path / "dist", "launcher-v0.0.0")
     assert not (tmp_path / "dist").exists()
+
+
+def test_legacy_cli_build_command_delegates_and_checks_the_tag(tmp_path):
+    output = tmp_path / "dist"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "tools/build_release.py"),
+            "cli",
+            "--tag",
+            "launcher-v0.0.0",
+            "--output",
+            str(output),
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 1
+    assert "does not match cli-v" in result.stderr
+    assert "Traceback" not in result.stderr
+    assert not output.exists()
 
 
 @pytest.mark.parametrize(
@@ -197,6 +266,7 @@ def test_cli_tag_must_match_before_build_starts(tmp_path):
     [
         ("--help",),
         ("--version",),
+        ("update", "--help"),
         ("inspect", "--help"),
         ("home", "status", "--help"),
         ("home", "backup", "--help"),
@@ -221,13 +291,35 @@ def test_cli_release_requires_the_home_helper_before_freezing(tmp_path):
     source.mkdir(parents=True)
     (source / "__init__.py").write_text('__version__ = "2.2.0"\n')
     with pytest.raises(ValueError, match="Home helper"):
-        build.build_cli(tmp_path, tmp_path / "output")
+        cli_build.build_cli(tmp_path, tmp_path / "output")
+    assert not (tmp_path / "output").exists()
+
+
+def test_cli_release_rejects_root_runtime_from_a_different_version(tmp_path):
+    helpers = tmp_path / "src/aerotizen/helpers"
+    helpers.mkdir(parents=True)
+    (helpers.parent / "__init__.py").write_text(f'__version__ = "{root_state.RUNTIME_VERSION}"\n')
+    for name in ("home-query.json", "home-control.json"):
+        (helpers / name).touch()
+    (helpers / "root-runtime.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "version": root_state.VERSION,
+                "files": dict.fromkeys(root_package.MANAGED),
+                "manifest": '<manifest version="0.0.0"/>',
+            }
+        )
+    )
+    with pytest.raises(ValueError, match="Root helper version does not match this CLI"):
+        cli_build.build_cli(tmp_path, tmp_path / "output")
     assert not (tmp_path / "output").exists()
 
 
 def add_weather_runtime(launcher):
     runtime = launcher / "dist/launcher"
-    (runtime / "js/photo-weather.js").write_text("local weather scenes")
+    html = runtime / "index.html"
+    html.write_text('<div id="weather-photo-root" aria-hidden="true"></div>' + html.read_text())
     weather = runtime / "assets/weather"
     weather.mkdir(parents=True)
     names = [

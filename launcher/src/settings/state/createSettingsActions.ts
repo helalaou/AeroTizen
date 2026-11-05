@@ -1,57 +1,84 @@
-import type { MutableStore } from '../../shared/state/createStore';
-import type { SettingsActions, SettingsServices, SettingsStore, SettingsValues, ViewState } from '../types';
+import type { SettingsStore, SettingsValues } from "../../contracts/preferences";
+import type { MutableStore } from "../../shared/state/createStore";
+import type { SettingsActions, SettingsServices, ViewState } from "../types";
 
 export const createSettingsActions = (
-  settings: SettingsStore, services: SettingsServices, view: MutableStore<ViewState>,
-  transaction: (action: () => void) => void
+  settings: SettingsStore,
+  services: SettingsServices,
+  view: MutableStore<ViewState>,
+  transaction: (action: () => void) => void,
 ): SettingsActions => {
-  const commit = (patch: Partial<SettingsValues>, after?: () => void) => transaction(() => {
-    settings.update(patch);
-    after?.();
-    settings.refresh();
-  });
+  const commit = (patch: Partial<SettingsValues>, after?: () => void) =>
+    transaction(() => {
+      settings.update(patch);
+      after?.();
+      settings.refresh();
+    });
   return {
-    setWeatherPhoto: weatherPhoto => commit({ weatherPhoto }, () => {
-      services.applyWeatherVisibility();
-      services.applyBackground();
-    }),
-    setContinueWatching: continueWatching => commit({ continueWatching }),
+    setGlassSettings: (glassSettings) => commit({ glassSettings }),
+    setWeatherPhoto: (weatherPhoto) =>
+      commit({ weatherPhoto }, () => {
+        services.applyWeatherVisibility();
+        services.applyBackground();
+      }),
+    setContinueWatching: (continueWatching) => commit({ continueWatching }),
     toggleContinueApp(id) {
       const selected = settings.getSnapshot().continueWatchingApps;
-      commit({ continueWatchingApps: selected.includes(id) ? selected.filter(app => app !== id) : [...selected, id] });
+      commit({
+        continueWatchingApps: selected.includes(id) ? selected.filter((app) => app !== id) : [...selected, id],
+      });
     },
-    setBackground: background => commit({ background }, services.applyBackground),
-    setWeatherVisible: showWeather => commit({ showWeather }, services.applyWeatherVisibility),
-    setLocationVisible: weatherShowLocation => commit({ weatherShowLocation }, services.applyLocationVisibility),
-    setTempUnit: tempUnit => commit({ tempUnit }, services.refreshWeather),
-    setDateFormat: dateFormat => commit({ dateFormat }, services.applyClock),
-    setNetworkVisible: showNetwork => commit({ showNetwork }, services.applyNetworkVisibility),
-    setLiveTvVisible: showLiveTv => commit({ showLiveTv }, services.applyInputs),
-    setCardSize: cardSize => commit({ cardSize }, services.applyCardSize),
-    setHomeCardMode: homeCardMode => commit({ homeCardMode }, services.applyCardSize),
-    setHomeCardColumns: homeCardColumns => commit({ homeCardColumns }, services.applyCardSize),
-    setHdmiVisibility: hideDisconnectedHdmi => commit({ hideDisconnectedHdmi }, services.applyInputs),
-    setTimeFormat: format => commit(format === 'none' ? { showTime: false } : { showTime: true, timeFormat: format }, services.applyClock),
-    setLocation: weatherLocation => commit({ weatherLocation }, services.refreshWeather),
+    setBackground(background) {
+      const wasPhoto = settings.getSnapshot().weatherPhoto;
+      commit({ background, weatherPhoto: false }, () => {
+        if (wasPhoto) {
+          services.applyWeatherVisibility();
+        }
+        services.applyBackground();
+      });
+    },
+    setWeatherVisible: (showWeather) => commit({ showWeather }, services.applyWeatherVisibility),
+    setLocationVisible: (weatherShowLocation) => commit({ weatherShowLocation }, services.applyLocationVisibility),
+    setTempUnit: (tempUnit) => commit({ tempUnit }, services.refreshWeather),
+    setClockLayout: (layout) =>
+      commit(
+        layout === "classic" ? { clockLayout: "classic" } : { clockLayout: "custom", aeroClockStyle: layout },
+        services.applyClock,
+      ),
+    setDateFormat: (dateFormat) => commit({ dateFormat }, services.applyClock),
+    setNetworkVisible: (showNetwork) => commit({ showNetwork }, services.applyNetworkVisibility),
+    setLiveTvVisible: (showLiveTv) => commit({ showLiveTv }, services.applyInputs),
+    setCardSize: (cardSize) => commit({ cardSize }, services.applyCardSize),
+    setHomeCardMode: (homeCardMode) => commit({ homeCardMode }, services.applyCardSize),
+    setHomeCardColumns: (homeCardColumns) => commit({ homeCardColumns }, services.applyCardSize),
+    setHdmiVisibility: (hideDisconnectedHdmi) => commit({ hideDisconnectedHdmi }, services.applyInputs),
+    setHdmiKeepVisible: (port, keep) =>
+      commit({ hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } }, services.applyInputs),
+    setTimeFormat: (format) =>
+      commit(format === "none" ? { showTime: false } : { showTime: true, timeFormat: format }, services.applyClock),
+    setLocation: (weatherLocation) => commit({ weatherLocation }, services.refreshWeather),
     setSpeed(direction) {
       const { MIN, MAX, STEP } = services.config.SPEED;
-      const speed = Math.round(Math.max(MIN, Math.min(MAX, settings.getSnapshot().speed + direction * STEP)) * 100) / 100;
+      const speed =
+        Math.round(Math.max(MIN, Math.min(MAX, settings.getSnapshot().speed + direction * STEP)) * 100) / 100;
       commit({ speed }, () => services.applySpeed(speed));
     },
     saveInputName(port, value) {
-      if ((settings.getSnapshot().inputNames[port] || '') === value) { return; }
-      const inputNames = { ...settings.getSnapshot().inputNames };
-      if (value) { inputNames[port] = value; } else { delete inputNames[port]; }
+      if ((settings.getSnapshot().inputNames[port] || "") === value) {
+        return;
+      }
+      const { [port]: previousName, ...otherNames } = settings.getSnapshot().inputNames;
+      const inputNames = value ? { ...otherNames, [port]: value } : otherNames;
       commit({ inputNames }, services.applyInputs);
     },
     toggleApp(id) {
       const home = settings.getSnapshot().home;
-      commit({ home: home.includes(id) ? home.filter(item => item !== id) : [...home, id] });
+      commit({ home: home.includes(id) ? home.filter((item) => item !== id) : [...home, id] });
     },
     openStore: services.openStore,
     useSamsungHome: services.useSamsungHome,
     preview() {
       transaction(() => view.set({ ...view.getSnapshot(), previewing: true }));
-    }
+    },
   };
 };

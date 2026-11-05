@@ -1,41 +1,64 @@
-import type { SettingsServices } from '../types';
-import type { LauncherRuntime } from './launcherRuntime';
+import { needsWebGL } from "../../contracts/backgrounds";
+import type { LauncherPlatform, LauncherRuntime } from "../../platform/tizen/launcherRuntime";
+import type { SettingsServices } from "../types";
 
 // All dependencies on unmigrated modules are kept at this boundary. Components
 // receive data/commands; none can call the legacy tile DOM constructors.
-export const createSettingsServices = (runtime: LauncherRuntime): SettingsServices => ({
+export const createSettingsServices = (runtime: LauncherRuntime, platform: LauncherPlatform): SettingsServices => ({
   config: runtime.config,
   clock: {
     dateStyle: runtime.clock.dateStyle,
+    formatDate: runtime.clock.formatDate,
+    subscribe: runtime.clock.subscribe,
     formatTime: runtime.clock.formatTime,
-    DATE_FORMATS: runtime.clock.DATE_FORMATS
+    DATE_FORMATS: runtime.clock.DATE_FORMATS,
   },
-  backgrounds: window.Backgrounds.list.map(background => ({ ...background, preview: window.Backgrounds.preview(background) })),
-  describeApp: app => runtime.tiles.describe(app),
+  backgrounds: platform.backgrounds.list.map((background) => ({
+    ...background,
+    preview: platform.backgrounds.preview(background),
+    requiresWebGL: needsWebGL(background),
+  })),
+  backgroundWebGL: platform.backgrounds.webGL,
+  describeApp: (app) => runtime.tiles.describe(app),
   searchLocations(query, done) {
     let cancelled = false;
-    window.Weather.searchLocations(query, results => { if (!cancelled) { done(results); } });
+    platform.weather.searchLocations(query, (results) => {
+      if (!cancelled) {
+        done(results);
+      }
+    });
     // The old client cannot abort transport; cancellation suppresses delivery.
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   },
   applyBackground: () => runtime.applyBackground(),
-  applySpeed: speed => window.Backgrounds.setSpeed(speed),
+  applySpeed: (speed) => platform.backgrounds.setSpeed(speed),
   applyClock: () => runtime.clock.tick(),
-  applyWeatherVisibility: () => window.Weather.updateVisibility(),
-  applyLocationVisibility: () => window.Weather.updateDisplay(),
-  refreshWeather: () => window.Weather.refresh(),
+  applyWeatherVisibility: () => platform.weather.updateVisibility(),
+  applyLocationVisibility: () => platform.weather.updateDisplay(),
+  refreshWeather: () => platform.weather.refresh(),
   applyNetworkVisibility: () => runtime.network.updateVisibility(),
-  applyInputs: () => runtime.inputs.render(),
-  applyCardSize: () => runtime.homeScreen.render(),
+  applyInputs: () => runtime.inputs.refresh(),
+  applyCardSize: () => runtime.homeScreen?.render(),
   openStore: () => runtime.apps.openStore(),
   useSamsungHome() {
     // Native navigation owns the acknowledged handoff, not physical HOME routing.
     // Keep the original escape available when that optional module is absent.
-    if (runtime.homewatch.openSamsungHome) { runtime.homewatch.openSamsungHome(); }
-    else { runtime.homewatch.useSamsungHome(); }
+    if (runtime.homewatch.openSamsungHome) {
+      runtime.homewatch.openSamsungHome();
+    } else {
+      runtime.homewatch.useSamsungHome();
+    }
   },
-  finishEditing() { runtime.settings.save(); runtime.homeScreen.render(); },
-  clearHomeFocus: () => { runtime.homeScreen.blur?.(); runtime.clearFocus(); },
-  showPreviewMessage: () => runtime.toast('Previewing. Press any key to return'),
-  hidePreviewMessage: () => runtime.hideToast()
+  finishEditing() {
+    runtime.settings.save();
+    runtime.homeScreen?.render();
+  },
+  clearHomeFocus: () => {
+    runtime.homeScreen?.blur();
+    runtime.clearFocus();
+  },
+  showPreviewMessage: () => runtime.toast(runtime.translate("wallpaper.previewing")),
+  hidePreviewMessage: () => runtime.hideToast(),
 });

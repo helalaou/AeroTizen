@@ -9,12 +9,11 @@
   "draft": true,
   "force-tag-creation": true,
   "packages": {
-    ".": {
+    "cli": {
       "release-type": "python",
       "component": "cli",
       "package-name": "aerotizen",
-      "changelog-path": "CHANGELOG-CLI.md",
-      "exclude-paths": ["launcher", "tests"]
+      "changelog-path": "CHANGELOG.md"
     },
     "launcher": {
       "release-type": "simple",

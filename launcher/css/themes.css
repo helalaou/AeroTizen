@@ -1,0 +1,94 @@
+/* Theme paint is defined once. Component styles own geometry and state selectors. */
+:root {
+  --bg: #000;
+  --fg: #fff;
+  --muted: #b8b8c0;
+  --card: #1c1c1e;
+  --focus: #7c5cff;
+  --focus-glow: rgba(124, 92, 255, 0.23);
+  --update-notice: #ffd34f;
+}
+body {
+  --surface-control: rgba(236, 242, 255, 0.08);
+  --border-control: rgba(255, 255, 255, 0.12);
+  --settings-text: #f7f8fa;
+  --settings-muted: rgba(235, 241, 249, 0.72);
+  --settings-subtitle: rgba(225, 234, 249, 0.69);
+  --settings-category-text: rgba(243, 246, 255, 0.79);
+  --settings-divider: rgba(255, 255, 255, 0.12);
+  --settings-heading-divider: rgba(255, 255, 255, 0.14);
+  --settings-kicker: rgba(235, 241, 249, 0.69);
+  --settings-close-surface: rgba(255, 255, 255, 0.07);
+  --settings-overlay: rgba(0, 0, 13, 0.35);
+  --settings-focused-surface: rgba(236, 242, 255, 0.15);
+  --header-tab-surface: rgba(28, 28, 30, 0.7);
+  --header-tab-border: #444448;
+  --header-tab-shadow: none;
+  --header-tab-text: var(--muted);
+  --header-focus-surface: rgba(124, 92, 255, 0.16);
+  --header-focus-shadow: none;
+  --header-gear-border: 0px;
+  --back-to-top-surface: #30343f;
+  --back-to-top-border: #a1a9ba;
+  --settings-surface: #1c1c1e;
+  --settings-main-surface: #141416;
+  --settings-border: #444448;
+  --settings-radius: 18px;
+  --settings-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+  --settings-focus-border: var(--focus);
+  --settings-sidebar-focus-surface: rgba(124, 92, 255, 0.12);
+  --settings-content-focus-surface: rgba(124, 92, 255, 0.12);
+  --settings-sidebar-focus-shadow: none;
+  --settings-content-focus-shadow: none;
+  --choice-selected-surface: var(--focus);
+  --choice-focused-surface: rgba(124, 92, 255, 0.25);
+  --selection-surface: var(--focus);
+  --input-icon-badge: #2c2c30;
+  --continue-surface: var(--card);
+  --continue-shadow: none;
+  --continue-label-surface: transparent;
+  --continue-episode-text: #ccc;
+  --continue-progress-track: #555;
+  --menu-surface: var(--settings-surface);
+  --menu-border: var(--settings-border);
+  --menu-shadow: var(--settings-shadow);
+  --menu-focus-surface: rgba(124, 92, 255, 0.18);
+  --network-offline: #ff6b6b;
+}
+body.glass-ui {
+  --focus: #edf2ff;
+  --focus-glow: rgba(237, 242, 255, 0.23);
+  --header-tab-surface: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.19) 0%,
+    rgba(60, 68, 78, 0.43) 22%,
+    rgba(20, 25, 35, 0.62) 63%,
+    rgba(15, 20, 28, 0.72) 100%
+  );
+  --header-tab-shadow: inset 0 1px rgba(255, 255, 255, 0.24), 0 13px 32px rgba(0, 0, 0, 0.27);
+  --header-tab-text: rgba(234, 239, 247, 0.78);
+  --header-focus-surface: rgba(236, 242, 255, 0.16);
+  --header-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.2);
+  --header-gear-border: 2px;
+  --settings-surface: linear-gradient(160deg, #626a78 0%, #333b4a 13%, #232b39 51%, #151a25 100%);
+  --settings-main-surface: rgba(10, 16, 28, 0.17);
+  --settings-border: rgba(255, 255, 255, 0.35);
+  --settings-radius: 25px;
+  --settings-shadow: inset 0 1px rgba(255, 255, 255, 0.24), 0 12px 28px rgba(0, 0, 0, 0.4);
+  --settings-focus-border: rgba(255, 255, 255, 0.89);
+  --settings-sidebar-focus-surface: rgba(236, 242, 255, 0.18);
+  --settings-content-focus-surface: rgba(236, 242, 255, 0.055);
+  --settings-sidebar-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.2);
+  --settings-content-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.19);
+  --choice-selected-surface: rgba(189, 218, 255, 0.24);
+  --choice-selected-border: rgba(201, 225, 255, 0.55);
+  --choice-focused-surface: rgba(236, 242, 255, 0.15);
+  --selection-surface: #475269;
+  --input-icon-badge: transparent;
+  --continue-surface: linear-gradient(160deg, rgba(86, 97, 116, 0.84), rgba(22, 29, 42, 0.94));
+  --continue-shadow: inset 0 1px rgba(255, 255, 255, 0.24), 0 10px 24px rgba(0, 0, 0, 0.28);
+  --continue-label-surface: rgba(18, 25, 38, 0.38);
+  --continue-episode-text: #d5deec;
+  --continue-progress-track: rgba(217, 227, 242, 0.24);
+  --menu-focus-surface: rgba(236, 242, 255, 0.18);
+}

@@ -1,32 +1,108 @@
-import { useLayoutEffect, useRef } from 'preact/hooks';
-import { flushSync } from 'preact/compat';
-import { useSettingsEnvironment } from './useSettingsEnvironment';
-import type { SettingsInventorySnapshot } from '../types';
+import { flushSync } from "preact/compat";
+import { useLayoutEffect, useMemo, useRef } from "preact/hooks";
 
-interface Layout extends SettingsInventorySnapshot { continueEnabled: boolean; animated: boolean; locationLabel?: string }
+import { useStore } from "../../shared/hooks/useStore";
+import { useTranslation } from "../../shared/i18n/useTranslation";
+import type { Direction } from "../../shared/navigation/createNavigation";
+import { categories } from "../layout/categories";
+import type { SettingsInventorySnapshot } from "../types";
+
+import { useSettingsEnvironment } from "./useSettingsEnvironment";
+
+interface Layout extends SettingsInventorySnapshot {
+  animated: boolean;
+  continueEnabled: boolean;
+  locationLabel?: string;
+}
 const SPACE_KEY = 32;
 
-export const useSettingsNavigation = (active: boolean, previewing: boolean, { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel }: Layout) => {
-  const { navigation, bridge, services, actions, settings, view, root } = useSettingsEnvironment();
-  const wasOpen = useRef(false);
+export const useSettingsNavigation = (
+  active: boolean,
+  previewing: boolean,
+  { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel }: Layout,
+) => {
+  const { language } = useTranslation();
+  const {
+    navigation,
+    bridge,
+    services,
+    actions,
+    settings,
+    view,
+    root,
+    drawer,
+    categoryMenu,
+    categoryContent,
+    categoryScroll,
+    panes,
+  } = useSettingsEnvironment();
+  const directions = useMemo<Partial<Record<number, Direction>>>(() => {
+    const { KEY } = services.config;
+    return { [KEY.LEFT]: "left", [KEY.RIGHT]: "right", [KEY.UP]: "up", [KEY.DOWN]: "down" };
+  }, [services.config]);
+  const category = useStore(drawer);
+  const previousDrawer = useRef<typeof category>();
   useLayoutEffect(() => {
+    if (active && !previousDrawer.current && category.expanded) {
+      drawer.set({ ...category, expanded: false });
+    }
     navigation.invalidate();
-    if (active && !wasOpen.current) { navigation.reset('bg:' + settings.getSnapshot().background); }
-    wasOpen.current = active;
-    if (active && !previewing) { navigation.focus(); } else { navigation.clear(); }
-  }, [active, previewing, apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel, navigation, settings]);
+    navigation.setScope?.(category.expanded ? categoryContent.current : categoryMenu.current);
+    if (previousDrawer.current !== category) {
+      if (categoryScroll.current) {
+        categoryScroll.current.scrollTop = 0;
+      }
+      const key = category.expanded
+        ? navigation.firstKey(panes.get(category.category)) || "settings-close"
+        : "section:" + category.category;
+      navigation.reset(key);
+    }
+    previousDrawer.current = active ? category : undefined;
+    if (active && !previewing) {
+      navigation.focus();
+    } else {
+      navigation.clear();
+    }
+  }, [
+    active,
+    previewing,
+    apps,
+    inputs,
+    continueSources,
+    continueMessage,
+    continueEnabled,
+    animated,
+    locationLabel,
+    language,
+    navigation,
+    settings,
+    category,
+    drawer,
+    categoryContent,
+    categoryMenu,
+    categoryScroll,
+    panes,
+  ]);
   useLayoutEffect(() => {
-    if (!active) { return; }
+    if (!active) {
+      return;
+    }
     const resize = () => {
       navigation.invalidate();
-      if (!view.getSnapshot().previewing) { flushSync(() => navigation.focus()); }
+      if (!view.getSnapshot().previewing) {
+        flushSync(() => navigation.focus());
+      }
     };
-    window.addEventListener('resize', resize);
+    window.addEventListener("resize", resize);
     const unregister = bridge.register({
-      focus: () => { flushSync(() => navigation.focus()); },
+      focus: () => {
+        flushSync(() => navigation.focus());
+      },
       blur: () => {
         const activeElement = document.activeElement;
-        if (activeElement instanceof HTMLElement && root.current?.contains(activeElement)) { activeElement.blur(); }
+        if (activeElement instanceof HTMLElement && root.current?.contains(activeElement)) {
+          activeElement.blur();
+        }
         navigation.clear();
       },
       keydown: (code, event) => {
@@ -37,24 +113,72 @@ export const useSettingsNavigation = (active: boolean, previewing: boolean, { ap
           return;
         }
         const current = navigation.current();
+        if (!category.expanded) {
+          event.preventDefault();
+          if (code === K.BACK || code === K.ESC) {
+            bridge.close();
+          } else if (code === K.UP || code === K.DOWN) {
+            flushSync(() => {
+              navigation.move(code === K.UP ? "up" : "down");
+              const next = categories.find((item) => navigation.getSnapshot() === "section:" + item.id);
+              if (next && next.id !== category.category) {
+                drawer.set({ category: next.id, expanded: false });
+              }
+            });
+          } else if (current?.id === "escape") {
+            if (code === K.ENTER || code === SPACE_KEY) {
+              current.click();
+            }
+          } else if (code === K.RIGHT || code === K.ENTER || code === SPACE_KEY) {
+            flushSync(() => drawer.set({ ...category, expanded: true }));
+          }
+          return;
+        }
+        const leftLeavesPane =
+          code === K.LEFT &&
+          current &&
+          (current.getBoundingClientRect().left <= (categoryContent.current?.getBoundingClientRect().left || 0) + 64 ||
+            (current.dataset.key === "settings-close" && !navigation.firstKey(panes.get(category.category))));
+        if ((code === K.BACK || code === K.ESC || leftLeavesPane) && !view.getSnapshot().adjusting) {
+          event.preventDefault();
+          flushSync(() => drawer.set({ ...category, expanded: false }));
+          return;
+        }
         if (view.getSnapshot().adjusting) {
           const setAdjusting = (adjusting: boolean) => flushSync(() => view.set({ ...view.getSnapshot(), adjusting }));
-          if (current?.dataset.key === 'speed' && (code === K.LEFT || code === K.RIGHT)) {
-            event.preventDefault(); actions.setSpeed(code === K.LEFT ? -1 : 1); return;
+          if (current?.dataset.key === "speed" && (code === K.LEFT || code === K.RIGHT)) {
+            event.preventDefault();
+            actions.setSpeed(code === K.LEFT ? -1 : 1);
+            return;
           }
           setAdjusting(false);
           // OK and Back only leave the slider; Up and Down leave it and move on.
-          if (code === K.ENTER || code === K.BACK || code === K.ESC) { event.preventDefault(); return; }
+          if (code === K.ENTER || code === K.BACK || code === K.ESC) {
+            event.preventDefault();
+            return;
+          }
         }
-        if (code === K.BACK || code === K.ESC) { event.preventDefault(); bridge.close(); return; }
-        if (code === K.ENTER || (code === SPACE_KEY && current?.getAttribute('role') === 'button')) {
-          event.preventDefault(); current?.click(); return;
+        if (code === K.BACK || code === K.ESC) {
+          event.preventDefault();
+          bridge.close();
+          return;
         }
-        const direction = code === K.LEFT ? 'left' : code === K.RIGHT ? 'right' :
-          code === K.UP ? 'up' : code === K.DOWN ? 'down' : undefined;
-        if (direction) { event.preventDefault(); flushSync(() => navigation.move(direction)); }
-      }
+        if (code === K.ENTER || (code === SPACE_KEY && current?.getAttribute("role") === "button")) {
+          event.preventDefault();
+          current?.click();
+          return;
+        }
+        const direction = directions[code];
+        if (direction) {
+          event.preventDefault();
+          flushSync(() => navigation.move(direction));
+        }
+      },
     });
-    return () => { unregister(); window.removeEventListener('resize', resize); navigation.clear(); };
-  }, [active, actions, bridge, navigation, root, services, view]);
+    return () => {
+      unregister();
+      window.removeEventListener("resize", resize);
+      navigation.clear();
+    };
+  }, [active, actions, bridge, navigation, root, services, view, category, drawer, categoryContent, directions, panes]);
 };

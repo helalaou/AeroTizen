@@ -2,19 +2,25 @@
 
 These commands inspect the TV's current native Home assignment and preserve the
 original values on the computer. They do not change Home, startup, Art Mode or
-watcher settings. [Apply and restore](home-apply-restore.md) use a separate writer.
+watcher settings. [Apply and restore](home-pc-flow.md) use a separate writer.
 
 ## Requirements
 
 - Working Developer Mode and an SDB connection from the current allowed host IP.
 - The read-only query payload, included in standalone CLI builds. Source users
-  build it with `python tools/build_home_query.py` and the .NET 6 SDK.
+  build it with `python cli/tools/build_home_query.py` and the .NET 6 SDK.
 
 The default transport runs as SDK UID 901 through the direct Python SDB session.
 It stages the helper in the standard SDK temporary folder and uses the published
 package-name command workaround. It does not acquire root. The helper targets
 .NET Core 3.1 with major-version roll-forward. Other TV runtimes, firmware and
 host platforms require their own hardware checks.
+
+Before starting the SDK helper, the CLI checks that `/usr/bin/dotnet` is executable
+on the TV. If it is missing or not executable, Native Home stops with a compatibility
+error and removes its staged files. Installing .NET on the computer does not fix a
+missing TV command. Use the default watcher setup on these TVs. This check does not
+add Native Home support for Tizen 5.5; other runtime entry points remain unverified.
 
 ## Commands
 
@@ -130,7 +136,7 @@ Verified on `QE65LS03DAUXXU`, ARMv7, Tizen 9.0.0, build
 - 188 Python tests, Ruff lint/format, workflow Actionlint, and standalone smoke
   checks passed locally. Hosted CI and other platforms were not exercised here.
 
-[Sanitized TV evidence](home-read-only-tv-20261024.json) records the typed values
+[Sanitized TV evidence](../tests/fixtures/home-read-only-tv-20261024.json) records the typed values
 and checks. Private reports and the baseline retain the device binding; the public
 evidence excludes the network address, device identity hash and local backup path.
 This result does not establish native Home takeover, boot routing or restore.
@@ -149,8 +155,6 @@ app launches, playback controls, Home writes or watcher pause were used. The
 passive app-status API did not identify the visible app, so uninterrupted film
 playback was not independently measured.
 
-[SDK-only TV evidence](home-sdk-read-only-tv-20261024.json) records this result.
-This proved native reads without root on this TV and firmware. The current CLI
-now integrates that transport, with local automated checks. That CLI integration,
-native assignment, restore and power-on behavior have not been retested on the
-TV. The historical evidence files record the commands used at the time.
+[SDK-only TV evidence](../tests/fixtures/home-sdk-read-only-tv-20261024.json) records this result.
+This proved native reads without root on this TV and firmware. For later native
+assignment, restore and power-on tests, see the [PC-managed flow](home-pc-flow.md).

@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.6.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.5.0...launcher-v2.6.0) (2026-11-03)
+
+
+### Features
+
+* **diagnostics:** add CLI and TV diagnostic reports ([#78](https://github.com/helalaou/AeroTizen/issues/78)) ([5ce548b](https://github.com/helalaou/AeroTizen/commit/5ce548b3acec07a54d8c38ea38503d5d13e0dde7))
+* **launcher:** offer classic and custom clock layouts ([#28](https://github.com/helalaou/AeroTizen/issues/28)) ([dd457ea](https://github.com/helalaou/AeroTizen/commit/dd457eae51838e4e8ca8f323a2338440989fd5ad))
+* **launcher:** offer Square and Rectangle Home card layouts ([#34](https://github.com/helalaou/AeroTizen/issues/34)) ([91a7dbe](https://github.com/helalaou/AeroTizen/commit/91a7dbe6d0e611a4611a15203b282e84889572f2))
+* **launcher:** retain recognised HDMI devices in standby ([#29](https://github.com/helalaou/AeroTizen/issues/29)) ([aee7373](https://github.com/helalaou/AeroTizen/commit/aee737386044ec479c0c975635256f38333f8fc8))
+* **launcher:** unify glass settings and Home navigation ([#30](https://github.com/helalaou/AeroTizen/issues/30)) ([faacf92](https://github.com/helalaou/AeroTizen/commit/faacf92952d9bd19db4511c068f6a3d51202b0d3))
+
+
+### Bug Fixes
+
+* **launcher:** close embedded HDMI on native Home return ([#101](https://github.com/helalaou/AeroTizen/issues/101)) ([a2d86a2](https://github.com/helalaou/AeroTizen/commit/a2d86a2be939f0fc04e41ff071fb481bd10a4124))
+
 ## [2.5.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.4.0...launcher-v2.5.0) (2026-10-29)
 
 

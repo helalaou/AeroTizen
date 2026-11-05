@@ -10,17 +10,138 @@ on:
         description: Exact commit to test for a release
         type: string
         required: true
+      release_tag:
+        description: Release tag to validate and use for the artifact name
+        type: string
+        required: true
+      release_component:
+        description: Component to test and package for this release
+        type: string
+        required: true
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ inputs.ref == '' && github.event_name == 'pull_request' && github.ref || github.run_id }}-${{ inputs.release_tag }}
+  cancel-in-progress: ${{ inputs.ref == '' && github.event_name == 'pull_request' }}
+
 jobs:
-  python:
+  changes:
+    # A release call selects tests by component and checks out its exact tag commit.
+    if: inputs.ref == ''
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.10", "3.12", "3.13"]
+    outputs:
+      cli: ${{ steps.select.outputs.cli }}
+      launcher: ${{ steps.select.outputs.launcher }}
+      code: ${{ steps.select.outputs.code }}
+      readme_only: ${{ steps.select.outputs.readme_only }}
+      format_contributing: ${{ steps.select.outputs.format_contributing }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Select test jobs
+        id: select
+        shell: python
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          import os
+          import subprocess
+
+          # Compare the PR merge commit to its base parent, or use the push's previous tip.
+          base = "HEAD^1" if os.environ["GITHUB_EVENT_NAME"] == "pull_request" else os.environ["BEFORE"]
+          diff = subprocess.run(
+              ["git", "diff", "--no-renames", "--name-only", "-z", base, "HEAD", "--"],
+              capture_output=True,
+          )
+          paths = diff.stdout.split(b"\0")[:-1] if diff.returncode == 0 else []
+          code_paths = [
+              path for path in paths
+              if path not in (b"README.md", b"CONTRIBUTING.md") and not path.startswith(b"docs/")
+          ]
+          # Shared or unknown paths, empty diffs, and unavailable history run the full suite.
+          shared = not paths or any(
+              not path.startswith((b"cli/", b"launcher/")) for path in code_paths
+          )
+          cli = shared or any(path.startswith(b"cli/") for path in code_paths)
+          launcher = shared or any(path.startswith(b"launcher/") for path in code_paths)
+          code = cli or launcher
+          outputs = {
+              "cli": cli,
+              "launcher": launcher,
+              "code": code,
+              "readme_only": not code and b"README.md" in paths,
+              "format_contributing": not launcher and b"CONTRIBUTING.md" in paths,
+          }
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              for name, value in outputs.items():
+                  print(f"{name}={str(value).lower()}", file=output)
+                  print(f"{name}={value}")
+
+  # GitHub skips a matrix before expanding it. Use fixed names for required checks.
+  # Missing change outputs enable all checks for the selected component.
+  python-310:
+    name: python (3.10)
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: "3.10"
+    steps: &python-steps
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - name: Check README contributor markers
+        if: needs.changes.outputs.readme_only == 'true'
+        run: python3 -c 'from tools.update_contributors import README, update; update(README.read_text(), [])'
+      - uses: actions/setup-python@v5
+        if: needs.changes.outputs.readme_only != 'true'
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-dotnet@v4
+        if: needs.changes.outputs.readme_only != 'true'
+        with:
+          dotnet-version: 6.0.428
+      - name: Build TV helpers and install the CLI
+        if: needs.changes.outputs.readme_only != 'true'
+        run: |
+          python cli/tools/build_home_query.py
+          python cli/tools/build_home_control.py
+          python cli/tools/build_root_runtime.py
+          pip install -e ".[dev]"
+      - name: Run Python checks
+        if: needs.changes.outputs.readme_only != 'true'
+        run: |
+          ruff check .
+          ruff format --check .
+          pytest
+
+  python-312:
+    name: python (3.12)
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.outputs.code != 'false' || needs.changes.outputs.readme_only == 'true') }}
+    runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: "3.12"
+    steps: *python-steps
+
+  python-313:
+    name: python (3.13)
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: "3.13"
+    steps: *python-steps
+
+  root-contracts:
+    needs: changes
+    if: ${{ !cancelled() && inputs.release_component != 'launcher' && needs.changes.outputs.cli != 'false' }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,18 +149,30 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 6.0.428
-      - run: python tools/build_home_query.py
-      - run: python tools/build_home_control.py
-      - run: pip install -e ".[dev]"
-      - run: ruff check .
-      - run: ruff format --check .
-      - run: pytest
+      - run: python -m pip install -e ".[dev]"
+      - name: Check pinned TV payloads for archive contract tests
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from aerotizen.root_package import upstream_payloads
+          root = Path(os.environ["RUNNER_TEMP"]) / "root-test-release"
+          target = root / "_internal/payloads/common"
+          target.mkdir(parents=True)
+          for name, data in upstream_payloads(root / "cache").items():
+              (target / name).write_bytes(data)
+          with open(os.environ["GITHUB_ENV"], "a") as output:
+              output.write(f"AEROTIZEN_TEST_ROOT_RELEASE={root}\n")
+          PY
+      - run: python -m pytest tests/test_root_bridge.py tests/test_root_package.py tests/test_root_control.py tests/test_root_transfer.py
 
   launcher:
+    needs: changes
+    if: ${{ !cancelled() && inputs.release_component != 'cli' && (needs.changes.outputs.launcher != 'false' || needs.changes.outputs.format_contributing == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,22 +182,57 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Check contributor guide formatting
+        if: needs.changes.outputs.format_contributing == 'true'
+        run: |
+          prettier_package=$(node -p 'require("./package-lock.json").packages["node_modules/prettier"].resolved')
+          npm exec --yes --ignore-scripts --package "$prettier_package" -- prettier --check CONTRIBUTING.md
       - run: npm ci --no-audit --no-fund
+        if: needs.changes.outputs.launcher != 'false'
+      - run: npm run format:check
+        if: needs.changes.outputs.launcher != 'false'
       - run: npm run lint
+        if: needs.changes.outputs.launcher != 'false'
       - run: npm run build
+        if: needs.changes.outputs.launcher != 'false'
       - run: npm test
+        if: needs.changes.outputs.launcher != 'false'
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
+        if: needs.changes.outputs.launcher != 'false'
+      - run: npx playwright test
+        if: needs.changes.outputs.launcher != 'false'
+      - uses: actions/setup-python@v5
+        if: inputs.release_component == 'launcher'
+        with:
+          python-version: "3.12"
       - name: Check compiled launcher release packaging
-        run: python tools/build_release.py launcher --output dist/release-check
+        if: needs.changes.outputs.launcher != 'false'
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          args=(launcher --output dist/release-check)
+          if [[ -n "$RELEASE_TAG" ]]; then
+            args+=(--tag "$RELEASE_TAG")
+          fi
+          python tools/build_release.py "${args[@]}"
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: inputs.release_component == 'launcher'
+        with:
+          name: release-${{ inputs.release_tag }}-launcher
+          path: dist/release-check/*
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: failure() && needs.changes.outputs.launcher != 'false'
         with:
           name: settings-browser-failures
           path: test-results/
           retention-days: 7
 
   windows-home:
+    # These tests exercise both the CLI and the launcher service.
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,8 +248,51 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 6.0.428
-      - run: python tools/build_home_query.py
-      - run: python tools/build_home_control.py
+      - run: python cli/tools/build_home_query.py
+      - run: python cli/tools/build_home_control.py
       - run: python -m pip install -e ".[dev]"
-      - run: python -m pytest tests/test_releases.py tests/test_home.py tests/test_home_control.py
-      - run: node --test tests/home_store.test.cjs
+      - run: python -m pytest tests/test_releases.py tests/test_cli_updates.py tests/test_self_update.py tests/test_home.py tests/test_home_control.py tests/test_diagnostics.py
+      - run: node --test tests/home_store.test.cjs tests/diagnostics.test.cjs tests/watcher.test.cjs
+
+  cli-update:
+    name: CLI update (${{ matrix.runner }})
+    needs: changes
+    if: ${{ !cancelled() && inputs.release_component != 'launcher' && needs.changes.outputs.cli != 'false' }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-22.04, windows-2022, macos-15, macos-15-intel]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: ${{ matrix.runner == 'macos-15-intel' && 'pip' || '' }}
+          cache-dependency-path: |
+            pyproject.toml
+            cli/pyproject.toml
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.428
+      - name: Prepare native update tests
+        run: |
+          python cli/tools/build_home_query.py
+          python cli/tools/build_home_control.py
+          python cli/tools/build_root_runtime.py
+          python -m pip install -e ".[dev]" "pyinstaller>=6.22.1,<7" certifi
+      - name: Test real executable updates and recovery
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python cli/tools/test_cli_self_update.py --output "${{ runner.temp }}/cli-update-proof"
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: cli-update-proof-${{ matrix.runner }}
+          path: |
+            ${{ runner.temp }}/cli-update-proof/report.json
+            ${{ runner.temp }}/cli-update-proof/*.log
+          retention-days: 7

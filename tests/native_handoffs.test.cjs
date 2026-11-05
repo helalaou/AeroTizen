@@ -1,259 +1,439 @@
-'use strict';
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const test = require('node:test');
-const vm = require('node:vm');
+const { translateEnglish } = require("./helpers/translate_english.cjs");
+("use strict");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const test = require("node:test");
+const vm = require("node:vm");
 
-const get = file => fs.readFileSync(path.join(__dirname, '../launcher/', file), 'utf8');
-const nativeSource = get('js/native-navigation.js');
-const inputSource = get('js/inputs.js');
-const appsSource = get('js/apps.js');
+const get = (file) => fs.readFileSync(path.join(__dirname, "../launcher/", file), "utf8");
+const nativeSource = get("js/native-navigation.js");
+const inputSource = get("js/inputs.js");
+const appsSource = get("js/apps.js");
 
 function harness(options = {}) {
-  const requests = [], launches = [], inputs = [], embedded = [], toasts = [], timers = [];
-  const listeners = {}, watch = [], resume = [];
+  const requests = [],
+    launches = [],
+    inputs = [],
+    embedded = [],
+    toasts = [],
+    timers = [],
+    backgrounds = [];
+  const listeners = {},
+    documentListeners = {},
+    watch = [],
+    resume = [];
+  const log = require("../launcher/js/diagnostics")("ui", {
+    later: (fn, ms) => {
+      timers.push({ fn, ms });
+    },
+  });
   function Request() {
     this.status = 0;
-    this.open = (method, url) => { this.method = method; this.url = url; };
-    this.send = () => { requests.push(this); };
-    this.resolve = status => { this.status = status; if (this.onload) this.onload(); };
-    this.fail = () => { if (this.onerror) this.onerror(); };
+    this.open = (method, url) => {
+      this.method = method;
+      this.url = url;
+    };
+    this.send = () => {
+      requests.push(this);
+    };
+    this.resolve = (status) => {
+      this.status = status;
+      if (this.onload) this.onload();
+    };
+    this.fail = () => {
+      if (this.onerror) this.onerror();
+    };
   }
   const tz = {
-    ApplicationControl: function (op) { this.operation = op; },
+    ApplicationControl: function (op) {
+      this.operation = op;
+    },
     application: {
-      getAppMetaData() { return []; },
+      getAppMetaData() {
+        return [];
+      },
+      getCurrentApplication() {
+        return {
+          getRequestedAppControl() {
+            return {
+              appControl: {
+                operation: options.operation || "http://tizen.org/appcontrol/operation/main",
+              },
+            };
+          },
+        };
+      },
       launch(id, success, failure) {
-        launches.push({ id, method: 'launch' });
+        launches.push({ id, method: "launch" });
         if (options.launchFails && (id === options.launchFails || options.launchFails === true)) {
-          if (failure) failure({ name: 'Denied' });
+          if (failure) failure({ name: "Denied" });
         } else if (success) success();
       },
       launchAppControl(control, id, success, failure) {
-        launches.push({ id, method: 'appcontrol' });
-        if (options.appControlFails) { if (failure) failure({ name: 'Denied' }); }
-        else if (success) success();
-      }
+        launches.push({ id, method: "appcontrol" });
+        if (options.appControlFails) {
+          if (failure) failure({ name: "Denied" });
+        } else if (success) success();
+      },
     },
     systeminfo: { addPropertyValueChangeListener() {} },
     tvwindow: {
       setSource(source, success, failure, target) {
         inputs.push({ source, target });
-        if (options.sourceFails) failure({ name: 'NoSource' });
+        if (options.sourceFails) failure({ name: "NoSource" });
         else success();
       },
-      show(success) { embedded.push('shown'); if (success) success(); },
-      hide() {}
-    }
+      show(success) {
+        embedded.push("shown");
+        if (success) success();
+      },
+      hide() {
+        embedded.push("hidden");
+      },
+    },
   };
-  if (options.noNativeLaunch) { delete tz.application.launch; }
+  if (options.noNativeLaunch) {
+    delete tz.application.launch;
+  }
   if (options.noAppControl) {
     delete tz.ApplicationControl;
     delete tz.application.launchAppControl;
   }
   const document = {
+    addEventListener(name, handler) {
+      documentListeners[name] = handler;
+    },
     hidden: options.visible === true ? false : true,
     body: { classList: { add() {}, remove() {} } },
-    documentElement: { style: {} }
+    documentElement: { style: {} },
   };
   const A = {
+    translate: translateEnglish,
     tizen: tz,
     config: {
-      SERVICE_URL: 'http://127.0.0.1:47790',
+      SERVICE_URL: "http://127.0.0.1:47790",
       STORE_PACKAGE: /^[A-Za-z0-9]{10}$/,
       HIDDEN_APPS: /service/i,
-      HBBTV_APP_ID: 'org.tizen.hbbtv',
-      HBBTV_LINK_METADATA: 'hbbtv.link',
-      DEFAULT_HOME_APPS: [], FIREPLACE_ID: '__fire', STORE_APP_IDS: options.storeIds || []
+      HBBTV_APP_ID: "org.tizen.hbbtv",
+      HBBTV_LINK_METADATA: "hbbtv.link",
+      DEFAULT_HOME_APPS: [],
+      FIREPLACE_ID: "__fire",
+      STORE_APP_IDS: options.storeIds || [],
     },
     homewatch: {
-      watch(id) { watch.push(id); },
-      resume() { resume.push(true); },
-      useSamsungHome() {}
+      watch(id) {
+        watch.push(id);
+      },
+      resume() {
+        resume.push(true);
+      },
+      useSamsungHome() {},
     },
-    catalog: { preloadedStoreId() { return null; } },
+    catalog: {
+      preloadedStoreId() {
+        return null;
+      },
+    },
     settings: { inputNames: {}, showLiveTv: true, hideDisconnectedHdmi: false },
     tiles: {
-      shortName: name => name,
-      ICONS: { tv: 'tv', hdmi: 'hdmi', box: 'box', pc: 'pc', game: 'game' }
+      shortName: (name) => name,
+      ICONS: { tv: "tv", hdmi: "hdmi", box: "box", pc: "pc", game: "game" },
     },
-    toast: message => toasts.push(message),
-    applyBackground() {}
+    toast: (message) => toasts.push(message),
+    applyBackground: () => backgrounds.push("restored"),
   };
   const window = {
     AeroTizen: A,
-    addEventListener(name, handler) { listeners[name] = handler; },
-    setTimeout(fn, ms) { timers.push({ fn, ms }); },
-    Backgrounds: { hide() {} }
+    AeroDiagnostics: log,
+    addEventListener(name, handler) {
+      listeners[name] = handler;
+    },
+    setTimeout(fn, ms) {
+      timers.push({ fn, ms });
+    },
+    Backgrounds: { suspend: () => backgrounds.push("suspended") },
   };
   const context = { window, document, XMLHttpRequest: Request };
-  vm.runInNewContext(nativeSource, context, { filename: 'native-navigation.js' });
-  vm.runInNewContext(inputSource, context, { filename: 'inputs.js' });
-  vm.runInNewContext(appsSource, context, { filename: 'apps.js' });
-  return { A, tz, requests, launches, inputs, embedded, watch, resume, toasts, timers, listeners,
-    document };
+  vm.runInNewContext(nativeSource, context, { filename: "native-navigation.js" });
+  vm.runInNewContext(inputSource, context, { filename: "inputs.js" });
+  vm.runInNewContext(appsSource, context, { filename: "apps.js" });
+  return {
+    A,
+    backgrounds,
+    tz,
+    requests,
+    launches,
+    inputs,
+    embedded,
+    watch,
+    resume,
+    toasts,
+    timers,
+    listeners,
+    document,
+    documentListeners,
+    log,
+  };
 }
 
-test('YouTube/Cobalt waits for a confirmed /leave before starting', () => {
+test("YouTube/Cobalt waits for a confirmed /leave before starting", () => {
   const h = harness();
-  h.A.apps.launch({ id: 'youtube.app', name: 'YouTube' });
+  h.A.apps.launch({ id: "youtube.app", name: "YouTube" });
   assert.equal(h.launches.length, 0);
-  assert.deepEqual(h.requests.map(r => r.url), ['http://127.0.0.1:47790/leave']);
+  assert.deepEqual(
+    h.requests.map((r) => r.url),
+    ["http://127.0.0.1:47790/leave"],
+  );
   h.requests[0].resolve(200);
-  assert.deepEqual(h.launches.map(r => r.id), ['youtube.app']);
+  assert.deepEqual(
+    h.launches.map((r) => r.id),
+    ["youtube.app"],
+  );
   assert.equal(h.watch.length, 0);
-  assert.equal(h.resume.length, 0, 'watcher stays paused until return to AeroTizen');
+  assert.equal(h.resume.length, 0, "watcher stays paused until return to AeroTizen");
 });
 
-test('YouTube rejects an unavailable /leave handoff without racing the watcher', () => {
+test("YouTube rejects an unavailable /leave handoff without racing the watcher", () => {
   const h = harness();
-  h.A.apps.launch({ id: 'youtube.app', name: 'YouTube' });
+  h.A.apps.launch({ id: "youtube.app", name: "YouTube" });
   h.requests[0].resolve(503);
   assert.equal(h.launches.length, 0);
-  assert.equal(h.requests[1].url, 'http://127.0.0.1:47790/home');
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
   assert.match(h.toasts[0], /HomeWatcher HTTP 503/);
 });
 
-test('double HTTP callbacks never launch YouTube more than once', () => {
+test("double HTTP callbacks never launch YouTube more than once", () => {
   const h = harness();
-  h.A.apps.launch({ id: 'youtube.app', name: 'YouTube' });
+  h.A.apps.launch({ id: "youtube.app", name: "YouTube" });
   h.requests[0].resolve(200);
   h.requests[0].resolve(200);
   assert.equal(h.launches.length, 1);
 });
 
-test('denied YouTube launch rearms HomeWatcher', () => {
-  const h = harness({ launchFails: 'youtube.app' });
-  h.A.apps.launch({ id: 'youtube.app', name: 'YouTube' });
+test("denied YouTube launch rearms HomeWatcher", () => {
+  const h = harness({ launchFails: "youtube.app" });
+  h.A.apps.launch({ id: "youtube.app", name: "YouTube" });
   h.requests[0].resolve(200);
-  assert.equal(h.requests[1].url, 'http://127.0.0.1:47790/home');
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
   assert.match(h.toasts[0], /Could not open YouTube/);
 });
 
-test('regular apps still use the original /watch launch sequence', () => {
+test("regular apps still use the original /watch launch sequence", () => {
   const h = harness();
-  h.A.apps.launch({ id: 'netflix.app', name: 'Netflix' });
-  assert.deepEqual(h.watch, ['netflix.app']);
+  h.A.apps.launch({ id: "netflix.app", name: "Netflix" });
+  assert.deepEqual(h.watch, ["netflix.app"]);
   assert.equal(h.requests.length, 0);
-  assert.deepEqual(h.launches.map(r => r.id), ['netflix.app']);
+  assert.deepEqual(
+    h.launches.map((r) => r.id),
+    ["netflix.app"],
+  );
 });
 
-test('Samsung Home requires the /leave acknowledgement', () => {
+test("Samsung Home requires the /leave acknowledgement", () => {
   const h = harness();
   h.A.homewatch.openSamsungHome();
   h.A.homewatch.openSamsungHome();
   assert.equal(h.launches.length, 0);
   assert.equal(h.requests.length, 1);
   h.requests[0].resolve(200);
-  assert.deepEqual(h.launches.map(r => r.id), ['com.samsung.tv.csfs']);
+  assert.deepEqual(
+    h.launches.map((r) => r.id),
+    ["com.samsung.tv.csfs"],
+  );
   assert.equal(h.requests.length, 1);
 });
 
-test('Samsung Home failed /leave does not launch and rearms the service', () => {
+test("Samsung Home failed /leave does not launch and rearms the service", () => {
   const h = harness();
   h.A.homewatch.openSamsungHome();
   h.requests[0].resolve(503);
   assert.equal(h.launches.length, 0);
-  assert.equal(h.requests[1].url, 'http://127.0.0.1:47790/home');
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
 });
 
-test('Samsung Home launch rejection uses native AppControl fallback', () => {
-  const h = harness({ launchFails: 'com.samsung.tv.csfs' });
+test("Samsung Home launch rejection uses native AppControl fallback", () => {
+  const h = harness({ launchFails: "com.samsung.tv.csfs" });
   h.A.homewatch.openSamsungHome();
   h.requests[0].resolve(200);
-  assert.deepEqual(h.launches.map(r => r.method), ['launch', 'appcontrol']);
+  assert.deepEqual(
+    h.launches.map((r) => r.method),
+    ["launch", "appcontrol"],
+  );
 });
 
-test('native Live TV uses the tested /leave before tuning and launching viewer', () => {
+test("native Live TV uses the tested /leave before tuning and launching viewer", () => {
   const h = harness();
-  const raw = { type: 'TV', number: 1 };
-  h.A.inputs.show({ type: 'TV', number: 1, raw });
+  const raw = { type: "TV", number: 1 };
+  h.A.inputs.show({ type: "TV", number: 1, raw });
   assert.equal(h.launches.length, 0);
   assert.equal(h.inputs.length, 0);
-  assert.equal(h.requests[0].url, 'http://127.0.0.1:47790/leave');
+  assert.equal(h.requests[0].url, "http://127.0.0.1:47790/leave");
   h.requests[0].resolve(200);
   assert.equal(h.inputs.length, 1);
   assert.equal(h.inputs[0].source, raw);
-  assert.equal(h.inputs[0].target, 'MAIN');
-  assert.deepEqual(h.launches.map(r => r.id), ['org.tizen.tv-viewer']);
+  assert.equal(h.inputs[0].target, "MAIN");
+  assert.deepEqual(
+    h.launches.map((r) => r.id),
+    ["org.tizen.tv-viewer"],
+  );
   assert.equal(h.embedded.length, 0);
 });
 
-test('native Live TV failed handoff never launches and rearms the service', () => {
+test("native Live TV failed handoff never launches and rearms the service", () => {
   const h = harness();
-  h.A.inputs.show({ type: 'TV', number: 1 });
+  h.A.inputs.show({ type: "TV", number: 1 });
   h.requests[0].fail();
   assert.equal(h.launches.length, 0);
-  assert.equal(h.requests[1].url, 'http://127.0.0.1:47790/home');
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
 });
 
-test('native Live TV launch failure reports error and rearms the service', () => {
-  const h = harness({ launchFails: 'org.tizen.tv-viewer', noAppControl: true });
-  h.A.inputs.show({ type: 'TV', number: 1 });
+test("native Live TV launch failure reports error and rearms the service", () => {
+  const h = harness({ launchFails: "org.tizen.tv-viewer", noAppControl: true });
+  h.A.inputs.show({ type: "TV", number: 1 });
   h.requests[0].resolve(200);
-  assert.equal(h.requests[1].url, 'http://127.0.0.1:47790/home');
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
   assert.match(h.toasts[0], /Could not open Live TV/);
 });
 
-test('old firmware without the viewer launch API uses upstream TVWindow', () => {
+test("old firmware without the viewer launch API uses upstream TVWindow", () => {
   const h = harness({ noNativeLaunch: true });
-  h.A.inputs.show({ type: 'TV', number: 1 });
+  h.A.inputs.show({ type: "TV", number: 1 });
   assert.equal(h.requests.length, 0);
   assert.equal(h.embedded.length, 1);
 });
 
-test('HDMI always uses TVWindow and never touches native Home or watcher', () => {
+test("HDMI always uses TVWindow and never touches native Home or watcher", () => {
   const h = harness();
-  h.A.inputs.show({ type: 'HDMI', number: 2 });
+  h.A.inputs.show({ type: "HDMI", number: 2 });
   assert.equal(h.embedded.length, 1);
   assert.equal(h.launches.length, 0);
   assert.equal(h.requests.length, 0);
 });
 
-test('native Live TV fallback rearms when launch accepted but never takes focus', () => {
+test("native Live TV fallback rearms when launch accepted but never takes focus", () => {
   const h = harness({ visible: true });
-  h.A.inputs.show({ type: 'TV', number: 1 });
+  h.A.inputs.show({ type: "TV", number: 1 });
   h.requests[0].resolve(200);
   assert.equal(h.timers[0].ms, 2100);
   h.timers[0].fn();
-  assert.equal(h.requests[1].url, 'http://127.0.0.1:47790/home');
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
 });
 
-test('on page reload native handoff re-arms HomeWatcher', () => {
+test("on page reload native handoff re-arms HomeWatcher", () => {
   const h = harness();
-  assert.equal(typeof h.listeners.load, 'function');
+  assert.equal(typeof h.listeners.load, "function");
   h.listeners.load();
-  assert.equal(h.requests[0].url, 'http://127.0.0.1:47790/home');
+  assert.equal(h.requests[0].url, "http://127.0.0.1:47790/home");
 });
 
-test('port does not replace the upstream Frame-aware watcher service', () => {
-  const html = get('index.html');
+test("port does not replace the upstream Frame-aware watcher service", () => {
+  const html = get("index.html");
   assert.ok(html.indexOf('src="js/homewatch.js"') >= 0);
   assert.ok(html.indexOf('src="js/native-navigation.js"') > html.indexOf('src="js/homewatch.js"'));
   assert.ok(html.indexOf('src="js/apps.js"') > html.indexOf('src="js/native-navigation.js"'));
-  const service = get('service/index.js');
+  const service = get("service/index.js");
   assert.match(service, /FRAME_HIDDEN_GRACE/);
   assert.match(service, /createArtMode/);
   assert.doesNotMatch(nativeSource, /app_operation_set_current_app|vconf_set_str/);
 });
 
-test('app store opens com.samsung.tv.store before the org.volt.apps alias', () => {
+test("launch outcomes correlate with requests and preserve failure handoffs", () => {
+  const h = harness();
+  h.A.apps.launch({ id: "prime.app", name: "Prime Video" });
+  const records = h.log.snapshot().records;
+  assert.deepEqual(
+    records.map((item) => item.event),
+    ["app.launch_requested", "app.launch_accepted"],
+  );
+  assert.equal(records[1].data.operation_id, records[0].id);
+  const failed = harness({ launchFails: "youtube.app" });
+  failed.A.apps.launch({ id: "youtube.app", name: "YouTube" });
+  failed.requests[0].resolve(200);
+  // Deferred error processing must not prevent /home rearm.
+  assert.equal(failed.requests[1].url, "http://127.0.0.1:47790/home");
+  failed.timers.filter((timer) => timer.ms === 0).forEach((timer) => timer.fn());
+  const error = failed.log.snapshot().records.at(-1);
+  assert.equal(error.event, "app.launch_failed");
+  assert.equal(error.data.error, "Denied");
+  assert.equal(error.data.operation_id, failed.log.snapshot().records[0].id);
+});
+
+test("Live TV acceptance remains separate from unconfirmed visibility", () => {
+  const h = harness({ visible: true });
+  h.A.homewatch.openNativeLiveTV();
+  h.requests[0].resolve(200);
+  h.timers.find((timer) => timer.ms === 2100).fn();
+  assert.deepEqual(
+    h.log.snapshot().records.map((item) => item.event),
+    ["handoff.request", "handoff.accepted", "handoff.visibility_unconfirmed"],
+  );
+});
+
+test("app store opens com.samsung.tv.store before the org.volt.apps alias", () => {
   const config = { window: { AeroTizen: {} } };
   config.AeroTizen = config.window.AeroTizen;
-  vm.runInNewContext(get('js/config.js'), config, { filename: 'config.js' });
+  vm.runInNewContext(get("js/config.js"), config, { filename: "config.js" });
   const storeIds = Array.from(config.AeroTizen.config.STORE_APP_IDS);
-  assert.deepEqual(storeIds, ['com.samsung.tv.store', 'org.volt.apps']);
+  assert.deepEqual(storeIds, ["com.samsung.tv.store", "org.volt.apps"]);
 
   const h = harness({ storeIds });
   h.A.apps.openStore();
-  assert.deepEqual(h.launches.map(r => r.id), ['com.samsung.tv.store'],
-    'a successful launch does not also open the alias');
+  assert.deepEqual(
+    h.launches.map((r) => r.id),
+    ["com.samsung.tv.store"],
+    "a successful launch does not also open the alias",
+  );
 });
 
-test('app store falls back to org.volt.apps where com.samsung.tv.store is missing', () => {
-  const h = harness({ storeIds: ['com.samsung.tv.store', 'org.volt.apps'], launchFails: 'com.samsung.tv.store' });
+test("app store falls back to org.volt.apps where com.samsung.tv.store is missing", () => {
+  const h = harness({
+    storeIds: ["com.samsung.tv.store", "org.volt.apps"],
+    launchFails: "com.samsung.tv.store",
+  });
   h.A.apps.openStore();
-  assert.deepEqual(h.launches.map(r => r.id), ['com.samsung.tv.store', 'org.volt.apps']);
+  assert.deepEqual(
+    h.launches.map((r) => r.id),
+    ["com.samsung.tv.store", "org.volt.apps"],
+  );
   assert.deepEqual(h.toasts, []);
+});
+
+test("Native Home closes an embedded HDMI window in the existing launcher", () => {
+  const h = harness({ visible: true });
+  h.A.inputs.show({ type: "HDMI", number: 1 });
+  assert.equal(h.A.inputs.watching, true);
+  h.listeners.appcontrol();
+  assert.equal(h.A.inputs.watching, false);
+  assert.deepEqual(h.embedded, ["shown", "hidden"]);
+  assert.deepEqual(h.backgrounds, ["suspended", "restored"]);
+  assert.equal(h.launches.length, 0, "no watcher or foreground relaunch needed");
+});
+
+test("non-Home appcontrol leaves HDMI playback untouched", () => {
+  const h = harness({ visible: true, operation: "http://tizen.org/appcontrol/operation/view" });
+  h.A.inputs.show({ type: "HDMI", number: 1 });
+  h.listeners.appcontrol();
+  assert.equal(h.A.inputs.watching, true);
+  assert.deepEqual(h.embedded, ["shown"]);
+});
+
+test("visibility resume closes HDMI only after a real hide transition", () => {
+  const h = harness({ visible: true });
+  h.A.inputs.show({ type: "HDMI", number: 1 });
+  h.documentListeners.visibilitychange();
+  assert.equal(h.A.inputs.watching, true, "ordinary HDMI selection stays visible");
+  h.document.hidden = true;
+  h.documentListeners.visibilitychange();
+  assert.equal(h.A.inputs.watching, true);
+  h.document.hidden = false;
+  h.documentListeners.visibilitychange();
+  assert.equal(h.A.inputs.watching, false);
+  assert.deepEqual(h.embedded, ["shown", "hidden"]);
+});
+
+test("Home requests while no input is open do not hide the TV window", () => {
+  const h = harness({ visible: true });
+  h.listeners.appcontrol();
+  assert.deepEqual(h.embedded, []);
 });

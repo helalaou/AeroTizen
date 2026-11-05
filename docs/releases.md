@@ -4,7 +4,7 @@ AeroTizen has two release streams in one repository:
 
 | Component | Tag | Version files | Release notes |
 |---|---|---|---|
-| CLI | `cli-vX.Y.Z` | `src/aerotizen/__init__.py` | `CHANGELOG-CLI.md` |
+| CLI | `cli-vX.Y.Z` | `cli/src/aerotizen/__init__.py` | `cli/CHANGELOG.md` |
 | Launcher and watcher | `launcher-vX.Y.Z` | `launcher/version.txt`, `launcher/config.xml` | `launcher/CHANGELOG.md` |
 
 Release Please manages both versions from `.release-please-manifest.json`. The existing
@@ -96,13 +96,19 @@ Release Please refreshes pending release PRs even when their release notes have 
 changed. This keeps the shared version manifest current after another component is
 released. Let CI pass again if that refresh changes the PR commit.
 
-Launcher source changes belong under `launcher/`. The CLI excludes `launcher/` and
-`tests/` from its release calculation, so a launcher change with JavaScript tests does
-not force a CLI release. A CLI source change with tests still releases the CLI. Shared
-root tooling and documentation can affect the CLI; a change needed in both components
-must also change the relevant launcher source or metadata. Test-only changes do not
-create releases. A commit scope such as `fix(launcher):` is useful context, but paths
-determine component ownership.
+Release Please tracks `cli/` and `launcher/` as separate packages. CLI source,
+package metadata, native helpers, and CLI build tools belong under `cli/`. Launcher
+source and release metadata belong under `launcher/`. Root documentation, tests, and
+shared tooling do not trigger either release. A change needed in both components must
+also change the relevant source or metadata in both package directories. A commit
+scope such as `fix(launcher):` is useful context, but paths determine component ownership.
+
+The manifest key for the CLI is `cli`; existing `cli-vX.Y.Z` tags and version history
+continue to identify the same component. Its workflow outputs use the `cli--` prefix.
+The root `pyproject.toml` forwards build hooks to `cli/`, so both
+`pip install git+https://github.com/helalaou/AeroTizen` and `pip install -e '.[dev]'`
+keep working. `pip install ./cli` builds the same package directly. Package metadata
+and dependencies are defined in `cli/pyproject.toml`.
 
 The launcher builder checks that `version.txt` and `config.xml` agree. Keep the app ID
 `DclHome001.Home` and package ID `DclHome001` stable for upgrades. Release Please updates
@@ -144,6 +150,90 @@ Downloaded and signed temporary files are removed after the command. For offline
 installation, download the WGT first and pass its local path. The explicit local path
 uses the existing local signing route rather than release-manifest validation.
 
+### Launcher updates
+
+Run `aerotizen update launcher --check` to compare the TV's installed version with
+the highest stable launcher release. It validates release metadata and shows the
+minimum CLI version without downloading the WGT, reading certificates, or writing
+to the TV. Add `--release-repo OWNER/REPO` to check a fork.
+
+Run `aerotizen update launcher` to install a newer release. Current and newer
+installed versions are left in place. The selected release stays pinned through
+download and installation, even if another release is published during the command.
+One device session covers the inventory check, signing and installation. The update
+reuses the install command's checksum/package checks, saved certificates and TV
+completion/version checks. It never uninstalls the app, resets settings or changes
+native Home assignments.
+
+If firmware omits the installed version or reports a version that cannot be compared,
+the command reports the limitation and stops before downloading the WGT. Use
+`aerotizen install launcher` to explicitly install without that comparison, or to
+reinstall the current release. The selected release may be older than an unversioned
+development build. A missing launcher also needs `aerotizen install launcher`.
+Intentional version selection remains available with
+`aerotizen install launcher --version X.Y.Z`.
+
+Launcher updates do not replace the CLI executable. On the TV, **Settings → About**
+shows the installed launcher version. AeroTizen checks the public launcher releases
+at startup or when it returns to the foreground, at most once per 24 hours. It
+keeps the last result if GitHub is unavailable.
+
+A yellow dot on the Settings icon and the About row marks an unread update.
+Open **About** to clear the dots. The update details stay visible. The dots
+return once a newer launcher is installed and a further update is available.
+**What’s new** shows a short list from the release notes. AeroTizen saves the list
+with the update check so you can read it offline.
+Install updates from your computer with `aerotizen update launcher`.
+
+### CLI updates
+
+Run `aerotizen update cli --check` to compare the running CLI version with the highest
+stable `cli-vX.Y.Z` release. It reads release metadata only, ignores launcher releases,
+drafts and prereleases, and needs no TV connection or signing certificates. Use
+`--release-repo OWNER/REPO` to check a fork.
+
+For GitHub API rate limits, an optional `GH_TOKEN` or `GITHUB_TOKEN` is sent only to
+the HTTPS GitHub API and is not forwarded to asset hosts. Temporary HTTP 500/502/503/504
+responses are retried twice; other failures are reported without replacing the CLI.
+
+If a newer CLI exists, the check shows the matching OS/CPU archive link and the
+release page. If no archive matches, it states that limitation and links to the
+release page. Current and newer versions are left unchanged.
+
+Run `aerotizen update cli` to replace a downloaded standalone executable. The updater
+requires the selected archive's `.sha256` asset, validates its named checksum, and
+accepts only the executable and LICENSE as regular archive files. It rejects paths,
+links, duplicate or unexpected files, oversized packages and incomplete archives.
+It stages the binary in the installation folder, runs its `--version`, and replaces
+the executable only after that version matches the selected release. An installation
+lock prevents simultaneous updates. A unique previous-executable backup is retained;
+failed final verification restores it. The user configuration and TV certificates
+are not moved or rewritten. Folder permission errors stop the update without elevation.
+
+macOS and Linux use an atomic rename, then verify the installed binary. On Windows,
+the running executable must first exit: a bundled PowerShell helper waits for that
+exit, acquires the installation lock, and uses `File.Replace` with a backup. It retries
+briefly while the onefile parent still holds the executable. The CLI reports this as
+staged; the helper prints completion and saves a JSON result beside the executable.
+`state: complete` confirms success; `restored` means verification failed and the old
+executable was restored. A `failed` result can require recovery from the printed
+backup path. The helper removes its staging folder after completion.
+
+Python-installed copies report the exact pinned `python -m pip install --upgrade`
+command for their interpreter and selected repository. The updater never replaces a
+Python interpreter or changes package-manager installations itself.
+
+To test CLI self-update, build the native helpers and install the packaging
+dependencies below. Run the validation script in a new temporary folder:
+
+```sh
+python cli/tools/test_cli_self_update.py --output /absolute/path/to/new-temporary-folder
+```
+
+It tests replacement, rollback and failure cases with temporary binaries and saves
+`report.json` and scenario logs. Use the generated fixtures for manual checks. The
+CI matrix runs the checks on Linux x64, Windows x64, macOS arm64 and macOS Intel.
+
 ## Local checks
 
 Use Python 3.10 or newer, or 3.12 to match the native build jobs:
@@ -153,8 +243,8 @@ python -m pip install -e '.[dev]'
 npm ci
 npm run build
 python tools/build_release.py launcher --output dist/releases/launcher
-python -m pip install 'pyinstaller>=6,<7' certifi
-python tools/build_release.py cli --output dist/cli
+python -m pip install 'pyinstaller>=6.22.1,<7' certifi
+python cli/tools/build_release.py --output dist/cli
 ```
 
 `--tag launcher-vX.Y.Z` or `--tag cli-vX.Y.Z` also checks that a tag matches the source

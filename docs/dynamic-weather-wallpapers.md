@@ -4,7 +4,7 @@ Related to [#19 — More wallpapers, and use wallpapers already on the TV](https
 This implements additional bundled wallpapers only, not reading Samsung Ambient
 Mode or Frame Art images already stored on the TV. Issue #19 remains open.
 
-In Settings, choose **Dynamic weather wallpapers → Automatic (weather)**.
+In **Settings → Backgrounds**, choose **Weather photos**, then **Automatic (weather)**.
 The option is off by default. Nine local **AI-generated** landscape scenes follow
 clear, partly cloudy, overcast, rain, storm, snow, fog, night and sunset conditions.
 See [asset provenance and redistribution](../launcher/assets/weather/CREDITS.md).
@@ -42,8 +42,6 @@ Yesterday's or tomorrow's solar pairs are not extrapolated into the current day.
 Locations without usable sunrise/sunset (including some polar conditions) retain
 the chosen background until trustworthy solar data is available.
 
-See the [S90C solar-cache test and rollback procedure](s90c-weather-solar-validation.md).
-
 ## Runtime cost
 
 - Full HD baseline JPEGs, no remote wallpaper downloads or extra animation loop.
@@ -56,9 +54,13 @@ See the [S90C solar-cache test and rollback procedure](s90c-weather-solar-valida
 
 ## Validation still needed on physical TVs
 
-Check saved preferences, visual legibility, image quality/banding, missing-image
-fallback, switching off back to an animated background, sunset/night transitions,
-and hidden-header behavior. Measure startup, scene decode latency and memory on
-older Chromium/Tizen devices. Browser tests do not establish hardware performance.
-No HOME remapping, watcher service, native app handoff or Samsung integration is
-introduced by this feature.
+Check image legibility, sunset and night transitions, and operation with the header
+weather widget hidden. If a recent forecast lacks solar data at night, the chosen
+background should stay visible until the night scene loads. Repeated toggles should
+reuse valid data and avoid repeated forecast requests. The browser regression in
+[#72](https://github.com/helalaou/AeroTizen/pull/72) covers this case without a TV clock change.
+
+Select **Off** to restore the previous background and speed. When testing a new
+build, update in place with the same signing certificate and keep a known-good
+package for recovery. Record the TV model, firmware, build and observed results.
+Browser checks do not establish performance on older TVs.

@@ -1,0 +1,59 @@
+/* The hidden attribute must win over component display rules, including SVG status hosts. */
+[hidden] {
+  display: none !important;
+}
+
+/* base: component-owned styles. */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  color: var(--fg);
+  font-family: "Roboto", "SamsungOne", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+h2 {
+  font-size: 39px;
+  font-weight: 500;
+  margin: 0 0 18px;
+}
+
+.app-grid .tile.focused,
+.continue-card.focused {
+  transform: translateZ(0) scale(1.035);
+  box-shadow:
+    0 0 0 4px var(--bg),
+    0 0 0 9px var(--focus),
+    0 18px 40px rgba(0, 0, 0, 0.6);
+  z-index: 2;
+}
+#settings-root [data-key] {
+  outline: none;
+}
+body.tv {
+  background: transparent;
+}
+body.tv main {
+  visibility: hidden;
+}
+body.previewing main {
+  visibility: hidden;
+}
+body.editing main {
+  visibility: hidden;
+}
+body {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  color: var(--fg);
+  font-family: "Roboto", "SamsungOne", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}

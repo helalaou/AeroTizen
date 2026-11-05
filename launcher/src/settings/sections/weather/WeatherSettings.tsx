@@ -1,43 +1,107 @@
-import { TranslatedText } from '../../../shared/TranslatedText';
-import { RemoteControl } from '../../components/RemoteControl';
-import { Choice } from '../../components/Choice';
-import { Pill } from '../../components/Pill';
-import { useWeatherLocation } from './useWeatherLocation';
-import type { SettingsSectionProps } from '../../types';
+import { useTranslation } from "../../../shared/i18n/useTranslation";
+import { ChoiceGroup } from "../../components/ChoiceGroup";
+import { ChoiceOption } from "../../components/ChoiceOption";
+import { SettingsControl } from "../../components/SettingsControl";
+import { SettingsSection } from "../../components/SettingsSection";
+import type { SettingsSectionProps } from "../../types";
 
-interface Props extends SettingsSectionProps { active: boolean }
+import { useWeatherLocation } from "./useWeatherLocation";
+
+const WEATHER_VISIBILITY_OPTIONS = [
+  { value: true, labelKey: "weather.show" },
+  { value: false, labelKey: "weather.hide" },
+] as const;
+
+const LOCATION_VISIBILITY_OPTIONS = [
+  { value: true, labelKey: "weather.showLocation" },
+  { value: false, labelKey: "weather.hideLocation" },
+] as const;
+
+const TEMPERATURE_UNIT_OPTIONS = [
+  { value: "F", labelKey: "weather.fahrenheit" },
+  { value: "C", labelKey: "weather.celsius" },
+] as const;
+
+interface Props extends SettingsSectionProps {
+  active: boolean;
+}
 
 export const WeatherSettings = ({ settings, actions, active }: Props) => {
+  const { t } = useTranslation();
   const search = useWeatherLocation(active, actions);
   return (
     <>
-      <h3><TranslatedText>Weather</TranslatedText></h3>
-      <Choice id="weather-display" label="Weather visibility" value={settings.showWeather !== false}
-        options={[[true, 'Show weather'], [false, 'Hide weather']]} onSelect={actions.setWeatherVisible} />
-      <p id="weather-location-summary" class="hint">
-        {settings.weatherLocation ? 'Location: ' + (settings.weatherLocation.label || settings.weatherLocation.name) :
-          'Automatic location uses your internet address and can be inaccurate. Search for your town, city or postcode to set it.'}
-      </p>
-      <div id="weather-location" class="units">
-        <Pill id="weather:auto" selected={!settings.weatherLocation} onSelect={() => search.selectLocation(null)}>Automatic</Pill>
-        <RemoteControl class="pill unit name-pill weather-search" focusKey="weather:query" onClick={search.focusQuery}>
-          <input ref={search.inputRef} type="text" maxLength={80} value={search.query} placeholder="Town, city or postcode"
-            aria-label="Weather location" onInput={search.onQueryInput} />
-        </RemoteControl>
-        <Pill id="weather:search" onSelect={search.search}>Search</Pill>
-      </div>
-      <p id="weather-search-status" class="hint" role="status" hidden={!search.message}>{search.message}</p>
-      <div id="weather-results" class="weather-results" hidden={!search.results.length}>
-        {search.results.map((location, index) => (
-          <Pill key={location.label + ':' + index} id={'weather:result:' + index}
-            onSelect={() => search.selectLocation(location)}>{location.label}</Pill>
-        ))}
-      </div>
-      <Choice id="weather-visibility" label="Weather location visibility" value={settings.weatherShowLocation}
-        options={[[true, 'Show location'], [false, 'Hide location']]} onSelect={actions.setLocationVisible} />
-      <h3><TranslatedText>Temperature</TranslatedText></h3>
-      <Choice id="units" label="Temperature unit" value={settings.tempUnit}
-        options={[['F', '°F  Fahrenheit'], ['C', '°C  Celsius']]} onSelect={actions.setTempUnit} />
+      <SettingsSection title={t("weather.visibility")}>
+        <ChoiceGroup
+          id="weather-display"
+          label={t("weather.visibility")}
+          value={settings.showWeather !== false}
+          options={WEATHER_VISIBILITY_OPTIONS}
+          onSelect={actions.setWeatherVisible}
+        />
+      </SettingsSection>
+      <SettingsSection
+        title={t("weather.locationLabel")}
+        description={
+          settings.weatherLocation
+            ? t("weather.location", { location: settings.weatherLocation.label || settings.weatherLocation.name })
+            : t("weather.autoLocation")
+        }
+      >
+        <div id="weather-location" class="weather-location-controls">
+          <ChoiceOption
+            id="weather:auto"
+            selected={!settings.weatherLocation}
+            onSelect={() => search.selectLocation(null)}
+          >
+            {t("common.automatic")}
+          </ChoiceOption>
+          <SettingsControl class="weather-search" focusKey="weather:query" onClick={search.focusQuery}>
+            <input
+              ref={search.inputRef}
+              type="text"
+              maxLength={80}
+              value={search.query}
+              placeholder={t("weather.searchPlaceholder")}
+              aria-label={t("weather.locationLabel")}
+              onInput={search.onQueryInput}
+            />
+          </SettingsControl>
+          <ChoiceOption id="weather:search" onSelect={search.search}>
+            {t("weather.search")}
+          </ChoiceOption>
+        </div>
+        <p id="weather-search-status" class="hint" role="status" hidden={!search.message}>
+          {search.message && t(search.message)}
+        </p>
+        <div id="weather-results" class="weather-results" hidden={!search.results.length}>
+          {search.results.map((location, index) => (
+            <ChoiceOption
+              key={location.label + ":" + index}
+              id={"weather:result:" + index}
+              onSelect={() => search.selectLocation(location)}
+            >
+              {location.label}
+            </ChoiceOption>
+          ))}
+        </div>
+        <ChoiceGroup
+          id="weather-visibility"
+          label={t("weather.locationVisibility")}
+          value={settings.weatherShowLocation}
+          options={LOCATION_VISIBILITY_OPTIONS}
+          onSelect={actions.setLocationVisible}
+        />
+      </SettingsSection>
+      <SettingsSection title={t("weather.temperature")}>
+        <ChoiceGroup
+          id="units"
+          label={t("weather.unit")}
+          value={settings.tempUnit}
+          options={TEMPERATURE_UNIT_OPTIONS}
+          onSelect={actions.setTempUnit}
+        />
+      </SettingsSection>
     </>
   );
 };

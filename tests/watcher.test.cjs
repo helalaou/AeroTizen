@@ -1,12 +1,12 @@
-'use strict';
+"use strict";
 // Watcher integration tests. All clocks, Art replies and HTTP requests are local mocks.
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
-const url = require('node:url');
-const { EventEmitter } = require('node:events');
-const source = fs.readFileSync(__dirname + '/../launcher/service/index.js', 'utf8');
-const SELF = 'DclHome001.Home';
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const vm = require("node:vm");
+const url = require("node:url");
+const { EventEmitter } = require("node:events");
+const source = fs.readFileSync(__dirname + "/../launcher/service/index.js", "utf8");
+const SELF = "DclHome001.Home";
 
 function harness(options = {}) {
   let clock = 1000000;
@@ -19,24 +19,37 @@ function harness(options = {}) {
   const held = new Set();
   const statuses = new Map([[SELF, { running: true, visible: false }]]);
   let capability = options.capability === undefined ? true : options.capability;
-  let powerState = 'on';
+  let powerState = "on";
   let artOptions;
-  let artValue = 'unknown';
+  let artValue = "unknown";
   const stored = options.stored || new Map();
-  const preference = options.noPreference ? null : {
-    exists: key => stored.has(key),
-    getValue: key => stored.get(key),
-    setValue(key, value) {
-      if (options.failStorage) throw new Error('storage failed');
-      stored.set(key, value);
-    }
-  };
+  const preference = options.noPreference
+    ? null
+    : {
+        exists: (key) => stored.has(key),
+        getValue: (key) => stored.get(key),
+        setValue(key, value) {
+          if (options.failStorage) throw new Error("storage failed");
+          stored.set(key, value);
+        },
+      };
   const art = {
-    starts: 0, stops: 0,
-    start() { this.starts += 1; },
-    stop() { this.stops += 1; artValue = 'unknown'; artOptions.onChange('unknown', 'stopped'); },
-    fresh(callback) { artReplies.push({ at: clock, callback }); },
-    getState() { return { artMode: artValue }; }
+    starts: 0,
+    stops: 0,
+    start() {
+      this.starts += 1;
+    },
+    stop() {
+      this.stops += 1;
+      artValue = "unknown";
+      artOptions.onChange("unknown", "stopped");
+    },
+    fresh(callback) {
+      artReplies.push({ at: clock, callback });
+    },
+    getState() {
+      return { artMode: artValue };
+    },
   };
   function timer(fn, delay, interval) {
     const id = ++serial;
@@ -52,7 +65,7 @@ function harness(options = {}) {
         if (entry.at <= end && (!selected || entry.at < selected.entry.at)) selected = { id, entry };
       }
       if (!selected) break;
-      assert.ok(++steps < 100000, 'timer loop must settle');
+      assert.ok(++steps < 100000, "timer loop must settle");
       clock = selected.entry.at;
       if (selected.entry.interval) selected.entry.at += selected.entry.interval;
       else timers.delete(selected.id);
@@ -61,30 +74,40 @@ function harness(options = {}) {
     clock = end;
   }
   function responseFor(path) {
-    if (path === '/api/v2/') {
-      if (capability === 'http-error') return { status: 503, body: {} };
-      if (capability === 'malformed') return { status: 200, body: { device: {} } };
-      if (capability === 'bad-metadata') return { status: 200, body: { device: { PowerState: 'invalid' } } };
-      if (capability === 'legacy') return { status: 200, body: { device: { modelName: 'Legacy Samsung TV' } } };
-      return { status: 200, body: { device: capability === 'missing' ? { PowerState: powerState } : { FrameTVSupport: capability, PowerState: powerState } } };
+    if (path === "/api/v2/") {
+      if (capability === "http-error") return { status: 503, body: {} };
+      if (capability === "malformed") return { status: 200, body: { device: {} } };
+      if (capability === "bad-metadata") return { status: 200, body: { device: { PowerState: "invalid" } } };
+      if (capability === "legacy") return { status: 200, body: { device: { modelName: "Legacy Samsung TV" } } };
+      return {
+        status: 200,
+        body: {
+          device:
+            capability === "missing"
+              ? { PowerState: powerState }
+              : { FrameTVSupport: capability, PowerState: powerState },
+        },
+      };
     }
-    const id = decodeURIComponent(path.slice('/api/v2/applications/'.length));
-    if (statuses.get(id) === 'error') return { status: 500, body: {} };
+    const id = decodeURIComponent(path.slice("/api/v2/applications/".length));
+    if (statuses.get(id) === "error") return { status: 500, body: {} };
     return statuses.has(id) ? { status: 200, body: statuses.get(id) } : { status: 404, body: {} };
   }
   function respond(item, response = responseFor(item.options.path)) {
     const res = new EventEmitter();
     res.statusCode = response.status;
     item.callback(res);
-    res.emit('data', typeof response.body === 'string' ? response.body : JSON.stringify(response.body));
-    res.emit('end');
+    res.emit("data", typeof response.body === "string" ? response.body : JSON.stringify(response.body));
+    res.emit("end");
     item.replied = true;
   }
   const http = {
     get(options, callback) {
       const req = new EventEmitter();
       const item = { options, callback, req, replied: false };
-      req.destroy = () => { item.destroyed = true; };
+      req.destroy = () => {
+        item.destroyed = true;
+      };
       requests.push(item);
       if (!held.has(options.path)) timer(() => respond(item), 0, 0);
       return req;
@@ -92,141 +115,228 @@ function harness(options = {}) {
     createServer(handler) {
       const server = new EventEmitter();
       server.handler = handler;
-      server.listen = (port, host) => { server.port = port; server.host = host; };
-      server.close = () => { server.closed = true; };
+      server.listen = (port, host) => {
+        server.port = port;
+        server.host = host;
+      };
+      server.close = () => {
+        server.closed = true;
+      };
       servers.push(server);
       return server;
-    }
+    },
   };
   const context = {
     module: { exports: {} },
     require(name) {
-      if (name === 'http') return http;
-      if (name === './artmode') return config => { artOptions = config; return art; };
-      if (name === './home-mode') return require('../launcher/service/home-mode');
-      if (name === './home-store') return (tz, ready) => ready(preference, !!options.storageReadFailed);
-      if (name === 'url') return url;
-      throw new Error('Unexpected require: ' + name);
+      if (name === "http") return http;
+      if (name === "../js/diagnostics")
+        return (kind) => require("../launcher/js/diagnostics")(kind, { later: (fn, ms) => timer(fn, ms, 0) });
+      if (name === "./diagnostics-context")
+        return () =>
+          require("../launcher/service/diagnostics-context")({
+            read: (done) => done(null, "VERSION_ID=9.0.0\nBUILD_ID=test"),
+          });
+      if (name === "./diagnostics-store") return (tz, ready) => ready(options.diagnosticsStorage || null);
+      if (name === "./artmode")
+        return (config) => {
+          artOptions = config;
+          return art;
+        };
+      if (name === "./home-mode") return require("../launcher/service/home-mode");
+      if (name === "./home-store") return (tz, ready) => ready(preference, !!options.storageReadFailed);
+      if (name === "url") return url;
+      throw new Error("Unexpected require: " + name);
     },
     Date: { now: () => clock },
     setTimeout: (fn, ms) => timer(fn, ms, 0),
-    clearTimeout: id => timers.delete(id),
+    clearTimeout: (id) => timers.delete(id),
     setInterval: (fn, ms) => timer(fn, ms, ms),
-    clearInterval: id => timers.delete(id),
-    tizen: { preference, application: { launch(id, success) {
-      launches.push({ at: clock, id });
-      statuses.set(SELF, { running: true, visible: true });
-      if (success) success();
-    } } }
+    clearInterval: (id) => timers.delete(id),
+    tizen: {
+      preference,
+      application: {
+        launch(id, success) {
+          launches.push({ at: clock, id });
+          statuses.set(SELF, { running: true, visible: true });
+          if (success) success();
+        },
+      },
+    },
   };
-  vm.runInNewContext(source, context, { filename: 'watcher.js' });
-  function control(path = '/') {
+  vm.runInNewContext(source, context, { filename: "watcher.js" });
+  function control(path = "/") {
     let body;
-    servers[0].handler({ method: 'GET', url: path }, { writeHead() {}, end(value) { body = JSON.parse(value); } });
+    servers[0].handler(
+      { method: "GET", url: path },
+      {
+        writeHead() {},
+        end(value) {
+          body = JSON.parse(value);
+        },
+      },
+    );
     return body;
   }
   function post(body, overrides = {}) {
     const req = new EventEmitter();
-    Object.assign(req, { method: 'POST', url: '/control/home',
-      headers: { 'content-type': 'application/json', 'x-aerotizen-home': '1' } }, overrides);
+    Object.assign(
+      req,
+      {
+        method: "POST",
+        url: "/control/home",
+        headers: { "content-type": "application/json", "x-aerotizen-home": "1" },
+      },
+      overrides,
+    );
     let code, value;
-    servers[0].handler(req, { writeHead(status) { code = status; }, end(data) { value = JSON.parse(data); } });
-    req.emit('data', typeof body === 'string' ? body : JSON.stringify(body)); req.emit('end');
+    servers[0].handler(req, {
+      writeHead(status) {
+        code = status;
+      },
+      end(data) {
+        value = JSON.parse(data);
+      },
+    });
+    req.emit("data", typeof body === "string" ? body : JSON.stringify(body));
+    req.emit("end");
     return { code, value };
   }
-  function handoff(mode, token = 'a'.repeat(32)) {
+  function handoff(mode, token = "a".repeat(32)) {
     const current = control().homeControl;
-    return post({ expected_mode: current.mode, expected_transaction: current.transaction,
-      expected_baseline_sha256: current.baseline_sha256, mode,
-      transaction: mode === 'watcher' ? null : token, baseline_sha256: mode === 'watcher' ? null : 'b'.repeat(64) });
+    return post({
+      expected_mode: current.mode,
+      expected_transaction: current.transaction,
+      expected_baseline_sha256: current.baseline_sha256,
+      mode,
+      transaction: mode === "watcher" ? null : token,
+      baseline_sha256: mode === "watcher" ? null : "b".repeat(64),
+    });
   }
   return {
-    api: context.module.exports, art, artReplies, requests, servers, launches, statuses,
-    advance, control, post, handoff, stored, state: () => control(),
-    setArt(value) { artValue = value; artOptions.onChange(value, 'mock reply'); },
+    api: context.module.exports,
+    art,
+    artReplies,
+    requests,
+    servers,
+    launches,
+    statuses,
+    advance,
+    control,
+    post,
+    handoff,
+    stored,
+    state: () => control(),
+    setArt(value) {
+      artValue = value;
+      artOptions.onChange(value, "mock reply");
+    },
     answerArt(value) {
-      assert.ok(artReplies.length, 'a fresh Art query must exist');
+      assert.ok(artReplies.length, "a fresh Art query must exist");
       const waiter = artReplies.shift();
       artValue = value;
-      artOptions.onChange(value, 'matching-reply');
+      artOptions.onChange(value, "matching-reply");
       waiter.callback(value);
     },
-    hold(id) { held.add('/api/v2/applications/' + encodeURIComponent(id)); },
-    release(id) { held.delete('/api/v2/applications/' + encodeURIComponent(id)); },
-    pendingRequest(id) {
-      const path = '/api/v2/applications/' + encodeURIComponent(id);
-      return requests.find(item => item.options.path === path && !item.replied);
+    hold(id) {
+      held.add("/api/v2/applications/" + encodeURIComponent(id));
     },
-    respond, setCapability(value) { capability = value; },
-    setPowerState(value) { powerState = value; },
-    now: () => clock
+    release(id) {
+      held.delete("/api/v2/applications/" + encodeURIComponent(id));
+    },
+    pendingRequest(id) {
+      const path = "/api/v2/applications/" + encodeURIComponent(id);
+      return requests.find((item) => item.options.path === path && !item.replied);
+    },
+    respond,
+    setCapability(value) {
+      capability = value;
+    },
+    setPowerState(value) {
+      powerState = value;
+    },
+    now: () => clock,
   };
 }
 
 function ready(options) {
   const h = harness(options);
-  h.api.onStart(); h.advance(0);
-  h.setArt('off');
+  h.api.onStart();
+  h.advance(0);
+  h.setArt("off");
   return h;
 }
 function candidate(h) {
   h.advance(4500);
-  assert.equal(h.artReplies.length, 1, 'stable hidden Home requests a fresh Art read');
+  assert.equal(h.artReplies.length, 1, "stable hidden Home requests a fresh Art read");
   assert.equal(h.launches.length, 0);
 }
 function passFirst(h) {
-  h.answerArt('off'); h.advance(0);
-  assert.equal(h.artReplies.length, 1, 'app recheck requires another fresh Art read');
+  h.answerArt("off");
+  h.advance(0);
+  assert.equal(h.artReplies.length, 1, "app recheck requires another fresh Art read");
 }
 const tests = [];
-function test(name, fn) { tests.push([name, fn]); }
+function test(name, fn) {
+  tests.push([name, fn]);
+}
 
-test('Home reclaim requires hidden debounce, two fresh off replies and app rechecks', () => {
+test("Home reclaim requires hidden debounce, two fresh off replies and app rechecks", () => {
   const h = ready();
   h.advance(4499);
   assert.equal(h.artReplies.length, 0);
   h.advance(1);
   assert.equal(h.launches.length, 0);
   passFirst(h);
-  h.answerArt('off');
+  h.answerArt("off");
   h.advance(0);
   assert.equal(h.launches.length, 1);
   assert.equal(h.launches[0].id, SELF);
   assert.equal(h.state().guard.launchCalls, 1);
 });
 
-test('Art on and unknown prevent startup and normal reclaim', () => {
-  for (const value of ['on', 'unknown']) {
-    const h = ready(); h.setArt(value); h.advance(12000);
+test("Art on and unknown prevent startup and normal reclaim", () => {
+  for (const value of ["on", "unknown"]) {
+    const h = ready();
+    h.setArt(value);
+    h.advance(12000);
     assert.equal(h.launches.length, 0);
     assert.equal(h.artReplies.length, 0);
     assert.ok(h.state().heartbeats > 30);
   }
 });
 
-test('cached off without a matching fresh reply never launches', () => {
-  const h = ready(); candidate(h); h.advance(15000);
+test("cached off without a matching fresh reply never launches", () => {
+  const h = ready();
+  candidate(h);
+  h.advance(15000);
   assert.equal(h.launches.length, 0);
-  assert.ok(h.state().guard.history.some(item => item.detail === 'guard deadline'));
+  assert.ok(h.state().guard.history.some((item) => item.detail === "guard deadline"));
 });
 
-test('Art on invalidates either fresh check, including a later stale off callback', () => {
+test("Art on invalidates either fresh check, including a later stale off callback", () => {
   for (const finalStage of [false, true]) {
-    const h = ready(); candidate(h);
+    const h = ready();
+    candidate(h);
     if (finalStage) passFirst(h);
-    h.setArt('on'); h.answerArt('off'); h.advance(1000);
+    h.setArt("on");
+    h.answerArt("off");
+    h.advance(1000);
     assert.equal(h.launches.length, 0);
     assert.equal(h.state().guard.pending, null);
   }
 });
 
-test('leave, watch, home and app inventory changes cancel a pending relaunch', () => {
-  for (const path of ['/leave', '/watch?id=AppB', '/home', '/apps?ids=AppB']) {
-    const h = ready(); candidate(h); passFirst(h);
-    h.control(path); h.answerArt('off');
+test("leave, watch, home and app inventory changes cancel a pending relaunch", () => {
+  for (const path of ["/leave", "/watch?id=AppB", "/home", "/apps?ids=AppB"]) {
+    const h = ready();
+    candidate(h);
+    passFirst(h);
+    h.control(path);
+    h.answerArt("off");
     assert.equal(h.launches.length, 0, path);
     assert.equal(h.state().guard.pending, null, path);
-    if (path === '/leave') {
+    if (path === "/leave") {
       h.advance(15000);
       assert.equal(h.launches.length, 0);
       assert.equal(h.state().leaving, true);
@@ -234,183 +344,231 @@ test('leave, watch, home and app inventory changes cancel a pending relaunch', (
   }
 });
 
-test('final recheck stands aside when an app becomes visible or newly running', () => {
+test("final recheck stands aside when an app becomes visible or newly running", () => {
   for (const visible of [true, false]) {
     const h = ready();
-    h.statuses.set('AppB', { running: false, visible: false });
-    h.control('/apps?ids=AppB'); candidate(h);
-    h.statuses.set('AppB', { running: true, visible });
-    h.answerArt('off'); h.advance(0);
+    h.statuses.set("AppB", { running: false, visible: false });
+    h.control("/apps?ids=AppB");
+    candidate(h);
+    h.statuses.set("AppB", { running: true, visible });
+    h.answerArt("off");
+    h.advance(0);
     assert.equal(h.launches.length, 0);
     assert.equal(h.artReplies.length, 0);
-    assert.equal(h.state().watched, 'AppB');
+    assert.equal(h.state().watched, "AppB");
   }
 });
 
-test('Art change while SELF recheck is outstanding invalidates the late response', () => {
-  const h = ready(); candidate(h);
-  h.hold(SELF); h.answerArt('off');
+test("Art change while SELF recheck is outstanding invalidates the late response", () => {
+  const h = ready();
+  candidate(h);
+  h.hold(SELF);
+  h.answerArt("off");
   const req = h.pendingRequest(SELF);
   assert.ok(req);
-  h.setArt('on'); h.respond(req); h.advance(0);
+  h.setArt("on");
+  h.respond(req);
+  h.advance(0);
   assert.equal(h.launches.length, 0);
   assert.equal(h.artReplies.length, 0);
 });
 
-test('Art exit restarts the grace period before Home can be reclaimed', () => {
-  const h = ready(); h.setArt('on'); h.advance(12000);
-  h.setArt('off'); h.advance(2499);
+test("Art exit restarts the grace period before Home can be reclaimed", () => {
+  const h = ready();
+  h.setArt("on");
+  h.advance(12000);
+  h.setArt("off");
+  h.advance(2499);
   assert.equal(h.launches.length, 0);
   assert.equal(h.artReplies.length, 0);
   h.advance(201);
   assert.equal(h.artReplies.length, 1);
-  passFirst(h); h.answerArt('off'); h.advance(0);
+  passFirst(h);
+  h.answerArt("off");
+  h.advance(0);
   assert.equal(h.launches.length, 1);
 });
 
-test('malformed or unavailable capability blocks instead of assuming Art is unsupported', () => {
-  for (const capability of ['malformed', 'bad-metadata', 'http-error', null, 'yes']) {
-    const h = harness({ capability }); h.api.onStart(); h.advance(12000);
+test("malformed or unavailable capability blocks instead of assuming Art is unsupported", () => {
+  for (const capability of ["malformed", "bad-metadata", "http-error", null, "yes"]) {
+    const h = harness({ capability });
+    h.api.onStart();
+    h.advance(12000);
     assert.equal(h.launches.length, 0);
     assert.equal(h.art.starts, 0);
-    assert.equal(h.state().guard.capability, 'unknown');
+    assert.equal(h.state().guard.capability, "unknown");
   }
 });
 
-test('non-Frame and valid older APIs skip Art checks without starting its client', () => {
-  for (const capability of [false, 'false', 'missing', 'legacy']) {
-    const h = harness({ capability }); h.api.onStart(); h.advance(5000);
+test("non-Frame and valid older APIs skip Art checks without starting its client", () => {
+  for (const capability of [false, "false", "missing", "legacy"]) {
+    const h = harness({ capability });
+    h.api.onStart();
+    h.advance(5000);
     assert.equal(h.launches.length, 1);
     assert.equal(h.art.starts, 0);
     assert.equal(h.artReplies.length, 0);
-    assert.equal(h.state().guard.capability, capability === false || capability === 'false' ? 'non-frame' : 'not-advertised');
+    assert.equal(
+      h.state().guard.capability,
+      capability === false || capability === "false" ? "non-frame" : "not-advertised",
+    );
   }
 });
 
-test('both supported Frame flag formats require the Art client and block until a fresh status', () => {
-  for (const capability of [true, 'true']) {
-    const h = harness({ capability }); h.api.onStart(); h.advance(12000);
-    assert.equal(h.state().guard.capability, 'frame');
+test("both supported Frame flag formats require the Art client and block until a fresh status", () => {
+  for (const capability of [true, "true"]) {
+    const h = harness({ capability });
+    h.api.onStart();
+    h.advance(12000);
+    assert.equal(h.state().guard.capability, "frame");
     assert.equal(h.art.starts, 1);
     assert.equal(h.launches.length, 0);
   }
 });
 
-test('failed app checks and late responses cannot authorize a relaunch', () => {
-  const h = ready(); candidate(h);
-  h.hold(SELF); h.answerArt('off');
+test("failed app checks and late responses cannot authorize a relaunch", () => {
+  const h = ready();
+  candidate(h);
+  h.hold(SELF);
+  h.answerArt("off");
   const req = h.pendingRequest(SELF);
   h.advance(1600);
   assert.equal(h.launches.length, 0);
-  h.respond(req); h.advance(0);
+  h.respond(req);
+  h.advance(0);
   assert.equal(h.launches.length, 0);
   assert.equal(h.artReplies.length, 0);
 });
 
-test('watch change cancels a scan and an unavailable HbbTV host is not reclaimed', () => {
+test("watch change cancels a scan and an unavailable HbbTV host is not reclaimed", () => {
   const h = ready();
-  h.statuses.set('AppA', { running: true, visible: true });
-  h.control('/watch?id=AppA');
+  h.statuses.set("AppA", { running: true, visible: true });
+  h.control("/watch?id=AppA");
   h.advance(4500);
   assert.equal(h.state().seen, true);
-  h.statuses.set('AppA', { running: true, visible: false });
-  h.hold('AppA'); h.advance(300);
-  const req = h.pendingRequest('AppA'); assert.ok(req);
-  h.control('/watch?id=org.tizen.hbbtv');
-  h.respond(req); h.advance(12000);
+  h.statuses.set("AppA", { running: true, visible: false });
+  h.hold("AppA");
+  h.advance(300);
+  const req = h.pendingRequest("AppA");
+  assert.ok(req);
+  h.control("/watch?id=org.tizen.hbbtv");
+  h.respond(req);
+  h.advance(12000);
   assert.equal(h.launches.length, 0);
-  assert.equal(h.state().watched, 'org.tizen.hbbtv');
+  assert.equal(h.state().watched, "org.tizen.hbbtv");
   assert.equal(h.artReplies.length, 0);
 });
 
-test('watched app disappearance needs debounce and the same double Art guard', () => {
+test("watched app disappearance needs debounce and the same double Art guard", () => {
   const h = ready();
-  h.statuses.set('AppA', { running: true, visible: true });
-  h.control('/apps?ids=AppA'); h.control('/watch?id=AppA');
+  h.statuses.set("AppA", { running: true, visible: true });
+  h.control("/apps?ids=AppA");
+  h.control("/watch?id=AppA");
   h.advance(4500);
   assert.equal(h.state().seen, true);
-  h.statuses.set('AppA', { running: true, visible: false });
+  h.statuses.set("AppA", { running: true, visible: false });
   h.advance(1799);
   assert.equal(h.artReplies.length, 0);
   h.advance(1);
   assert.equal(h.artReplies.length, 1);
-  passFirst(h); h.answerArt('off'); h.advance(0);
+  passFirst(h);
+  h.answerArt("off");
+  h.advance(0);
   assert.equal(h.launches.length, 1);
 });
 
-test('lifecycle starts once and exit cancels pending authorization', () => {
-  const h = ready(); h.api.onStart();
+test("lifecycle starts once and exit cancels pending authorization", () => {
+  const h = ready();
+  h.api.onStart();
   assert.equal(h.servers.length, 1);
   assert.equal(h.art.starts, 1);
-  candidate(h); passFirst(h);
-  h.api.onExit(); h.answerArt('off'); h.advance(12000);
+  candidate(h);
+  passFirst(h);
+  h.api.onExit();
+  h.answerArt("off");
+  h.advance(12000);
   assert.equal(h.launches.length, 0);
   assert.equal(h.art.stops, 1);
   assert.equal(h.servers[0].closed, true);
 });
 
-test('a buffered Art-on veto after the final off reply prevents commit', () => {
-  const h = ready(); candidate(h); passFirst(h);
-  h.answerArt('off');
+test("a buffered Art-on veto after the final off reply prevents commit", () => {
+  const h = ready();
+  candidate(h);
+  passFirst(h);
+  h.answerArt("off");
   assert.equal(h.launches.length, 0);
-  h.setArt('on'); h.advance(0);
+  h.setArt("on");
+  h.advance(0);
   assert.equal(h.launches.length, 0);
 });
 
-test('missing or standby power status denies a relaunch despite fresh Art off', () => {
-  for (const value of [undefined, 'standby', 'off', 'ON']) {
-    const h = ready(); candidate(h); h.setPowerState(value);
-    h.answerArt('off'); h.advance(0);
+test("missing or standby power status denies a relaunch despite fresh Art off", () => {
+  for (const value of [undefined, "standby", "off", "ON"]) {
+    const h = ready();
+    candidate(h);
+    h.setPowerState(value);
+    h.answerArt("off");
+    h.advance(0);
     assert.equal(h.launches.length, 0);
     assert.equal(h.artReplies.length, 0);
-    assert.equal(h.state().guard.lastBlocked, 'TV power state unavailable or not on');
+    assert.equal(h.state().guard.lastBlocked, "TV power state unavailable or not on");
   }
 });
 
-test('Art round trip preserves a known app with unavailable visibility', () => {
+test("Art round trip preserves a known app with unavailable visibility", () => {
   const h = ready();
-  h.statuses.set('Cobalt', { running: true, visible: false });
-  h.control('/apps?ids=Cobalt'); h.control('/watch?id=Cobalt');
+  h.statuses.set("Cobalt", { running: true, visible: false });
+  h.control("/apps?ids=Cobalt");
+  h.control("/watch?id=Cobalt");
   h.advance(5000);
-  h.setArt('on'); h.advance(10000);
-  h.setArt('off'); h.advance(10000);
-  assert.equal(h.state().watched, 'Cobalt');
+  h.setArt("on");
+  h.advance(10000);
+  h.setArt("off");
+  h.advance(10000);
+  assert.equal(h.state().watched, "Cobalt");
   assert.equal(h.launches.length, 0);
   assert.equal(h.artReplies.length, 0);
 });
 
-test('non-Frame TVs open the launcher at boot and reclaim Home on the fast path', () => {
-  const h = harness({ capability: false }); h.api.onStart();
+test("non-Frame TVs open the launcher at boot and reclaim Home on the fast path", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
   h.advance(2999);
-  assert.equal(h.launches.length, 0, 'waits for the boot delay');
+  assert.equal(h.launches.length, 0, "waits for the boot delay");
   h.advance(1);
   assert.equal(h.launches.length, 1);
-  assert.ok(h.state().guard.history.some(item => item.kind === 'launch' && item.detail === 'boot'));
+  assert.ok(h.state().guard.history.some((item) => item.kind === "launch" && item.detail === "boot"));
   h.advance(5000);
   h.statuses.set(SELF, { running: true, visible: false });
   h.advance(900);
-  assert.equal(h.launches.length, 2, 'hidden launcher comes back within a second');
+  assert.equal(h.launches.length, 2, "hidden launcher comes back within a second");
   assert.equal(h.artReplies.length, 0);
 });
 
-test('non-Frame TVs return from a watched app without the Frame debounce', () => {
-  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
-  h.statuses.set('AppA', { running: true, visible: true });
+test("non-Frame TVs return from a watched app without the Frame debounce", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(8000);
+  h.statuses.set("AppA", { running: true, visible: true });
   h.statuses.set(SELF, { running: true, visible: false });
-  h.control('/apps?ids=AppA'); h.control('/watch?id=AppA');
+  h.control("/apps?ids=AppA");
+  h.control("/watch?id=AppA");
   h.advance(600);
   assert.equal(h.state().seen, true);
-  h.statuses.set('AppA', { running: true, visible: false });
+  h.statuses.set("AppA", { running: true, visible: false });
   h.advance(600);
   assert.equal(h.launches.length, 2);
 });
 
-test('apps already running when the inventory arrives are not mistaken for a new app', () => {
-  const h = harness({ capability: false }); h.api.onStart(); h.advance(3000);
+test("apps already running when the inventory arrives are not mistaken for a new app", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(3000);
   assert.equal(h.launches.length, 1);
   h.advance(600); // first snapshot runs before the launcher reports its apps
-  h.statuses.set('AppB', { running: true, visible: false });
-  h.control('/apps?ids=AppB');
+  h.statuses.set("AppB", { running: true, visible: false });
+  h.control("/apps?ids=AppB");
   h.advance(2000);
   h.statuses.set(SELF, { running: true, visible: false });
   h.advance(900);
@@ -418,209 +576,408 @@ test('apps already running when the inventory arrives are not mistaken for a new
   assert.equal(h.state().watched, null);
 });
 
-test('a failed app status does not hold up Home on non-Frame TVs', () => {
-  const h = harness({ capability: false }); h.api.onStart(); h.advance(3000);
-  h.statuses.set('AppB', { running: false, visible: false });
-  h.control('/apps?ids=AppB'); h.advance(3000);
-  h.statuses.set('AppB', 'error');
+test("a failed app status does not hold up Home on non-Frame TVs", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(3000);
+  h.statuses.set("AppB", { running: false, visible: false });
+  h.control("/apps?ids=AppB");
+  h.advance(3000);
+  h.statuses.set("AppB", "error");
   h.statuses.set(SELF, { running: true, visible: false });
   h.advance(900);
   assert.equal(h.launches.length, 2);
 });
 
-test('an unresolved TV type still opens the launcher after the boot fallback', () => {
-  const h = harness({ capability: 'http-error' }); h.api.onStart();
+test("an unresolved TV type still opens the launcher after the boot fallback", () => {
+  const h = harness({ capability: "http-error" });
+  h.api.onStart();
   h.advance(14999);
   assert.equal(h.launches.length, 0);
   h.advance(1);
   assert.equal(h.launches.length, 1);
-  assert.equal(h.state().guard.capability, 'unknown');
+  assert.equal(h.state().guard.capability, "unknown");
   h.advance(20000);
-  assert.equal(h.launches.length, 1, 'no reclaim while the type is unknown');
+  assert.equal(h.launches.length, 1, "no reclaim while the type is unknown");
 });
 
-test('Frame TVs leave the boot launch to the guarded watcher', () => {
-  const h = harness(); h.api.onStart(); h.advance(0); h.setArt('on');
+test("Frame TVs leave the boot launch to the guarded watcher", () => {
+  const h = harness();
+  h.api.onStart();
+  h.advance(0);
+  h.setArt("on");
   h.advance(20000);
   assert.equal(h.launches.length, 0);
 });
 
 // Seen on a 2022 Q60B (Tizen 6.5): a third-party player runs but never reports itself visible.
-test('an app that never reports visible holds Home only while it is running', () => {
-  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
+test("an app that never reports visible holds Home only while it is running", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(8000);
   assert.equal(h.launches.length, 1);
-  h.statuses.set('AppA', { running: true, visible: false });
-  h.control('/apps?ids=AppA'); h.control('/watch?id=AppA');
+  h.statuses.set("AppA", { running: true, visible: false });
+  h.control("/apps?ids=AppA");
+  h.control("/watch?id=AppA");
   h.statuses.set(SELF, { running: true, visible: false });
   h.advance(20000);
-  assert.equal(h.launches.length, 1, 'an unseen running app is never interrupted');
-  assert.equal(h.state().watched, 'AppA');
-  h.statuses.set('AppA', { running: false, visible: false });  // closed, e.g. with Back
+  assert.equal(h.launches.length, 1, "an unseen running app is never interrupted");
+  assert.equal(h.state().watched, "AppA");
+  h.statuses.set("AppA", { running: false, visible: false }); // closed, e.g. with Back
   h.advance(1200);
-  assert.equal(h.launches.length, 1, 'a stop must hold before the watch is dropped');
+  assert.equal(h.launches.length, 1, "a stop must hold before the watch is dropped");
   h.advance(1200);
   assert.equal(h.launches.length, 2);
-  assert.ok(h.state().guard.history.some(item => item.kind === 'unwatched' && item.detail === 'AppA stopped running'));
+  assert.ok(
+    h.state().guard.history.some((item) => item.kind === "unwatched" && item.detail === "AppA stopped running"),
+  );
   assert.equal(h.state().watched, null);
 });
 
-test('a watch survives the moment before the opened app covers the launcher', () => {
-  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
-  h.statuses.set('AppA', { running: true, visible: false });  // already running in the background
-  h.control('/apps?ids=AppA'); h.advance(6000);
-  h.control('/watch?id=AppA');
-  h.advance(1500);  // the launcher is still on screen while AppA comes up
+test("a watch survives the moment before the opened app covers the launcher", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(8000);
+  h.statuses.set("AppA", { running: true, visible: false }); // already running in the background
+  h.control("/apps?ids=AppA");
+  h.advance(6000);
+  h.control("/watch?id=AppA");
+  h.advance(1500); // the launcher is still on screen while AppA comes up
   h.statuses.set(SELF, { running: true, visible: false });
   h.advance(20000);
-  assert.equal(h.launches.length, 1, 'the launcher must not cover the app it just opened');
-  assert.equal(h.state().watched, 'AppA');
+  assert.equal(h.launches.length, 1, "the launcher must not cover the app it just opened");
+  assert.equal(h.state().watched, "AppA");
 });
 
-test('a watch for an app that never opened clears while the launcher stays on screen', () => {
-  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
-  h.control('/watch?id=AppA');  // the launch failed, so the launcher never left the screen
+test("a watch for an app that never opened clears while the launcher stays on screen", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(8000);
+  h.control("/watch?id=AppA"); // the launch failed, so the launcher never left the screen
   h.advance(9000);
-  assert.equal(h.state().watched, 'AppA');
+  assert.equal(h.state().watched, "AppA");
   h.advance(1500);
   assert.equal(h.state().watched, null);
 });
 
-test('a brief not-running reading does not drop a watched app', () => {
-  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
-  h.statuses.set('AppA', { running: true, visible: false });
-  h.control('/apps?ids=AppA'); h.control('/watch?id=AppA');
+test("a brief not-running reading does not drop a watched app", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(8000);
+  h.statuses.set("AppA", { running: true, visible: false });
+  h.control("/apps?ids=AppA");
+  h.control("/watch?id=AppA");
   h.statuses.set(SELF, { running: true, visible: false });
   h.advance(5000);
-  h.statuses.set('AppA', { running: false, visible: false });
+  h.statuses.set("AppA", { running: false, visible: false });
   h.advance(600);
-  h.statuses.set('AppA', { running: true, visible: false });
+  h.statuses.set("AppA", { running: true, visible: false });
   h.advance(10000);
   assert.equal(h.launches.length, 1);
-  assert.equal(h.state().watched, 'AppA');
+  assert.equal(h.state().watched, "AppA");
 });
 
-test('a watched app that never reports running is never covered', () => {
+test("a watched app that never reports running is never covered", () => {
   // Status replies may say running:false for an app that is on screen; only a seen stop counts.
-  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
-  h.statuses.set('AppA', { running: false, visible: false });
-  h.control('/apps?ids=AppA'); h.control('/watch?id=AppA');
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(8000);
+  h.statuses.set("AppA", { running: false, visible: false });
+  h.control("/apps?ids=AppA");
+  h.control("/watch?id=AppA");
   h.statuses.set(SELF, { running: true, visible: false });
   h.advance(30000);
   assert.equal(h.launches.length, 1);
-  assert.equal(h.state().watched, 'AppA');
+  assert.equal(h.state().watched, "AppA");
 });
 
-test('an unseen watched app hands Home over to an app that reports visible', () => {
-  const h = harness({ capability: false }); h.api.onStart(); h.advance(8000);
-  h.statuses.set('AppA', { running: true, visible: false });
-  h.statuses.set('AppB', { running: false, visible: false });
-  h.control('/apps?ids=AppA,AppB'); h.control('/watch?id=AppA');
+test("an unseen watched app hands Home over to an app that reports visible", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(8000);
+  h.statuses.set("AppA", { running: true, visible: false });
+  h.statuses.set("AppB", { running: false, visible: false });
+  h.control("/apps?ids=AppA,AppB");
+  h.control("/watch?id=AppA");
   h.statuses.set(SELF, { running: true, visible: false });
   h.advance(5000);
-  h.statuses.set('AppB', { running: true, visible: true });  // opened from Samsung Home
+  h.statuses.set("AppB", { running: true, visible: true }); // opened from Samsung Home
   h.advance(2500);
-  assert.equal(h.state().watched, 'AppB');
+  assert.equal(h.state().watched, "AppB");
   assert.equal(h.state().seen, true);
   assert.equal(h.launches.length, 1);
-  h.statuses.set('AppB', { running: true, visible: false });  // Home pressed in AppB
+  h.statuses.set("AppB", { running: true, visible: false }); // Home pressed in AppB
   h.advance(900);
   assert.equal(h.launches.length, 2);
 });
 
-test('Frame TVs keep the Art guard after a watched app closes', () => {
+test("Frame TVs keep the Art guard after a watched app closes", () => {
   const h = ready();
-  h.statuses.set('AppA', { running: true, visible: false });
-  h.control('/apps?ids=AppA'); h.control('/watch?id=AppA');
+  h.statuses.set("AppA", { running: true, visible: false });
+  h.control("/apps?ids=AppA");
+  h.control("/watch?id=AppA");
   h.advance(12000);
-  assert.equal(h.artReplies.length, 0, 'an unseen running app is left alone');
-  h.statuses.set('AppA', { running: false, visible: false });
+  assert.equal(h.artReplies.length, 0, "an unseen running app is left alone");
+  h.statuses.set("AppA", { running: false, visible: false });
   h.advance(4500);
-  assert.equal(h.launches.length, 0, 'no launch without fresh Art replies');
+  assert.equal(h.launches.length, 0, "no launch without fresh Art replies");
   assert.equal(h.artReplies.length, 1);
 });
 
-test('native mode survives restart with no API polling, Art client or boot launch', () => {
+test("native mode survives restart with no API polling, Art client or boot launch", () => {
   const h = ready();
-  assert.equal(h.handoff('hold').code, 200);
-  assert.equal(h.handoff('native').code, 200);
-  h.control('/watch?id=AppB'); h.control('/home');
+  assert.equal(h.handoff("hold").code, 200);
+  assert.equal(h.handoff("native").code, 200);
+  h.control("/watch?id=AppB");
+  h.control("/home");
   const requests = h.requests.length;
   h.advance(60000);
-  assert.equal(h.launches.length, 0); assert.equal(h.requests.length, requests);
+  assert.equal(h.launches.length, 0);
+  assert.equal(h.requests.length, requests);
   const restarted = harness({ stored: h.stored, capability: false });
-  restarted.api.onStart(); restarted.advance(60000);
-  assert.equal(restarted.state().homeControl.mode, 'native');
-  assert.equal(restarted.requests.length, 0); assert.equal(restarted.launches.length, 0);
+  restarted.api.onStart();
+  restarted.advance(60000);
+  assert.equal(restarted.state().homeControl.mode, "native");
+  assert.equal(restarted.requests.length, 0);
+  assert.equal(restarted.launches.length, 0);
   assert.equal(restarted.art.starts, 0);
 });
 
-test('a pending handoff survives restart with the watcher suppressed', () => {
-  const h = ready(); h.handoff('hold');
-  const restarted = harness({ stored: h.stored, capability: false });
-  restarted.api.onStart(); restarted.control('/home'); restarted.control('/watch?id=AppB');
-  restarted.advance(60000);
-  assert.equal(restarted.state().homeControl.mode, 'hold');
-  assert.equal(restarted.requests.length, 0); assert.equal(restarted.launches.length, 0);
-});
-
-test('handoff invalidates late Art replies and pending non-Frame boot timers', () => {
-  const h = ready(); candidate(h); passFirst(h); h.handoff('hold');
-  h.answerArt('off'); h.advance(60000); assert.equal(h.launches.length, 0);
-  const plain = harness({ capability: false }); plain.api.onStart(); plain.advance(0);
-  plain.handoff('hold'); plain.advance(60000); assert.equal(plain.launches.length, 0);
-});
-
-test('restore reenables normal watching only after a committed hold-to-watcher transition', () => {
-  const h = harness({ capability: false }); h.api.onStart(); h.advance(0);
-  h.handoff('hold'); h.handoff('native');
-  assert.equal(h.handoff('watcher').code, 409, 'native cannot skip the restore hold');
-  h.handoff('hold', 'c'.repeat(32)); h.handoff('watcher'); h.advance(3000);
-  assert.equal(h.state().homeControl.mode, 'watcher'); assert.equal(h.launches.length, 1);
-});
-
-test('mode control rejects browser requests, stale transactions and oversized bodies', () => {
+test("a pending handoff survives restart with the watcher suppressed", () => {
   const h = ready();
-  for (const overrides of [{ method: 'GET' }, { headers: {} },
-    { headers: { origin: 'https://example.com', 'x-aerotizen-home': '1', 'content-type': 'application/json' } }]) {
+  h.handoff("hold");
+  const restarted = harness({ stored: h.stored, capability: false });
+  restarted.api.onStart();
+  restarted.control("/home");
+  restarted.control("/watch?id=AppB");
+  restarted.advance(60000);
+  assert.equal(restarted.state().homeControl.mode, "hold");
+  assert.equal(restarted.requests.length, 0);
+  assert.equal(restarted.launches.length, 0);
+});
+
+test("handoff invalidates late Art replies and pending non-Frame boot timers", () => {
+  const h = ready();
+  candidate(h);
+  passFirst(h);
+  h.handoff("hold");
+  h.answerArt("off");
+  h.advance(60000);
+  assert.equal(h.launches.length, 0);
+  const plain = harness({ capability: false });
+  plain.api.onStart();
+  plain.advance(0);
+  plain.handoff("hold");
+  plain.advance(60000);
+  assert.equal(plain.launches.length, 0);
+});
+
+test("restore reenables normal watching only after a committed hold-to-watcher transition", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(0);
+  h.handoff("hold");
+  h.handoff("native");
+  assert.equal(h.handoff("watcher").code, 409, "native cannot skip the restore hold");
+  h.handoff("hold", "c".repeat(32));
+  h.handoff("watcher");
+  h.advance(3000);
+  assert.equal(h.state().homeControl.mode, "watcher");
+  assert.equal(h.launches.length, 1);
+});
+
+test("mode control rejects browser requests, stale transactions and oversized bodies", () => {
+  const h = ready();
+  for (const overrides of [
+    { method: "GET" },
+    { headers: {} },
+    {
+      headers: {
+        origin: "https://example.com",
+        "x-aerotizen-home": "1",
+        "content-type": "application/json",
+      },
+    },
+  ]) {
     assert.notEqual(h.post({}, overrides).code, 200);
   }
-  assert.equal(h.post('x'.repeat(4097)).code, 413);
-  assert.equal(h.post({ expected_mode: 'native', mode: 'hold' }).code, 409);
-  assert.equal(h.state().homeControl.mode, 'watcher');
+  assert.equal(h.post("x".repeat(4097)).code, 413);
+  assert.equal(h.post({ expected_mode: "native", mode: "hold" }).code, 409);
+  assert.equal(h.state().homeControl.mode, "watcher");
 });
 
-test('missing persistence refuses the handoff; failed persistence blocks all launches', () => {
-  const old = harness({ noPreference: true, capability: false }); old.api.onStart(); old.advance(0);
-  assert.equal(old.handoff('hold').code, 409); assert.equal(old.state().homeControl.persistent, false);
-  const h = harness({ failStorage: true, capability: false }); h.api.onStart(); h.advance(0);
-  assert.equal(h.handoff('hold').code, 409); assert.equal(h.state().homeControl.mode, 'blocked');
-  h.advance(60000); assert.equal(h.launches.length, 0);
+test("missing persistence refuses the handoff; failed persistence blocks all launches", () => {
+  const old = harness({ noPreference: true, capability: false });
+  old.api.onStart();
+  old.advance(0);
+  assert.equal(old.handoff("hold").code, 409);
+  assert.equal(old.state().homeControl.persistent, false);
+  const h = harness({ failStorage: true, capability: false });
+  h.api.onStart();
+  h.advance(0);
+  assert.equal(h.handoff("hold").code, 409);
+  assert.equal(h.state().homeControl.mode, "blocked");
+  h.advance(60000);
+  assert.equal(h.launches.length, 0);
 });
 
-test('corrupt saved mode fails closed at service startup', () => {
-  const stored = new Map([['aerotizen.home-routing.v1', '{bad json']]);
-  const h = harness({ stored, capability: false }); h.api.onStart(); h.advance(60000);
-  assert.equal(h.state().homeControl.mode, 'blocked'); assert.equal(h.launches.length, 0);
+test("corrupt saved mode fails closed at service startup", () => {
+  const stored = new Map([["aerotizen.home-routing.v1", "{bad json"]]);
+  const h = harness({ stored, capability: false });
+  h.api.onStart();
+  h.advance(60000);
+  assert.equal(h.state().homeControl.mode, "blocked");
+  assert.equal(h.launches.length, 0);
   assert.equal(h.requests.length, 0);
 });
 
-test('startup diagnostics cannot restart native polling or launch an app', () => {
-  const h = harness({ capability: false }); h.api.onStart(); h.advance(0);
-  h.handoff('hold'); h.handoff('native');
-  const trace = { script_at: 123, marks: [{ name: 'home-rendered', ms: 9 }] };
+test("startup diagnostics cannot restart native polling or launch an app", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(0);
+  h.handoff("hold");
+  h.handoff("native");
+  const trace = { script_at: 123, marks: [{ name: "home-rendered", ms: 9 }] };
   const before = h.requests.length;
-  h.control('/startup?data=' + encodeURIComponent(JSON.stringify(trace)));
-  h.control('/startup?data={broken');
+  h.control("/startup?data=" + encodeURIComponent(JSON.stringify(trace)));
+  h.control("/startup?data={broken");
   h.advance(60000);
   assert.deepEqual(JSON.parse(JSON.stringify(h.state().startup)), trace);
-  assert.equal(h.requests.length, before); assert.equal(h.launches.length, 0);
-  assert.equal(h.art.starts, 0); assert.equal(h.state().homeControl.mode, 'native');
+  assert.equal(h.requests.length, before);
+  assert.equal(h.launches.length, 0);
+  assert.equal(h.art.starts, 0);
+  assert.equal(h.state().homeControl.mode, "native");
+});
+
+test("diagnostics enforce read access and batch limits without changing native Home mode", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(0);
+  h.handoff("hold");
+  h.handoff("native");
+  function request(method, url, headers, data) {
+    const req = new EventEmitter();
+    Object.assign(req, { method, url, headers });
+    let code, body;
+    h.servers[0].handler(req, {
+      writeHead(value) {
+        code = value;
+      },
+      end(value) {
+        body = JSON.parse(value);
+      },
+    });
+    if (data !== undefined) req.emit("data", typeof data === "string" ? data : JSON.stringify(data));
+    req.emit("end");
+    return { code, body };
+  }
+  const event = {
+    id: "ui-event-1",
+    at: 12,
+    source: "ui",
+    event: "ui.appcontrol",
+    data: { password: "PRIVATE", action: "home" },
+  };
+  const before = h.requests.length;
+  assert.equal(request("GET", "/diagnostics/logs", {}).code, 403);
+  assert.equal(
+    request("GET", "/diagnostics/logs", {
+      origin: "https://evil.test",
+      "x-aerotizen-diagnostics": "1",
+    }).code,
+    403,
+  );
+  assert.equal(request("POST", "/diagnostics/events", { origin: "https://evil.test" }, [event]).code, 403);
+  assert.equal(request("POST", "/diagnostics/events", { origin: "null" }, [event]).code, 200);
+  assert.equal(request("POST", "/diagnostics/events", {}, [Object.assign({}, event, { source: "service" })]).code, 400);
+  assert.equal(request("POST", "/diagnostics/events", {}, Array(25).fill(event)).code, 400);
+  assert.equal(request("POST", "/diagnostics/events", {}, "x".repeat(16385)).code, 413);
+  assert.equal(
+    request(
+      "POST",
+      "/diagnostics/events",
+      {},
+      {
+        schema_version: 1,
+        records: [event],
+        version: "2.4.0",
+        build: { build_id: "a".repeat(64) },
+        health: { storage: "failed", discarded: 2 },
+        queued: 1,
+      },
+    ).code,
+    200,
+  );
+  const logs = request("GET", "/diagnostics/logs", { "x-aerotizen-diagnostics": "1" });
+  assert.equal(logs.code, 200);
+  assert.equal(logs.body.schema_version, 1);
+  assert.equal(logs.body.ui.health.discarded, 2);
+  assert.equal(logs.body.environment.tizen, "9.0.0");
+  assert.ok(logs.body.records.some((item) => item.event === event.event));
+  assert.ok(!JSON.stringify(logs.body).includes("PRIVATE"));
+  h.advance(60000);
+  assert.equal(h.requests.length, before);
+  assert.equal(h.launches.length, 0);
+  assert.equal(h.art.starts, 0);
+  assert.equal(h.state().homeControl.mode, "native");
+});
+
+test("pending diagnostic storage does not delay Home requests or native mode control", () => {
+  const saves = [],
+    completions = [];
+  const h = harness({
+    capability: false,
+    diagnosticsStorage: {
+      load: (done) => done(null, null),
+      save: (value, done) => {
+        saves.push(value);
+        completions.push(done);
+      },
+    },
+  });
+  h.api.onStart();
+  h.advance(0);
+  h.handoff("hold");
+  h.handoff("native");
+  assert.equal(saves.length, 0);
+  h.advance(500);
+  assert.equal(saves.length, 1);
+  const before = h.requests.length;
+  assert.equal(h.control("/home").homeControl.mode, "native");
+  assert.equal(h.handoff("hold", "c".repeat(32)).code, 200);
+  assert.equal(h.handoff("native", "c".repeat(32)).code, 200);
+  h.advance(60000);
+  assert.equal(saves.length, 1);
+  assert.equal(h.requests.length, before);
+  assert.equal(h.launches.length, 0);
+  assert.equal(h.state().heartbeats, 0);
+  let logs;
+  h.servers[0].handler(
+    { method: "GET", url: "/diagnostics/logs", headers: { "x-aerotizen-diagnostics": "1" } },
+    {
+      writeHead(status) {
+        assert.equal(status, 200);
+      },
+      end(data) {
+        logs = JSON.parse(data);
+      },
+    },
+  );
+  assert.ok(logs.records.some((item) => item.event === "service.request" && item.data.action === "home"));
+  completions.shift()(null);
+  h.advance(500);
+  assert.equal(saves.length, 2);
 });
 
 let failed = 0;
 for (const [name, fn] of tests) {
-  try { fn(); console.log('PASS ' + name); }
-  catch (error) { failed += 1; console.error('FAIL ' + name + '\n' + error.stack); }
+  try {
+    fn();
+    console.log("PASS " + name);
+  } catch (error) {
+    failed += 1;
+    console.error("FAIL " + name + "\n" + error.stack);
+  }
 }
 console.log(`${tests.length - failed}/${tests.length} watcher integration tests passed`);
 if (failed) process.exitCode = 1;
