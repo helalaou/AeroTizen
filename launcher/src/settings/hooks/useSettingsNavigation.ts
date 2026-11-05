@@ -113,6 +113,11 @@ export const useSettingsNavigation = (
           return;
         }
         const current = navigation.current();
+        // The sidebar sits on the right in right-to-left languages, so the keys that
+        // open a section and return to the sidebar swap sides with it.
+        const rtl = document.documentElement.dir === "rtl";
+        const into = rtl ? K.LEFT : K.RIGHT;
+        const out = rtl ? K.RIGHT : K.LEFT;
         if (!category.expanded) {
           event.preventDefault();
           if (code === K.BACK || code === K.ESC) {
@@ -129,17 +134,20 @@ export const useSettingsNavigation = (
             if (code === K.ENTER || code === SPACE_KEY) {
               current.click();
             }
-          } else if (code === K.RIGHT || code === K.ENTER || code === SPACE_KEY) {
+          } else if (code === into || code === K.ENTER || code === SPACE_KEY) {
             flushSync(() => drawer.set({ ...category, expanded: true }));
           }
           return;
         }
-        const leftLeavesPane =
-          code === K.LEFT &&
+        const pane = categoryContent.current?.getBoundingClientRect();
+        const atSidebarEdge = (box: DOMRect) =>
+          rtl ? box.right >= (pane?.right || 0) - 64 : box.left <= (pane?.left || 0) + 64;
+        const leavesPane =
+          code === out &&
           current &&
-          (current.getBoundingClientRect().left <= (categoryContent.current?.getBoundingClientRect().left || 0) + 64 ||
+          (atSidebarEdge(current.getBoundingClientRect()) ||
             (current.dataset.key === "settings-close" && !navigation.firstKey(panes.get(category.category))));
-        if ((code === K.BACK || code === K.ESC || leftLeavesPane) && !view.getSnapshot().adjusting) {
+        if ((code === K.BACK || code === K.ESC || leavesPane) && !view.getSnapshot().adjusting) {
           event.preventDefault();
           flushSync(() => drawer.set({ ...category, expanded: false }));
           return;

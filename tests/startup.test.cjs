@@ -60,7 +60,11 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
     Backgrounds: { setSpeed() {}, apply() {} },
     Weather: { start() {} },
     addEventListener: (name, fn) => {
-      events[name] = fn;
+      const previous = events[name];
+      events[name] = () => {
+        previous?.();
+        fn();
+      };
     },
     performance: { timing: { navigationStart: Date.now() - 10 } },
     requestAnimationFrame: (cb) => frames.push(cb),
@@ -71,7 +75,10 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
     AeroTizen: A,
     document,
     localStorage,
-    setTimeout: (cb) => timers.push(cb),
+    setTimeout: (cb) => timers.push(cb) - 1,
+    clearTimeout: (id) => {
+      if (id !== undefined) timers[id] = () => {};
+    },
   });
   for (const file of ["config.js", "startup.js", "apps.js"]) vm.runInContext(source(file), context);
   return {
