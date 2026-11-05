@@ -42,6 +42,11 @@ for (const glassSettings of [false, true]) {
       for (const category of ["appearance", "status", "sources", "weather", "wallpaper", "apps", "about"]) {
         await openCategory(page, category);
         await expect(page.locator(`[data-section-pane="${category}"]`)).toBeVisible();
+        if (category === "appearance") {
+          const label = page.locator('[data-key="home-card-columns:auto"] span').first();
+          await expect(label).toHaveText("In base alle dimensioni");
+          await expect.poll(() => label.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
+        }
         await page.screenshot({ path: info.outputPath(category + ".png") });
         await page.keyboard.press("Escape");
       }
