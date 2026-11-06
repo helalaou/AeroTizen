@@ -168,7 +168,9 @@ for the sprite effects. Rain draws its streaks directly in the shader.
 Solid backgrounds show the saved custom colour first, followed by nineteen presets.
 Gradients also start with a custom tile. The pencil sits beside each Custom label
 and marks the editable choice. Both editors keep drafts in Settings view state and
-preview through the background mount. The gradient editor shares the colour controls
+preview through the background mount. The TypeScript preference service owns the
+custom colour and gradient defaults, validation and persistence. Editors read its
+current snapshot and save through its update API. The gradient editor shares the colour controls
 and adds two colour stops and a direction. OK selects a stop before editing its colour.
 Apply persists the choice; Cancel, Back, closing Settings and teardown restore the saved
 wallpaper or weather photo. Left/Right starts at one degree or one percent per press,

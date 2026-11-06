@@ -6,8 +6,8 @@ export interface ColourChannels {
 
 export const DEFAULT_CUSTOM_COLOUR = "#7c5cff";
 
-export const normalizeColour = (value: unknown): string =>
-  typeof value === "string" && /^#[\da-f]{6}$/i.test(value) ? value.toLowerCase() : DEFAULT_CUSTOM_COLOUR;
+export const normalizeColour = (value: unknown, fallback = DEFAULT_CUSTOM_COLOUR): string =>
+  typeof value === "string" && /^#[\da-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
 
 const rgbChannels = (colour: string) => {
   const hex = normalizeColour(colour);

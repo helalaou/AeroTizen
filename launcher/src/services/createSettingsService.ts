@@ -24,6 +24,10 @@ const snapshot = (values: SettingsPreferences, previous?: SettingsSnapshot): Set
   const next = Object.freeze({
     ...values,
     homeInitialized: values.home !== null,
+    customGradient:
+      previous && equalRecord(previous.customGradient, values.customGradient)
+        ? previous.customGradient
+        : Object.freeze({ ...values.customGradient }),
     home:
       previous && equalRecord(previous.home, values.home || [])
         ? previous.home

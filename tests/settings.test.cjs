@@ -216,11 +216,14 @@ test("Continue Watching requires explicit opt-in and validates saved source choi
 test("custom colours persist, normalize case and reject malformed saved values", () => {
   const key = "aerotizen.settings.v1";
   const original = loadSettings({ [key]: JSON.stringify({ background: "custom", customColour: "#A1B2C3" }) });
-  assert.equal(original.settings.customColour, "#a1b2c3");
-  original.settings.save();
-  assert.equal(loadSettings(original.store).settings.customColour, "#a1b2c3");
+  assert.equal(original.settings.getSnapshot().customColour, "#a1b2c3");
+  original.settings.update({ customColour: "#A1B2C3" });
+  assert.equal(loadSettings(original.store).settings.getSnapshot().customColour, "#a1b2c3");
   for (const customColour of [null, 123, "#fff", "red", "url(example)", "#12345678"]) {
-    assert.equal(loadSettings({ [key]: JSON.stringify({ customColour }) }).settings.customColour, "#7c5cff");
+    assert.equal(
+      loadSettings({ [key]: JSON.stringify({ customColour }) }).settings.getSnapshot().customColour,
+      "#7c5cff",
+    );
   }
 });
 
@@ -232,15 +235,14 @@ test("custom gradients preserve both colours and direction across a restart and 
       customGradient: { start: "#AABBCC", end: "#001122", angle: -90 },
     }),
   });
-  original.settings.save();
-  const restarted = loadSettings(original.store).settings;
+  const restarted = loadSettings(original.store).settings.getSnapshot();
   assert.equal(restarted.background, "custom-gradient");
   assert.equal(restarted.customGradient.start, "#aabbcc");
   assert.equal(restarted.customGradient.end, "#001122");
   assert.equal(restarted.customGradient.angle, 270);
   const invalid = loadSettings({
     [key]: JSON.stringify({ customGradient: { start: "url(example)", end: 7, angle: "90" } }),
-  }).settings;
+  }).settings.getSnapshot();
   assert.equal(invalid.customGradient.start, "#7c5cff");
   assert.equal(invalid.customGradient.end, "#00c4d4");
   assert.equal(invalid.customGradient.angle, 135);

@@ -101,8 +101,7 @@ for (const glass of [false, true]) {
         "aerotizen.weather.v2",
         JSON.stringify({ temp: 12, code: 71, city: "Test city", source: "auto", unit: "C", at: Date.now() }),
       );
-      AeroTizen.settings.showWeather = true;
-      AeroTizen.settings.save();
+      AeroTizen.settings.update({ showWeather: true });
       window.Weather.start();
     });
     await page.locator('[data-key="bg:solid-white"]').click();
@@ -110,9 +109,10 @@ for (const glass of [false, true]) {
     await page.keyboard.press("Escape");
     for (const layout of ["classic", "vertical", "horizontal", "minimal", "bold"]) {
       await page.evaluate((layout) => {
-        AeroTizen.settings.clockLayout = layout === "classic" ? "classic" : "custom";
-        AeroTizen.settings.aeroClockStyle = layout === "classic" ? "vertical" : layout;
-        AeroTizen.settings.save();
+        AeroTizen.settings.update({
+          clockLayout: layout === "classic" ? "classic" : "custom",
+          aeroClockStyle: layout === "classic" ? "vertical" : layout,
+        });
       }, layout);
       const time = page.locator(layout === "classic" ? "#time" : '[data-clock-part="time"]');
       await expect(time).toBeVisible();
@@ -129,8 +129,7 @@ for (const glass of [false, true]) {
     const icon = page.locator('[data-weather-part="icon"] svg');
     await expect(icon).toHaveCSS("stroke", "rgb(255, 255, 255)");
     await page.evaluate(() => {
-      AeroTizen.settings.customColour = "#fcfaf5";
-      AeroTizen.settings.save();
+      AeroTizen.settings.update({ customColour: "#fcfaf5" });
     });
     await page.locator('[data-key="bg:custom"]').click();
     await expect(icon).toHaveCSS("stroke", "rgb(21, 21, 27)");
@@ -267,8 +266,7 @@ test("Back and external close cancel a preview, including the weather-photo back
   await page.evaluate(() => {
     window.Weather.currentReading = () => ({ code: 0 });
     window.Weather.solarPhase = () => "day";
-    AeroTizen.settings.weatherPhoto = true;
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ weatherPhoto: true });
     AeroTizen.applyBackground();
   });
   await expect(page.locator("#weather-photo")).toBeVisible();
@@ -292,8 +290,7 @@ test("Back and external close cancel a preview, including the weather-photo back
 test("Arabic picker keeps physical Left/Right adjustment and returns focus to Custom", async ({ page }) => {
   const errors = await openSolid(page, true);
   await page.evaluate(() => {
-    AeroTizen.settings.language = "ar";
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ language: "ar" });
   });
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await page.locator('[data-key="bg:custom"]').click();

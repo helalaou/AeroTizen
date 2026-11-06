@@ -275,23 +275,23 @@ test("colour drafts do not save until Apply and cancellation retains the full sa
   h.actions.adjustColour("lightness", 1);
   h.actions.closeColourPicker(false);
   assert.equal(h.saves, saved);
-  assert.equal(h.source.background, "black");
-  assert.equal(h.source.weatherPhoto, true);
+  assert.equal(h.settings.getSnapshot().background, "black");
+  assert.equal(h.settings.getSnapshot().weatherPhoto, true);
   h.actions.openColourPicker();
   h.actions.adjustColour("lightness", 1);
   h.actions.closeColourPicker(true);
-  assert.equal(h.source.background, "custom");
-  assert.equal(h.source.customColour, "#030303");
-  assert.equal(h.source.weatherPhoto, false);
+  assert.equal(h.settings.getSnapshot().background, "custom");
+  assert.equal(h.settings.getSnapshot().customColour, "#030303");
+  assert.equal(h.settings.getSnapshot().weatherPhoto, false);
   assert.equal(h.saves, saved + 1);
   h.actions.setBackground("black");
-  assert.equal(h.source.customColour, "#030303", "preset choices retain the custom colour");
+  assert.equal(h.settings.getSnapshot().customColour, "#030303", "preset choices retain the custom colour");
 });
 
 test("opening the picker reads the current custom colour and discards an earlier cancelled draft", () => {
   const h = harness();
-  h.source.background = "custom";
-  h.source.customColour = "#336699";
+  h.settings.update({ background: "custom", customColour: "#336699" });
+  const saved = h.saves;
   h.actions.openColourPicker();
   const draft = h.view.getSnapshot().colourPicker;
   const channels = draft.colour;
@@ -302,7 +302,7 @@ test("opening the picker reads the current custom colour and discards an earlier
   h.actions.closeColourPicker(false);
   h.actions.openColourPicker();
   assert.deepEqual(h.view.getSnapshot().colourPicker, draft);
-  assert.equal(h.saves, 0, "opening and cancelling never save a different colour");
+  assert.equal(h.saves, saved, "opening and cancelling never save a different colour");
 });
 
 test("gradient drafts edit each colour independently, save once, and reopen the saved gradient", () => {
@@ -326,12 +326,15 @@ test("gradient drafts edit each colour independently, save once, and reopen the 
   h.actions.adjustGradientAngle(1);
   h.actions.closeColourPicker(true);
   assert.equal(h.saves, 1);
-  assert.equal(h.source.background, "custom-gradient");
-  assert.equal(h.source.customColour, "#000000");
-  assert.deepEqual(h.source.customGradient, { start: "#336699", end: "#ff0000", angle: 91 });
+  assert.equal(h.settings.getSnapshot().background, "custom-gradient");
+  assert.equal(h.settings.getSnapshot().customColour, "#000000");
+  assert.deepEqual(h.settings.getSnapshot().customGradient, { start: "#336699", end: "#ff0000", angle: 91 });
   h.actions.openGradientPicker();
   assert.equal(h.view.getSnapshot().colourPicker.angle, 91);
-  h.source.customGradient.start = "#ffffff";
-  h.source.save();
-  assert.equal(before.customGradient.start, "#336699", "old snapshots cannot be changed by legacy writes");
+  const gradient = { ...h.settings.getSnapshot().customGradient, start: "#ffffff" };
+  h.settings.update({ customGradient: gradient });
+  gradient.end = "#000000";
+  assert.equal(h.settings.getSnapshot().customGradient.end, "#ff0000", "updates copy the gradient object");
+  assert.equal(before.customGradient.start, "#336699", "updates cannot change an old snapshot");
+  assert.equal(Object.isFrozen(h.settings.getSnapshot().customGradient), true);
 });

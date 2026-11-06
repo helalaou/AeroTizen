@@ -19,7 +19,6 @@ export const createSettingsActions = (
     });
   return {
     openColourPicker() {
-      settings.refresh();
       const hex = normalizeColour(settings.getSnapshot().customColour);
       transaction(() =>
         view.set({
@@ -30,7 +29,6 @@ export const createSettingsActions = (
       );
     },
     openGradientPicker() {
-      settings.refresh();
       const gradient = normalizeGradient(settings.getSnapshot().customGradient);
       transaction(() =>
         view.set({

@@ -1,23 +1,22 @@
 import type { CustomGradient } from "../contracts/preferences";
 
+import { normalizeColour } from "./colours";
+
 export const DEFAULT_CUSTOM_GRADIENT: CustomGradient = {
   start: "#7c5cff",
   end: "#00c4d4",
   angle: 135,
 };
 
-const gradientColour = (value: unknown, fallback: string) =>
-  typeof value === "string" && /^#[\da-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
-
-export const normalizeGradient = (value: unknown): CustomGradient => {
+export const normalizeGradient = (value: unknown, fallback = DEFAULT_CUSTOM_GRADIENT): CustomGradient => {
   const source = value && typeof value === "object" ? (value as Partial<CustomGradient>) : {};
   const angle =
     typeof source.angle === "number" && Number.isFinite(source.angle)
       ? ((Math.round(source.angle) % 360) + 360) % 360
-      : DEFAULT_CUSTOM_GRADIENT.angle;
+      : fallback.angle;
   return {
-    start: gradientColour(source.start, DEFAULT_CUSTOM_GRADIENT.start),
-    end: gradientColour(source.end, DEFAULT_CUSTOM_GRADIENT.end),
+    start: normalizeColour(source.start, fallback.start),
+    end: normalizeColour(source.end, fallback.end),
     angle,
   };
 };

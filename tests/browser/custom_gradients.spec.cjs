@@ -159,8 +159,7 @@ test("Back restores a weather photo after a gradient preview, and light gradient
   await page.evaluate(() => {
     window.Weather.currentReading = () => ({ code: 0 });
     window.Weather.solarPhase = () => "day";
-    AeroTizen.settings.weatherPhoto = true;
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ weatherPhoto: true });
     AeroTizen.applyBackground();
   });
   await expect(page.locator("[data-weather-photo]")).toBeVisible();
@@ -171,9 +170,10 @@ test("Back restores a weather photo after a gradient preview, and light gradient
   await expect(page.locator("[data-weather-photo]")).toBeVisible();
   expect(await saved(page)).toEqual(before);
   await page.evaluate(() => {
-    AeroTizen.settings.weatherPhoto = false;
-    AeroTizen.settings.customGradient = { start: "#ffffff", end: "#ffffdd", angle: 180 };
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({
+      weatherPhoto: false,
+      customGradient: { start: "#ffffff", end: "#ffffdd", angle: 180 },
+    });
     AeroTizen.applyBackground();
   });
   await expect(page.locator("html")).toHaveAttribute("data-light-background", "true");

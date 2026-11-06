@@ -95,8 +95,7 @@ for (const glass of [false, true]) {
       await expect(page.locator("#weather b")).toHaveText("12°");
       for (const background of ["solid-white", "solid-lavender", "black"]) {
         await page.evaluate((background) => {
-          AeroTizen.settings.background = background;
-          AeroTizen.settings.save();
+          AeroTizen.settings.update({ background });
           AeroTizen.applyBackground();
         }, background);
         await expect(page.locator("#weather svg")).toHaveCSS(

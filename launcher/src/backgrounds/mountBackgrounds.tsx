@@ -58,12 +58,7 @@ export const mountBackgrounds = (
       } else if (previewBackground?.kind === "gradient") {
         backgrounds.bridge.apply("custom-gradient", settings.speed, undefined, previewBackground.gradient);
       } else {
-        backgrounds.bridge.apply(
-          settings.background,
-          settings.speed,
-          settings.customColour,
-          settings.customGradient,
-        );
+        backgrounds.bridge.apply(settings.background, settings.speed, settings.customColour, settings.customGradient);
       }
     }
   };
