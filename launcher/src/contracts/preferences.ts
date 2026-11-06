@@ -2,7 +2,6 @@ import type { Store } from "../shared/state/createStore";
 
 export type TimeFormat = "12" | "24";
 export type TemperatureUnit = "C" | "F";
-export type CardSize = "big" | "small";
 export type DateFormat = "compact" | "short" | "long" | "numeric-short" | "numeric" | "iso" | "none";
 export interface WeatherLocation {
   readonly country_code?: string;
@@ -14,7 +13,6 @@ export interface WeatherLocation {
 export interface SettingsValues {
   aeroClockStyle: "vertical" | "horizontal" | "minimal" | "bold";
   background: string;
-  cardSize: CardSize;
   clockLayout: "classic" | "custom";
   continueWatching: boolean;
   continueWatchingApps: string[];
@@ -23,8 +21,8 @@ export interface SettingsValues {
   hdmiKeepVisible: Record<string, boolean>;
   hideDisconnectedHdmi: boolean;
   home: string[];
-  homeCardColumns: number | null;
-  homeCardMode: "square" | "rectangle";
+  homeAppLayout: "grid" | "scroll";
+  homeCardColumns: number;
   inputNames: Record<string, string>;
   language: string;
   numerals: "latn" | "arab";

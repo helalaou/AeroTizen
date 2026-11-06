@@ -4,7 +4,8 @@ for (const scenario of [
   { size: "small", count: 5, columns: 5, initial: 3, scrolled: 6 },
   { size: "big", count: 3, columns: 3, initial: 3, scrolled: 6 },
   { size: "small", count: 7, columns: 5, initial: 1, scrolled: 6 },
-  { size: "big", count: 4, columns: 3, initial: 2, scrolled: 7 },
+  // An incomplete app row starts in its grid column, so its nearest feed card is left of centre.
+  { size: "big", count: 4, columns: 3, initial: 1, scrolled: 6 },
 ]) {
   test(`Continue Watching keeps its position across ${scenario.count} ${scenario.size} Home apps`, async ({
     page,

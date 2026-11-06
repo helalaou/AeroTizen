@@ -75,6 +75,7 @@
 
   settings.load = function () {
     var data = defaults();
+    var migrateCards = false;
     try {
       var raw = localStorage.getItem(cfg.STORAGE_KEY);
       for (var i = 0; !raw && i < cfg.LEGACY_STORAGE_KEYS.length; i++) {
@@ -89,10 +90,26 @@
           data[k] = saved[k];
         }
       });
+      // Keep the previous row count when retiring Big/Small and rectangle cards.
+      var columns = Number(saved.homeCardColumns);
+      if ([3, 4, 5].indexOf(columns) >= 0) {
+        data.homeCardColumns = columns;
+      } else if (saved.cardSize === "small") {
+        data.homeCardColumns = 5;
+      } else if (saved.cardSize === "big") {
+        data.homeCardColumns = 3;
+      } else {
+        data.homeCardColumns = cfg.DEFAULTS.homeCardColumns;
+      }
+      migrateCards =
+        saved.homeCardColumns !== data.homeCardColumns ||
+        saved.cardSize !== undefined ||
+        saved.homeCardMode !== undefined;
     } catch (e) {
       /* corrupt or unavailable storage: keep defaults */
     }
     data.language = typeof data.language === "string" && data.language ? data.language : "auto";
+    data.homeAppLayout = data.homeAppLayout === "scroll" ? "scroll" : "grid";
     data.numerals = data.numerals === "arab" ? "arab" : "latn";
     data.continueWatching = data.continueWatching === true;
     data.continueWatchingApps = Array.isArray(data.continueWatchingApps)
@@ -114,7 +131,7 @@
       settings[k] = data[k];
     });
     // Resolve older Automatic settings once, then retain the selected option.
-    if (detectTimeFormat || detectTempUnit) {
+    if (detectTimeFormat || detectTempUnit || migrateCards) {
       settings.save();
     } else {
       notify();

@@ -22,20 +22,33 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
   const visibleHome = home.filter(
     (id) => id === env.runtime.config.FIREPLACE_ID || !ready || apps.some((app) => app.id === id),
   );
-  const size = settings.cardSize === "small" ? "small" : "big";
   const showContinueWatching = page === "home" && settings.continueWatching && items.length > 0;
   const dockInputs =
     page === "home" &&
     inputs.length > 0 &&
     !showContinueWatching &&
     visibleHome.length > 0 &&
-    visibleHome.length <= env.columns(settings);
+    (settings.homeAppLayout === "scroll" || visibleHome.length <= env.columns(settings));
   const viewportClass = "content-viewport" + (scroll > 0 ? " is-scrolled" : "");
   const atAppsEnd = page === "apps" && scroll === appsEndOffset;
   const dockClass = dockInputs ? "rows--dock-inputs" : undefined;
   useLayoutEffect(() => {
     env.bridge.focus();
-  }, [env, page, apps, inputs, items, ready, settings.home, settings.homeInitialized, draft, size]);
+  }, [
+    env,
+    page,
+    apps,
+    inputs,
+    items,
+    ready,
+    settings.home,
+    settings.homeInitialized,
+    draft,
+    settings.homeCardColumns,
+    settings.homeAppLayout,
+    settings.clockLayout,
+    settings.aeroClockStyle,
+  ]);
   return (
     <>
       <HomeHeader env={env} />

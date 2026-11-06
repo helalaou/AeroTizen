@@ -49,7 +49,7 @@ main {
   transition: transform 0.22s ease-out;
   will-change: transform;
 }
-.home-page-surface[data-page="home"] > .app-grid {
+.home-page-surface[data-page="home"] > .app-grid-viewport > .app-grid {
   margin-bottom: 0;
 }
 .home-page-surface[data-page="home"] > :not([hidden]):not(:empty) ~ section:not([hidden]) {
@@ -78,8 +78,6 @@ main {
 .row {
   display: flex;
   gap: 22px;
-  transition: transform 0.22s ease-out;
-  will-change: transform;
 }
 body.editing:not(.previewing) #home-root main {
   visibility: visible !important;

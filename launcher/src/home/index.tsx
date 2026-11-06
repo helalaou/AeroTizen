@@ -39,15 +39,14 @@ export const mountHome = (
       status,
       updates,
       rows,
+      appItems: createRef<HTMLDivElement>(),
+      appViewport: createRef<HTMLDivElement>(),
       continueItems: createRef<HTMLDivElement>(),
       continueViewport: createRef<HTMLDivElement>(),
       nodes: new Map(),
       showMoveInstructions: () => runtime.toast(translations.getSnapshot().t("home.moveInstructions")),
       describe: (app) => runtime.tiles.describe(app),
-      columns: (values) =>
-        [3, 4, 5].includes(Number(values.homeCardColumns))
-          ? Number(values.homeCardColumns)
-          : runtime.config.CARD_COLUMNS[values.cardSize === "small" ? "small" : "big"],
+      columns: (values) => values.homeCardColumns,
     },
     flushSync,
   );

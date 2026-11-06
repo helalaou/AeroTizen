@@ -1,9 +1,4 @@
 /* continue watching: component-owned styles. */
-.continue-viewport {
-  /* Home's content viewport clips at the screen edges. */
-  margin: 0 calc(-1 * var(--home-side-padding));
-  padding: 0 var(--home-side-padding);
-}
 #continue-items {
   position: relative;
   gap: 24px;

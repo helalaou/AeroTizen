@@ -38,16 +38,14 @@ AeroTizen.config = {
   FIREPLACE_ID: "__fire",
   FIREPLACE_VIDEO: "WuHSBSLK3_A",
 
-  CARD_COLUMNS: { big: 3, small: 5 }, // Settings → App cards
   LONG_PRESS_MS: 600,
   SPEED: { MIN: 0.25, MAX: 3, STEP: 0.25 },
 
   DEFAULTS: {
     home: null, // null selects defaults on first launch; [] keeps an empty Home.
-    cardSize: "big",
     glassSettings: false, // Optional Preact Glass categories and source dock.
-    homeCardMode: "square", // Square Samsung artwork remains the default.
-    homeCardColumns: null, // null preserves the existing Big/Small column count.
+    homeCardColumns: 3, // Square app cards: 3, 4 or 5 apps per row.
+    homeAppLayout: "grid", // Home app icons can also use one horizontal scrolling row.
     background: "aurora",
     weatherPhoto: false, // Opt-in AI-generated scenes using the existing forecast.
     speed: 1,

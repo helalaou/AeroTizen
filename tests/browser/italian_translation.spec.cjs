@@ -43,9 +43,18 @@ for (const glassSettings of [false, true]) {
         await openCategory(page, category);
         await expect(page.locator(`[data-section-pane="${category}"]`)).toBeVisible();
         if (category === "appearance") {
-          const label = page.locator('[data-key="home-card-columns:auto"] span').first();
-          await expect(label).toHaveText("In base alle dimensioni");
-          await expect.poll(() => label.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
+          const labels = page.locator("#home-card-columns span, #home-app-layout span");
+          await expect(labels).toHaveText(["Piccola", "Media", "Grande", "Griglia", "Scorrimento"]);
+          await expect
+            .poll(() =>
+              labels.evaluateAll((elements) =>
+                elements.every(
+                  (element) =>
+                    element.scrollHeight <= element.clientHeight && element.scrollWidth <= element.clientWidth,
+                ),
+              ),
+            )
+            .toBe(true);
         }
         await page.screenshot({ path: info.outputPath(category + ".png") });
         await page.keyboard.press("Escape");

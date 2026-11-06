@@ -157,7 +157,7 @@ test("Home docks Inputs with one app row and leaves them in flow with two rows",
   await page.keyboard.press("ArrowDown");
   await expect(firstInput).toBeFocused();
 });
-test("compiled Home preserves legacy geometry and artwork source selection at 1080p", async ({
+test("compiled Home preserves header and input geometry around the resized app grid at 1080p", async ({
   page,
   browser,
 }, info) => {
@@ -180,7 +180,7 @@ test("compiled Home preserves legacy geometry and artwork source selection at 10
     await tab.waitForFunction(() => AeroTizen.apps.ready && document.querySelector("#grid > .tile.focused"));
   const geometry = (tab) =>
     tab.evaluate(() =>
-      [".topbar", "#gear", "#grid", "#inputs"].map((selector) => {
+      [".topbar", "#gear", "#inputs"].map((selector) => {
         const element = document.querySelector(selector),
           rect = element.getBoundingClientRect();
         // The shared Home heading and section spacing set a new vertical position for Inputs.
@@ -189,7 +189,7 @@ test("compiled Home preserves legacy geometry and artwork source selection at 10
         return [selector, ...coordinates.map((n) => Math.round(n))];
       }),
     );
-  // Header tabs are now centred in both themes; app/source geometry remains upstream-compatible.
+  // App sizes now fit two complete rows; header and input dimensions stay upstream-compatible.
   await page.waitForFunction(() =>
     document
       .querySelector(".home-page-surface")

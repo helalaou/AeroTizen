@@ -1,9 +1,11 @@
 import type { InstalledApp } from "../../contracts/launcher";
 import type { SettingsSnapshot } from "../../contracts/preferences";
+import { useStore } from "../../shared/hooks/useStore";
 import type { HomeEnvironment, Page } from "../types";
 
 import { AppCard } from "./AppCard";
 import { FireplaceCard } from "./FireplaceCard";
+import { HorizontalScroller } from "./HorizontalScroller";
 
 export const AppGrid = ({
   env,
@@ -24,14 +26,20 @@ export const AppGrid = ({
   active: boolean;
   label: string;
 }) => {
-  const size = settings.cardSize === "small" ? "small" : "big";
+  const { appOffset } = useStore(env.state);
+  const scroll = page === "home" && settings.homeAppLayout === "scroll";
   return (
-    <div
-      style={{ display: shown ? undefined : "none" }}
-      hidden={!shown}
+    <HorizontalScroller
       id={shown ? "grid" : page + "-grid-parked"}
-      class={"app-grid cards-" + size + " cards-" + settings.homeCardMode + " cols-" + env.columns(settings)}
-      aria-label={label}
+      label={label}
+      enabled={scroll}
+      visible={shown}
+      viewportClass="app-grid-viewport"
+      trackClass={"app-grid cards-square cols-" + env.columns(settings) + (scroll ? " app-grid--scroll" : "")}
+      trackRef={page === "home" ? env.appItems : undefined}
+      viewportRef={page === "home" ? env.appViewport : undefined}
+      offset={appOffset}
+      onOffsetChange={(offset) => env.state.set({ ...env.state.getSnapshot(), appOffset: offset })}
     >
       {ids.map((id) => {
         if (id === env.runtime.config.FIREPLACE_ID) {
@@ -40,6 +48,6 @@ export const AppGrid = ({
         const app = apps.find((app) => app.id === id) || { id, name: id, icon: "" };
         return <AppCard key={id} env={env} app={app} active={active && shown} />;
       })}
-    </div>
+    </HorizontalScroller>
   );
 };

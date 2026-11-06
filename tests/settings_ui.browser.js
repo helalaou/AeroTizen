@@ -137,8 +137,13 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       assert(!A.$("network").hasAttribute("hidden"), "network restored");
       find(variant === "preact" ? "live-tv-visibility:false" : "live-tv:false").click();
       assert(A.settings.showLiveTv === false, "Live TV hidden");
-      find(variant === "preact" ? "card-sizes:small" : "cards:small").click();
-      assert(A.settings.cardSize === "small", "card size saved");
+      if (variant === "preact") {
+        find("home-card-columns:5").click();
+        assert(A.settings.homeCardColumns === 5, "apps per row saved");
+      } else {
+        find("cards:small").click();
+        assert(A.settings.cardSize === "small", "legacy card size saved");
+      }
       find(variant === "preact" ? "input-visibility:true" : "inputs:true").click();
       assert(
         !Array.from(document.querySelector("#inputs").children).some((el) => el.textContent === "HDMI 2"),

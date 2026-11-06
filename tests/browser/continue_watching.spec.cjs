@@ -238,7 +238,8 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   // Preact updates the changed keyed record in place; progress above verifies fresh data.
   expect(await page.evaluate(() => window.savedCards[6] === document.querySelectorAll(".continue-card")[6])).toBe(true);
   await page.keyboard.press("ArrowDown"); // app row -> Continue Watching
-  await expect(page.locator(".continue-card").nth(2)).toHaveClass(/focused/);
+  // A partial grid row starts in its first column; select the nearest visible feed card.
+  await expect(page.locator(".continue-card").nth(1)).toHaveClass(/focused/);
   await page.keyboard.press("ArrowLeft");
   await page.keyboard.press("ArrowLeft");
   await expect(page.locator(".continue-card").first()).toHaveClass(/focused/);

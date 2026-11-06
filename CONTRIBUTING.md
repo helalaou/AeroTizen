@@ -157,7 +157,7 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
   components and serves the legacy runtime files. TV-only features use sample data.
   For README screenshots, open `?demo=1` in a clean browser context at 1920×1080.
   It loads Glass, sample favourites and a fictional Continue Watching feed. In
-  **Settings → Appearance**, select **Square** and set **Apps per row** to **5**.
+  **Settings → Appearance**, set **App size** to **Small**.
   Add a fifth favourite to Home.
 - Run `npm run build` for the compiled runtime in `dist/launcher/`.
   Releases package this directory. The explicit production HTML mounts Home and
