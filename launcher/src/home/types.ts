@@ -20,6 +20,7 @@ export interface HomeMenuChoice {
 }
 export interface HomeState {
   readonly active: boolean;
+  readonly appOffset: number;
   readonly appsEndOffset: number;
   readonly continueOffset: number;
   readonly draft: readonly string[] | null;
@@ -31,6 +32,8 @@ export interface HomeState {
 }
 export interface HomeEnvironment {
   activate(key: string): void;
+  appItems: RefObject<HTMLDivElement>;
+  appViewport: RefObject<HTMLDivElement>;
   bridge: HomeBridge;
   choose(index: number): void;
   columns(settings: SettingsSnapshot): number;

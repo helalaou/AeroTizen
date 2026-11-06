@@ -53,10 +53,6 @@
     transform: translate(var(--dx), var(--dy));
   }
 }
-.app-grid.cards-rectangle .tile.moving > .move-arrow {
-  display: flex;
-  z-index: 31;
-}
 .app-actions-menu__backdrop {
   position: fixed;
   top: 0;

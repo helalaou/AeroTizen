@@ -70,17 +70,23 @@ for (const height of [720, 1080])
       expect(slots[1].x - slots[0].x).toBe(slots[2].x - slots[1].x);
       await page.keyboard.press("ArrowDown");
       await expect(page.locator(".continue-card")).toHaveClass(/focused/);
-      await expect(page.locator(".continue-viewport")).toHaveCSS("overflow", "visible");
+      await expect(page.locator(".continue-viewport")).toHaveCSS("overflow", "hidden");
       // The box shadow lies outside the transformed border box. Include its full
       // scaled 9px radius rather than checking only the card's content rectangle.
       await expect
         .poll(() =>
           page.locator(".continue-card").evaluate((card) => {
             const r = card.getBoundingClientRect(),
-              clip = card.closest(".content-viewport").getBoundingClientRect();
+              clip = card.closest(".content-viewport").getBoundingClientRect(),
+              rowClip = card.closest(".horizontal-scroller").getBoundingClientRect();
             const scale = r.width / card.offsetWidth,
               ring = 9 * scale;
-            return r.top - ring >= clip.top && r.bottom + ring <= clip.bottom && r.left - ring >= clip.left;
+            return (
+              r.top - ring >= Math.max(clip.top, rowClip.top) &&
+              r.bottom + ring <= Math.min(clip.bottom, rowClip.bottom) &&
+              r.left - ring >= Math.max(clip.left, rowClip.left) &&
+              r.right + ring <= Math.min(clip.right, rowClip.right)
+            );
           }),
         )
         .toBe(true);

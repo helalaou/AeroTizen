@@ -31,8 +31,7 @@ if (new URLSearchParams(location.search).get("demo") === "1" && !("tizen" in win
   config.LEGACY_STORAGE_KEYS = [];
   config.DEFAULTS.continueWatching = true;
   config.DEFAULTS.glassSettings = true;
-  config.DEFAULTS.cardSize = "small";
-  config.DEFAULTS.homeCardMode = "rectangle";
+  config.DEFAULTS.homeCardColumns = 5;
   config.DEFAULTS.home = ["demo0", "demo1", "demo3", "demo6"];
 
   const items: ContinueItem[] = programmes.map(

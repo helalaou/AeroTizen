@@ -42,6 +42,7 @@ test("Home interpolates the top fade without replacing its mask and keeps the bo
     const mask = document.querySelector(".content-mask");
     getComputedStyle(mask).webkitMaskPositionY;
     AeroTizen.homeScreen.keydown(40, { preventDefault() {} });
+    AeroTizen.homeScreen.keydown(40, { preventDefault() {} });
     getComputedStyle(mask).webkitMaskPositionY;
     const motion = mask.getAnimations().find((a) => a.transitionProperty?.includes("mask-position"));
     if (!motion) return null;

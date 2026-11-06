@@ -54,7 +54,6 @@ export type ClockFormatter = Pick<
   "dateStyle" | "formatDate" | "formatTime" | "subscribe" | "DATE_FORMATS"
 >;
 export interface LauncherConfig {
-  CARD_COLUMNS: Record<string, number>;
   DEFAULTS: Omit<SettingsValues, "home" | "tempUnit" | "timeFormat"> & {
     home: string[] | null;
     tempUnit: TemperatureUnit | null;

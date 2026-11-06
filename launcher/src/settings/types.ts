@@ -12,7 +12,6 @@ import type {
   SettingsBridge,
 } from "../contracts/launcher";
 import type {
-  CardSize,
   DateFormat,
   SettingsSnapshot,
   SettingsStore,
@@ -64,15 +63,14 @@ export interface SettingsActions {
   preview(): void;
   saveInputName(port: string, value: string): void;
   setBackground(background: string): void;
-  setCardSize(size: CardSize): void;
   setClockLayout(layout: "classic" | SettingsValues["aeroClockStyle"]): void;
   setContinueWatching(enabled: boolean): void;
   setDateFormat(format: DateFormat): void;
   setGlassSettings(enabled: boolean): void;
   setHdmiKeepVisible(port: string, keep: boolean): void;
   setHdmiVisibility(hide: boolean): void;
-  setHomeCardColumns(columns: number | null): void;
-  setHomeCardMode(mode: SettingsValues["homeCardMode"]): void;
+  setHomeAppLayout(layout: SettingsValues["homeAppLayout"]): void;
+  setHomeCardColumns(columns: number): void;
   setLiveTvVisible(visible: boolean): void;
   setLocation(location: WeatherLocation | null): void;
   setLocationVisible(visible: boolean): void;
