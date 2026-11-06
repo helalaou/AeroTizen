@@ -28,8 +28,8 @@ for (const glass of [false, true])
       await expect(choice).toHaveAttribute("aria-pressed", "true");
       await closeSettings(page);
       await page.locator("#apps-tab").click();
-      await expect(page.locator("#grid")).toHaveClass(new RegExp("cards-square cols-" + columns));
-      const tiles = page.locator("#grid > .tile");
+      await expect(page.locator("#grid")).toHaveAttribute("data-columns", String(columns));
+      const tiles = page.locator("#grid > [data-id]");
       const positions = await tiles.evaluateAll((nodes) =>
         nodes.slice(0, 6).map((n) => ({ top: n.offsetTop, width: n.offsetWidth, height: n.offsetHeight })),
       );
@@ -46,16 +46,18 @@ for (const glass of [false, true])
       await expect(page.getByRole("menu")).toBeVisible();
       await page.keyboard.up("Enter");
       await page.keyboard.press("Enter");
-      await expect(page.locator("#grid > .tile").first()).toHaveClass(/moving/);
-      const viewportTop = await page.locator(".content-viewport").evaluate((node) => node.getBoundingClientRect().top);
+      await expect(page.locator("#grid > [data-id]").first()).toHaveAttribute("data-moving", "true");
+      const viewportTop = await page
+        .locator("[data-home-viewport]")
+        .evaluate((node) => node.getBoundingClientRect().top);
       await expect
-        .poll(async () => (await page.locator("#grid > .tile").first().boundingBox()).y)
+        .poll(async () => (await page.locator("#grid > [data-id]").first().boundingBox()).y)
         .toBeGreaterThanOrEqual(viewportTop + 9);
       await page.keyboard.press("ArrowRight");
       await page.keyboard.press("Enter");
       await page.reload();
       expect(await page.evaluate(() => AeroTizen.settings.homeCardColumns)).toBe(columns);
-      await expect(page.locator("#grid")).toHaveClass(new RegExp("cards-square cols-" + columns));
+      await expect(page.locator("#grid")).toHaveAttribute("data-columns", String(columns));
       await page.locator("#gear").click();
       await openCategory(page, "appearance");
       await expect(choice).toHaveAttribute("aria-pressed", "true");
@@ -79,9 +81,9 @@ test("a saved rectangle layout opens as squares and retains its row count", asyn
   });
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.ready);
-  await expect(page.locator("#grid")).toHaveClass(/cards-square cols-5/);
+  await expect(page.locator("#grid")).toHaveAttribute("data-columns", "5");
   const size = await page
-    .locator("#grid > .tile")
+    .locator("#grid > [data-id]")
     .first()
     .evaluate((n) => [n.offsetWidth, n.offsetHeight]);
   expect(size).toEqual([332, 332]);
@@ -136,7 +138,7 @@ for (const glass of [false, true]) {
           { columns, clock },
         );
         await page.locator("#home-tab").click();
-        const apps = page.locator("#grid > .tile");
+        const apps = page.locator("#grid > [data-id]");
         await expect(apps).toHaveCount(columns * 2);
         const geometry = await apps.evaluateAll((nodes) =>
           nodes.map((node) => ({
@@ -151,7 +153,7 @@ for (const glass of [false, true]) {
         expect(new Set(geometry.map((rect) => rect.top)).size).toBe(2);
         expect(geometry.filter((rect) => rect.top === geometry[0].top)).toHaveLength(columns);
         const bottom = await page
-          .locator(".content-viewport")
+          .locator("[data-home-viewport]")
           .evaluate((node) => node.getBoundingClientRect().bottom - 80);
         for (const rect of geometry) {
           expect(rect.width).toBe(rect.height);
@@ -166,7 +168,7 @@ for (const glass of [false, true]) {
         await expect
           .poll(async () => (await apps.nth(columns).boundingBox()).y + (await apps.nth(columns).boundingBox()).height)
           .toBeLessThanOrEqual(bottom - 9);
-        await expect(page.locator(".content-viewport")).not.toHaveClass(/is-scrolled/);
+        await expect(page.locator("[data-home-viewport]")).toHaveAttribute("data-scrolled", "false");
         if (clock === "classic" || clock === "vertical") {
           await page.screenshot({ path: info.outputPath(`${clock}-${columns}-two-rows.png`) });
         }
@@ -177,7 +179,7 @@ for (const glass of [false, true]) {
         }, columns);
         await page.keyboard.press("ArrowDown");
         await expect(apps.nth(columns * 2)).toBeFocused();
-        const top = await page.locator(".content-viewport").evaluate((node) => node.getBoundingClientRect().top);
+        const top = await page.locator("[data-home-viewport]").evaluate((node) => node.getBoundingClientRect().top);
         await expect
           .poll(async () => {
             const rect = await apps.nth(columns * 2).boundingBox();

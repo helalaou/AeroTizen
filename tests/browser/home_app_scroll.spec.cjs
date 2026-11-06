@@ -71,7 +71,7 @@ const fullyVisible = async (page, card) => {
   await expect
     .poll(async () => {
       const rect = await card.boundingBox();
-      const viewport = await page.locator(".content-viewport").boundingBox();
+      const viewport = await page.locator("[data-home-viewport]").boundingBox();
       return rect && rect.x >= 9 && rect.x + rect.width <= 1911 && rect.y >= viewport.y && rect.y + rect.height <= 991;
     })
     .toBe(true);
@@ -91,9 +91,9 @@ for (const glass of [false, true]) {
       await expect(page.locator("#home-card-columns .choice-option__description")).toHaveCount(0);
       await page.locator('[data-key="home-app-layout:scroll"]').click();
       await closeSettings(page);
-      await expect(page.locator("#grid")).toHaveClass(/app-grid--scroll/);
+      await expect(page.locator("#grid")).toHaveAttribute("data-scroll", "true");
       expect(await track.evaluate((node) => node === document.querySelector("#grid"))).toBe(true);
-      const apps = page.locator("#grid > .tile");
+      const apps = page.locator("#grid > [data-id]");
       expect(await apps.evaluateAll((nodes) => new Set(nodes.map((node) => node.offsetTop)).size)).toBe(1);
       await page.locator("#home-tab").click();
       await page.keyboard.press("ArrowDown");
@@ -113,14 +113,14 @@ for (const glass of [false, true]) {
       expect(await offset(page, "#continue-items")).toBeGreaterThan(0);
       const feedOffset = await offset(page, "#continue-items");
       await page.keyboard.press("ArrowUp");
-      await expect(page.locator("#grid > .tile.focused")).toHaveCount(1);
-      await fullyVisible(page, page.locator("#grid > .tile.focused"));
+      await expect(page.locator("#grid > [data-id].focused")).toHaveCount(1);
+      await fullyVisible(page, page.locator("#grid > [data-id].focused"));
       expect(await offset(page, "#continue-items")).toBe(feedOffset);
       expect(await offset(page, "#grid")).toBe(appOffset);
       await page.reload();
-      await expect(page.locator("#grid")).toHaveClass(/app-grid--scroll/);
+      await expect(page.locator("#grid")).toHaveAttribute("data-scroll", "true");
       await page.locator("#apps-tab").click();
-      await expect(page.locator("#grid")).not.toHaveClass(/app-grid--scroll/);
+      await expect(page.locator("#grid")).not.toHaveAttribute("data-scroll", "true");
       await page.locator("#home-tab").click();
       await page.keyboard.press("ArrowDown");
       for (let index = 0; index < 11; index++) await page.keyboard.press(next);
@@ -155,10 +155,10 @@ for (const glass of [false, true]) {
         );
         await page.locator("#home-tab").click();
         await page.keyboard.press("ArrowDown");
-        await fullyVisible(page, page.locator("#grid > .tile").first());
+        await fullyVisible(page, page.locator("#grid > [data-id]").first());
         await expect
           .poll(() =>
-            page.locator("#grid > .tile").evaluateAll((nodes) =>
+            page.locator("#grid > [data-id]").evaluateAll((nodes) =>
               nodes.some((node) => {
                 const rect = node.getBoundingClientRect();
                 return rect.left < 1896 && rect.right > 1920 && rect.left > 0;
@@ -174,8 +174,8 @@ for (const glass of [false, true]) {
         if (clock === "classic" && columns === 3) await page.screenshot({ path: info.outputPath("apps-and-feed.png") });
       }
     }
-    await expect(page.locator("#grid")).toHaveCSS("transition-property", "none");
-    await expect(page.locator("#continue-items")).toHaveCSS("transition-property", "none");
+    await expect(page.locator("#grid")).toHaveCSS("transition-duration", "0s");
+    await expect(page.locator("#continue-items")).toHaveCSS("transition-duration", "0s");
   });
 }
 
@@ -187,7 +187,7 @@ for (const language of ["en", "ar"]) {
     await page.locator("#home-tab").click();
     await page.keyboard.press("ArrowDown");
     for (let index = 0; index < 6; index++) await page.keyboard.press(next);
-    const card = page.locator('#grid > .tile[data-id="' + before[6] + '"]');
+    const card = page.locator('#grid > [data-id][data-id="' + before[6] + '"]');
     await expect(card).toBeFocused();
     await page.keyboard.press("Enter");
     await expect.poll(() => page.evaluate(() => window.scrollLaunches)).toEqual([before[6]]);
@@ -195,8 +195,8 @@ for (const language of ["en", "ar"]) {
     await expect(page.getByRole("menu")).toBeVisible();
     await page.keyboard.up("Enter");
     await page.keyboard.press("Enter");
-    await expect(card).toHaveClass(/moving/);
-    await expect(card.locator(".move-arrow.up, .move-arrow.down")).toHaveCount(0);
+    await expect(card).toHaveAttribute("data-moving", "true");
+    await expect(card.locator("[data-reorder-arrow].up, [data-reorder-arrow].down")).toHaveCount(0);
     await page.keyboard.press(next);
     await page.keyboard.press("Enter");
     expect(await page.evaluate(() => AeroTizen.settings.home[7])).toBe(before[6]);

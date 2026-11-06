@@ -25,7 +25,6 @@ h2 {
   margin: 0 0 18px;
 }
 
-.app-grid .tile.focused,
 .continue-card.focused {
   transform: translateZ(0) scale(1.035);
   box-shadow:
@@ -37,13 +36,13 @@ h2 {
 body.tv {
   background: transparent;
 }
-body.tv main {
+body.tv [data-home-content] {
   visibility: hidden;
 }
-body.previewing main {
+body.previewing [data-home-content] {
   visibility: hidden;
 }
-body.editing main {
+body.editing [data-home-content] {
   visibility: hidden;
 }
 /* Public shell hook: Settings keeps the header dimmed over native TV mode. */
@@ -51,7 +50,8 @@ body.tv [data-home-header],
 body.previewing [data-home-header] {
   visibility: hidden;
 }
-body.editing:not(.previewing) [data-home-header] {
+body.editing:not(.previewing) [data-home-header],
+body.editing:not(.previewing) [data-home-content] {
   visibility: visible;
   opacity: 0.48;
   pointer-events: none;

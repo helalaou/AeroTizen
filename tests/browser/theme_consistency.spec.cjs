@@ -47,20 +47,22 @@ for (const glassSettings of [false, true]) {
       };
     });
     expect(homeLayout).toEqual({ gridGap: 40, continueGap: 40 });
-    const headings = page.locator(".home-section-heading");
+    const headings = page.locator("[data-home-section-heading]");
     await expect(headings).toHaveCount(2);
     for (const heading of await headings.all()) {
       await expect(heading).toHaveCSS("font-size", "21px");
       await expect(heading).toHaveCSS("text-transform", "uppercase");
     }
     const colour = glassSettings ? "rgb(237, 242, 255)" : "rgb(124, 92, 255)";
-    expect(await page.locator("#grid .tile.focused").evaluate((n) => getComputedStyle(n).boxShadow)).toContain(colour);
+    expect(await page.locator("#grid [data-id].focused").evaluate((n) => getComputedStyle(n).boxShadow)).toContain(
+      colour,
+    );
     await page.keyboard.down("Enter");
     await expect(page.getByRole("menu")).toBeVisible();
     await page.keyboard.up("Enter");
-    expect(
-      await page.locator(".app-actions-menu__focus-indicator").evaluate((n) => getComputedStyle(n).borderColor),
-    ).toBe(colour);
+    expect(await page.locator("[data-app-actions-focus]").evaluate((n) => getComputedStyle(n).borderColor)).toBe(
+      colour,
+    );
     expect(await page.getByRole("menu").evaluate((n) => getComputedStyle(n).backgroundImage === "none")).toBe(
       !glassSettings,
     );

@@ -1,10 +1,12 @@
 import { Move, SquareMinus, SquarePlus } from "lucide-preact";
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 
-import { useStore } from "../../shared/hooks/useStore";
-import { useTranslation } from "../../shared/i18n/useTranslation";
-import { Icon } from "../../shared/icons/Icon";
-import type { HomeEnvironment } from "../types";
+import { useStore } from "../../../shared/hooks/useStore";
+import { useTranslation } from "../../../shared/i18n/useTranslation";
+import { Icon } from "../../../shared/icons/Icon";
+import type { HomeEnvironment } from "../../types";
+
+import styles from "./AppActionsMenu.module.css";
 const ACTION_ICONS = { add: SquarePlus, move: Move, remove: SquareMinus } as const;
 
 export const AppActionsMenu = ({ env }: { env: HomeEnvironment }) => {
@@ -31,25 +33,26 @@ export const AppActionsMenu = ({ env }: { env: HomeEnvironment }) => {
   }
   return (
     <>
-      <div class="app-actions-menu__backdrop is-open" aria-hidden="true" onClick={env.dismiss} />
-      <div ref={panel} style={position} class="app-actions-menu is-open" role="menu" aria-label={t("home.appActions")}>
+      <div class={styles.backdrop} data-app-actions-backdrop aria-hidden="true" onClick={env.dismiss} />
+      <div ref={panel} style={position} class={styles.menu} role="menu" aria-label={t("home.appActions")}>
         <div
-          class="app-actions-menu__focus-indicator"
+          class={styles.focus}
+          data-app-actions-focus
           aria-hidden="true"
           style={{ transform: "translate3d(0," + menu.selected * 64 + "px,0)" }}
         />
         {env.menuChoices().map((choice, i) => (
           <div
             key={choice.action}
-            class={"app-actions-menu__option" + (menu.selected === i ? " selected" : "")}
+            class={styles.option}
             role="menuitem"
             aria-selected={menu.selected === i}
             onClick={() => env.choose(i)}
           >
-            <span class="app-actions-menu__icon" aria-hidden="true">
+            <span class={styles.icon} aria-hidden="true">
               <Icon icon={ACTION_ICONS[choice.action]} />
             </span>
-            <span class="app-actions-menu__label">{t(choice.label)}</span>
+            <span class={styles.label}>{t(choice.label)}</span>
           </div>
         ))}
       </div>

@@ -115,13 +115,13 @@ test("moving visible favourites ignores stale uninstalled IDs in saved settings"
   );
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.ready);
-  await expect(page.locator("#grid > .tile")).toHaveCount(3);
+  await expect(page.locator("#grid > [data-id]")).toHaveCount(3);
   await page.keyboard.down("Enter");
   await expect(page.getByRole("menu")).toBeVisible();
   await page.keyboard.up("Enter");
   await page.keyboard.press("Enter");
   await page.keyboard.press("ArrowRight");
-  expect(await page.locator("#grid > .tile").evaluateAll((nodes) => nodes.map((n) => n.dataset.id))).toEqual([
+  expect(await page.locator("#grid > [data-id]").evaluateAll((nodes) => nodes.map((n) => n.dataset.id))).toEqual([
     "demo1",
     "demo0",
     "demo2",
@@ -137,15 +137,15 @@ test("an inventory refresh removing the moving app cannot delete another favouri
   await expect(page.getByRole("menu")).toBeVisible();
   await page.keyboard.up("Enter");
   await page.keyboard.press("Enter");
-  await expect(page.locator("#grid .tile.moving")).toHaveCount(1);
+  await expect(page.locator("#grid [data-id][data-moving=true]")).toHaveCount(1);
   await page.evaluate(() => {
     AeroTizen.apps.all = AeroTizen.apps.all.filter((app) => app.id !== "demo0");
     AeroTizen.homeScreen.refreshApps();
   });
-  await expect(page.locator("#grid .tile.moving")).toHaveCount(0);
+  await expect(page.locator("#grid [data-id][data-moving=true]")).toHaveCount(0);
   await page.keyboard.press("ArrowRight");
   expect(await page.evaluate(() => AeroTizen.settings.home)).toEqual(["demo0", "demo1", "demo2"]);
-  expect(await page.locator("#grid > .tile").evaluateAll((nodes) => nodes.map((n) => n.dataset.id))).toEqual([
+  expect(await page.locator("#grid > [data-id]").evaluateAll((nodes) => nodes.map((n) => n.dataset.id))).toEqual([
     "demo1",
     "demo2",
   ]);

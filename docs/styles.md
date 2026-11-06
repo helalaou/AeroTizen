@@ -5,8 +5,15 @@ New or migrated components import a sibling `Component.module.css`. Keep layout
 and state selectors with their component, and remove the old global rules when
 migrating. All Settings controls, sections and the drawer now use modules;
 the global `settings.css` sheet has been removed. Home header and status components
-also use modules; `home-header.css` and `clock.css` have been removed. Remaining
-Home content styles migrate separately.
+also use modules; `home-header.css` and `clock.css` have been removed. Home layout,
+app cards, headings, scrolling and app actions now use modules too; their four
+global sheets have been removed. Continue Watching and input cards migrate separately.
+
+Use a component-named directory for a styled component and its private helpers,
+for example `AppGrid/AppGrid.tsx` with `AppGrid/AppGrid.module.css`. Small components
+without companion files can stay flat. Apply this structure as components are
+migrated; imports name the component file directly, without a barrel per folder.
+
 Keep theme paint in
 `launcher/css/themes.css`, which defines the default Classic values and the
 `body.glass-ui` overrides. Prefer role names such as `--settings-surface`,
@@ -72,6 +79,20 @@ props. Their modules do not depend on a parent's private class or body clock mod
 Tests use `data-home-header`, `data-header-focus`, `data-clock-part` and
 `data-weather-part`; semantic IDs remain available for integrations.
 
+`HomeAppCard` owns the common app/Fireplace frame, focus, moving state and reorder
+controls. `AppGrid` owns sizes, columns and compact/expanded clock clearance through
+explicit data attributes. `AppArtwork` owns image geometry; its inherited radius
+keeps images rounded when moving cards expose their overflow. Input frames and
+Continue Watching source badges retain their own legacy rules, without a shared
+global `.tile` base. `HorizontalScroller` owns clipping and track movement for both
+app and Continue Watching rows.
+
+`Home` owns the viewport, fades, page reveals and section spacing. The inputs
+section exposes `data-home-section="inputs"` as a layout slot. Tests use
+`data-home-viewport`, `data-home-mask`, `data-home-page`, `data-app-grid`, `data-columns`,
+`data-moving`, `data-reorder-arrow` and `data-app-actions-focus`. Use `data-id` to
+identify app cards and ARIA state for menu selection.
+
 App brand data sets `--app-background` on AppCard and AppOption. The card style
 uses that value, while Settings can supply its focused surface through a normal
 state rule. Do not put state paint into an inline background style.
@@ -102,11 +123,12 @@ state. Do not override the shared motion durations in theme or component rules.
 Keep keyframes with their component until multiple components need the same
 effect. A shared CSS Module can then own the keyframes and reusable animation class.
 
-Settings focus indicators, controls, the drawer and the Home header use this policy.
-This removes their repeated media queries and reduced-motion `!important` rules. New and migrated
-components should use the same tokens. Keep a local media query only when an effect
+Settings, the Home header, app cards, viewport, scrollers, page reveals and app
+actions use this policy. Reorder arrows also stop moving under reduced motion.
+This removes their repeated media queries and reduced-motion `!important` rules.
+New and migrated components should use the same tokens. Keep a local media query only when an effect
 needs different behavior, such as replacing movement with a static alternative.
-Existing Home/input rules keep their local handling until migrated; the policy
+Existing Continue Watching/input rules keep their local handling until migrated; the policy
 does not change wallpaper or JavaScript animation behavior.
 
 ## Runtime DOM boundary
@@ -120,11 +142,11 @@ and `setAttribute("class", ...)` calls.
 
 The remaining shell classes are public integration hooks, not module classes:
 
-| Hook                                         | Owner                        | Purpose                                                         |
-| -------------------------------------------- | ---------------------------- | --------------------------------------------------------------- |
-| `body.tv`                                    | `launcher/js/inputs.js`      | Hide Home while the native TVWindow is visible                  |
-| `body.glass-ui`, `body.clock-layout-compact` | `home/index.tsx`             | Apply the existing appearance and clock modes before measuring  |
-| `body.editing`, `body.previewing`            | `useSettingsPresentation.ts` | Settings and wallpaper preview visibility, with unmount cleanup |
+| Hook                              | Owner                        | Purpose                                                         |
+| --------------------------------- | ---------------------------- | --------------------------------------------------------------- |
+| `body.tv`                         | `launcher/js/inputs.js`      | Hide Home while the native TVWindow is visible                  |
+| `body.glass-ui`                   | `home/index.tsx`             | Apply the existing appearance before measuring                  |
+| `body.editing`, `body.previewing` | `useSettingsPresentation.ts` | Settings and wallpaper preview visibility, with unmount cleanup |
 
 The obsolete DOM constructors, list-chunking helper and focus sweep live only in
 the comparison helper. Keep frozen fixture scripts and CSS out of the migration.
@@ -132,7 +154,8 @@ Native/background adapters also own page transparency; dynamic
 geometry, progress and brand custom properties remain explicit inline data.
 
 The global `[hidden]` rule must override component display rules, including SVG
-status hosts. `base.css` owns native/preview visibility for `[data-home-header]`;
+status hosts. `base.css` owns native/preview visibility for `[data-home-header]`
+and `[data-home-content]`;
 the Settings rule has enough specificity to keep the header visible and dimmed
 when native TV is active. It does not need `!important`. Remaining legacy sheets
 still use `!important` for reduced motion and native/preview visibility. Keep

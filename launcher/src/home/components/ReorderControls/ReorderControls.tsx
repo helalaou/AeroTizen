@@ -1,9 +1,11 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-preact";
 
-import { useStore } from "../../shared/hooks/useStore";
-import { useTranslation } from "../../shared/i18n/useTranslation";
-import { Icon } from "../../shared/icons/Icon";
-import type { HomeEnvironment } from "../types";
+import { useStore } from "../../../shared/hooks/useStore";
+import { useTranslation } from "../../../shared/i18n/useTranslation";
+import { Icon } from "../../../shared/icons/Icon";
+import type { HomeEnvironment } from "../../types";
+
+import styles from "./ReorderControls.module.css";
 const DIRECTION_ICONS = [
   { direction: "left", icon: ChevronLeft },
   { direction: "right", icon: ChevronRight },
@@ -26,8 +28,8 @@ export const ReorderControls = ({ env, id }: { env: HomeEnvironment; id: string 
   return (
     <>
       {DIRECTION_ICONS.filter(({ direction }) => allowed[direction]).map(({ direction, icon }) => (
-        <div key={direction} class={"move-arrow " + direction} aria-hidden="true">
-          <Icon icon={icon} color="#111" />
+        <div key={direction} class={styles.arrow} data-reorder-arrow data-direction={direction} aria-hidden="true">
+          <Icon icon={icon} />
         </div>
       ))}
     </>

@@ -4,8 +4,8 @@ import { useTranslation } from "../../shared/i18n/useTranslation";
 import type { HomeEnvironment } from "../types";
 
 import { ContinueWatchingCard } from "./ContinueWatchingCard";
-import { HomeSectionHeading } from "./HomeSectionHeading";
-import { HorizontalScroller } from "./HorizontalScroller";
+import { HomeSectionHeading } from "./HomeSectionHeading/HomeSectionHeading";
+import { HorizontalScroller } from "./HorizontalScroller/HorizontalScroller";
 
 export const ContinueWatchingRow = ({
   env,
@@ -25,7 +25,6 @@ export const ContinueWatchingRow = ({
         id="continue-items"
         label={t("home.continueWatching")}
         viewportClass="continue-viewport"
-        trackClass="row"
         trackRef={env.continueItems}
         viewportRef={env.continueViewport}
         offset={continueOffset}

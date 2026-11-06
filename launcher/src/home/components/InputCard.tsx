@@ -8,7 +8,7 @@ import type { InputKind } from "../presentation/inputs";
 import { getInputPresentation } from "../presentation/inputs";
 import type { HomeEnvironment } from "../types";
 
-import { HomeControl } from "./HomeControl";
+import { HomeControl } from "./HomeControl/HomeControl";
 
 const INPUT_ICONS = { tv: Tv, game: Gamepad2, pc: Monitor, box: RectangleEllipsis, hdmi: HdmiPort } satisfies Record<
   InputKind,
