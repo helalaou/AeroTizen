@@ -15,6 +15,7 @@ export const HomeControl = ({
   title,
   dataId,
   dataKey,
+  dataAttributes,
   moving = false,
   onActivate,
   style,
@@ -30,6 +31,7 @@ export const HomeControl = ({
   title: string;
   dataId?: string;
   dataKey?: string;
+  dataAttributes?: Readonly<Record<`data-${string}`, string | number | boolean>>;
   moving?: boolean;
   onActivate?(): void;
   style?: Record<string, string>;
@@ -54,6 +56,7 @@ export const HomeControl = ({
   );
   return (
     <div
+      {...dataAttributes}
       ref={register}
       id={id}
       class={styles.control + " " + className + (focused ? " focused" : "")}

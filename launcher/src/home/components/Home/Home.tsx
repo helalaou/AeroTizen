@@ -10,7 +10,7 @@ import { AppGrid } from "../AppGrid/AppGrid";
 import { ContinueWatchingRow } from "../ContinueWatchingRow/ContinueWatchingRow";
 import { HomeControl } from "../HomeControl/HomeControl";
 import { HomeHeader } from "../HomeHeader";
-import { InputDock } from "../InputDock";
+import { InputDock } from "../InputDock/InputDock";
 
 import styles from "./Home.module.css";
 

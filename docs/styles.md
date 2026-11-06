@@ -7,8 +7,9 @@ migrating. All Settings controls, sections and the drawer now use modules;
 the global `settings.css` sheet has been removed. Home header and status components
 also use modules; `home-header.css` and `clock.css` have been removed. Home layout,
 app cards, headings, scrolling and app actions now use modules too; their four
-global sheets have been removed. Continue Watching cards and their row also use
-modules; input cards migrate separately.
+global sheets have been removed. Continue Watching and the inputs dock/cards also
+use modules. Home and Settings layout/control styles now live in modules;
+shared icon, background and runtime styles migrate separately.
 
 Use a component-named directory for a styled component and its private helpers,
 for example `AppGrid/AppGrid.tsx` with `AppGrid/AppGrid.module.css`. Small components
@@ -83,8 +84,7 @@ Tests use `data-home-header`, `data-header-focus`, `data-clock-part` and
 `HomeAppCard` owns the common app/Fireplace frame, focus, moving state and reorder
 controls. `AppGrid` owns sizes, columns and compact/expanded clock clearance through
 explicit data attributes. `AppArtwork` owns image geometry; its inherited radius
-keeps images rounded when moving cards expose their overflow. Input frames retain
-their own legacy rules, without a shared global `.tile` base.
+keeps images rounded when moving cards expose their overflow.
 `HorizontalScroller` owns clipping and track movement for both
 app and Continue Watching rows.
 
@@ -93,6 +93,16 @@ artwork, source badges, titles and progress. Episode titles combine a local disp
 modifier with the shared `truncate` utility; other titles keep their two-line clamp.
 Tests use `#continue-items > [data-key]`, `data-focused` and `data-continue-part`
 hooks. Keep card focus paint and motion with the card, rather than in `base.css`.
+
+`InputDock` owns collection spacing and the compact Glass dock. `InputCard` owns
+its frame, icon, labels, status badge and focused/disconnected states. Pass the
+compact layout explicitly; child geometry must not depend on a parent's class.
+The card exposes `data-input-card`, `data-status`, `data-disconnected`, `data-variant`
+and `data-input-part` hooks. Classic and Glass keep their existing layouts.
+Theme tokens own neutral input paint; connection-status palettes keep local
+defaults through optional named variable fallbacks. Both labels reuse the shared
+truncate utility where their layout needs it. Preserve margin-based dock spacing
+for Chromium 69, which does not support flex gaps.
 
 `Home` owns the viewport, fades, page reveals and section spacing. The inputs
 section exposes `data-home-section="inputs"` as a layout slot. Tests use
@@ -131,20 +141,20 @@ Keep keyframes with their component until multiple components need the same
 effect. A shared CSS Module can then own the keyframes and reusable animation class.
 
 Settings, the Home header, app cards, viewport, scrollers, page reveals, app
-actions and Continue Watching use this policy. Reorder arrows also stop moving
+actions, Continue Watching and inputs use this policy. Reorder arrows also stop moving
 under reduced motion.
 This removes their repeated media queries and reduced-motion `!important` rules.
 New and migrated components should use the same tokens. Keep a local media query only when an effect
 needs different behavior, such as replacing movement with a static alternative.
-Existing input rules keep their local handling until migrated; the policy
-does not change wallpaper or JavaScript animation behavior.
+The policy does not change wallpaper or JavaScript animation behavior.
 
 ## Runtime DOM boundary
 
 Preact owns component classes and focus state. Settings asks `homeScreen.blur()`
 to clear Home focus; the old document-wide `.focused` sweep has been removed.
 `HomeControl` and `SettingsControl` render `data-focused` from their state. Their
-global `.focused` class remains temporarily for unmigrated styles and checks.
+global `.focused` class remains temporarily for legacy checks; migrated styles
+use the data/ARIA state.
 ESLint rejects legacy `classList` access on component nodes, `className` assignments
 and `setAttribute("class", ...)` calls.
 

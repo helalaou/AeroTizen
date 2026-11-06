@@ -131,7 +131,7 @@ test("Home docks Inputs with one app row and leaves them in flow with two rows",
 
   const inputs = page.locator("#inputs-section");
   const firstApp = page.locator("#grid > [data-id]").first();
-  const firstInput = inputs.locator(".tile").first();
+  const firstInput = inputs.locator("[data-input-card]").first();
   await expect(inputs).toBeVisible();
   const bottomGap = await inputs.evaluate((section) => {
     const viewport = section.closest("[data-home-viewport]");

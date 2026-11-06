@@ -1,0 +1,46 @@
+.dock {
+  --input-dock-spacing: 32px;
+
+  display: flex;
+  gap: 0;
+
+  > * + * {
+    margin-left: var(--input-dock-spacing);
+  }
+
+  &[data-variant="glass"] {
+    --input-dock-spacing: 11px;
+
+    position: relative;
+    align-items: stretch;
+    width: 100%;
+    min-height: 140px;
+    padding: var(--input-dock-spacing);
+    overflow: visible;
+    isolation: isolate;
+    border: 1px solid var(--input-dock-border);
+    border-radius: 37px;
+    background: var(--input-dock-surface);
+    box-shadow: var(--input-dock-shadow);
+
+    &::before {
+      content: "";
+      position: absolute;
+      z-index: 0;
+      pointer-events: none;
+      left: 19px;
+      right: 19px;
+      top: 1px;
+      height: 46%;
+      border-radius: 36px 36px 58% 58%;
+      background: var(--input-dock-shine);
+    }
+
+    &[data-compact="true"] {
+      display: inline-flex;
+      width: auto;
+      max-width: 100%;
+      vertical-align: top;
+    }
+  }
+}
