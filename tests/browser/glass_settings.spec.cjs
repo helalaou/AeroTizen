@@ -107,6 +107,50 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
 
 for (const language of ["en", "ar"])
   for (const glass of [false, true]) {
+    test(`${language} ${glass ? "Glass" : "Classic"} native focus and rapid keys open the focused category`, async ({
+      page,
+    }) => {
+      await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+      await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+      await page.addInitScript(
+        ({ language, glass }) => {
+          localStorage.setItem(
+            "aerotizen.settings.v1",
+            JSON.stringify({ language, glassSettings: glass, background: "black", showWeather: false }),
+          );
+        },
+        { language, glass },
+      );
+      await page.goto("/");
+      await page.waitForFunction(() => AeroTizen.apps.ready);
+      await page.locator("#gear").click();
+      const into = language === "ar" ? "ArrowLeft" : "ArrowRight";
+      for (const [category, key] of [
+        ["apps", into],
+        ["language", "Enter"],
+        ["about", "Space"],
+      ]) {
+        const entry = page.locator(`[data-key="section:${category}"]`);
+        // Native focus (including focus restoration) can precede the drawer's next render.
+        await entry.focus();
+        await expect(entry).toHaveAttribute("data-focused", "true");
+        await page.keyboard.press(key);
+        await expect(page.locator(`[data-section-pane="${category}"]`)).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(page.locator('[data-settings-drawer="frame"]')).toHaveAttribute("data-expanded", "false");
+      }
+      await page.locator('[data-key="section:appearance"]').focus();
+      // Deliver a remote sequence in one task, without waiting for a browser frame.
+      await page.evaluate(() => {
+        const { KEY } = AeroTizen.config;
+        AeroTizen.settingsUi.keydown(KEY.DOWN, { preventDefault() {} });
+        AeroTizen.settingsUi.keydown(document.documentElement.dir === "rtl" ? KEY.LEFT : KEY.RIGHT, {
+          preventDefault() {},
+        });
+      });
+      await expect(page.locator('[data-section-pane="apps"]')).toBeVisible();
+    });
+
     test(`${language} ${glass ? "Glass" : "Classic"} Settings bounds and remote focus at 1080p`, async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
       await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
