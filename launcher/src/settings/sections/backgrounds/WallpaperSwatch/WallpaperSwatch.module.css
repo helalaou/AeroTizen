@@ -1,5 +1,8 @@
 .swatch {
   --settings-control-focus-z-index: 3;
+  --settings-control-focus-outline: 3px solid var(--wallpaper-label-surface);
+  --selection-surface: var(--wallpaper-label-surface);
+  --selection-text: var(--wallpaper-label-text);
 
   position: relative;
   border-radius: 10px;
@@ -17,14 +20,42 @@
 
 .label {
   position: absolute;
-  left: 14px;
-  bottom: 10px;
-  font-size: 22px;
+  left: 8px;
+  bottom: 8px;
+  max-width: calc(100% - 16px);
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: var(--wallpaper-label-surface);
+  font-size: 20px;
   color: var(--wallpaper-label-text);
   text-shadow: var(--wallpaper-label-shadow);
 
   [dir="rtl"] & {
     left: auto;
-    right: 14px;
+    right: 8px;
+  }
+}
+
+.editMark {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--wallpaper-label-surface);
+  color: var(--wallpaper-label-text);
+
+  > svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  [dir="rtl"] & {
+    left: auto;
+    right: 10px;
   }
 }

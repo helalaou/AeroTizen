@@ -63,6 +63,7 @@ export interface LauncherRuntime {
 
 export interface LauncherPlatform {
   backgrounds: BackgroundBridge;
+  previewColour(colour: string | null): void;
   weather: Store<WeatherSnapshot> &
     WeatherPhotoSource & {
       updateVisibility(): void;

@@ -5,6 +5,7 @@ import { useStore } from "../../shared/hooks/useStore";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import type { Direction } from "../../shared/navigation/createNavigation";
 import { categories } from "../layout/categories";
+import { COLOUR_CONTROLS } from "../state/colourPicker";
 import type { SettingsInventorySnapshot } from "../types";
 
 import { useSettingsEnvironment } from "./useSettingsEnvironment";
@@ -41,14 +42,19 @@ export const useSettingsNavigation = (
     return { [KEY.LEFT]: "left", [KEY.RIGHT]: "right", [KEY.UP]: "up", [KEY.DOWN]: "down" };
   }, [services.config]);
   const category = useStore(drawer);
+  const pickerOpen = Boolean(useStore(view).colourPicker);
   const previousDrawer = useRef<typeof category>();
+  const previousPicker = useRef(false);
   useLayoutEffect(() => {
     if (active && !previousDrawer.current && category.expanded) {
       drawer.set({ ...category, expanded: false });
     }
     navigation.invalidate();
-    navigation.setScope?.(category.expanded ? categoryContent.current : categoryMenu.current);
-    if (previousDrawer.current !== category) {
+    const drawerScope = category.expanded ? categoryContent.current : categoryMenu.current;
+    navigation.setScope?.(pickerOpen ? root.current : drawerScope);
+    if (pickerOpen !== previousPicker.current) {
+      navigation.reset(pickerOpen ? "colour:hue" : "bg:custom");
+    } else if (previousDrawer.current !== category) {
       if (categoryScroll.current) {
         categoryScroll.current.scrollTop = 0;
       }
@@ -58,6 +64,7 @@ export const useSettingsNavigation = (
       navigation.reset(key);
     }
     previousDrawer.current = active ? category : undefined;
+    previousPicker.current = pickerOpen;
     if (active && !previewing) {
       navigation.focus();
     } else {
@@ -77,6 +84,8 @@ export const useSettingsNavigation = (
     navigation,
     settings,
     category,
+    pickerOpen,
+    root,
     drawer,
     categoryContent,
     categoryMenu,
@@ -115,6 +124,23 @@ export const useSettingsNavigation = (
           return;
         }
         const current = navigation.current();
+        if (view.getSnapshot().colourPicker) {
+          event.preventDefault();
+          const control = COLOUR_CONTROLS.find((control) => current?.dataset.key === "colour:" + control.value);
+          if (code === K.BACK || code === K.ESC) {
+            actions.closeColourPicker(false);
+          } else if (control && (code === K.LEFT || code === K.RIGHT)) {
+            actions.adjustColour(control.value, code === K.LEFT ? -1 : 1);
+          } else if (code === K.ENTER || code === SPACE_KEY) {
+            current?.click();
+          } else {
+            const direction = directions[code];
+            if (direction) {
+              flushSync(() => navigation.move(direction));
+            }
+          }
+          return;
+        }
         // The sidebar sits on the right in right-to-left languages, so the keys that
         // open a section and return to the sidebar swap sides with it.
         const rtl = document.documentElement.dir === "rtl";

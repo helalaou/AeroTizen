@@ -8,6 +8,7 @@ import { SettingsDrawer } from "./layout/SettingsDrawer/SettingsDrawer";
 import { AboutSettings } from "./sections/AboutSettings/AboutSettings";
 import { AppearanceSettings } from "./sections/AppearanceSettings";
 import { HomeAppsSettings } from "./sections/apps/HomeAppsSettings/HomeAppsSettings";
+import { ColourPicker } from "./sections/backgrounds/ColourPicker/ColourPicker";
 import { BackgroundSettings } from "./sections/BackgroundSettings/BackgroundSettings";
 import { ClockSettings } from "./sections/ClockSettings";
 import { ContinueWatchingSettings } from "./sections/ContinueWatchingSettings/ContinueWatchingSettings";
@@ -24,7 +25,8 @@ export const SettingsContent = ({
   previewing: boolean;
   openedAt: number;
 }) => {
-  const { settings: store, inventory, services, actions } = useSettingsEnvironment();
+  const { settings: store, inventory, services, actions, view } = useSettingsEnvironment();
+  const { colourPicker } = useStore(view);
   const settings = useStore(store);
   const { apps, inputs, continueSources, continueMessage } = useStore(inventory);
   const webGL = useStore(services.backgroundWebGL);
@@ -58,37 +60,42 @@ export const SettingsContent = ({
     [settings.home, apps, actions, active, services],
   );
   return (
-    <SettingsDrawer
-      panes={{
-        appearance: <AppearanceSettings settings={settings} actions={actions} />,
-        apps: (
-          <>
-            {homeApps}
-            <ContinueWatchingSettings
-              settings={settings}
-              actions={actions}
-              sources={continueSources}
-              message={continueMessage}
-              active={active}
-              describeApp={services.describeApp}
-            />
-          </>
-        ),
-        wallpaper: (
-          <BackgroundSettings
-            settings={settings}
-            actions={actions}
-            config={services.config}
-            backgrounds={services.backgrounds}
-            webGL={webGL}
-          />
-        ),
-        status: <ClockSettings settings={settings} actions={actions} clock={services.clock} openedAt={openedAt} />,
-        weather: <WeatherSettings settings={settings} actions={actions} active={active} />,
-        sources: <InputSettings settings={settings} actions={actions} inputs={inputs} />,
-        language: <LanguageSettings language={settings.language} />,
-        about: <AboutSettings active={active && !previewing} />,
-      }}
-    />
+    <>
+      <div hidden={Boolean(colourPicker)}>
+        <SettingsDrawer
+          panes={{
+            appearance: <AppearanceSettings settings={settings} actions={actions} />,
+            apps: (
+              <>
+                {homeApps}
+                <ContinueWatchingSettings
+                  settings={settings}
+                  actions={actions}
+                  sources={continueSources}
+                  message={continueMessage}
+                  active={active}
+                  describeApp={services.describeApp}
+                />
+              </>
+            ),
+            wallpaper: (
+              <BackgroundSettings
+                settings={settings}
+                actions={actions}
+                config={services.config}
+                backgrounds={services.backgrounds}
+                webGL={webGL}
+              />
+            ),
+            status: <ClockSettings settings={settings} actions={actions} clock={services.clock} openedAt={openedAt} />,
+            weather: <WeatherSettings settings={settings} actions={actions} active={active} />,
+            sources: <InputSettings settings={settings} actions={actions} inputs={inputs} />,
+            language: <LanguageSettings language={settings.language} />,
+            about: <AboutSettings active={active && !previewing} />,
+          }}
+        />
+      </div>
+      {active && colourPicker ? <ColourPicker colour={colourPicker} /> : null}
+    </>
   );
 };

@@ -20,6 +20,7 @@ export const mountBackgrounds = (
   previous?: BackgroundState,
 ) => {
   let generation = 0;
+  let previewColour: string | null = null;
   const status = createStore<boolean | undefined>(undefined);
   const webGL: BackgroundGraphics = {
     getSnapshot: status.getSnapshot,
@@ -44,13 +45,18 @@ export const mountBackgrounds = (
   });
   const photo = createWeatherPhoto(
     weather,
-    () => runtime.settings.getSnapshot().weatherPhoto === true && !runtime.inputs.watching,
+    () => previewColour === null && runtime.settings.getSnapshot().weatherPhoto === true && !runtime.inputs.watching,
     window,
   );
   const { getSnapshot } = photo;
   const restoreWallpaper = () => {
     if (!runtime.inputs.watching) {
-      backgrounds.bridge.apply(runtime.settings.getSnapshot().background, runtime.settings.getSnapshot().speed);
+      const settings = runtime.settings.getSnapshot();
+      if (previewColour !== null) {
+        backgrounds.bridge.apply("custom", settings.speed, previewColour);
+      } else {
+        backgrounds.bridge.apply(settings.background, settings.speed, settings.customColour);
+      }
     }
   };
   const unsubscribe = photo.subscribe(() => {
@@ -59,15 +65,20 @@ export const mountBackgrounds = (
     }
   });
   render(<WeatherPhotoView onVisible={backgrounds.bridge.suspend} photo={photo} />, photoHost);
+  const apply = () => {
+    const previous = getSnapshot();
+    photo.update();
+    // The subscription restores the wallpaper when an active photo clears.
+    if (!previous && !getSnapshot()) {
+      restoreWallpaper();
+    }
+  };
   return {
     ...backgrounds,
-    apply() {
-      const previous = getSnapshot();
-      photo.update();
-      // The subscription restores the wallpaper when an active photo clears.
-      if (!previous && !getSnapshot()) {
-        restoreWallpaper();
-      }
+    apply,
+    previewColour(colour: string | null) {
+      previewColour = colour;
+      apply();
     },
     dispose() {
       unsubscribe();

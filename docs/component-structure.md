@@ -165,6 +165,15 @@ Starfield, Nebula, Snow, Fireflies and Rain use WebGL 1. Each scene submits
 its particles in one batch. Canvas 2D creates glow textures once at startup
 for the sprite effects. Rain draws its streaks directly in the shader.
 
+Solid backgrounds show the saved custom colour first, followed by nineteen presets.
+The pencil marks the editable colour tile. The colour picker keeps a draft in
+Settings view state and previews it through the background mount. Apply persists
+the custom colour; Cancel, Back, closing Settings and teardown restore the saved
+wallpaper or weather photo. Left/Right adjusts hue by one degree and the other
+channels by one percent. Up/Down moves between channels and Apply/Cancel. Bright
+solid colours select contrasting floating Home text without changing the chosen
+background or tab theme.
+
 The wallpaper pane checks for WebGL when it opens. A failed setup or lost
 context hides the WebGL choices and leaves the saved wallpaper's static
 base in place. The preference is retained for the next launch. CSS wallpapers

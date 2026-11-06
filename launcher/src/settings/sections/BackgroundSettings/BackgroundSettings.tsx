@@ -2,6 +2,7 @@ import { Play } from "lucide-preact";
 import { flushSync } from "preact/compat";
 import { useLayoutEffect, useState } from "preact/hooks";
 
+import { normalizeColour } from "../../../backgrounds/colours";
 import type { BackgroundOption, LauncherConfig } from "../../../contracts/launcher";
 import { useStore } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
@@ -35,14 +36,14 @@ interface Props extends SettingsSectionProps {
   webGL?: boolean;
 }
 
-const getInitialCategory = (settings: SettingsSectionProps["settings"], animated: boolean) => {
+const getInitialCategory = (settings: SettingsSectionProps["settings"], selected?: BackgroundOption) => {
   if (settings.weatherPhoto) {
     return "photo";
   }
-  if (animated) {
+  if (selected?.anim) {
     return "animated";
   }
-  return settings.background === "black" ? "solid" : "gradient";
+  return selected?.category === "solid" ? "solid" : "gradient";
 };
 
 export const BackgroundSettings = ({ settings, actions, config, backgrounds: list, webGL }: Props) => {
@@ -61,7 +62,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
     navigation.invalidate();
   }, [navigation, webGL]);
   const { adjusting } = useStore(view);
-  const [filter, setFilter] = useState(() => getInitialCategory(settings, Boolean(selected?.anim)));
+  const [filter, setFilter] = useState(() => getInitialCategory(settings, selected));
   const show = (category: string) => filter === category;
   // OK toggles adjusting, so Left/Right can still reach Preview from the slider.
   const toggleAdjusting = () =>
@@ -73,10 +74,16 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
       .map((background) => (
         <WallpaperSwatch
           key={background.id}
-          background={background}
-          hidden={!isAnimated && (filter === "solid" ? background.id !== "black" : background.id === "black")}
+          editable={background.id === "custom"}
+          background={
+            background.id === "custom" ? { ...background, preview: normalizeColour(settings.customColour) } : background
+          }
+          labelKey={background.id === "custom" ? "wallpaper.custom" : undefined}
+          hidden={
+            !isAnimated && (filter === "solid" ? background.category !== "solid" : background.category === "solid")
+          }
           selected={background.id === settings.background}
-          onSelect={() => actions.setBackground(background.id)}
+          onSelect={background.id === "custom" ? actions.openColourPicker : () => actions.setBackground(background.id)}
         />
       ));
   };

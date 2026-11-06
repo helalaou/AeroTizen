@@ -23,6 +23,7 @@ export const createSettingsBridge = (
           previewing: false,
           mounted: true,
           adjusting: false,
+          colourPicker: null,
           openedAt: current.open ? current.openedAt : now(),
         });
       });
@@ -30,7 +31,7 @@ export const createSettingsBridge = (
     close() {
       transaction(() => {
         handlers?.blur();
-        view.set({ ...view.getSnapshot(), open: false, previewing: false, adjusting: false });
+        view.set({ ...view.getSnapshot(), open: false, previewing: false, adjusting: false, colourPicker: null });
         services.finishEditing();
       });
     },

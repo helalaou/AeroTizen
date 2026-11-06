@@ -212,3 +212,14 @@ test("Continue Watching requires explicit opt-in and validates saved source choi
   assert.equal(restored.getSnapshot().continueWatching, false);
   assert.deepEqual(Array.from(restored.getSnapshot().continueWatchingApps), ["video.app", "other-app"]);
 });
+
+test("custom colours persist, normalize case and reject malformed saved values", () => {
+  const key = "aerotizen.settings.v1";
+  const original = loadSettings({ [key]: JSON.stringify({ background: "custom", customColour: "#A1B2C3" }) });
+  assert.equal(original.settings.customColour, "#a1b2c3");
+  original.settings.save();
+  assert.equal(loadSettings(original.store).settings.customColour, "#a1b2c3");
+  for (const customColour of [null, 123, "#fff", "red", "url(example)", "#12345678"]) {
+    assert.equal(loadSettings({ [key]: JSON.stringify({ customColour }) }).settings.customColour, "#7c5cff");
+  }
+});

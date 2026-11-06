@@ -1,5 +1,6 @@
 import type { BackgroundBridge, BackgroundGraphics, BackgroundScene } from "../contracts/backgrounds";
 
+import { isLightColour, normalizeColour } from "./colours";
 import { preview, SCENES } from "./scenes";
 
 export interface BackgroundState {
@@ -27,13 +28,18 @@ export const createBackgrounds = (options: BackgroundOptions) => {
     }
   }
 
-  const apply = (id: string | undefined, value = speed) => {
+  const apply = (id: string | undefined, value = speed, customColour?: string) => {
     speed = value || 1;
     suspended = false;
-    current = SCENES.find((scene) => scene.id === id) ?? SCENES[0];
+    const scene = SCENES.find((scene) => scene.id === id) ?? SCENES[0];
+    current = scene.id === "custom" ? { ...scene, base: normalizeColour(customColour) } : scene;
     // Only the root gets a background: a body background would paint over the animated layer.
     document.documentElement.style.background = current.base;
     document.body.style.background = "transparent";
+    document.documentElement.setAttribute(
+      "data-light-background",
+      String(current.category === "solid" && isLightColour(current.base)),
+    );
     renderScene(current, speed);
     layer.hidden = false;
   };
@@ -47,6 +53,7 @@ export const createBackgrounds = (options: BackgroundOptions) => {
       suspended = true;
       renderScene(null, speed);
       layer.hidden = true;
+      document.documentElement.setAttribute("data-light-background", "false");
     },
     setSpeed(value) {
       const next = value || 1;
@@ -55,7 +62,7 @@ export const createBackgrounds = (options: BackgroundOptions) => {
       }
       speed = next;
       if (current && !suspended) {
-        apply(current.id);
+        apply(current.id, next, current.base);
       }
     },
   };

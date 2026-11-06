@@ -1,5 +1,6 @@
 import type { RefObject } from "preact";
 
+import type { ColourChannels } from "../backgrounds/colours";
 import type { BackgroundGraphics } from "../contracts/backgrounds";
 import type {
   AppPresentation,
@@ -26,6 +27,7 @@ import type { Navigation } from "../shared/navigation/createNavigation";
 import type { MutableStore, Store } from "../shared/state/createStore";
 
 import type { Category, SettingsDrawerState } from "./layout/categories";
+import type { ColourChannel } from "./state/colourPicker";
 export interface SettingsInventorySnapshot {
   readonly apps: readonly Readonly<InstalledApp>[];
   readonly continueMessage: MessageKey | "";
@@ -53,12 +55,16 @@ export interface SettingsServices {
   finishEditing(): void;
   hidePreviewMessage(): void;
   openStore(): void;
+  previewColour(colour: string | null): void;
   refreshWeather(): void;
   searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): () => void;
   showPreviewMessage(): void;
   useSamsungHome(): void;
 }
 export interface SettingsActions {
+  adjustColour(channel: ColourChannel, direction: number): void;
+  closeColourPicker(apply: boolean): void;
+  openColourPicker(): void;
   openStore(): void;
   preview(): void;
   saveInputName(port: string, value: string): void;
@@ -88,6 +94,7 @@ export interface SettingsActions {
 // adjusting: OK was pressed on the speed slider, so Left/Right change the speed instead of moving focus.
 export interface ViewState {
   readonly adjusting: boolean;
+  readonly colourPicker: ColourChannels | null;
   readonly mounted: boolean;
   readonly open: boolean;
   readonly openedAt: number;

@@ -1,6 +1,9 @@
+import { channelsToColour, colourToChannels, normalizeColour } from "../../backgrounds/colours";
 import type { SettingsStore, SettingsValues } from "../../contracts/preferences";
 import type { MutableStore } from "../../shared/state/createStore";
 import type { SettingsActions, SettingsServices, ViewState } from "../types";
+
+import { adjustColourChannel } from "./colourPicker";
 
 export const createSettingsActions = (
   settings: SettingsStore,
@@ -14,6 +17,33 @@ export const createSettingsActions = (
       after?.();
     });
   return {
+    openColourPicker() {
+      settings.refresh();
+      const hex = normalizeColour(settings.getSnapshot().customColour);
+      transaction(() => view.set({ ...view.getSnapshot(), adjusting: false, colourPicker: colourToChannels(hex) }));
+    },
+    adjustColour(channel, direction) {
+      const current = view.getSnapshot();
+      const colour = current.colourPicker;
+      if (colour) {
+        transaction(() => view.set({ ...current, colourPicker: adjustColourChannel(colour, channel, direction) }));
+      }
+    },
+    closeColourPicker(apply) {
+      const colour = view.getSnapshot().colourPicker;
+      if (!colour) {
+        return;
+      }
+      transaction(() => {
+        if (apply) {
+          commit({ background: "custom", customColour: channelsToColour(colour), weatherPhoto: false }, () => {
+            services.applyWeatherVisibility();
+            services.applyBackground();
+          });
+        }
+        view.set({ ...view.getSnapshot(), colourPicker: null });
+      });
+    },
     setGlassSettings: (glassSettings) => commit({ glassSettings }),
     setWeatherPhoto: (weatherPhoto) =>
       commit({ weatherPhoto }, () => {

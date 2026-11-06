@@ -1,5 +1,7 @@
 import type { BackgroundScene } from "../contracts/backgrounds";
 
+import { DEFAULT_CUSTOM_COLOUR } from "./colours";
+
 export const blob = (color: string) => "radial-gradient(closest-side, " + color + ", rgba(0,0,0,0))";
 
 export const SCENES: readonly BackgroundScene[] = [
@@ -99,7 +101,26 @@ export const SCENES: readonly BackgroundScene[] = [
     base: "linear-gradient(180deg,#03101c 0%,#05243a 100%)",
   },
   // static
-  { id: "black", base: "#000" },
+  { id: "custom", category: "solid", base: DEFAULT_CUSTOM_COLOUR },
+  { id: "black", category: "solid", base: "#000000" },
+  { id: "solid-charcoal", category: "solid", base: "#303038" },
+  { id: "solid-grey", category: "solid", base: "#92949a" },
+  { id: "solid-white", category: "solid", base: "#ffffff" },
+  { id: "solid-red", category: "solid", base: "#e53935" },
+  { id: "solid-coral", category: "solid", base: "#ff7f73" },
+  { id: "solid-orange", category: "solid", base: "#fb8c00" },
+  { id: "solid-yellow", category: "solid", base: "#ffdf36" },
+  { id: "solid-lime", category: "solid", base: "#b5db45" },
+  { id: "solid-green", category: "solid", base: "#328549" },
+  { id: "solid-teal", category: "solid", base: "#008577" },
+  { id: "solid-cyan", category: "solid", base: "#00c4d4" },
+  { id: "solid-sky", category: "solid", base: "#83c9f4" },
+  { id: "solid-navy", category: "solid", base: "#15264a" },
+  { id: "solid-indigo", category: "solid", base: "#4b50b5" },
+  { id: "solid-purple", category: "solid", base: "#873cba" },
+  { id: "solid-pink", category: "solid", base: "#f4a6ca" },
+  { id: "solid-lavender", category: "solid", base: "#c7b3ed" },
+  { id: "solid-brown", category: "solid", base: "#795548" },
   {
     id: "midnight",
     base: "radial-gradient(1500px 900px at 15% -10%, #1d2a52 0%, rgba(29,42,82,0) 60%), #04060c",

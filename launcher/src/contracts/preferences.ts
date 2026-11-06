@@ -16,6 +16,7 @@ export interface SettingsValues {
   clockLayout: "classic" | "custom";
   continueWatching: boolean;
   continueWatchingApps: string[];
+  customColour: string;
   dateFormat: DateFormat | "auto" | "weekday" | "dmy" | "mdy";
   glassSettings: boolean;
   hdmiKeepVisible: Record<string, boolean>;

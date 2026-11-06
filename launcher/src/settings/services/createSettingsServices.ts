@@ -33,6 +33,7 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
     };
   },
   applyBackground: () => runtime.applyBackground(),
+  previewColour: (colour) => platform.previewColour(colour),
   applySpeed: (speed) => platform.backgrounds.setSpeed(speed),
   applyClock: () => runtime.clock.tick(),
   applyWeatherVisibility: () => platform.weather.updateVisibility(),
