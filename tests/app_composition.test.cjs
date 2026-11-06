@@ -1,10 +1,10 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { createSettingsService } = loadTypeScript("launcher/src/services/createSettingsService.ts");
 const { createLauncherApp } = loadTypeScript("launcher/src/app/createLauncherApp.ts");
 
 const harness = () => {
-  const listeners = new Set();
   const events = new Map();
   const calls = [];
   const document = {
@@ -17,16 +17,16 @@ const harness = () => {
       if (events.get(name) === listener) events.delete(name);
     },
   };
-  const source = {
-    home: ["one"],
-    save() {
-      [...listeners].forEach((listener) => listener());
-    },
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-  };
+  const makeSettings = () =>
+    createSettingsService({
+      defaults: { home: ["one"] },
+      storage: { getItem: () => null, setItem() {} },
+      storageKey: "settings",
+      legacyStorageKeys: [],
+      speedRange: { MIN: 0.25, MAX: 3 },
+      locale: { timeFormat: () => "24", tempUnit: () => "C" },
+    });
+  const settings = makeSettings();
   const homeBridge = { focus: () => calls.push("focus"), blur: () => calls.push("blur") };
   const settingsBridge = {};
   const previousHome = {};
@@ -49,7 +49,7 @@ const harness = () => {
   const runtime = {
     clock: statusSource(0, statusListeners[0]),
     network: statusSource({}, statusListeners[1]),
-    settings: source,
+    settings,
     config: { DEFAULTS: {} },
     homeScreen: previousHome,
     settingsUi: previousSettings,
@@ -74,13 +74,13 @@ const harness = () => {
     runtime,
     platform,
     statusListeners,
-    source,
+    settings,
+    makeSettings,
     hosts,
     views,
     updates,
     updateCalls,
     calls,
-    listeners,
     events,
     document,
     previousHome,
@@ -101,11 +101,11 @@ const harness = () => {
   };
 };
 
-test("Home and Settings share one preference source and release it once", () => {
+test("Home and Settings share the injected preference service", () => {
   const h = harness();
-  const app = createLauncherApp(h.runtime, h.platform, h.hosts, h.views, h.updates);
-  assert.equal(h.listeners.size, 1, "there is one source subscription for the whole app");
+  const app = createLauncherApp(h.runtime, h.platform, h.hosts, h.views, h.updates, h.settings);
   assert.equal(h.homeSettings, h.editorSettings);
+  assert.equal(h.homeSettings, h.settings, "views use the canonical service without a second snapshot store");
   assert.equal(h.homeTranslations, h.editorTranslations);
   assert.equal(h.homeTranslations.getSnapshot().t("common.settings"), "Settings");
   assert.equal(h.runtime.translate("apps.openFailed", { name: "A & B <HD>" }), "Could not open A & B <HD>");
@@ -120,7 +120,6 @@ test("Home and Settings share one preference source and release it once", () => 
   assert.deepEqual(h.updateCalls, ["check", "check"]);
   app.dispose();
   app.dispose();
-  assert.equal(h.listeners.size, 0);
   assert.equal(
     h.statusListeners.reduce((size, listeners) => size + listeners.size, 0),
     0,
@@ -133,13 +132,15 @@ test("Home and Settings share one preference source and release it once", () => 
   assert.equal(h.runtime.translate, h.previousTranslate);
 });
 
-test("failed view assembly releases the settings source and already mounted Home", () => {
+test("failed view assembly releases subscriptions and already mounted Home", () => {
   const h = harness();
   h.views.settings = () => {
     throw new Error("mount failed");
   };
-  assert.throws(() => createLauncherApp(h.runtime, h.platform, h.hosts, h.views, h.updates), /mount failed/);
-  assert.equal(h.listeners.size, 0);
+  assert.throws(
+    () => createLauncherApp(h.runtime, h.platform, h.hosts, h.views, h.updates, h.settings),
+    /mount failed/,
+  );
   assert.equal(
     h.statusListeners.reduce((size, listeners) => size + listeners.size, 0),
     0,
@@ -154,23 +155,35 @@ test("failed view assembly releases the settings source and already mounted Home
 test("repeated app replacement does not retain source or visibility listeners", () => {
   const h = harness();
   for (let i = 0; i < 3; i++) {
-    const app = createLauncherApp(h.runtime, h.platform, h.hosts, h.views, h.updates);
+    const app = createLauncherApp(h.runtime, h.platform, h.hosts, h.views, h.updates, h.settings);
     let updates = 0;
-    h.editorSettings.subscribe(() => updates++);
-    assert.equal(h.listeners.size, 1);
+    const unsubscribe = h.editorSettings.subscribe(() => updates++);
     assert.equal(h.events.size, 1);
-    h.source.home.push(String(i));
-    h.source.save();
+    h.settings.update({ home: [String(i)] });
     assert.equal(updates, 1);
     app.dispose();
-    h.source.home.push("after disposal");
-    h.source.save();
+    unsubscribe();
+    h.settings.update({ home: ["after disposal"] });
     assert.equal(updates, 1, "disposed views receive no further source changes");
-    assert.equal(h.listeners.size, 0);
     assert.equal(
       h.statusListeners.reduce((size, listeners) => size + listeners.size, 0),
       0,
     );
     assert.equal(h.events.size, 0);
   }
+});
+
+test("replacing views preserves the runtime preference service and TV-service subscriptions", () => {
+  const h = harness();
+  let updates = 0;
+  const unsubscribe = h.settings.subscribe(() => updates++);
+  for (const background of ["snow", "lava", "black"]) {
+    const app = createLauncherApp(h.runtime, h.platform, h.hosts, h.views, h.updates, h.settings);
+    app.dispose();
+    h.settings.update({ background });
+    assert.equal(h.settings.getSnapshot().background, background);
+  }
+  assert.equal(updates, 3);
+  unsubscribe();
+  h.settings.dispose();
 });

@@ -31,7 +31,7 @@ for (const glass of [false, true]) {
         at: now,
         solar: [{ sunrise: now - 3600000, sunset: now + 3600000 }],
       });
-      AeroTizen.settings.weatherPhoto = true;
+      AeroTizen.settings.update({ weatherPhoto: true });
       AeroTizen.applyBackground();
     });
     const photo = page.locator("#weather-photo");

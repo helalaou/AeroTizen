@@ -1,3 +1,4 @@
+const { createTestSettings } = require("./helpers/settings.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
@@ -26,13 +27,12 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
       },
     },
     catalog: { preloadedStoreId: () => null },
-    settings: {
-      home: saved,
-      load() {},
-      save() {
-        calls.push("save");
+    settings: createTestSettings(
+      { home: saved },
+      {
+        storage: { getItem: () => null, setItem: () => calls.push("save") },
       },
-    },
+    ),
     continueWatching: { start() {} },
     clock: { start() {}, tick() {} },
     network: { start() {} },
@@ -113,7 +113,7 @@ for (const mode of ["deferred", "throw", "fail"])
     h.discover();
     assert.equal(h.calls[0], "render");
     assert.equal(h.calls[1], "discover");
-    assert.deepEqual(h.A.settings.home, ["youtube.id"]);
+    assert.deepEqual(h.A.settings.getSnapshot().home, ["youtube.id"]);
     assert.equal(h.A.apps.byId("youtube.id").id, "youtube.id");
     assert.equal(h.A.apps.ready, false);
   });
@@ -135,7 +135,7 @@ test("late discovery refreshes once and caches labels without resetting saved Ho
   h.reply(list);
   h.fail();
   assert.equal(h.calls.filter((x) => x === "refresh").length, 1);
-  assert.deepEqual(h.A.settings.home, ["youtube.id"]);
+  assert.deepEqual(h.A.settings.getSnapshot().home, ["youtube.id"]);
   assert.equal(h.A.apps.ready, true);
   const cached = JSON.parse(h.data["aerotizen.apps.v1"]);
   assert.equal(cached[0].name, "YouTube");
@@ -145,7 +145,7 @@ test("missing cache and never-returning discovery do not save first-run defaults
   const h = harness("deferred", null);
   h.boot();
   h.discover();
-  assert.equal(h.A.settings.home, null);
+  assert.equal(h.A.settings.getSnapshot().homeInitialized, false);
   assert.equal(h.calls.includes("save"), false);
 });
 
@@ -155,7 +155,7 @@ test("valid cached labels remain available if discovery fails; malformed cache i
   h.boot();
   h.discover();
   assert.equal(h.A.apps.byId("youtube.id").name, "YouTube");
-  assert.deepEqual(plain(h.A.settings.home), ["youtube.id"]);
+  assert.deepEqual(plain(h.A.settings.getSnapshot().home), ["youtube.id"]);
   const bad = harness();
   bad.data["aerotizen.apps.v1"] = "{";
   bad.boot();

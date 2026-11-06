@@ -1,12 +1,10 @@
 import type { NavigationHandlers, SettingsBridge } from "../../contracts/launcher";
-import type { SettingsStore } from "../../contracts/preferences";
 import type { MutableStore } from "../../shared/state/createStore";
 import type { SettingsServices, ViewState } from "../types";
 
 // Compatibility with the existing app key router. Rendering is subscribed to the
 // stores; this bridge never builds markup or requests a root render.
 export const createSettingsBridge = (
-  settings: SettingsStore,
   view: MutableStore<ViewState>,
   services: SettingsServices,
   transaction: (action: () => void) => void,
@@ -16,7 +14,6 @@ export const createSettingsBridge = (
   return {
     open() {
       transaction(() => {
-        settings.refresh();
         const current = view.getSnapshot();
         if (!current.open) {
           services.clearHomeFocus();
@@ -35,7 +32,6 @@ export const createSettingsBridge = (
         handlers?.blur();
         view.set({ ...view.getSnapshot(), open: false, previewing: false, adjusting: false });
         services.finishEditing();
-        settings.refresh();
       });
     },
     isOpen: () => view.getSnapshot().open,

@@ -169,7 +169,9 @@ test("root helper and installed Stremio enable an opt-in source; loss hides it b
   await page.locator("#gear").click();
   await openCategory(page, "apps");
   await expect(option).toHaveCount(0);
-  expect(await page.evaluate((id) => AeroTizen.settings.continueWatchingApps.includes(id), stremio)).toBe(true);
+  expect(await page.evaluate((id) => AeroTizen.settings.getSnapshot().continueWatchingApps.includes(id), stremio)).toBe(
+    true,
+  );
   await closeSettings(page);
   await expect(page.locator("#continue-items > [data-key]")).toHaveCount(1);
   await expect(page.locator("#continue-items > [data-key]")).toContainText("Prime programme");

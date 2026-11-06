@@ -1,7 +1,7 @@
 import type { MessageKey } from "../shared/i18n/catalogues";
 import type { Store } from "../shared/state/createStore";
 
-import type { DateFormat, SettingsValues, TemperatureUnit, TimeFormat } from "./preferences";
+import type { DateFormat, SettingsDefaults, SettingsValues, TimeFormat } from "./preferences";
 
 export interface InputSource {
   readonly active?: boolean;
@@ -42,6 +42,7 @@ export interface BackgroundOption extends Background {
 export interface ClockService extends Store<number> {
   DATE_FORMATS: ReadonlyArray<{ id: DateFormat; format(date: Date): string }>;
   dateStyle(format: SettingsValues["dateFormat"]): DateFormat;
+  defaultTimeFormat(): TimeFormat;
   formatDate(date: Date, format: SettingsValues["dateFormat"]): string;
   formatTime(date: Date, format: TimeFormat): string;
   formatTimeParts?(date: Date, format: TimeFormat): { hour: string; minute: string; dayPeriod: string } | null;
@@ -54,15 +55,13 @@ export type ClockFormatter = Pick<
   "dateStyle" | "formatDate" | "formatTime" | "subscribe" | "DATE_FORMATS"
 >;
 export interface LauncherConfig {
-  DEFAULTS: Omit<SettingsValues, "home" | "tempUnit" | "timeFormat"> & {
-    home: string[] | null;
-    tempUnit: TemperatureUnit | null;
-    timeFormat: TimeFormat | null;
-  };
+  DEFAULTS?: Partial<SettingsDefaults>;
   FIREPLACE_ID: string;
   KEY: Record<"LEFT" | "RIGHT" | "UP" | "DOWN" | "ENTER" | "BACK" | "ESC" | "IME_DONE" | "IME_CANCEL", number>;
+  LEGACY_STORAGE_KEYS: string[];
   LONG_PRESS_MS: number;
   SPEED: { MIN: number; MAX: number; STEP: number };
+  STORAGE_KEY: string;
 }
 export interface AppPresentation {
   readonly artwork: readonly string[];

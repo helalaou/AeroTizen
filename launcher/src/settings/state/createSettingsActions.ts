@@ -12,7 +12,6 @@ export const createSettingsActions = (
     transaction(() => {
       settings.update(patch);
       after?.();
-      settings.refresh();
     });
   return {
     setGlassSettings: (glassSettings) => commit({ glassSettings }),

@@ -171,5 +171,5 @@ test("an unavailable saved WebGL scene keeps its base and saved preference", asy
   await expect(page.getByRole("slider", { name: "Background speed" })).toHaveCount(0);
   await page.reload();
   await expect(page.locator("#bg canvas")).toHaveCount(0);
-  expect(await page.evaluate(() => AeroTizen.settings.background)).toBe("nebula");
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().background)).toBe("nebula");
 });

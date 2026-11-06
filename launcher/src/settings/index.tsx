@@ -36,7 +36,7 @@ export const mountSettings = (
   const inventory = createSettingsInventory(runtime);
   const services = createSettingsServices(runtime, platform);
   const actions = createSettingsActions(settings, services, view, flushSync);
-  const bridge = createSettingsBridge(settings, view, services, flushSync);
+  const bridge = createSettingsBridge(view, services, flushSync);
   const root = createRef<HTMLDivElement>();
   const drawer = createStore<import("./layout/categories").SettingsDrawerState>({
     category: "appearance",

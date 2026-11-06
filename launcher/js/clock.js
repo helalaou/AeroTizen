@@ -46,7 +46,7 @@
       system = nav.languages ? Array.prototype.slice.call(nav.languages) : nav.language ? [nav.language] : [];
     if (chosen && /^ar\b/.test(chosen)) {
       // Arabic readers differ on digits, so the clock uses the one picked in Settings.
-      chosen += "-u-nu-" + (A.settings && A.settings.numerals === "arab" ? "arab" : "latn");
+      chosen += "-u-nu-" + (A.settings && A.settings.getSnapshot().numerals === "arab" ? "arab" : "latn");
     }
     return chosen && chosen !== "en" ? [chosen].concat(system) : system;
   }

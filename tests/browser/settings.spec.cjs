@@ -23,12 +23,14 @@ test.afterEach(async ({ page }) => {
 
 const openSettings = async (page, waitForApps = true) => {
   await page.goto("/");
-  await page.waitForFunction(() => window.AeroTizen?.settingsUi && Array.isArray(AeroTizen.settings.home));
+  await page.waitForFunction(
+    () => window.AeroTizen?.settingsUi && Array.isArray(AeroTizen.settings.getSnapshot().home),
+  );
   if (waitForApps) await page.waitForFunction(() => AeroTizen.apps.all.length > 0);
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
-    Object.assign(AeroTizen.settings, { background: "black", timeFormat: "24", showTime: true });
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ background: "black", timeFormat: "24", showTime: true });
+
     AeroTizen.settingsUi.open();
   });
   await expect(page.locator("#editor")).toBeVisible();
@@ -195,7 +197,7 @@ test("the first pointer click activates its control; Space activates buttons wit
   const time = page.locator('[data-key="time:12"]');
   await time.click();
   await expect(time).toHaveAttribute("aria-pressed", "true");
-  expect(await page.evaluate(() => AeroTizen.settings.timeFormat)).toBe("12");
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().timeFormat)).toBe("12");
   await openCategory(page, "wallpaper");
   await page.locator('[data-key="wallpaper-categories:animated"]').click();
   await page.locator('[data-key="bg:lava"]').focus();
@@ -231,24 +233,21 @@ test("an unrelated preference does not remeasure navigation; removed controls re
         },
       });
     }
-    AeroTizen.settings.timeFormat = "24";
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ timeFormat: "24" });
   });
   await expect(page.locator('[data-key="time:24"]')).toHaveAttribute("aria-pressed", "true");
   expect(await page.evaluate(() => window.layoutReads)).toBe(0);
   await page.evaluate(() => {
-    AeroTizen.settings.background = "aurora";
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ background: "aurora" });
   });
   await openCategory(page, "wallpaper");
   await page.locator('[data-key="wallpaper-categories:animated"]').click();
   await page.locator('[data-key="speed"]').focus();
   await page.keyboard.press("Enter");
   await page.keyboard.press("ArrowRight");
-  expect(await page.evaluate(() => AeroTizen.settings.speed)).toBe(1.25);
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().speed)).toBe(1.25);
   await page.evaluate(() => {
-    AeroTizen.settings.background = "black";
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ background: "black" });
   });
   await expect(page.locator('[data-key="speed"]')).toHaveCount(0);
   await expect(page.locator("#editor [data-focused=true]")).toHaveCount(1);
@@ -356,13 +355,13 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
   await expect(control.getByRole("button", { name: "Off", exact: true })).toHaveAttribute("aria-pressed", "true");
   expect(images).toEqual([]);
   await page.evaluate(() => {
-    Object.assign(AeroTizen.settings, {
+    AeroTizen.settings.update({
       background: "aurora",
       speed: 1.3,
       showWeather: false,
       weatherLocation: { name: "Fixture city", latitude: 1, longitude: 2 },
     });
-    AeroTizen.settings.save();
+
     AeroTizen.applyBackground();
     window.Weather.updateVisibility();
   });
@@ -376,7 +375,7 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
   await expect(page.locator("#bg")).toBeHidden();
   await expect(page.locator("#bg [data-background-blob]")).toHaveCount(0);
   await page.reload();
-  await page.waitForFunction(() => AeroTizen.settings.weatherPhoto === true);
+  await page.waitForFunction(() => AeroTizen.settings.getSnapshot().weatherPhoto === true);
   await expect(page.locator("#weather-photo")).toBeVisible();
   await page.evaluate(() => AeroTizen.settingsUi.open());
   await openCategory(page, "wallpaper");
@@ -386,8 +385,8 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
   await expect(page.locator("#bg")).toBeVisible();
   expect(
     await page.evaluate(() => ({
-      background: AeroTizen.settings.background,
-      speed: AeroTizen.settings.speed,
+      background: AeroTizen.settings.getSnapshot().background,
+      speed: AeroTizen.settings.getSnapshot().speed,
     })),
   ).toEqual({ background: "aurora", speed: 1.3 });
   await expect(page.locator("#bg [data-background-blob]")).toHaveCount(4);

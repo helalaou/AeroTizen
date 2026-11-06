@@ -1,3 +1,4 @@
+const { createTestSettings } = require("./helpers/settings.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 // Tizen VIDEOSOURCE standby recognition, port de-duplication and visibility.
 const assert = require("node:assert/strict");
@@ -21,12 +22,12 @@ function harness(settings = {}, report = {}, selected = null, legacyView = true)
   let builds = 0;
   const A = {
     translate: translateEnglish,
-    settings: {
+    settings: createTestSettings({
       showLiveTv: true,
       hideDisconnectedHdmi: true,
       inputNames: {},
       ...settings,
-    },
+    }),
     $: (name) => (name === "inputs" ? root : null),
     tiles: {
       ICONS: { tv: "TV", game: "GAME", pc: "PC", box: "BOX", hdmi: "HDMI" },
@@ -254,7 +255,7 @@ test("manual per-port exception preserves an unidentified but explicitly selecte
   assert.equal(h.tiles[0].classes.has("off"), false, "a pinned port remains reachable");
   assert.equal(h.A.inputs.sources[1].connected, false, "pinning must not invent a signal");
   assert.equal(h.A.inputs.alwaysVisible(h.A.inputs.sources[1]), true);
-  h.A.settings.hdmiKeepVisible = {};
+  h.A.settings.update({ hdmiKeepVisible: {} });
   h.A.inputs.render();
   assert.equal(h.tiles.length, 0);
 });
@@ -342,15 +343,15 @@ test("HDMI per-port exceptions survive the existing official settings storage", 
       store[key] = data;
     },
   };
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../launcher/js/settings.js"), "utf8"), {
+  require("./helpers/settings.cjs").installSettings({
     window,
     localStorage,
   });
   A.settings.load();
-  assert.equal(Object.keys(A.settings.hdmiKeepVisible).length, 0);
-  A.settings.hdmiKeepVisible["2"] = true;
-  A.settings.save();
-  A.settings.hdmiKeepVisible = {};
-  A.settings.load();
-  assert.equal(A.settings.hdmiKeepVisible["2"], true);
+  assert.equal(Object.keys(A.settings.getSnapshot().hdmiKeepVisible).length, 0);
+  A.settings.update({ hdmiKeepVisible: { 2: true } });
+
+  const restarted = require("./helpers/settings.cjs").installSettings({ window, localStorage });
+  restarted.load();
+  assert.equal(restarted.getSnapshot().hdmiKeepVisible["2"], true);
 });

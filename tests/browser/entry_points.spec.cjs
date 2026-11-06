@@ -12,13 +12,11 @@ for (const [name, url] of [
     });
     await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-    await page.route("**/js/settings.js", async (route) => {
+    await page.route("**/js/main.js", async (route) => {
       const response = await route.fetch();
-      const body = await response.text();
       await route.fulfill({
         response,
         body:
-          body +
           `
           window.preferenceSourceSubscriptions = 0;
           var source = AeroTizen.settings, subscribe = source.subscribe;
@@ -27,15 +25,7 @@ for (const [name, url] of [
             var unsubscribe = subscribe.call(source, listener);
             return function () { window.preferenceSourceSubscriptions--; unsubscribe(); };
           };
-        `,
-      });
-    });
-    await page.route("**/js/main.js", async (route) => {
-      const response = await route.fetch();
-      await route.fulfill({
-        response,
-        body:
-          "window.uiPreferenceSourceSubscriptions = window.preferenceSourceSubscriptions;\n" + (await response.text()),
+        ` + (await response.text()),
       });
     });
     await page.addInitScript(() => {
@@ -105,14 +95,22 @@ for (const [name, url] of [
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
     await expect(page.locator("#editor")).toBeHidden();
-    expect(await page.evaluate(() => window.uiPreferenceSourceSubscriptions)).toBe(1);
-    // The existing Continue Watching service also watches its persisted opt-in settings.
-    expect(await page.evaluate(() => window.preferenceSourceSubscriptions)).toBe(2);
+    // UI and TV services share this owner. Reopening Settings must not retain listeners.
+    const subscriptions = await page.evaluate(() => window.preferenceSourceSubscriptions);
+    expect(subscriptions).toBeGreaterThan(0);
+    for (let reopen = 0; reopen < 2; reopen++) {
+      await page.locator("#gear").click();
+      await expect(page.locator("#editor")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+      await expect(page.locator("#editor")).toBeHidden();
+      expect(await page.evaluate(() => window.preferenceSourceSubscriptions)).toBe(subscriptions);
+    }
     expect(await page.evaluate(() => typeof AeroTizen.inputs.render)).toBe("undefined");
     expect(
       await page.evaluate(() =>
         Array.from(document.scripts, (script) => script.src && new URL(script.src).pathname).filter((file) =>
-          /\/(?:settings-ui|home-screen|continue-row|clock-layouts)\.js$/.test(file),
+          /\/(?:settings|settings-ui|home-screen|continue-row|clock-layouts)\.js$/.test(file),
         ),
       ),
     ).toEqual([]);
@@ -124,7 +122,7 @@ test("Continue Watching demo is opt-in, local to Vite and uses separate preferen
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
   await page.goto("http://127.0.0.1:8172/");
-  await page.waitForFunction(() => AeroTizen.apps.ready && Array.isArray(AeroTizen.settings.home));
+  await page.waitForFunction(() => AeroTizen.apps.ready && Array.isArray(AeroTizen.settings.getSnapshot().home));
   await expect(page.locator("#continue-section")).toBeHidden();
   const original = await page.evaluate(() => localStorage.getItem("aerotizen.settings.v1"));
   await page.goto("http://127.0.0.1:8172/?demo=1");

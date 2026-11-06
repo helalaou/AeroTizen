@@ -75,7 +75,6 @@
 
   // ---- boot ----------------------------------------------------------------------
   var startup = window.AeroStartup;
-  A.settings.load();
   startup.mark("settings-loaded");
   A.applyBackground();
   A.clock.start();
@@ -86,9 +85,8 @@
   var appIds;
   var reportAppsTimer;
   function appInventoryChanged() {
-    if (A.settings.home === null) {
-      A.settings.home = A.apps.defaultHome();
-      A.settings.save();
+    if (!A.settings.getSnapshot().homeInitialized) {
+      A.settings.update({ home: A.apps.defaultHome() });
     }
     var nextIds = A.apps.realIds.slice().sort().join(",");
     if (nextIds !== appIds) {
@@ -105,7 +103,7 @@
     A.continueWatching.start();
     A.network.start();
     window.Weather.start(function () {
-      return A.settings;
+      return A.settings.getSnapshot();
     });
     A.inputs.load();
     A.homewatch.start();

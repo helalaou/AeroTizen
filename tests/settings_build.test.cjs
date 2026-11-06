@@ -24,6 +24,7 @@ test("compiled launcher uses the production page, local scripts and the Preact l
   assert.doesNotMatch(html, /type="module"|https?:[^"']+\.js|@vite\/client|\/src\//);
   const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((match) => match[1]);
   assert.ok(scripts.includes("js/launcher-ui.js"));
+  assert.ok(!scripts.includes("js/settings.js"), "settings are owned by the TypeScript service");
   assert.ok(scripts.indexOf("js/launcher-ui.js") < scripts.indexOf("js/main.js"), "views mount before boot");
   for (const file of scripts) {
     assert.ok(existsSync(path.join(output, file)), file);
@@ -74,6 +75,7 @@ test("compilation preserves runtime scripts, CSS, service and app identity", () 
 test("legacy views remain test fixtures and cannot enter the compiled runtime", () => {
   for (const file of [
     "settings-ui.js",
+    "settings.js",
     "home-screen.js",
     "continue-row.js",
     "clock-layouts.js",

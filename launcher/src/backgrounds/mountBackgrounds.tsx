@@ -44,13 +44,13 @@ export const mountBackgrounds = (
   });
   const photo = createWeatherPhoto(
     weather,
-    () => runtime.settings.weatherPhoto === true && !runtime.inputs.watching,
+    () => runtime.settings.getSnapshot().weatherPhoto === true && !runtime.inputs.watching,
     window,
   );
   const { getSnapshot } = photo;
   const restoreWallpaper = () => {
     if (!runtime.inputs.watching) {
-      backgrounds.bridge.apply(runtime.settings.background, runtime.settings.speed);
+      backgrounds.bridge.apply(runtime.settings.getSnapshot().background, runtime.settings.getSnapshot().speed);
     }
   };
   const unsubscribe = photo.subscribe(() => {

@@ -52,7 +52,6 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
     }
   },
   finishEditing() {
-    runtime.settings.save();
     runtime.homeScreen?.render();
   },
   clearHomeFocus: () => runtime.homeScreen?.blur(),

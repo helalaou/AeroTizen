@@ -85,10 +85,10 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
     await page.screenshot({ path: info.outputPath("glass-" + category + ".png") });
   }
   await page.locator('[data-key="section:wallpaper"]').click();
-  const before = await page.evaluate(() => JSON.stringify(AeroTizen.settings));
+  const before = await page.evaluate(() => JSON.stringify(AeroTizen.settings.getSnapshot()));
   for (const filter of ["photo", "solid", "gradient", "animated"])
     await page.locator(`[data-key="wallpaper-categories:${filter}"]`).click();
-  expect(await page.evaluate(() => JSON.stringify(AeroTizen.settings))).toBe(before);
+  expect(await page.evaluate(() => JSON.stringify(AeroTizen.settings.getSnapshot()))).toBe(before);
   await page.locator('[data-key="section:apps"]').click();
   await page.evaluate(() => {
     window.escapeCount = 0;
@@ -100,7 +100,7 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   await page.keyboard.press("Escape");
   await expect(page.locator("#editor")).toBeHidden();
   await page.reload();
-  expect(await page.evaluate(() => AeroTizen.settings.glassSettings)).toBe(true);
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().glassSettings)).toBe(true);
   await checkTabPlate();
   expect(errors).toEqual([]);
 });

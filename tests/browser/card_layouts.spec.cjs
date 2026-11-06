@@ -56,7 +56,7 @@ for (const glass of [false, true])
       await page.keyboard.press("ArrowRight");
       await page.keyboard.press("Enter");
       await page.reload();
-      expect(await page.evaluate(() => AeroTizen.settings.homeCardColumns)).toBe(columns);
+      expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().homeCardColumns)).toBe(columns);
       await expect(page.locator("#grid")).toHaveAttribute("data-columns", String(columns));
       await page.locator("#gear").click();
       await openCategory(page, "appearance");
@@ -127,13 +127,12 @@ for (const glass of [false, true]) {
       for (const columns of [5, 4, 3]) {
         await page.evaluate(
           ({ columns, clock }) => {
-            Object.assign(AeroTizen.settings, {
+            AeroTizen.settings.update({
               homeCardColumns: columns,
               home: Array.from({ length: columns * 2 }, (_, index) => "demo" + index),
               clockLayout: clock === "classic" ? "classic" : "custom",
               aeroClockStyle: clock === "classic" ? "vertical" : clock,
             });
-            AeroTizen.settings.save();
           },
           { columns, clock },
         );
@@ -174,8 +173,7 @@ for (const glass of [false, true]) {
         }
         // More than two rows remain reachable; the full focused card must clear both fades.
         await page.evaluate((columns) => {
-          AeroTizen.settings.home = Array.from({ length: columns * 3 }, (_, index) => "demo" + index);
-          AeroTizen.settings.save();
+          AeroTizen.settings.update({ home: Array.from({ length: columns * 3 }, (_, index) => "demo" + index) });
         }, columns);
         await page.keyboard.press("ArrowDown");
         await expect(apps.nth(columns * 2)).toBeFocused();

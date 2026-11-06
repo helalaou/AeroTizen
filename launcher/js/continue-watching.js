@@ -188,7 +188,7 @@
     var changed = Math.abs(wall - clockWall - (elapsed - clockElapsed)) > CLOCK_CHANGE_MS;
     clockWall = wall;
     clockElapsed = elapsed;
-    if (changed && cw.items.length && A.settings.continueWatching === true && !document.hidden) {
+    if (changed && cw.items.length && A.settings.getSnapshot().continueWatching === true && !document.hidden) {
       merge();
     }
   }
@@ -196,7 +196,7 @@
     cw.messageKey = !A.apps.ready ? "continue.findingApps" : !cw.sources.length ? "continue.noApps" : "";
   }
   function isSelected(source) {
-    return !!source.storeId && A.settings.continueWatchingApps.indexOf(source.id) >= 0;
+    return !!source.storeId && A.settings.getSnapshot().continueWatchingApps.indexOf(source.id) >= 0;
   }
 
   function remove(source) {
@@ -303,7 +303,7 @@
     candidates = Object.create(null);
     cw.sources = [];
     cw.messageKey = "";
-    if (A.settings.continueWatching !== true) {
+    if (A.settings.getSnapshot().continueWatching !== true) {
       feeds = Object.create(null);
       cw.items = [];
       publish();
@@ -382,7 +382,10 @@
     }
     A.apps.subscribe(cw.refresh);
     A.settings.subscribe(function () {
-      var next = JSON.stringify([A.settings.continueWatching, A.settings.continueWatchingApps]);
+      var next = JSON.stringify([
+        A.settings.getSnapshot().continueWatching,
+        A.settings.getSnapshot().continueWatchingApps,
+      ]);
       if (signature !== next) {
         signature = next;
         cw.refresh(true);
@@ -395,7 +398,10 @@
         cw.refresh();
       }
     });
-    signature = JSON.stringify([A.settings.continueWatching, A.settings.continueWatchingApps]);
+    signature = JSON.stringify([
+      A.settings.getSnapshot().continueWatching,
+      A.settings.getSnapshot().continueWatchingApps,
+    ]);
     cw.refresh();
   };
 })(window.AeroTizen);

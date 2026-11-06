@@ -1,3 +1,4 @@
+const { createTestSettings } = require("./helpers/settings.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -45,13 +46,13 @@ function harness({ settings = {}, tizen, online = true } = {}) {
   );
   const intervals = [];
   const A = {
-    settings: {
+    settings: createTestSettings({
       dateFormat: "iso",
       timeFormat: "24",
       showTime: true,
       showNetwork: true,
       ...settings,
-    },
+    }),
     tizen,
     $: (id) => elements[id],
   };
@@ -71,7 +72,18 @@ function harness({ settings = {}, tizen, online = true } = {}) {
   for (const file of ["clock.js", "network.js"]) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "launcher/js", file), "utf8"), context);
   }
-  vm.runInContext(fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"), context);
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"), {
+    ...context,
+    window: {
+      ...context.window,
+      AeroTizen: {
+        ...A,
+        get settings() {
+          return A.settings.getSnapshot();
+        },
+      },
+    },
+  });
   return { A, elements, intervals };
 }
 
@@ -92,14 +104,14 @@ test("clock applies changes immediately and keeps time hidden on later ticks", (
   const h = harness();
   h.A.clock.start();
   assert.equal(h.elements.time.hidden, false);
-  h.A.settings.showTime = false;
+  h.A.settings.update({ showTime: false });
   h.A.clock.tick();
   assert.equal(h.elements.time.hidden, true);
   h.intervals[0].fn();
   assert.equal(h.elements.time.hidden, true);
   assert.equal(h.elements.date.hidden, false);
-  h.A.settings.showTime = true;
-  h.A.settings.dateFormat = "none";
+  h.A.settings.update({ showTime: true });
+  h.A.settings.update({ dateFormat: "none" });
   h.A.clock.tick();
   assert.equal(h.elements.time.hidden, false);
   assert.equal(h.elements.date.hidden, true);
@@ -112,7 +124,7 @@ test("network visibility applies on startup and changes immediately in the brows
   assert.equal(h.elements.network.getAttribute("aria-label"), "Offline");
   h.intervals[0].fn();
   assert.equal(h.elements.network.hasAttribute("hidden"), true);
-  h.A.settings.showNetwork = true;
+  h.A.settings.update({ showNetwork: true });
   h.A.network.updateVisibility();
   assert.equal(h.elements.network.hasAttribute("hidden"), false);
   assert.equal(h.elements.network.getAttribute("aria-label"), "Offline");
@@ -136,7 +148,7 @@ test("delayed network responses and change listeners cannot reveal a hidden indi
   h.A.network.start();
   assert.equal(indicator.hasAttribute("hidden"), false);
   assert.equal(requests[0].property, "NETWORK");
-  h.A.settings.showNetwork = false;
+  h.A.settings.update({ showNetwork: false });
   h.A.network.updateVisibility();
   requests[0].success({ networkType: "WIFI" });
   assert.equal(requests[1].property, "WIFI_NETWORK");
@@ -153,7 +165,7 @@ test("delayed network responses and change listeners cannot reveal a hidden indi
   h.intervals[0].fn();
   requests[3].failure();
   assert.equal(indicator.hasAttribute("hidden"), true);
-  h.A.settings.showNetwork = true;
+  h.A.settings.update({ showNetwork: true });
   h.A.network.updateVisibility();
   assert.equal(indicator.hasAttribute("hidden"), false);
   assert.equal(indicator.getAttribute("aria-label"), "Network status unavailable");

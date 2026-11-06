@@ -10,7 +10,7 @@ import type {
   LauncherConfig,
   SettingsBridge,
 } from "../../contracts/launcher";
-import type { SettingsSource, WeatherLocation } from "../../contracts/preferences";
+import type { SettingsService, WeatherLocation } from "../../contracts/preferences";
 import type { NetworkSnapshot, WeatherPhotoSource, WeatherSnapshot } from "../../contracts/status";
 import type { MessageKey } from "../../shared/i18n/catalogues";
 import type { Translate } from "../../shared/i18n/createTranslations";
@@ -54,7 +54,7 @@ export interface LauncherRuntime {
     subscribe(listener: () => void): () => void;
   };
   network: Store<NetworkSnapshot> & { updateVisibility(): void; refresh(): void };
-  settings: SettingsSource;
+  settings: SettingsService;
   settingsUi?: SettingsBridge;
   tiles: { describe(app: InstalledApp): AppPresentation };
   toast(message: string): void;

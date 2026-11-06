@@ -1,13 +1,12 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
-const { createSettingsStore } = loadTypeScript("launcher/src/services/createSettingsStore.ts");
+const { createSettingsService } = loadTypeScript("launcher/src/services/createSettingsService.ts");
 const { createStore } = loadTypeScript("launcher/src/shared/state/createStore.ts");
 const { createSettingsActions } = loadTypeScript("launcher/src/settings/state/createSettingsActions.ts");
 const { createSettingsBridge } = loadTypeScript("launcher/src/settings/services/createSettingsBridge.ts");
 
 const harness = () => {
-  const listeners = new Set();
   let saves = 0;
   const defaults = {
     background: "black",
@@ -30,18 +29,14 @@ const harness = () => {
     showLiveTv: true,
     hideDisconnectedHdmi: false,
   };
-  const source = {
-    ...defaults,
-    save() {
-      saves++;
-      [...listeners].forEach((listener) => listener());
-    },
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-  };
-  const settings = createSettingsStore(source, defaults);
+  const settings = createSettingsService({
+    defaults,
+    storage: { getItem: () => null, setItem: () => saves++ },
+    storageKey: "settings",
+    legacyStorageKeys: [],
+    speedRange: { MIN: 0.2, MAX: 2 },
+    locale: { timeFormat: () => "24", tempUnit: () => "C" },
+  });
   const calls = [];
   const services = { config: { SPEED: { MIN: 0.2, MAX: 2, STEP: 0.1 } } };
   for (const name of [
@@ -73,44 +68,43 @@ const harness = () => {
   const transaction = (action) => action();
   const actions = createSettingsActions(settings, services, view, transaction);
   let now = 1000;
-  const bridge = createSettingsBridge(settings, view, services, transaction, () => now++);
+  const bridge = createSettingsBridge(view, services, transaction, () => now++);
   return {
-    source,
     settings,
     actions,
     view,
     bridge,
     calls,
-    listeners,
     get saves() {
       return saves;
     },
   };
 };
 
-test("one source publishes stable immutable snapshots for actions and legacy writes", () => {
+test("one service publishes stable immutable snapshots for actions and direct updates", () => {
   const h = harness();
   let updates = 0;
   const unsubscribe = h.settings.subscribe(() => updates++);
   const before = h.settings.getSnapshot();
   assert.equal(before, h.settings.getSnapshot(), "reads do not allocate");
-  h.source.save();
-  assert.equal(updates, 0, "unchanged save does not notify the view");
+  h.settings.update({});
+  assert.equal(updates, 0, "unchanged update does not notify the view");
   h.actions.setTimeFormat("12");
   const time = h.settings.getSnapshot();
   assert.equal(time.home, before.home, "unrelated arrays retain identity");
   assert.equal(time.inputNames, before.inputNames);
-  h.source.home.push("external");
-  h.source.inputNames["HDMI 1"] = "Console";
-  h.source.weatherLocation = { name: "Example", latitude: 1, longitude: 2 };
-  h.source.save();
+  h.settings.update({
+    home: [...h.settings.getSnapshot().home, "external"],
+    inputNames: { ...h.settings.getSnapshot().inputNames, "HDMI 1": "Console" },
+    weatherLocation: { name: "Example", latitude: 1, longitude: 2 },
+  });
   const external = h.settings.getSnapshot();
   assert.deepEqual(before.home, ["one"]);
   assert.deepEqual(before.inputNames, {});
   assert.deepEqual(external.home, ["one", "external"]);
   assert.equal(external.inputNames["HDMI 1"], "Console");
-  h.source.weatherLocation.name = "Changed";
-  h.source.save();
+  h.settings.update({ weatherLocation: { ...h.settings.getSnapshot().weatherLocation, name: "Changed" } });
+
   assert.equal(external.weatherLocation.name, "Example", "nested source mutations cannot alter old snapshots");
   assert.throws(() => external.home.push("forbidden"), TypeError);
   assert.equal(updates, 3);
@@ -118,13 +112,14 @@ test("one source publishes stable immutable snapshots for actions and legacy wri
   h.actions.setTimeFormat("24");
   assert.equal(updates, 3);
   h.settings.dispose();
-  assert.equal(h.listeners.size, 0, "source subscription is removed on disposal");
+  h.settings.update({ background: "snow" });
+  assert.equal(updates, 3, "disposed settings do not publish changes");
 });
 
 test("unset Home preferences and a saved empty list have distinct snapshots", () => {
   const h = harness();
-  h.source.home = null;
-  h.source.save();
+  h.settings.update({ home: null });
+
   const unset = h.settings.getSnapshot();
   assert.equal(unset.homeInitialized, false);
   assert.deepEqual(unset.home, []);
@@ -134,7 +129,6 @@ test("unset Home preferences and a saved empty list have distinct snapshots", ()
   assert.equal(h.settings.getSnapshot().homeInitialized, true);
   assert.equal(h.settings.getSnapshot().home, unset.home, "unchanged list contents retain identity");
   assert.equal(updates, 1, "initialization changes notify both views even if the list stays empty");
-  assert.equal("homeInitialized" in h.source, false, "derived state is not persisted");
   h.settings.dispose();
 });
 
@@ -156,34 +150,34 @@ test("actions persist preferences and invoke only the relevant service", () => {
   for (const [action, value, key, service] of cases) {
     h.calls.length = 0;
     h.actions[action](value);
-    assert.deepEqual(h.source[key], value);
+    assert.deepEqual(h.settings.getSnapshot()[key], value);
     assert.deepEqual(h.calls, [[service]]);
   }
   assert.equal(h.saves, cases.length);
   h.actions.setTimeFormat("none");
-  assert.equal(h.source.showTime, false);
+  assert.equal(h.settings.getSnapshot().showTime, false);
   h.actions.setTimeFormat("24");
-  assert.equal(h.source.showTime, true);
+  assert.equal(h.settings.getSnapshot().showTime, true);
   h.actions.saveInputName("HDMI 1", "Console");
   const saves = h.saves;
   h.actions.saveInputName("HDMI 1", "Console");
   assert.equal(h.saves, saves, "unchanged blur does not save twice");
   h.actions.saveInputName("HDMI 1", "");
-  assert.deepEqual(h.source.inputNames, {});
+  assert.deepEqual(h.settings.getSnapshot().inputNames, {});
   h.actions.toggleApp("two");
-  assert.deepEqual(h.source.home, ["one", "two"]);
+  assert.deepEqual(h.settings.getSnapshot().home, ["one", "two"]);
   h.actions.toggleApp("one");
   h.actions.toggleApp("two");
-  assert.deepEqual(h.source.home, []);
+  assert.deepEqual(h.settings.getSnapshot().home, []);
   for (let i = 0; i < 30; i++) h.actions.setSpeed(-1);
-  assert.equal(h.source.speed, 0.2);
+  assert.equal(h.settings.getSnapshot().speed, 0.2);
   for (let i = 0; i < 30; i++) h.actions.setSpeed(1);
-  assert.equal(h.source.speed, 2);
+  assert.equal(h.settings.getSnapshot().speed, 2);
 });
 
 test("key-router bridge delegates to current handlers and releases them on cleanup", () => {
   const h = harness();
-  h.source.background = "aurora"; // open also refreshes unsaved runtime changes
+  h.settings.update({ background: "aurora" });
   h.bridge.open();
   assert.equal(h.settings.getSnapshot().background, "aurora");
   assert.equal(h.bridge.isOpen(), true);
@@ -241,12 +235,12 @@ test("key-router bridge delegates to current handlers and releases them on clean
 test("weather wallpaper action preserves background and speed and refreshes the shared consumers", () => {
   const h = harness();
   h.actions.setWeatherPhoto(true);
-  assert.equal(h.source.weatherPhoto, true);
-  assert.equal(h.source.background, "black");
-  assert.equal(h.source.speed, 1);
+  assert.equal(h.settings.getSnapshot().weatherPhoto, true);
+  assert.equal(h.settings.getSnapshot().background, "black");
+  assert.equal(h.settings.getSnapshot().speed, 1);
   assert.deepEqual(h.calls, [["applyWeatherVisibility"], ["applyBackground"]]);
   h.actions.setWeatherPhoto(false);
-  assert.equal(h.source.weatherPhoto, false);
+  assert.equal(h.settings.getSnapshot().weatherPhoto, false);
   assert.equal(h.saves, 2);
 });
 
@@ -260,7 +254,7 @@ test("Continue Watching selection is persisted with immutable snapshots", () => 
   assert.deepEqual(before.continueWatchingApps, []);
   assert.equal(Object.isFrozen(selected.continueWatchingApps), true);
   h.actions.setContinueWatching(false);
-  assert.deepEqual(h.source.continueWatchingApps, ["video.app"], "off retains the chosen apps");
+  assert.deepEqual(h.settings.getSnapshot().continueWatchingApps, ["video.app"], "off retains the chosen apps");
   h.actions.toggleContinueApp("video.app");
-  assert.deepEqual(h.source.continueWatchingApps, []);
+  assert.deepEqual(h.settings.getSnapshot().continueWatchingApps, []);
 });

@@ -120,7 +120,7 @@ both themes. Add coverage here for new UI paths.
 | `launcher/src/contracts/`         | Screen-independent preferences, app/input/feed types and bridge protocols                       |
 | `launcher/src/backgrounds/`       | Wallpaper scenes, background bridge and canvas animation                                        |
 | `launcher/src/status/`            | Shared status views and hooks; one Clock with compact and expanded layouts                      |
-| `launcher/src/services/`          | Shared preference/status snapshots and persistence adapter                                      |
+| `launcher/src/services/`          | TypeScript preference ownership, validation, persistence and shared status snapshots            |
 | `launcher/src/platform/tizen/`    | Typed boundary for the existing TV and browser services                                         |
 | `launcher/src/dev.ts`             | Development entry that loads the same views before boot                                         |
 | `launcher/src/settings/`          | TypeScript/TSX Settings components, state, actions and service adapters                         |
@@ -131,17 +131,19 @@ both themes. Add coverage here for new UI paths.
 | `tests/fixtures/legacy-launcher/` | Old views used only by regression and comparison tests                                          |
 | `vite.config.mts`                 | Official Preact preset, dev server and TV bundle settings                                       |
 | `dist/launcher/`                  | Generated TV runtime with shared launcher-ui.js; no Node needed on TV                           |
-| `launcher/js/config.js`           | Launcher behaviour and settings                                                                 |
+| `launcher/js/config.js`           | Launcher behaviour and storage identities                                                       |
 | `launcher/js/app-catalog.js`      | App IDs, Samsung store IDs and optional fallback branding                                       |
 | `launcher/js/app-lookup.js`       | Shared ID lookup and legacy name compatibility                                                  |
 | `launcher/service/`               | Background service that reclaims the screen from Samsung Home                                   |
 | `tests/`                          | pytest suite (`test_*.py`, a fake TV covers the sdb protocol) and launcher tests (`*.test.cjs`) |
 | `dns/`, `docs/`                   | Ad/telemetry blocklists and the settings guide                                                  |
 
-The application creates one shared preference store and passes it to Home, Settings
-and the clock. Feature mount functions return bridges and disposers. Composition
-owns visibility handling and tears down the views before releasing the shared
-source subscription. Input discovery publishes data through `inputs.refresh()`;
+The entry point creates one TypeScript preference service and passes it to Home, Settings
+and the clock. It owns defaults, saved-data validation, migration and persistence.
+TV services use the same snapshot and update API as the UI. The service survives development
+hot reload so those services retain their subscriptions. Feature mount functions return
+bridges and disposers. Composition owns visibility handling and releases its subscriptions
+when tearing down the views. Input discovery publishes data through `inputs.refresh()`;
 production services do not render input tiles or replace a renderer at startup.
 Clock, weather and network services publish immutable snapshots. The application
 binds each status source once; views add no polling timers or forecast requests.

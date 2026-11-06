@@ -126,8 +126,7 @@ for (const glass of [false, true]) {
       for (let index = 0; index < 11; index++) await page.keyboard.press(next);
       await expect(apps.last()).toBeFocused();
       await page.evaluate(() => {
-        AeroTizen.settings.home = AeroTizen.settings.home.slice(0, 3);
-        AeroTizen.settings.save();
+        AeroTizen.settings.update({ home: AeroTizen.settings.getSnapshot().home.slice(0, 3) });
       });
       await expect(apps).toHaveCount(3);
       await expect.poll(() => offset(page, "#grid")).toBe(0);
@@ -144,12 +143,11 @@ for (const glass of [false, true]) {
       for (const columns of [5, 4, 3]) {
         await page.evaluate(
           ({ clock, columns }) => {
-            Object.assign(AeroTizen.settings, {
+            AeroTizen.settings.update({
               homeCardColumns: columns,
               clockLayout: clock === "classic" ? "classic" : "custom",
               aeroClockStyle: clock === "classic" ? "vertical" : clock,
             });
-            AeroTizen.settings.save();
           },
           { clock, columns },
         );
@@ -183,7 +181,7 @@ for (const language of ["en", "ar"]) {
   test(`${language} scrolling app rows retain launch and long-press move actions`, async ({ page }) => {
     await prepare(page, { layout: "scroll", language });
     const next = language === "ar" ? "ArrowLeft" : "ArrowRight";
-    const before = await page.evaluate(() => AeroTizen.settings.home.slice());
+    const before = await page.evaluate(() => AeroTizen.settings.getSnapshot().home.slice());
     await page.locator("#home-tab").click();
     await page.keyboard.press("ArrowDown");
     for (let index = 0; index < 6; index++) await page.keyboard.press(next);
@@ -199,7 +197,7 @@ for (const language of ["en", "ar"]) {
     await expect(card.locator("[data-reorder-arrow].up, [data-reorder-arrow].down")).toHaveCount(0);
     await page.keyboard.press(next);
     await page.keyboard.press("Enter");
-    expect(await page.evaluate(() => AeroTizen.settings.home[7])).toBe(before[6]);
+    expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home[7])).toBe(before[6]);
     await fullyVisible(page, card);
   });
 }

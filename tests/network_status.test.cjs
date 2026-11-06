@@ -1,3 +1,4 @@
+const { createTestSettings } = require("./helpers/settings.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const test = require("node:test");
@@ -17,7 +18,7 @@ function setup(level, standard, online = true, view = true) {
     classList: { toggle() {} },
   };
   const A = {
-    settings: {},
+    settings: createTestSettings({}),
     $: () => el,
     tizen: {
       systeminfo: {
@@ -122,7 +123,7 @@ test("network snapshots publish without DOM access and retain identity for uncha
   assert.equal(wifi.strength, 0.5);
   assert.equal(Object.isFrozen(wifi), true);
   assert.equal(initial.kind, "unknown");
-  h.A.settings.showNetwork = false;
+  h.A.settings.update({ showNetwork: false });
   h.A.network.updateVisibility();
   assert.equal(h.A.network.getSnapshot().visible, false);
   assert.equal(updates, 2);

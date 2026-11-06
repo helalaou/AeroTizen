@@ -37,6 +37,7 @@ async function fixture(page, initialRecords) {
       response.writeHead(200, { "Content-Type": "text/html" });
       response.end(`<!doctype html><title>Continue Watching cache regression</title><div id="items"></div><script>
         var listeners = [], completed = 0;
+        var preferences = { continueWatching: true, continueWatchingApps: ['prime'] };
         var send = XMLHttpRequest.prototype.send;
         XMLHttpRequest.prototype.send = function () {
           this.addEventListener('loadend', function () { completed++; });
@@ -46,15 +47,17 @@ async function fixture(page, initialRecords) {
           config: { HIDDEN_APPS: /hidden/ },
           apps: { inventory: [{ id: 'prime', packageId: 'prime', name: 'Prime' },
             { id: 'youtube', packageId: 'youtube', name: 'YouTube' }], ready: true, subscribe: function () {} },
-          settings: { continueWatching: true, continueWatchingApps: ['prime'], subscribe: function (fn) { listeners.push(fn); } },
+          settings: { getSnapshot: function () { return preferences; },
+            update: function (patch) { preferences = Object.assign({}, preferences, patch); listeners.forEach(function (fn) { fn(); }); },
+            subscribe: function (fn) { listeners.push(fn); } },
           catalog: { storeId: function (id) { return id === 'prime' ? '123' : '456'; } },
           tiles: { shortName: function (name) { return name; } },
           tizen: { application: { getAppMetaData: function () {
             return [{ key: 'http://samsung.com/tv/metadata/app_support_continue_watching', value: 'true' }];
           } } }
         };
-        function select(sources) { AeroTizen.settings.continueWatchingApps = sources; listeners.forEach(function (fn) { fn(); }); }
-        function stop() { AeroTizen.settings.continueWatching = false; listeners.forEach(function (fn) { fn(); }); }
+        function select(sources) { AeroTizen.settings.update({ continueWatchingApps: sources }); }
+        function stop() { AeroTizen.settings.update({ continueWatching: false }); }
       </script><script src="/reader.js"></script><script>
         AeroTizen.continueWatching.subscribe(function () {
           var target = document.getElementById('items'); target.textContent = '';
