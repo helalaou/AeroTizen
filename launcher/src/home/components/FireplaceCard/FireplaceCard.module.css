@@ -1,0 +1,11 @@
+.card {
+  --home-app-gap: 20px;
+  --app-background: radial-gradient(110% 120% at 50% 110%, #ff8a1e 0%, #c2380d 35%, #3a0d04 70%, #120402 100%);
+
+  flex-direction: column;
+}
+
+.flame {
+  width: calc(var(--app-card-size) * 0.42);
+  height: calc(var(--app-card-size) * 0.42);
+}

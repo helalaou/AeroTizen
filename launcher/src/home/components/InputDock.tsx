@@ -2,7 +2,7 @@ import type { InputSource } from "../../contracts/launcher";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import type { HomeEnvironment } from "../types";
 
-import { HomeSectionHeading } from "./HomeSectionHeading";
+import { HomeSectionHeading } from "./HomeSectionHeading/HomeSectionHeading";
 import { InputCard } from "./InputCard";
 
 export const InputDock = ({
@@ -18,7 +18,7 @@ export const InputDock = ({
 }) => {
   const { t } = useTranslation();
   return (
-    <section id="inputs-section" hidden={!visible || !inputs.length}>
+    <section id="inputs-section" data-home-section="inputs" hidden={!visible || !inputs.length}>
       <HomeSectionHeading title={t("common.inputs")} />
       <div id="inputs" class={"row small input-dock" + (inputs.length < 5 ? " input-dock--compact" : "")}>
         {inputs.map((source) => (

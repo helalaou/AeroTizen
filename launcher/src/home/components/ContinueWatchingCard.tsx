@@ -4,8 +4,8 @@ import type { ContinueItem } from "../../contracts/launcher";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import type { HomeEnvironment } from "../types";
 
-import { AppArtwork } from "./AppArtwork";
-import { HomeControl } from "./HomeControl";
+import { AppArtwork } from "./AppArtwork/AppArtwork";
+import { HomeControl } from "./HomeControl/HomeControl";
 
 const MIN_PLAYBACK_SECONDS = 1;
 
@@ -48,7 +48,7 @@ export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item
             onError={artwork.onError}
           />
         )}
-        <div class="tile app-tile continue-app-icon" aria-hidden="true" style={{ background: brand.background }}>
+        <div class="continue-app-icon" aria-hidden="true" style={{ background: brand.background }}>
           <AppArtwork app={app} brand={brand} active variant="badge" />
         </div>
       </div>

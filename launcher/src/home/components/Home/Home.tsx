@@ -1,17 +1,18 @@
 import { ArrowUp } from "lucide-preact";
 import { useLayoutEffect } from "preact/hooks";
 
-import { useStore } from "../shared/hooks/useStore";
-import { useTranslation } from "../shared/i18n/useTranslation";
-import { Icon } from "../shared/icons/Icon";
+import { useStore } from "../../../shared/hooks/useStore";
+import { useTranslation } from "../../../shared/i18n/useTranslation";
+import { Icon } from "../../../shared/icons/Icon";
+import type { HomeEnvironment } from "../../types";
+import { AppActionsMenu } from "../AppActionsMenu/AppActionsMenu";
+import { AppGrid } from "../AppGrid/AppGrid";
+import { ContinueWatchingRow } from "../ContinueWatchingRow";
+import { HomeControl } from "../HomeControl/HomeControl";
+import { HomeHeader } from "../HomeHeader";
+import { InputDock } from "../InputDock";
 
-import { AppActionsMenu } from "./components/AppActionsMenu";
-import { AppGrid } from "./components/AppGrid";
-import { ContinueWatchingRow } from "./components/ContinueWatchingRow";
-import { HomeControl } from "./components/HomeControl";
-import { HomeHeader } from "./components/HomeHeader";
-import { InputDock } from "./components/InputDock";
-import type { HomeEnvironment } from "./types";
+import styles from "./Home.module.css";
 
 export const Home = ({ env }: { env: HomeEnvironment }) => {
   const { t } = useTranslation();
@@ -29,9 +30,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
     !showContinueWatching &&
     visibleHome.length > 0 &&
     (settings.homeAppLayout === "scroll" || visibleHome.length <= env.columns(settings));
-  const viewportClass = "content-viewport" + (scroll > 0 ? " is-scrolled" : "");
   const atAppsEnd = page === "apps" && scroll === appsEndOffset;
-  const dockClass = dockInputs ? "rows--dock-inputs" : undefined;
   useLayoutEffect(() => {
     env.bridge.focus();
   }, [
@@ -50,17 +49,26 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
     settings.aeroClockStyle,
   ]);
   return (
-    <>
+    <div class={styles.home} data-home data-expanded={settings.clockLayout === "custom" ? "true" : "false"}>
       <HomeHeader env={env} />
-      <div class={viewportClass + (atAppsEnd ? " is-at-apps-end" : "")} aria-hidden={!active}>
-        <div class="content-mask">
+      <div
+        class={styles.viewport}
+        data-home-viewport
+        data-scrolled={scroll > 0 ? "true" : "false"}
+        data-at-apps-end={atAppsEnd ? "true" : "false"}
+        aria-hidden={!active}
+      >
+        <div class={styles.mask} data-home-mask data-scrolled={scroll > 0 && !atAppsEnd ? "true" : "false"}>
           <main
             id="rows"
-            class={page === "apps" ? "rows--apps" : dockClass}
+            class={styles.rows}
+            data-home-content
+            data-page={page}
+            data-docked={dockInputs ? "true" : "false"}
             ref={env.rows}
             style={{ "--home-offset": -scroll + "px", "--apps-end-offset": appsEndOffset + "px" }}
           >
-            <div class="home-page-surface" data-page={page}>
+            <div class={styles.page} data-home-page data-page={page} data-docked={dockInputs ? "true" : "false"}>
               <AppGrid
                 env={env}
                 ids={visibleHome}
@@ -81,7 +89,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
                 active={active}
                 label={t("home.allApps")}
               />
-              <p id="apps-empty" class="apps-empty" hidden={page === "home" || apps.length > 0}>
+              <p id="apps-empty" class={styles.empty} hidden={page === "home" || apps.length > 0}>
                 {t("home.emptyApps")}
               </p>
               <ContinueWatchingRow env={env} items={items} visible={showContinueWatching} />
@@ -91,7 +99,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
               <HomeControl
                 env={env}
                 controlKey="back-to-top"
-                className="back-to-top"
+                className={styles.backToTop}
                 title={t("home.backToTop")}
                 preserveSelection
               >
@@ -102,6 +110,6 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
         </div>
       </div>
       <AppActionsMenu env={env} />
-    </>
+    </div>
   );
 };

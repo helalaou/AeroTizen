@@ -76,7 +76,7 @@ for (const scenario of [
     await page.goto("/");
     await expect(page).toHaveTitle("AeroTizen");
     const cards = page.locator(".continue-card"),
-      apps = page.locator("#grid > .tile");
+      apps = page.locator("#grid > [data-id]");
     await expect(cards).toHaveCount(10);
     await expect(apps).toHaveCount(scenario.count);
     await expect
@@ -173,7 +173,7 @@ for (const settingsOpen of [false, true]) {
     }, prime);
     await page.goto("/");
     const cards = page.locator(".continue-card"),
-      app = page.locator("#grid > .tile");
+      app = page.locator("#grid > [data-id]");
     await expect(cards).toHaveCount(10);
     await page.keyboard.press("ArrowDown");
     for (let i = 0; i < 10; i++) await page.keyboard.press("ArrowRight");

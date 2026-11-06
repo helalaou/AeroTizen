@@ -1,7 +1,9 @@
-import type { AppPresentation, InstalledApp } from "../../contracts/launcher";
-import type { AppFallbackVariant } from "../../shared/components/AppFallback";
-import { AppFallback } from "../../shared/components/AppFallback";
-import { useImageSequence } from "../../shared/hooks/useImageSequence";
+import type { AppPresentation, InstalledApp } from "../../../contracts/launcher";
+import type { AppFallbackVariant } from "../../../shared/components/AppFallback";
+import { AppFallback } from "../../../shared/components/AppFallback";
+import { useImageSequence } from "../../../shared/hooks/useImageSequence";
+
+import styles from "./AppArtwork.module.css";
 
 export const AppArtwork = ({
   app,
@@ -21,7 +23,8 @@ export const AppArtwork = ({
       {artwork.src ? (
         <img
           key={artwork.src}
-          class="app-artwork"
+          class={styles.image}
+          data-app-artwork
           alt=""
           src={artwork.src}
           hidden={!artwork.loaded}

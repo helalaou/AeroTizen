@@ -7,7 +7,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | Component                                                            | Responsibility                                                                  | Data and commands                                                            |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `backgrounds/BackgroundSceneView`                                    | Render decorative gradients, waves and particle canvas                          | Background bridge provides scenes and speed. The app mounts and disposes it. |
-| `home/Home`                                                          | Compose the screen and refresh focus when its inventory or layout changes       | Shared settings/inventory and Home controller                                |
+| `home/components/Home`                                               | Compose the screen and refresh focus when its inventory or layout changes       | Shared settings/inventory and Home controller                                |
 | `HomeHeader`                                                         | Shortcuts, page tabs and status placement                                       | Home navigation and shared status stores                                     |
 | `HeaderFocusIndicator`                                               | Measure a registered shortcut/tab and render its focus position                 | Explicit `shortcuts` or `tabs` group                                         |
 | `AppGrid`                                                            | Render one keyed page of apps, preserving artwork while another page is active  | Ordered IDs, app records, layout settings and visibility                     |
@@ -32,6 +32,14 @@ screens need the same behavior, rather than because they have a similar shape.
 | `SettingsAppCard`                                                    | Common app-choice frame, focus, selection and disabled states                   | Explicit favourite/source variant and control props                          |
 | `WallpaperSwatch`, `SpeedSlider`, `WeatherSearch`                    | Wallpaper preview choices, speed adjustment and location input                  | Explicit values, state and callbacks; no platform requests                   |
 | `SettingsHint`                                                       | Shared Settings help and status copy                                            | Text, semantic attributes and optional spacing override                      |
+
+Styled components use a component-named directory, such as
+`AppGrid/AppGrid.tsx` and `AppGrid/AppGrid.module.css`. Private helpers stay there;
+small components with no companion files can remain flat. Apply this pattern as
+components are migrated, and import their named file directly.
+
+`HomeAppCard` owns the shared app/Fireplace frame, focus and moving state.
+`AppCard` and `FireplaceCard` supply app-specific content and paint.
 
 `HomeControl` and `SettingsControl` remain separate because they use different
 navigation contracts. Neither starts platform services. Shared navigation, hooks and
@@ -75,17 +83,23 @@ keys and values also remain compatible.
 | `shared/components/AppFallback.module.css`                           | Shared logo/label geometry with explicit Home, favourite, source and badge variants |
 | `base.css`                                                           | Page sizing, fonts, hidden state and native/preview visibility                      |
 | `backgrounds.css`, `runtime.css`, `photo-weather.css`                | Background layers, Fireplace/toast and weather photos                               |
-| `home.css`                                                           | Home viewport/page movement and content clearance                                   |
+| `home/components/Home/Home.module.css`                               | Home viewport, fades, page reveals, section spacing and content clearance           |
 | `home/components/HomeHeader.module.css`                              | Header layout, shortcuts, tabs and expanded clock clearance                         |
 | `home/components/HeaderFocusIndicator.module.css`                    | Measured shortcut/tab focus plates and shared motion durations                      |
 | `status/Clock.module.css`                                            | Compact, vertical, horizontal, minimal and bold time/date layouts                   |
 | `status/HeaderStatus.module.css`                                     | Compact/expanded status placement                                                   |
 | `status/WeatherStatus.module.css`, `status/NetworkStatus.module.css` | Weather and network presentation, with explicit layout/state props                  |
-| `app-cards.css`                                                      | App artwork, card sizes/columns and moving/focused states                           |
+| `home/components/AppGrid/AppGrid.module.css`                         | App sizes, columns and clock clearance                                              |
+| `home/components/HomeAppCard/HomeAppCard.module.css`                 | Shared app/Fireplace frame and focus/moving states                                  |
+| `home/components/AppArtwork/AppArtwork.module.css`                   | App image geometry                                                                  |
+| `home/components/FireplaceCard/FireplaceCard.module.css`             | Fireplace card artwork                                                              |
+| `home/components/HomeControl/HomeControl.module.css`                 | Home control focus reset                                                            |
+| `home/components/HomeSectionHeading/HomeSectionHeading.module.css`   | Shared Home section headings                                                        |
 | `continue-watching.css`                                              | Continue Watching row, cards, labels and progress                                   |
-| `horizontal-scroller.css`                                            | Shared horizontal viewport, track layout and reduced motion                         |
+| `home/components/HorizontalScroller/HorizontalScroller.module.css`   | Shared horizontal viewport, track layout and motion                                 |
 | `input-dock.css`                                                     | InputDock and InputCard layout/states                                               |
-| `app-actions-menu.css`                                               | AppActionsMenu and ReorderControls                                                  |
+| `home/components/AppActionsMenu/AppActionsMenu.module.css`           | App actions and menu selection                                                      |
+| `home/components/ReorderControls/ReorderControls.module.css`         | Reorder arrows and local motion                                                     |
 | `icons.css`                                                          | Shared interface icon sizing                                                        |
 
 Module paths in this table are relative to `launcher/src/`; global sheets are in
@@ -96,7 +110,9 @@ use semantic IDs, roles, `data-key`, `data-focused`, `data-settings-focus` and
 remains only as a transition hook for unmigrated styles; only Preact writes it.
 Header/status tests use `data-home-header`, `data-header-tabs`, `data-header-focus`,
 `data-clock-part` and `data-weather-part`. Shell visibility uses the public
-`data-home-header` hook, rather than a private module class.
+`data-home-header` and `data-home-content` hooks, rather than private module classes.
+Home layout/card tests use `data-home-viewport`, `data-home-mask`, `data-home-page`,
+`data-columns`, `data-moving`, `data-reorder-arrow` and `data-app-actions-focus`.
 See the runtime boundary in the
 [style rules](styles.md) for the remaining public body classes.
 

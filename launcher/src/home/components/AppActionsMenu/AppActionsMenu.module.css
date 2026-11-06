@@ -1,0 +1,96 @@
+.backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  background: var(--menu-backdrop);
+  opacity: 1;
+  transition: opacity var(--motion-duration-backdrop) ease-out;
+}
+
+.menu {
+  position: fixed;
+  z-index: 1001;
+  box-sizing: border-box;
+  width: 382px;
+  max-width: calc(100% - 48px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  color: var(--menu-text);
+  font-family: inherit;
+  border: 1px solid var(--menu-border);
+  border-radius: 24px;
+  background: var(--menu-surface);
+  box-shadow: var(--menu-shadow);
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity var(--motion-duration-menu) ease-out,
+    transform var(--motion-duration-menu) ease-out;
+}
+
+.focus {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  top: 16px;
+  left: 12px;
+  right: 12px;
+  height: 60px;
+  box-sizing: border-box;
+  border: 2px solid var(--focus);
+  border-radius: 17px;
+  background: var(--menu-focus-surface);
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--motion-duration-focus) ease-out;
+}
+
+.option {
+  display: flex;
+  position: relative;
+  z-index: 1;
+  align-items: center;
+  flex: 0 0 60px;
+  height: 60px;
+  min-height: 60px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+  gap: 12px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 17px;
+  background: transparent;
+  color: var(--menu-option-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  transition: color var(--motion-duration-feedback) linear;
+
+  &[aria-selected="true"] {
+    color: var(--menu-text);
+  }
+}
+
+.icon {
+  display: block;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+
+  > svg {
+    display: block;
+    width: 26px;
+    height: 26px;
+  }
+}
+
+.label {
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+}

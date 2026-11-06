@@ -20,28 +20,32 @@ for (const glassSettings of [false, true]) {
     );
     await page.goto("/");
     await page.waitForFunction(() => AeroTizen.apps.ready);
+    const surface = page.locator("[data-home-page]");
+    const homeAnimation = await surface.evaluate((node) => getComputedStyle(node).animationName);
+    expect(homeAnimation).not.toBe("none");
     await page.evaluate(() => {
-      window.savedHomeCard = document.querySelector("#grid > .tile");
+      window.savedHomeCard = document.querySelector("#grid > [data-id]");
     });
     expect(await page.locator("[data-header-focus=tabs]").evaluate((n) => getComputedStyle(n).transitionProperty)).toBe(
       "none",
     );
     await page.locator("#apps-tab").click();
-    await expect(page.locator(".home-page-surface")).toHaveCSS("animation-name", "apps-page-reveal");
+    await expect(surface).not.toHaveCSS("animation-name", homeAnimation);
+    await expect(surface).not.toHaveCSS("animation-name", "none");
     expect(
       await page.locator("[data-header-focus=tabs]").evaluate((n) => getComputedStyle(n).transitionProperty),
     ).toContain("transform");
     await page.keyboard.press("ArrowDown");
-    await expect(page.locator("#grid > .tile").first()).toHaveClass(/focused/);
+    await expect(page.locator("#grid > [data-id]").first()).toHaveClass(/focused/);
     await page.keyboard.press("Escape");
-    await expect(page.locator(".home-page-surface")).toHaveCSS("animation-name", "home-page-reveal");
-    expect(await page.evaluate(() => window.savedHomeCard === document.querySelector("#grid > .tile"))).toBe(true);
+    await expect(surface).toHaveCSS("animation-name", homeAnimation);
+    expect(await page.evaluate(() => window.savedHomeCard === document.querySelector("#grid > [data-id]"))).toBe(true);
     for (let i = 0; i < 3; i++) {
       await page.locator("#apps-tab").click();
       await page.keyboard.press("Escape");
     }
     await expect(page.locator("#home-tab")).toHaveClass(/focused/);
-    await expect(page.locator("#grid > .tile")).toHaveCount(4);
+    await expect(page.locator("#grid > [data-id]")).toHaveCount(4);
     await page.keyboard.press("ArrowLeft");
     await expect(page.locator("#samsung-home-shortcut")).toHaveClass(/focused/);
     await page.evaluate(() => {
@@ -54,6 +58,8 @@ for (const glassSettings of [false, true]) {
     expect(await page.evaluate(() => window.samsungEscapes)).toBe(1);
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.locator("#apps-tab").click();
-    await expect(page.locator(".home-page-surface")).toHaveCSS("animation-name", "none");
+    await expect(surface).toHaveCSS("animation-duration", "0s");
+    await expect(surface).toHaveCSS("opacity", "1");
+    expect(await surface.evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).isIdentity)).toBe(true);
   });
 }

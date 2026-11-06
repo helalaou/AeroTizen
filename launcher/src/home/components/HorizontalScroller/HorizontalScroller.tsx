@@ -1,8 +1,10 @@
 import type { ComponentChildren, RefObject } from "preact";
 import { useLayoutEffect, useRef } from "preact/hooks";
 
-import { useTranslation } from "../../shared/i18n/useTranslation";
-import { clampHorizontalOffset } from "../state/horizontalScroll";
+import { useTranslation } from "../../../shared/i18n/useTranslation";
+import { clampHorizontalOffset } from "../../state/horizontalScroll";
+
+import styles from "./HorizontalScroller.module.css";
 
 export const HorizontalScroller = ({
   children,
@@ -16,6 +18,7 @@ export const HorizontalScroller = ({
   trackClass = "",
   trackRef,
   viewportRef,
+  trackData,
 }: {
   children: ComponentChildren;
   id: string;
@@ -28,6 +31,7 @@ export const HorizontalScroller = ({
   trackClass?: string;
   trackRef?: RefObject<HTMLDivElement>;
   viewportRef?: RefObject<HTMLDivElement>;
+  trackData?: Readonly<Record<`data-${string}`, string | number>>;
 }) => {
   const ownTrack = useRef<HTMLDivElement>(null);
   const track = trackRef || ownTrack;
@@ -45,13 +49,18 @@ export const HorizontalScroller = ({
   });
   return (
     <div
-      class={"horizontal-scroller" + (enabled ? " horizontal-scroller--enabled" : "") + " " + viewportClass}
+      class={styles.viewport + " " + viewportClass}
+      data-horizontal-scroller
+      data-enabled={enabled ? "true" : undefined}
       hidden={!visible}
       ref={viewportRef}
     >
       <div
         id={id}
-        class={"horizontal-scroller__track " + trackClass}
+        class={styles.track + " " + trackClass}
+        {...trackData}
+        data-scroller-track
+        data-enabled={enabled ? "true" : undefined}
         aria-label={label}
         ref={track}
         data-offset={enabled ? offset : undefined}

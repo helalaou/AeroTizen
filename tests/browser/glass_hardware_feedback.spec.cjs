@@ -77,8 +77,8 @@ for (const height of [720, 1080])
         .poll(() =>
           page.locator(".continue-card").evaluate((card) => {
             const r = card.getBoundingClientRect(),
-              clip = card.closest(".content-viewport").getBoundingClientRect(),
-              rowClip = card.closest(".horizontal-scroller").getBoundingClientRect();
+              clip = card.closest("[data-home-viewport]").getBoundingClientRect(),
+              rowClip = card.closest("[data-horizontal-scroller]").getBoundingClientRect();
             const scale = r.width / card.offsetWidth,
               ring = 9 * scale;
             return (
@@ -92,7 +92,7 @@ for (const height of [720, 1080])
         .toBe(true);
       await page.screenshot({ path: info.outputPath("complete-focus-ring.png") });
       await page.keyboard.press("ArrowUp");
-      await expect(page.locator("#grid > .tile")).toHaveClass(/focused/);
+      await expect(page.locator("#grid > [data-id]")).toHaveClass(/focused/);
       expect(errors).toEqual([]);
     });
   }
@@ -142,7 +142,7 @@ for (const height of [720, 1080])
         if (!count) {
           await expect(page.locator("#inputs-section")).toBeHidden();
           await page.keyboard.press("ArrowDown");
-          await expect(page.locator("#grid > .tile")).toHaveClass(/focused/);
+          await expect(page.locator("#grid > [data-id]")).toHaveClass(/focused/);
           return;
         }
         if (glass && count < 5) {

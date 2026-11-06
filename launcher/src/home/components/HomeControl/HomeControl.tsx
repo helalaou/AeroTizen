@@ -1,8 +1,10 @@
 import type { ComponentChildren } from "preact";
 import { useCallback, useRef } from "preact/hooks";
 
-import { useStore } from "../../shared/hooks/useStore";
-import type { HomeEnvironment } from "../types";
+import { useStore } from "../../../shared/hooks/useStore";
+import type { HomeEnvironment } from "../../types";
+
+import styles from "./HomeControl.module.css";
 
 export const HomeControl = ({
   env,
@@ -13,6 +15,7 @@ export const HomeControl = ({
   title,
   dataId,
   dataKey,
+  moving = false,
   onActivate,
   style,
   pressed,
@@ -27,6 +30,7 @@ export const HomeControl = ({
   title: string;
   dataId?: string;
   dataKey?: string;
+  moving?: boolean;
   onActivate?(): void;
   style?: Record<string, string>;
   pressed?: boolean;
@@ -52,7 +56,7 @@ export const HomeControl = ({
     <div
       ref={register}
       id={id}
-      class={className + (focused ? " focused" : "")}
+      class={styles.control + " " + className + (focused ? " focused" : "")}
       role="button"
       aria-label={title}
       title={title}
@@ -60,6 +64,7 @@ export const HomeControl = ({
       data-id={dataId}
       data-key={dataKey}
       data-focused={focused ? "true" : undefined}
+      data-moving={moving ? "true" : undefined}
       aria-pressed={pressed}
       style={style}
       onClick={() => {

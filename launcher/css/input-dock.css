@@ -1,3 +1,24 @@
+/* Input cards retain their own legacy frame until their module migration. */
+.input-dock .tile {
+  position: relative;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: var(--card);
+  transform: translateZ(0);
+  transition: transform 0.15s ease-out;
+}
+.input-dock .tile .name {
+  font-weight: 500;
+  color: #fff;
+  text-shadow: var(--app-label-shadow);
+  max-width: 60%;
+  line-height: 1.1;
+}
 .input-dock .tile.focused {
   transform: translateZ(0) scale(1.035);
   box-shadow:
@@ -11,6 +32,7 @@
 #inputs {
   --input-dock-spacing: 32px;
 
+  display: flex;
   gap: 0;
 }
 #inputs > .tile + .tile {

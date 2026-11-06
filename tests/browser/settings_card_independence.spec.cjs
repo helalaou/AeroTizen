@@ -39,7 +39,7 @@ test("Home columns never change standard Settings icons or artwork nodes", async
 });
 
 for (const glassSettings of [false, true]) {
-  test(`${glassSettings ? "Glass" : "Classic"} Settings cards retain styles without Home CSS or the editor ID`, async ({
+  test(`${glassSettings ? "Glass" : "Classic"} Settings cards retain styles without legacy Home sheets or the editor ID`, async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
@@ -79,7 +79,11 @@ for (const glassSettings of [false, true]) {
     expect(before.length).toBeGreaterThan(2);
     await page.evaluate(() => {
       document.querySelector('[data-settings-drawer="overlay"]').removeAttribute("id");
-      document.querySelector('link[href="css/app-cards.css"]').disabled = true;
+      for (const sheet of document.querySelectorAll(
+        'link[href="css/input-dock.css"], link[href="css/continue-watching.css"]',
+      )) {
+        sheet.disabled = true;
+      }
     });
     expect(await inspect()).toEqual(before);
     const app = page.locator('#all-apps [data-key="app:demo0"]');

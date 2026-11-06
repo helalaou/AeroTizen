@@ -1,11 +1,12 @@
-import type { InstalledApp } from "../../contracts/launcher";
-import type { SettingsSnapshot } from "../../contracts/preferences";
-import { useStore } from "../../shared/hooks/useStore";
-import type { HomeEnvironment, Page } from "../types";
+import type { InstalledApp } from "../../../contracts/launcher";
+import type { SettingsSnapshot } from "../../../contracts/preferences";
+import { useStore } from "../../../shared/hooks/useStore";
+import type { HomeEnvironment, Page } from "../../types";
+import { AppCard } from "../AppCard";
+import { FireplaceCard } from "../FireplaceCard/FireplaceCard";
+import { HorizontalScroller } from "../HorizontalScroller/HorizontalScroller";
 
-import { AppCard } from "./AppCard";
-import { FireplaceCard } from "./FireplaceCard";
-import { HorizontalScroller } from "./HorizontalScroller";
+import styles from "./AppGrid.module.css";
 
 export const AppGrid = ({
   env,
@@ -34,8 +35,14 @@ export const AppGrid = ({
       label={label}
       enabled={scroll}
       visible={shown}
-      viewportClass="app-grid-viewport"
-      trackClass={"app-grid cards-square cols-" + env.columns(settings) + (scroll ? " app-grid--scroll" : "")}
+      trackClass={styles.grid}
+      trackData={{
+        "data-app-grid": "",
+        "data-columns": env.columns(settings),
+        "data-page": page,
+        "data-expanded": settings.clockLayout === "custom" ? "true" : "false",
+        "data-scroll": scroll ? "true" : "false",
+      }}
       trackRef={page === "home" ? env.appItems : undefined}
       viewportRef={page === "home" ? env.appViewport : undefined}
       offset={appOffset}

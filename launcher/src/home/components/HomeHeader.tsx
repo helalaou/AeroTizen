@@ -8,7 +8,7 @@ import { NetworkStatus } from "../../status/NetworkStatus";
 import type { HomeEnvironment } from "../types";
 
 import { HeaderFocusIndicator } from "./HeaderFocusIndicator";
-import { HomeControl } from "./HomeControl";
+import { HomeControl } from "./HomeControl/HomeControl";
 import styles from "./HomeHeader.module.css";
 
 export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {

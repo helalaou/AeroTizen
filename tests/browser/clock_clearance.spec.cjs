@@ -43,7 +43,7 @@ for (const glassSettings of [false, true]) {
       const measure = () =>
         page.evaluate(() => {
           const city = document.querySelector("[data-clock=expanded]").getBoundingClientRect();
-          const card = document.querySelector("#grid .tile.focused").getBoundingClientRect();
+          const card = document.querySelector("#grid [data-id].focused").getBoundingClientRect();
           const tabs = document.querySelector("[data-header-tabs]").getBoundingClientRect();
           return { gap: card.top - city.bottom, centre: tabs.left + tabs.width / 2 };
         });
@@ -55,10 +55,10 @@ for (const glassSettings of [false, true]) {
       const headerBounds = await page.locator("[data-home-header]").boundingBox();
       const headerBefore = await page.screenshot();
       await page.screenshot({ path: info.outputPath("clock-clearance.png") });
-      await expect(page.locator(".content-viewport")).not.toHaveClass(/is-scrolled/);
+      await expect(page.locator("[data-home-viewport]")).toHaveAttribute("data-scrolled", "false");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("ArrowDown");
-      await expect(page.locator(".content-viewport")).toHaveClass(/is-scrolled/);
+      await expect(page.locator("[data-home-viewport]")).toHaveAttribute("data-scrolled", "true");
       expect(await page.locator("[data-weather-part=location]").textContent()).toContain("fixture city");
       const headerAfter = await page.screenshot();
       const difference = await compareHeaderPixels(page, headerBefore, headerAfter, headerHeight);
@@ -68,12 +68,12 @@ for (const glassSettings of [false, true]) {
       ).toBe(0);
       expect(await page.locator("[data-home-header]").boundingBox()).toEqual(headerBounds);
       await page.screenshot({ path: info.outputPath("scroll-fade.png") });
-      expect(await page.locator(".content-viewport").evaluate((n) => getComputedStyle(n).webkitMaskImage)).toContain(
+      expect(await page.locator("[data-home-viewport]").evaluate((n) => getComputedStyle(n).webkitMaskImage)).toContain(
         "linear-gradient",
       );
       await page.keyboard.press("ArrowUp");
       await page.keyboard.press("ArrowUp");
-      await expect(page.locator(".content-viewport")).not.toHaveClass(/is-scrolled/);
+      await expect(page.locator("[data-home-viewport]")).toHaveAttribute("data-scrolled", "false");
     });
   }
 }

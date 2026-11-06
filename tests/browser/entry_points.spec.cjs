@@ -46,8 +46,8 @@ for (const [name, url] of [
     });
     await page.goto(url);
     await expect(page).toHaveTitle("AeroTizen");
-    await expect(page.locator("#home-root #grid > .tile")).toHaveCount(2);
-    await expect(page.locator("#home-root #grid > .tile").first()).toHaveClass(/focused/);
+    await expect(page.locator("#home-root #grid > [data-id]")).toHaveCount(2);
+    await expect(page.locator("#home-root #grid > [data-id]").first()).toHaveClass(/focused/);
     await page.locator("#gear").click();
     await expect(page.locator("#settings-root #editor")).toBeVisible();
     await page.locator('[data-key="section:appearance"]').click();
@@ -131,7 +131,9 @@ test("Continue Watching demo is opt-in, local to Vite and uses separate preferen
   await expect(page.locator("#continue-section")).toBeVisible();
   await expect(page.locator(".continue-card")).toHaveCount(5);
   await expect(
-    page.locator(".continue-app-icon :is(.app-artwork, [data-app-fallback] > svg, [data-app-fallback] > img):visible"),
+    page.locator(
+      ".continue-app-icon :is([data-app-artwork], [data-app-fallback] > svg, [data-app-fallback] > img):visible",
+    ),
   ).toHaveCount(5);
   await expect(page.locator(".continue-progress-fill")).toHaveCount(4);
   const unplayed = page.getByRole("button", { name: "Paper Moons · Prime Video" });

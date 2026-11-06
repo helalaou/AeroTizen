@@ -150,7 +150,7 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   await expect(page.locator(".continue-card").first()).toContainText("Recent episode 0");
   await expect(page.locator(".continue-source")).toHaveCount(0);
   await expect(page.locator(".continue-app-icon")).toHaveCount(7);
-  await expect(page.locator(".continue-app-icon .app-artwork")).toHaveCount(7);
+  await expect(page.locator(".continue-app-icon [data-app-artwork]")).toHaveCount(7);
   await expect(page.locator(".continue-label .continue-app-icon")).toHaveCount(0);
   expect(
     await page
@@ -200,7 +200,7 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   expect(await episodeTitle.evaluate((n) => n.clientWidth)).toBe(382);
   await page.evaluate(() => {
     window.savedCards = [...document.querySelectorAll(".continue-card")];
-    window.savedIcons = window.savedCards.map((n) => n.querySelector(".continue-app-icon .app-artwork"));
+    window.savedIcons = window.savedCards.map((n) => n.querySelector(".continue-app-icon [data-app-artwork]"));
     AeroTizen.continueWatching.refresh();
   });
   await expect(page.locator(".continue-card")).toHaveCount(7);
@@ -214,7 +214,7 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
       window.savedCards.every(
         (n, i) =>
           n === document.querySelectorAll(".continue-card")[i] &&
-          window.savedIcons[i] === n.querySelector(".continue-app-icon .app-artwork"),
+          window.savedIcons[i] === n.querySelector(".continue-app-icon [data-app-artwork]"),
       ),
     ),
   ).toBe(true);
@@ -231,7 +231,7 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
         .every(
           (n, i) =>
             n === document.querySelectorAll(".continue-card")[i] &&
-            window.savedIcons[i] === n.querySelector(".continue-app-icon .app-artwork"),
+            window.savedIcons[i] === n.querySelector(".continue-app-icon [data-app-artwork]"),
         ),
     ),
   ).toBe(true);

@@ -132,7 +132,7 @@ for (const glass of [false, true]) {
     await expect(speed.locator("[data-slider-hint] svg[aria-hidden=true]")).toHaveCount(2);
     await speed.click();
     await closeSettings(page);
-    await expect(page.locator("#grid > .tile")).toHaveCount(1);
+    await expect(page.locator("#grid > [data-id]")).toHaveCount(1);
     await expect(page.locator("vite-error-overlay")).toHaveCount(0);
     expect(errors).toEqual([]);
   });

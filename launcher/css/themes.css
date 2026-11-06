@@ -53,6 +53,14 @@ body {
   --header-gear-border: 0px;
   --back-to-top-surface: #30343f;
   --back-to-top-border: #a1a9ba;
+  --back-to-top-focus-shadow: 0 0 0 2px var(--bg), 0 0 0 5px var(--focus);
+  --home-card-focus-shadow: 0 0 0 4px var(--bg), 0 0 0 9px var(--focus), 0 18px 40px rgba(0, 0, 0, 0.6);
+  --home-card-move-shadow: 0 0 0 4px var(--bg), 0 0 0 9px var(--focus), 0 28px 50px rgba(0, 0, 0, 0.7);
+  --home-section-heading-text: rgba(250, 252, 255, 0.85);
+  --home-section-heading-shadow: 0 2px 9px rgba(0, 0, 0, 0.42);
+  --reorder-surface: rgba(255, 255, 255, 0.95);
+  --reorder-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  --reorder-icon: #111;
   --settings-surface: #1c1c1e;
   --settings-main-surface: #141416;
   --settings-border: #444448;
@@ -83,6 +91,9 @@ body {
   --menu-border: var(--settings-border);
   --menu-shadow: var(--settings-shadow);
   --menu-focus-surface: rgba(124, 92, 255, 0.18);
+  --menu-text: #fff;
+  --menu-option-text: rgba(243, 246, 255, 0.79);
+  --menu-backdrop: rgba(5, 8, 16, 0.53);
   --network-offline: #ff6b6b;
 }
 body.glass-ui {
