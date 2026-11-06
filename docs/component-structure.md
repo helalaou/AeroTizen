@@ -166,13 +166,15 @@ its particles in one batch. Canvas 2D creates glow textures once at startup
 for the sprite effects. Rain draws its streaks directly in the shader.
 
 Solid backgrounds show the saved custom colour first, followed by nineteen presets.
-The pencil marks the editable colour tile. The colour picker keeps a draft in
-Settings view state and previews it through the background mount. Apply persists
-the custom colour; Cancel, Back, closing Settings and teardown restore the saved
-wallpaper or weather photo. Left/Right adjusts hue by one degree and the other
-channels by one percent. Up/Down moves between channels and Apply/Cancel. Bright
-solid colours select contrasting floating Home text without changing the chosen
-background or tab theme.
+Gradients also start with a custom tile. The pencil sits beside each Custom label
+and marks the editable choice. Both editors keep drafts in Settings view state and
+preview through the background mount. The gradient editor shares the colour controls
+and adds two colour stops and a direction. OK selects a stop before editing its colour.
+Apply persists the choice; Cancel, Back, closing Settings and teardown restore the saved
+wallpaper or weather photo. Left/Right starts at one degree or one percent per press,
+then accelerates while held. Key release, focus changes and blur restore fine control.
+Up/Down moves between controls and Apply/Cancel. Bright backgrounds select contrasting
+floating Home text without changing the chosen background or tab theme.
 
 The wallpaper pane checks for WebGL when it opens. A failed setup or lost
 context hides the WebGL choices and leaves the saved wallpaper's static

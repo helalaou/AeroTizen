@@ -256,5 +256,10 @@
   "wallpaper.cancelColour": "Cancel",
   "wallpaper.decreaseColour": "Decrease {{name}}",
   "wallpaper.increaseColour": "Increase {{name}}",
-  "wallpaper.custom": "Custom"
+  "wallpaper.custom": "Custom",
+  "scene.custom-gradient": "Custom gradient",
+  "wallpaper.firstColour": "First colour",
+  "wallpaper.secondColour": "Second colour",
+  "wallpaper.direction": "Direction",
+  "wallpaper.gradientHint": "OK selects a colour. Up/Down: choose a control. Left/Right: adjust. Hold to adjust faster."
 }

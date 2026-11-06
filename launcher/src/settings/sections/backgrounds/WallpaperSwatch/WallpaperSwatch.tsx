@@ -31,12 +31,16 @@ export const WallpaperSwatch = ({ background, editable = false, hidden, labelKey
       style={{ background: background.preview }}
       onClick={onSelect}
     >
-      {editable ? (
-        <span class={styles.editMark} data-wallpaper-edit aria-hidden="true">
-          <Icon icon={Pencil} />
+      <span class={styles.caption}>
+        {editable ? (
+          <span class={styles.editMark} data-wallpaper-edit aria-hidden="true">
+            <Icon icon={Pencil} />
+          </span>
+        ) : null}
+        <span class={styles.label} data-wallpaper-label>
+          {t(labelKey ?? `scene.${background.id}`)}
         </span>
-      ) : null}
-      <span class={styles.label}>{t(labelKey ?? `scene.${background.id}`)}</span>
+      </span>
       {selected ? <SelectionIndicator small /> : null}
     </SettingsControl>
   );

@@ -1,22 +1,30 @@
-import { ChevronLeft, ChevronRight } from "lucide-preact";
-import { useLayoutEffect } from "preact/hooks";
+import { useLayoutEffect, useMemo } from "preact/hooks";
 
-import type { ColourChannels } from "../../../../backgrounds/colours";
 import { channelsToColour } from "../../../../backgrounds/colours";
+import { gradientBackground } from "../../../../backgrounds/gradients";
 import { useTranslation } from "../../../../shared/i18n/useTranslation";
-import { Icon } from "../../../../shared/icons/Icon/Icon";
+import { SelectionIndicator } from "../../../components/SelectionIndicator/SelectionIndicator";
 import { SettingsControl } from "../../../components/SettingsControl/SettingsControl";
 import { useSettingsEnvironment } from "../../../hooks/useSettingsEnvironment";
-import { COLOUR_CONTROLS } from "../../../state/colourPicker";
+import type { ColourPickerDraft } from "../../../state/colourPicker";
+import { activeColour, COLOUR_CONTROLS, colourChannelValue, draftBackground } from "../../../state/colourPicker";
+import { ColourSlider } from "../ColourSlider/ColourSlider";
 
 import styles from "./ColourPicker.module.css";
 
-export const ColourPicker = ({ colour }: { colour: ColourChannels }) => {
+const GRADIENT_STOPS = [
+  { value: 0, labelKey: "wallpaper.firstColour" },
+  { value: 1, labelKey: "wallpaper.secondColour" },
+] as const;
+
+export const ColourPicker = ({ draft }: { draft: ColourPickerDraft }) => {
   const { t } = useTranslation();
   const { services, actions } = useSettingsEnvironment();
-  const hex = channelsToColour(colour);
-  useLayoutEffect(() => services.previewColour(hex), [hex, services]);
-  useLayoutEffect(() => () => services.previewColour(null), [services]);
+  const preview = useMemo(() => draftBackground(draft), [draft]);
+  const colour = activeColour(draft);
+  const gradient = draft.kind === "gradient";
+  useLayoutEffect(() => services.previewBackground(preview), [preview, services]);
+  useLayoutEffect(() => () => services.previewBackground(null), [services]);
   return (
     <section
       class={styles.panel}
@@ -24,13 +32,34 @@ export const ColourPicker = ({ colour }: { colour: ColourChannels }) => {
       aria-modal="true"
       aria-labelledby="colour-picker-title"
       data-colour-picker
+      data-gradient={gradient ? "true" : undefined}
     >
-      <h2 id="colour-picker-title">{t("scene.custom")}</h2>
-      <p class={styles.hint}>{t("wallpaper.colourHint")}</p>
+      <h2 id="colour-picker-title">{t(gradient ? "scene.custom-gradient" : "scene.custom")}</h2>
+      <p class={styles.hint}>{t(gradient ? "wallpaper.gradientHint" : "wallpaper.colourHint")}</p>
+      {draft.kind === "gradient" ? (
+        <div class={styles.stops}>
+          {GRADIENT_STOPS.map((stop) => (
+            <SettingsControl
+              key={stop.value}
+              class={styles.stop}
+              focusKey={"gradient:stop:" + stop.value}
+              role="button"
+              aria-pressed={draft.activeStop === stop.value}
+              onClick={() => actions.setGradientStop(stop.value)}
+            >
+              <span
+                class={styles.sample}
+                style={{ background: channelsToColour(draft.colours[stop.value]) }}
+                aria-hidden="true"
+              />
+              <span>{t(stop.labelKey)}</span>
+              {draft.activeStop === stop.value ? <SelectionIndicator small /> : null}
+            </SettingsControl>
+          ))}
+        </div>
+      ) : null}
       <div class={styles.controls}>
         {COLOUR_CONTROLS.map((control) => {
-          const label = t(control.labelKey);
-          const value = Math.round(colour[control.value]);
           const start = channelsToColour({ ...colour, [control.value]: 0 });
           const end = channelsToColour({ ...colour, [control.value]: control.max });
           const middle = channelsToColour({ ...colour, lightness: 50 });
@@ -41,50 +70,31 @@ export const ColourPicker = ({ colour }: { colour: ColourChannels }) => {
             background = `linear-gradient(to right, #000, ${middle}, #fff)`;
           }
           return (
-            <SettingsControl
+            <ColourSlider
               key={control.value}
-              class={styles.control}
+              background={background}
+              compact={gradient}
               focusKey={"colour:" + control.value}
-              role="slider"
-              aria-label={label}
-              aria-valuemin={0}
-              aria-valuemax={control.max}
-              aria-valuenow={value}
-              aria-valuetext={value + control.unit}
-            >
-              <div class={styles.label}>
-                <span>{label}</span>
-                <span>
-                  {value}
-                  {control.unit}
-                </span>
-              </div>
-              <div class={styles.adjustment}>
-                <button
-                  type="button"
-                  class={styles.arrow}
-                  tabIndex={-1}
-                  aria-label={t("wallpaper.decreaseColour", { name: label })}
-                  onClick={() => actions.adjustColour(control.value, -1)}
-                >
-                  <Icon icon={ChevronLeft} />
-                </button>
-                <div class={styles.track} style={{ background }} aria-hidden="true">
-                  <span class={styles.thumb} style={{ left: (value / control.max) * 100 + "%" }} />
-                </div>
-                <button
-                  type="button"
-                  class={styles.arrow}
-                  tabIndex={-1}
-                  aria-label={t("wallpaper.increaseColour", { name: label })}
-                  onClick={() => actions.adjustColour(control.value, 1)}
-                >
-                  <Icon icon={ChevronRight} />
-                </button>
-              </div>
-            </SettingsControl>
+              label={t(control.labelKey)}
+              max={control.max}
+              onAdjust={(direction) => actions.adjustColour(control.value, direction)}
+              unit={control.unit}
+              value={colourChannelValue(colour, control.value)}
+            />
           );
         })}
+        {draft.kind === "gradient" && preview.kind === "gradient" ? (
+          <ColourSlider
+            background={gradientBackground(preview.gradient)}
+            compact
+            focusKey="gradient:angle"
+            label={t("wallpaper.direction")}
+            max={359}
+            onAdjust={actions.adjustGradientAngle}
+            unit="°"
+            value={draft.angle}
+          />
+        ) : null}
       </div>
       <div class={styles.actions}>
         <SettingsControl

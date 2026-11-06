@@ -256,5 +256,10 @@
   "wallpaper.cancelColour": "إلغاء",
   "wallpaper.decreaseColour": "تقليل {{name}}",
   "wallpaper.increaseColour": "زيادة {{name}}",
-  "wallpaper.custom": "مخصص"
+  "wallpaper.custom": "مخصص",
+  "scene.custom-gradient": "تدرج مخصص",
+  "wallpaper.firstColour": "اللون الأول",
+  "wallpaper.secondColour": "اللون الثاني",
+  "wallpaper.direction": "الاتجاه",
+  "wallpaper.gradientHint": "OK لاختيار لون. أعلى/أسفل: اختر أداة. يمين/يسار: اضبط. اضغط مطولاً للضبط أسرع."
 }

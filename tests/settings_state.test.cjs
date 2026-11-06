@@ -11,6 +11,7 @@ const harness = () => {
   const defaults = {
     background: "black",
     customColour: "#000000",
+    customGradient: { start: "#336699", end: "#ff0000", angle: 90 },
     home: ["one"],
     inputNames: {},
     speed: 1,
@@ -292,13 +293,45 @@ test("opening the picker reads the current custom colour and discards an earlier
   h.source.background = "custom";
   h.source.customColour = "#336699";
   h.actions.openColourPicker();
-  const channels = h.view.getSnapshot().colourPicker;
+  const draft = h.view.getSnapshot().colourPicker;
+  const channels = draft.colour;
   assert.equal(Math.round(channels.hue), 210);
   assert.equal(Math.round(channels.strength), 50);
   assert.equal(Math.round(channels.lightness), 40);
   h.actions.adjustColour("hue", 1);
   h.actions.closeColourPicker(false);
   h.actions.openColourPicker();
-  assert.deepEqual(h.view.getSnapshot().colourPicker, channels);
+  assert.deepEqual(h.view.getSnapshot().colourPicker, draft);
   assert.equal(h.saves, 0, "opening and cancelling never save a different colour");
+});
+
+test("gradient drafts edit each colour independently, save once, and reopen the saved gradient", () => {
+  const h = harness();
+  const before = h.settings.getSnapshot();
+  h.actions.openGradientPicker();
+  h.actions.adjustColour("hue", 1);
+  h.actions.setGradientStop(1);
+  h.actions.adjustColour("lightness", 10);
+  h.actions.adjustGradientAngle(-100);
+  assert.equal(h.saves, 0);
+  assert.deepEqual(h.settings.getSnapshot().customGradient, before.customGradient);
+  const draft = h.view.getSnapshot().colourPicker;
+  assert.equal(draft.angle, 350);
+  assert.equal(Math.round(draft.colours[0].hue), 211);
+  assert.equal(Math.round(draft.colours[1].hue), 0);
+  h.actions.closeColourPicker(false);
+  assert.equal(h.saves, 0);
+  h.actions.openGradientPicker();
+  assert.equal(h.view.getSnapshot().colourPicker.angle, 90);
+  h.actions.adjustGradientAngle(1);
+  h.actions.closeColourPicker(true);
+  assert.equal(h.saves, 1);
+  assert.equal(h.source.background, "custom-gradient");
+  assert.equal(h.source.customColour, "#000000");
+  assert.deepEqual(h.source.customGradient, { start: "#336699", end: "#ff0000", angle: 91 });
+  h.actions.openGradientPicker();
+  assert.equal(h.view.getSnapshot().colourPicker.angle, 91);
+  h.source.customGradient.start = "#ffffff";
+  h.source.save();
+  assert.equal(before.customGradient.start, "#336699", "old snapshots cannot be changed by legacy writes");
 });

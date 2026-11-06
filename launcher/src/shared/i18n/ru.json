@@ -256,5 +256,10 @@
   "wallpaper.cancelColour": "Отмена",
   "wallpaper.decreaseColour": "Уменьшить {{name}}",
   "wallpaper.increaseColour": "Увеличить {{name}}",
-  "wallpaper.custom": "Свой цвет"
+  "wallpaper.custom": "Свой цвет",
+  "scene.custom-gradient": "Свой градиент",
+  "wallpaper.firstColour": "Первый цвет",
+  "wallpaper.secondColour": "Второй цвет",
+  "wallpaper.direction": "Направление",
+  "wallpaper.gradientHint": "OK выбирает цвет. Вверх/Вниз: выбрать параметр. Влево/Вправо: изменить. Удерживайте для ускорения."
 }

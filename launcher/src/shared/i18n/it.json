@@ -256,5 +256,10 @@
   "wallpaper.cancelColour": "Annulla",
   "wallpaper.decreaseColour": "Riduci {{name}}",
   "wallpaper.increaseColour": "Aumenta {{name}}",
-  "wallpaper.custom": "Personalizzato"
+  "wallpaper.custom": "Su misura",
+  "scene.custom-gradient": "Sfumatura personalizzata",
+  "wallpaper.firstColour": "Colore 1",
+  "wallpaper.secondColour": "Colore 2",
+  "wallpaper.direction": "Direzione",
+  "wallpaper.gradientHint": "OK seleziona un colore. Su/Giù: scegli un controllo. Sinistra/Destra: regola. Tieni premuto per accelerare."
 }

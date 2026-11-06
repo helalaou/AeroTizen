@@ -1,9 +1,10 @@
-import { channelsToColour, colourToChannels, normalizeColour } from "../../backgrounds/colours";
+import { colourToChannels, normalizeColour } from "../../backgrounds/colours";
+import { normalizeGradient } from "../../backgrounds/gradients";
 import type { SettingsStore, SettingsValues } from "../../contracts/preferences";
 import type { MutableStore } from "../../shared/state/createStore";
 import type { SettingsActions, SettingsServices, ViewState } from "../types";
 
-import { adjustColourChannel } from "./colourPicker";
+import { adjustDraftColour, draftBackground } from "./colourPicker";
 
 export const createSettingsActions = (
   settings: SettingsStore,
@@ -20,13 +21,50 @@ export const createSettingsActions = (
     openColourPicker() {
       settings.refresh();
       const hex = normalizeColour(settings.getSnapshot().customColour);
-      transaction(() => view.set({ ...view.getSnapshot(), adjusting: false, colourPicker: colourToChannels(hex) }));
+      transaction(() =>
+        view.set({
+          ...view.getSnapshot(),
+          adjusting: false,
+          colourPicker: { kind: "solid", colour: colourToChannels(hex) },
+        }),
+      );
+    },
+    openGradientPicker() {
+      settings.refresh();
+      const gradient = normalizeGradient(settings.getSnapshot().customGradient);
+      transaction(() =>
+        view.set({
+          ...view.getSnapshot(),
+          adjusting: false,
+          colourPicker: {
+            kind: "gradient",
+            colours: [colourToChannels(gradient.start), colourToChannels(gradient.end)],
+            activeStop: 0,
+            angle: gradient.angle,
+          },
+        }),
+      );
+    },
+    setGradientStop(stop) {
+      const current = view.getSnapshot();
+      const draft = current.colourPicker;
+      if (draft?.kind === "gradient") {
+        transaction(() => view.set({ ...current, colourPicker: { ...draft, activeStop: stop } }));
+      }
+    },
+    adjustGradientAngle(direction) {
+      const current = view.getSnapshot();
+      const draft = current.colourPicker;
+      if (draft?.kind === "gradient") {
+        const angle = (((draft.angle + direction) % 360) + 360) % 360;
+        transaction(() => view.set({ ...current, colourPicker: { ...draft, angle } }));
+      }
     },
     adjustColour(channel, direction) {
       const current = view.getSnapshot();
       const colour = current.colourPicker;
       if (colour) {
-        transaction(() => view.set({ ...current, colourPicker: adjustColourChannel(colour, channel, direction) }));
+        transaction(() => view.set({ ...current, colourPicker: adjustDraftColour(colour, channel, direction) }));
       }
     },
     closeColourPicker(apply) {
@@ -36,7 +74,12 @@ export const createSettingsActions = (
       }
       transaction(() => {
         if (apply) {
-          commit({ background: "custom", customColour: channelsToColour(colour), weatherPhoto: false }, () => {
+          const preview = draftBackground(colour);
+          const patch: Partial<SettingsValues> =
+            preview.kind === "solid"
+              ? { background: "custom", customColour: preview.colour, weatherPhoto: false }
+              : { background: "custom-gradient", customGradient: preview.gradient, weatherPhoto: false };
+          commit(patch, () => {
             services.applyWeatherVisibility();
             services.applyBackground();
           });

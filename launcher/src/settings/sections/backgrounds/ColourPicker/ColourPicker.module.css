@@ -26,75 +26,87 @@
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 18px;
 }
 
-.control,
+.actions {
+  display: flex;
+  margin-top: 30px;
+}
+
 .action {
   --settings-control-focus-outline: 4px solid var(--settings-focus-border);
 
   padding: 18px 22px;
   border-radius: 14px;
   background: var(--surface-control);
-}
-
-.label {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  font-size: 27px;
-  margin-bottom: 10px;
-  font-variant-numeric: tabular-nums;
-}
-
-.adjustment {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  direction: ltr;
-}
-
-.arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-  border: none;
-  border-radius: 8px;
-  background: var(--surface-control);
-  color: var(--settings-text);
-  cursor: pointer;
-}
-
-.track {
-  position: relative;
-  flex: 1;
-  height: 22px;
-  border-radius: 11px;
-}
-
-.thumb {
-  position: absolute;
-  top: -7px;
-  width: 18px;
-  height: 36px;
-  margin-left: -9px;
-  border: 3px solid var(--settings-slider-thumb);
-  border-radius: 7px;
-  background: var(--settings-slider-track);
-  box-shadow: var(--settings-slider-thumb-shadow);
-}
-
-.actions {
-  display: flex;
-  gap: 18px;
-  margin-top: 30px;
-}
-
-.action {
   flex: 1;
   text-align: center;
   font-size: 27px;
+}
+
+.panel[data-gradient="true"] {
+  top: 48px;
+  padding: 28px;
+}
+
+.stops {
+  display: flex;
+  margin-bottom: 18px;
+}
+
+.stop {
+  --settings-control-focus-outline: 4px solid var(--settings-focus-border);
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  padding: 10px 48px 10px 14px;
+  border-radius: 12px;
+  background: var(--surface-control);
+  font-size: 24px;
+
+  [dir="rtl"] & {
+    padding: 10px 14px 10px 48px;
+  }
+}
+
+.sample {
+  width: 48px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-control);
+  border-radius: 6px;
+}
+
+.controls > * + * {
+  margin-top: 18px;
+}
+
+.action + .action {
+  margin-left: 18px;
+}
+
+[dir="rtl"] .action + .action {
+  margin-left: 0;
+  margin-right: 18px;
+}
+
+.stop + .stop {
+  margin-left: 14px;
+}
+
+[dir="rtl"] .stop + .stop {
+  margin-left: 0;
+  margin-right: 14px;
+}
+
+.stop > span + span {
+  margin-left: 14px;
+}
+
+[dir="rtl"] .stop > span + span {
+  margin-left: 0;
+  margin-right: 14px;
 }

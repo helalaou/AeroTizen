@@ -223,3 +223,25 @@ test("custom colours persist, normalize case and reject malformed saved values",
     assert.equal(loadSettings({ [key]: JSON.stringify({ customColour }) }).settings.customColour, "#7c5cff");
   }
 });
+
+test("custom gradients preserve both colours and direction across a restart and validate saved fields", () => {
+  const key = "aerotizen.settings.v1";
+  const original = loadSettings({
+    [key]: JSON.stringify({
+      background: "custom-gradient",
+      customGradient: { start: "#AABBCC", end: "#001122", angle: -90 },
+    }),
+  });
+  original.settings.save();
+  const restarted = loadSettings(original.store).settings;
+  assert.equal(restarted.background, "custom-gradient");
+  assert.equal(restarted.customGradient.start, "#aabbcc");
+  assert.equal(restarted.customGradient.end, "#001122");
+  assert.equal(restarted.customGradient.angle, 270);
+  const invalid = loadSettings({
+    [key]: JSON.stringify({ customGradient: { start: "url(example)", end: 7, angle: "90" } }),
+  }).settings;
+  assert.equal(invalid.customGradient.start, "#7c5cff");
+  assert.equal(invalid.customGradient.end, "#00c4d4");
+  assert.equal(invalid.customGradient.angle, 135);
+});

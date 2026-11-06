@@ -1,6 +1,6 @@
 import { render } from "preact";
 
-import type { BackgroundGraphics } from "../contracts/backgrounds";
+import type { BackgroundGraphics, BackgroundPreview } from "../contracts/backgrounds";
 import type { WeatherPhotoSource } from "../contracts/status";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import { createStore } from "../shared/state/createStore";
@@ -20,7 +20,7 @@ export const mountBackgrounds = (
   previous?: BackgroundState,
 ) => {
   let generation = 0;
-  let previewColour: string | null = null;
+  let previewBackground: BackgroundPreview | null = null;
   const status = createStore<boolean | undefined>(undefined);
   const webGL: BackgroundGraphics = {
     getSnapshot: status.getSnapshot,
@@ -45,17 +45,25 @@ export const mountBackgrounds = (
   });
   const photo = createWeatherPhoto(
     weather,
-    () => previewColour === null && runtime.settings.getSnapshot().weatherPhoto === true && !runtime.inputs.watching,
+    () =>
+      previewBackground === null && runtime.settings.getSnapshot().weatherPhoto === true && !runtime.inputs.watching,
     window,
   );
   const { getSnapshot } = photo;
   const restoreWallpaper = () => {
     if (!runtime.inputs.watching) {
       const settings = runtime.settings.getSnapshot();
-      if (previewColour !== null) {
-        backgrounds.bridge.apply("custom", settings.speed, previewColour);
+      if (previewBackground?.kind === "solid") {
+        backgrounds.bridge.apply("custom", settings.speed, previewBackground.colour);
+      } else if (previewBackground?.kind === "gradient") {
+        backgrounds.bridge.apply("custom-gradient", settings.speed, undefined, previewBackground.gradient);
       } else {
-        backgrounds.bridge.apply(settings.background, settings.speed, settings.customColour);
+        backgrounds.bridge.apply(
+          settings.background,
+          settings.speed,
+          settings.customColour,
+          settings.customGradient,
+        );
       }
     }
   };
@@ -76,8 +84,8 @@ export const mountBackgrounds = (
   return {
     ...backgrounds,
     apply,
-    previewColour(colour: string | null) {
-      previewColour = colour;
+    previewBackground(preview: BackgroundPreview | null) {
+      previewBackground = preview;
       apply();
     },
     dispose() {

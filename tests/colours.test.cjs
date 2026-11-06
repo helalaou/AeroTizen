@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { channelsToColour, colourToChannels, isLightColour } = loadTypeScript("launcher/src/backgrounds/colours.ts");
-const { adjustColourChannel } = loadTypeScript("launcher/src/settings/state/colourPicker.ts");
+const { adjustColourChannel, colourChannelValue } = loadTypeScript("launcher/src/settings/state/colourPicker.ts");
 
 test("the picker reaches primary colours, greys, black and white without losing saved RGB precision", () => {
   assert.equal(channelsToColour({ hue: 0, strength: 100, lightness: 50 }), "#ff0000");
@@ -34,4 +34,12 @@ test("one-degree remote presses reach every hue", () => {
   }
   assert.equal(visited.size, 360);
   assert.equal(colour.hue, 0);
+});
+
+test("a saved colour next to red keeps its RGB precision and shows hue zero within the slider range", () => {
+  const colour = colourToChannels("#ff0001");
+  assert.equal(channelsToColour(colour), "#ff0001");
+  assert.equal(colourChannelValue(colour, "hue"), 0);
+  assert.equal(adjustColourChannel(colour, "hue", 1).hue, 1);
+  assert.equal(adjustColourChannel(colour, "hue", -1).hue, 359);
 });

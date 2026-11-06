@@ -18,17 +18,13 @@
   }
 }
 
-.label {
+.caption {
   position: absolute;
   left: 8px;
   bottom: 8px;
   max-width: calc(100% - 16px);
-  padding: 3px 7px;
-  border-radius: 5px;
-  background: var(--wallpaper-label-surface);
-  font-size: 20px;
-  color: var(--wallpaper-label-text);
-  text-shadow: var(--wallpaper-label-shadow);
+  display: flex;
+  align-items: center;
 
   [dir="rtl"] & {
     left: auto;
@@ -36,26 +32,35 @@
   }
 }
 
+.label {
+  min-width: 0;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: var(--wallpaper-label-surface);
+  font-size: 20px;
+  color: var(--wallpaper-label-text);
+  text-shadow: var(--wallpaper-label-shadow);
+}
+
 .editMark {
-  position: absolute;
-  top: 10px;
-  left: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 29px;
+  height: 29px;
+  flex-shrink: 0;
+  margin-right: 5px;
+  border-radius: 5px;
   background: var(--wallpaper-label-surface);
   color: var(--wallpaper-label-text);
 
-  > svg {
-    width: 20px;
-    height: 20px;
+  [dir="rtl"] & {
+    margin-right: 0;
+    margin-left: 5px;
   }
 
-  [dir="rtl"] & {
-    left: auto;
-    right: 10px;
+  > svg {
+    width: 18px;
+    height: 18px;
   }
 }

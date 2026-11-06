@@ -95,7 +95,7 @@ export const SettingsContent = ({
           }}
         />
       </div>
-      {active && colourPicker ? <ColourPicker colour={colourPicker} /> : null}
+      {active && colourPicker ? <ColourPicker draft={colourPicker} /> : null}
     </>
   );
 };

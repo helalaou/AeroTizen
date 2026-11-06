@@ -1,6 +1,7 @@
 import type { BackgroundScene } from "../contracts/backgrounds";
 
 import { DEFAULT_CUSTOM_COLOUR } from "./colours";
+import { DEFAULT_CUSTOM_GRADIENT, gradientBackground } from "./gradients";
 
 export const blob = (color: string) => "radial-gradient(closest-side, " + color + ", rgba(0,0,0,0))";
 
@@ -121,6 +122,11 @@ export const SCENES: readonly BackgroundScene[] = [
   { id: "solid-pink", category: "solid", base: "#f4a6ca" },
   { id: "solid-lavender", category: "solid", base: "#c7b3ed" },
   { id: "solid-brown", category: "solid", base: "#795548" },
+  {
+    id: "custom-gradient",
+    category: "gradient",
+    base: gradientBackground(DEFAULT_CUSTOM_GRADIENT),
+  },
   {
     id: "midnight",
     base: "radial-gradient(1500px 900px at 15% -10%, #1d2a52 0%, rgba(29,42,82,0) 60%), #04060c",

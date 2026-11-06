@@ -65,6 +65,10 @@ for (const glass of [false, true]) {
     await expect(tiles.first()).toHaveText("Custom");
     await expect(tiles.first().locator("[data-wallpaper-edit] .lucide-pencil")).toBeVisible();
     await expect(tiles.locator("[data-wallpaper-edit]")).toHaveCount(1);
+    const editBox = await tiles.first().locator("[data-wallpaper-edit]").boundingBox();
+    const labelBox = await tiles.first().locator("[data-wallpaper-label]").boundingBox();
+    expect(editBox.x + editBox.width).toBeLessThan(labelBox.x);
+    expect(Math.abs(editBox.y - labelBox.y)).toBeLessThan(2);
     const sizes = await tiles.evaluateAll((tiles) => tiles.map((tile) => [tile.offsetWidth, tile.offsetHeight]));
     expect(sizes.every(([width, height]) => width === sizes[0][0] && height === sizes[0][1])).toBe(true);
     const custom = page.locator('[data-key="bg:custom"]');

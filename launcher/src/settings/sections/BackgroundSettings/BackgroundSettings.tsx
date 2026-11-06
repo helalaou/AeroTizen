@@ -3,6 +3,7 @@ import { flushSync } from "preact/compat";
 import { useLayoutEffect, useState } from "preact/hooks";
 
 import { normalizeColour } from "../../../backgrounds/colours";
+import { gradientBackground } from "../../../backgrounds/gradients";
 import type { BackgroundOption, LauncherConfig } from "../../../contracts/launcher";
 import { useStore } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
@@ -71,21 +72,39 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
   const swatches = (isAnimated: boolean) => {
     return list
       .filter((background) => Boolean(background.anim) === isAnimated && (!background.requiresWebGL || webGL !== false))
-      .map((background) => (
-        <WallpaperSwatch
-          key={background.id}
-          editable={background.id === "custom"}
-          background={
-            background.id === "custom" ? { ...background, preview: normalizeColour(settings.customColour) } : background
+      .map((background) => {
+        const solid = background.id === "custom";
+        const gradient = background.id === "custom-gradient";
+        const editable = solid || gradient;
+        let preview = background.preview;
+        if (solid) {
+          preview = normalizeColour(settings.customColour);
+        } else if (gradient) {
+          preview = gradientBackground(settings.customGradient);
+        }
+        const onSelect = () => {
+          if (solid) {
+            actions.openColourPicker();
+          } else if (gradient) {
+            actions.openGradientPicker();
+          } else {
+            actions.setBackground(background.id);
           }
-          labelKey={background.id === "custom" ? "wallpaper.custom" : undefined}
-          hidden={
-            !isAnimated && (filter === "solid" ? background.category !== "solid" : background.category === "solid")
-          }
-          selected={background.id === settings.background}
-          onSelect={background.id === "custom" ? actions.openColourPicker : () => actions.setBackground(background.id)}
-        />
-      ));
+        };
+        return (
+          <WallpaperSwatch
+            key={background.id}
+            editable={editable}
+            background={editable ? { ...background, preview } : background}
+            labelKey={editable ? "wallpaper.custom" : undefined}
+            hidden={
+              !isAnimated && (filter === "solid" ? background.category !== "solid" : background.category === "solid")
+            }
+            selected={background.id === settings.background}
+            onSelect={onSelect}
+          />
+        );
+      });
   };
 
   return (

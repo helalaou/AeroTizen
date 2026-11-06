@@ -71,3 +71,16 @@ test("custom colours are validated and survive speed changes without replacing s
   assert.equal(root.style.background, "#000000");
   assert.equal(root["data-light-background"], "false");
 });
+
+test("custom gradients render, retain both colours on speed changes, and select light-background contrast", () => {
+  const { bridge, layer } = setup();
+  const root = layer.ownerDocument.documentElement;
+  bridge.apply("custom-gradient", 1, undefined, { start: "#336699", end: "#ff0000", angle: 90 });
+  assert.equal(root.style.background, "linear-gradient(90deg, #336699, #ff0000)");
+  bridge.setSpeed(2);
+  assert.equal(root.style.background, "linear-gradient(90deg, #336699, #ff0000)");
+  bridge.apply("custom-gradient", 1, undefined, { start: "#ffffff", end: "#fff0cf", angle: 0 });
+  assert.equal(root["data-light-background"], "true");
+  bridge.apply("black");
+  assert.equal(root["data-light-background"], "false");
+});
