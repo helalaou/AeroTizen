@@ -1,4 +1,4 @@
-:global(#editor) .group {
+.group {
   display: flex;
   flex-wrap: wrap;
   max-width: 100%;
@@ -7,7 +7,7 @@
   align-items: stretch;
 }
 
-:global(#editor) .grid {
+.grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }

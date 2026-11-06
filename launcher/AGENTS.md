@@ -26,6 +26,8 @@ also read the [style rules](../docs/styles.md) or [icon rules](../docs/icons.md)
 - Co-locate migrated styles in `Component.module.css`. Use semantic data/ARIA hooks
   for focus and selection; never use generated class names as runtime APIs. Legacy
   services must request UI changes through bridges, not mutate component classes.
+- Use local module classes without ID/global scopes. Standard CSS nesting is compiled
+  for Chromium 69; keep it at two levels or fewer and leave copied legacy CSS flat.
 
 ## Compatibility
 

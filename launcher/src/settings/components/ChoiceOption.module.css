@@ -1,4 +1,4 @@
-:global(#editor) .option {
+.option {
   border: 2px solid var(--border-control);
   border-radius: var(--control-radius);
   color: var(--control-text);
@@ -17,27 +17,19 @@
   line-height: 24px;
   white-space: normal;
   text-align: center;
-}
 
-:global(#editor) .option[data-focused="true"] {
-  border-color: transparent;
-  outline: none;
-  outline-offset: 0;
-  box-shadow: none;
-  transform: none;
-  transition:
-    color 0.1s linear,
-    background-color 0.1s linear;
-  background: var(--choice-focused-surface);
-  color: var(--control-focused-text);
-}
+  &[data-focused="true"] {
+    background: var(--choice-focused-surface);
+    color: var(--control-focused-text);
+  }
 
-:global(#editor) .option[aria-pressed="true"] {
-  background: var(--choice-selected-surface);
-}
+  &[aria-pressed="true"] {
+    background: var(--choice-selected-surface);
 
-:global(#editor) .option[aria-pressed="true"]:not([data-focused="true"]) {
-  border-color: var(--choice-selected-border);
+    &:not([data-focused="true"]) {
+      border-color: var(--choice-selected-border);
+    }
+  }
 }
 
 .label {
@@ -47,18 +39,18 @@
   min-width: 0;
   overflow: hidden;
   overflow-wrap: break-word;
+
+  > svg {
+    margin-right: 8px;
+  }
+
+  [dir="rtl"] & > svg {
+    margin-right: 0;
+    margin-left: 8px;
+  }
 }
 
 .inline {
   display: flex;
   align-items: center;
-}
-
-.label > svg {
-  margin-right: 8px;
-}
-
-[dir="rtl"] .label > svg {
-  margin-right: 0;
-  margin-left: 8px;
 }

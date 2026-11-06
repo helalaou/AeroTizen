@@ -22,9 +22,20 @@ link in the packaged widget: the library build emits CSS separately from JavaScr
 Each active selector is defined once within its media context. Use component
 classes and explicit state modifiers. Migrated controls use `data-focused="true"`
 and `aria-pressed="true"`; never query a generated module class from runtime code
-or tests. Keep the Settings scope under `#editor` while the global sheet remains;
-modules may use `:global(#editor)` to retain that existing scope. Do not add global
-aliases for generated classes. Keep module selectors flat and Chromium 69 compatible.
+or tests. Module selectors must not depend on `#editor`, IDs or global class aliases.
+`SettingsControl` owns the shared focus reset in its own module; the remaining
+global component rules must not override every focused control through an ID.
+
+Use standard CSS nesting in `.module.css` files. Vite's Lightning CSS transformer
+flattens nested selectors for Chromium 69 in both development and production.
+Keep nesting at two levels or fewer. Legacy sheets under `launcher/css/` ship as
+copied assets, so they must remain flat. Sass is not required for nesting; theme
+values remain runtime custom properties such as `var(--control-text)`.
+
+CSS Modules scope class and animation names, not bare element selectors. Apply
+local classes such as `.title` and `.description` directly to headings and copy.
+Use a nested child selector when that relationship is part of the component,
+as with `.small { > svg { ... } }` in `SelectionIndicator`.
 
 Do not add extra IDs or theme selectors to beat an earlier rule. The Clock owns
 expanded header clearance; the header and Home styles supply compact defaults.
@@ -35,6 +46,7 @@ state rule. Do not put state paint into an inline background style.
 
 `ControlGroup` owns wrapping and grid layout for Settings controls. `ChoiceGroup`
 supplies its choices; time/date and input-name sections use the same layout owner.
+`SettingsControl` supplies common focus resets; each control owns its state paint.
 `SelectionIndicator` takes an explicit small variant for wallpaper swatches.
 Component variants must not depend on a parent's private CSS class.
 
@@ -72,6 +84,7 @@ Prettier formats CSS. `npm run lint:css` runs the focused Stylelint rules in
 syntax/property mistakes, invalid colours and units,
 duplicate declarations/selectors, and unsafe keyframe declarations. `npm run lint`
 runs both ESLint and Stylelint; CI uses that command with zero warnings allowed.
+Module rules also reject ID selectors and nesting deeper than two levels.
 
 Keep CSS compatible with Chromium 69. Use `top`, `right`, `bottom` and `left`
 instead of the `inset` property; Stylelint rejects the latter. A build's JavaScript

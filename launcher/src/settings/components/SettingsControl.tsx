@@ -6,6 +6,8 @@ import { focusControl } from "../../shared/navigation/focusControl";
 import { FocusedControlContext } from "../context";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 
+import styles from "./SettingsControl.module.css";
+
 interface Props extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "class" | "ref"> {
   class?: string;
   focusKey: string;
@@ -44,7 +46,7 @@ export const SettingsControl = ({ focusKey, class: className = "", onClick, onFo
         select();
         onFocusCapture?.(event);
       }}
-      class={className + (focused ? " focused" : "")}
+      class={styles.control + " " + className + (focused ? " focused" : "")}
     />
   );
 };

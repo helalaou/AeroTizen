@@ -10,11 +10,16 @@
   justify-content: center;
   background: var(--selection-surface);
   color: var(--selection-text);
-}
 
-.indicator > svg {
-  width: 26px;
-  height: 26px;
+  > svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  [dir="rtl"] & {
+    right: auto;
+    left: 12px;
+  }
 }
 
 .small {
@@ -22,18 +27,13 @@
   right: 10px;
   width: 34px;
   height: 34px;
-}
 
-.small > svg {
-  width: 22px;
-  height: 22px;
-}
+  > svg {
+    width: 22px;
+    height: 22px;
+  }
 
-[dir="rtl"] .indicator {
-  right: auto;
-  left: 12px;
-}
-
-[dir="rtl"] .small {
-  left: 10px;
+  [dir="rtl"] & {
+    left: 10px;
+  }
 }

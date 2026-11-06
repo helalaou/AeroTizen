@@ -4,8 +4,8 @@
   gap: 26px 22px;
   width: 1792px;
 }
-#editor .settings-drawer__pane [data-key].focused {
-  z-index: 2;
+#editor .settings-drawer__pane {
+  --settings-control-focus-z-index: 2;
 }
 /* settings: component-owned styles. */
 #editor .swatch span {
@@ -411,17 +411,6 @@ body.previewing #editor.settings-drawer {
   background: var(--update-notice);
 }
 #editor .slider.focused {
-  border-color: transparent;
-  outline: none;
-  outline-offset: 0;
-  box-shadow: none;
-  transform: none;
-  color: #fff;
-  transition:
-    color 0.1s linear,
-    background-color 0.1s linear;
-}
-#editor [data-key].focused {
   border-color: transparent;
   outline: none;
   outline-offset: 0;

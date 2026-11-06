@@ -20,6 +20,7 @@ export const InputName = ({ port, name, placeholder, actions }: Props) => {
       <span class={styles.port}>{port}</span>
       <input
         {...input}
+        class={styles.field}
         type="text"
         maxLength={24}
         placeholder={placeholder || t("inputs.addName")}

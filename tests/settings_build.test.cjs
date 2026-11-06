@@ -35,7 +35,11 @@ test("compiled launcher uses the production page, local scripts and the Preact l
   const componentStyles = read(output, "js/launcher-ui.css");
   assert.match(componentStyles, /var\(--choice-selected-surface\)/);
   assert.match(componentStyles, /data-focused/);
-  assert.doesNotMatch(componentStyles, /:global\(|@layer\b|\binset:/, "the package contains compiled Chromium 69 CSS");
+  assert.doesNotMatch(
+    componentStyles,
+    /#editor|:global\(|:is\(|:where\(|@layer\b|\binset:/,
+    "component styles have no editor dependency or unsupported Chromium 69 selectors",
+  );
   assert.equal(existsSync(path.join(output, "src")), false, "TypeScript source is not a TV runtime asset");
   assert.doesNotMatch(read(output, "js/launcher-ui.js"), /@vite\/client|@prefresh|preact\/debug/);
   assert.match(read(output, "licenses/preact.txt"), /MIT License/);

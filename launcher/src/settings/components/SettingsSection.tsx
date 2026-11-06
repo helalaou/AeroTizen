@@ -17,8 +17,8 @@ export const SettingsSection = ({
 }) => (
   <section class={styles.section} hidden={hidden} aria-label={label}>
     <header class={styles.header}>
-      <h3>{title}</h3>
-      {description && <p>{description}</p>}
+      <h3 class={styles.title}>{title}</h3>
+      {description && <p class={styles.description}>{description}</p>}
     </header>
     {children}
   </section>

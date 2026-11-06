@@ -50,6 +50,59 @@ for (const [name, url] of [
     await expect(page.locator("#home-root #grid > .tile").first()).toHaveClass(/focused/);
     await page.locator("#gear").click();
     await expect(page.locator("#settings-root #editor")).toBeVisible();
+    await page.locator('[data-key="section:appearance"]').click();
+    const componentCss = await page.evaluate(() => {
+      const sheets = Array.from(document.styleSheets).filter(
+        (sheet) =>
+          sheet.href?.endsWith("/js/launcher-ui.css") ||
+          sheet.ownerNode?.getAttribute?.("data-vite-dev-id")?.endsWith(".module.css"),
+      );
+      const selectors = [];
+      const nested = [];
+      const visit = (rules) => {
+        for (const rule of rules) {
+          if (rule.type === CSSRule.STYLE_RULE) {
+            selectors.push(rule.selectorText);
+            if (rule.cssRules?.length) nested.push(rule.selectorText);
+          } else if (rule.cssRules) {
+            visit(rule.cssRules);
+          }
+        }
+      };
+      for (const sheet of sheets) visit(sheet.cssRules);
+      return { sheets: sheets.length, selectors, nested };
+    });
+    expect(componentCss.sheets).toBeGreaterThan(0);
+    expect(componentCss.selectors.some((selector) => selector.includes("#editor"))).toBe(false);
+    expect(componentCss.nested, "Chromium 69 receives flattened CSS in development and production").toEqual([]);
+
+    const standalone = await page
+      .locator('#settings-appearance, #settings-appearance [data-focused="true"]')
+      .evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const properties = node.hasAttribute("data-key")
+            ? ["background", "border", "border-radius", "padding", "height", "color", "outline", "transform"]
+            : ["display", "flex-wrap", "gap", "margin-bottom"];
+          const read = (element) => {
+            const style = getComputedStyle(element);
+            return Object.fromEntries(properties.map((property) => [property, style.getPropertyValue(property)]));
+          };
+          const inside = read(node);
+          const clone = node.cloneNode(true);
+          clone.removeAttribute("id");
+          clone.removeAttribute("data-key");
+          clone.style.position = "fixed";
+          document.body.appendChild(clone);
+          try {
+            return { inside, outside: read(clone) };
+          } finally {
+            clone.remove();
+          }
+        }),
+      );
+    expect(standalone).toHaveLength(2);
+    for (const control of standalone) expect(control.outside).toEqual(control.inside);
+    await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
     await expect(page.locator("#editor")).toBeHidden();
     expect(await page.evaluate(() => window.uiPreferenceSourceSubscriptions)).toBe(1);

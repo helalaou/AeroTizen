@@ -2,7 +2,7 @@ module.exports = {
   overrides: [
     {
       files: ["launcher/src/**/*.module.css"],
-      rules: { "selector-pseudo-class-no-unknown": [true, { ignorePseudoClasses: ["global"] }] },
+      rules: { "max-nesting-depth": 2, "selector-max-id": 0 },
     },
   ],
   rules: {

@@ -11,10 +11,15 @@
   transition:
     transform 0.15s ease-out,
     opacity 0.1s linear;
-}
 
-.indicator[data-visible="true"] {
-  opacity: 1;
+  &[data-visible="true"] {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 .sidebar {
@@ -35,11 +40,4 @@
     border-radius 0.12s ease-out;
   background: var(--settings-content-focus-surface);
   box-shadow: var(--settings-content-focus-shadow);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .indicator {
-    animation: none !important;
-    transition: none !important;
-  }
 }

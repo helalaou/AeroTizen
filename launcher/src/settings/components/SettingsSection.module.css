@@ -1,18 +1,20 @@
-:global(#editor) .section + .section {
-  margin-top: var(--settings-section-spacing, 0px);
+.section {
+  & + & {
+    margin-top: var(--settings-section-spacing, 0px);
+  }
 }
 
 .header {
   margin: 5px 0 15px;
 }
 
-.header h3 {
+.title {
   margin: 0;
   font-size: 24px;
   font-weight: 500;
 }
 
-.header p {
+.description {
   margin: 6px 0 0;
   color: var(--settings-subtitle);
   font-size: 20px;

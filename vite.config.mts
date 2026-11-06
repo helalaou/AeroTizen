@@ -46,10 +46,16 @@ export default defineConfig(({ mode }) => {
     root: source,
     base: "./",
     publicDir: false,
+    css: {
+      transformer: "lightningcss",
+      // Lightning CSS encodes major.minor.patch in three bytes, including in development.
+      lightningcss: { targets: { chrome: 69 << 16 } },
+    },
     plugins: [preact({ devToolsEnabled: false }), widgetAssets(output), developmentEntry],
     server: { host: "0.0.0.0", port: 8019, strictPort: true },
     build: {
       target: ["chrome69", "es2018"],
+      cssTarget: "chrome69",
       outDir: path.join(output, "js"),
       emptyOutDir: false,
       minify: true,
