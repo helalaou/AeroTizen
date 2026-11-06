@@ -29,7 +29,7 @@ for (const glassSettings of [false, true]) {
       await page.locator('[data-key="language:it"]').click();
       await expect(page.locator('[data-key="language:auto"]')).toContainText("Usa la lingua della TV");
       await page.keyboard.press("ArrowLeft");
-      await expect(page.locator("#editor .focused")).toBeVisible();
+      await expect(page.locator("#editor [data-focused=true]")).toBeVisible();
       await closeSettings(page);
       await page.reload();
       await expect(page.locator("#apps-tab")).toContainText("Tutte le app");

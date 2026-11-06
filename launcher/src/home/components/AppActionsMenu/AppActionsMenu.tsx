@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState } from "preact/hooks";
 
 import { useStore } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
-import { Icon } from "../../../shared/icons/Icon";
+import { Icon } from "../../../shared/icons/Icon/Icon";
 import type { HomeEnvironment } from "../../types";
 
 import styles from "./AppActionsMenu.module.css";

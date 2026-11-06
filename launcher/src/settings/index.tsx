@@ -14,7 +14,7 @@ import { createSettingsBridge } from "./services/createSettingsBridge";
 import { createSettingsInventory } from "./services/createSettingsInventory";
 import { createSettingsServices } from "./services/createSettingsServices";
 import { SettingsProvider } from "./SettingsProvider";
-import { SettingsRoot } from "./SettingsRoot";
+import { SettingsRoot } from "./SettingsRoot/SettingsRoot";
 import { createSettingsActions } from "./state/createSettingsActions";
 import type { SettingsEnvironment, ViewState } from "./types";
 

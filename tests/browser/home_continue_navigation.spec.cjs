@@ -90,7 +90,7 @@ for (const scenario of [
     const lastRow = Math.floor((scenario.count - 1) / scenario.columns),
       start = lastRow * scenario.columns;
     for (let i = 0; i < lastRow; i++) await page.keyboard.press("ArrowDown");
-    await expect(apps.nth(start)).toHaveClass(/focused/);
+    await expect(apps.nth(start)).toHaveAttribute("data-focused", "true");
     const position = () => page.locator("#continue-items").evaluate((n) => n.style.transform);
     const initialPosition = await position();
     for (let i = start + 1; i < scenario.count; i++) {
@@ -98,9 +98,9 @@ for (const scenario of [
       expect(await position()).toBe(initialPosition);
     }
     await page.keyboard.press("ArrowDown");
-    await expect(cards.nth(scenario.initial)).toHaveClass(/focused/);
+    await expect(cards.nth(scenario.initial)).toHaveAttribute("data-focused", "true");
     for (let i = 0; i < 10; i++) await page.keyboard.press("ArrowRight");
-    await expect(cards.last()).toHaveClass(/focused/);
+    await expect(cards.last()).toHaveAttribute("data-focused", "true");
     await expect
       .poll(async () => {
         const rect = await cards.last().boundingBox();
@@ -109,18 +109,18 @@ for (const scenario of [
       .toBeLessThanOrEqual(1872);
     const scrolledPosition = await position();
     await page.keyboard.press("ArrowUp");
-    await expect(apps.last()).toHaveClass(/focused/);
+    await expect(apps.last()).toHaveAttribute("data-focused", "true");
     for (let i = scenario.count - 1; i > start; i--) {
       await page.keyboard.press("ArrowLeft");
       expect(await position()).toBe(scrolledPosition);
     }
-    await expect(apps.nth(start)).toHaveClass(/focused/);
+    await expect(apps.nth(start)).toHaveAttribute("data-focused", "true");
     await page.keyboard.press("ArrowDown");
-    await expect(cards.nth(scenario.scrolled)).toHaveClass(/focused/);
+    await expect(cards.nth(scenario.scrolled)).toHaveAttribute("data-focused", "true");
     expect(await position()).toBe(scrolledPosition);
     await page.screenshot({ path: info.outputPath("nearest-continue-card.png") });
     await page.keyboard.press("ArrowUp");
-    await expect(apps.nth(start)).toHaveClass(/focused/);
+    await expect(apps.nth(start)).toHaveAttribute("data-focused", "true");
     expect(await position()).toBe(scrolledPosition);
     expect(errors).toEqual([]);
   });
@@ -177,9 +177,9 @@ for (const settingsOpen of [false, true]) {
     await expect(cards).toHaveCount(10);
     await page.keyboard.press("ArrowDown");
     for (let i = 0; i < 10; i++) await page.keyboard.press("ArrowRight");
-    await expect(cards.last()).toHaveClass(/focused/);
+    await expect(cards.last()).toHaveAttribute("data-focused", "true");
     await page.keyboard.press("ArrowUp");
-    await expect(app).toHaveClass(/focused/);
+    await expect(app).toHaveAttribute("data-focused", "true");
     if (settingsOpen) await page.locator("#gear").click();
     count = 2;
     await page.evaluate(() => AeroTizen.continueWatching.refresh());
@@ -198,7 +198,7 @@ for (const settingsOpen of [false, true]) {
       )
       .toBe(true);
     if (settingsOpen) await page.keyboard.press("Escape");
-    await expect(app).toHaveClass(/focused/);
+    await expect(app).toHaveAttribute("data-focused", "true");
     await page.screenshot({ path: info.outputPath("shorter-continue-list.png") });
     expect(errors).toEqual([]);
   });

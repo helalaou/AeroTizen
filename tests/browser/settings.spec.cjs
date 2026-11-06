@@ -32,7 +32,7 @@ const openSettings = async (page, waitForApps = true) => {
     AeroTizen.settingsUi.open();
   });
   await expect(page.locator("#editor")).toBeVisible();
-  await expect(page.locator('[data-key="section:appearance"]')).toHaveClass(/focused/);
+  await expect(page.locator('[data-key="section:appearance"]')).toHaveAttribute("data-focused", "true");
   await openCategory(page, "wallpaper");
   await page.locator('[data-key="bg:black"]').click();
   await page.locator('[data-key="wallpaper-categories:photo"]').click();
@@ -251,8 +251,8 @@ test("an unrelated preference does not remeasure navigation; removed controls re
     AeroTizen.settings.save();
   });
   await expect(page.locator('[data-key="speed"]')).toHaveCount(0);
-  await expect(page.locator("#editor .focused")).toHaveCount(1);
-  await expect.poll(() => page.evaluate(() => document.activeElement?.classList.contains("focused"))).toBe(true);
+  await expect(page.locator("#editor [data-focused=true]")).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => document.activeElement?.matches("[data-focused=true]"))).toBe(true);
 });
 
 test("date previews stay stable during an opening and refresh on the next opening", async ({ page }) => {
@@ -374,7 +374,7 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
   expect(images[0]).toContain("/sun.jpg");
   await page.evaluate(() => window.Backgrounds.setSpeed(1.3));
   await expect(page.locator("#bg")).toBeHidden();
-  await expect(page.locator("#bg .bg-blob")).toHaveCount(0);
+  await expect(page.locator("#bg [data-background-blob]")).toHaveCount(0);
   await page.reload();
   await page.waitForFunction(() => AeroTizen.settings.weatherPhoto === true);
   await expect(page.locator("#weather-photo")).toBeVisible();
@@ -390,7 +390,7 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
       speed: AeroTizen.settings.speed,
     })),
   ).toEqual({ background: "aurora", speed: 1.3 });
-  await expect(page.locator("#bg .bg-blob")).toHaveCount(4);
+  await expect(page.locator("#bg [data-background-blob]")).toHaveCount(4);
 });
 
 test("turning weather wallpaper off while its image is pending cannot hide the fallback", async ({ page }) => {
@@ -495,7 +495,7 @@ test("enabling compiled Settings at 23:00 repairs legacy solar cache once and ne
   expect(forecasts).toBe(1);
   expect(locations).toBe(1);
   await release();
-  await expect(page.locator("#weather-photo")).toHaveClass(/scene-night/);
+  await expect(page.locator("#weather-photo")).toHaveAttribute("data-weather-photo", "night");
   expect(images).toHaveLength(1);
   expect(images[0]).toContain("/night.jpg");
   await expect(page.locator("#weather b")).toHaveText("15°");

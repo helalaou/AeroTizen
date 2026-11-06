@@ -59,7 +59,7 @@ export const HomeControl = ({
       {...dataAttributes}
       ref={register}
       id={id}
-      class={styles.control + " " + className + (focused ? " focused" : "")}
+      class={styles.control + " " + className}
       role="button"
       aria-label={title}
       title={title}

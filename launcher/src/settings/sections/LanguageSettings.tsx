@@ -1,7 +1,7 @@
 import { catalogues } from "../../shared/i18n/catalogues";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../components/ChoiceGroup";
-import { SettingsSection } from "../components/SettingsSection";
+import { SettingsSection } from "../components/SettingsSection/SettingsSection";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 
 const languages = Object.entries(catalogues).map(([value, catalogue]) => ({ value, label: catalogue.name }));

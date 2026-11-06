@@ -5,11 +5,11 @@ import type { WeatherPhotoSource } from "../contracts/status";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import { createStore } from "../shared/state/createStore";
 
-import { BackgroundSceneView } from "./BackgroundSceneView";
+import { BackgroundSceneView } from "./BackgroundSceneView/BackgroundSceneView";
 import type { BackgroundState } from "./createBackgrounds";
 import { createBackgrounds } from "./createBackgrounds";
 import { createWeatherPhoto } from "./createWeatherPhoto";
-import { WeatherPhotoView } from "./WeatherPhotoView";
+import { WeatherPhotoView } from "./WeatherPhotoView/WeatherPhotoView";
 import { probeWebGL } from "./webglParticles";
 
 export const mountBackgrounds = (

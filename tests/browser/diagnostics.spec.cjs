@@ -49,7 +49,7 @@ test("diagnostics persist across reload without changing launcher navigation or 
     () => window.AeroDiagnostics.snapshot().records.find((item) => item.event === "ui.start").id,
   );
   await page.keyboard.press("ArrowRight");
-  await expect(page.locator("#grid > [data-id].focused")).toHaveCount(1);
+  await expect(page.locator("#grid > [data-id][data-focused=true]")).toHaveCount(1);
   await page.evaluate(() => AeroTizen.settingsUi.open());
   await expect(page.locator("#editor")).toBeVisible();
   await page.keyboard.press("Escape");
@@ -288,7 +288,7 @@ test("personal text is excluded before IndexedDB persistence and loopback delive
     window.AeroDiagnostics.flush();
   }, poison);
   await page.keyboard.press("ArrowRight");
-  await expect(page.locator("#grid > [data-id].focused")).toHaveCount(1);
+  await expect(page.locator("#grid > [data-id][data-focused=true]")).toHaveCount(1);
   await expect
     .poll(async () => (await persistedEvents(page)).some((item) => item.event === "app.launch_requested"))
     .toBe(true);

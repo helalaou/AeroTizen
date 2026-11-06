@@ -3,7 +3,7 @@ import { Gamepad2, HdmiPort, Monitor, RectangleEllipsis, Tv } from "lucide-preac
 
 import type { InputSource } from "../../../contracts/launcher";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
-import { Icon } from "../../../shared/icons/Icon";
+import { Icon } from "../../../shared/icons/Icon/Icon";
 import text from "../../../shared/styles/text.module.css";
 import type { InputKind } from "../../presentation/inputs";
 import { getInputPresentation } from "../../presentation/inputs";

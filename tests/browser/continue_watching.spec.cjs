@@ -243,14 +243,14 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   ).toBe(true);
   await page.keyboard.press("ArrowDown"); // app row -> Continue Watching
   // A partial grid row starts in its first column; select the nearest visible feed card.
-  await expect(page.locator("#continue-items > [data-key]").nth(1)).toHaveClass(/focused/);
+  await expect(page.locator("#continue-items > [data-key]").nth(1)).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("ArrowLeft");
   await page.keyboard.press("ArrowLeft");
-  await expect(page.locator("#continue-items > [data-key]").first()).toHaveClass(/focused/);
+  await expect(page.locator("#continue-items > [data-key]").first()).toHaveAttribute("data-focused", "true");
   await page.screenshot({ path: info.outputPath("continue-watching-episode-title.png") });
   for (let i = 0; i < 6; i++) await page.keyboard.press("ArrowRight");
   const last = page.locator("#continue-items > [data-key]").last();
-  await expect(last).toHaveClass(/focused/);
+  await expect(last).toHaveAttribute("data-focused", "true");
   await expect
     .poll(async () => {
       const rect = await last.boundingBox();

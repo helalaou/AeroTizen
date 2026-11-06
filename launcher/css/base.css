@@ -5,6 +5,22 @@
 
 /* Page reset and shell visibility. */
 
+/* The background mount is part of the fixed TV canvas. Preact owns its contents. */
+[data-background-host] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+}
+
+body.tv [data-weather-photo] {
+  display: none;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

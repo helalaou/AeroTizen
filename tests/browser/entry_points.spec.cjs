@@ -47,7 +47,7 @@ for (const [name, url] of [
     await page.goto(url);
     await expect(page).toHaveTitle("AeroTizen");
     await expect(page.locator("#home-root #grid > [data-id]")).toHaveCount(2);
-    await expect(page.locator("#home-root #grid > [data-id]").first()).toHaveClass(/focused/);
+    await expect(page.locator("#home-root #grid > [data-id]").first()).toHaveAttribute("data-focused", "true");
     await page.locator("#gear").click();
     await expect(page.locator("#settings-root #editor")).toBeVisible();
     await page.locator('[data-key="section:appearance"]').click();

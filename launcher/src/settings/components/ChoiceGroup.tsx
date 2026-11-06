@@ -1,8 +1,8 @@
 import type { MessageKey } from "../../shared/i18n/catalogues";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 
-import { ChoiceOption } from "./ChoiceOption";
-import { ControlGroup } from "./ControlGroup";
+import { ChoiceOption } from "./ChoiceOption/ChoiceOption";
+import { ControlGroup } from "./ControlGroup/ControlGroup";
 
 interface Props<T extends string | boolean> {
   grid?: boolean;

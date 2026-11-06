@@ -29,6 +29,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     await page.reload();
     await page.waitForFunction(() => window.AeroTizen && AeroTizen.apps.all.length > 0);
     const check = await page.evaluate(async (variant) => {
+      const focusSelector = variant === "preact" ? "[data-focused=true]" : ".focused";
       const A = AeroTizen,
         K = A.config.KEY;
       function assert(value, message) {
@@ -86,25 +87,21 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       const before = JSON.stringify(A.settings.home);
       // Use the real home -> gear -> OK -> Settings route.
       key(K.UP);
-      for (let step = 0; step < 4 && !document.getElementById("gear").classList.contains("focused"); step++)
-        key(K.LEFT);
-      assert(
-        document.getElementById("gear").classList.contains("focused"),
-        "gear is reachable through the header controls",
-      );
+      for (let step = 0; step < 4 && !document.getElementById("gear").matches(focusSelector); step++) key(K.LEFT);
+      assert(document.getElementById("gear").matches(focusSelector), "gear is reachable through the header controls");
       key(K.ENTER);
       key(K.ENTER, "keyup");
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       assert(A.settingsUi.isOpen(), "remote opens Settings");
       assert(
-        document.querySelector("#editor .focused").dataset.key ===
+        document.querySelector("#editor " + focusSelector).dataset.key ===
           (variant === "preact" ? "section:appearance" : "bg:aurora"),
         "initial focus",
       );
       find("bg:aurora").click();
       if (variant === "preact") {
         assert(
-          document.activeElement === document.querySelector("#editor .focused"),
+          document.activeElement === document.querySelector("#editor " + focusSelector),
           "remote state and browser focus agree",
         );
         assert(
@@ -114,7 +111,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       }
       assert(document.querySelectorAll("#editor [data-key]").length >= 80, "all sections present");
       for (let i = 0; i < 10; i++) key(K.UP);
-      assert(document.querySelectorAll("#editor .focused").length === 1, "top boundary keeps one focus");
+      assert(document.querySelectorAll("#editor " + focusSelector).length === 1, "top boundary keeps one focus");
       const weatherField = document.querySelector("#weather-location input");
       const appTile = find("app:" + A.apps.all[0].id);
       find("time:24").click();
@@ -214,7 +211,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
           "open resets preview and its message together",
         );
         assert(
-          document.activeElement === document.querySelector("#editor .focused"),
+          document.activeElement === document.querySelector("#editor " + focusSelector),
           "preview return restores browser focus",
         );
         find("preview").click();
@@ -235,27 +232,25 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       find("bg:aurora").click();
       // Move from the first swatch row to the speed slider using only remote arrows.
       if (variant === "preact") {
-        for (let i = 0; i < 20 && document.querySelector("#editor .focused")?.dataset.key !== "speed"; i++) key(K.DOWN);
+        for (let i = 0; i < 20 && document.querySelector("#editor " + focusSelector)?.dataset.key !== "speed"; i++)
+          key(K.DOWN);
       } else {
         for (let i = 0; i < 9; i++) key(K.LEFT);
         key(K.DOWN);
         key(K.DOWN);
       }
-      assert(document.querySelector("#editor .focused").dataset.key === "speed", "remote reaches speed");
+      assert(document.querySelector("#editor " + focusSelector).dataset.key === "speed", "remote reaches speed");
       if (variant === "preact") {
         // Without OK, Right moves on to Preview; Left comes back to the slider.
         const unchanged = A.settings.speed;
         key(K.RIGHT);
-        assert(document.querySelector("#editor .focused").dataset.key === "preview", "Right reaches Preview");
+        assert(document.querySelector("#editor " + focusSelector).dataset.key === "preview", "Right reaches Preview");
         assert(A.settings.speed === unchanged, "moving past the slider keeps the speed");
         key(K.LEFT);
-        assert(document.querySelector("#editor .focused").dataset.key === "speed", "Left returns to speed");
+        assert(document.querySelector("#editor " + focusSelector).dataset.key === "speed", "Left returns to speed");
         // OK starts adjusting; Left/Right then change the speed.
         key(K.ENTER);
-        assert(
-          document.querySelector("#editor [data-focused=true]").dataset.adjusting === "true",
-          "OK starts adjusting",
-        );
+        assert(document.querySelector("#editor " + focusSelector).dataset.adjusting === "true", "OK starts adjusting");
       }
       for (let i = 0; i < 30; i++) key(K.LEFT);
       assert(A.settings.speed === A.config.SPEED.MIN, "speed lower bound");
@@ -275,7 +270,10 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
         key(K.ESC);
       }
       for (let i = 0; i < 60; i++) key(K.DOWN);
-      assert(document.querySelector("#editor .focused").textContent.includes("Samsung Home"), "bottom row reachable");
+      assert(
+        document.querySelector("#editor " + focusSelector).textContent.includes("Samsung Home"),
+        "bottom row reachable",
+      );
       if (variant === "baseline") {
         assert(document.querySelector("#editor").scrollTop > 0, "focus scrolls into view");
       }
@@ -347,7 +345,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
   const artwork = await page.evaluate(() => {
     const tile = document.querySelector("#all-apps [data-app-option]");
     if (!tile.querySelector("[data-app-fallback]").hidden) throw new Error("Artwork did not replace fallback");
-    if (!tile.classList.contains("focused")) throw new Error("Artwork arrival removed remote focus");
+    if (!tile.matches("[data-focused=true]")) throw new Error("Artwork arrival removed remote focus");
     document.querySelector('[data-key="time:12"]').click();
     if (tile !== document.querySelector("#all-apps [data-app-option]")) throw new Error("Clock change rebuilt artwork");
     tile.click();
@@ -418,7 +416,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
           JSON.stringify({
             before: original,
             after: A.settings.speed,
-            key: document.querySelector("#editor .focused")?.dataset.key,
+            key: document.querySelector("#editor [data-focused=true]")?.dataset.key,
             adjusting: document.querySelector("#editor [data-adjusting=true]")?.dataset.key,
           }),
       );

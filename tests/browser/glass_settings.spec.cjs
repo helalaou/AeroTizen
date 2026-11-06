@@ -39,9 +39,9 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   await checkTabPlate();
   await page.locator("#gear").click();
   await expect(page.locator("[data-settings-drawer=frame]")).toHaveAttribute("data-expanded", "false");
-  await expect(page.locator('[data-key="section:appearance"]')).toHaveClass(/focused/);
+  await expect(page.locator('[data-key="section:appearance"]')).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("ArrowDown");
-  await expect(page.locator('[data-key="section:apps"]')).toHaveClass(/focused/);
+  await expect(page.locator('[data-key="section:apps"]')).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-section-pane="apps"]')).toBeVisible();
   const paneScroll = page.locator("[data-settings-drawer=scroll]");
@@ -53,7 +53,7 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   await expect(paneScroll).toHaveJSProperty("scrollTop", 0);
   await page.locator('[data-key="section:apps"]').click();
   await expect(paneScroll).toHaveJSProperty("scrollTop", 0);
-  await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", "add");
+  await expect(page.locator("#editor [data-focused=true]")).toHaveAttribute("data-key", "add");
   expect(await paneScroll.evaluate(scrollToEnd)).toBeGreaterThan(0);
   await page.keyboard.press("Escape");
   await page.keyboard.press("ArrowRight");
@@ -63,14 +63,14 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   for (const category of ["appearance", "apps", "wallpaper", "status", "weather", "sources"]) {
     await page.locator(`[data-key="section:${category}"]`).click();
     await expect(page.locator(`[data-section-pane="${category}"]`)).toBeVisible();
-    await expect(page.locator("#editor .focused")).toHaveCount(1);
+    await expect(page.locator("#editor [data-focused=true]")).toHaveCount(1);
     await expect(page.locator("[data-settings-focus=content]")).toHaveAttribute("data-visible", "true");
-    const current = page.locator("#editor .focused");
+    const current = page.locator("#editor [data-focused=true]");
     expect(await current.evaluate((node) => getComputedStyle(node).boxShadow)).toBe("none");
     await expect
       .poll(() =>
         page.locator("[data-settings-focus=content]").evaluate((plate) => {
-          const target = document.querySelector("#editor .focused"),
+          const target = document.querySelector("#editor [data-focused=true]"),
             a = plate.getBoundingClientRect(),
             b = target.getBoundingClientRect();
           return Math.max(
@@ -195,17 +195,17 @@ for (const language of ["en", "ar"])
       await page.keyboard.press(enterPane);
       await expect(footer).toBeFocused();
       await page.keyboard.press("ArrowUp");
-      await expect(page.locator('[data-key="section:about"]')).toHaveClass(/focused/);
+      await expect(page.locator('[data-key="section:about"]')).toHaveAttribute("data-focused", "true");
       await page.keyboard.press("ArrowUp");
-      await expect(page.locator('[data-key="section:language"]')).toHaveClass(/focused/);
+      await expect(page.locator('[data-key="section:language"]')).toHaveAttribute("data-focused", "true");
       await page.keyboard.press("ArrowUp");
-      await expect(page.locator('[data-key="section:sources"]')).toHaveClass(/focused/);
+      await expect(page.locator('[data-key="section:sources"]')).toHaveAttribute("data-focused", "true");
       await page.keyboard.press(enterPane);
       await expect(page.locator('[data-section-pane="sources"]')).toBeVisible();
       expect((await sidebar.boundingBox()).width).toBe(sidebarWidth);
       expect((await page.locator('[data-key="section:appearance"]').boundingBox()).width).toBe(categoryWidth);
       for (let i = 0; i < 20; i++) await page.keyboard.press("ArrowDown");
-      const visible = await page.locator("#editor .focused").evaluate((el) => {
+      const visible = await page.locator("#editor [data-focused=true]").evaluate((el) => {
         const r = el.getBoundingClientRect(),
           host = el.closest("[data-settings-drawer=scroll]") || el.closest("[data-settings-drawer=main]"),
           h = host.getBoundingClientRect();

@@ -23,7 +23,7 @@ for (const glassSettings of [false, true]) {
     await page.locator("#gear").click();
     await expect(page.locator('#home-root [data-focused="true"]')).toHaveCount(0);
     await expect(page.locator("[data-settings-drawer=frame]")).toHaveAttribute("data-expanded", "false");
-    await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", "section:appearance");
+    await expect(page.locator("#editor [data-focused=true]")).toHaveAttribute("data-key", "section:appearance");
     await page.keyboard.press("ArrowRight");
     await page.locator(`[data-key="settings-appearance:${!glassSettings}"]`).click();
     await expect(page.locator('#editor [data-focused="true"]')).toHaveAttribute(
@@ -31,7 +31,10 @@ for (const glassSettings of [false, true]) {
       `settings-appearance:${!glassSettings}`,
     );
     await expect(page.locator("[data-settings-drawer=frame]")).toHaveAttribute("data-expanded", "true");
-    await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", `settings-appearance:${!glassSettings}`);
+    await expect(page.locator("#editor [data-focused=true]")).toHaveAttribute(
+      "data-key",
+      `settings-appearance:${!glassSettings}`,
+    );
     await page.keyboard.press("Escape");
     await expect(page.locator("[data-settings-drawer=frame]")).toHaveAttribute("data-expanded", "false");
     await page.keyboard.press("ArrowDown");

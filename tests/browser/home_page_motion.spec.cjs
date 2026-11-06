@@ -36,7 +36,7 @@ for (const glassSettings of [false, true]) {
       await page.locator("[data-header-focus=tabs]").evaluate((n) => getComputedStyle(n).transitionProperty),
     ).toContain("transform");
     await page.keyboard.press("ArrowDown");
-    await expect(page.locator("#grid > [data-id]").first()).toHaveClass(/focused/);
+    await expect(page.locator("#grid > [data-id]").first()).toHaveAttribute("data-focused", "true");
     await page.keyboard.press("Escape");
     await expect(surface).toHaveCSS("animation-name", homeAnimation);
     expect(await page.evaluate(() => window.savedHomeCard === document.querySelector("#grid > [data-id]"))).toBe(true);
@@ -44,10 +44,10 @@ for (const glassSettings of [false, true]) {
       await page.locator("#apps-tab").click();
       await page.keyboard.press("Escape");
     }
-    await expect(page.locator("#home-tab")).toHaveClass(/focused/);
+    await expect(page.locator("#home-tab")).toHaveAttribute("data-focused", "true");
     await expect(page.locator("#grid > [data-id]")).toHaveCount(4);
     await page.keyboard.press("ArrowLeft");
-    await expect(page.locator("#samsung-home-shortcut")).toHaveClass(/focused/);
+    await expect(page.locator("#samsung-home-shortcut")).toHaveAttribute("data-focused", "true");
     await page.evaluate(() => {
       window.samsungEscapes = 0;
       AeroTizen.homewatch.openSamsungHome = () => {

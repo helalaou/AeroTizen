@@ -21,7 +21,7 @@ test("Home short/held OK, action menu, move/drop and Settings focus restoration"
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.ready);
   const first = page.locator("#grid > [data-id]").first();
-  await expect(first).toHaveClass(/focused/);
+  await expect(first).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("Enter");
   await expect(page.locator("#toast")).toContainText("Would open YouTube");
   await page.keyboard.down("Enter");
@@ -39,7 +39,7 @@ test("Home short/held OK, action menu, move/drop and Settings focus restoration"
   await page.locator("#gear").click();
   await expect(page.locator("#editor")).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(page.locator("#grid > [data-id]").nth(1)).toHaveClass(/focused/);
+  await expect(page.locator("#grid > [data-id]").nth(1)).toHaveAttribute("data-focused", "true");
   await page.reload();
   await expect(page.locator("#grid > [data-id]").first()).toHaveAttribute("data-id", "demo1");
   expect(errors).toEqual([]);
@@ -68,11 +68,11 @@ test("Home and All apps retain keyed artwork nodes and Back returns to Home", as
   await page.locator("#apps-tab").click();
   await expect(page.locator("#grid > [data-id]")).toHaveCount(25);
   await page.keyboard.press("ArrowDown");
-  await expect(page.locator("#grid > [data-id]").first()).toHaveClass(/focused/);
+  await expect(page.locator("#grid > [data-id]").first()).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("Escape");
   await expect(page.locator("#grid > [data-id]")).toHaveCount(4);
   expect(await page.evaluate(() => window.originalHome === document.querySelector("#grid > [data-id]"))).toBe(true);
-  await expect(page.locator("#home-tab")).toHaveClass(/focused/);
+  await expect(page.locator("#home-tab")).toHaveAttribute("data-focused", "true");
 });
 test("Back to top restores scroll and focus from below a partial app row", async ({ page }) => {
   await page.addInitScript(() => {
@@ -179,7 +179,12 @@ test("compiled Home preserves header and input geometry around the resized app g
   await baseline.goto("http://127.0.0.1:8170/tests/fixtures/legacy-launcher/");
   await page.goto("/");
   for (const tab of [baseline, page])
-    await tab.waitForFunction(() => AeroTizen.apps.ready && document.querySelector("#grid > [data-id].focused"));
+    await tab.waitForFunction(
+      (legacy) =>
+        AeroTizen.apps.ready &&
+        document.querySelector(legacy ? "#grid > [data-id].focused" : "#grid > [data-id][data-focused=true]"),
+      tab === baseline,
+    );
   const geometry = (tab) =>
     tab.evaluate(() =>
       ["header", "#gear", "#inputs"].map((selector) => {

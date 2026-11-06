@@ -1,0 +1,11 @@
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 60px;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 18px 34px;
+  border-radius: 12px;
+  background: var(--toast-surface);
+  font-size: 26px;
+}

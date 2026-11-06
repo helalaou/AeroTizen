@@ -29,7 +29,7 @@ test("held OK is cancelled if the app loses visibility before its release", asyn
     document.dispatchEvent(new Event("visibilitychange"));
     AeroTizen.homeScreen.refreshApps();
   });
-  await expect(page.locator("#home-root .focused")).toHaveCount(0);
+  await expect(page.locator("#home-root [data-focused=true]")).toHaveCount(0);
   await page.waitForTimeout(800);
   await expect(page.getByRole("menu")).toBeHidden();
   await page.evaluate(() => {
