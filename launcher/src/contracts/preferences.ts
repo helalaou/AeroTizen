@@ -21,6 +21,7 @@ export interface SettingsValues {
   dateFormat: DateFormat | "auto" | "weekday" | "dmy" | "mdy";
   glassSettings: boolean;
   hdmiKeepVisible: Record<string, boolean>;
+  hdmiNativeViewer: boolean;
   hideDisconnectedHdmi: boolean;
   home: string[];
   homeCardColumns: number | null;

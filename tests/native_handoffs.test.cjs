@@ -303,12 +303,73 @@ test("old firmware without the viewer launch API uses upstream TVWindow", () => 
   assert.equal(h.embedded.length, 1);
 });
 
-test("HDMI always uses TVWindow and never touches native Home or watcher", () => {
+test("HDMI uses TVWindow by default", () => {
   const h = harness();
   h.A.inputs.show({ type: "HDMI", number: 2 });
   assert.equal(h.embedded.length, 1);
   assert.equal(h.launches.length, 0);
   assert.equal(h.requests.length, 0);
+});
+
+test("opt-in HDMI handoff waits for /leave and selects the raw source before opening Samsung viewer", () => {
+  const h = harness();
+  h.A.settings.hdmiNativeViewer = true;
+  const raw = { type: "HDMI", number: 2, signal: false };
+  h.A.inputs.show({ type: "HDMI", number: 2, raw });
+  h.A.inputs.show({ type: "HDMI", number: 3 });
+  assert.equal(h.launches.length, 0);
+  assert.equal(h.inputs.length, 0);
+  assert.equal(h.requests.length, 1);
+  assert.equal(h.requests[0].url, "http://127.0.0.1:47790/leave");
+  h.requests[0].resolve(200);
+  assert.deepEqual(h.inputs, [{ source: raw, target: "MAIN" }]);
+  assert.equal(h.inputs[0].source, raw);
+  assert.deepEqual(h.launches, [{ id: "org.tizen.tv-viewer", method: "launch" }]);
+  assert.deepEqual(h.embedded, []);
+  assert.equal(h.log.snapshot().records[0].data.action, "hdmi");
+});
+
+test("opt-in HDMI uses TVWindow if the launch API is unavailable", () => {
+  const h = harness({ noNativeLaunch: true });
+  h.A.settings.hdmiNativeViewer = true;
+  h.A.inputs.show({ type: "HDMI", number: 2 });
+  assert.deepEqual(h.requests, []);
+  assert.deepEqual(h.embedded, ["shown"]);
+});
+
+test("HDMI viewer rejection rearms the watcher and opens the embedded input", () => {
+  const h = harness({ launchFails: "org.tizen.tv-viewer", appControlFails: true });
+  h.A.settings.hdmiNativeViewer = true;
+  h.A.inputs.show({ type: "HDMI", number: 2 });
+  h.requests[0].resolve(200);
+  assert.deepEqual(
+    h.launches.map(({ method }) => method),
+    ["launch", "appcontrol"],
+  );
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
+  assert.deepEqual(h.embedded, ["shown"]);
+});
+
+test("HDMI handoff without watcher acknowledgement opens only the embedded input", () => {
+  const h = harness();
+  h.A.settings.hdmiNativeViewer = true;
+  h.A.inputs.show({ type: "HDMI", number: 2 });
+  h.requests[0].fail();
+  assert.deepEqual(h.launches, []);
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
+  assert.deepEqual(h.embedded, ["shown"]);
+});
+
+test("an old viewer focus timer cannot rearm the watcher during a newer handoff", () => {
+  const h = harness({ visible: true });
+  h.A.settings.hdmiNativeViewer = true;
+  h.A.inputs.show({ type: "HDMI", number: 2 });
+  h.requests[0].resolve(200);
+  h.A.inputs.show({ type: "HDMI", number: 3 });
+  h.timers.find((timer) => timer.ms === 2100).fn();
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/leave");
+  assert.equal(h.requests.length, 2);
+  assert.deepEqual(h.toasts, []);
 });
 
 test("native Live TV fallback rearms when launch accepted but never takes focus", () => {
@@ -361,7 +422,7 @@ test("launch outcomes correlate with requests and preserve failure handoffs", ()
 
 test("Live TV acceptance remains separate from unconfirmed visibility", () => {
   const h = harness({ visible: true });
-  h.A.homewatch.openNativeLiveTV();
+  h.A.homewatch.openNativeViewer();
   h.requests[0].resolve(200);
   h.timers.find((timer) => timer.ms === 2100).fn();
   assert.deepEqual(

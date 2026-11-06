@@ -1,5 +1,4 @@
-// Native Samsung Home and Live TV transitions, adapted from the tested
-// AeroTizen handoff. The physical Home-key watcher and service are untouched.
+// Transitions to Samsung Home and the native viewer.
 (function (A) {
   "use strict";
   if (!A || !A.homewatch) {
@@ -9,7 +8,8 @@
   var tz = A.tizen,
     cfg = A.config;
   var homePending = false,
-    livePending = false;
+    viewerPending = false,
+    viewerRequest = 0;
 
   function report(name, action, operation, reason) {
     var log = window.AeroDiagnostics;
@@ -130,27 +130,36 @@
     leaveBeforeLaunch(nativeLaunch, failed);
   }
 
-  // Unlike tvwindow's embedded TV picture, the native viewer owns
-  // channel selection and remote-control interactions.
-  function openNativeLiveTV(videoSource) {
-    if (livePending) {
+  // The native viewer owns channel selection and remote-control interactions.
+  function openNativeViewer(videoSource, hdmi) {
+    if (viewerPending) {
       return true;
     }
     if (!tz || !tz.application || typeof tz.application.launch !== "function") {
       // Older devices keep the upstream embedded TVWindow behaviour.
       return false;
     }
-    var operation = report("request", "live_tv");
-    livePending = true;
+    var canSelectSource = videoSource && tz.tvwindow && typeof tz.tvwindow.setSource === "function";
+    if (hdmi && !canSelectSource) {
+      return false;
+    }
+    var action = hdmi ? "hdmi" : "live_tv";
+    var operation = report("request", action);
+    var request = ++viewerRequest;
+    viewerPending = true;
     var finished = false;
     function failed(reason, detail) {
       if (finished) {
         return;
       }
       finished = true;
-      livePending = false;
-      report("failed", "live_tv", operation, reason);
+      viewerPending = false;
+      report("failed", action, operation, reason);
       rearmWatcher();
+      if (hdmi) {
+        hdmi.fallback();
+        return;
+      }
       A.toast(A.translate("handoff.liveTvFailed", { reason: detail || reason }));
     }
     function accepted() {
@@ -158,15 +167,17 @@
         return;
       }
       finished = true;
-      livePending = false;
-      report("accepted", "live_tv", operation);
+      viewerPending = false;
+      report("accepted", action, operation);
       // A Tizen launch success callback only confirms that launch was
       // accepted. It does not guarantee the native viewer took focus.
       window.setTimeout(function () {
-        if (!document.hidden) {
-          report("visibility_unconfirmed", "live_tv", operation);
+        if (request === viewerRequest && !document.hidden) {
+          report("visibility_unconfirmed", action, operation);
           rearmWatcher();
-          A.toast(A.translate("handoff.liveTvNoFocus"));
+          A.toast(
+            hdmi ? A.translate("handoff.inputNoFocus", { input: hdmi.label }) : A.translate("handoff.liveTvNoFocus")
+          );
         }
       }, 2100);
     }
@@ -200,9 +211,8 @@
         appControlFallback();
       }
     }
-    function selectTuner() {
-      // A previous HDMI selection must not carry over into native Live TV.
-      if (!videoSource || !tz.tvwindow || !tz.tvwindow.setSource) {
+    function selectSource() {
+      if (!canSelectSource) {
         launchViewer();
         return;
       }
@@ -213,17 +223,17 @@
           function (error) {
             var reason = error && (error.name || error.message);
             failed(
-              "TV tuner selection failed: " + (reason || "source error"),
+              "source selection failed",
               A.translate("handoff.tunerFailed", { reason: reason || A.translate("handoff.sourceError") })
             );
           },
           "MAIN"
         );
       } catch (error) {
-        failed("TV tuner selection is unavailable", A.translate("handoff.tunerUnavailable"));
+        failed("source selection failed", A.translate("handoff.tunerUnavailable"));
       }
     }
-    leaveBeforeLaunch(selectTuner, failed);
+    leaveBeforeLaunch(selectSource, failed);
     return true;
   }
 
@@ -232,7 +242,7 @@
   A.homewatch.resume = rearmWatcher;
   A.homewatch.suspendForExternal = leaveBeforeLaunch;
   A.homewatch.openSamsungHome = openSamsungHome;
-  A.homewatch.openNativeLiveTV = openNativeLiveTV;
+  A.homewatch.openNativeViewer = openNativeViewer;
 
   // Ported from the working launcher: returning from a Samsung system app
   // can reload the page without a visibilitychange event. The existing

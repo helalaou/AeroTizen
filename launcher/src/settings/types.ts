@@ -70,6 +70,7 @@ export interface SettingsActions {
   setDateFormat(format: DateFormat): void;
   setGlassSettings(enabled: boolean): void;
   setHdmiKeepVisible(port: string, keep: boolean): void;
+  setHdmiNativeViewer(enabled: boolean): void;
   setHdmiVisibility(hide: boolean): void;
   setHomeCardColumns(columns: number | null): void;
   setHomeCardMode(mode: SettingsValues["homeCardMode"]): void;
