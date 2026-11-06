@@ -1,0 +1,35 @@
+.card {
+  position: relative;
+  flex: 0 0 160px;
+  width: 160px;
+  height: 160px;
+  border-radius: var(--control-radius);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: var(--settings-card-direction, row);
+  gap: var(--settings-card-gap, 22px);
+  padding: var(--settings-card-padding, 0px);
+  background: var(--settings-card-surface, var(--app-background, var(--card)));
+  box-shadow: var(--settings-card-shadow, none);
+  transform: translateZ(0);
+  transition: transform var(--motion-duration-focus) ease-out;
+
+  &[aria-pressed="false"] {
+    opacity: 0.5;
+
+    &[data-focused="true"] {
+      opacity: 0.85;
+    }
+  }
+
+  &[data-focused="true"] {
+    background: var(--settings-focused-surface);
+  }
+
+  &[aria-disabled="true"],
+  &[aria-disabled="true"][data-focused="true"] {
+    opacity: 0.35;
+  }
+}

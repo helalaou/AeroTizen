@@ -2,10 +2,12 @@ import type { ContinueSource } from "../../contracts/launcher";
 import type { MessageKey } from "../../shared/i18n/catalogues";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../components/ChoiceGroup";
+import { SettingsHint } from "../components/SettingsHint";
 import { SettingsSection } from "../components/SettingsSection";
 import type { SettingsSectionProps, SettingsServices } from "../types";
 
 import { AppOption } from "./apps/AppOption";
+import styles from "./ContinueWatchingSettings.module.css";
 
 const CONTINUE_WATCHING_OPTIONS = [
   { value: false, labelKey: "common.off" },
@@ -32,19 +34,15 @@ export const ContinueWatchingSettings = ({ settings, actions, sources, message, 
       />
       {settings.continueWatching && (
         <>
-          {sources.length > 0 && <p class="hint">{t("continue.chooseApps")}</p>}
-          {message && (
-            <p class="hint" role="status">
-              {t(message)}
-            </p>
-          )}
-          <div class="grid continue-apps">
+          {sources.length > 0 && <SettingsHint>{t("continue.chooseApps")}</SettingsHint>}
+          {message && <SettingsHint role="status">{t(message)}</SettingsHint>}
+          <div class={styles.apps}>
             {sources.map((source) => (
               <AppOption
                 key={source.id}
                 app={source}
                 focusKey={"continue-app:" + source.id}
-                className="continue-option"
+                variant="source"
                 selected={settings.continueWatchingApps.includes(source.id)}
                 active={active}
                 disabled={!source.storeId}

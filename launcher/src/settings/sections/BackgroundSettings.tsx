@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Play } from "lucide-preact";
+import { Play } from "lucide-preact";
 import { flushSync } from "preact/compat";
 import { useLayoutEffect, useState } from "preact/hooks";
 
@@ -8,11 +8,14 @@ import { useTranslation } from "../../shared/i18n/useTranslation";
 import { Icon } from "../../shared/icons/Icon";
 import { ChoiceGroup } from "../components/ChoiceGroup";
 import { ChoiceOption } from "../components/ChoiceOption";
-import { SelectionIndicator } from "../components/SelectionIndicator";
-import { SettingsControl } from "../components/SettingsControl";
+import { SettingsHint } from "../components/SettingsHint";
 import { SettingsSection } from "../components/SettingsSection";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 import type { SettingsSectionProps } from "../types";
+
+import { SpeedSlider } from "./backgrounds/SpeedSlider";
+import { WallpaperSwatch } from "./backgrounds/WallpaperSwatch";
+import styles from "./BackgroundSettings.module.css";
 
 const WALLPAPER_CATEGORY_OPTIONS = [
   { value: "photo", labelKey: "wallpaper.photos" },
@@ -47,7 +50,6 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
   const selected = list.find((background) => background.id === settings.background);
   const unavailable = webGL === false && selected?.requiresWebGL === true;
   const animated = Boolean(selected?.anim) && !unavailable;
-  const percent = ((settings.speed - config.SPEED.MIN) / (config.SPEED.MAX - config.SPEED.MIN)) * 100;
   const { view, drawer, navigation, services } = useSettingsEnvironment();
   const { category, expanded } = useStore(drawer);
   useLayoutEffect(() => {
@@ -69,19 +71,13 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
     return list
       .filter((background) => Boolean(background.anim) === isAnimated && (!background.requiresWebGL || webGL !== false))
       .map((background) => (
-        <SettingsControl
+        <WallpaperSwatch
           key={background.id}
-          class={"swatch" + (background.id === settings.background ? " on" : "")}
+          background={background}
           hidden={!isAnimated && (filter === "solid" ? background.id !== "black" : background.id === "black")}
-          focusKey={"bg:" + background.id}
-          role="button"
-          aria-pressed={background.id === settings.background}
-          style={{ background: background.preview }}
-          onClick={() => actions.setBackground(background.id)}
-        >
-          <span>{t(`scene.${background.id}`)}</span>
-          {background.id === settings.background ? <SelectionIndicator small /> : null}
-        </SettingsControl>
+          selected={background.id === settings.background}
+          onSelect={() => actions.setBackground(background.id)}
+        />
       ));
   };
 
@@ -109,40 +105,20 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
         />
       </SettingsSection>
       <SettingsSection title={t("wallpaper.animated")} hidden={!show("animated")}>
-        {unavailable && <p class="hint">{t("wallpaper.unavailable")}</p>}
-        <div id="bg-anim" class="swatches">
+        {unavailable && <SettingsHint>{t("wallpaper.unavailable")}</SettingsHint>}
+        <div id="bg-anim" class={styles.swatches}>
           {swatches(true)}
         </div>
-        <div id="speed-row" class="speed-row" hidden={!animated}>
+        <div id="speed-row" class={styles.speedRow} hidden={!animated}>
           {animated ? (
             <>
-              <SettingsControl
-                class={"slider" + (adjusting ? " adjusting" : "")}
-                focusKey="speed"
-                role="slider"
-                aria-label={t("wallpaper.speedLabel")}
-                aria-valuemin={config.SPEED.MIN}
-                aria-valuemax={config.SPEED.MAX}
-                aria-valuenow={settings.speed}
-                onClick={toggleAdjusting}
-              >
-                <span class="slider-label">{t("wallpaper.speed")}</span>
-                <div class="track">
-                  <div class="fill" style={{ width: percent + "%" }} />
-                  <div class="thumb" style={{ left: percent + "%" }} />
-                </div>
-                <span class="slider-value">{settings.speed}×</span>
-                <span class="slider-hint">
-                  {adjusting ? (
-                    <>
-                      <Icon icon={ChevronLeft} />
-                      <Icon icon={ChevronRight} />
-                    </>
-                  ) : (
-                    t("wallpaper.adjust")
-                  )}
-                </span>
-              </SettingsControl>
+              <SpeedSlider
+                value={settings.speed}
+                min={config.SPEED.MIN}
+                max={config.SPEED.MAX}
+                adjusting={adjusting}
+                onSelect={toggleAdjusting}
+              />
               <ChoiceOption id="preview" onSelect={actions.preview} inline>
                 <Icon icon={Play} />
                 {t("wallpaper.preview")}
@@ -152,7 +128,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
         </div>
       </SettingsSection>
       <SettingsSection title={t("wallpaper.still")} hidden={filter !== "solid" && filter !== "gradient"}>
-        <div id="bg-still" class="swatches">
+        <div id="bg-still" class={styles.swatches}>
           {swatches(false)}
         </div>
       </SettingsSection>

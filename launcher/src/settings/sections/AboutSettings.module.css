@@ -1,0 +1,61 @@
+.info {
+  margin-bottom: 24px;
+  font-size: 22px;
+  line-height: 1.4;
+}
+
+.paragraph {
+  margin: 0 0 12px;
+}
+
+.lead {
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 10px 32px;
+  margin: 24px 0;
+  padding: 20px 0;
+  border-top: 1px solid var(--settings-divider);
+  border-bottom: 1px solid var(--settings-divider);
+}
+
+.term,
+.community {
+  color: var(--settings-subtitle);
+}
+
+.definition {
+  margin: 0;
+}
+
+.releaseNotes {
+  font-size: 20px;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+
+.notesTitle {
+  margin: 0 0 8px;
+  font-weight: 500;
+}
+
+.list {
+  margin: 0;
+  padding-left: 24px;
+}
+
+.listItem {
+  & + & {
+    margin-top: 8px;
+  }
+}
+
+.command {
+  --settings-hint-margin: auto 0 0;
+
+  padding-top: 24px;
+}

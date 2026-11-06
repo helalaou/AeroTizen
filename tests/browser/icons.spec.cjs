@@ -129,7 +129,7 @@ for (const glass of [false, true]) {
     expect(layout.centerOffset).toBeLessThanOrEqual(1);
     const speed = page.getByRole("slider", { name: "Background speed", exact: true });
     await speed.click();
-    await expect(speed.locator(".slider-hint svg[aria-hidden=true]")).toHaveCount(2);
+    await expect(speed.locator("[data-slider-hint] svg[aria-hidden=true]")).toHaveCount(2);
     await speed.click();
     await closeSettings(page);
     await expect(page.locator("#grid > .tile")).toHaveCount(1);

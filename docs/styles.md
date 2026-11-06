@@ -3,9 +3,9 @@
 Use the [component ownership map](component-structure.md) to find a stylesheet.
 New or migrated components import a sibling `Component.module.css`. Keep layout
 and state selectors with their component, and remove the old global rules when
-migrating. Shared Settings choices, groups, section headings, focus/selection
-indicators, input names and drawer shell now use modules. The remaining global
-styles are migrated in separate changes. Keep theme paint in
+migrating. All Settings controls, sections and the drawer now use modules;
+the global `settings.css` sheet has been removed. Home styles migrate separately.
+Keep theme paint in
 `launcher/css/themes.css`, which defines the default Classic values and the
 `body.glass-ui` overrides. Prefer role names such as `--settings-surface`,
 `--header-focus-surface` and `--menu-border` over new colour literals for shared
@@ -57,12 +57,28 @@ local classes such as `.title` and `.description` directly to headings and copy.
 Use a nested child selector when that relationship is part of the component,
 as with `.small { > svg { ... } }` in `SelectionIndicator`.
 
+Use `shared/styles/text.module.css` for single-line truncation. Import its
+`truncate` class and apply it to the text element, alongside the component's local
+class. Keep width and layout constraints with the component; the utility only
+owns wrapping, clipping and ellipsis. Choice labels retain their two-line default
+and use a nested local modifier when a single-line result is requested.
+
 Do not add extra IDs or theme selectors to beat an earlier rule. The Clock owns
 expanded header clearance; the header and Home styles supply compact defaults.
 
 App brand data sets `--app-background` on AppCard and AppOption. The card style
 uses that value, while Settings can supply its focused surface through a normal
 state rule. Do not put state paint into an inline background style.
+
+`SettingsAppCard` owns the common app-choice frame, focus, selection and disabled
+states. App, Fireplace and Store options supply their own content. `AppFallback`
+owns logo and label geometry through explicit `home`, `favourite`, `source` and
+`badge` variants. Do not size its contents through a parent's tile or logo classes.
+Home artwork passes the `badge` variant for Continue Watching source icons.
+
+`WallpaperSwatch`, `SpeedSlider` and `WeatherSearch` own their control styles.
+`SettingsHint` supplies section status/help text. Each section owns its collection
+layout, while About applies local classes directly to paragraphs, facts and notes.
 
 `ControlGroup` owns wrapping and grid layout for Settings controls. `ChoiceGroup`
 supplies its choices; time/date and input-name sections use the same layout owner.

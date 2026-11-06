@@ -1,12 +1,23 @@
 import type { AppPresentation, InstalledApp } from "../../contracts/launcher";
+import type { AppFallbackVariant } from "../../shared/components/AppFallback";
 import { AppFallback } from "../../shared/components/AppFallback";
 import { useImageSequence } from "../../shared/hooks/useImageSequence";
 
-export const AppArtwork = ({ app, brand, active }: { app: InstalledApp; brand: AppPresentation; active: boolean }) => {
+export const AppArtwork = ({
+  app,
+  brand,
+  active,
+  variant = "home",
+}: {
+  app: InstalledApp;
+  brand: AppPresentation;
+  active: boolean;
+  variant?: AppFallbackVariant;
+}) => {
   const artwork = useImageSequence(brand.artwork, active);
   return (
     <>
-      <AppFallback app={app} brand={brand} active={active} hidden={artwork.loaded} />
+      <AppFallback app={app} brand={brand} active={active} hidden={artwork.loaded} variant={variant} />
       {artwork.src ? (
         <img
           key={artwork.src}

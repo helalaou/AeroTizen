@@ -48,17 +48,6 @@
   box-shadow: 0 2px 8px #0008;
   pointer-events: none;
 }
-.continue-app-icon .app-fallback {
-  padding: 4px;
-  gap: 0;
-}
-.continue-app-icon .app-fallback .logo {
-  width: 46px;
-  height: 46px;
-}
-.continue-app-icon .app-fallback .name {
-  display: none;
-}
 .continue-progress-fill {
   height: 100%;
   background: var(--focus);

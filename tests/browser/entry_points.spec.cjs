@@ -130,7 +130,9 @@ test("Continue Watching demo is opt-in, local to Vite and uses separate preferen
   await page.goto("http://127.0.0.1:8172/?demo=1");
   await expect(page.locator("#continue-section")).toBeVisible();
   await expect(page.locator(".continue-card")).toHaveCount(5);
-  await expect(page.locator(".continue-app-icon :is(.app-artwork, .logo):visible")).toHaveCount(5);
+  await expect(
+    page.locator(".continue-app-icon :is(.app-artwork, [data-app-fallback] > svg, [data-app-fallback] > img):visible"),
+  ).toHaveCount(5);
   await expect(page.locator(".continue-progress-fill")).toHaveCount(4);
   const unplayed = page.getByRole("button", { name: "Paper Moons · Prime Video" });
   await expect(unplayed.locator(".continue-progress-fill")).toHaveCount(0);

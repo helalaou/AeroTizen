@@ -252,7 +252,10 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
         assert(document.querySelector("#editor .focused").dataset.key === "speed", "Left returns to speed");
         // OK starts adjusting; Left/Right then change the speed.
         key(K.ENTER);
-        assert(document.querySelector("#editor .focused").classList.contains("adjusting"), "OK starts adjusting");
+        assert(
+          document.querySelector("#editor [data-focused=true]").dataset.adjusting === "true",
+          "OK starts adjusting",
+        );
       }
       for (let i = 0; i < 30; i++) key(K.LEFT);
       assert(A.settings.speed === A.config.SPEED.MIN, "speed lower bound");
@@ -261,7 +264,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       if (variant === "preact") {
         key(K.ESC);
         assert(
-          A.settingsUi.isOpen() && !document.querySelector("#editor .adjusting"),
+          A.settingsUi.isOpen() && !document.querySelector("#editor [data-adjusting=true]"),
           "Back leaves the slider, not Settings",
         );
       }
@@ -337,18 +340,18 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
   });
   await page.locator('[data-key="section:apps"]').click();
   // A real pointer click waits for the pane to render before selecting an app.
-  await page.locator("#all-apps .app-tile").first().click();
+  await page.locator("#all-apps [data-app-option]").first().click();
   await page.waitForFunction(
-    () => document.querySelectorAll("#all-apps .has-artwork").length === AeroTizen.apps.all.length,
+    () => document.querySelectorAll("#all-apps [data-artwork-loaded=true]").length === AeroTizen.apps.all.length,
   );
   const artwork = await page.evaluate(() => {
-    const tile = document.querySelector("#all-apps .app-tile");
-    if (!tile.querySelector(".app-fallback").hidden) throw new Error("Artwork did not replace fallback");
+    const tile = document.querySelector("#all-apps [data-app-option]");
+    if (!tile.querySelector("[data-app-fallback]").hidden) throw new Error("Artwork did not replace fallback");
     if (!tile.classList.contains("focused")) throw new Error("Artwork arrival removed remote focus");
     document.querySelector('[data-key="time:12"]').click();
-    if (tile !== document.querySelector("#all-apps .app-tile")) throw new Error("Clock change rebuilt artwork");
+    if (tile !== document.querySelector("#all-apps [data-app-option]")) throw new Error("Clock change rebuilt artwork");
     tile.click();
-    if (tile !== document.querySelector("#all-apps .app-tile")) throw new Error("Selection rebuilt artwork");
+    if (tile !== document.querySelector("#all-apps [data-app-option]")) throw new Error("Selection rebuilt artwork");
     if (window.settingsArtworkConstructions !== 0) throw new Error("Settings called a legacy DOM constructor");
     return { asynchronous: true, fallback: true, stableOnClockAndSelection: true };
   });
@@ -416,7 +419,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
             before: original,
             after: A.settings.speed,
             key: document.querySelector("#editor .focused")?.dataset.key,
-            adjusting: document.querySelector("#editor .adjusting")?.dataset.key,
+            adjusting: document.querySelector("#editor [data-adjusting=true]")?.dataset.key,
           }),
       );
     return {

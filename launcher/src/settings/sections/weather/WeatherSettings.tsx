@@ -1,11 +1,13 @@
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../../components/ChoiceGroup";
 import { ChoiceOption } from "../../components/ChoiceOption";
-import { SettingsControl } from "../../components/SettingsControl";
+import { SettingsHint } from "../../components/SettingsHint";
 import { SettingsSection } from "../../components/SettingsSection";
 import type { SettingsSectionProps } from "../../types";
 
 import { useWeatherLocation } from "./useWeatherLocation";
+import { WeatherSearch } from "./WeatherSearch";
+import styles from "./WeatherSettings.module.css";
 
 const WEATHER_VISIBILITY_OPTIONS = [
   { value: true, labelKey: "weather.show" },
@@ -48,7 +50,7 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
             : t("weather.autoLocation")
         }
       >
-        <div id="weather-location" class="weather-location-controls">
+        <div id="weather-location" class={styles.locationControls}>
           <ChoiceOption
             id="weather:auto"
             selected={!settings.weatherLocation}
@@ -56,29 +58,25 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
           >
             {t("common.automatic")}
           </ChoiceOption>
-          <SettingsControl class="weather-search" focusKey="weather:query" onClick={search.focusQuery}>
-            <input
-              ref={search.inputRef}
-              type="text"
-              maxLength={80}
-              value={search.query}
-              placeholder={t("weather.searchPlaceholder")}
-              aria-label={t("weather.locationLabel")}
-              onInput={search.onQueryInput}
-            />
-          </SettingsControl>
+          <WeatherSearch
+            inputRef={search.inputRef}
+            value={search.query}
+            onSelect={search.focusQuery}
+            onInput={search.onQueryInput}
+          />
           <ChoiceOption id="weather:search" onSelect={search.search}>
             {t("weather.search")}
           </ChoiceOption>
         </div>
-        <p id="weather-search-status" class="hint" role="status" hidden={!search.message}>
+        <SettingsHint id="weather-search-status" role="status" hidden={!search.message}>
           {search.message && t(search.message)}
-        </p>
-        <div id="weather-results" class="weather-results" hidden={!search.results.length}>
+        </SettingsHint>
+        <div id="weather-results" class={styles.results} hidden={!search.results.length}>
           {search.results.map((location, index) => (
             <ChoiceOption
               key={location.label + ":" + index}
               id={"weather:result:" + index}
+              truncate
               onSelect={() => search.selectLocation(location)}
             >
               {location.label}

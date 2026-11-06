@@ -2,8 +2,11 @@ import { useEffect } from "preact/hooks";
 
 import { useStore } from "../../shared/hooks/useStore";
 import { useTranslation } from "../../shared/i18n/useTranslation";
+import { SettingsHint } from "../components/SettingsHint";
 import { SettingsSection } from "../components/SettingsSection";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
+
+import styles from "./AboutSettings.module.css";
 
 const updateCommand = "aerotizen update launcher";
 const projectUrl = "github.com/helalaou/AeroTizen";
@@ -25,40 +28,42 @@ export const AboutSettings = ({ active }: { active: boolean }) => {
         title={t("settings.about.installedVersion", { version: installedVersion })}
         description={latestVersion ? t("settings.about.updateVersion", { version: latestVersion }) : undefined}
       >
-        <div class="about-info">
-          <p class="about-lead">{t("settings.about.tagline")}</p>
-          <p>{t("settings.about.summary")}</p>
-          <dl class="about-facts">
-            <dt>{t("settings.about.licenseLabel")}</dt>
-            <dd>{t("settings.about.licenseValue")}</dd>
-            <dt>{t("settings.about.madeByLabel")}</dt>
-            <dd>{t("settings.about.madeByValue")}</dd>
-            <dt>{t("settings.about.project")}</dt>
-            <dd>
+        <div class={styles.info}>
+          <p class={styles.paragraph + " " + styles.lead}>{t("settings.about.tagline")}</p>
+          <p class={styles.paragraph}>{t("settings.about.summary")}</p>
+          <dl class={styles.facts} data-about-facts>
+            <dt class={styles.term}>{t("settings.about.licenseLabel")}</dt>
+            <dd class={styles.definition}>{t("settings.about.licenseValue")}</dd>
+            <dt class={styles.term}>{t("settings.about.madeByLabel")}</dt>
+            <dd class={styles.definition}>{t("settings.about.madeByValue")}</dd>
+            <dt class={styles.term}>{t("settings.about.project")}</dt>
+            <dd class={styles.definition}>
               <code>{projectUrl}</code>
             </dd>
-            <dt>{t("settings.about.feedbackLabel")}</dt>
-            <dd>{t("settings.about.feedbackValue")}</dd>
+            <dt class={styles.term}>{t("settings.about.feedbackLabel")}</dt>
+            <dd class={styles.definition}>{t("settings.about.feedbackValue")}</dd>
           </dl>
-          <p class="about-community">{t("settings.about.community")}</p>
+          <p class={styles.paragraph + " " + styles.community}>{t("settings.about.community")}</p>
         </div>
         {releaseNotes.length > 0 && (
-          <div class="about-release-notes">
-            <h4>{t("settings.about.whatsNew")}</h4>
-            <ul>
+          <div class={styles.releaseNotes} data-release-notes>
+            <h4 class={styles.notesTitle}>{t("settings.about.whatsNew")}</h4>
+            <ul class={styles.list}>
               {releaseNotes.map((note, index) => (
-                <li key={index}>{note}</li>
+                <li key={index} class={styles.listItem}>
+                  {note}
+                </li>
               ))}
             </ul>
           </div>
         )}
       </SettingsSection>
       {latestVersion && (
-        <p class="hint about-update-command">
+        <SettingsHint class={styles.command} data-update-command>
           {t("settings.about.runOnComputer")}
           <br />
           <code>{updateCommand}</code>
-        </p>
+        </SettingsHint>
       )}
     </>
   );

@@ -107,6 +107,8 @@ export const useSettingsNavigation = (
       },
       keydown: (code, event) => {
         const K = services.config.KEY;
+        // Remote input and native focus can arrive before the next render.
+        const currentDrawer = drawer.getSnapshot();
         if (view.getSnapshot().previewing) {
           event.preventDefault();
           flushSync(() => view.set({ ...view.getSnapshot(), previewing: false }));
@@ -118,7 +120,7 @@ export const useSettingsNavigation = (
         const rtl = document.documentElement.dir === "rtl";
         const into = rtl ? K.LEFT : K.RIGHT;
         const out = rtl ? K.RIGHT : K.LEFT;
-        if (!category.expanded) {
+        if (!currentDrawer.expanded) {
           event.preventDefault();
           if (code === K.BACK || code === K.ESC) {
             bridge.close();
@@ -126,7 +128,7 @@ export const useSettingsNavigation = (
             flushSync(() => {
               navigation.move(code === K.UP ? "up" : "down");
               const next = categories.find((item) => navigation.getSnapshot() === "section:" + item.id);
-              if (next && next.id !== category.category) {
+              if (next && next.id !== currentDrawer.category) {
                 drawer.set({ category: next.id, expanded: false });
               }
             });
@@ -135,7 +137,8 @@ export const useSettingsNavigation = (
               current.click();
             }
           } else if (code === into || code === K.ENTER || code === SPACE_KEY) {
-            flushSync(() => drawer.set({ ...category, expanded: true }));
+            const focusedCategory = categories.find((item) => current?.dataset.key === "section:" + item.id);
+            flushSync(() => drawer.set({ category: focusedCategory?.id ?? currentDrawer.category, expanded: true }));
           }
           return;
         }
@@ -146,10 +149,10 @@ export const useSettingsNavigation = (
           code === out &&
           current &&
           (atSidebarEdge(current.getBoundingClientRect()) ||
-            (current.dataset.key === "settings-close" && !navigation.firstKey(panes.get(category.category))));
+            (current.dataset.key === "settings-close" && !navigation.firstKey(panes.get(currentDrawer.category))));
         if ((code === K.BACK || code === K.ESC || leavesPane) && !view.getSnapshot().adjusting) {
           event.preventDefault();
-          flushSync(() => drawer.set({ ...category, expanded: false }));
+          flushSync(() => drawer.set({ ...currentDrawer, expanded: false }));
           return;
         }
         if (view.getSnapshot().adjusting) {
@@ -188,5 +191,5 @@ export const useSettingsNavigation = (
       window.removeEventListener("resize", resize);
       navigation.clear();
     };
-  }, [active, actions, bridge, navigation, root, services, view, category, drawer, categoryContent, directions, panes]);
+  }, [active, actions, bridge, navigation, root, services, view, drawer, categoryContent, directions, panes]);
 };

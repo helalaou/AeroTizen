@@ -1,0 +1,7 @@
+.apps {
+  display: flex;
+  flex-wrap: wrap;
+  width: 1792px;
+  gap: 22px;
+  margin-bottom: 32px;
+}

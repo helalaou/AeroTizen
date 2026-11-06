@@ -41,6 +41,11 @@
   overflow: hidden;
   overflow-wrap: break-word;
 
+  &.singleLine {
+    display: block;
+    -webkit-line-clamp: unset;
+  }
+
   > svg {
     margin-right: 8px;
   }
