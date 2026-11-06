@@ -4,11 +4,6 @@
   right: 64px;
   width: 760px;
   padding: 34px;
-  border: 2px solid var(--settings-border);
-  border-radius: var(--settings-radius);
-  background: var(--settings-surface);
-  box-shadow: var(--settings-shadow);
-  color: var(--settings-text);
 
   [dir="rtl"] & {
     right: auto;
@@ -16,10 +11,7 @@
   }
 }
 
-.hint {
-  color: var(--settings-muted);
-  font-size: 23px;
-  line-height: 1.45;
+.heading {
   margin-bottom: 30px;
 }
 

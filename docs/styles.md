@@ -34,8 +34,10 @@ Controls can supply `--settings-control-focus-outline` for a visible focus outli
 as the drawer close button does.
 
 `SettingsRoot` owns the overlay and preview visibility. `SettingsDrawer` owns the
-frame, headings, sidebar and pane layout; `SettingsCategory` and `SettingsHelp`
-own the sidebar rows and remote help. Expanded state uses `data-expanded` on the
+drawer geometry, sidebar and pane layout. `SettingsPanel` owns the shared drawer
+and picker surface and font; `SettingsHeading` owns panel/section title, kicker
+and description typography. `SettingsCategory` and `SettingsHelp` own the sidebar
+rows and remote help. Expanded state uses `data-expanded` on the
 frame and sidebar, while the content uses `hidden`. Tests can use the stable
 `data-settings-drawer` part names, `data-settings-help`, `data-settings-title` and
 `data-settings-update-notice` hooks instead of private classes.

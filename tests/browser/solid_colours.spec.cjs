@@ -152,21 +152,29 @@ for (const glass of [false, true]) {
     await page.keyboard.press("Enter");
     const picker = page.getByRole("dialog", { name: "Custom colour" });
     await expect(picker).toBeVisible();
+    await expect(picker).toHaveAccessibleDescription(/Up\/Down.*Left\/Right/);
     const pickerSurface = await picker.evaluate((node) => {
-      const style = getComputedStyle(node);
-      const surface = getComputedStyle(document.querySelector('[data-settings-drawer="frame"]'));
+      const paint = (element, properties) => {
+        const style = getComputedStyle(element);
+        return Object.fromEntries(properties.map((property) => [property, style.getPropertyValue(property)]));
+      };
+      const surface = ["background", "border", "border-radius", "box-shadow", "color", "font-family"];
+      const typography = ["font-family", "font-size", "font-weight", "line-height", "color"];
       return {
-        background: style.background,
-        settingsBackground: surface.background,
-        radius: style.borderRadius,
-        settingsRadius: surface.borderRadius,
-        shadow: style.boxShadow,
-        settingsShadow: surface.boxShadow,
+        picker: paint(node, surface),
+        drawer: paint(document.querySelector('[data-settings-drawer="frame"]'), surface),
+        pickerTitle: paint(node.querySelector("[data-settings-heading-title]"), typography),
+        drawerTitle: paint(document.querySelector("[data-settings-title]"), typography),
+        pickerDescription: paint(node.querySelector("[data-settings-heading-description]"), typography),
+        sectionDescription: paint(
+          document.querySelector('[data-settings-heading="section"] [data-settings-heading-description]'),
+          typography,
+        ),
       };
     });
-    expect(pickerSurface.background).toBe(pickerSurface.settingsBackground);
-    expect(pickerSurface.radius).toBe(pickerSurface.settingsRadius);
-    expect(pickerSurface.shadow).toBe(pickerSurface.settingsShadow);
+    expect(pickerSurface.picker).toEqual(pickerSurface.drawer);
+    expect(pickerSurface.pickerTitle).toEqual(pickerSurface.drawerTitle);
+    expect(pickerSurface.pickerDescription).toEqual(pickerSurface.sectionDescription);
     await expect(page.locator('[data-key="colour:hue"]')).toBeFocused();
     await expect(page.locator('[data-settings-drawer="overlay"]')).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     const before = await saved(page);

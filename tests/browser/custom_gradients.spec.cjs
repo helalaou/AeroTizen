@@ -72,6 +72,7 @@ for (const glass of [false, true]) {
     await page.keyboard.press("Enter");
     const editor = page.getByRole("dialog", { name: "Custom gradient" });
     await expect(editor).toBeVisible();
+    await expect(editor).toHaveAccessibleDescription(/OK selects a colour.*Hold to adjust faster/);
     await expect(page.locator('[data-key="gradient:stop:0"]')).toBeFocused();
     await editBothColours(page);
     await expect.poll(() => image(page)).not.toBe(original);

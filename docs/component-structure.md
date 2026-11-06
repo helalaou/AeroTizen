@@ -38,6 +38,13 @@ Styled components use a component-named directory, such as
 small components with no companion files can remain flat. Apply this pattern as
 components are migrated, and import their named file directly.
 
+`SettingsPanel` owns the shared drawer and picker surface: border, radius, shadow,
+background, text colour and font. Each consumer owns its position, size and spacing.
+`SettingsHeading` owns panel and section titles, optional kickers and descriptions.
+Panel titles share one size; section titles use the smaller variant. The colour and
+gradient dialogs use the same description style and link their instructions with
+`aria-describedby`. `SettingsSection` supplies section spacing and content.
+
 `HomeAppCard` owns the shared app/Fireplace frame, focus and moving state.
 `AppCard` and `FireplaceCard` supply app-specific content and paint.
 

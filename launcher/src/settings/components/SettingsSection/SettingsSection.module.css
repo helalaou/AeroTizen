@@ -7,16 +7,3 @@
 .header {
   margin: 5px 0 15px;
 }
-
-.title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 500;
-}
-
-.description {
-  margin: 6px 0 0;
-  color: var(--settings-subtitle);
-  font-size: 20px;
-  line-height: 1.3;
-}

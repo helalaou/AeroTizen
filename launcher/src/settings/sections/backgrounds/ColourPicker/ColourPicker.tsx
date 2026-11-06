@@ -5,6 +5,8 @@ import { gradientBackground } from "../../../../backgrounds/gradients";
 import { useTranslation } from "../../../../shared/i18n/useTranslation";
 import { SelectionIndicator } from "../../../components/SelectionIndicator/SelectionIndicator";
 import { SettingsControl } from "../../../components/SettingsControl/SettingsControl";
+import { SettingsHeading } from "../../../components/SettingsHeading/SettingsHeading";
+import { SettingsPanel } from "../../../components/SettingsPanel/SettingsPanel";
 import { useSettingsEnvironment } from "../../../hooks/useSettingsEnvironment";
 import type { ColourPickerDraft } from "../../../state/colourPicker";
 import { activeColour, COLOUR_CONTROLS, colourChannelValue, draftBackground } from "../../../state/colourPicker";
@@ -26,16 +28,22 @@ export const ColourPicker = ({ draft }: { draft: ColourPickerDraft }) => {
   useLayoutEffect(() => services.previewBackground(preview), [preview, services]);
   useLayoutEffect(() => () => services.previewBackground(null), [services]);
   return (
-    <section
+    <SettingsPanel
       class={styles.panel}
       role="dialog"
       aria-modal="true"
       aria-labelledby="colour-picker-title"
+      aria-describedby="colour-picker-hint"
       data-colour-picker
       data-gradient={gradient ? "true" : undefined}
     >
-      <h2 id="colour-picker-title">{t(gradient ? "scene.custom-gradient" : "scene.custom")}</h2>
-      <p class={styles.hint}>{t(gradient ? "wallpaper.gradientHint" : "wallpaper.colourHint")}</p>
+      <SettingsHeading
+        class={styles.heading}
+        id="colour-picker-title"
+        title={t(gradient ? "scene.custom-gradient" : "scene.custom")}
+        description={t(gradient ? "wallpaper.gradientHint" : "wallpaper.colourHint")}
+        descriptionId="colour-picker-hint"
+      />
       {draft.kind === "gradient" ? (
         <div class={styles.stops}>
           {GRADIENT_STOPS.map((stop) => (
@@ -114,6 +122,6 @@ export const ColourPicker = ({ draft }: { draft: ColourPickerDraft }) => {
           {t("wallpaper.cancelColour")}
         </SettingsControl>
       </div>
-    </section>
+    </SettingsPanel>
   );
 };
