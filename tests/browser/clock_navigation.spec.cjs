@@ -26,7 +26,7 @@ test("clock layouts are in one group and keep remote navigation stable on select
   await page.waitForFunction(() => AeroTizen.apps.ready);
   await page.locator("#gear").click();
   await openCategory(page, "status");
-  await expect(page.locator("#clock-layouts .choice-option:visible")).toHaveCount(5);
+  await expect(page.locator("#clock-layouts [role=button]:visible")).toHaveCount(5);
   await page.keyboard.press("ArrowRight");
   await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", "clock-layouts:vertical");
   await page.keyboard.press("Enter");

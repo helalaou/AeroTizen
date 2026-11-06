@@ -1,0 +1,38 @@
+.indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  border: 2px solid var(--settings-focus-border);
+  border-radius: var(--control-radius);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform var(--motion-duration-focus) ease-out,
+    opacity var(--motion-duration-feedback) linear;
+
+  &[data-visible="true"] {
+    opacity: 1;
+  }
+}
+
+.sidebar {
+  z-index: 0;
+  width: calc(100% - 8px);
+  height: 76px;
+  background: var(--settings-sidebar-focus-surface);
+  box-shadow: var(--settings-sidebar-focus-shadow);
+}
+
+.content {
+  z-index: 12;
+  width: 1px;
+  height: 1px;
+  transition:
+    transform var(--motion-duration-focus) ease-out,
+    opacity var(--motion-duration-feedback) linear,
+    border-radius var(--motion-duration-shape) ease-out;
+  background: var(--settings-content-focus-surface);
+  box-shadow: var(--settings-content-focus-shadow);
+}

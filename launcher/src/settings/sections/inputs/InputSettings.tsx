@@ -1,6 +1,7 @@
 import type { InputOption } from "../../../contracts/launcher";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../../components/ChoiceGroup";
+import { ControlGroup } from "../../components/ControlGroup";
 import { SettingsSection } from "../../components/SettingsSection";
 import type { SettingsSectionProps } from "../../types";
 
@@ -65,11 +66,11 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => {
         </div>
       </SettingsSection>
       <SettingsSection title={t("inputs.names")}>
-        <div id="input-names" class="units">
+        <ControlGroup id="input-names">
           {inputs.map((input) => (
             <InputName key={input.port} {...input} name={settings.inputNames[input.port]} actions={actions} />
           ))}
-        </div>
+        </ControlGroup>
       </SettingsSection>
     </>
   );

@@ -80,7 +80,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
           onClick={() => actions.setBackground(background.id)}
         >
           <span>{t(`scene.${background.id}`)}</span>
-          {background.id === settings.background ? <SelectionIndicator /> : null}
+          {background.id === settings.background ? <SelectionIndicator small /> : null}
         </SettingsControl>
       ));
   };
@@ -143,7 +143,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
                   )}
                 </span>
               </SettingsControl>
-              <ChoiceOption id="preview" onSelect={actions.preview}>
+              <ChoiceOption id="preview" onSelect={actions.preview} inline>
                 <Icon icon={Play} />
                 {t("wallpaper.preview")}
               </ChoiceOption>

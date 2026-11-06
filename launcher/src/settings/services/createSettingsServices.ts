@@ -55,10 +55,7 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
     runtime.settings.save();
     runtime.homeScreen?.render();
   },
-  clearHomeFocus: () => {
-    runtime.homeScreen?.blur();
-    runtime.clearFocus();
-  },
+  clearHomeFocus: () => runtime.homeScreen?.blur(),
   showPreviewMessage: () => runtime.toast(runtime.translate("wallpaper.previewing")),
   hidePreviewMessage: () => runtime.hideToast(),
 });

@@ -2,8 +2,10 @@ import { Check } from "lucide-preact";
 
 import { Icon } from "../../shared/icons/Icon";
 
-export const SelectionIndicator = () => (
-  <div class="selection-indicator" aria-hidden="true">
+import styles from "./SelectionIndicator.module.css";
+
+export const SelectionIndicator = ({ small = false }: { small?: boolean }) => (
+  <div class={styles.indicator + (small ? " " + styles.small : "")} data-selection-indicator aria-hidden="true">
     <Icon icon={Check} />
   </div>
 );

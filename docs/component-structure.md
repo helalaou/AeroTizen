@@ -12,8 +12,8 @@ screens need the same behavior, rather than because they have a similar shape.
 | `HeaderFocusIndicator`                                               | Measure a registered shortcut/tab and render its focus position                 | Explicit `shortcuts` or `tabs` group                                         |
 | `AppGrid`                                                            | Render one keyed page of apps, preserving artwork while another page is active  | Ordered IDs, app records, layout settings and visibility                     |
 | `AppCard`, `FireplaceCard`                                           | Launchable Home app and fireplace presentation                                  | Existing app commands through `HomeControl`                                  |
-| `ContinueWatchingRow`, `ContinueWatchingCard`                        | Feed section and item presentation                                      | Immutable feed items; live launch records stay in the service                |
-| `HorizontalScroller`                                                | Shared clipping, track movement and offset limits for horizontal app/feed rows  | Each row owns its offset; the Home controller reveals the selected card      |
+| `ContinueWatchingRow`, `ContinueWatchingCard`                        | Feed section and item presentation                                              | Immutable feed items; live launch records stay in the service                |
+| `HorizontalScroller`                                                 | Shared clipping, track movement and offset limits for horizontal app/feed rows  | Each row owns its offset; the Home controller reveals the selected card      |
 | `InputDock`, `InputCard`                                             | Input collection and one input's label, artwork and connection state            | Existing input service capabilities and commands                             |
 | `shared/components/AppFallback`                                      | Shared app logo/icon and label fallback for Home and Settings                   | App presentation, image lifetime and visibility                              |
 | `AppActionsMenu`, `ReorderControls`                                  | App actions and move/drop controls                                              | Home controller actions; menu positioning is rendered from state             |
@@ -56,20 +56,31 @@ Existing semantic IDs such as `editor`, `grid`, `rows`, `weather` and `time`, an
 `data-key` values, remain stable for integration and test tools. Persisted preference
 keys and values also remain compatible.
 
-| Stylesheet                                            | Owner                                                           |
-| ----------------------------------------------------- | --------------------------------------------------------------- |
-| `themes.css`                                          | Shared semantic paint tokens and Classic/Glass values           |
-| `base.css`                                            | Page sizing, fonts, hidden state and native/preview visibility  |
-| `backgrounds.css`, `runtime.css`, `photo-weather.css` | Background layers, Fireplace/toast and weather photos           |
-| `home.css`, `home-header.css`                         | Home viewport/page movement, header layout and focus indicators |
-| `clock.css`                                           | Clock variants, status placement and expanded header clearance  |
-| `app-cards.css`                                       | App artwork, card sizes/columns and moving/focused states       |
-| `continue-watching.css`                               | Continue Watching row, cards, labels and progress               |
-| `horizontal-scroller.css`                              | Shared horizontal viewport, track layout and reduced motion     |
-| `input-dock.css`                                      | InputDock and InputCard layout/states                           |
-| `settings.css`                                        | Settings drawer, controls, choice previews and focus indicators |
-| `app-actions-menu.css`                                | AppActionsMenu and ReorderControls                              |
-| `icons.css`                                           | Shared interface icon sizing                                    |
+| Stylesheet                                            | Owner                                                                            |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `themes.css`                                          | Shared semantic paint tokens and Classic/Glass values                            |
+| `motion.css`                                          | Shared UI durations and reduced-motion policy                                    |
+| `settings/components/*.module.css`                    | Shared Settings focus, choices, group layout, headings and selection badges      |
+| `settings/layout/SettingsFocusIndicator.module.css`   | Measured Settings focus plate and motion preference                              |
+| `settings/sections/inputs/InputName.module.css`       | Input-name field layout and focus states                                         |
+| `base.css`                                            | Page sizing, fonts, hidden state and native/preview visibility                   |
+| `backgrounds.css`, `runtime.css`, `photo-weather.css` | Background layers, Fireplace/toast and weather photos                            |
+| `home.css`, `home-header.css`                         | Home viewport/page movement, header layout and focus indicators                  |
+| `clock.css`                                           | Clock variants, status placement and expanded header clearance                   |
+| `app-cards.css`                                       | App artwork, card sizes/columns and moving/focused states                        |
+| `continue-watching.css`                               | Continue Watching row, cards, labels and progress                                |
+| `horizontal-scroller.css`                             | Shared horizontal viewport, track layout and reduced motion                      |
+| `input-dock.css`                                      | InputDock and InputCard layout/states                                            |
+| `settings.css`                                        | Unmigrated Settings drawer, section-specific controls and app/wallpaper previews |
+| `app-actions-menu.css`                                | AppActionsMenu and ReorderControls                                               |
+| `icons.css`                                           | Shared interface icon sizing                                                     |
+
+Module paths in this table are relative to `launcher/src/`; global sheets are in
+`launcher/css/`. Generated module class names are private. Runtime and test hooks
+use semantic IDs, roles, `data-key`, `data-focused`, `data-settings-focus` and
+`data-selection-indicator`. Global `.focused` remains only as a transition hook
+for unmigrated styles; only Preact writes it. See the runtime boundary in the
+[style rules](styles.md) for the remaining public body classes.
 
 Each component has one style owner. Theme differences use tokens from `themes.css`;
 layout and state rules stay with the component. The legacy comparison page has a

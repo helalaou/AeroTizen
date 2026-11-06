@@ -97,18 +97,18 @@ for (const glass of [false, true]) {
     await gear.click();
     await openCategory(page, "apps");
     const selectedApp = page.locator('[data-key="app:demo0"]');
-    await expect(selectedApp.locator(".selection-indicator .lucide-check")).toBeVisible();
+    await expect(selectedApp.locator("[data-selection-indicator] .lucide-check")).toBeVisible();
     await selectedApp.click();
     await expect(selectedApp).toHaveAttribute("aria-pressed", "false");
-    await expect(selectedApp.locator(".selection-indicator")).toHaveCount(0);
+    await expect(selectedApp.locator("[data-selection-indicator]")).toHaveCount(0);
     await selectedApp.click();
-    await expect(selectedApp.locator(".selection-indicator")).toBeVisible();
-    await expect(selectedApp.locator(".selection-indicator")).toHaveCSS(
+    await expect(selectedApp.locator("[data-selection-indicator]")).toBeVisible();
+    await expect(selectedApp.locator("[data-selection-indicator]")).toHaveCSS(
       "background-color",
       glass ? "rgb(71, 82, 105)" : "rgb(124, 92, 255)",
     );
     await openCategory(page, "wallpaper");
-    await expect(page.locator('[data-key="bg:black"] .selection-indicator')).toBeVisible();
+    await expect(page.locator('[data-key="bg:black"] [data-selection-indicator]')).toBeVisible();
     await expect(page.locator(".settings-drawer__help svg[aria-hidden=true]")).toHaveCount(3);
     await page.locator('[data-key="wallpaper-categories:animated"]').click();
     await page.locator('[data-key="bg:aurora"]').click();

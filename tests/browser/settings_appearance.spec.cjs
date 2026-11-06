@@ -19,11 +19,17 @@ for (const glassSettings of [false, true]) {
     }, glassSettings);
     await page.goto("/");
     await page.waitForFunction(() => AeroTizen.apps.ready);
+    await expect(page.locator('#home-root [data-focused="true"]')).toHaveCount(1);
     await page.locator("#gear").click();
+    await expect(page.locator('#home-root [data-focused="true"]')).toHaveCount(0);
     await expect(page.locator("#editor")).toHaveClass(/settings-drawer--collapsed/);
     await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", "section:appearance");
     await page.keyboard.press("ArrowRight");
     await page.locator(`[data-key="settings-appearance:${!glassSettings}"]`).click();
+    await expect(page.locator('#editor [data-focused="true"]')).toHaveAttribute(
+      "data-key",
+      `settings-appearance:${!glassSettings}`,
+    );
     await expect(page.locator("#editor")).not.toHaveClass(/settings-drawer--collapsed/);
     await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", `settings-appearance:${!glassSettings}`);
     await page.keyboard.press("Escape");
@@ -34,6 +40,7 @@ for (const glassSettings of [false, true]) {
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
     await expect(page.locator("#editor")).toBeHidden();
+    await expect(page.locator('#home-root [data-focused="true"]')).toHaveCount(1);
     await page.reload();
     await page.locator("#gear").click();
     await expect(page.locator("#editor")).toHaveClass(

@@ -1,0 +1,57 @@
+.option {
+  border: 2px solid var(--border-control);
+  border-radius: var(--control-radius);
+  color: var(--control-text);
+  background: var(--surface-control);
+  transform: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 200px;
+  min-width: 160px;
+  max-width: 100%;
+  height: 72px;
+  padding: 10px 16px;
+  margin-left: 0;
+  font-size: 20px;
+  line-height: 24px;
+  white-space: normal;
+  text-align: center;
+
+  &[data-focused="true"] {
+    background: var(--choice-focused-surface);
+    color: var(--control-focused-text);
+  }
+
+  &[aria-pressed="true"] {
+    background: var(--choice-selected-surface);
+
+    &:not([data-focused="true"]) {
+      border-color: var(--choice-selected-border);
+    }
+  }
+}
+
+.label {
+  /* Chromium 69's multiline clamp needs all three legacy WebKit declarations. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: break-word;
+
+  > svg {
+    margin-right: 8px;
+  }
+
+  [dir="rtl"] & > svg {
+    margin-right: 0;
+    margin-left: 8px;
+  }
+}
+
+.inline {
+  display: flex;
+  align-items: center;
+}

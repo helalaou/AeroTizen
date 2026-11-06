@@ -5,6 +5,8 @@ import { useStore } from "../../shared/hooks/useStore";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 
+import styles from "./SettingsFocusIndicator.module.css";
+
 export const SettingsFocusIndicator = ({
   container,
   sidebar = false,
@@ -48,11 +50,9 @@ export const SettingsFocusIndicator = ({
   return (
     <div
       aria-hidden="true"
-      class={
-        "settings-focus-indicator " +
-        (sidebar ? "settings-focus-indicator--sidebar" : "settings-focus-indicator--content") +
-        (visible ? " is-visible" : "")
-      }
+      class={styles.indicator + " " + (sidebar ? styles.sidebar : styles.content)}
+      data-settings-focus={sidebar ? "sidebar" : "content"}
+      data-visible={visible ? "true" : undefined}
       style={style}
     />
   );

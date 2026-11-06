@@ -82,15 +82,17 @@ for (const glassSettings of [false, true]) {
     ).toContain(glassSettings ? "255, 255, 255" : "124, 92, 255");
     await page.locator("#gear").click();
     await page.locator('[data-key="section:appearance"]').click();
-    const choices = await page.locator('[data-section-pane="appearance"] .pill.unit').evaluateAll((nodes) =>
-      nodes
-        .filter((n) => n.getBoundingClientRect().height)
-        .map((n) => ({
-          height: n.getBoundingClientRect().height,
-          font: getComputedStyle(n).fontSize,
-          minWidth: getComputedStyle(n).minWidth,
-        })),
-    );
+    const choices = await page
+      .locator('[data-section-pane="appearance"] [role=button][aria-pressed]')
+      .evaluateAll((nodes) =>
+        nodes
+          .filter((n) => n.getBoundingClientRect().height)
+          .map((n) => ({
+            height: n.getBoundingClientRect().height,
+            font: getComputedStyle(n).fontSize,
+            minWidth: getComputedStyle(n).minWidth,
+          })),
+      );
     expect(choices.length).toBeGreaterThan(3);
     for (const choice of choices) {
       expect(choice.height).toBe(72);
@@ -109,15 +111,17 @@ for (const glassSettings of [false, true]) {
     await expect(vertical).toHaveAttribute("aria-pressed", "true");
     await expect(compact).toHaveAttribute("aria-pressed", "false");
     await expect(vertical).not.toHaveCSS("background-color", unselectedFill);
-    await expect(page.locator("#clock-layouts .selection-indicator")).toHaveCount(0);
-    const statusChoices = await page.locator('[data-section-pane="status"] .pill.unit').evaluateAll((nodes) =>
-      nodes
-        .filter((n) => n.getBoundingClientRect().height)
-        .map((n) => ({
-          height: n.getBoundingClientRect().height,
-          font: getComputedStyle(n).fontSize,
-        })),
-    );
+    await expect(page.locator("#clock-layouts [data-selection-indicator]")).toHaveCount(0);
+    const statusChoices = await page
+      .locator('[data-section-pane="status"] [role=button][aria-pressed]')
+      .evaluateAll((nodes) =>
+        nodes
+          .filter((n) => n.getBoundingClientRect().height)
+          .map((n) => ({
+            height: n.getBoundingClientRect().height,
+            font: getComputedStyle(n).fontSize,
+          })),
+      );
     for (const choice of statusChoices) {
       expect(choice.height).toBe(72);
       expect(choice.font).toBe("20px");
