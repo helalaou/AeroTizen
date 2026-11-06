@@ -45,29 +45,31 @@ const runSettingsResources = async (page) => {
     };
     A.artwork.sources = () => ["https://pending-artwork.test/first", "https://pending-artwork.test/second"];
     A.settingsUi.open();
-    window.oldArtwork = document.querySelector("#all-apps .app-artwork");
+    window.oldArtwork = document.querySelector("#all-apps [data-app-artwork]");
     if (timers.size !== A.apps.all.length) throw new Error("Expected one deadline per pending artwork");
     A.settingsUi.close();
     if (timers.size) throw new Error("Closed Settings retained image deadlines");
-    if (document.querySelector("#all-apps .app-artwork")) throw new Error("Closed Settings retained a pending image");
+    if (document.querySelector("#all-apps [data-app-artwork]"))
+      throw new Error("Closed Settings retained a pending image");
     A.settingsUi.open();
     window.oldArtwork.dispatchEvent(new Event("load"));
-    if (document.querySelector("#all-apps .has-artwork")) throw new Error("Detached image changed reopened Settings");
+    if (document.querySelector("#all-apps [data-artwork-loaded=true]"))
+      throw new Error("Detached image changed reopened Settings");
     // Expire all first candidates. Each tile must try its second candidate.
     [...timers.values()].forEach((expire) => expire());
   });
   await page.waitForFunction(
     () =>
-      [...document.querySelectorAll("#all-apps .app-artwork")].every((image) => image.src.endsWith("/second")) &&
+      [...document.querySelectorAll("#all-apps [data-app-artwork]")].every((image) => image.src.endsWith("/second")) &&
       window.artworkTimers.size === AeroTizen.apps.all.length,
   );
   await page.evaluate(() => {
     [...window.artworkTimers.values()].forEach((expire) => expire());
   });
-  await page.waitForFunction(() => !document.querySelector("#all-apps .app-artwork"));
+  await page.waitForFunction(() => !document.querySelector("#all-apps [data-app-artwork]"));
   const result = await page.evaluate(() => {
     if (window.artworkTimers.size) throw new Error("Exhausted artwork retained deadlines");
-    if ([...document.querySelectorAll("#all-apps .app-fallback")].some((element) => element.hidden)) {
+    if ([...document.querySelectorAll("#all-apps [data-app-fallback]")].some((element) => element.hidden)) {
       throw new Error("Failed artwork hid the brand fallback");
     }
     AeroTizen.settingsUi.close();

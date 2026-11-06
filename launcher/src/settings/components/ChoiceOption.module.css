@@ -51,6 +51,13 @@
   }
 }
 
+.option.truncate {
+  max-width: 1680px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .inline {
   display: flex;
   align-items: center;

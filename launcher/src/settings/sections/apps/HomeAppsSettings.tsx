@@ -6,6 +6,7 @@ import type { SettingsActions, SettingsServices } from "../../types";
 import { AppOption } from "./AppOption";
 import { AppStoreOption } from "./AppStoreOption";
 import { FireplaceOption } from "./FireplaceOption";
+import styles from "./HomeAppsSettings.module.css";
 
 interface Props {
   actions: SettingsActions;
@@ -20,7 +21,7 @@ export const HomeAppsSettings = ({ home, apps, actions, describeApp, fireplaceId
   const { t } = useTranslation();
   return (
     <SettingsSection title={t("apps.show")} description={t("apps.hint")}>
-      <div id="all-apps" class="grid home-apps-settings">
+      <div id="all-apps" class={styles.grid}>
         <AppStoreOption onSelect={actions.openStore} />
         <FireplaceOption
           id={fireplaceId}

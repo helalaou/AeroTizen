@@ -137,7 +137,7 @@ for (const glassSettings of [false, true]) {
       );
     expect(appsGap).toBe(30);
     const icons = await page
-      .locator("#all-apps > .tile")
+      .locator("#all-apps > [data-settings-card]")
       .evaluateAll((nodes) => nodes.map((n) => [n.offsetWidth, n.offsetHeight]));
     for (const size of icons) expect(size).toEqual([160, 160]);
     await page.screenshot({ path: info.outputPath("settings-standard-icons.png") });

@@ -49,7 +49,7 @@ export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item
           />
         )}
         <div class="tile app-tile continue-app-icon" aria-hidden="true" style={{ background: brand.background }}>
-          <AppArtwork app={app} brand={brand} active />
+          <AppArtwork app={app} brand={brand} active variant="badge" />
         </div>
       </div>
       <div class={"continue-progress" + (progress > 0 ? "" : " empty")} aria-hidden="true">

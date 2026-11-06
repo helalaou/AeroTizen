@@ -52,9 +52,9 @@ const findUntranslated = (page) =>
         if (
           (text === "AEROTIZEN" && element.matches("[data-product-name]")) ||
           (languageCode && text === languageNames[languageCode]) ||
-          (text === releaseNote && element.matches(".about-release-notes li")) ||
-          (text === "aerotizen update launcher" && element.matches(".about-update-command code")) ||
-          (text === "github.com/helalaou/AeroTizen" && element.matches(".about-facts code")) ||
+          (text === releaseNote && element.matches("[data-release-notes] li")) ||
+          (text === "aerotizen update launcher" && element.matches("[data-update-command] code")) ||
+          (text === "github.com/helalaou/AeroTizen" && element.matches("[data-about-facts] code")) ||
           (dates.includes(text) && element.closest('#date, #date-formats [data-key]:not([data-key="date:none"])'))
         ) {
           return;
@@ -253,9 +253,9 @@ for (const glassSettings of [false, true]) {
     await page.keyboard.press("Escape");
     await openCategory(page, "about");
     const about = page.locator('[data-section-pane="about"]');
-    await expect(about.locator(".about-release-notes li")).toHaveText(releaseNote);
+    await expect(about.locator("[data-release-notes] li")).toHaveText(releaseNote);
     await expect(about.getByRole("heading", { name: pseudoText("settings.about.whatsNew") })).toBeVisible();
-    await expect(about.locator(".about-update-command")).toContainText(pseudoText("settings.about.runOnComputer"));
+    await expect(about.locator("[data-update-command]")).toContainText(pseudoText("settings.about.runOnComputer"));
     await expectTranslatedScreen(page, "About");
 
     await closeSettings(page);

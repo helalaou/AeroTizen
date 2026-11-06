@@ -9,11 +9,18 @@ interface Props {
   inline?: boolean;
   onSelect(): void;
   selected?: boolean;
+  truncate?: boolean;
 }
 
-export const ChoiceOption = ({ id, selected = false, onSelect, children, inline = false }: Props) => {
+export const ChoiceOption = ({ id, selected = false, onSelect, children, inline = false, truncate = false }: Props) => {
   return (
-    <SettingsControl class={styles.option} focusKey={id} role="button" aria-pressed={selected} onClick={onSelect}>
+    <SettingsControl
+      class={styles.option + (truncate ? " " + styles.truncate : "")}
+      focusKey={id}
+      role="button"
+      aria-pressed={selected}
+      onClick={onSelect}
+    >
       <span class={styles.label + (inline ? " " + styles.inline : "")}>{children}</span>
     </SettingsControl>
   );

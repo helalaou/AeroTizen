@@ -1,0 +1,22 @@
+.fireplace {
+  --settings-card-direction: column;
+  --settings-card-gap: 8px;
+  --settings-card-padding: 12px;
+  --settings-card-surface: radial-gradient(110% 120% at 50% 110%, #ff8a1e 0%, #c2380d 35%, #3a0d04 70%, #120402 100%);
+}
+
+.icon {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 76px;
+}
+
+.label {
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--control-text);
+  text-shadow: var(--app-label-shadow);
+  max-width: 100%;
+  line-height: 21px;
+  text-align: center;
+}

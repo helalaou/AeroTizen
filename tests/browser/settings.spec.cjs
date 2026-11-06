@@ -166,23 +166,23 @@ test("failed artwork retries from the first candidate on reopen while loaded art
   });
   const loadedTile = page.locator('[data-key="app:' + ids.loaded + '"]');
   const failedTile = page.locator('[data-key="app:' + ids.failed + '"]');
-  await expect(loadedTile).toHaveClass(/has-artwork/);
+  await expect(loadedTile).toHaveAttribute("data-artwork-loaded", "true");
   await expect.poll(() => failedRequests).toEqual(["/failed/first", "/failed/second"]);
-  await expect(failedTile.locator(".app-artwork")).toHaveCount(0);
+  await expect(failedTile.locator("[data-app-artwork]")).toHaveCount(0);
   await openCategory(page, "apps");
-  await expect(failedTile.locator(".app-fallback")).toBeVisible();
-  const loadedNode = await loadedTile.locator(".app-artwork").elementHandle();
+  await expect(failedTile.locator("[data-app-fallback]")).toBeVisible();
+  const loadedNode = await loadedTile.locator("[data-app-artwork]").elementHandle();
   recovered = true;
   await page.evaluate(() => {
     AeroTizen.settingsUi.close();
     AeroTizen.settingsUi.open();
   });
-  await expect(failedTile).toHaveClass(/has-artwork/);
+  await expect(failedTile).toHaveAttribute("data-artwork-loaded", "true");
   expect(failedRequests).toEqual(["/failed/first", "/failed/second", "/failed/first"]);
   expect(loadedRequests).toBe(1);
   expect(
     await loadedNode.evaluate(
-      (node) => node === document.querySelector('[data-key="app:' + AeroTizen.apps.all[0].id + '"] .app-artwork'),
+      (node) => node === document.querySelector('[data-key="app:' + AeroTizen.apps.all[0].id + '"] [data-app-artwork]'),
     ),
   ).toBe(true);
 });
