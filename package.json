@@ -13,7 +13,7 @@
     "test:browser": "npm run build && playwright test",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
     "lint:js": "eslint launcher tests eslint.config.js playwright.config.cjs vite.config.mts \"tools/*.{mjs,cjs}\" stylelint.config.cjs --max-warnings=0",
-    "lint:css": "stylelint \"launcher/css/**/*.css\" --max-warnings 0"
+    "lint:css": "stylelint \"launcher/{css,src}/**/*.css\" --max-warnings 0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

@@ -23,6 +23,9 @@ also read the [style rules](../docs/styles.md) or [icon rules](../docs/icons.md)
   do not add polling or requests to presentation components.
 - Follow the documented dependency direction and style owners. Use theme tokens and
   the shared icon components. Remove code made obsolete by the change.
+- Co-locate migrated styles in `Component.module.css`. Use semantic data/ARIA hooks
+  for focus and selection; never use generated class names as runtime APIs. Legacy
+  services must request UI changes through bridges, not mutate component classes.
 
 ## Compatibility
 

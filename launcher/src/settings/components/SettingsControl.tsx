@@ -34,6 +34,7 @@ export const SettingsControl = ({ focusKey, class: className = "", onClick, onFo
       {...props}
       ref={register}
       data-key={focusKey}
+      data-focused={focused ? "true" : undefined}
       tabIndex={focused ? 0 : -1}
       onClick={(event) => {
         select();

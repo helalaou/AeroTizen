@@ -1,0 +1,45 @@
+.indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  border: 2px solid var(--settings-focus-border);
+  border-radius: var(--control-radius);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 0.15s ease-out,
+    opacity 0.1s linear;
+}
+
+.indicator[data-visible="true"] {
+  opacity: 1;
+}
+
+.sidebar {
+  z-index: 0;
+  width: calc(100% - 8px);
+  height: 76px;
+  background: var(--settings-sidebar-focus-surface);
+  box-shadow: var(--settings-sidebar-focus-shadow);
+}
+
+.content {
+  z-index: 12;
+  width: 1px;
+  height: 1px;
+  transition:
+    transform 0.15s ease-out,
+    opacity 0.1s linear,
+    border-radius 0.12s ease-out;
+  background: var(--settings-content-focus-surface);
+  box-shadow: var(--settings-content-focus-shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator {
+    animation: none !important;
+    transition: none !important;
+  }
+}

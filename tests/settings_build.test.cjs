@@ -29,6 +29,13 @@ test("compiled launcher uses the production page, local scripts and the Preact l
     assert.ok(existsSync(path.join(output, file)), file);
     parse(read(output, file), { ecmaVersion: 2018, sourceType: "script" });
   }
+  const stylesheets = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(stylesheets.includes("js/launcher-ui.css"), "the TV page loads the compiled component styles");
+  for (const file of stylesheets) assert.ok(existsSync(path.join(output, file)), file);
+  const componentStyles = read(output, "js/launcher-ui.css");
+  assert.match(componentStyles, /var\(--choice-selected-surface\)/);
+  assert.match(componentStyles, /data-focused/);
+  assert.doesNotMatch(componentStyles, /:global\(|@layer\b|\binset:/, "the package contains compiled Chromium 69 CSS");
   assert.equal(existsSync(path.join(output, "src")), false, "TypeScript source is not a TV runtime asset");
   assert.doesNotMatch(read(output, "js/launcher-ui.js"), /@vite\/client|@prefresh|preact\/debug/);
   assert.match(read(output, "licenses/preact.txt"), /MIT License/);
@@ -47,7 +54,7 @@ test("compiled launcher uses the production page, local scripts and the Preact l
 test("compilation preserves runtime scripts, CSS, service and app identity", () => {
   assert.deepEqual(
     readdirSync(path.join(output, "js")).sort(),
-    [...readdirSync(path.join(root, "launcher/js")), "launcher-ui.js"].sort(),
+    [...readdirSync(path.join(root, "launcher/js")), "launcher-ui.js", "launcher-ui.css"].sort(),
   );
   for (const directory of ["js", "css", "service"]) {
     for (const file of readdirSync(path.join(root, "launcher", directory))) {

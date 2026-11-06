@@ -41,8 +41,15 @@ body {
   --settings-sidebar-focus-shadow: none;
   --settings-content-focus-shadow: none;
   --choice-selected-surface: var(--focus);
+  --choice-selected-border: var(--border-control);
   --choice-focused-surface: rgba(124, 92, 255, 0.25);
+  --control-text: #fff;
+  --control-focused-text: #fff;
+  --control-radius: 17px;
+  --input-placeholder: #77777f;
+  --input-underline: #4a4a50;
   --selection-surface: var(--focus);
+  --selection-text: #fff;
   --input-icon-badge: #2c2c30;
   --continue-surface: var(--card);
   --continue-shadow: none;

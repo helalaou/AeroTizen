@@ -1,4 +1,5 @@
 const { test, expect } = require("@playwright/test");
+const { preserveLegacyDom } = require("./legacy_helpers.cjs");
 test.beforeEach(async ({ page }) => {
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
@@ -174,6 +175,7 @@ test("compiled Home preserves header and input geometry around the resized app g
       }),
     );
   await baseline.addInitScript(seed);
+  await preserveLegacyDom(baseline);
   await baseline.goto("http://127.0.0.1:8170/tests/fixtures/legacy-launcher/");
   await page.goto("/");
   for (const tab of [baseline, page])

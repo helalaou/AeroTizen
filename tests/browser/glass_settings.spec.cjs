@@ -64,12 +64,12 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
     await page.locator(`[data-key="section:${category}"]`).click();
     await expect(page.locator(`[data-section-pane="${category}"]`)).toBeVisible();
     await expect(page.locator("#editor .focused")).toHaveCount(1);
-    await expect(page.locator(".settings-focus-indicator--content")).toHaveClass(/is-visible/);
+    await expect(page.locator("[data-settings-focus=content]")).toHaveAttribute("data-visible", "true");
     const current = page.locator("#editor .focused");
     expect(await current.evaluate((node) => getComputedStyle(node).boxShadow)).toBe("none");
     await expect
       .poll(() =>
-        page.locator(".settings-focus-indicator--content").evaluate((plate) => {
+        page.locator("[data-settings-focus=content]").evaluate((plate) => {
           const target = document.querySelector("#editor .focused"),
             a = plate.getBoundingClientRect(),
             b = target.getBoundingClientRect();

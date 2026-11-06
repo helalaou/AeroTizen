@@ -1,4 +1,5 @@
 const { openCategory } = require("./drawer_helpers.cjs");
+const { preserveLegacyDom } = require("./legacy_helpers.cjs");
 const { test, expect } = require("@playwright/test");
 const { runSettingsUi } = require("../settings_ui.browser");
 const { runSettingsFocus } = require("../settings_focus.browser");
@@ -101,6 +102,7 @@ test("compiled Settings retains the original Samsung Home escape without the opt
 });
 
 test("Settings matches legacy remote, persistence, search and artwork behaviour", async ({ page }, info) => {
+  await preserveLegacyDom(page);
   await page.goto("/");
   const result = await runSettingsUi(page, {
     baselineUrl: "http://127.0.0.1:8170/tests/fixtures/legacy-launcher/",

@@ -2,6 +2,7 @@ import type { ClockFormatter } from "../../contracts/launcher";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../components/ChoiceGroup";
 import { ChoiceOption } from "../components/ChoiceOption";
+import { ControlGroup } from "../components/ControlGroup";
 import { SettingsSection } from "../components/SettingsSection";
 import type { SettingsSectionProps } from "../types";
 
@@ -38,6 +39,7 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
       <SettingsSection title={t("clock.layout")}>
         <ChoiceGroup
           id="clock-layouts"
+          grid
           label={t("clock.layout")}
           value={settings.clockLayout === "classic" ? "classic" : settings.aeroClockStyle}
           options={CLOCK_LAYOUT_OPTIONS}
@@ -45,7 +47,7 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
         />
       </SettingsSection>
       <SettingsSection title={t("clock.dateAndTime")}>
-        <div id="time-formats" class="units">
+        <ControlGroup id="time-formats">
           {TIME_FORMATS.map((format) => (
             <ChoiceOption
               key={format}
@@ -63,8 +65,8 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
           >
             {t("clock.noTime")}
           </ChoiceOption>
-        </div>
-        <div id="date-formats" class="units">
+        </ControlGroup>
+        <ControlGroup id="date-formats">
           {clock.DATE_FORMATS.map((format) => (
             <ChoiceOption
               key={format.id}
@@ -75,7 +77,7 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
               {format.id === "none" ? t("clock.noDate") : format.format(now)}
             </ChoiceOption>
           ))}
-        </div>
+        </ControlGroup>
       </SettingsSection>
       {language === "ar" && (
         <SettingsSection title={t("clock.digits")}>

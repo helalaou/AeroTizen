@@ -56,7 +56,7 @@ Run `npm run format` to apply the shared Prettier rules before committing fronte
 changes. Formatting covers launcher JavaScript, TypeScript, TSX, CSS, HTML and JSON;
 JavaScript tests and legacy HTML fixtures; root frontend configuration; the launcher build script; this guide;
 and the CI workflow. ESLint covers launcher code, tests and frontend tooling.
-Stylelint checks active launcher CSS for errors and duplicate rules. Run either
+Stylelint checks global and component-module launcher CSS for errors and duplicate rules. Run either
 check alone with `npm run lint:js` or `npm run lint:css`. The TypeScript checks also
 reject unused locals and parameters. CI rejects formatting
 differences, lint warnings and errors, and type errors.

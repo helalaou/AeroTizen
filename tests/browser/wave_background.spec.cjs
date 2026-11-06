@@ -1,6 +1,7 @@
 const { test, expect } = require("@playwright/test");
 const { compareHeaderPixels } = require("./compare_header_pixels.cjs");
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
+const { preserveLegacyDom } = require("./legacy_helpers.cjs");
 
 test.beforeEach(async ({ context }) => {
   await context.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
@@ -25,6 +26,7 @@ const durations = (page) =>
 
 test("wave artwork and geometry match the frozen renderer at two animation phases", async ({ page, context }) => {
   const baseline = await context.newPage();
+  await preserveLegacyDom(baseline);
   const errors = [];
   for (const target of [baseline, page]) {
     target.on("pageerror", (error) => errors.push(error.message));

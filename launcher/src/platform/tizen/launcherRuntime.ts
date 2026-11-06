@@ -28,7 +28,6 @@ export interface LauncherRuntime {
     playFireplace(): void;
     subscribe(listener: () => void): () => void;
   };
-  clearFocus(): void;
   clock: ClockService;
   config: LauncherConfig;
   continueWatching: {

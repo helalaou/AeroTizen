@@ -1,4 +1,10 @@
 module.exports = {
+  overrides: [
+    {
+      files: ["launcher/src/**/*.module.css"],
+      rules: { "selector-pseudo-class-no-unknown": [true, { ignorePseudoClasses: ["global"] }] },
+    },
+  ],
   rules: {
     "at-rule-no-unknown": true,
     "block-no-empty": true,

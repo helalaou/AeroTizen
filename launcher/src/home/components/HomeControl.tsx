@@ -59,6 +59,7 @@ export const HomeControl = ({
       tabIndex={focused ? 0 : -1}
       data-id={dataId}
       data-key={dataKey}
+      data-focused={focused ? "true" : undefined}
       aria-pressed={pressed}
       style={style}
       onClick={() => {
