@@ -191,7 +191,7 @@ body.previewing #editor.settings-drawer {
   color: var(--settings-category-text);
   box-shadow: none;
   transform: none;
-  transition: color 0.1s linear;
+  transition: color var(--motion-duration-feedback) linear;
 }
 #editor .settings-category.focused {
   color: #fff;
@@ -418,8 +418,8 @@ body.previewing #editor.settings-drawer {
   transform: none;
   color: #fff;
   transition:
-    color 0.1s linear,
-    background-color 0.1s linear;
+    color var(--motion-duration-feedback) linear,
+    background-color var(--motion-duration-feedback) linear;
 }
 #editor .swatches {
   display: flex;
@@ -433,7 +433,7 @@ body.previewing #editor.settings-drawer {
   border-radius: 10px;
   overflow: hidden;
   box-shadow: inset 0 0 0 2px var(--border-control);
-  transition: transform 0.15s ease-out;
+  transition: transform var(--motion-duration-focus) ease-out;
   width: 168px;
   height: 96px;
   max-width: calc(20% - 12px);
@@ -450,8 +450,8 @@ body.previewing #editor.settings-drawer {
   transform: none;
   color: #fff;
   transition:
-    color 0.1s linear,
-    background-color 0.1s linear;
+    color var(--motion-duration-feedback) linear,
+    background-color var(--motion-duration-feedback) linear;
   background: var(--settings-focused-surface);
 }
 #editor .swatch.focused {
@@ -463,15 +463,9 @@ body.previewing #editor.settings-drawer {
   transform: none;
   color: #fff;
   transition:
-    color 0.1s linear,
-    background-color 0.1s linear;
+    color var(--motion-duration-feedback) linear,
+    background-color var(--motion-duration-feedback) linear;
   background-blend-mode: normal;
-}
-@media (prefers-reduced-motion: reduce) {
-  #editor .settings-drawer__frame {
-    animation: none !important;
-    transition: none !important;
-  }
 }
 #editor.settings-drawer--collapsed .settings-drawer__frame {
   width: calc(var(--settings-sidebar-width) + 2px);
@@ -503,7 +497,7 @@ body.previewing #editor.settings-drawer {
   overflow: hidden;
   color: var(--settings-text);
   font-family: "SamsungOne", "Roboto", Arial, sans-serif;
-  animation: settings-drawer-enter 0.2s ease-out both;
+  animation: settings-drawer-enter var(--motion-duration-enter) ease-out both;
   background: var(--settings-surface);
   border-color: var(--settings-border);
   border-radius: var(--settings-radius);

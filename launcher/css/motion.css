@@ -1,0 +1,16 @@
+/* Shared UI motion policy. Components own transition properties and easing. */
+:root {
+  --motion-duration-feedback: 0.1s;
+  --motion-duration-focus: 0.15s;
+  --motion-duration-shape: 0.12s;
+  --motion-duration-enter: 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-feedback: 0s;
+    --motion-duration-focus: 0s;
+    --motion-duration-shape: 0s;
+    --motion-duration-enter: 0s;
+  }
+}

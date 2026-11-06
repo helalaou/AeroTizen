@@ -9,16 +9,11 @@
   opacity: 0;
   transform: translate3d(0, 0, 0);
   transition:
-    transform 0.15s ease-out,
-    opacity 0.1s linear;
+    transform var(--motion-duration-focus) ease-out,
+    opacity var(--motion-duration-feedback) linear;
 
   &[data-visible="true"] {
     opacity: 1;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none !important;
-    transition: none !important;
   }
 }
 
@@ -35,9 +30,9 @@
   width: 1px;
   height: 1px;
   transition:
-    transform 0.15s ease-out,
-    opacity 0.1s linear,
-    border-radius 0.12s ease-out;
+    transform var(--motion-duration-focus) ease-out,
+    opacity var(--motion-duration-feedback) linear,
+    border-radius var(--motion-duration-shape) ease-out;
   background: var(--settings-content-focus-surface);
   box-shadow: var(--settings-content-focus-shadow);
 }

@@ -28,6 +28,8 @@ also read the [style rules](../docs/styles.md) or [icon rules](../docs/icons.md)
   services must request UI changes through bridges, not mutate component classes.
 - Use local module classes without ID/global scopes. Standard CSS nesting is compiled
   for Chromium 69; keep it at two levels or fewer and leave copied legacy CSS flat.
+- Use shared duration tokens from `css/motion.css` for UI motion. Keep component
+  reduced-motion queries only for behavior that cannot be expressed by those tokens.
 
 ## Compatibility
 

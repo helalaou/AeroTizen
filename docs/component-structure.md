@@ -59,6 +59,7 @@ keys and values also remain compatible.
 | Stylesheet                                            | Owner                                                                            |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `themes.css`                                          | Shared semantic paint tokens and Classic/Glass values                            |
+| `motion.css`                                          | Shared UI durations and reduced-motion policy                                    |
 | `settings/components/*.module.css`                    | Shared Settings focus, choices, group layout, headings and selection badges      |
 | `settings/layout/SettingsFocusIndicator.module.css`   | Measured Settings focus plate and motion preference                              |
 | `settings/sections/inputs/InputName.module.css`       | Input-name field layout and focus states                                         |

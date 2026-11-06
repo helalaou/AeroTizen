@@ -61,6 +61,21 @@ supplies its choices; time/date and input-name sections use the same layout owne
 `SelectionIndicator` takes an explicit small variant for wallpaper swatches.
 Component variants must not depend on a parent's private CSS class.
 
+## Motion
+
+`launcher/css/motion.css` owns shared UI durations and one reduced-motion query.
+Feedback, focus movement, shape changes and entry effects keep their normal
+durations; when the browser reports reduced motion, those durations become `0s`.
+Components own the transition properties and easing, and always render their final
+state. Do not override the shared motion durations in theme or component rules.
+
+Settings focus indicators, controls and the drawer use this policy. This removes
+their repeated media queries and reduced-motion `!important` rules. New and migrated
+components should use the same tokens. Keep a local media query only when an effect
+needs different behavior, such as replacing movement with a static alternative.
+Existing Home/input rules keep their local handling until migrated; the policy
+does not change wallpaper or JavaScript animation behavior.
+
 ## Runtime DOM boundary
 
 Preact owns component classes and focus state. Settings asks `homeScreen.blur()`

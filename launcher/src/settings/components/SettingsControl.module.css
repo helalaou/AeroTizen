@@ -8,7 +8,7 @@
     transform: none;
     color: var(--control-focused-text);
     transition:
-      color 0.1s linear,
-      background-color 0.1s linear;
+      color var(--motion-duration-feedback) linear,
+      background-color var(--motion-duration-feedback) linear;
   }
 }
