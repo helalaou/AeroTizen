@@ -20,6 +20,9 @@ Built with help from these contributors. [Join them](CONTRIBUTING.md): testing o
     <td align="center"><a href="https://github.com/tjmcleod8"><img src="https://github.com/tjmcleod8.png?size=100" width="64" height="64" alt="tjmcleod8"><br><sub>tjmcleod8</sub></a></td>
     <td align="center"><a href="https://github.com/jamesmcnicholas"><img src="https://github.com/jamesmcnicholas.png?size=100" width="64" height="64" alt="jamesmcnicholas"><br><sub>jamesmcnicholas</sub></a></td>
   </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/cheack"><img src="https://github.com/cheack.png?size=100" width="64" height="64" alt="cheack"><br><sub>cheack</sub></a></td>
+  </tr>
 </table>
 <!-- contributors:end -->
 
@@ -94,6 +97,8 @@ data, autorun) and [DNS blocklists](dns/) if you run Pi-hole, AdGuard Home or Ne
 | Samsung 55" Crystal UHD U8000F (UE55U8000FKXXU) | 2026 | Tizen 9.0 | |
 | Samsung 75" QLED Q7F (QE75Q7FAAUXXH) | 2025 | Tizen 9.0 | |
 | Samsung 55" Crystal UHD U8092F (UE55U8092FUXXH) | 2025 | Tizen 9.0 | Native Home apply fails ([#69](../../issues/69)) |
+| Samsung 55" OLED S95F (TQ55S95FATXXC) | 2025 | Tizen 9.0 | Native Home works with `--boot`; Home-only rolls back ([#159](../../issues/159)) |
+| Samsung 75" QLED Q70D (QA75Q70DAUXZN) | 2024 | Tizen 9.0 | Native Home and cold boot work with `--boot`; Home-only rolls back ([#162](../../issues/162)) |
 | Samsung 65" Crystal UHD DU7200 (UN65DU7200FXZA) | 2024 | Tizen 9.0 | |
 | Samsung 85" Crystal UHD DU7179 (GU85DU7179UXZG) | 2024 | Tizen 8.0 | Native Home and boot work; Steam Link on HDMI shows black ([#103](../../issues/103)) |
 | Samsung 65" The Frame LS03D (QE65LS03DAUXXU) | 2024 | Tizen 9.0 | |
@@ -112,7 +117,7 @@ data, autorun) and [DNS blocklists](dns/) if you run Pi-hole, AdGuard Home or Ne
 | Samsung 65" Crystal UHD AU7172 (UE65AU7172UXXH) | 2021 | Tizen 6.0 | Home doesn't return yet ([#65](../../issues/65)) |
 | Samsung 43" Crystal UHD AU8000 (UN43AU8000FXZC) | 2021 | | Runs; Home and power-on don't work yet ([#65](../../issues/65)) |
 | Samsung 82" Crystal UHD TU8070 (UE82TU8070UXZT) | 2020 | Tizen 5.5 | Runs; manual IP worked ([#124](../../issues/124)) |
-| Samsung 70" Crystal UHD TU700D (UN70TU700DBXZA) | 2020 | Tizen 5.5 | Runs; Home and auto-start unconfirmed ([#122](../../issues/122)) |
+| Samsung 70" Crystal UHD TU700D (UN70TU700DBXZA) | 2020 | Tizen 5.5 | Runs; watcher and native Home fail; auto-start fails on warm and cold boots ([#122](../../issues/122#issuecomment-6649571277)) |
 | Samsung 65" Crystal UHD TU7179 (GU65TU7179UXZG) | 2020 | Tizen 5.5 | Runs; native Home doesn't work yet ([#84](../../issues/84)) |
 | Samsung 32" The Frame LS03T (QE32LS03TCUXZT) | 2020 | Tizen 5.5 | Runs; native Home doesn't work yet ([#75](../../issues/75)) |
 | Samsung 65" UHD RU8000 (UE65RU8000UXZT) | 2019 | Tizen 5.0 | Runs; manual IP worked ([#123](../../issues/123)) |
@@ -234,6 +239,56 @@ For accurate weather, open **Settings → Weather** and search for your town or 
 
 To look at or remove installed apps, run `./aerotizen apps` and `./aerotizen debloat`. To remove AeroTizen itself, run
 `./aerotizen uninstall launcher`.
+
+### Let an AI assistant do it
+
+If you use an AI coding assistant that can run terminal commands, it can do most of the setup
+for you. A few steps still need you:
+
+- turning on Developer Mode with the remote and unplugging the TV (step 2);
+- signing in to your Samsung account in the browser (step 3);
+- pressing buttons or checking what's on screen.
+
+Review commands that change the TV before you approve them: `debloat`, `uninstall`,
+`home apply`, `home restore` and `root`. Those commands preview first and only make changes
+with `--yes`.
+
+Turn the TV on, make sure it's on the same network as your computer, then paste this. You
+can change the last line to what you want:
+
+```text
+Help me set up AeroTizen, a custom launcher for my Samsung Tizen TV:
+https://github.com/helalaou/AeroTizen
+
+Read the README first, especially Setup, "Choose how Home works" and Limits, and follow it.
+Work out as much as you can yourself instead of asking me.
+
+1. Check my computer: the operating system, CPU (Apple silicon, Intel or x64), and its
+   local IP address on the network the TV uses. Tell me what you found.
+2. Download the latest CLI release (cli-v...) that matches my computer, extract it into a
+   new folder and run commands from there. Don't build from source unless I ask.
+3. Find the TV yourself. Run "aerotizen discover" first. If it finds nothing, scan my local
+   network: list the devices my computer already sees (for example with arp), then check
+   the addresses on my subnet for Samsung TVs, which answer at http://TV_IP:8001/api/v2/.
+   Only look at my own local network, and don't install scanning tools without asking.
+4. Identify the TV from that /api/v2/ answer: model name, year (the "model" field starts
+   with it, like 24_...) and whether Developer Mode is on. If you find more than one TV,
+   list them and ask which one is mine. Check the model against the README's Limits and tell me if anything won't work on it.
+5. Stop and tell me exactly what to do when a step needs me: turning on Developer Mode
+   (give me the exact Host PC IP to type), unplugging the TV, signing in to Samsung, or
+   checking the screen. After each one, check it worked before moving on (for example,
+   "status" should show developerMode=1).
+6. Run read-only commands (discover, status, apps, home status) freely. Before any command
+   that changes the TV (debloat, uninstall, home apply/restore, root, or anything with
+   --yes), show me the preview and wait for my OK.
+7. Run "home backup" before opening AeroTizen for the first time.
+8. If something fails, show me the exact error and check the README and the open GitHub
+   issues before trying workarounds. If the TV stops answering, look for it again: its IP
+   address may have changed.
+
+Goal: install the launcher and [keep the default watcher / set up native Home / remove
+some preinstalled apps].
+```
 
 ## Continue Watching (experimental)
 
