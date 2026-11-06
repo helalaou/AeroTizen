@@ -3,7 +3,7 @@
   display: none !important;
 }
 
-/* base: component-owned styles. */
+/* Page reset and shell visibility. */
 
 * {
   box-sizing: border-box;
@@ -25,14 +25,6 @@ h2 {
   margin: 0 0 18px;
 }
 
-.continue-card.focused {
-  transform: translateZ(0) scale(1.035);
-  box-shadow:
-    0 0 0 4px var(--bg),
-    0 0 0 9px var(--focus),
-    0 18px 40px rgba(0, 0, 0, 0.6);
-  z-index: 2;
-}
 body.tv {
   background: transparent;
 }

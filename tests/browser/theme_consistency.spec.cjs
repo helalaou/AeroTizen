@@ -68,14 +68,16 @@ for (const glassSettings of [false, true]) {
     );
     await page.keyboard.press("Escape");
     await page.keyboard.press("ArrowDown");
-    await expect(page.locator(".continue-card")).toHaveClass(/focused/);
-    expect(await page.locator(".continue-card").evaluate((n) => getComputedStyle(n).boxShadow)).toContain(colour);
-    expect(await page.locator(".continue-progress-fill").evaluate((n) => getComputedStyle(n).backgroundColor)).toBe(
+    await expect(page.locator("#continue-items > [data-key]")).toHaveClass(/focused/);
+    expect(await page.locator("#continue-items > [data-key]").evaluate((n) => getComputedStyle(n).boxShadow)).toContain(
       colour,
     );
-    expect(await page.locator(".continue-card").evaluate((n) => getComputedStyle(n).backgroundImage)).toBe(
-      glassSettings ? "linear-gradient(160deg, rgba(86, 97, 116, 0.84), rgba(22, 29, 42, 0.94))" : "none",
-    );
+    expect(
+      await page.locator("[data-continue-part=progress-fill]").evaluate((n) => getComputedStyle(n).backgroundColor),
+    ).toBe(colour);
+    expect(
+      await page.locator("#continue-items > [data-key]").evaluate((n) => getComputedStyle(n).backgroundImage),
+    ).toBe(glassSettings ? "linear-gradient(160deg, rgba(86, 97, 116, 0.84), rgba(22, 29, 42, 0.94))" : "none");
     await page.keyboard.press("ArrowDown");
     const source = page.locator("#inputs .focused");
     await expect(source).toHaveCount(1);

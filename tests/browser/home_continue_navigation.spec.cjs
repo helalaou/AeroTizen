@@ -75,13 +75,13 @@ for (const scenario of [
     });
     await page.goto("/");
     await expect(page).toHaveTitle("AeroTizen");
-    const cards = page.locator(".continue-card"),
+    const cards = page.locator("#continue-items > [data-key]"),
       apps = page.locator("#grid > [data-id]");
     await expect(cards).toHaveCount(10);
     await expect(apps).toHaveCount(scenario.count);
     await expect
       .poll(() =>
-        page.locator(".continue-viewport").evaluate((viewport) => {
+        page.locator("#continue-section [data-horizontal-scroller]").evaluate((viewport) => {
           const { left, right } = viewport.getBoundingClientRect();
           return [left, right];
         }),
@@ -172,7 +172,7 @@ for (const settingsOpen of [false, true]) {
       };
     }, prime);
     await page.goto("/");
-    const cards = page.locator(".continue-card"),
+    const cards = page.locator("#continue-items > [data-key]"),
       app = page.locator("#grid > [data-id]");
     await expect(cards).toHaveCount(10);
     await page.keyboard.press("ArrowDown");
@@ -188,7 +188,7 @@ for (const settingsOpen of [false, true]) {
       .poll(
         () =>
           cards.evaluateAll((nodes) => {
-            const clip = document.querySelector(".continue-viewport").getBoundingClientRect();
+            const clip = document.querySelector("#continue-section [data-horizontal-scroller]").getBoundingClientRect();
             return nodes.every((node) => {
               const rect = node.getBoundingClientRect();
               return rect.left >= clip.left && rect.right <= clip.right;

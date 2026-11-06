@@ -7,7 +7,8 @@ migrating. All Settings controls, sections and the drawer now use modules;
 the global `settings.css` sheet has been removed. Home header and status components
 also use modules; `home-header.css` and `clock.css` have been removed. Home layout,
 app cards, headings, scrolling and app actions now use modules too; their four
-global sheets have been removed. Continue Watching and input cards migrate separately.
+global sheets have been removed. Continue Watching cards and their row also use
+modules; input cards migrate separately.
 
 Use a component-named directory for a styled component and its private helpers,
 for example `AppGrid/AppGrid.tsx` with `AppGrid/AppGrid.module.css`. Small components
@@ -82,10 +83,16 @@ Tests use `data-home-header`, `data-header-focus`, `data-clock-part` and
 `HomeAppCard` owns the common app/Fireplace frame, focus, moving state and reorder
 controls. `AppGrid` owns sizes, columns and compact/expanded clock clearance through
 explicit data attributes. `AppArtwork` owns image geometry; its inherited radius
-keeps images rounded when moving cards expose their overflow. Input frames and
-Continue Watching source badges retain their own legacy rules, without a shared
-global `.tile` base. `HorizontalScroller` owns clipping and track movement for both
+keeps images rounded when moving cards expose their overflow. Input frames retain
+their own legacy rules, without a shared global `.tile` base.
+`HorizontalScroller` owns clipping and track movement for both
 app and Continue Watching rows.
+
+`ContinueWatchingRow` owns its track spacing. `ContinueWatchingCard` owns focus,
+artwork, source badges, titles and progress. Episode titles combine a local display
+modifier with the shared `truncate` utility; other titles keep their two-line clamp.
+Tests use `#continue-items > [data-key]`, `data-focused` and `data-continue-part`
+hooks. Keep card focus paint and motion with the card, rather than in `base.css`.
 
 `Home` owns the viewport, fades, page reveals and section spacing. The inputs
 section exposes `data-home-section="inputs"` as a layout slot. Tests use
@@ -123,12 +130,13 @@ state. Do not override the shared motion durations in theme or component rules.
 Keep keyframes with their component until multiple components need the same
 effect. A shared CSS Module can then own the keyframes and reusable animation class.
 
-Settings, the Home header, app cards, viewport, scrollers, page reveals and app
-actions use this policy. Reorder arrows also stop moving under reduced motion.
+Settings, the Home header, app cards, viewport, scrollers, page reveals, app
+actions and Continue Watching use this policy. Reorder arrows also stop moving
+under reduced motion.
 This removes their repeated media queries and reduced-motion `!important` rules.
 New and migrated components should use the same tokens. Keep a local media query only when an effect
 needs different behavior, such as replacing movement with a static alternative.
-Existing Continue Watching/input rules keep their local handling until migrated; the policy
+Existing input rules keep their local handling until migrated; the policy
 does not change wallpaper or JavaScript animation behavior.
 
 ## Runtime DOM boundary

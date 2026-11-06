@@ -93,10 +93,10 @@ for (const correctClock of [false, true]) {
         await page.evaluate(() => window.releaseInventory());
       }
       await page.waitForFunction(() => window.completedFeeds === 2);
-      await expect(page.locator(".continue-card")).toHaveCount(1);
+      await expect(page.locator("#continue-items > [data-key]")).toHaveCount(1);
       await page.evaluate(() => {
-        window.firstCard = document.querySelector(".continue-card");
-        window.firstIcon = window.firstCard.querySelector(".continue-app-icon");
+        window.firstCard = document.querySelector("#continue-items > [data-key]");
+        window.firstIcon = window.firstCard.querySelector("[data-continue-part=source-badge]");
       });
       for (const [index, delay] of [2000, 5000, 15000, 30000, 60000, 60000, 60000, 60000].entries()) {
         await page.clock.fastForward(delay);
@@ -104,13 +104,13 @@ for (const correctClock of [false, true]) {
           timeout: 5000,
         });
       }
-      await expect(page.locator(".continue-card")).toHaveCount(2);
-      await expect(page.locator(".continue-card").last()).toContainText("Late Prime programme");
+      await expect(page.locator("#continue-items > [data-key]")).toHaveCount(2);
+      await expect(page.locator("#continue-items > [data-key]").last()).toContainText("Late Prime programme");
       expect(
         await page.evaluate(
           () =>
-            window.firstCard === document.querySelector(".continue-card") &&
-            window.firstIcon === window.firstCard.querySelector(".continue-app-icon"),
+            window.firstCard === document.querySelector("#continue-items > [data-key]") &&
+            window.firstIcon === window.firstCard.querySelector("[data-continue-part=source-badge]"),
         ),
       ).toBe(true);
       await page.clock.fastForward(120000);
@@ -175,7 +175,7 @@ test("settled cards reorder on the existing clock tick without rereading feeds",
     { prime, youtube },
   );
   await page.goto("/");
-  const titles = page.locator(".continue-title");
+  const titles = page.locator("[data-continue-part=title]");
   await expect(titles).toHaveText(["Older Prime programme", "Newer YouTube programme"]);
   expect(reads).toHaveLength(2);
   await page.clock.setSystemTime(corrected);
@@ -186,13 +186,15 @@ test("settled cards reorder on the existing clock tick without rereading feeds",
     recent - 3600,
   ]);
   await page.evaluate(() => {
-    window.correctedCards = [...document.querySelectorAll(".continue-card")];
+    window.correctedCards = [...document.querySelectorAll("#continue-items > [data-key]")];
   });
   await page.clock.fastForward(30000);
   expect(reads).toHaveLength(2);
   expect(
     await page.evaluate(() =>
-      window.correctedCards.every((card, index) => card === document.querySelectorAll(".continue-card")[index]),
+      window.correctedCards.every(
+        (card, index) => card === document.querySelectorAll("#continue-items > [data-key]")[index],
+      ),
     ),
   ).toBe(true);
   await page.screenshot({ path: info.outputPath("clock-corrected-order.png") });

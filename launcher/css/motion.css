@@ -5,6 +5,7 @@
   --motion-duration-shape: 0.12s;
   --motion-duration-enter: 0.2s;
   --motion-duration-header-focus: 0.18s;
+  --motion-duration-continue-focus: 0.17s;
   --motion-duration-scroll: 0.22s;
   --motion-duration-viewport: 0.32s;
   --motion-duration-page: 0.24s;
@@ -20,6 +21,7 @@
     --motion-duration-shape: 0s;
     --motion-duration-enter: 0s;
     --motion-duration-header-focus: 0s;
+    --motion-duration-continue-focus: 0s;
     --motion-duration-scroll: 0s;
     --motion-duration-viewport: 0s;
     --motion-duration-page: 0s;

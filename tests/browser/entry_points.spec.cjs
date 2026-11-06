@@ -129,31 +129,33 @@ test("Continue Watching demo is opt-in, local to Vite and uses separate preferen
   const original = await page.evaluate(() => localStorage.getItem("aerotizen.settings.v1"));
   await page.goto("http://127.0.0.1:8172/?demo=1");
   await expect(page.locator("#continue-section")).toBeVisible();
-  await expect(page.locator(".continue-card")).toHaveCount(5);
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(5);
   await expect(
     page.locator(
-      ".continue-app-icon :is([data-app-artwork], [data-app-fallback] > svg, [data-app-fallback] > img):visible",
+      "[data-continue-part=source-badge] :is([data-app-artwork], [data-app-fallback] > svg, [data-app-fallback] > img):visible",
     ),
   ).toHaveCount(5);
-  await expect(page.locator(".continue-progress-fill")).toHaveCount(4);
+  await expect(page.locator("[data-continue-part=progress-fill]")).toHaveCount(4);
   const unplayed = page.getByRole("button", { name: "Paper Moons · Prime Video" });
-  await expect(unplayed.locator(".continue-progress-fill")).toHaveCount(0);
+  await expect(unplayed.locator("[data-continue-part=progress-fill]")).toHaveCount(0);
   const labelBackground = await unplayed
-    .locator(".continue-label")
+    .locator("[data-continue-part=label]")
     .evaluate((node) => getComputedStyle(node).backgroundColor);
-  await expect(unplayed.locator(".continue-progress")).toHaveCSS("background-color", labelBackground);
+  await expect(unplayed.locator("[data-continue-part=progress]")).toHaveCSS("background-color", labelBackground);
   const longTitle = page
     .getByRole("button", { name: /Signal North and the Last Broadcast/ })
-    .locator(".continue-title");
+    .locator("[data-continue-part=title]");
   expect(await longTitle.evaluate((node) => node.clientHeight === 60 && node.scrollHeight > node.clientHeight)).toBe(
     true,
   );
-  const heights = await page.locator(".continue-card").evaluateAll((cards) => cards.map((card) => card.offsetHeight));
+  const heights = await page
+    .locator("#continue-items > [data-key]")
+    .evaluateAll((cards) => cards.map((card) => card.offsetHeight));
   expect(heights).toEqual(Array(5).fill(318));
-  await expect(page.locator(".continue-image").first()).toHaveJSProperty("complete", true);
+  await expect(page.locator("[data-continue-part=image]").first()).toHaveJSProperty("complete", true);
   expect(
     await page
-      .locator(".continue-image")
+      .locator("[data-continue-part=image]")
       .first()
       .evaluate((image) => image.naturalWidth),
   ).toBeGreaterThan(0);

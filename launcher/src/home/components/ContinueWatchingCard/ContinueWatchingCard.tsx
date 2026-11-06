@@ -1,11 +1,13 @@
 import { useMemo, useState } from "preact/hooks";
 
-import type { ContinueItem } from "../../contracts/launcher";
-import { useTranslation } from "../../shared/i18n/useTranslation";
-import type { HomeEnvironment } from "../types";
+import type { ContinueItem } from "../../../contracts/launcher";
+import { useTranslation } from "../../../shared/i18n/useTranslation";
+import text from "../../../shared/styles/text.module.css";
+import type { HomeEnvironment } from "../../types";
+import { AppArtwork } from "../AppArtwork/AppArtwork";
+import { HomeControl } from "../HomeControl/HomeControl";
 
-import { AppArtwork } from "./AppArtwork/AppArtwork";
-import { HomeControl } from "./HomeControl/HomeControl";
+import styles from "./ContinueWatchingCard.module.css";
 
 const MIN_PLAYBACK_SECONDS = 1;
 
@@ -31,34 +33,58 @@ export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item
       env={env}
       controlKey={"continue:" + item.key}
       dataKey={item.key}
-      className={"continue-card" + (episode ? " episodic" : "")}
+      className={styles.card}
       title={
         episode
           ? t("continue.episodeTitle", { title: item.title, episode, source: item.sourceName })
           : t("continue.itemTitle", { title: item.title, source: item.sourceName })
       }
     >
-      <div class="continue-image-wrap">
+      <div class={styles.artwork} data-continue-part="artwork">
         {artwork && (
           <img
             key={artwork.src}
-            class={artwork === poster ? "continue-image" : "continue-image continue-image--landscape"}
+            class={styles.image}
+            data-continue-part="image"
+            data-fit={artwork === poster ? "contain" : "cover"}
             alt=""
             src={artwork.src}
             onError={artwork.onError}
           />
         )}
-        <div class="continue-app-icon" aria-hidden="true" style={{ background: brand.background }}>
+        <div
+          class={styles.sourceBadge}
+          data-continue-part="source-badge"
+          aria-hidden="true"
+          style={{ "--app-background": brand.background }}
+        >
           <AppArtwork app={app} brand={brand} active variant="badge" />
         </div>
       </div>
-      <div class={"continue-progress" + (progress > 0 ? "" : " empty")} aria-hidden="true">
-        {progress > 0 && <div class="continue-progress-fill" style={{ width: progress + "%" }} />}
+      <div
+        class={styles.progress}
+        data-continue-part="progress"
+        data-empty={progress > 0 ? "false" : "true"}
+        aria-hidden="true"
+      >
+        {progress > 0 && (
+          <div class={styles.progressFill} data-continue-part="progress-fill" style={{ width: progress + "%" }} />
+        )}
       </div>
-      <div class="continue-label">
-        <div class="continue-details">
-          <div class="continue-title">{item.title}</div>
-          {episode ? <div class="continue-episode">{episode}</div> : null}
+      <div class={styles.label} data-continue-part="label">
+        <div class={styles.details}>
+          <div
+            class={styles.title + (episode ? " " + text.truncate : "")}
+            data-continue-part="title"
+            data-single-line={episode ? "true" : undefined}
+          >
+            {item.title}
+          </div>
+          {episode ? (
+            <div class={styles.episode} data-continue-part="episode">
+              {episode}
+            </div>
+          ) : null}
         </div>
       </div>
     </HomeControl>

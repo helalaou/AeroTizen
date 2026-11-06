@@ -84,6 +84,9 @@ body {
   --input-icon-badge: #2c2c30;
   --continue-surface: var(--card);
   --continue-shadow: none;
+  --continue-focus-shadow: var(--home-card-focus-shadow);
+  --continue-artwork-surface: #101014;
+  --continue-badge-shadow: 0 2px 8px #0008;
   --continue-label-surface: transparent;
   --continue-episode-text: #ccc;
   --continue-progress-track: #555;
