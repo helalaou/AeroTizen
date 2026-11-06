@@ -40,33 +40,4 @@ AeroTizen.config = {
 
   LONG_PRESS_MS: 600,
   SPEED: { MIN: 0.25, MAX: 3, STEP: 0.25 },
-
-  DEFAULTS: {
-    home: null, // null selects defaults on first launch; [] keeps an empty Home.
-    glassSettings: false, // Optional Preact Glass categories and source dock.
-    homeCardColumns: 3, // Square app cards: 3, 4 or 5 apps per row.
-    homeAppLayout: "grid", // Home app icons can also use one horizontal scrolling row.
-    background: "aurora",
-    weatherPhoto: false, // Opt-in AI-generated scenes using the existing forecast.
-    speed: 1,
-    showWeather: true,
-    showTime: true,
-    showNetwork: true,
-    tempUnit: null, // Select the locale's weather unit when first loaded.
-    weatherLocation: null,
-    weatherShowLocation: true,
-    dateFormat: "short",
-    language: "auto",
-    numerals: "latn", // Arabic only: Western (latn) or Arabic-Indic (arab) digits.
-    // Existing installs continue using the unchanged compact header.
-    clockLayout: "classic",
-    aeroClockStyle: "vertical",
-    timeFormat: null, // Detect 12/24-hour format when first loaded.
-    continueWatching: false,
-    continueWatchingApps: [],
-    showLiveTv: true,
-    hideDisconnectedHdmi: false,
-    hdmiKeepVisible: {}, // Optional per-port exception for an unidentified device.
-    inputNames: {},
-  },
 };

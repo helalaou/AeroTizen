@@ -20,7 +20,10 @@ test("custom clock styles preserve upstream date/time preferences, visibility an
     await expect(page.locator("[data-clock=expanded]")).toBeVisible();
     expect(await page.locator("[data-clock-part=time]").getAttribute("aria-label")).toBe(
       await page.evaluate(() =>
-        AeroTizen.clock.formatTime(new Date(AeroTizen.clock.getSnapshot()), AeroTizen.settings.timeFormat),
+        AeroTizen.clock.formatTime(
+          new Date(AeroTizen.clock.getSnapshot()),
+          AeroTizen.settings.getSnapshot().timeFormat,
+        ),
       ),
     );
     await page.screenshot({ path: info.outputPath("clock-" + style + ".png") });
@@ -33,10 +36,12 @@ test("custom clock styles preserve upstream date/time preferences, visibility an
   await expect(page.locator("[data-clock-part=date]")).toBeHidden();
   await page.reload();
   await expect(page.locator("[data-clock=expanded]")).toHaveAttribute("data-clock-layout", "bold");
-  expect(await page.evaluate(() => [AeroTizen.settings.timeFormat, AeroTizen.settings.dateFormat])).toEqual([
-    "24",
-    "none",
-  ]);
+  expect(
+    await page.evaluate(() => [
+      AeroTizen.settings.getSnapshot().timeFormat,
+      AeroTizen.settings.getSnapshot().dateFormat,
+    ]),
+  ).toEqual(["24", "none"]);
   await page.locator("#gear").click();
   await openCategory(page, "status");
   await page.locator('[data-key="clock-layouts:classic"]').click();

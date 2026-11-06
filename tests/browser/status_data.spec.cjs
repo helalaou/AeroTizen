@@ -42,23 +42,21 @@ test("status views update from shared data without querying status markup", asyn
         throw new Error("Status services must not query view markup");
       return getById(id);
     };
-    AeroTizen.settings.tempUnit = "F";
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ tempUnit: "F" });
+
     window.Weather.updateDisplay();
     AeroTizen.clock.tick();
   });
   await expect(page.locator("[data-weather-part=temperature]")).toHaveText("54°");
   for (const style of ["horizontal", "minimal", "bold"]) {
     await page.evaluate((style) => {
-      AeroTizen.settings.aeroClockStyle = style;
-      AeroTizen.settings.save();
+      AeroTizen.settings.update({ aeroClockStyle: style });
     }, style);
     await expect(page.locator("[data-clock=expanded]")).toHaveAttribute("data-clock-layout", style);
     await expect(page.locator("[data-weather-part=temperature]")).toHaveText("54°");
   }
   await page.evaluate(() => {
-    AeroTizen.settings.clockLayout = "classic";
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ clockLayout: "classic" });
   });
   await expect(page.locator("#time")).toBeVisible();
   await expect(page.locator("#weather b")).toHaveText("54°");
@@ -66,14 +64,14 @@ test("status views update from shared data without querying status markup", asyn
   await page.evaluate(() => AeroTizen.network.refresh());
   await expect(page.locator("#network")).toHaveAttribute("data-net-kind", "offline");
   await page.evaluate(() => {
-    AeroTizen.settings.showNetwork = false;
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ showNetwork: false });
+
     AeroTizen.network.updateVisibility();
   });
   await expect(page.locator("#network")).toBeHidden();
   await page.evaluate(() => {
-    AeroTizen.settings.showNetwork = true;
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ showNetwork: true });
+
     AeroTizen.network.updateVisibility();
   });
   await expect(page.locator("#network")).toBeVisible();

@@ -1,3 +1,4 @@
+const { createTestSettings } = require("./helpers/settings.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 ("use strict");
 const assert = require("node:assert/strict");
@@ -135,7 +136,7 @@ function harness(options = {}) {
         return null;
       },
     },
-    settings: { inputNames: {}, showLiveTv: true, hideDisconnectedHdmi: false },
+    settings: createTestSettings({ inputNames: {}, showLiveTv: true, hideDisconnectedHdmi: false }),
     tiles: {
       shortName: (name) => name,
       ICONS: { tv: "tv", hdmi: "hdmi", box: "box", pc: "pc", game: "game" },

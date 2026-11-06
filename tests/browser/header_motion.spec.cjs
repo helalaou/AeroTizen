@@ -31,8 +31,7 @@ for (const [build, url] of [
     await page.emulateMedia({ reducedMotion: "reduce" });
     for (const glassSettings of [false, true]) {
       await page.evaluate((glassSettings) => {
-        AeroTizen.settings.glassSettings = glassSettings;
-        AeroTizen.settings.save();
+        AeroTizen.settings.update({ glassSettings: glassSettings });
       }, glassSettings);
       for (const plate of [tabs, shortcuts]) {
         const durations = await plate.evaluate((node) =>

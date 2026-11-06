@@ -7,8 +7,8 @@ const runSettingsFocus = async (page) => {
   await page.waitForFunction(() => AeroTizen.apps.all.length > 0);
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
-    AeroTizen.settings.background = "aurora";
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ background: "aurora" });
+
     AeroTizen.settingsUi.open();
   });
   await page.locator('[data-key="section:wallpaper"]').click();
@@ -28,7 +28,7 @@ const runSettingsFocus = async (page) => {
   await page.keyboard.press("Enter");
   await page.waitForFunction(
     () =>
-      AeroTizen.settings.inputNames["HDMI 1"] === "React draft" &&
+      AeroTizen.settings.getSnapshot().inputNames["HDMI 1"] === "React draft" &&
       document.activeElement?.getAttribute("data-key") === "name:HDMI 1",
   );
   const focused = await page.evaluate(() => {

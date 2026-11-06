@@ -6,22 +6,48 @@ import { createLauncherApp } from "./app/createLauncherApp";
 import { mountToast } from "./app/mountToast";
 import type { BackgroundState } from "./backgrounds/createBackgrounds";
 import { mountBackgrounds } from "./backgrounds/mountBackgrounds";
+import type { SettingsService } from "./contracts/preferences";
 import { mountFireplace } from "./fireplace/mountFireplace";
 import { mountHome } from "./home/index";
+import { defaultTemperatureUnit } from "./platform/tizen/defaultTemperatureUnit";
 import { createLauncherUpdates } from "./services/createLauncherUpdates";
+import { createSettingsService } from "./services/createSettingsService";
 import { mountSettings } from "./settings/index";
 
 const backgroundHost = document.getElementById("bg");
 const home = document.getElementById("home-root");
-const settings = document.getElementById("settings-root");
+const settingsHost = document.getElementById("settings-root");
 const toastHost = document.getElementById("toast-root");
 const weatherPhotoHost = document.getElementById("weather-photo-root");
 const fireplaceHost = document.getElementById("fireplace-root");
-if (!backgroundHost || !home || !settings || !toastHost || !weatherPhotoHost || !fireplaceHost) {
+if (!backgroundHost || !home || !settingsHost || !toastHost || !weatherPhotoHost || !fireplaceHost) {
   throw new Error("Launcher mount points are missing.");
 }
 const runtime = window.AeroTizen;
-const hotData = import.meta.hot ? (import.meta.hot.data as { backgrounds?: BackgroundState }) : undefined;
+const hotData = import.meta.hot
+  ? (import.meta.hot.data as { backgrounds?: BackgroundState; preferences?: SettingsService })
+  : undefined;
+const settings =
+  hotData?.preferences ||
+  createSettingsService({
+    defaults: runtime.config.DEFAULTS,
+    storageKey: runtime.config.STORAGE_KEY,
+    legacyStorageKeys: runtime.config.LEGACY_STORAGE_KEYS,
+    storage: {
+      getItem: (key) => localStorage.getItem(key),
+      setItem: (key, value) => localStorage.setItem(key, value),
+    },
+    speedRange: runtime.config.SPEED,
+    locale: {
+      timeFormat: () => runtime.clock.defaultTimeFormat(),
+      tempUnit: () =>
+        defaultTemperatureUnit(navigator.languages?.length ? navigator.languages : [navigator.language], Intl),
+    },
+  });
+runtime.settings = settings;
+if (!hotData?.preferences) {
+  settings.load();
+}
 const weather = window.Weather;
 const backgrounds = mountBackgrounds(
   backgroundHost,
@@ -54,9 +80,10 @@ try {
   const app = createLauncherApp(
     runtime,
     platform,
-    { home, settings },
+    { home, settings: settingsHost },
     { home: mountHome, settings: mountSettings },
     createLauncherUpdates(version.trim()),
+    settings,
     flushSync,
   );
   if (import.meta.hot && hotData) {
@@ -66,6 +93,7 @@ try {
     import.meta.hot.accept();
     import.meta.hot.dispose(() => {
       hotData.backgrounds = backgrounds.getState();
+      hotData.preferences = settings;
       app.dispose();
       dispose();
     });

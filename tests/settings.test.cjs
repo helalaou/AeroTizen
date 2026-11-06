@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
+const { installSettings } = require("./helpers/settings.cjs");
 
 function loadSettings(storage, defaults = {}) {
   const store = { ...storage };
@@ -19,25 +20,25 @@ function loadSettings(storage, defaults = {}) {
     AeroTizen: A,
     localStorage,
   });
-  for (const file of ["config.js", "settings.js", "clock.js"]) {
+  for (const file of ["config.js", "clock.js"]) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "launcher", "js", file), "utf8"), context);
   }
-  Object.assign(A.config.DEFAULTS, defaults);
+  installSettings(context, defaults);
   A.settings.load();
   return { settings: A.settings, store };
 }
 
 test("defaults apply when nothing is saved", () => {
   const { settings } = loadSettings({});
-  assert.equal(settings.background, "aurora");
-  assert.equal(settings.tempUnit, "C");
-  assert.equal(settings.timeFormat, "24");
-  assert.equal(settings.home, null, "null picks the default tiles on first launch");
-  assert.equal(settings.showWeather, true);
-  assert.equal(settings.showTime, true);
-  assert.equal(settings.showNetwork, true);
-  assert.equal(settings.homeCardColumns, 3);
-  assert.equal(settings.homeAppLayout, "grid");
+  assert.equal(settings.getSnapshot().background, "aurora");
+  assert.equal(settings.getSnapshot().tempUnit, "C");
+  assert.equal(settings.getSnapshot().timeFormat, "24");
+  assert.equal(settings.getSnapshot().homeInitialized, false, "first launch selects default tiles");
+  assert.equal(settings.getSnapshot().showWeather, true);
+  assert.equal(settings.getSnapshot().showTime, true);
+  assert.equal(settings.getSnapshot().showNetwork, true);
+  assert.equal(settings.getSnapshot().homeCardColumns, 3);
+  assert.equal(settings.getSnapshot().homeAppLayout, "grid");
   assert.equal("cardSize" in settings, false);
   assert.equal("homeCardMode" in settings, false);
 });
@@ -45,14 +46,17 @@ test("defaults apply when nothing is saved", () => {
 test("Home layout persists independently of app size and rejects unknown layout values", () => {
   const key = "aerotizen.settings.v1";
   const { settings, store } = loadSettings({ [key]: JSON.stringify({ homeCardColumns: 4 }) });
-  assert.equal(settings.homeAppLayout, "grid");
-  settings.homeAppLayout = "scroll";
-  settings.save();
+  assert.equal(settings.getSnapshot().homeAppLayout, "grid");
+  settings.update({ homeAppLayout: "scroll" });
+
   const restarted = loadSettings(store).settings;
-  assert.equal(restarted.homeAppLayout, "scroll");
-  assert.equal(restarted.homeCardColumns, 4);
+  assert.equal(restarted.getSnapshot().homeAppLayout, "scroll");
+  assert.equal(restarted.getSnapshot().homeCardColumns, 4);
   for (const value of [null, true, "carousel", "rectangle"]) {
-    assert.equal(loadSettings({ [key]: JSON.stringify({ homeAppLayout: value }) }).settings.homeAppLayout, "grid");
+    assert.equal(
+      loadSettings({ [key]: JSON.stringify({ homeAppLayout: value }) }).settings.getSnapshot().homeAppLayout,
+      "grid",
+    );
   }
 });
 
@@ -73,7 +77,7 @@ test("square cards migrate legacy sizes and keep explicit row counts and other p
         const { settings, store } = loadSettings({ [key]: JSON.stringify(legacy) });
         const columns = Number(homeCardColumns);
         const expected = [3, 4, 5].includes(columns) ? columns : cardSize === "small" ? 5 : 3;
-        assert.equal(settings.homeCardColumns, expected);
+        assert.equal(settings.getSnapshot().homeCardColumns, expected);
         const saved = JSON.parse(store["aerotizen.settings.v1"]);
         assert.equal(saved.homeCardColumns, expected, "migration is saved even with explicit locale settings");
         assert.equal("cardSize" in saved, false);
@@ -83,7 +87,11 @@ test("square cards migrate legacy sizes and keep explicit row counts and other p
         assert.equal(saved.showWeather, false);
         assert.equal(saved.tempUnit, "F");
         assert.equal(saved.timeFormat, "12");
-        assert.equal(loadSettings(store).settings.homeCardColumns, expected, "migration survives restart");
+        assert.equal(
+          loadSettings(store).settings.getSnapshot().homeCardColumns,
+          expected,
+          "migration survives restart",
+        );
       }
     }
   }
@@ -92,8 +100,8 @@ test("square cards migrate legacy sizes and keep explicit row counts and other p
 test("browser demo defaults do not override a saved Big card choice", () => {
   const key = "aerotizen.settings.v1";
   const { settings } = loadSettings({ [key]: JSON.stringify({ cardSize: "big" }) }, { homeCardColumns: 5 });
-  assert.equal(settings.homeCardColumns, 3);
-  assert.equal(loadSettings({}, { homeCardColumns: 5 }).settings.homeCardColumns, 5);
+  assert.equal(settings.getSnapshot().homeCardColumns, 3);
+  assert.equal(loadSettings({}, { homeCardColumns: 5 }).settings.getSnapshot().homeCardColumns, 5);
 });
 
 test("older current and legacy saves keep all header items visible", () => {
@@ -101,18 +109,18 @@ test("older current and legacy saves keep all header items visible", () => {
     const { settings } = loadSettings({
       [key]: JSON.stringify({ tempUnit: "F", dateFormat: "none" }),
     });
-    assert.equal(settings.showWeather, true, key);
-    assert.equal(settings.showTime, true, key);
-    assert.equal(settings.showNetwork, true, key);
-    assert.equal(settings.dateFormat, "none", "date remains under its existing setting");
-    assert.equal(settings.tempUnit, "F");
+    assert.equal(settings.getSnapshot().showWeather, true, key);
+    assert.equal(settings.getSnapshot().showTime, true, key);
+    assert.equal(settings.getSnapshot().showNetwork, true, key);
+    assert.equal(settings.getSnapshot().dateFormat, "none", "date remains under its existing setting");
+    assert.equal(settings.getSnapshot().tempUnit, "F");
   }
 });
 
 test("header visibility survives a restart without changing date or weather preferences", () => {
   const location = { name: "London", latitude: 51.5085, longitude: -0.1257, country_code: "GB" };
   const { settings, store } = loadSettings({});
-  Object.assign(settings, {
+  settings.update({
     showWeather: false,
     showTime: false,
     showNetwork: false,
@@ -122,48 +130,48 @@ test("header visibility survives a restart without changing date or weather pref
     tempUnit: "F",
     weatherShowLocation: false,
   });
-  settings.save();
-  const restarted = loadSettings(store).settings;
-  assert.equal(restarted.showWeather, false);
-  assert.equal(restarted.showTime, false);
-  assert.equal(restarted.showNetwork, false);
-  assert.equal(restarted.dateFormat, "iso");
-  assert.equal(restarted.timeFormat, "24");
-  assert.deepEqual(JSON.parse(JSON.stringify(restarted.weatherLocation)), location);
-  assert.equal(restarted.tempUnit, "F");
-  assert.equal(restarted.weatherShowLocation, false);
 
-  restarted.showWeather = true;
-  restarted.showTime = true;
-  restarted.showNetwork = true;
-  restarted.save();
+  const restarted = loadSettings(store).settings;
+  assert.equal(restarted.getSnapshot().showWeather, false);
+  assert.equal(restarted.getSnapshot().showTime, false);
+  assert.equal(restarted.getSnapshot().showNetwork, false);
+  assert.equal(restarted.getSnapshot().dateFormat, "iso");
+  assert.equal(restarted.getSnapshot().timeFormat, "24");
+  assert.deepEqual(JSON.parse(JSON.stringify(restarted.getSnapshot().weatherLocation)), location);
+  assert.equal(restarted.getSnapshot().tempUnit, "F");
+  assert.equal(restarted.getSnapshot().weatherShowLocation, false);
+
+  restarted.update({ showWeather: true });
+  restarted.update({ showTime: true });
+  restarted.update({ showNetwork: true });
+
   restarted.load();
-  assert.equal(restarted.showWeather, true);
-  assert.equal(restarted.showTime, true);
-  assert.equal(restarted.showNetwork, true);
-  assert.deepEqual(JSON.parse(JSON.stringify(restarted.weatherLocation)), location);
-  assert.equal(restarted.tempUnit, "F");
-  assert.equal(restarted.dateFormat, "iso");
+  assert.equal(restarted.getSnapshot().showWeather, true);
+  assert.equal(restarted.getSnapshot().showTime, true);
+  assert.equal(restarted.getSnapshot().showNetwork, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(restarted.getSnapshot().weatherLocation)), location);
+  assert.equal(restarted.getSnapshot().tempUnit, "F");
+  assert.equal(restarted.getSnapshot().dateFormat, "iso");
 });
 
 test("an empty saved Home stays empty", () => {
   const { settings } = loadSettings({ "aerotizen.settings.v1": JSON.stringify({ home: [] }) });
-  assert.deepEqual(JSON.parse(JSON.stringify(settings.home)), []);
+  assert.deepEqual(JSON.parse(JSON.stringify(settings.getSnapshot().home)), []);
 });
 
 test("settings migrate from an earlier storage key and field name", () => {
   const legacy = { favorites: ["a.app", "__fire"], background: "lava", speed: 2 };
   const { settings } = loadSettings({ "hearth.home.v1": JSON.stringify(legacy) });
-  assert.deepEqual(JSON.parse(JSON.stringify(settings.home)), ["a.app", "__fire"]);
-  assert.equal(settings.background, "lava");
-  assert.equal(settings.speed, 2);
+  assert.deepEqual(JSON.parse(JSON.stringify(settings.getSnapshot().home)), ["a.app", "__fire"]);
+  assert.equal(settings.getSnapshot().background, "lava");
+  assert.equal(settings.getSnapshot().speed, 2);
 });
 
 test("save writes only known settings under the current key", () => {
   const { settings, store } = loadSettings({});
-  settings.background = "snow";
-  settings.unrelated = "ignored";
-  settings.save();
+  settings.update({ background: "snow" });
+  settings.update({ unrelated: "ignored" });
+
   const saved = JSON.parse(store["aerotizen.settings.v1"]);
   assert.equal(saved.background, "snow");
   assert.equal("unrelated" in saved, false);
@@ -171,29 +179,29 @@ test("save writes only known settings under the current key", () => {
 
 test("corrupt storage falls back to defaults", () => {
   const { settings } = loadSettings({ "aerotizen.settings.v1": "{not json" });
-  assert.equal(settings.background, "aurora");
+  assert.equal(settings.getSnapshot().background, "aurora");
 });
 
-test("settings publish saves and reloads, and unsubscribe is safe to repeat", () => {
-  const { settings } = loadSettings({});
+test("settings publish updates and reloads, and unsubscribe is safe to repeat", () => {
+  const { settings, store } = loadSettings({});
   const values = [];
-  const unsubscribe = settings.subscribe(() => values.push(settings.background));
-  settings.background = "snow";
-  settings.save();
-  settings.background = "black";
+  const unsubscribe = settings.subscribe(() => values.push(settings.getSnapshot().background));
+  settings.update({ background: "snow" });
+
+  store["aerotizen.settings.v1"] = JSON.stringify({ background: "black" });
   settings.load();
-  assert.deepEqual(values, ["snow", "snow"]);
+  assert.deepEqual(values, ["snow", "black"]);
   unsubscribe();
   unsubscribe();
-  settings.background = "lava";
-  settings.save();
-  assert.deepEqual(values, ["snow", "snow"]);
+  settings.update({ background: "lava" });
+
+  assert.deepEqual(values, ["snow", "black"]);
 });
 
 test("Continue Watching requires explicit opt-in and validates saved source choices", () => {
   const { settings } = loadSettings({});
-  assert.equal(settings.continueWatching, false);
-  assert.deepEqual(Array.from(settings.continueWatchingApps), []);
+  assert.equal(settings.getSnapshot().continueWatching, false);
+  assert.deepEqual(Array.from(settings.getSnapshot().continueWatchingApps), []);
   const key = "aerotizen.settings.v1";
   const restored = loadSettings({
     [key]: JSON.stringify({
@@ -201,6 +209,6 @@ test("Continue Watching requires explicit opt-in and validates saved source choi
       continueWatchingApps: ["video.app", "video.app", null, {}, "bad id", "other-app"],
     }),
   }).settings;
-  assert.equal(restored.continueWatching, false);
-  assert.deepEqual(Array.from(restored.continueWatchingApps), ["video.app", "other-app"]);
+  assert.equal(restored.getSnapshot().continueWatching, false);
+  assert.deepEqual(Array.from(restored.getSnapshot().continueWatchingApps), ["video.app", "other-app"]);
 });

@@ -65,7 +65,10 @@ for (const scenario of [
       const label = await page.locator("[data-clock-part=time]").getAttribute("aria-label");
       expect(label).toBe(
         await page.evaluate(() =>
-          AeroTizen.clock.formatTime(new Date(AeroTizen.clock.getSnapshot()), AeroTizen.settings.timeFormat),
+          AeroTizen.clock.formatTime(
+            new Date(AeroTizen.clock.getSnapshot()),
+            AeroTizen.settings.getSnapshot().timeFormat,
+          ),
         ),
       );
       expect(await page.locator("[data-clock-part=minutes] small").textContent()).toContain(

@@ -48,8 +48,7 @@ for (const [build, url] of [
     await page.emulateMedia({ reducedMotion: "reduce" });
     for (const glassSettings of [false, true]) {
       await page.evaluate((glassSettings) => {
-        AeroTizen.settings.glassSettings = glassSettings;
-        AeroTizen.settings.save();
+        AeroTizen.settings.update({ glassSettings: glassSettings });
       }, glassSettings);
       await expect(card).toBeFocused();
       await expect(card).toHaveCSS("transition-duration", "0s");
@@ -64,7 +63,7 @@ for (const [build, url] of [
     await expect(card).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(card).not.toHaveAttribute("data-moving", "true");
-    expect(await page.evaluate(() => AeroTizen.settings.home[1])).toBe("demo0");
+    expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home[1])).toBe("demo0");
     await page.keyboard.down("Enter");
     await expect(menu).toBeVisible();
     await page.keyboard.up("Enter");

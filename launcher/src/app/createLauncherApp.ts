@@ -4,7 +4,6 @@ import type { StatusStores } from "../contracts/status";
 import type { LauncherUpdateNotice } from "../contracts/updates";
 import type { LauncherPlatform, LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import type { LauncherUpdates } from "../services/createLauncherUpdates";
-import { createSettingsStore } from "../services/createSettingsStore";
 import { createStatusStores } from "../services/createStatusStores";
 import { catalogues, resolveLanguage } from "../shared/i18n/catalogues";
 import type { Translations } from "../shared/i18n/createTranslations";
@@ -42,15 +41,9 @@ export const createLauncherApp = (
   hosts: { home: HTMLElement; settings: HTMLElement },
   views: LauncherViews,
   updates: LauncherUpdates,
+  settings: SettingsStore,
   transaction: (action: () => void) => void = (action) => action(),
 ) => {
-  const settings = createSettingsStore(runtime.settings, {
-    ...runtime.config.DEFAULTS,
-    home: [],
-    language: "auto",
-    tempUnit: "C",
-    timeFormat: "12",
-  });
   const status = createStatusStores(runtime, platform, transaction, settings);
   const previousHome = runtime.homeScreen;
   const previousSettings = runtime.settingsUi;
@@ -115,7 +108,6 @@ export const createLauncherApp = (
       runtime.homeScreen = previousHome;
     }
     status.dispose();
-    settings.dispose();
     if (runtime.translate === translate) {
       runtime.translate = previousTranslate;
     }

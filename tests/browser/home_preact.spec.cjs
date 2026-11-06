@@ -32,9 +32,9 @@ test("Home short/held OK, action menu, move/drop and Settings focus restoration"
   await expect(first).toHaveAttribute("data-moving", "true");
   await expect(page.locator("#toast")).toHaveText("Use the arrows to move it, OK to drop");
   await page.keyboard.press("ArrowRight");
-  expect(await page.evaluate(() => AeroTizen.settings.home[0])).toBe("demo0");
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home[0])).toBe("demo0");
   await page.keyboard.press("Enter");
-  expect(await page.evaluate(() => AeroTizen.settings.home.slice(0, 2))).toEqual(["demo1", "demo0"]);
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home.slice(0, 2))).toEqual(["demo1", "demo0"]);
   await expect(page.locator("#toast")).toBeHidden();
   await page.locator("#gear").click();
   await expect(page.locator("#editor")).toBeVisible();
@@ -124,9 +124,8 @@ test("Home docks Inputs with one app row and leaves them in flow with two rows",
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.ready);
   await page.evaluate(() => {
-    AeroTizen.settings.home = ["demo0", "demo1", "demo2"];
-    AeroTizen.settings.homeCardColumns = 3;
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ home: ["demo0", "demo1", "demo2"] });
+    AeroTizen.settings.update({ homeCardColumns: 3 });
   });
 
   const inputs = page.locator("#inputs-section");
@@ -145,8 +144,7 @@ test("Home docks Inputs with one app row and leaves them in flow with two rows",
   await expect(firstApp).toBeFocused();
 
   await page.evaluate(() => {
-    AeroTizen.settings.home = [...AeroTizen.settings.home, "demo3"];
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ home: [...AeroTizen.settings.getSnapshot().home, "demo3"] });
   });
   await expect(page.locator("#grid > [data-id]")).toHaveCount(4);
   const rowGap = await inputs.evaluate(

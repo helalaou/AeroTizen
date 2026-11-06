@@ -47,15 +47,15 @@ export type SettingsSnapshot = Readonly<
   readonly inputNames: Readonly<Record<string, string>>;
   readonly weatherLocation: Readonly<WeatherLocation> | null;
 };
-export interface SettingsSource extends Partial<Omit<SettingsValues, "home" | "tempUnit" | "timeFormat">> {
-  home?: string[] | null;
-  save(): void;
-  subscribe(listener: () => void): () => void;
-  tempUnit?: TemperatureUnit | null;
-  timeFormat?: TimeFormat | null;
-}
+export type SettingsPreferences = Omit<SettingsValues, "home"> & { home: string[] | null };
+export type SettingsDefaults = Omit<SettingsPreferences, "tempUnit" | "timeFormat"> & {
+  tempUnit: TemperatureUnit | null;
+  timeFormat: TimeFormat | null;
+};
 export interface SettingsStore extends Store<SettingsSnapshot> {
+  update(patch: Partial<SettingsPreferences>): void;
+}
+export interface SettingsService extends SettingsStore {
   dispose(): void;
-  refresh(): void;
-  update(patch: Partial<SettingsValues>): void;
+  load(): void;
 }

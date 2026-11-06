@@ -87,8 +87,7 @@ for (const [build, url] of [
           .toBeCloseTo(glassSettings ? 1.015 : 1.035, 3);
       }
       await page.evaluate((glassSettings) => {
-        AeroTizen.settings.glassSettings = !glassSettings;
-        AeroTizen.settings.save();
+        AeroTizen.settings.update({ glassSettings: !glassSettings });
       }, glassSettings);
       await expect(cards.last()).toBeFocused();
       await expect(cards.last()).toHaveCSS("transition-duration", glassSettings ? "0s" : "0s, 0s");

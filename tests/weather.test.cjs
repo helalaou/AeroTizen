@@ -642,22 +642,22 @@ test("old preferences keep the default visibility; location and visibility persi
     },
   });
   context.AeroTizen = context.window.AeroTizen = {};
-  for (const file of ["config.js", "settings.js", "clock.js"]) {
+  for (const file of ["config.js", "clock.js"]) {
     vm.runInContext(fs.readFileSync(path.join(root, "launcher/js", file), "utf8"), context);
   }
+  require("./helpers/settings.cjs").installSettings(context);
   const settings = context.AeroTizen.settings;
   settings.load();
-  assert.equal(settings.weatherShowLocation, true);
-  assert.equal(settings.weatherLocation, null);
-  settings.weatherLocation = london;
-  settings.weatherShowLocation = false;
-  settings.save();
-  settings.weatherLocation = null;
-  settings.weatherShowLocation = true;
-  settings.load();
-  assert.equal(settings.weatherLocation.name, "London");
-  assert.equal(settings.weatherShowLocation, false);
-  assert.equal(settings.tempUnit, "C");
+  assert.equal(settings.getSnapshot().weatherShowLocation, true);
+  assert.equal(settings.getSnapshot().weatherLocation, null);
+  settings.update({ weatherLocation: london });
+  settings.update({ weatherShowLocation: false });
+
+  const restarted = require("./helpers/settings.cjs").installSettings(context);
+  restarted.load();
+  assert.equal(restarted.getSnapshot().weatherLocation.name, "London");
+  assert.equal(restarted.getSnapshot().weatherShowLocation, false);
+  assert.equal(restarted.getSnapshot().tempUnit, "C");
 });
 
 function preferences({ locale = "en-GB", intl = Intl, saved = {}, legacy = false } = {}) {
@@ -671,9 +671,10 @@ function preferences({ locale = "en-GB", intl = Intl, saved = {}, legacy = false
       setItem: (key, value) => storage.set(key, value),
     },
   });
-  for (const file of ["config.js", "settings.js", "clock.js"]) {
+  for (const file of ["config.js", "clock.js"]) {
     vm.runInContext(fs.readFileSync(path.join(root, "launcher/js", file), "utf8"), context);
   }
+  require("./helpers/settings.cjs").installSettings(context);
   A.settings.load();
   return { A, storage, context };
 }
@@ -700,7 +701,7 @@ test("temperature defaults follow regional weather conventions, including non-US
     ["zh-TW", "C"],
   ]) {
     const { A, storage } = preferences({ locale });
-    assert.equal(A.settings.tempUnit, unit, locale);
+    assert.equal(A.settings.getSnapshot().tempUnit, unit, locale);
     assert.equal(JSON.parse(storage.get(A.config.STORAGE_KEY)).tempUnit, unit);
   }
 });
@@ -715,14 +716,14 @@ test("explicit locale temperature and regional overrides take precedence", () =>
     ["es-Latn-US", "F"],
     ["en-US-x-u-mu-celsius", "F"],
   ]) {
-    assert.equal(preferences({ locale }).A.settings.tempUnit, unit, locale);
+    assert.equal(preferences({ locale }).A.settings.getSnapshot().tempUnit, unit, locale);
   }
 });
 
 test("older browsers can read explicit regions without Intl", () => {
-  assert.equal(preferences({ locale: "en-US", intl: null }).A.settings.tempUnit, "F");
-  assert.equal(preferences({ locale: "en-GB", intl: null }).A.settings.tempUnit, "C");
-  assert.equal(preferences({ locale: "unknown", intl: null }).A.settings.tempUnit, "C");
+  assert.equal(preferences({ locale: "en-US", intl: null }).A.settings.getSnapshot().tempUnit, "F");
+  assert.equal(preferences({ locale: "en-GB", intl: null }).A.settings.getSnapshot().tempUnit, "C");
+  assert.equal(preferences({ locale: "unknown", intl: null }).A.settings.getSnapshot().tempUnit, "C");
 });
 
 test("Automatic and invalid values migrate once, while saved manual choices remain", () => {
@@ -735,13 +736,13 @@ test("Automatic and invalid values migrate once, while saved manual choices rema
       ["C", "C"],
     ]) {
       const { A, storage, context } = preferences({ legacy, saved: { tempUnit: previous } });
-      assert.equal(A.settings.tempUnit, expected);
-      A.settings.save();
+      assert.equal(A.settings.getSnapshot().tempUnit, expected);
+
       assert.equal(JSON.parse(storage.get(A.config.STORAGE_KEY)).tempUnit, expected);
       context.window.navigator.languages = ["en-US"];
       context.window.navigator.language = "en-US";
       A.settings.load();
-      assert.equal(A.settings.tempUnit, expected);
+      assert.equal(A.settings.getSnapshot().tempUnit, expected);
     }
   }
 });

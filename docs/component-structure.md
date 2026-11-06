@@ -52,6 +52,21 @@ objects, and fixed options live outside the component. Data snapshots use read-o
 contracts. Navigation replaces position objects and app order arrays when they change.
 Private geometry buffers and DOM ref registries remain local to navigation.
 
+## Preference ownership
+
+`services/createSettingsService.ts` owns preferences, immutable snapshots and persistence.
+Defaults, saved-data migration and validation live in `services/preferences/`. The service uses
+injected storage and locale defaults, with no Preact or TV API dependency. It keeps the
+existing storage keys. `migrateSettings.ts` converts older favourites and card sizes only
+when loading, before current-schema validation. Updates use only the current schema.
+First-launch `home: null` remains distinct from an intentionally empty `home: []`.
+
+The entry point loads preferences before mounting views. Home and Settings receive
+the same service directly. TV services also use `getSnapshot()`, `subscribe()` and
+`update()`; there is no mutable settings facade or separate save step.
+View teardown releases view subscriptions. The runtime preference service survives
+development hot reload so existing TV-service subscriptions remain active.
+
 ## DOM and style ownership
 
 Only `src/index.ts` discovers the Home, Settings, wallpaper, Fireplace and toast mount hosts. Preact renders the

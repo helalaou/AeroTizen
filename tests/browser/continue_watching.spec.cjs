@@ -277,6 +277,6 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   await expect(page.locator("#continue-section")).toBeHidden();
   await page.waitForTimeout(100);
   expect(reads.length).toBe(stopped);
-  expect(await page.evaluate(() => AeroTizen.settings.continueWatchingApps.length)).toBe(3);
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().continueWatchingApps.length)).toBe(3);
   expect(errors).toEqual([]);
 });

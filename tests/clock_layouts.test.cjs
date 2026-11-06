@@ -87,7 +87,9 @@ function runtime(saved = {}, cache) {
     },
   });
   for (const name of ["config.js", "settings.js", "clock.js", "clock-layouts.js"]) {
-    const directory = name === "clock-layouts.js" ? "fixtures/legacy-launcher/js" : "../launcher/js";
+    const directory = ["clock-layouts.js", "config.js", "settings.js", "clock.js"].includes(name)
+      ? "fixtures/legacy-launcher/js"
+      : "../launcher/js";
     vm.runInContext(fs.readFileSync(path.join(__dirname, directory, name), "utf8"), context);
   }
   vm.runInContext(fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"), context);

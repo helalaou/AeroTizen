@@ -43,7 +43,9 @@ for (const glassSettings of [false, true]) {
     }
     await page.getByRole("textbox", { name: "HDMI 2 name", exact: true }).fill("Updated console");
     await page.getByRole("textbox", { name: "HDMI 2 name", exact: true }).press("Tab");
-    await expect.poll(() => page.evaluate(() => AeroTizen.settings.inputNames["HDMI 2"])).toBe("Updated console");
+    await expect
+      .poll(() => page.evaluate(() => AeroTizen.settings.getSnapshot().inputNames["HDMI 2"]))
+      .toBe("Updated console");
     await page.screenshot({ path: info.outputPath("hdmi-name-fields.png") });
   });
 }

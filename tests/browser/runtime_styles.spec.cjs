@@ -55,8 +55,7 @@ for (const [build, url] of [
       const arrow = page.locator('[data-key="section:appearance"] .lucide-chevron-right');
       await expect(arrow).toHaveCSS("transform", "none");
       await page.evaluate(() => {
-        AeroTizen.settings.language = "ar";
-        AeroTizen.settings.save();
+        AeroTizen.settings.update({ language: "ar" });
       });
       await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
       await expect(arrow).toHaveCSS("transform", "matrix(-1, 0, 0, 1, 0, 0)");

@@ -29,7 +29,7 @@ test("Preact standby overrides persist without confusing custom labels with devi
   await expect(page.locator("#inputs")).toContainText("Custom console label");
   await page.reload();
   await expect(page.locator("#inputs")).toContainText("Custom console label");
-  expect(await page.evaluate(() => AeroTizen.settings.hdmiKeepVisible["2"])).toBe(true);
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().hdmiKeepVisible["2"])).toBe(true);
   await page.locator("#gear").click();
   await openCategory(page, "sources");
   await page.locator('[data-key="hdmi-keep:2:false"]').click();

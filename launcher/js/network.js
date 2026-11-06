@@ -10,7 +10,7 @@
     kind = "unknown",
     strength = null;
   function getSnapshot() {
-    var visible = A.settings.showNetwork !== false;
+    var visible = A.settings.getSnapshot().showNetwork !== false;
     if (!snapshot || snapshot.kind !== kind || snapshot.strength !== strength || snapshot.visible !== visible) {
       snapshot = Object.freeze({ kind: kind, strength: strength, visible: visible });
     }
