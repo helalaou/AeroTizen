@@ -603,7 +603,7 @@ def cmd_home_runtime_probe(args):
         home_runtime_probe.load_helper()  # Refuse bad package data before contacting the TV.
         host = pick_tv(args)
         with require_sdb(host) as session:
-            report = home_runtime_probe.collect(session, args.launcher)
+            report = home_runtime_probe.collect(session, args.launcher, app_context=args.app_context)
         home_probe.save_report(report, output)
         if args.json:
             print(json.dumps(report, indent=2))
@@ -695,6 +695,11 @@ def main():
         choices=["dotnet-launcher", "dotnet-launcher-inhouse"],
         default="dotnet-launcher",
         help="run only this launcher; no automatic fallback",
+    )
+    command.add_argument(
+        "--app-context",
+        action="store_true",
+        help="set APP_ID to the installed AeroTizen launcher for this diagnostic process only",
     )
     command.add_argument(
         "--output",

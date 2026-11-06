@@ -13,7 +13,10 @@ This command runs only `/usr/bin/dotnet-launcher --standalone` with the bundled
 `netcoreapp3.0` diagnostic. It does not fall back to another launcher, acquire
 root, install a package, launch an app, or use the Home query/writer helpers.
 The existing `home probe`, `status`, `backup`, `apply` and `restore` routes are
-unchanged. No physical Tizen 5.5 test has been performed for this diagnostic.
+unchanged. On the reported TU8079 / Tizen 5.5, both standalone launchers exited 0
+without console startup evidence. The file-marker version also observed no
+startup marker with `dotnet-launcher-inhouse`. The app-context mode below has not
+yet been tested on that TV.
 
 The SDK transport starts as UID 901. The diagnostic reports its actual UID/GID,
 runtime description, process bitness, Linux capability masks, `NoNewPrivs`, and
@@ -62,6 +65,9 @@ The output's parent folder must already exist. Review the report before sharing.
   or the console shows startup.
 - `launcher.errors` contains recognised error categories. An empty list can also
   mean the launcher emitted no matching message or its log was unavailable.
+- `launcher.app_context_requested` records whether `--app-context` was selected.
+  It describes the requested environment, not proof that Samsung accepted it or
+  that managed code started. Use the startup and getter results for that evidence.
 - Getter `ok`: the native getter returned successfully. No value is exported.
 - Getter `absent`: the app-manager getter explicitly reported no AeroTizen app.
 - `missing_library`, `missing_symbol`, `unavailable`, `error` or `skipped`: the
@@ -90,6 +96,34 @@ Flutter Tizen documents the
 A [different TV report](https://github.com/chris-ritsen/samsung-tv-root/issues/1#issuecomment-6388715821)
 describes managed startup with cleared effective capabilities. Neither reference
 establishes compatibility or getter access on the issue #84 device.
+
+## Test the installed AeroTizen app context
+
+CleanFrame's separate [2020 Frame helper instructions](https://github.com/nthnclrk/CleanFrame/blob/main/scripts/native-home/frame-2020/README.md)
+set `APP_ID` to the installed launcher when invoking `dotnet-launcher --standalone`.
+This is a possible difference to test on the TU8079, not a confirmed fix. Its
+firmware and owner-supplied transport differ from the issue #84 TVs.
+
+After reviewing the previous report, run the same selected launcher with an
+explicit AeroTizen context and a new output path:
+
+```sh
+aerotizen --tv TV_IP home diagnose-runtime \
+  --launcher dotnet-launcher-inhouse --app-context \
+  --output home-runtime-inhouse-context.json
+```
+
+This mode first checks the installed-app list for `DclHome001.Home`. If it cannot
+confirm that app, it stops before staging the runtime probe. It sets `APP_ID` only
+for the selected diagnostic process. It does not install or launch another app,
+change the installed launcher, or change Home/startup/watcher settings. The
+managed payload, getters, time limit, and cleanup are the same in both modes.
+
+Without `--app-context`, the probe explicitly clears `APP_ID` so an inherited SDK
+shell value cannot affect the comparison. Do not run both launchers or modes as
+an automatic fallback. Review each result before requesting another run. A
+successful runtime probe still does not establish Home writes or recovery;
+keep `home apply` on hold.
 
 ## Payload and local validation
 

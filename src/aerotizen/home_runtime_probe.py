@@ -5,8 +5,9 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from aerotizen import __version__, home, home_probe, sdk
+from aerotizen import __version__, catalog, home, home_probe, releases, sdk
 from aerotizen.device import DeviceSessionError
+from aerotizen.sdb import SdbError
 
 PAYLOAD_PATH = Path(__file__).parent / "helpers/home-runtime-probe.json"
 FILES = ("AeroTizenRuntimeProbe.dll", "AeroTizenRuntimeProbe.runtimeconfig.json")
@@ -40,7 +41,7 @@ def load_helper():
         ) from error
 
 
-def parse_output(result, capabilities, launcher):
+def parse_output(result, capabilities, launcher, *, app_context=False):
     """Discard all raw runtime/launcher messages and unknown identity fields."""
     if result.get("staging_cleaned") is not True:
         raise DeviceSessionError("Runtime diagnostic temporary-file cleanup was not confirmed.")
@@ -142,7 +143,12 @@ def parse_output(result, capabilities, launcher):
                 if capabilities.get("cpu_arch") in home_probe.ARCHITECTURES
                 else None,
             },
-            "launcher": {"path": launcher, "available": available, "errors": sorted(launcher_errors)},
+            "launcher": {
+                "path": launcher,
+                "available": available,
+                "app_context_requested": app_context,
+                "errors": sorted(launcher_errors),
+            },
             "execution": {
                 "state": state,
                 "exit_code": code,
@@ -175,17 +181,28 @@ def parse_output(result, capabilities, launcher):
         raise DeviceSessionError("Runtime diagnostic returned an invalid report.") from error
 
 
-def collect(session, launcher="dotnet-launcher"):
+def collect(session, launcher="dotnet-launcher", *, app_context=False):
     path = "/usr/bin/" + launcher
     if path not in sdk.PROBE_LAUNCHERS:
         raise ValueError("Unknown diagnostic launcher")
     files = load_helper()
     capabilities = session.capability()
+    if app_context:
+        try:
+            installed = catalog.parse_applist(session.applist())
+        except (OSError, SdbError) as error:
+            raise DeviceSessionError(
+                "Could not confirm the installed AeroTizen launcher; no runtime probe was staged."
+            ) from error
+        if not any(app["appid"] == releases.APP_ID for app in installed):
+            raise DeviceSessionError(
+                "The installed AeroTizen launcher was not found; no runtime probe was staged."
+            )
     try:
-        result = sdk.run_standalone_probe(session, files, FILES[0], path)
+        result = sdk.run_standalone_probe(session, files, FILES[0], path, app_context=app_context)
     except (OSError, DeviceSessionError) as error:
         raise DeviceSessionError(
             "Runtime diagnostic transport failed; temporary-file cleanup is unconfirmed. "
             "Check SDB and allow the TV to connect back to this computer."
         ) from error
-    return parse_output(result, capabilities, path)
+    return parse_output(result, capabilities, path, app_context=app_context)

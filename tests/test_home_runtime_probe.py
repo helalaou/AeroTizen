@@ -14,9 +14,10 @@ from pathlib import Path
 
 import pytest
 
-from aerotizen import cli, home_probe, sdk
+from aerotizen import cli, home_probe, releases, sdk
 from aerotizen import home_runtime_probe as probe
 from aerotizen.device import DeviceSessionError
+from aerotizen.sdb import SdbError
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -143,7 +144,8 @@ def test_shipped_payload_is_net30_and_matches_getter_only_source():
 @pytest.mark.parametrize(
     "mode", ["success", "marker_only", "failure", "missing", "timeout", "ignore_term", "tamper"]
 )
-def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_path, mode):
+@pytest.mark.parametrize("app_context", [False, True])
+def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_path, mode, app_context):
     executable = tmp_path / "launcher"
     log_prefix = str(tmp_path / "dotnet_error.")
     marker_only = (
@@ -158,7 +160,10 @@ def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_
         "marker_only": marker_only,
         "failure": "exit 9\n",
     }.get(mode, "printf '%s\\n' " + shlex.quote(managed_output().split("\n", 1)[1]))
-    executable.write_text("#!/bin/bash\n" + body)
+    context_check = (
+        f'test "$APP_ID" = {shlex.quote(releases.APP_ID)}' if app_context else 'test "${APP_ID+x}" != x'
+    )
+    executable.write_text("#!/bin/bash\n" + context_check + " || exit 21\n" + body)
     executable.chmod(0o600 if mode == "missing" else 0o700)
     uploads = []
 
@@ -167,6 +172,11 @@ def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_
 
         def capability(self):
             return {"platform_version": "5.5"}
+
+        def applist(self):
+            assert app_context
+            assert not uploads
+            return releases.APP_ID + "\tAeroTizen\n"
 
         def push(self, data, path):
             uploads.append(path)
@@ -188,11 +198,17 @@ def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_
             encoded = re.search(r"\$\{IFS\}%s\$\{IFS\}(.+?)\|base64", command)[1]
             launch = base64.b64decode(encoded).decode().replace(sdk.DIRECTORY, str(tmp_path))
             process = subprocess.run(
-                [shutil.which("bash"), "-c", launch], capture_output=True, text=True, timeout=5
+                [shutil.which("bash"), "-c", launch],
+                env={**os.environ, "APP_ID": "unrelated-app-secret"},
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             return process.stdout
 
-    report = probe.collect(Session())
+    report = probe.collect(Session(), app_context=app_context)
+    assert report["launcher"]["app_context_requested"] is app_context
+    assert "unrelated-app-secret" not in json.dumps(report)
     assert len(uploads) == 3 and not list(tmp_path.glob("ah-*"))
     assert (
         report["execution"]["state"]
@@ -221,7 +237,10 @@ def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_
 
 
 @pytest.mark.parametrize("json_output", [False, True])
-def test_cli_uses_selected_launcher_and_saves_new_report(monkeypatch, tmp_path, capsys, json_output):
+@pytest.mark.parametrize("app_context", [False, True])
+def test_cli_uses_selected_launcher_and_saves_new_report(
+    monkeypatch, tmp_path, capsys, json_output, app_context
+):
     calls = []
 
     @contextmanager
@@ -229,8 +248,8 @@ def test_cli_uses_selected_launcher_and_saves_new_report(monkeypatch, tmp_path, 
         calls.append(host)
         yield object()
 
-    def collect(session, launcher):
-        calls.append(launcher)
+    def collect(session, launcher, *, app_context):
+        calls.append((launcher, app_context))
         return parse(result())
 
     monkeypatch.setattr(cli, "require_sdb", connect)
@@ -249,9 +268,11 @@ def test_cli_uses_selected_launcher_and_saves_new_report(monkeypatch, tmp_path, 
     ]
     if json_output:
         argv.append("--json")
+    if app_context:
+        argv.append("--app-context")
     monkeypatch.setattr("sys.argv", argv)
     cli.main()
-    assert calls == ["192.0.2.10", "dotnet-launcher-inhouse"]
+    assert calls == ["192.0.2.10", ("dotnet-launcher-inhouse", app_context)]
     report = json.loads(destination.read_text())
     assert report["native_home_supported"] is None
     if json_output:
@@ -280,19 +301,40 @@ def test_cli_refuses_bad_output_or_payload_before_tv_contact(monkeypatch, tmp_pa
         assert destination.read_text() == "keep"
 
 
-def test_transport_failure_is_redacted_and_leaves_no_report(monkeypatch, tmp_path):
+@pytest.mark.parametrize("app_context", [False, True])
+def test_transport_failure_is_redacted_and_leaves_no_report(monkeypatch, tmp_path, app_context):
     class Session:
         def capability(self):
             return {}
 
-    def fail(*args):
+        def applist(self):
+            return releases.APP_ID
+
+    def fail(*args, **kwargs):
         raise DeviceSessionError("secret TV IP and staging path")
 
     monkeypatch.setattr(sdk, "run_standalone_probe", fail)
     with pytest.raises(DeviceSessionError, match="cleanup is unconfirmed") as error:
-        probe.collect(Session())
+        probe.collect(Session(), app_context=app_context)
     assert "secret" not in str(error.value)
     assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize("failure", [None, SdbError, OSError])
+def test_app_context_refuses_unconfirmed_launcher_before_staging(monkeypatch, failure):
+    class Session:
+        def capability(self):
+            return {}
+
+        def applist(self):
+            if failure:
+                raise failure("private app list and network address")
+            return releases.APP_ID + ".Other\tUnrelated App\n"
+
+    monkeypatch.setattr(sdk, "_run", lambda *args: pytest.fail("No files should be staged"))
+    with pytest.raises(DeviceSessionError, match="no runtime probe was staged") as error:
+        probe.collect(Session(), app_context=True)
+    assert "private" not in str(error.value)
 
 
 def test_output_publication_still_refuses_races(tmp_path):

@@ -13,6 +13,7 @@ import shlex
 import socket
 from concurrent.futures import ThreadPoolExecutor
 
+from aerotizen import releases
 from aerotizen.device import DeviceSessionError
 
 DIRECTORY = "/home/owner/share/tmp/sdk_tools"
@@ -130,7 +131,7 @@ def run_shell(session, script):
     return _run(session, {}, lambda *transport: _build_script({}, script, *transport))
 
 
-def build_standalone_probe(files, entrypoint, launcher, callback, port, token):
+def build_standalone_probe(files, entrypoint, launcher, callback, port, token, *, app_context=False):
     """Separate diagnostic route; never used as a Home query/writer fallback."""
     if launcher not in PROBE_LAUNCHERS or entrypoint not in files:
         raise ValueError("Invalid diagnostic launcher or entrypoint")
@@ -157,8 +158,11 @@ def build_standalone_probe(files, entrypoint, launcher, callback, port, token):
         [
             f"probe_marker={shlex.quote(_path(token, marker))}",
             '(set -C; printf "0\\n" > "$probe_marker")',
+            # Isolate this comparison from any APP_ID inherited by the SDK shell.
+            "unset APP_ID",
             # Bound startup as well as getters. Retail TVs need not have `timeout`.
-            f"{launcher} --standalone {assembly_path} &",
+            (f"APP_ID={shlex.quote(releases.APP_ID)} " if app_context else "")
+            + f"{launcher} --standalone {assembly_path} &",
             "probe_pid=$!",
             "(",
             "  sleep 12 >/dev/null 2>&1 3>&-",
@@ -194,11 +198,15 @@ def build_standalone_probe(files, entrypoint, launcher, callback, port, token):
     return _build_script(files, "\n".join(lines), callback, port, token, scratch=(marker,))
 
 
-def run_standalone_probe(session, files, entrypoint, launcher):
+def run_standalone_probe(session, files, entrypoint, launcher, *, app_context=False):
     if not files or sum(map(len, files.values())) > 2 * 1024 * 1024:
         raise DeviceSessionError("Invalid SDK diagnostic payload size.")
     return _run(
-        session, files, lambda *transport: build_standalone_probe(files, entrypoint, launcher, *transport)
+        session,
+        files,
+        lambda *transport: build_standalone_probe(
+            files, entrypoint, launcher, *transport, app_context=app_context
+        ),
     )
 
 
