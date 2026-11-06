@@ -32,7 +32,7 @@ for (const [build, url] of [
 
       const sidebar = page.locator('[data-settings-focus="sidebar"]');
       const content = page.locator('[data-settings-focus="content"]');
-      const drawer = page.locator(".settings-drawer__frame");
+      const drawer = page.locator("[data-settings-drawer=frame]");
       await expect(sidebar).toHaveCSS("transition-duration", "0.15s, 0.1s");
       await expect(drawer).toHaveCSS("animation-duration", "0.2s");
       await openCategory(page, "appearance");

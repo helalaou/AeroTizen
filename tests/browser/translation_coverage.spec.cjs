@@ -50,7 +50,7 @@ const findUntranslated = (page) =>
         const languageOption = element.closest('[data-key^="language:"]');
         const languageCode = languageOption?.getAttribute("data-key").slice("language:".length);
         if (
-          (text === "AEROTIZEN" && element.matches(".settings-drawer__kicker")) ||
+          (text === "AEROTIZEN" && element.matches("[data-product-name]")) ||
           (languageCode && text === languageNames[languageCode]) ||
           (text === releaseNote && element.matches(".about-release-notes li")) ||
           (text === "aerotizen update launcher" && element.matches(".about-update-command code")) ||
@@ -201,7 +201,7 @@ for (const glassSettings of [false, true]) {
       .toBeCloseTo(translatedWidth);
     await expectTextFits(homeTab);
     await expectTextFits(page.locator('[data-key="language:auto"]'));
-    await expect(page.locator(".settings-drawer__active-title")).toHaveText(pseudoText("settings.language.title"));
+    await expect(page.locator("[data-settings-title]")).toHaveText(pseudoText("settings.language.title"));
 
     await expectTranslatedScreen(page, "Language");
 

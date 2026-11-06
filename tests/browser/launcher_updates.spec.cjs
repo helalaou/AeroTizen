@@ -61,7 +61,7 @@ test("opening About marks a stable launcher update as seen across restarts", asy
   const about = page.locator('[data-section-pane="about"]');
   const notes = about.getByRole("list");
   const aboutCategory = page.locator('[data-key="section:about"]');
-  const categoryDot = aboutCategory.locator(".settings-update-dot");
+  const categoryDot = aboutCategory.locator("[data-settings-update-notice]");
   await expect(homeDot).toBeVisible();
   await expect(gear).toHaveAccessibleName(/Update available/);
   await gear.click();
@@ -138,7 +138,7 @@ test("a newer installed launcher re-arms the notice for a further release", asyn
   await page.goto("/");
   await expect(page.locator("#gear .home-update-dot")).toBeVisible();
   await page.locator("#gear").click();
-  await expect(page.locator('[data-key="section:about"] .settings-update-dot')).toBeVisible();
+  await expect(page.locator('[data-key="section:about"] [data-settings-update-notice]')).toBeVisible();
   await page.locator('[data-key="section:about"]').click();
   await expect(page.locator("#gear .home-update-dot")).toHaveCount(0);
   await expect(page.getByText("Update available: " + update)).toBeVisible();
