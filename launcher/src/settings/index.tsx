@@ -32,6 +32,7 @@ export const mountSettings = (
     mounted: false,
     openedAt: 0,
     adjusting: false,
+    colourPicker: null,
   });
   const inventory = createSettingsInventory(runtime);
   const services = createSettingsServices(runtime, platform);

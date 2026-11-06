@@ -5,6 +5,8 @@ import { useStore } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { Icon } from "../../../shared/icons/Icon/Icon";
 import { SettingsControl } from "../../components/SettingsControl/SettingsControl";
+import { SettingsHeading } from "../../components/SettingsHeading/SettingsHeading";
+import { SettingsPanel } from "../../components/SettingsPanel/SettingsPanel";
 import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
 import type { Category } from "../categories";
 import { categories } from "../categories";
@@ -32,7 +34,7 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
   const active = categories.find((category) => category.id === state.category);
   const expanded = state.expanded ? "true" : "false";
   return (
-    <div class={styles.frame} data-settings-drawer="frame" data-expanded={expanded}>
+    <SettingsPanel class={styles.frame} data-settings-drawer="frame" data-expanded={expanded}>
       <aside class={styles.sidebar} data-settings-drawer="sidebar" data-expanded={expanded}>
         <div class={styles.head}>
           <div class={styles.kicker} data-product-name>
@@ -77,13 +79,12 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
         <SettingsHelp />
       </aside>
       <div class={styles.main} data-settings-drawer="main" ref={categoryContent} hidden={!state.expanded}>
-        <div class={styles.contentHead}>
-          <span class={styles.contentKicker}>
-            {t(state.category === "about" ? "settings.about.kicker" : "settings.drawer.customisation")}
-          </span>
-          <h2 class={styles.activeTitle} data-settings-title>
-            {active && t(active.title)}
-          </h2>
+        <SettingsHeading
+          class={styles.contentHead}
+          kicker={t(state.category === "about" ? "settings.about.kicker" : "settings.drawer.customisation")}
+          title={active ? t(active.title) : ""}
+          data-settings-title
+        >
           <SettingsControl
             class={styles.close}
             focusKey="settings-close"
@@ -93,7 +94,7 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
           >
             <Icon icon={X} />
           </SettingsControl>
-        </div>
+        </SettingsHeading>
         <div class={styles.scroll} data-settings-drawer="scroll" ref={categoryScroll}>
           <SettingsFocusIndicator container={categoryScroll} />
           {categories.map((category) => (
@@ -115,6 +116,6 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
           ))}
         </div>
       </div>
-    </div>
+    </SettingsPanel>
   );
 };

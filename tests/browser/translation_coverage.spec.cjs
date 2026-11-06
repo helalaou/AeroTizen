@@ -230,10 +230,22 @@ for (const glassSettings of [false, true]) {
     };
     await visit("appearance", "appearance.title");
     await visit("apps", "continue.tvOnly");
-    await visit("wallpaper", "scene.black", '[data-key="bg:black"] span');
+    await visit("wallpaper", "scene.black", '[data-key="bg:black"] [data-wallpaper-label]');
+    await page.locator('[data-key="bg:custom"]').click();
+    await expect(page.locator("[data-colour-picker]")).toBeVisible();
+    await expectTranslatedScreen(page, "custom colour picker");
+    await expectTextFits(page.locator("#colour-picker-title"));
+    await page.keyboard.press("Escape");
     for (const group of ["photo", "gradient", "animated"]) {
       await page.locator(`[data-key="wallpaper-categories:${group}"]`).click();
       await expectTranslatedScreen(page, `wallpaper ${group}`);
+      if (group === "gradient") {
+        await page.locator('[data-key="bg:custom-gradient"]').click();
+        await expect(page.locator("[data-colour-picker]")).toBeVisible();
+        await expectTranslatedScreen(page, "custom gradient picker");
+        await expectTextFits(page.locator("#colour-picker-title"));
+        await page.keyboard.press("Escape");
+      }
     }
     await visit("status", "clock.layout");
     await visit("weather", "weather.visibility");

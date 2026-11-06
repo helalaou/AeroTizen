@@ -57,7 +57,7 @@ const backgrounds = mountBackgrounds(
   hotData && hotData.backgrounds,
 );
 window.Backgrounds = backgrounds.bridge;
-const platform = { backgrounds: backgrounds.bridge, weather };
+const platform = { backgrounds: backgrounds.bridge, previewBackground: backgrounds.previewBackground, weather };
 const toast = mountToast(toastHost);
 const fireplace = mountFireplace(fireplaceHost, (key, values) => runtime.translate(key, values));
 const previousFireplace = window.Fireplace;

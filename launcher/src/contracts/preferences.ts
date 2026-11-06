@@ -3,6 +3,11 @@ import type { Store } from "../shared/state/createStore";
 export type TimeFormat = "12" | "24";
 export type TemperatureUnit = "C" | "F";
 export type DateFormat = "compact" | "short" | "long" | "numeric-short" | "numeric" | "iso" | "none";
+export interface CustomGradient {
+  readonly angle: number;
+  readonly end: string;
+  readonly start: string;
+}
 export interface WeatherLocation {
   readonly country_code?: string;
   readonly label?: string;
@@ -16,6 +21,8 @@ export interface SettingsValues {
   clockLayout: "classic" | "custom";
   continueWatching: boolean;
   continueWatchingApps: string[];
+  customColour: string;
+  customGradient: CustomGradient;
   dateFormat: DateFormat | "auto" | "weekday" | "dmy" | "mdy";
   glassSettings: boolean;
   hdmiKeepVisible: Record<string, boolean>;

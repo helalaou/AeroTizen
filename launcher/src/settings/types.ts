@@ -1,6 +1,6 @@
 import type { RefObject } from "preact";
 
-import type { BackgroundGraphics } from "../contracts/backgrounds";
+import type { BackgroundGraphics, BackgroundPreview } from "../contracts/backgrounds";
 import type {
   AppPresentation,
   BackgroundOption,
@@ -26,6 +26,7 @@ import type { Navigation } from "../shared/navigation/createNavigation";
 import type { MutableStore, Store } from "../shared/state/createStore";
 
 import type { Category, SettingsDrawerState } from "./layout/categories";
+import type { ColourChannel, ColourPickerDraft } from "./state/colourPicker";
 export interface SettingsInventorySnapshot {
   readonly apps: readonly Readonly<InstalledApp>[];
   readonly continueMessage: MessageKey | "";
@@ -53,12 +54,18 @@ export interface SettingsServices {
   finishEditing(): void;
   hidePreviewMessage(): void;
   openStore(): void;
+  previewBackground(preview: BackgroundPreview | null): void;
   refreshWeather(): void;
   searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): () => void;
   showPreviewMessage(): void;
   useSamsungHome(): void;
 }
 export interface SettingsActions {
+  adjustColour(channel: ColourChannel, direction: number): void;
+  adjustGradientAngle(direction: number): void;
+  closeColourPicker(apply: boolean): void;
+  openColourPicker(): void;
+  openGradientPicker(): void;
   openStore(): void;
   preview(): void;
   saveInputName(port: string, value: string): void;
@@ -67,6 +74,7 @@ export interface SettingsActions {
   setContinueWatching(enabled: boolean): void;
   setDateFormat(format: DateFormat): void;
   setGlassSettings(enabled: boolean): void;
+  setGradientStop(stop: 0 | 1): void;
   setHdmiKeepVisible(port: string, keep: boolean): void;
   setHdmiVisibility(hide: boolean): void;
   setHomeAppLayout(layout: SettingsValues["homeAppLayout"]): void;
@@ -88,6 +96,7 @@ export interface SettingsActions {
 // adjusting: OK was pressed on the speed slider, so Left/Right change the speed instead of moving focus.
 export interface ViewState {
   readonly adjusting: boolean;
+  readonly colourPicker: ColourPickerDraft | null;
   readonly mounted: boolean;
   readonly open: boolean;
   readonly openedAt: number;

@@ -1,6 +1,6 @@
 import { render } from "preact";
 
-import type { BackgroundGraphics } from "../contracts/backgrounds";
+import type { BackgroundGraphics, BackgroundPreview } from "../contracts/backgrounds";
 import type { WeatherPhotoSource } from "../contracts/status";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import { createStore } from "../shared/state/createStore";
@@ -20,6 +20,7 @@ export const mountBackgrounds = (
   previous?: BackgroundState,
 ) => {
   let generation = 0;
+  let previewBackground: BackgroundPreview | null = null;
   const status = createStore<boolean | undefined>(undefined);
   const webGL: BackgroundGraphics = {
     getSnapshot: status.getSnapshot,
@@ -44,13 +45,21 @@ export const mountBackgrounds = (
   });
   const photo = createWeatherPhoto(
     weather,
-    () => runtime.settings.getSnapshot().weatherPhoto === true && !runtime.inputs.watching,
+    () =>
+      previewBackground === null && runtime.settings.getSnapshot().weatherPhoto === true && !runtime.inputs.watching,
     window,
   );
   const { getSnapshot } = photo;
   const restoreWallpaper = () => {
     if (!runtime.inputs.watching) {
-      backgrounds.bridge.apply(runtime.settings.getSnapshot().background, runtime.settings.getSnapshot().speed);
+      const settings = runtime.settings.getSnapshot();
+      if (previewBackground?.kind === "solid") {
+        backgrounds.bridge.apply("custom", settings.speed, previewBackground.colour);
+      } else if (previewBackground?.kind === "gradient") {
+        backgrounds.bridge.apply("custom-gradient", settings.speed, undefined, previewBackground.gradient);
+      } else {
+        backgrounds.bridge.apply(settings.background, settings.speed, settings.customColour, settings.customGradient);
+      }
     }
   };
   const unsubscribe = photo.subscribe(() => {
@@ -59,15 +68,20 @@ export const mountBackgrounds = (
     }
   });
   render(<WeatherPhotoView onVisible={backgrounds.bridge.suspend} photo={photo} />, photoHost);
+  const apply = () => {
+    const previous = getSnapshot();
+    photo.update();
+    // The subscription restores the wallpaper when an active photo clears.
+    if (!previous && !getSnapshot()) {
+      restoreWallpaper();
+    }
+  };
   return {
     ...backgrounds,
-    apply() {
-      const previous = getSnapshot();
-      photo.update();
-      // The subscription restores the wallpaper when an active photo clears.
-      if (!previous && !getSnapshot()) {
-        restoreWallpaper();
-      }
+    apply,
+    previewBackground(preview: BackgroundPreview | null) {
+      previewBackground = preview;
+      apply();
     },
     dispose() {
       unsubscribe();

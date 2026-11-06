@@ -15,20 +15,13 @@
   position: absolute;
   top: 112px;
   left: 60px;
-  box-sizing: border-box;
   display: flex;
   width: 1440px;
   height: 850px;
   max-width: calc(100% - 120px);
   max-height: calc(100% - 146px);
-  border: 1px solid var(--settings-border);
   overflow: hidden;
-  color: var(--settings-text);
-  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
   animation: enter var(--motion-duration-enter) ease-out both;
-  background: var(--settings-surface);
-  border-radius: var(--settings-radius);
-  box-shadow: var(--settings-shadow);
 
   &[data-expanded="false"] {
     width: calc(var(--settings-sidebar-width) + 2px);
@@ -118,18 +111,6 @@
   flex: 0 0 auto;
   border-bottom: 1px solid var(--settings-heading-divider);
   padding-bottom: 18px;
-}
-
-.contentKicker {
-  font-size: 13px;
-  color: var(--settings-kicker);
-  letter-spacing: 2px;
-}
-
-.activeTitle {
-  margin: 6px 0 0;
-  font-size: 37px;
-  font-weight: 500;
 }
 
 .close {

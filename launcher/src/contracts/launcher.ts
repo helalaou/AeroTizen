@@ -33,6 +33,7 @@ type BackgroundId = Extract<MessageKey, `scene.${string}`> extends `scene.${infe
 
 export interface Background {
   readonly anim?: string;
+  readonly category?: "solid" | "gradient";
   readonly id: BackgroundId;
 }
 export interface BackgroundOption extends Background {

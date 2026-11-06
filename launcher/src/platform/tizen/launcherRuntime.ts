@@ -1,4 +1,4 @@
-import type { BackgroundBridge } from "../../contracts/backgrounds";
+import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
 import type {
   AppPresentation,
   ClockService,
@@ -63,6 +63,7 @@ export interface LauncherRuntime {
 
 export interface LauncherPlatform {
   backgrounds: BackgroundBridge;
+  previewBackground(preview: BackgroundPreview | null): void;
   weather: Store<WeatherSnapshot> &
     WeatherPhotoSource & {
       updateVisibility(): void;

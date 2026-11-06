@@ -60,6 +60,43 @@ test("historical fields migrate on load and cannot affect runtime updates", () =
   assert.equal(h.service.getSnapshot(), current, "loading migrated data is stable");
 });
 
+test("custom backgrounds survive current and historical storage keys in the TypeScript service", () => {
+  for (const key of ["aerotizen.settings.v1", "hearth.home.v1", "declutter.home.v5"]) {
+    const h = harness({
+      [key]: JSON.stringify({
+        background: "custom-gradient",
+        customColour: "#ABCDEF",
+        customGradient: { start: "#AABBCC", end: "#112233", angle: -90 },
+      }),
+    });
+    h.service.load();
+    const before = h.service.getSnapshot();
+    assert.equal(before.customColour, "#abcdef");
+    assert.deepEqual(before.customGradient, { start: "#aabbcc", end: "#112233", angle: 270 });
+    h.service.update({ showTime: false });
+    assert.equal(h.service.getSnapshot().customGradient, before.customGradient);
+    h.service.load();
+    assert.equal(h.service.getSnapshot().background, "custom-gradient");
+    assert.equal(h.service.getSnapshot().customColour, before.customColour);
+    assert.equal(h.service.getSnapshot().customGradient, before.customGradient);
+    const stored = JSON.parse(h.data.get("aerotizen.settings.v1"));
+    assert.equal(stored.customColour, before.customColour);
+    assert.deepEqual(stored.customGradient, before.customGradient);
+  }
+});
+
+test("custom background updates validate fields before publishing or saving them", () => {
+  const h = harness();
+  h.service.update({ customColour: "url(example)", customGradient: { start: "red", end: 7, angle: Infinity } });
+  const state = h.service.getSnapshot();
+  assert.equal(state.customColour, "#7c5cff");
+  assert.deepEqual(state.customGradient, { start: "#7c5cff", end: "#00c4d4", angle: 135 });
+  assert.equal(Object.isFrozen(state.customGradient), true);
+  const stored = JSON.parse(h.data.get("aerotizen.settings.v1"));
+  assert.equal(stored.customColour, state.customColour);
+  assert.deepEqual(stored.customGradient, state.customGradient);
+});
+
 test("malformed JSON shapes and individual values produce usable typed preferences", () => {
   for (const saved of [null, [], true, 5, "text", { home: {}, inputNames: null }]) {
     const h = harness({ "aerotizen.settings.v1": JSON.stringify(saved) });

@@ -10,6 +10,8 @@ const harness = () => {
   let saves = 0;
   const defaults = {
     background: "black",
+    customColour: "#000000",
+    customGradient: { start: "#336699", end: "#ff0000", angle: 90 },
     home: ["one"],
     inputNames: {},
     speed: 1,
@@ -38,7 +40,10 @@ const harness = () => {
     locale: { timeFormat: () => "24", tempUnit: () => "C" },
   });
   const calls = [];
-  const services = { config: { SPEED: { MIN: 0.2, MAX: 2, STEP: 0.1 } } };
+  const services = {
+    backgrounds: [{ id: "black", category: "solid", preview: "#000" }],
+    config: { SPEED: { MIN: 0.2, MAX: 2, STEP: 0.1 } },
+  };
   for (const name of [
     "applyBackground",
     "applyWeatherVisibility",
@@ -64,6 +69,7 @@ const harness = () => {
     mounted: false,
     openedAt: 0,
     adjusting: false,
+    colourPicker: null,
   });
   const transaction = (action) => action();
   const actions = createSettingsActions(settings, services, view, transaction);
@@ -186,6 +192,7 @@ test("key-router bridge delegates to current handlers and releases them on clean
     previewing: false,
     mounted: true,
     adjusting: false,
+    colourPicker: null,
     openedAt: 1000,
   });
   h.bridge.open();
@@ -221,6 +228,7 @@ test("key-router bridge delegates to current handlers and releases them on clean
     previewing: false,
     mounted: true,
     adjusting: false,
+    colourPicker: null,
     openedAt: 1000,
   });
   current();
@@ -257,4 +265,76 @@ test("Continue Watching selection is persisted with immutable snapshots", () => 
   assert.deepEqual(h.settings.getSnapshot().continueWatchingApps, ["video.app"], "off retains the chosen apps");
   h.actions.toggleContinueApp("video.app");
   assert.deepEqual(h.settings.getSnapshot().continueWatchingApps, []);
+});
+
+test("colour drafts do not save until Apply and cancellation retains the full saved background", () => {
+  const h = harness();
+  h.settings.update({ weatherPhoto: true });
+  const saved = h.saves;
+  h.actions.openColourPicker();
+  h.actions.adjustColour("lightness", 1);
+  h.actions.closeColourPicker(false);
+  assert.equal(h.saves, saved);
+  assert.equal(h.settings.getSnapshot().background, "black");
+  assert.equal(h.settings.getSnapshot().weatherPhoto, true);
+  h.actions.openColourPicker();
+  h.actions.adjustColour("lightness", 1);
+  h.actions.closeColourPicker(true);
+  assert.equal(h.settings.getSnapshot().background, "custom");
+  assert.equal(h.settings.getSnapshot().customColour, "#030303");
+  assert.equal(h.settings.getSnapshot().weatherPhoto, false);
+  assert.equal(h.saves, saved + 1);
+  h.actions.setBackground("black");
+  assert.equal(h.settings.getSnapshot().customColour, "#030303", "preset choices retain the custom colour");
+});
+
+test("opening the picker reads the current custom colour and discards an earlier cancelled draft", () => {
+  const h = harness();
+  h.settings.update({ background: "custom", customColour: "#336699" });
+  const saved = h.saves;
+  h.actions.openColourPicker();
+  const draft = h.view.getSnapshot().colourPicker;
+  const channels = draft.colour;
+  assert.equal(Math.round(channels.hue), 210);
+  assert.equal(Math.round(channels.strength), 50);
+  assert.equal(Math.round(channels.lightness), 40);
+  h.actions.adjustColour("hue", 1);
+  h.actions.closeColourPicker(false);
+  h.actions.openColourPicker();
+  assert.deepEqual(h.view.getSnapshot().colourPicker, draft);
+  assert.equal(h.saves, saved, "opening and cancelling never save a different colour");
+});
+
+test("gradient drafts edit each colour independently, save once, and reopen the saved gradient", () => {
+  const h = harness();
+  const before = h.settings.getSnapshot();
+  h.actions.openGradientPicker();
+  h.actions.adjustColour("hue", 1);
+  h.actions.setGradientStop(1);
+  h.actions.adjustColour("lightness", 10);
+  h.actions.adjustGradientAngle(-100);
+  assert.equal(h.saves, 0);
+  assert.deepEqual(h.settings.getSnapshot().customGradient, before.customGradient);
+  const draft = h.view.getSnapshot().colourPicker;
+  assert.equal(draft.angle, 350);
+  assert.equal(Math.round(draft.colours[0].hue), 211);
+  assert.equal(Math.round(draft.colours[1].hue), 0);
+  h.actions.closeColourPicker(false);
+  assert.equal(h.saves, 0);
+  h.actions.openGradientPicker();
+  assert.equal(h.view.getSnapshot().colourPicker.angle, 90);
+  h.actions.adjustGradientAngle(1);
+  h.actions.closeColourPicker(true);
+  assert.equal(h.saves, 1);
+  assert.equal(h.settings.getSnapshot().background, "custom-gradient");
+  assert.equal(h.settings.getSnapshot().customColour, "#000000");
+  assert.deepEqual(h.settings.getSnapshot().customGradient, { start: "#336699", end: "#ff0000", angle: 91 });
+  h.actions.openGradientPicker();
+  assert.equal(h.view.getSnapshot().colourPicker.angle, 91);
+  const gradient = { ...h.settings.getSnapshot().customGradient, start: "#ffffff" };
+  h.settings.update({ customGradient: gradient });
+  gradient.end = "#000000";
+  assert.equal(h.settings.getSnapshot().customGradient.end, "#ff0000", "updates copy the gradient object");
+  assert.equal(before.customGradient.start, "#336699", "updates cannot change an old snapshot");
+  assert.equal(Object.isFrozen(h.settings.getSnapshot().customGradient), true);
 });

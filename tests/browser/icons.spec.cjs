@@ -77,14 +77,14 @@ for (const glass of [false, true]) {
       await expect(page.getByRole("img", { name: label, exact: true })).toHaveAttribute("id", "network");
       await expect(page.locator("#network")).not.toHaveAttribute("aria-hidden", "true");
     }
-    for (const [code, glyph] of [
-      [0, "sun"],
-      [2, "cloud-sun"],
-      [3, "cloud"],
-      [45, "cloud-fog"],
-      [51, "cloud-rain"],
-      [71, "cloud-snow"],
-      [95, "cloud-lightning"],
+    for (const [code, glyph, colour] of [
+      [0, "sun", "rgb(255, 211, 77)"],
+      [2, "cloud-sun", "rgb(255, 211, 77)"],
+      [3, "cloud", "rgb(213, 219, 228)"],
+      [45, "cloud-fog", "rgb(213, 219, 228)"],
+      [51, "cloud-rain", "rgb(108, 182, 255)"],
+      [71, "cloud-snow", "rgb(255, 255, 255)"],
+      [95, "cloud-lightning", "rgb(255, 211, 77)"],
     ]) {
       await page.evaluate((code) => {
         const cache = JSON.parse(localStorage.getItem("aerotizen.weather.v2"));
@@ -93,6 +93,16 @@ for (const glass of [false, true]) {
       }, code);
       await expect(page.locator("#weather svg")).toHaveClass(new RegExp("lucide-" + glyph + "(?: |$)"));
       await expect(page.locator("#weather b")).toHaveText("12°");
+      for (const background of ["solid-white", "solid-lavender", "black"]) {
+        await page.evaluate((background) => {
+          AeroTizen.settings.update({ background });
+          AeroTizen.applyBackground();
+        }, background);
+        await expect(page.locator("#weather svg")).toHaveCSS(
+          "stroke",
+          background === "black" ? colour : "rgb(21, 21, 27)",
+        );
+      }
     }
     await gear.click();
     await openCategory(page, "apps");

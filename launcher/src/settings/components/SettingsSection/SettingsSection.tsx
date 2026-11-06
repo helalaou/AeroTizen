@@ -1,5 +1,7 @@
 import type { ComponentChildren } from "preact";
 
+import { SettingsHeading } from "../SettingsHeading/SettingsHeading";
+
 import styles from "./SettingsSection.module.css";
 
 export const SettingsSection = ({
@@ -16,10 +18,7 @@ export const SettingsSection = ({
   label?: string;
 }) => (
   <section class={styles.section} hidden={hidden} aria-label={label}>
-    <header class={styles.header}>
-      <h3 class={styles.title}>{title}</h3>
-      {description && <p class={styles.description}>{description}</p>}
-    </header>
+    <SettingsHeading class={styles.header} title={title} description={description} variant="section" />
     {children}
   </section>
 );

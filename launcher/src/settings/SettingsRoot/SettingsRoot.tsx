@@ -14,6 +14,7 @@ export const SettingsRoot = () => {
       id="editor"
       class={styles.overlay}
       data-settings-drawer="overlay"
+      data-colour-picker-open={state.colourPicker ? "true" : undefined}
       data-previewing={state.previewing ? "true" : undefined}
       hidden={!state.open}
       ref={root}

@@ -1,6 +1,7 @@
 .status {
   --header-status-margin: 0px;
 
+  color: var(--fg);
   display: flex;
   align-items: center;
   gap: 28px;

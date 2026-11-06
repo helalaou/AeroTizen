@@ -38,6 +38,13 @@ Styled components use a component-named directory, such as
 small components with no companion files can remain flat. Apply this pattern as
 components are migrated, and import their named file directly.
 
+`SettingsPanel` owns the shared drawer and picker surface: border, radius, shadow,
+background, text colour and font. Each consumer owns its position, size and spacing.
+`SettingsHeading` owns panel and section titles, optional kickers and descriptions.
+Panel titles share one size; section titles use the smaller variant. The colour and
+gradient dialogs use the same description style and link their instructions with
+`aria-describedby`. `SettingsSection` supplies section spacing and content.
+
 `HomeAppCard` owns the shared app/Fireplace frame, focus and moving state.
 `AppCard` and `FireplaceCard` supply app-specific content and paint.
 
@@ -164,6 +171,19 @@ weather photos suspend it.
 Starfield, Nebula, Snow, Fireflies and Rain use WebGL 1. Each scene submits
 its particles in one batch. Canvas 2D creates glow textures once at startup
 for the sprite effects. Rain draws its streaks directly in the shader.
+
+Solid backgrounds show the saved custom colour first, followed by nineteen presets.
+Gradients also start with a custom tile. The pencil sits beside each Custom label
+and marks the editable choice. Both editors keep drafts in Settings view state and
+preview through the background mount. The TypeScript preference service owns the
+custom colour and gradient defaults, validation and persistence. Editors read its
+current snapshot and save through its update API. The gradient editor shares the colour controls
+and adds two colour stops and a direction. OK selects a stop before editing its colour.
+Apply persists the choice; Cancel, Back, closing Settings and teardown restore the saved
+wallpaper or weather photo. Left/Right starts at one degree or one percent per press,
+then accelerates while held. Key release, focus changes and blur restore fine control.
+Up/Down moves between controls and Apply/Cancel. Bright backgrounds select contrasting
+floating Home text without changing the chosen background or tab theme.
 
 The wallpaper pane checks for WebGL when it opens. A failed setup or lost
 context hides the WebGL choices and leaves the saved wallpaper's static
