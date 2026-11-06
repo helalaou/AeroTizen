@@ -1,6 +1,6 @@
 import { Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Sun } from "lucide-preact";
 
-import { Icon } from "../shared/icons/Icon";
+import { Icon } from "../shared/icons/Icon/Icon";
 import { getWeatherPresentation } from "../shared/weather/conditions";
 
 const WEATHER_ICONS = {

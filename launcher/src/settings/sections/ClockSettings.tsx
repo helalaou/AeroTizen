@@ -1,9 +1,9 @@
 import type { ClockFormatter } from "../../contracts/launcher";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../components/ChoiceGroup";
-import { ChoiceOption } from "../components/ChoiceOption";
-import { ControlGroup } from "../components/ControlGroup";
-import { SettingsSection } from "../components/SettingsSection";
+import { ChoiceOption } from "../components/ChoiceOption/ChoiceOption";
+import { ControlGroup } from "../components/ControlGroup/ControlGroup";
+import { SettingsSection } from "../components/SettingsSection/SettingsSection";
 import type { SettingsSectionProps } from "../types";
 
 const CLOCK_LAYOUT_OPTIONS = [

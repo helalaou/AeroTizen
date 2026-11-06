@@ -36,9 +36,9 @@ for (const glass of [false, true])
       expect(positions.filter((p) => p.top === positions[0].top)).toHaveLength(columns);
       for (const position of positions) expect(position.width).toBe(position.height);
       await page.keyboard.press("ArrowDown");
-      await expect(tiles.first()).toHaveClass(/focused/);
+      await expect(tiles.first()).toHaveAttribute("data-focused", "true");
       await page.keyboard.press("ArrowDown");
-      await expect(tiles.nth(columns)).toHaveClass(/focused/);
+      await expect(tiles.nth(columns)).toHaveAttribute("data-focused", "true");
       // Long OK opens the app menu; moving uses the same square geometry.
       await page.locator("#home-tab").click();
       await page.keyboard.press("ArrowDown");

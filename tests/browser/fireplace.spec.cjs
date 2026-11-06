@@ -67,7 +67,7 @@ test("Fireplace remote controls update volume and stop drawing and audio on clos
 
   await page.keyboard.press("ArrowUp");
   await expect(volume).toHaveText("Volume 7");
-  await expect(volume).toHaveClass(/show/);
+  await expect(volume).toHaveAttribute("data-visible", "true");
   expect((await getPlayback()).level).toBeCloseTo(0.7);
   for (let level = 7; level > 0; level--) {
     await page.keyboard.press("ArrowDown");
@@ -75,7 +75,7 @@ test("Fireplace remote controls update volume and stop drawing and audio on clos
   await expect(volume).toHaveText("Muted");
   expect((await getPlayback()).level).toBe(0);
   await page.clock.runFor(1600);
-  await expect(volume).not.toHaveClass(/show/);
+  await expect(volume).not.toHaveAttribute("data-visible", "true");
 
   await page.evaluate(() => {
     document.dispatchEvent(new KeyboardEvent("keydown", { keyCode: AeroTizen.config.KEY.BACK }));
@@ -94,7 +94,7 @@ test("Fireplace remote controls update volume and stop drawing and audio on clos
   expect(reopened.opened).toBe(2);
   expect(reopened.frames).toBeGreaterThan(stopped.frames);
   expect(reopened.level).toBe(0);
-  await expect(volume).not.toHaveClass(/show/);
+  await expect(volume).not.toHaveAttribute("data-visible", "true");
   await page.keyboard.press("Escape");
   await expect(overlay).toBeHidden();
   expect((await getPlayback()).closed).toBe(2);

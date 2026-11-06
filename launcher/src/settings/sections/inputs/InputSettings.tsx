@@ -1,11 +1,11 @@
 import type { InputOption } from "../../../contracts/launcher";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../../components/ChoiceGroup";
-import { ControlGroup } from "../../components/ControlGroup";
-import { SettingsSection } from "../../components/SettingsSection";
+import { ControlGroup } from "../../components/ControlGroup/ControlGroup";
+import { SettingsSection } from "../../components/SettingsSection/SettingsSection";
 import type { SettingsSectionProps } from "../../types";
 
-import { InputName } from "./InputName";
+import { InputName } from "./InputName/InputName";
 
 const LIVE_TV_VISIBILITY_OPTIONS = [
   { value: true, labelKey: "common.show" },

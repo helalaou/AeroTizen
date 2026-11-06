@@ -1,0 +1,27 @@
+.wave {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 3840px;
+  height: 260px;
+  will-change: transform;
+  animation: waves linear infinite;
+
+  &[data-background-wave="back"] {
+    bottom: 40px;
+  }
+
+  > svg {
+    width: 3840px;
+    height: 260px;
+    display: block;
+  }
+}
+@keyframes waves {
+  from {
+    transform: translateZ(0) translateX(0);
+  }
+  to {
+    transform: translateZ(0) translateX(-1920px);
+  }
+}

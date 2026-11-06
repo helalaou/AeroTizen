@@ -1,15 +1,9 @@
 # Launcher style rules
 
 Use the [component ownership map](component-structure.md) to find a stylesheet.
-New or migrated components import a sibling `Component.module.css`. Keep layout
-and state selectors with their component, and remove the old global rules when
-migrating. All Settings controls, sections and the drawer now use modules;
-the global `settings.css` sheet has been removed. Home header and status components
-also use modules; `home-header.css` and `clock.css` have been removed. Home layout,
-app cards, headings, scrolling and app actions now use modules too; their four
-global sheets have been removed. Continue Watching and the inputs dock/cards also
-use modules. Home and Settings layout/control styles now live in modules;
-shared icon, background and runtime styles migrate separately.
+All component styles live in co-located `Component.module.css` files. Only
+`base.css`, `themes.css` and `motion.css` remain global, for page rules, shared
+paint and motion policy. Keep layout and state selectors with their component.
 
 Use a component-named directory for a styled component and its private helpers,
 for example `AppGrid/AppGrid.tsx` with `AppGrid/AppGrid.module.css`. Small components
@@ -25,8 +19,8 @@ state palettes stay with their component.
 
 ## Cascade and state
 
-`launcher/index.html` loads tokens and base rules first, then global component
-styles and the compiled `js/launcher-ui.css`. Vite imports module styles directly
+`launcher/index.html` loads tokens and base rules first, then the compiled
+`js/launcher-ui.css`. Vite imports module styles directly
 in development; the development page removes the production CSS link. Keep this
 link in the packaged widget: the library build emits CSS separately from JavaScript.
 
@@ -34,8 +28,8 @@ Each active selector is defined once within its media context. Use component
 classes and explicit state modifiers. Migrated controls use `data-focused="true"`
 and `aria-pressed="true"`; never query a generated module class from runtime code
 or tests. Module selectors must not depend on `#editor`, IDs or global class aliases.
-`SettingsControl` owns the shared focus reset in its own module; the remaining
-global component rules must not override every focused control through an ID.
+`SettingsControl` owns the shared focus reset in its own module.
+Do not override focused controls through an ID selector.
 Controls can supply `--settings-control-focus-outline` for a visible focus outline,
 as the drawer close button does.
 
@@ -48,14 +42,15 @@ frame and sidebar, while the content uses `hidden`. Tests can use the stable
 
 Use standard CSS nesting in `.module.css` files. Vite's Lightning CSS transformer
 flattens nested selectors for Chromium 69 in both development and production.
-Keep nesting at two levels or fewer. Legacy sheets under `launcher/css/` ship as
+Keep nesting at two levels or fewer. Shared sheets under `launcher/css/` ship as
 copied assets, so they must remain flat. Sass is not required for nesting; theme
 values remain runtime custom properties such as `var(--control-text)`.
 
 Lightning CSS also adds vendor prefixes for the configured Chromium 69 target.
 Write standard properties in compiled modules and let that transformer supply
-supported fallbacks; a separate Autoprefixer pass is not needed. The copied legacy
-sheets still need their explicit prefixes until they move through the compiler.
+supported fallbacks; a separate Autoprefixer pass is not needed. All component
+styles pass through this compiler; shared page rules retain their
+explicit font-smoothing prefix.
 
 The multiline clamp is an intentional exception: keep `display: -webkit-box`,
 `-webkit-box-orient: vertical` and `-webkit-line-clamp` together. They form the
@@ -141,7 +136,8 @@ Keep keyframes with their component until multiple components need the same
 effect. A shared CSS Module can then own the keyframes and reusable animation class.
 
 Settings, the Home header, app cards, viewport, scrollers, page reveals, app
-actions, Continue Watching and inputs use this policy. Reorder arrows also stop moving
+actions, Continue Watching, inputs and the Fireplace volume notice use this policy.
+Reorder arrows also stop moving
 under reduced motion.
 This removes their repeated media queries and reduced-motion `!important` rules.
 New and migrated components should use the same tokens. Keep a local media query only when an effect
@@ -153,8 +149,8 @@ The policy does not change wallpaper or JavaScript animation behavior.
 Preact owns component classes and focus state. Settings asks `homeScreen.blur()`
 to clear Home focus; the old document-wide `.focused` sweep has been removed.
 `HomeControl` and `SettingsControl` render `data-focused` from their state. Their
-global `.focused` class remains temporarily for legacy checks; migrated styles
-use the data/ARIA state.
+old global `.focused` aliases have been removed. Active tests use data/ARIA state;
+comparison tests use the frozen renderer's legacy hooks only on that renderer.
 ESLint rejects legacy `classList` access on component nodes, `className` assignments
 and `setAttribute("class", ...)` calls.
 
@@ -175,9 +171,10 @@ The global `[hidden]` rule must override component display rules, including SVG
 status hosts. `base.css` owns native/preview visibility for `[data-home-header]`
 and `[data-home-content]`;
 the Settings rule has enough specificity to keep the header visible and dimmed
-when native TV is active. It does not need `!important`. Remaining legacy sheets
-still use `!important` for reduced motion and native/preview visibility. Keep
-these exceptions documented. Normal focus, selection, theme and layout rules must
+when native TV is active. Weather-photo visibility uses `data-weather-photo`.
+The background mount uses `data-background-host` for fixed canvas sizing.
+These shell rules do not need `!important`; only the universal hidden-attribute
+rule uses it. Normal focus, selection, theme and layout rules must
 use the cascade without `!important`.
 
 ## Checks and compatibility
@@ -197,6 +194,10 @@ Keep CSS compatible with Chromium 69. Use `top`, `right`, `bottom` and `left`
 instead of the `inset` property; Stylelint rejects the latter. A build's JavaScript
 syntax check does not establish CSS or TV compatibility. Animate transforms and
 opacity, preserve the reduced-motion rules, and test remote focus after changes.
+
+Keep an explicit `translateZ(0)` when a transform needs 3D compositing.
+Lightning CSS can simplify `translate3d(x, y, 0)` to a 2D transform; this can change
+SVG rasterization even when geometry stays the same.
 
 Browser tests cover both themes, all clock variants, card/input layouts, Settings
 navigation, wallpaper visibility and focus geometry. For cascade changes, compare

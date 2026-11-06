@@ -113,8 +113,8 @@ for (const glass of [false, true]) {
       expect(await offset(page, "#continue-items")).toBeGreaterThan(0);
       const feedOffset = await offset(page, "#continue-items");
       await page.keyboard.press("ArrowUp");
-      await expect(page.locator("#grid > [data-id].focused")).toHaveCount(1);
-      await fullyVisible(page, page.locator("#grid > [data-id].focused"));
+      await expect(page.locator("#grid > [data-id][data-focused=true]")).toHaveCount(1);
+      await fullyVisible(page, page.locator("#grid > [data-id][data-focused=true]"));
       expect(await offset(page, "#continue-items")).toBe(feedOffset);
       expect(await offset(page, "#grid")).toBe(appOffset);
       await page.reload();

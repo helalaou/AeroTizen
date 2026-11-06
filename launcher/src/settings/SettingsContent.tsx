@@ -4,16 +4,16 @@ import { useStore } from "../shared/hooks/useStore";
 
 import { useSettingsEnvironment } from "./hooks/useSettingsEnvironment";
 import { useSettingsNavigation } from "./hooks/useSettingsNavigation";
-import { SettingsDrawer } from "./layout/SettingsDrawer";
-import { AboutSettings } from "./sections/AboutSettings";
+import { SettingsDrawer } from "./layout/SettingsDrawer/SettingsDrawer";
+import { AboutSettings } from "./sections/AboutSettings/AboutSettings";
 import { AppearanceSettings } from "./sections/AppearanceSettings";
-import { HomeAppsSettings } from "./sections/apps/HomeAppsSettings";
-import { BackgroundSettings } from "./sections/BackgroundSettings";
+import { HomeAppsSettings } from "./sections/apps/HomeAppsSettings/HomeAppsSettings";
+import { BackgroundSettings } from "./sections/BackgroundSettings/BackgroundSettings";
 import { ClockSettings } from "./sections/ClockSettings";
-import { ContinueWatchingSettings } from "./sections/ContinueWatchingSettings";
+import { ContinueWatchingSettings } from "./sections/ContinueWatchingSettings/ContinueWatchingSettings";
 import { InputSettings } from "./sections/inputs/InputSettings";
 import { LanguageSettings } from "./sections/LanguageSettings";
-import { WeatherSettings } from "./sections/weather/WeatherSettings";
+import { WeatherSettings } from "./sections/weather/WeatherSettings/WeatherSettings";
 
 export const SettingsContent = ({
   active,

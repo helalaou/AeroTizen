@@ -69,7 +69,7 @@ for (const height of [720, 1080])
       expect(slots[1].y).toBe(slots[2].y);
       expect(slots[1].x - slots[0].x).toBe(slots[2].x - slots[1].x);
       await page.keyboard.press("ArrowDown");
-      await expect(page.locator("#continue-items > [data-key]")).toHaveClass(/focused/);
+      await expect(page.locator("#continue-items > [data-key]")).toHaveAttribute("data-focused", "true");
       await expect(page.locator("#continue-section [data-horizontal-scroller]")).toHaveCSS("overflow", "hidden");
       // The box shadow lies outside the transformed border box. Include its full
       // scaled 9px radius rather than checking only the card's content rectangle.
@@ -92,7 +92,7 @@ for (const height of [720, 1080])
         .toBe(true);
       await page.screenshot({ path: info.outputPath("complete-focus-ring.png") });
       await page.keyboard.press("ArrowUp");
-      await expect(page.locator("#grid > [data-id]")).toHaveClass(/focused/);
+      await expect(page.locator("#grid > [data-id]")).toHaveAttribute("data-focused", "true");
       expect(errors).toEqual([]);
     });
   }
@@ -142,7 +142,7 @@ for (const height of [720, 1080])
         if (!count) {
           await expect(page.locator("#inputs-section")).toBeHidden();
           await page.keyboard.press("ArrowDown");
-          await expect(page.locator("#grid > [data-id]")).toHaveClass(/focused/);
+          await expect(page.locator("#grid > [data-id]")).toHaveAttribute("data-focused", "true");
           return;
         }
         if (glass && count < 5) {
@@ -163,12 +163,12 @@ for (const height of [720, 1080])
         await page.keyboard.press("ArrowDown");
         await expect(page.locator("#inputs > [data-focused=true]")).toHaveCount(1);
         for (let i = 0; i < count; i++) await page.keyboard.press("ArrowLeft");
-        await expect(cards.first()).toHaveClass(/focused/);
+        await expect(cards.first()).toHaveAttribute("data-focused", "true");
         if (count > 1) {
           await page.keyboard.press("ArrowRight");
-          await expect(cards.nth(1)).toHaveClass(/focused/);
+          await expect(cards.nth(1)).toHaveAttribute("data-focused", "true");
           await page.keyboard.press("ArrowLeft");
-          await expect(cards.first()).toHaveClass(/focused/);
+          await expect(cards.first()).toHaveAttribute("data-focused", "true");
         }
         await page.screenshot({ path: info.outputPath("source-dock.png") });
       });

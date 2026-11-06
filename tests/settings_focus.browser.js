@@ -33,11 +33,11 @@ const runSettingsFocus = async (page) => {
   );
   const focused = await page.evaluate(() => {
     const controls = [...document.querySelectorAll("#editor [data-key]")];
-    if (controls.filter((control) => control.classList.contains("focused")).length !== 1)
-      throw new Error("Focus class is not unique");
+    if (controls.filter((control) => control.matches("[data-focused=true]")).length !== 1)
+      throw new Error("Rendered focus is not unique");
     if (controls.filter((control) => control.tabIndex === 0).length !== 1)
       throw new Error("Tab position is not unique");
-    if (!document.activeElement.classList.contains("focused"))
+    if (!document.activeElement.matches("[data-focused=true]"))
       throw new Error("Browser focus and rendered state differ");
     return true;
   });

@@ -28,14 +28,14 @@ test("clock layouts are in one group and keep remote navigation stable on select
   await openCategory(page, "status");
   await expect(page.locator("#clock-layouts [role=button]:visible")).toHaveCount(5);
   await page.keyboard.press("ArrowRight");
-  await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", "clock-layouts:vertical");
+  await expect(page.locator("#editor [data-focused=true]")).toHaveAttribute("data-key", "clock-layouts:vertical");
   await page.keyboard.press("Enter");
-  await expect(page.locator("#editor .focused")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#editor [data-focused=true]")).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("ArrowLeft");
   await page.keyboard.press("Enter");
   await expect(page.locator('[data-key="clock-layouts:classic"]')).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("ArrowDown");
-  await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", "time:12");
+  await expect(page.locator("#editor [data-focused=true]")).toHaveAttribute("data-key", "time:12");
 });
 
 for (const scenario of [

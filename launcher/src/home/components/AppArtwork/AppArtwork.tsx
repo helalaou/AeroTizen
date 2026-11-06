@@ -1,6 +1,6 @@
 import type { AppPresentation, InstalledApp } from "../../../contracts/launcher";
-import type { AppFallbackVariant } from "../../../shared/components/AppFallback";
-import { AppFallback } from "../../../shared/components/AppFallback";
+import type { AppFallbackVariant } from "../../../shared/components/AppFallback/AppFallback";
+import { AppFallback } from "../../../shared/components/AppFallback/AppFallback";
 import { useImageSequence } from "../../../shared/hooks/useImageSequence";
 
 import styles from "./AppArtwork.module.css";

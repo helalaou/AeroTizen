@@ -9,6 +9,8 @@
   --update-notice: #ffd34f;
 }
 body {
+  --toast-surface: var(--card);
+  --fireplace-notice-surface: rgba(0, 0, 0, 0.55);
   --surface-control: rgba(236, 242, 255, 0.08);
   --border-control: rgba(255, 255, 255, 0.12);
   --settings-text: #f7f8fa;

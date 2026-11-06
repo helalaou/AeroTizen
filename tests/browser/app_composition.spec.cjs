@@ -18,7 +18,7 @@ test("an unset Home list and a saved empty list preserve their distinct views an
     AeroTizen.settings.save();
   });
   await expect(page.locator("#grid > [data-id]")).toHaveCount(0);
-  await expect(page.locator("#inputs > [data-input-card]").first()).toHaveClass(/focused/);
+  await expect(page.locator("#inputs > [data-input-card]").first()).toHaveAttribute("data-focused", "true");
   await page.locator("#gear").click();
   await expect(page.locator("#editor")).toBeVisible();
   await page.keyboard.press("Escape");

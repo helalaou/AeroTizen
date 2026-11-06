@@ -43,7 +43,7 @@ for (const glassSettings of [false, true]) {
       const measure = () =>
         page.evaluate(() => {
           const city = document.querySelector("[data-clock=expanded]").getBoundingClientRect();
-          const card = document.querySelector("#grid [data-id].focused").getBoundingClientRect();
+          const card = document.querySelector("#grid [data-id][data-focused=true]").getBoundingClientRect();
           const tabs = document.querySelector("[data-header-tabs]").getBoundingClientRect();
           return { gap: card.top - city.bottom, centre: tabs.left + tabs.width / 2 };
         });

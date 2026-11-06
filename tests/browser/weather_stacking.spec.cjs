@@ -23,7 +23,7 @@ for (const glass of [false, true]) {
     );
     await page.goto("/");
     await page.waitForFunction(() => AeroTizen.apps.ready);
-    await expect(page.locator("#gear")).not.toHaveClass(/focused/);
+    await expect(page.locator("#gear")).not.toHaveAttribute("data-focused", "true");
     await page.evaluate(() => {
       const now = Date.now();
       window.Weather.currentReading = () => ({
@@ -35,7 +35,7 @@ for (const glass of [false, true]) {
       AeroTizen.applyBackground();
     });
     const photo = page.locator("#weather-photo");
-    await expect(photo).toHaveClass(/scene-cloud/);
+    await expect(photo).toHaveAttribute("data-weather-photo", "cloud");
     // Enable hit testing to detect paint-order occlusion.
     await photo.evaluate((layer) => (layer.style.pointerEvents = "auto"));
     for (const selector of ["#gear", "#network", "#home-tab", "#apps-tab", "#time", "[data-home-viewport]"]) {

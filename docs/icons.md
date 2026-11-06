@@ -1,8 +1,10 @@
 # Interface icons
 
 Use named imports from the pinned `lucide-preact` dependency for interface icons.
-Render them through `shared/icons/Icon.tsx`. Defaults are a 24-unit SVG, a two-unit
-stroke and `currentColor`; component CSS owns the displayed size. Weather colours
+Render them through `shared/icons/Icon/Icon.tsx`. Defaults are a 24-unit SVG, a two-unit
+stroke and `currentColor`; component CSS owns the displayed size.
+Use `mirrorInRtl` for directional arrows that must follow the document direction.
+The Icon module owns this behavior; callers do not add global mirror classes. Weather colours
 and dark arrows on white move controls are explicit contrast overrides.
 
 Controls keep their visible text and accessible labels. The shared helper makes
@@ -22,7 +24,7 @@ App logos and artwork stay in the app catalogue and `AppLogoIcon`. The Fireplace
 flame is the existing custom motif in `FlameIcon`; it is not a general interface
 symbol. These custom SVGs also remain decorative. Input icons are components and
 no longer require the runtime SVG string table. Decorative wave artwork lives in
-`backgrounds/WaveBackground.tsx`, with its existing shapes and CSS animation.
+`backgrounds/WaveBackground/WaveBackground.tsx`, with its existing shapes and CSS animation.
 
 The old string table, tile constructors and selection badge CSS live only under
 `tests/fixtures/legacy-launcher/` for comparison tests. Production `brands.js`

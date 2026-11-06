@@ -1,6 +1,6 @@
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../components/ChoiceGroup";
-import { SettingsSection } from "../components/SettingsSection";
+import { SettingsSection } from "../components/SettingsSection/SettingsSection";
 import type { SettingsSectionProps } from "../types";
 
 const APPEARANCE_OPTIONS = [

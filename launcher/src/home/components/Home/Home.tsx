@@ -3,13 +3,13 @@ import { useLayoutEffect } from "preact/hooks";
 
 import { useStore } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
-import { Icon } from "../../../shared/icons/Icon";
+import { Icon } from "../../../shared/icons/Icon/Icon";
 import type { HomeEnvironment } from "../../types";
 import { AppActionsMenu } from "../AppActionsMenu/AppActionsMenu";
 import { AppGrid } from "../AppGrid/AppGrid";
 import { ContinueWatchingRow } from "../ContinueWatchingRow/ContinueWatchingRow";
 import { HomeControl } from "../HomeControl/HomeControl";
-import { HomeHeader } from "../HomeHeader";
+import { HomeHeader } from "../HomeHeader/HomeHeader";
 import { InputDock } from "../InputDock/InputDock";
 
 import styles from "./Home.module.css";

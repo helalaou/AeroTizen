@@ -1,0 +1,37 @@
+import { EthernetPort, Globe, Wifi, WifiHigh, WifiLow, WifiOff } from "lucide-preact";
+
+import type { StatusStores } from "../../contracts/status";
+import { useStore } from "../../shared/hooks/useStore";
+import { useTranslation } from "../../shared/i18n/useTranslation";
+import { Icon } from "../../shared/icons/Icon/Icon";
+import { getNetworkPresentation } from "../presentation/network";
+
+import styles from "./NetworkStatus.module.css";
+
+const NETWORK_ICONS = {
+  ethernet: EthernetPort,
+  offline: WifiOff,
+  unknown: Globe,
+  wifi: Wifi,
+  wifiHigh: WifiHigh,
+  wifiLow: WifiLow,
+} as const;
+
+export const NetworkStatus = ({ status }: { status: StatusStores }) => {
+  const { t } = useTranslation();
+  const reading = useStore(status.network);
+  const { kind, strength, visible } = reading;
+  const presentation = getNetworkPresentation(reading);
+  return (
+    <Icon
+      icon={NETWORK_ICONS[presentation.symbol]}
+      id="network"
+      class={styles.icon}
+      hidden={visible ? undefined : true}
+      style={{ display: visible ? undefined : "none" }}
+      label={t(presentation.label)}
+      data-net-kind={kind}
+      data-net-level={strength === null ? "unknown" : String(strength)}
+    />
+  );
+};

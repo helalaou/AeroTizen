@@ -54,9 +54,9 @@ for (const glassSettings of [false, true]) {
       await expect(heading).toHaveCSS("text-transform", "uppercase");
     }
     const colour = glassSettings ? "rgb(237, 242, 255)" : "rgb(124, 92, 255)";
-    expect(await page.locator("#grid [data-id].focused").evaluate((n) => getComputedStyle(n).boxShadow)).toContain(
-      colour,
-    );
+    expect(
+      await page.locator("#grid [data-id][data-focused=true]").evaluate((n) => getComputedStyle(n).boxShadow),
+    ).toContain(colour);
     await page.keyboard.down("Enter");
     await expect(page.getByRole("menu")).toBeVisible();
     await page.keyboard.up("Enter");
@@ -68,7 +68,7 @@ for (const glassSettings of [false, true]) {
     );
     await page.keyboard.press("Escape");
     await page.keyboard.press("ArrowDown");
-    await expect(page.locator("#continue-items > [data-key]")).toHaveClass(/focused/);
+    await expect(page.locator("#continue-items > [data-key]")).toHaveAttribute("data-focused", "true");
     expect(await page.locator("#continue-items > [data-key]").evaluate((n) => getComputedStyle(n).boxShadow)).toContain(
       colour,
     );
