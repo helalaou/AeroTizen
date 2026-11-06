@@ -33,8 +33,8 @@ test("status views update from shared data without querying status markup", asyn
     );
   });
   await page.goto("/");
-  await expect(page.locator(".weather-status__temperature")).toHaveText("12°");
-  await expect(page.locator(".weather-status__location")).toHaveText("Test city");
+  await expect(page.locator("[data-weather-part=temperature]")).toHaveText("12°");
+  await expect(page.locator("[data-weather-part=location]")).toHaveText("Test city");
   await page.evaluate(() => {
     const getById = document.getElementById.bind(document);
     document.getElementById = (id) => {
@@ -47,14 +47,14 @@ test("status views update from shared data without querying status markup", asyn
     window.Weather.updateDisplay();
     AeroTizen.clock.tick();
   });
-  await expect(page.locator(".weather-status__temperature")).toHaveText("54°");
+  await expect(page.locator("[data-weather-part=temperature]")).toHaveText("54°");
   for (const style of ["horizontal", "minimal", "bold"]) {
     await page.evaluate((style) => {
       AeroTizen.settings.aeroClockStyle = style;
       AeroTizen.settings.save();
     }, style);
-    await expect(page.locator(".clock--expanded")).toHaveClass(new RegExp("clock--" + style));
-    await expect(page.locator(".weather-status__temperature")).toHaveText("54°");
+    await expect(page.locator("[data-clock=expanded]")).toHaveAttribute("data-clock-layout", style);
+    await expect(page.locator("[data-weather-part=temperature]")).toHaveText("54°");
   }
   await page.evaluate(() => {
     AeroTizen.settings.clockLayout = "classic";

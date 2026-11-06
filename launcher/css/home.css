@@ -4,6 +4,10 @@ body {
   --home-side-padding: 64px;
 }
 
+body:not(.clock-layout-compact) {
+  --home-content-padding: 24px;
+}
+
 .content-viewport {
   --home-bottom-fade: 80px;
 

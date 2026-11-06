@@ -196,7 +196,7 @@ for (const glassSettings of [false, true]) {
     const translatedWidth = await homeTab.evaluate((element) => element.getBoundingClientRect().width);
     expect(translatedWidth).toBeGreaterThan(englishWidth);
     await expect
-      .poll(() => page.locator(".header-focus-indicator--tabs").evaluate((element) => parseFloat(element.style.width)))
+      .poll(() => page.locator("[data-header-focus=tabs]").evaluate((element) => parseFloat(element.style.width)))
       .toBeCloseTo(translatedWidth);
     await expectTextFits(homeTab);
     await expectTextFits(page.locator('[data-key="language:auto"]'));

@@ -53,36 +53,40 @@ transforms and scrolled class. Settings enters a category through registered con
 inside that pane, rather than a document/CSS query. Native focus, geometry reads and
 Settings scroll-container movement remain explicit layout operations.
 
-Classes name their component or role: `clock__time`, `clock--horizontal`,
-`weather-status__temperature`, `input-card__status` and
-`header-focus-indicator--tabs`. Version/model names are absent from active view styles.
+Modules use local classes such as `digits`, `horizontal` and `temperature`.
+Unmigrated classes name their component or role, such as `input-card__status`.
+Version/model names are absent from active view styles.
 Existing semantic IDs such as `editor`, `grid`, `rows`, `weather` and `time`, and remote
 `data-key` values, remain stable for integration and test tools. Persisted preference
 keys and values also remain compatible.
 
-| Stylesheet                                            | Owner                                                                               |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `themes.css`                                          | Shared semantic paint tokens and Classic/Glass values                               |
-| `motion.css`                                          | Shared UI durations and reduced-motion policy                                       |
-| `settings/components/*.module.css`                    | Shared Settings focus, choices, group layout, headings and selection badges         |
-| `settings/SettingsRoot.module.css`                    | Settings overlay and preview visibility                                             |
-| `settings/layout/SettingsDrawer.module.css`           | Drawer frame, headings, sidebar and active pane layout                              |
-| `settings/layout/SettingsCategory.module.css`         | Category and Samsung Home rows, current state and update notice                     |
-| `settings/layout/SettingsHelp.module.css`             | Sidebar remote help                                                                 |
-| `settings/layout/SettingsFocusIndicator.module.css`   | Measured Settings focus plate and motion preference                                 |
-| `settings/sections/inputs/InputName.module.css`       | Input-name field layout and focus states                                            |
-| `settings/sections/**/*.module.css`                   | Section layouts, app options, wallpaper controls, weather search and About          |
-| `shared/components/AppFallback.module.css`            | Shared logo/label geometry with explicit Home, favourite, source and badge variants |
-| `base.css`                                            | Page sizing, fonts, hidden state and native/preview visibility                      |
-| `backgrounds.css`, `runtime.css`, `photo-weather.css` | Background layers, Fireplace/toast and weather photos                               |
-| `home.css`, `home-header.css`                         | Home viewport/page movement, header layout and focus indicators                     |
-| `clock.css`                                           | Clock variants, status placement and expanded header clearance                      |
-| `app-cards.css`                                       | App artwork, card sizes/columns and moving/focused states                           |
-| `continue-watching.css`                               | Continue Watching row, cards, labels and progress                                   |
-| `horizontal-scroller.css`                             | Shared horizontal viewport, track layout and reduced motion                         |
-| `input-dock.css`                                      | InputDock and InputCard layout/states                                               |
-| `app-actions-menu.css`                                | AppActionsMenu and ReorderControls                                                  |
-| `icons.css`                                           | Shared interface icon sizing                                                        |
+| Stylesheet                                                           | Owner                                                                               |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `themes.css`                                                         | Shared semantic paint tokens and Classic/Glass values                               |
+| `motion.css`                                                         | Shared UI durations and reduced-motion policy                                       |
+| `settings/components/*.module.css`                                   | Shared Settings focus, choices, group layout, headings and selection badges         |
+| `settings/SettingsRoot.module.css`                                   | Settings overlay and preview visibility                                             |
+| `settings/layout/SettingsDrawer.module.css`                          | Drawer frame, headings, sidebar and active pane layout                              |
+| `settings/layout/SettingsCategory.module.css`                        | Category and Samsung Home rows, current state and update notice                     |
+| `settings/layout/SettingsHelp.module.css`                            | Sidebar remote help                                                                 |
+| `settings/layout/SettingsFocusIndicator.module.css`                  | Measured Settings focus plate and motion preference                                 |
+| `settings/sections/inputs/InputName.module.css`                      | Input-name field layout and focus states                                            |
+| `settings/sections/**/*.module.css`                                  | Section layouts, app options, wallpaper controls, weather search and About          |
+| `shared/components/AppFallback.module.css`                           | Shared logo/label geometry with explicit Home, favourite, source and badge variants |
+| `base.css`                                                           | Page sizing, fonts, hidden state and native/preview visibility                      |
+| `backgrounds.css`, `runtime.css`, `photo-weather.css`                | Background layers, Fireplace/toast and weather photos                               |
+| `home.css`                                                           | Home viewport/page movement and content clearance                                   |
+| `home/components/HomeHeader.module.css`                              | Header layout, shortcuts, tabs and expanded clock clearance                         |
+| `home/components/HeaderFocusIndicator.module.css`                    | Measured shortcut/tab focus plates and shared motion durations                      |
+| `status/Clock.module.css`                                            | Compact, vertical, horizontal, minimal and bold time/date layouts                   |
+| `status/HeaderStatus.module.css`                                     | Compact/expanded status placement                                                   |
+| `status/WeatherStatus.module.css`, `status/NetworkStatus.module.css` | Weather and network presentation, with explicit layout/state props                  |
+| `app-cards.css`                                                      | App artwork, card sizes/columns and moving/focused states                           |
+| `continue-watching.css`                                              | Continue Watching row, cards, labels and progress                                   |
+| `horizontal-scroller.css`                                            | Shared horizontal viewport, track layout and reduced motion                         |
+| `input-dock.css`                                                     | InputDock and InputCard layout/states                                               |
+| `app-actions-menu.css`                                               | AppActionsMenu and ReorderControls                                                  |
+| `icons.css`                                                          | Shared interface icon sizing                                                        |
 
 Module paths in this table are relative to `launcher/src/`; global sheets are in
 `launcher/css/`. Generated module class names are private. Runtime and test hooks
@@ -90,6 +94,9 @@ use semantic IDs, roles, `data-key`, `data-focused`, `data-settings-focus` and
 `data-selection-indicator`. Drawer tests use `data-settings-drawer` part names,
 `data-expanded` and the help/title/update-notice data hooks. Global `.focused`
 remains only as a transition hook for unmigrated styles; only Preact writes it.
+Header/status tests use `data-home-header`, `data-header-tabs`, `data-header-focus`,
+`data-clock-part` and `data-weather-part`. Shell visibility uses the public
+`data-home-header` hook, rather than a private module class.
 See the runtime boundary in the
 [style rules](styles.md) for the remaining public body classes.
 

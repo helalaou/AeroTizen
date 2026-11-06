@@ -182,7 +182,7 @@ test("compiled Home preserves header and input geometry around the resized app g
     await tab.waitForFunction(() => AeroTizen.apps.ready && document.querySelector("#grid > .tile.focused"));
   const geometry = (tab) =>
     tab.evaluate(() =>
-      [".topbar", "#gear", "#inputs"].map((selector) => {
+      ["header", "#gear", "#inputs"].map((selector) => {
         const element = document.querySelector(selector),
           rect = element.getBoundingClientRect();
         // The shared Home heading and section spacing set a new vertical position for Inputs.

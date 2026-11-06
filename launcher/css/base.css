@@ -46,6 +46,16 @@ body.previewing main {
 body.editing main {
   visibility: hidden;
 }
+/* Public shell hook: Settings keeps the header dimmed over native TV mode. */
+body.tv [data-home-header],
+body.previewing [data-home-header] {
+  visibility: hidden;
+}
+body.editing:not(.previewing) [data-home-header] {
+  visibility: visible;
+  opacity: 0.48;
+  pointer-events: none;
+}
 body {
   width: 1920px;
   height: 1080px;
