@@ -32,6 +32,17 @@ Keep nesting at two levels or fewer. Legacy sheets under `launcher/css/` ship as
 copied assets, so they must remain flat. Sass is not required for nesting; theme
 values remain runtime custom properties such as `var(--control-text)`.
 
+Lightning CSS also adds vendor prefixes for the configured Chromium 69 target.
+Write standard properties in compiled modules and let that transformer supply
+supported fallbacks; a separate Autoprefixer pass is not needed. The copied legacy
+sheets still need their explicit prefixes until they move through the compiler.
+
+The multiline clamp is an intentional exception: keep `display: -webkit-box`,
+`-webkit-box-orient: vertical` and `-webkit-line-clamp` together. They form the
+legacy clamping behavior needed by older TVs. The installed compiler does not
+generate this combination from `line-clamp`, so changing the source to that
+single standard property would lose the fallback.
+
 CSS Modules scope class and animation names, not bare element selectors. Apply
 local classes such as `.title` and `.description` directly to headings and copy.
 Use a nested child selector when that relationship is part of the component,

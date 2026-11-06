@@ -33,6 +33,7 @@
 }
 
 .label {
+  /* Chromium 69's multiline clamp needs all three legacy WebKit declarations. */
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
