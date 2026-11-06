@@ -57,6 +57,12 @@ local classes such as `.title` and `.description` directly to headings and copy.
 Use a nested child selector when that relationship is part of the component,
 as with `.small { > svg { ... } }` in `SelectionIndicator`.
 
+Use `shared/styles/text.module.css` for single-line truncation. Import its
+`truncate` class and apply it to the text element, alongside the component's local
+class. Keep width and layout constraints with the component; the utility only
+owns wrapping, clipping and ellipsis. Choice labels retain their two-line default
+and use a nested local modifier when a single-line result is requested.
+
 Do not add extra IDs or theme selectors to beat an earlier rule. The Clock owns
 expanded header clearance; the header and Home styles supply compact defaults.
 
