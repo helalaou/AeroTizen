@@ -122,7 +122,6 @@ for (const glassSettings of [false, true]) {
   }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.setViewportSize({ width: 1280, height: 720 });
     await page.clock.setFixedTime(new Date("2026-06-10T13:05:00Z"));
     await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
     await page.route("https://api.github.com/repos/helalaou/AeroTizen/releases?*", (route) =>

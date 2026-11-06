@@ -63,11 +63,6 @@
       border-left-color: transparent;
     }
   }
-
-  @media (max-height: 960px) {
-    padding-top: 16px;
-    padding-bottom: 14px;
-  }
 }
 
 .head {
@@ -85,11 +80,6 @@
   font-size: 31px;
   font-weight: 500;
   margin: 7px 0 22px;
-
-  @media (max-height: 960px) {
-    margin: 3px 0 8px;
-    font-size: 26px;
-  }
 }
 
 .menu {
@@ -102,11 +92,6 @@
   padding: 10px 4px 12px;
   overflow-y: auto;
   overflow-x: hidden;
-
-  @media (max-height: 960px) {
-    padding-top: 6px;
-    padding-bottom: 8px;
-  }
 }
 
 .return {
@@ -114,10 +99,6 @@
   margin-top: auto;
   padding-top: 10px;
   border-top: 1px solid var(--border-control);
-
-  @media (max-height: 960px) {
-    padding-top: 5px;
-  }
 }
 
 .main {

@@ -6,10 +6,6 @@
   flex-wrap: wrap;
   font-size: 13px;
   color: var(--settings-muted);
-
-  @media (max-height: 960px) {
-    padding-top: 8px;
-  }
 }
 
 .command {

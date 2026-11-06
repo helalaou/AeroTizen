@@ -21,7 +21,6 @@ const setHidden = (page, value) =>
 
 test("opening About marks a stable launcher update as seen across restarts", async ({ page }) => {
   const errors = [];
-  await page.setViewportSize({ width: 1280, height: 720 });
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   let checks = 0;
@@ -68,6 +67,7 @@ test("opening About marks a stable launcher update as seen across restarts", asy
   await expect(categoryDot).toBeVisible();
   for (let i = 0; i < 7; i++) await page.keyboard.press("ArrowDown");
   await expect(aboutCategory).toBeFocused();
+  await expect(aboutCategory).toHaveAttribute("data-current", "true");
   await expect(categoryDot).toBeVisible();
   await page.keyboard.press("ArrowRight");
   await expect(about).toBeVisible();

@@ -27,12 +27,6 @@
   &.return {
     margin-bottom: 0;
   }
-
-  @media (max-height: 960px) {
-    min-height: 44px;
-    margin-bottom: 3px;
-    padding: 2px 10px;
-  }
 }
 
 .icon {
@@ -57,20 +51,11 @@
   flex-direction: column;
   gap: 3px;
   min-width: 0;
-
-  @media (max-height: 960px) {
-    gap: 1px;
-  }
 }
 
 .title {
   font-size: 20px;
   font-weight: 500;
-
-  @media (max-height: 960px) {
-    font-size: 17px;
-    line-height: 20px;
-  }
 }
 
 .categoryTitle {

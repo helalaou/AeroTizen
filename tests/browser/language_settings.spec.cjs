@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 
-test.use({ locale: "ja-JP", viewport: { width: 1280, height: 720 } });
+test.use({ locale: "ja-JP" });
 
 test("language selection uses the English fallback offline and persists through reload", async ({ page }) => {
   const errors = [];
