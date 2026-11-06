@@ -1,9 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { mkdirSync } = require("node:fs");
 const { openCategory } = require("./drawer_helpers.cjs");
-
-const evidence = "/private/tmp/aerotizen-138";
-mkdirSync(evidence, { recursive: true });
 
 const openSolid = async (page, glass) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -75,7 +71,7 @@ for (const glass of [false, true]) {
     const customBox = await custom.boundingBox();
     const scrollBox = await page.locator('[data-settings-drawer="scroll"]').boundingBox();
     expect(customBox.y + customBox.height).toBeLessThanOrEqual(scrollBox.y + scrollBox.height);
-    await page.screenshot({ path: `${evidence}/presets-${theme}.png` });
+    await page.screenshot({ path: test.info().outputPath(`presets-${theme}.png`) });
     await page.locator('[data-key="bg:black"]').click();
     const darkTabs = await tabPaint(page);
     expect(darkTabs.text).toHaveLength(2);
@@ -88,7 +84,7 @@ for (const glass of [false, true]) {
       .toBe("rgb(21, 21, 27)");
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
-    await page.screenshot({ path: `${evidence}/white-home-${theme}.png` });
+    await page.screenshot({ path: test.info().outputPath(`white-home-${theme}.png`) });
     await page.reload();
     await expect.poll(() => rootColour(page)).toBe("rgb(255, 255, 255)");
     await page.locator("#gear").click();
@@ -145,7 +141,7 @@ for (const glass of [false, true]) {
     await expect(icon).toHaveCSS("stroke", "rgb(21, 21, 27)");
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
-    await page.screenshot({ path: `${evidence}/light-weather-${theme}.png` });
+    await page.screenshot({ path: test.info().outputPath(`light-weather-${theme}.png`) });
     expect(errors).toEqual([]);
   });
 
@@ -184,7 +180,7 @@ for (const glass of [false, true]) {
     await page.keyboard.press("ArrowRight");
     await expect.poll(() => rootColour(page)).not.toBe(beforeColour);
     expect(await saved(page)).toEqual(before);
-    await page.screenshot({ path: `${evidence}/picker-${theme}.png` });
+    await page.screenshot({ path: test.info().outputPath(`picker-${theme}.png`) });
     await page.keyboard.press("ArrowDown");
     await expect(page.locator('[data-key="colour:apply"]')).toBeFocused();
     await page.keyboard.press("ArrowRight");

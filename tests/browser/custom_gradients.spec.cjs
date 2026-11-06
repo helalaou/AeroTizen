@@ -1,9 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { mkdirSync } = require("node:fs");
 const { openCategory } = require("./drawer_helpers.cjs");
-
-const evidence = "/private/tmp/aerotizen-gradients";
-mkdirSync(evidence, { recursive: true });
 
 const image = (page) => page.evaluate(() => getComputedStyle(document.documentElement).backgroundImage);
 const saved = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("aerotizen.settings.v1")));
@@ -68,7 +64,7 @@ for (const glass of [false, true]) {
     await expect(tiles).toHaveCount(15);
     await expect(tiles.first()).toHaveAttribute("data-key", "bg:custom-gradient");
     await expect(tiles.first().locator("[data-wallpaper-edit]")).toBeVisible();
-    await page.screenshot({ path: `${evidence}/grid-${theme}.png` });
+    await page.screenshot({ path: test.info().outputPath(`grid-${theme}.png`) });
     const before = await saved(page);
     const original = await image(page);
     await page.keyboard.press("ArrowDown");
@@ -83,7 +79,7 @@ for (const glass of [false, true]) {
     const box = await editor.boundingBox();
     expect(box.y).toBeGreaterThanOrEqual(0);
     expect(box.y + box.height).toBeLessThanOrEqual(1080);
-    await page.screenshot({ path: `${evidence}/editor-${theme}.png` });
+    await page.screenshot({ path: test.info().outputPath(`editor-${theme}.png`) });
     await page.keyboard.press("ArrowDown");
     await expect(page.locator('[data-key="colour:apply"]')).toBeFocused();
     await page.keyboard.press("ArrowRight");
