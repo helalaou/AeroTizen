@@ -82,6 +82,35 @@ body {
   --selection-surface: var(--focus);
   --selection-text: #fff;
   --input-icon-badge: #2c2c30;
+  --input-icon-text: var(--fg);
+  --input-text: #f0f0f3;
+  --input-label-shadow: var(--app-label-shadow);
+  --input-subtitle-text: var(--muted);
+  --input-dock-border: transparent;
+  --input-dock-surface: transparent;
+  --input-dock-shadow: none;
+  --input-dock-shine: none;
+  --input-card-border: transparent;
+  --input-card-surface: var(--card);
+  --input-card-shadow: none;
+  --input-focus-shadow: var(--home-card-focus-shadow);
+  --input-empty-text: rgba(255, 255, 255, 0.89);
+  --input-empty-subtitle-text: rgba(237, 242, 250, 0.64);
+  --input-focus-text: #fff;
+  --input-focus-subtitle-text: rgba(255, 255, 255, 0.83);
+  --input-empty-focus-subtitle-text: rgba(255, 255, 255, 0.88);
+  --input-focus-border: rgba(255, 255, 255, 0.95);
+  --input-focus-surface: linear-gradient(
+    170deg,
+    rgba(255, 255, 255, 0.23),
+    rgba(255, 255, 255, 0.09) 47%,
+    rgba(255, 255, 255, 0.04)
+  );
+  --input-status-text: rgba(255, 255, 255, 0.87);
+  --input-status-border: rgba(255, 255, 255, 0.2);
+  --input-status-surface: rgba(0, 0, 0, 0.25);
+  --input-focus-status-border: rgba(255, 255, 255, 0.55);
+  --input-focus-status-surface: rgba(15, 21, 30, 0.44);
   --continue-surface: var(--card);
   --continue-shadow: none;
   --continue-focus-shadow: var(--home-card-focus-shadow);
@@ -100,6 +129,31 @@ body {
   --network-offline: #ff6b6b;
 }
 body.glass-ui {
+  --input-icon-badge: transparent;
+  --input-icon-text: #fff;
+  --input-text: #fff;
+  --input-label-shadow: 0 1px 6px rgba(0, 0, 0, 0.33);
+  --input-subtitle-text: rgba(255, 255, 255, 0.83);
+  --input-dock-border: rgba(255, 255, 255, 0.31);
+  --input-dock-surface: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.2),
+    rgba(60, 68, 78, 0.44) 18%,
+    rgba(20, 25, 35, 0.63) 62%,
+    rgba(15, 20, 28, 0.71)
+  );
+  --input-dock-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.24), inset 0 -1px rgba(255, 255, 255, 0.09), 0 13px 32px rgba(0, 0, 0, 0.27);
+  --input-dock-shine: linear-gradient(to bottom, rgba(255, 255, 255, 0.075), transparent);
+  --input-card-border: rgba(255, 255, 255, 0.18);
+  --input-card-surface: linear-gradient(
+    170deg,
+    rgba(255, 255, 255, 0.145),
+    rgba(255, 255, 255, 0.035) 70%,
+    rgba(255, 255, 255, 0.055)
+  );
+  --input-card-shadow: inset 0 1px rgba(255, 255, 255, 0.16), 0 4px 13px rgba(0, 0, 0, 0.1);
+  --input-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.28), 0 7px 18px rgba(0, 0, 0, 0.25);
   --focus: #edf2ff;
   --focus-glow: rgba(237, 242, 255, 0.23);
   --header-tab-surface: linear-gradient(
@@ -130,7 +184,6 @@ body.glass-ui {
   --choice-selected-border: rgba(201, 225, 255, 0.55);
   --choice-focused-surface: rgba(236, 242, 255, 0.15);
   --selection-surface: #475269;
-  --input-icon-badge: transparent;
   --continue-surface: linear-gradient(160deg, rgba(86, 97, 116, 0.84), rgba(22, 29, 42, 0.94));
   --continue-shadow: inset 0 1px rgba(255, 255, 255, 0.24), 0 10px 24px rgba(0, 0, 0, 0.28);
   --continue-label-surface: rgba(18, 25, 38, 0.38);

@@ -79,7 +79,7 @@ for (const glassSettings of [false, true]) {
       await page.locator("#continue-items > [data-key]").evaluate((n) => getComputedStyle(n).backgroundImage),
     ).toBe(glassSettings ? "linear-gradient(160deg, rgba(86, 97, 116, 0.84), rgba(22, 29, 42, 0.94))" : "none");
     await page.keyboard.press("ArrowDown");
-    const source = page.locator("#inputs .focused");
+    const source = page.locator("#inputs [data-focused=true]");
     await expect(source).toHaveCount(1);
     expect(
       await source.evaluate((n) => getComputedStyle(n).boxShadow + " " + getComputedStyle(n).borderColor),

@@ -62,7 +62,8 @@ inside that pane, rather than a document/CSS query. Native focus, geometry reads
 Settings scroll-container movement remain explicit layout operations.
 
 Modules use local classes such as `digits`, `horizontal` and `temperature`.
-Unmigrated classes name their component or role, such as `input-card__status`.
+Remaining global classes name decorative backgrounds and runtime overlays, such
+as `bg-wave` and `fire-volume`.
 Version/model names are absent from active view styles.
 Existing semantic IDs such as `editor`, `grid`, `rows`, `weather` and `time`, and remote
 `data-key` values, remain stable for integration and test tools. Persisted preference
@@ -98,7 +99,8 @@ keys and values also remain compatible.
 | `home/components/ContinueWatchingRow/ContinueWatchingRow.module.css`   | Continue Watching track spacing                                                     |
 | `home/components/ContinueWatchingCard/ContinueWatchingCard.module.css` | Card focus, artwork, source badges, titles and progress                             |
 | `home/components/HorizontalScroller/HorizontalScroller.module.css`     | Shared horizontal viewport, track layout and motion                                 |
-| `input-dock.css`                                                       | InputDock and InputCard layout/states                                               |
+| `home/components/InputDock/InputDock.module.css`                       | Input collection spacing and compact dock layout                                    |
+| `home/components/InputCard/InputCard.module.css`                       | Input frame, icon, labels, status badge and focus/state paint                       |
 | `home/components/AppActionsMenu/AppActionsMenu.module.css`             | App actions and menu selection                                                      |
 | `home/components/ReorderControls/ReorderControls.module.css`           | Reorder arrows and local motion                                                     |
 | `icons.css`                                                            | Shared interface icon sizing                                                        |
@@ -108,7 +110,7 @@ Module paths in this table are relative to `launcher/src/`; global sheets are in
 use semantic IDs, roles, `data-key`, `data-focused`, `data-settings-focus` and
 `data-selection-indicator`. Drawer tests use `data-settings-drawer` part names,
 `data-expanded` and the help/title/update-notice data hooks. Global `.focused`
-remains only as a transition hook for unmigrated styles; only Preact writes it.
+remains only as a transition hook for legacy checks; only Preact writes it.
 Header/status tests use `data-home-header`, `data-header-tabs`, `data-header-focus`,
 `data-clock-part` and `data-weather-part`. Shell visibility uses the public
 `data-home-header` and `data-home-content` hooks, rather than private module classes.

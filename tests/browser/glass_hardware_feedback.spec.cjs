@@ -135,7 +135,7 @@ for (const height of [720, 1080])
           { count, glass },
         );
         await page.goto("/");
-        const cards = page.locator("#inputs > .tile");
+        const cards = page.locator("#inputs > [data-input-card]");
         await expect(cards).toHaveCount(count);
         const widths = await cards.evaluateAll((nodes) => nodes.map((node) => node.offsetWidth));
         expect(widths.every((width) => width <= (glass ? 354 : 576))).toBe(true);
@@ -161,7 +161,7 @@ for (const height of [720, 1080])
           for (const gap of spacing) expect(gap).toBeCloseTo(11, 1);
         }
         await page.keyboard.press("ArrowDown");
-        await expect(page.locator("#inputs > .focused")).toHaveCount(1);
+        await expect(page.locator("#inputs > [data-focused=true]")).toHaveCount(1);
         for (let i = 0; i < count; i++) await page.keyboard.press("ArrowLeft");
         await expect(cards.first()).toHaveClass(/focused/);
         if (count > 1) {

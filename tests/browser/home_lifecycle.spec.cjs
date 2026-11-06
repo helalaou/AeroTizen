@@ -168,8 +168,8 @@ test("source reachability keeps active, recognised and manually pinned inputs di
     AeroTizen.inputs.alwaysVisible = (source) => source.number === 3;
     AeroTizen.inputs.refresh();
   });
-  const sources = page.locator("#inputs > .tile");
+  const sources = page.locator("#inputs > [data-input-card]");
   await expect(sources).toHaveCount(4);
-  for (let i = 0; i < 3; i++) await expect(sources.nth(i)).not.toHaveClass(/\boff\b/);
-  await expect(sources.nth(3)).toHaveClass(/\boff\b/);
+  for (let i = 0; i < 3; i++) await expect(sources.nth(i)).toHaveAttribute("data-disconnected", "false");
+  await expect(sources.nth(3)).toHaveAttribute("data-disconnected", "true");
 });
