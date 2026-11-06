@@ -4,8 +4,8 @@ Use the [component ownership map](component-structure.md) to find a stylesheet.
 New or migrated components import a sibling `Component.module.css`. Keep layout
 and state selectors with their component, and remove the old global rules when
 migrating. Shared Settings choices, groups, section headings, focus/selection
-indicators and input names now use modules. The remaining global styles are
-migrated in separate changes. Keep theme paint in
+indicators, input names and drawer shell now use modules. The remaining global
+styles are migrated in separate changes. Keep theme paint in
 `launcher/css/themes.css`, which defines the default Classic values and the
 `body.glass-ui` overrides. Prefer role names such as `--settings-surface`,
 `--header-focus-surface` and `--menu-border` over new colour literals for shared
@@ -25,6 +25,15 @@ and `aria-pressed="true"`; never query a generated module class from runtime cod
 or tests. Module selectors must not depend on `#editor`, IDs or global class aliases.
 `SettingsControl` owns the shared focus reset in its own module; the remaining
 global component rules must not override every focused control through an ID.
+Controls can supply `--settings-control-focus-outline` for a visible focus outline,
+as the drawer close button does.
+
+`SettingsRoot` owns the overlay and preview visibility. `SettingsDrawer` owns the
+frame, headings, sidebar and pane layout; `SettingsCategory` and `SettingsHelp`
+own the sidebar rows and remote help. Expanded state uses `data-expanded` on the
+frame and sidebar, while the content uses `hidden`. Tests can use the stable
+`data-settings-drawer` part names, `data-settings-help`, `data-settings-title` and
+`data-settings-update-notice` hooks instead of private classes.
 
 Use standard CSS nesting in `.module.css` files. Vite's Lightning CSS transformer
 flattens nested selectors for Chromium 69 in both development and production.
@@ -68,6 +77,8 @@ Feedback, focus movement, shape changes and entry effects keep their normal
 durations; when the browser reports reduced motion, those durations become `0s`.
 Components own the transition properties and easing, and always render their final
 state. Do not override the shared motion durations in theme or component rules.
+Keep keyframes with their component until multiple components need the same
+effect. A shared CSS Module can then own the keyframes and reusable animation class.
 
 Settings focus indicators, controls and the drawer use this policy. This removes
 their repeated media queries and reduced-motion `!important` rules. New and migrated
@@ -104,6 +115,10 @@ and native/preview visibility. Keep these exceptions documented. Normal focus,
 selection, theme and layout rules must use the cascade without `!important`.
 
 ## Checks and compatibility
+
+The packaged launcher uses a 1920×1080 CSS canvas, which the TV scales to its
+panel. Test layout at that viewport; do not add compact-screen breakpoints just
+to fit a smaller desktop preview window.
 
 Prettier formats CSS. `npm run lint:css` runs the focused Stylelint rules in
 `stylelint.config.cjs` across both `launcher/css/` and `launcher/src/`:

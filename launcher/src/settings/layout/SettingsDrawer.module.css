@@ -1,0 +1,178 @@
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.frame {
+  --settings-sidebar-width: 330px;
+
+  position: absolute;
+  top: 112px;
+  left: 60px;
+  box-sizing: border-box;
+  display: flex;
+  width: 1440px;
+  height: 850px;
+  max-width: calc(100% - 120px);
+  max-height: calc(100% - 146px);
+  border: 1px solid var(--settings-border);
+  overflow: hidden;
+  color: var(--settings-text);
+  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
+  animation: enter var(--motion-duration-enter) ease-out both;
+  background: var(--settings-surface);
+  border-radius: var(--settings-radius);
+  box-shadow: var(--settings-shadow);
+
+  &[data-expanded="false"] {
+    width: calc(var(--settings-sidebar-width) + 2px);
+  }
+
+  [dir="rtl"] & {
+    left: auto;
+    right: 60px;
+  }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  flex: 0 0 var(--settings-sidebar-width);
+  min-width: 0;
+  height: 100%;
+  padding: 29px 13px 25px;
+  background: transparent;
+  border-right: 1px solid var(--border-control);
+
+  &[data-expanded="false"] {
+    border-right-color: transparent;
+  }
+
+  [dir="rtl"] & {
+    border-right: 0;
+    border-left: 1px solid var(--border-control);
+
+    &[data-expanded="false"] {
+      border-left-color: transparent;
+    }
+  }
+}
+
+.head {
+  padding: 0 10px 5px 21px;
+}
+
+.kicker {
+  font-size: 12px;
+  color: var(--settings-muted);
+  letter-spacing: 2.8px;
+  font-weight: 600;
+}
+
+.sidebarTitle {
+  font-size: 31px;
+  font-weight: 500;
+  margin: 7px 0 22px;
+}
+
+.menu {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  isolation: isolate;
+  padding: 10px 4px 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.return {
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-control);
+}
+
+.main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 100%;
+  padding: 30px 35px 36px 38px;
+  background: var(--settings-main-surface);
+}
+
+.contentHead {
+  position: relative;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--settings-heading-divider);
+  padding-bottom: 18px;
+}
+
+.contentKicker {
+  font-size: 13px;
+  color: var(--settings-kicker);
+  letter-spacing: 2px;
+}
+
+.activeTitle {
+  margin: 6px 0 0;
+  font-size: 37px;
+  font-weight: 500;
+}
+
+.close {
+  --settings-control-focus-outline: 2px solid var(--control-focused-text);
+
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  font-size: 32px;
+  color: var(--control-text);
+  background: var(--settings-close-surface);
+
+  [dir="rtl"] & {
+    right: auto;
+    left: 0;
+  }
+}
+
+.scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px 9px 25px 4px;
+}
+
+.pane {
+  --settings-control-focus-z-index: 2;
+
+  &[data-section-pane="apps"] {
+    --settings-section-spacing: 30px;
+  }
+
+  &[data-section-pane="about"] {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+}

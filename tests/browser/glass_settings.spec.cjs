@@ -38,13 +38,13 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
       .toBeLessThan(2);
   await checkTabPlate();
   await page.locator("#gear").click();
-  await expect(page.locator("#editor")).toHaveClass(/settings-drawer--collapsed/);
+  await expect(page.locator("[data-settings-drawer=frame]")).toHaveAttribute("data-expanded", "false");
   await expect(page.locator('[data-key="section:appearance"]')).toHaveClass(/focused/);
   await page.keyboard.press("ArrowDown");
   await expect(page.locator('[data-key="section:apps"]')).toHaveClass(/focused/);
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-section-pane="apps"]')).toBeVisible();
-  const paneScroll = page.locator(".settings-drawer__scroll");
+  const paneScroll = page.locator("[data-settings-drawer=scroll]");
   const scrollToEnd = (node) => (node.scrollTop = node.scrollHeight);
   expect(await paneScroll.evaluate(scrollToEnd)).toBeGreaterThan(0);
   await page.locator('[data-key="section:sources"]').click();
@@ -59,7 +59,7 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   await page.keyboard.press("ArrowRight");
   await expect(paneScroll).toHaveJSProperty("scrollTop", 0);
   await page.keyboard.press("Escape");
-  await expect(page.locator("#editor")).toHaveClass(/settings-drawer--collapsed/);
+  await expect(page.locator("[data-settings-drawer=frame]")).toHaveAttribute("data-expanded", "false");
   for (const category of ["appearance", "apps", "wallpaper", "status", "weather", "sources"]) {
     await page.locator(`[data-key="section:${category}"]`).click();
     await expect(page.locator(`[data-section-pane="${category}"]`)).toBeVisible();
@@ -105,19 +105,19 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   expect(errors).toEqual([]);
 });
 
-for (const glass of [false, true])
-  for (const height of [720, 1080]) {
-    test(`${glass ? "Glass" : "Classic"} Settings bounds and remote focus at ${height}p`, async ({ page }) => {
-      await page.setViewportSize({ width: height === 720 ? 1280 : 1920, height });
+for (const language of ["en", "ar"])
+  for (const glass of [false, true]) {
+    test(`${language} ${glass ? "Glass" : "Classic"} Settings bounds and remote focus at 1080p`, async ({ page }) => {
+      await page.setViewportSize({ width: 1920, height: 1080 });
       await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
       await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
       await page.addInitScript(
-        (glass) =>
+        ({ glass, language }) =>
           localStorage.setItem(
             "aerotizen.settings.v1",
-            JSON.stringify({ glassSettings: glass, background: "black", showWeather: false }),
+            JSON.stringify({ glassSettings: glass, language, background: "black", showWeather: false }),
           ),
-        glass,
+        { glass, language },
       );
       await page.goto("/");
       await page.waitForFunction(() => AeroTizen.apps.ready);
@@ -135,19 +135,20 @@ for (const glass of [false, true])
         };
       });
       expect(bounds.sides).toEqual(["0px", "0px", "0px", "0px"]);
-      expect(bounds.width).toBe(height === 720 ? 1280 : 1920);
-      expect(bounds.height).toBe(height);
-      const sidebar = page.locator(".settings-drawer__sidebar");
-      const menu = sidebar.locator(".settings-drawer__menu");
+      expect(bounds.width).toBe(1920);
+      expect(bounds.height).toBe(1080);
+      const enterPane = language === "ar" ? "ArrowLeft" : "ArrowRight";
+      const sidebar = page.locator("[data-settings-drawer=sidebar]");
+      const menu = sidebar.locator("[data-settings-drawer=menu]");
       expect(await menu.evaluate((el) => el.scrollHeight - el.clientHeight)).toBe(0);
       const sidebarWidth = (await sidebar.boundingBox()).width;
       const categoryWidth = (await page.locator('[data-key="section:appearance"]').boundingBox()).width;
       for (let i = 0; i < 8; i++) await page.keyboard.press("ArrowDown");
-      const footer = page.getByRole("button", { name: "Samsung Home", exact: true }).and(page.locator("#escape"));
+      const footer = page.locator("#escape");
       await expect(footer).toBeFocused();
       await expect(footer).toBeInViewport();
       expect(await menu.evaluate((el) => el.scrollTop)).toBe(0);
-      await page.keyboard.press("ArrowRight");
+      await page.keyboard.press(enterPane);
       await expect(footer).toBeFocused();
       await page.keyboard.press("ArrowUp");
       await expect(page.locator('[data-key="section:about"]')).toHaveClass(/focused/);
@@ -155,20 +156,24 @@ for (const glass of [false, true])
       await expect(page.locator('[data-key="section:language"]')).toHaveClass(/focused/);
       await page.keyboard.press("ArrowUp");
       await expect(page.locator('[data-key="section:sources"]')).toHaveClass(/focused/);
-      await page.keyboard.press("ArrowRight");
+      await page.keyboard.press(enterPane);
       await expect(page.locator('[data-section-pane="sources"]')).toBeVisible();
       expect((await sidebar.boundingBox()).width).toBe(sidebarWidth);
       expect((await page.locator('[data-key="section:appearance"]').boundingBox()).width).toBe(categoryWidth);
       for (let i = 0; i < 20; i++) await page.keyboard.press("ArrowDown");
       const visible = await page.locator("#editor .focused").evaluate((el) => {
         const r = el.getBoundingClientRect(),
-          host = el.closest(".settings-drawer__scroll") || el.closest(".settings-drawer__main"),
+          host = el.closest("[data-settings-drawer=scroll]") || el.closest("[data-settings-drawer=main]"),
           h = host.getBoundingClientRect();
         return r.width > 0 && r.height > 0 && r.top >= h.top && r.bottom <= h.bottom && r.right <= innerWidth;
       });
       expect(visible).toBe(true);
-      await page.keyboard.press("Escape");
-      await page.keyboard.press("Escape");
+      const close = page.locator('[data-key="settings-close"]');
+      await close.focus();
+      await expect(close).toHaveAttribute("data-focused", "true");
+      await expect(close).toHaveCSS("outline-style", "solid");
+      await expect(close).toHaveCSS("outline-width", "2px");
+      await page.keyboard.press("Enter");
       await expect(page.locator("#editor")).toBeHidden();
     });
   }

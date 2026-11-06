@@ -22,7 +22,7 @@ for (const glassSettings of [false, true]) {
     await expect(page.locator('#home-root [data-focused="true"]')).toHaveCount(1);
     await page.locator("#gear").click();
     await expect(page.locator('#home-root [data-focused="true"]')).toHaveCount(0);
-    await expect(page.locator("#editor")).toHaveClass(/settings-drawer--collapsed/);
+    await expect(page.locator("[data-settings-drawer=frame]")).toHaveAttribute("data-expanded", "false");
     await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", "section:appearance");
     await page.keyboard.press("ArrowRight");
     await page.locator(`[data-key="settings-appearance:${!glassSettings}"]`).click();
@@ -30,10 +30,10 @@ for (const glassSettings of [false, true]) {
       "data-key",
       `settings-appearance:${!glassSettings}`,
     );
-    await expect(page.locator("#editor")).not.toHaveClass(/settings-drawer--collapsed/);
+    await expect(page.locator("[data-settings-drawer=frame]")).toHaveAttribute("data-expanded", "true");
     await expect(page.locator("#editor .focused")).toHaveAttribute("data-key", `settings-appearance:${!glassSettings}`);
     await page.keyboard.press("Escape");
-    await expect(page.locator("#editor")).toHaveClass(/settings-drawer--collapsed/);
+    await expect(page.locator("[data-settings-drawer=frame]")).toHaveAttribute("data-expanded", "false");
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowRight");
     await expect(page.locator('[data-section-pane="apps"]')).toBeVisible();
@@ -43,8 +43,10 @@ for (const glassSettings of [false, true]) {
     await expect(page.locator('#home-root [data-focused="true"]')).toHaveCount(1);
     await page.reload();
     await page.locator("#gear").click();
-    await expect(page.locator("#editor")).toHaveClass(
-      !glassSettings ? /settings-drawer--glass/ : /settings-drawer--classic/,
-    );
+    expect(
+      await page
+        .locator("[data-settings-drawer=frame]")
+        .evaluate((node) => getComputedStyle(node).backgroundImage !== "none"),
+    ).toBe(!glassSettings);
   });
 }

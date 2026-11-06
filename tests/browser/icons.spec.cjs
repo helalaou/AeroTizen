@@ -109,7 +109,7 @@ for (const glass of [false, true]) {
     );
     await openCategory(page, "wallpaper");
     await expect(page.locator('[data-key="bg:black"] [data-selection-indicator]')).toBeVisible();
-    await expect(page.locator(".settings-drawer__help svg[aria-hidden=true]")).toHaveCount(3);
+    await expect(page.locator("[data-settings-help] svg[aria-hidden=true]")).toHaveCount(3);
     await page.locator('[data-key="wallpaper-categories:animated"]').click();
     await page.locator('[data-key="bg:aurora"]').click();
     const preview = page.getByRole("button", { name: "Preview", exact: true });

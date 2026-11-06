@@ -34,9 +34,6 @@ h2 {
     0 18px 40px rgba(0, 0, 0, 0.6);
   z-index: 2;
 }
-#settings-root [data-key] {
-  outline: none;
-}
 body.tv {
   background: transparent;
 }

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, House, X } from "lucide-preact";
+import { House, X } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 
 import { useStore } from "../../shared/hooks/useStore";
@@ -9,7 +9,10 @@ import { useSettingsEnvironment } from "../hooks/useSettingsEnvironment";
 
 import type { Category } from "./categories";
 import { categories } from "./categories";
+import { SettingsCategory } from "./SettingsCategory";
+import styles from "./SettingsDrawer.module.css";
 import { SettingsFocusIndicator } from "./SettingsFocusIndicator";
+import { SettingsHelp } from "./SettingsHelp";
 
 // Categories and remote behaviour are shared by both appearance themes.
 export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChildren> }) => {
@@ -27,84 +30,62 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
   const { unread } = useStore(updates);
   const { t } = useTranslation();
   const active = categories.find((category) => category.id === state.category);
+  const expanded = state.expanded ? "true" : "false";
   return (
-    <div class="settings-drawer__frame">
-      <aside class="settings-drawer__sidebar">
-        <div class="settings-drawer__head">
-          <div class="settings-drawer__kicker">
+    <div class={styles.frame} data-settings-drawer="frame" data-expanded={expanded}>
+      <aside class={styles.sidebar} data-settings-drawer="sidebar" data-expanded={expanded}>
+        <div class={styles.head}>
+          <div class={styles.kicker} data-product-name>
             {
               // eslint-disable-next-line launcher-i18n/translated-copy -- Product name.
               "AEROTIZEN"
             }
           </div>
-          <h2>{t("common.settings")}</h2>
+          <h2 class={styles.sidebarTitle}>{t("common.settings")}</h2>
         </div>
-        <div class="settings-drawer__menu" ref={categoryMenu}>
+        <div class={styles.menu} data-settings-drawer="menu" ref={categoryMenu}>
           <SettingsFocusIndicator container={categoryMenu} sidebar />
           {categories.map((category) => {
             const hasUpdate = category.id === "about" && unread;
+            const current = state.category === category.id;
             return (
-              <SettingsControl
+              <SettingsCategory
                 key={category.id}
-                class={"settings-category" + (state.category === category.id ? " is-current" : "")}
                 focusKey={"section:" + category.id}
-                role="button"
-                aria-label={t(hasUpdate ? "settings.about.sectionNotice" : category.title)}
-                aria-expanded={state.category === category.id && state.expanded}
-                onClick={() => drawer.set({ category: category.id, expanded: true })}
-              >
-                <span class="settings-category__icon">
-                  <Icon icon={category.icon} />
-                </span>
-                <span class="settings-category__label">
-                  <strong>
-                    {t(category.title)}
-                    {hasUpdate && <span class="settings-update-dot" aria-hidden="true" />}
-                  </strong>
-                  <small>{t(hasUpdate ? "settings.about.updateAvailable" : category.hint)}</small>
-                </span>
-                <span class="settings-category__chevron">
-                  <Icon icon={ChevronRight} class="ui-icon--mirror" />
-                </span>
-              </SettingsControl>
+                accessibleLabel={t(hasUpdate ? "settings.about.sectionNotice" : category.title)}
+                expanded={current && state.expanded}
+                current={current}
+                icon={category.icon}
+                label={t(category.title)}
+                hint={t(hasUpdate ? "settings.about.updateAvailable" : category.hint)}
+                notice={hasUpdate}
+                onSelect={() => drawer.set({ category: category.id, expanded: true })}
+              />
             );
           })}
-          <div class="settings-drawer__return">
-            <SettingsControl
+          <div class={styles.return}>
+            <SettingsCategory
               id="escape"
-              class="settings-category"
               focusKey="escape"
-              role="button"
-              onClick={actions.useSamsungHome}
-            >
-              <span class="settings-category__icon">
-                <Icon icon={House} />
-              </span>
-              <strong>{t("common.samsungHome")}</strong>
-            </SettingsControl>
+              variant="return"
+              icon={House}
+              label={t("common.samsungHome")}
+              onSelect={actions.useSamsungHome}
+            />
           </div>
         </div>
-        <div class="settings-drawer__help">
-          <span>
-            <Icon icon={ChevronUp} />
-            <Icon icon={ChevronDown} />
-            {t("home.move")}
-          </span>
-          <span>{t("settings.drawer.select")}</span>
-          <span>
-            <Icon icon={ChevronLeft} class="ui-icon--mirror" />
-            {t("settings.drawer.back")}
-          </span>
-        </div>
+        <SettingsHelp />
       </aside>
-      <div class="settings-drawer__main" ref={categoryContent}>
-        <div class="settings-drawer__content-head">
-          <span class="settings-drawer__content-kicker">
+      <div class={styles.main} data-settings-drawer="main" ref={categoryContent} hidden={!state.expanded}>
+        <div class={styles.contentHead}>
+          <span class={styles.contentKicker}>
             {t(state.category === "about" ? "settings.about.kicker" : "settings.drawer.customisation")}
           </span>
-          <h2 class="settings-drawer__active-title">{active && t(active.title)}</h2>
+          <h2 class={styles.activeTitle} data-settings-title>
+            {active && t(active.title)}
+          </h2>
           <SettingsControl
-            class="settings-drawer__close"
+            class={styles.close}
             focusKey="settings-close"
             role="button"
             aria-label={t("settings.drawer.close")}
@@ -113,12 +94,12 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
             <Icon icon={X} />
           </SettingsControl>
         </div>
-        <div class="settings-drawer__scroll" ref={categoryScroll}>
+        <div class={styles.scroll} data-settings-drawer="scroll" ref={categoryScroll}>
           <SettingsFocusIndicator container={categoryScroll} />
           {categories.map((category) => (
             <section
               key={category.id}
-              class="settings-drawer__pane"
+              class={styles.pane}
               data-section-pane={category.id}
               ref={(node) => {
                 if (node) {

@@ -44,7 +44,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
         const pane = element.closest("[data-section-pane]");
         if (
           pane &&
-          (pane.hidden || document.querySelector("#editor").classList.contains("settings-drawer--collapsed"))
+          (pane.hidden || document.querySelector("[data-settings-drawer=frame]").dataset.expanded === "false")
         ) {
           const entry = document.querySelector('[data-key="section:' + pane.dataset.sectionPane + '"]');
           // Category clicks use the same public controls as the physical drawer.
@@ -268,7 +268,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       if (variant === "preact") {
         find("app:" + A.apps.all[0].id).click();
         for (let i = 0; i < 60; i++) key(K.DOWN);
-        assert(document.querySelector(".settings-drawer__scroll").scrollTop > 0, "focus scrolls apps into view");
+        assert(document.querySelector("[data-settings-drawer=scroll]").scrollTop > 0, "focus scrolls apps into view");
         key(K.ESC);
       }
       for (let i = 0; i < 60; i++) key(K.DOWN);
@@ -324,7 +324,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
         : '<svg xmlns="http://www.w3.org/2000/svg" width="304" height="304"><rect width="304" height="304" fill="purple"/></svg>',
     }),
   );
-  await page.evaluate(async () => {
+  await page.evaluate(() => {
     const A = AeroTizen;
     const original = A.tiles.app;
     window.settingsArtworkConstructions = 0;
@@ -334,10 +334,10 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     };
     A.artwork.sources = () => ["https://artwork.test/bad", "https://artwork.test/good"];
     A.settingsUi.open();
-    document.querySelector('[data-key="section:apps"]').click();
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    document.querySelector("#all-apps .app-tile").click();
   });
+  await page.locator('[data-key="section:apps"]').click();
+  // A real pointer click waits for the pane to render before selecting an app.
+  await page.locator("#all-apps .app-tile").first().click();
   await page.waitForFunction(
     () => document.querySelectorAll("#all-apps .has-artwork").length === AeroTizen.apps.all.length,
   );
