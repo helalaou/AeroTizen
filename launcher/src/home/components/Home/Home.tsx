@@ -7,7 +7,7 @@ import { Icon } from "../../../shared/icons/Icon";
 import type { HomeEnvironment } from "../../types";
 import { AppActionsMenu } from "../AppActionsMenu/AppActionsMenu";
 import { AppGrid } from "../AppGrid/AppGrid";
-import { ContinueWatchingRow } from "../ContinueWatchingRow";
+import { ContinueWatchingRow } from "../ContinueWatchingRow/ContinueWatchingRow";
 import { HomeControl } from "../HomeControl/HomeControl";
 import { HomeHeader } from "../HomeHeader";
 import { InputDock } from "../InputDock";

@@ -79,9 +79,7 @@ for (const glassSettings of [false, true]) {
     expect(before.length).toBeGreaterThan(2);
     await page.evaluate(() => {
       document.querySelector('[data-settings-drawer="overlay"]').removeAttribute("id");
-      for (const sheet of document.querySelectorAll(
-        'link[href="css/input-dock.css"], link[href="css/continue-watching.css"]',
-      )) {
+      for (const sheet of document.querySelectorAll('link[href="css/input-dock.css"]')) {
         sheet.disabled = true;
       }
     });

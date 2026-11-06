@@ -145,19 +145,21 @@ test("root helper and installed Stremio enable an opt-in source; loss hides it b
   await page.locator('[data-key="continue-app:' + prime + '"]').click();
   await option.click();
   await closeSettings(page);
-  await expect(page.locator(".continue-card")).toHaveCount(2);
-  await expect(page.locator(".continue-card").first()).toContainText("Stremio programme");
-  await expect(page.locator(".continue-card").first()).toContainText("S2 E9");
-  await page.locator(".continue-card").first().click();
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(2);
+  await expect(page.locator("#continue-items > [data-key]").first()).toContainText("Stremio programme");
+  await expect(page.locator("#continue-items > [data-key]").first()).toContainText("S2 E9");
+  await page.locator("#continue-items > [data-key]").first().click();
   expect(await page.evaluate(() => window.stremioLaunches)).toEqual([stremio]);
   await page.evaluate(() => {
-    window.savedStremio = document.querySelector(".continue-card");
+    window.savedStremio = document.querySelector("#continue-items > [data-key]");
     AeroTizen.continueWatching.refresh();
   });
   await expect
     .poll(() => page.evaluate((id) => AeroTizen.continueWatching.sources.find((s) => s.id === id)?.status, stremio))
     .toBe("Available");
-  expect(await page.evaluate(() => window.savedStremio === document.querySelector(".continue-card"))).toBe(true);
+  expect(
+    await page.evaluate(() => window.savedStremio === document.querySelector("#continue-items > [data-key]")),
+  ).toBe(true);
   await page.clock.install();
   const settled = h.calls.length;
   await page.clock.fastForward(35000);
@@ -169,8 +171,8 @@ test("root helper and installed Stremio enable an opt-in source; loss hides it b
   await expect(option).toHaveCount(0);
   expect(await page.evaluate((id) => AeroTizen.settings.continueWatchingApps.includes(id), stremio)).toBe(true);
   await closeSettings(page);
-  await expect(page.locator(".continue-card")).toHaveCount(1);
-  await expect(page.locator(".continue-card")).toContainText("Prime programme");
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(1);
+  await expect(page.locator("#continue-items > [data-key]")).toContainText("Prime programme");
   h.state.root = true;
   await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
   await page.locator("#gear").click();
@@ -178,7 +180,7 @@ test("root helper and installed Stremio enable an opt-in source; loss hides it b
   await expect(option).toBeVisible();
   await expect(option).toHaveAttribute("aria-pressed", "true");
   await closeSettings(page);
-  await expect(page.locator(".continue-card")).toHaveCount(2);
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(2);
   expect(h.errors).toEqual([]);
 });
 
@@ -218,7 +220,7 @@ test("unchecking Stremio removes its cards and keeps its option in place", async
   const h = await setup(page, { youtube: true });
   const option = page.locator('[data-key="continue-app:' + stremio + '"]');
   await option.click();
-  await expect(page.locator(".continue-card")).toHaveCount(1);
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(1);
   await page.evaluate(() => {
     const cw = AeroTizen.continueWatching;
     window.sourceOrders = [];
@@ -227,12 +229,12 @@ test("unchecking Stremio removes its cards and keeps its option in place", async
   const requestCount = h.calls.length;
   await option.click();
   await expect(option).toHaveAttribute("aria-pressed", "false");
-  await expect(page.locator(".continue-card")).toHaveCount(0);
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(0);
   expect(await page.evaluate(() => window.sourceOrders)).toEqual([[prime, stremio, youtube]]);
   expect(h.calls).toHaveLength(requestCount);
   await option.click();
   await expect(option).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".continue-card")).toHaveCount(1);
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(1);
 });
 
 for (const thumbnailAvailable of [true, false]) {
@@ -258,16 +260,16 @@ for (const thumbnailAvailable of [true, false]) {
     });
     await page.locator('[data-key="continue-app:' + stremio + '"]').click();
     await closeSettings(page);
-    const card = page.locator(".continue-card");
-    const image = card.locator(".continue-image");
+    const card = page.locator("#continue-items > [data-key]");
+    const image = card.locator("[data-continue-part=image]");
     await expect(image).toHaveAttribute("src", thumbnailAvailable ? thumbnail : background);
     await expect(image).toHaveCSS("object-fit", "cover");
     await expect.poll(() => image.evaluate((element) => element.naturalWidth)).toBe(800);
     expect(requested).toEqual(thumbnailAvailable ? ["episode"] : ["episode", "series"]);
-    await expect(card.locator(".continue-progress-fill")).toHaveCount(0);
+    await expect(card.locator("[data-continue-part=progress-fill]")).toHaveCount(0);
     const labelBackground = await card
-      .locator(".continue-label")
+      .locator("[data-continue-part=label]")
       .evaluate((node) => getComputedStyle(node).backgroundColor);
-    await expect(card.locator(".continue-progress")).toHaveCSS("background-color", labelBackground);
+    await expect(card.locator("[data-continue-part=progress]")).toHaveCSS("background-color", labelBackground);
   });
 }

@@ -1,11 +1,12 @@
-import type { ContinueItem } from "../../contracts/launcher";
-import { useStore } from "../../shared/hooks/useStore";
-import { useTranslation } from "../../shared/i18n/useTranslation";
-import type { HomeEnvironment } from "../types";
+import type { ContinueItem } from "../../../contracts/launcher";
+import { useStore } from "../../../shared/hooks/useStore";
+import { useTranslation } from "../../../shared/i18n/useTranslation";
+import type { HomeEnvironment } from "../../types";
+import { ContinueWatchingCard } from "../ContinueWatchingCard/ContinueWatchingCard";
+import { HomeSectionHeading } from "../HomeSectionHeading/HomeSectionHeading";
+import { HorizontalScroller } from "../HorizontalScroller/HorizontalScroller";
 
-import { ContinueWatchingCard } from "./ContinueWatchingCard";
-import { HomeSectionHeading } from "./HomeSectionHeading/HomeSectionHeading";
-import { HorizontalScroller } from "./HorizontalScroller/HorizontalScroller";
+import styles from "./ContinueWatchingRow.module.css";
 
 export const ContinueWatchingRow = ({
   env,
@@ -24,7 +25,7 @@ export const ContinueWatchingRow = ({
       <HorizontalScroller
         id="continue-items"
         label={t("home.continueWatching")}
-        viewportClass="continue-viewport"
+        trackClass={styles.track}
         trackRef={env.continueItems}
         viewportRef={env.continueViewport}
         offset={continueOffset}

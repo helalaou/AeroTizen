@@ -51,7 +51,7 @@ for (const height of [720, 1080])
         };
       }, glass);
       await page.goto("/");
-      await expect(page.locator(".continue-card")).toHaveCount(1);
+      await expect(page.locator("#continue-items > [data-key]")).toHaveCount(1);
       const slots = await page.locator("#gear, #samsung-home-shortcut, #network").evaluateAll((nodes) =>
         nodes.map((node) => {
           const rect = node.getBoundingClientRect();
@@ -69,13 +69,13 @@ for (const height of [720, 1080])
       expect(slots[1].y).toBe(slots[2].y);
       expect(slots[1].x - slots[0].x).toBe(slots[2].x - slots[1].x);
       await page.keyboard.press("ArrowDown");
-      await expect(page.locator(".continue-card")).toHaveClass(/focused/);
-      await expect(page.locator(".continue-viewport")).toHaveCSS("overflow", "hidden");
+      await expect(page.locator("#continue-items > [data-key]")).toHaveClass(/focused/);
+      await expect(page.locator("#continue-section [data-horizontal-scroller]")).toHaveCSS("overflow", "hidden");
       // The box shadow lies outside the transformed border box. Include its full
       // scaled 9px radius rather than checking only the card's content rectangle.
       await expect
         .poll(() =>
-          page.locator(".continue-card").evaluate((card) => {
+          page.locator("#continue-items > [data-key]").evaluate((card) => {
             const r = card.getBoundingClientRect(),
               clip = card.closest("[data-home-viewport]").getBoundingClientRect(),
               rowClip = card.closest("[data-horizontal-scroller]").getBoundingClientRect();

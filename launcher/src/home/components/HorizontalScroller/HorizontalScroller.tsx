@@ -14,7 +14,6 @@ export const HorizontalScroller = ({
   onOffsetChange,
   enabled = true,
   visible = true,
-  viewportClass = "",
   trackClass = "",
   trackRef,
   viewportRef,
@@ -27,7 +26,6 @@ export const HorizontalScroller = ({
   onOffsetChange(offset: number): void;
   enabled?: boolean;
   visible?: boolean;
-  viewportClass?: string;
   trackClass?: string;
   trackRef?: RefObject<HTMLDivElement>;
   viewportRef?: RefObject<HTMLDivElement>;
@@ -49,7 +47,7 @@ export const HorizontalScroller = ({
   });
   return (
     <div
-      class={styles.viewport + " " + viewportClass}
+      class={styles.viewport}
       data-horizontal-scroller
       data-enabled={enabled ? "true" : undefined}
       hidden={!visible}

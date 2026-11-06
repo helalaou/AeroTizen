@@ -63,7 +63,7 @@ async function prepare(page, { glass = false, language = "en", layout = "grid" }
   );
   await page.goto("/");
   await expect(page).toHaveTitle("AeroTizen");
-  await expect(page.locator(".continue-card")).toHaveCount(10);
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(10);
 }
 
 const offset = (page, id) => page.locator(id).getAttribute("data-offset").then(Number);
@@ -106,10 +106,10 @@ for (const glass of [false, true]) {
       expect(appOffset).toBeGreaterThan(0);
       expect(await offset(page, "#continue-items")).toBe(0);
       await page.keyboard.press("ArrowDown");
-      await expect(page.locator(".continue-card.focused")).toHaveCount(1);
+      await expect(page.locator("#continue-items > [data-key][data-focused=true]")).toHaveCount(1);
       for (let index = 0; index < 8; index++) await page.keyboard.press(next);
-      await expect(page.locator(".continue-card").last()).toBeFocused();
-      await fullyVisible(page, page.locator(".continue-card").last());
+      await expect(page.locator("#continue-items > [data-key]").last()).toBeFocused();
+      await fullyVisible(page, page.locator("#continue-items > [data-key]").last());
       expect(await offset(page, "#continue-items")).toBeGreaterThan(0);
       const feedOffset = await offset(page, "#continue-items");
       await page.keyboard.press("ArrowUp");
@@ -170,7 +170,7 @@ for (const glass of [false, true]) {
         expect(feed.y).toBeLessThan(950);
         if (clock === "classic") expect(feed.y + feed.height).toBeLessThanOrEqual(1000);
         await page.keyboard.press("ArrowDown");
-        await fullyVisible(page, page.locator(".continue-card.focused"));
+        await fullyVisible(page, page.locator("#continue-items > [data-key][data-focused=true]"));
         if (clock === "classic" && columns === 3) await page.screenshot({ path: info.outputPath("apps-and-feed.png") });
       }
     }
