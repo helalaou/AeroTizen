@@ -4,6 +4,7 @@ import type { StatusStores } from "../contracts/status";
 import { useStore } from "../shared/hooks/useStore";
 
 import { Clock } from "./Clock";
+import styles from "./HeaderStatus.module.css";
 import { useClock } from "./hooks/useClock";
 import { useWeather } from "./hooks/useWeather";
 import { WeatherStatus } from "./WeatherStatus";
@@ -22,10 +23,11 @@ export const HeaderStatus = ({
   const weather = useWeather(status.weather);
   const layout = settings.clockLayout === "custom" ? settings.aeroClockStyle : "compact";
   return (
-    <div class={"topbar-right" + (!settings.showTime && settings.dateFormat === "none" ? " weather-only" : "")}>
+    <div class={styles.status} data-header-status data-expanded={layout !== "compact" ? "true" : "false"}>
       <Clock layout={layout} settings={settings} clock={clock} value={value}>
         <WeatherStatus
-          variant={layout === "compact" ? "compact" : "expanded"}
+          layout={layout}
+          only={!settings.showTime && settings.dateFormat === "none"}
           weather={weather}
           showWeather={settings.showWeather}
           showLocation={settings.weatherShowLocation}

@@ -4,6 +4,8 @@ import { useStore } from "../../shared/hooks/useStore";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import type { HomeEnvironment } from "../types";
 
+import styles from "./HeaderFocusIndicator.module.css";
+
 const GROUP_KEYS: Record<"tabs" | "shortcuts", readonly string[]> = {
   tabs: ["home-tab", "apps-tab"],
   shortcuts: ["gear", "samsung-home-shortcut"],
@@ -56,13 +58,11 @@ export const HeaderFocusIndicator = ({
   return (
     <div
       aria-hidden="true"
-      class={
-        "header-focus-indicator " +
-        (tabs ? "header-focus-indicator--tabs" : "header-focus-indicator--shortcuts") +
-        (tabs || focused ? " is-visible" : "") +
-        (focused ? " is-focused" : "") +
-        (plate.motion ? "" : " no-motion")
-      }
+      class={styles.indicator + " " + (tabs ? styles.tabs : styles.shortcuts)}
+      data-header-focus={group}
+      data-visible={tabs || focused ? "true" : undefined}
+      data-focused={focused ? "true" : undefined}
+      data-motion={plate.motion ? "true" : "false"}
       style={plate.style}
     />
   );

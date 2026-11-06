@@ -1,0 +1,11 @@
+.icon {
+  display: block;
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  padding: 12px;
+  color: var(--fg);
+  &[data-net-kind="offline"] {
+    color: var(--network-offline);
+  }
+}

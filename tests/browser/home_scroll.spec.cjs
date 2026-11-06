@@ -31,7 +31,7 @@ test("Home interpolates the top fade without replacing its mask and keeps the bo
   expect(await mask.evaluate((n) => getComputedStyle(n).webkitMaskImage)).toBe(image);
   expect(await viewport.evaluate((n) => getComputedStyle(n).webkitMaskImage)).toBe(bottom);
   expect(await viewport.evaluate((n) => n.getBoundingClientRect().top)).toBe(top);
-  expect(await page.locator(".topbar").evaluate((n) => n.getBoundingClientRect().top)).toBe(0);
+  expect(await page.locator("[data-home-header]").evaluate((n) => n.getBoundingClientRect().top)).toBe(0);
   await page.screenshot({ path: info.outputPath("scrolled-fade.png") });
   await page.keyboard.press("ArrowUp");
   await page.keyboard.press("ArrowUp");

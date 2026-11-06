@@ -4,6 +4,7 @@
   --motion-duration-focus: 0.15s;
   --motion-duration-shape: 0.12s;
   --motion-duration-enter: 0.2s;
+  --motion-duration-header-focus: 0.18s;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -12,5 +13,6 @@
     --motion-duration-focus: 0s;
     --motion-duration-shape: 0s;
     --motion-duration-enter: 0s;
+    --motion-duration-header-focus: 0s;
   }
 }

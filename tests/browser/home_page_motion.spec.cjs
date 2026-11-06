@@ -23,13 +23,13 @@ for (const glassSettings of [false, true]) {
     await page.evaluate(() => {
       window.savedHomeCard = document.querySelector("#grid > .tile");
     });
-    expect(
-      await page.locator(".header-focus-indicator--tabs").evaluate((n) => getComputedStyle(n).transitionProperty),
-    ).toBe("none");
+    expect(await page.locator("[data-header-focus=tabs]").evaluate((n) => getComputedStyle(n).transitionProperty)).toBe(
+      "none",
+    );
     await page.locator("#apps-tab").click();
     await expect(page.locator(".home-page-surface")).toHaveCSS("animation-name", "apps-page-reveal");
     expect(
-      await page.locator(".header-focus-indicator--tabs").evaluate((n) => getComputedStyle(n).transitionProperty),
+      await page.locator("[data-header-focus=tabs]").evaluate((n) => getComputedStyle(n).transitionProperty),
     ).toContain("transform");
     await page.keyboard.press("ArrowDown");
     await expect(page.locator("#grid > .tile").first()).toHaveClass(/focused/);

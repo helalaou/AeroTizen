@@ -23,7 +23,7 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   const checkTabPlate = async () =>
     expect
       .poll(() =>
-        page.locator(".header-focus-indicator--tabs").evaluate((plate) => {
+        page.locator("[data-header-focus=tabs]").evaluate((plate) => {
           const target = document.querySelector("#home-tab"),
             a = plate.getBoundingClientRect(),
             b = target.getBoundingClientRect();

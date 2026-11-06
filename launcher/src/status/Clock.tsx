@@ -5,6 +5,7 @@ import type { ClockService } from "../contracts/launcher";
 import type { SettingsSnapshot } from "../contracts/preferences";
 import type { ClockLayout } from "../contracts/status";
 
+import styles from "./Clock.module.css";
 import type { useClock } from "./hooks/useClock";
 import { useClockWidth } from "./hooks/useClockWidth";
 
@@ -27,12 +28,12 @@ export const Clock = ({
   return layout === "compact" ? (
     <>
       {children}
-      <span id="date" class="date" hidden={settings.dateFormat === "none"}>
+      <span id="date" class={styles.compactDate} hidden={settings.dateFormat === "none"}>
         {value.date}
       </span>
       <span
         id="time"
-        class="time"
+        class={styles.compactTime}
         ref={time}
         hidden={!settings.showTime}
         data-format={settings.timeFormat}
@@ -42,19 +43,23 @@ export const Clock = ({
       </span>
     </>
   ) : (
-    <div class="clock-container">
+    <div data-clock-container>
       <div
-        class={"clock clock--expanded clock--" + layout}
+        class={styles.expanded + " " + styles[layout]}
+        data-clock="expanded"
+        data-clock-layout={layout}
         hidden={!settings.showTime && settings.dateFormat === "none" && !settings.showWeather}
       >
-        <div class="clock__time" aria-label={value.text} hidden={!settings.showTime}>
-          <span class="clock__digit clock__hours">{value.hour}</span>
-          <span class="clock__digit clock__minutes">
+        <div class={styles.digits} data-clock-part="time" aria-label={value.text} hidden={!settings.showTime}>
+          <span class={styles.digit + " " + styles.hours} data-clock-part="hours">
+            {value.hour}
+          </span>
+          <span class={styles.digit} data-clock-part="minutes">
             {value.minute}
-            <small style={{ fontSize: ".2em", letterSpacing: 0 }}>{value.period}</small>
+            <small class={styles.period}>{value.period}</small>
           </span>
         </div>
-        <div class="clock__date" hidden={settings.dateFormat === "none"}>
+        <div class={styles.date} data-clock-part="date" hidden={settings.dateFormat === "none"}>
           {value.date}
         </div>
         {children}

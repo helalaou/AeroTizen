@@ -1,35 +1,57 @@
+import type { ClockLayout } from "../contracts/status";
+
 import type { useWeather } from "./hooks/useWeather";
 import { WeatherIcon } from "./WeatherIcon";
+import styles from "./WeatherStatus.module.css";
 
 export const WeatherStatus = ({
-  variant,
+  layout,
+  only,
   weather,
   showWeather,
   showLocation,
 }: {
-  variant: "compact" | "expanded";
+  layout: ClockLayout;
+  only: boolean;
   weather: ReturnType<typeof useWeather>;
   showWeather: boolean;
   showLocation: boolean;
 }) =>
-  variant === "compact" ? (
-    <span id="weather" class="weather weather-status--compact" hidden={!weather.visible}>
+  layout === "compact" ? (
+    <span
+      id="weather"
+      class={styles.compact}
+      data-weather-part="compact"
+      data-weather-only={only ? "true" : undefined}
+      hidden={!weather.visible}
+    >
       {weather.visible ? (
         <>
           <WeatherIcon code={weather.code} />
-          <b>{weather.text}</b>
-          {weather.showLocation ? <span>{weather.city}</span> : null}
+          <b class={styles.compactTemperature}>{weather.text}</b>
+          {weather.showLocation ? <span class={styles.compactLocation}>{weather.city}</span> : null}
         </>
       ) : null}
     </span>
   ) : (
     <>
-      <div class="weather-status--expanded" hidden={!showWeather}>
-        <span class="weather-status__icon">{weather.visible ? <WeatherIcon code={weather.code} /> : null}</span>
-        <span class="weather-status__temperature">{weather.text}</span>
-        <span class="weather-status__condition">{weather.condition}</span>
+      <div class={styles.expanded} data-weather-part="expanded" data-clock-layout={layout} hidden={!showWeather}>
+        <span class={styles.icon} data-weather-part="icon">
+          {weather.visible ? <WeatherIcon code={weather.code} /> : null}
+        </span>
+        <span class={styles.temperature} data-weather-part="temperature">
+          {weather.text}
+        </span>
+        <span class={styles.condition} data-weather-part="condition">
+          {weather.condition}
+        </span>
       </div>
-      <div class="weather-status__location" hidden={!showWeather || !showLocation || !weather.visible}>
+      <div
+        class={styles.location}
+        data-weather-part="location"
+        data-clock-layout={layout}
+        hidden={!showWeather || !showLocation || !weather.visible}
+      >
         {weather.city}
       </div>
     </>

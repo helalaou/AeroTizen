@@ -9,38 +9,52 @@ import type { HomeEnvironment } from "../types";
 
 import { HeaderFocusIndicator } from "./HeaderFocusIndicator";
 import { HomeControl } from "./HomeControl";
+import styles from "./HomeHeader.module.css";
 
 export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
   const { t } = useTranslation();
   const { page, active } = useStore(env.state);
   const { unread } = useStore(env.updates);
+  const settings = useStore(env.settings);
   const settingsTitle = t(unread ? "settings.about.homeNotice" : "common.settings");
   return (
-    <header class="topbar" aria-hidden={!active}>
-      <div class="topbar-left">
+    <header
+      class={styles.header}
+      data-home-header
+      data-expanded={settings.clockLayout === "custom" ? "true" : "false"}
+      aria-hidden={!active}
+    >
+      <div class={styles.shortcuts} data-header-shortcuts>
         <HeaderFocusIndicator env={env} />
-        <HomeControl env={env} id="gear" controlKey="gear" className="icon-btn" preserveSelection title={settingsTitle}>
+        <HomeControl
+          env={env}
+          id="gear"
+          controlKey="gear"
+          className={styles.shortcut}
+          preserveSelection
+          title={settingsTitle}
+        >
           <Icon icon={Settings} />
-          {unread && <span class="home-update-dot" aria-hidden="true" />}
+          {unread && <span class={styles.notice} data-home-update-notice aria-hidden="true" />}
         </HomeControl>
         <HomeControl
           env={env}
           id="samsung-home-shortcut"
           controlKey="samsung-home-shortcut"
-          className="icon-btn samsung-home-shortcut"
+          className={styles.shortcut + " " + styles.nativeShortcut}
           title={t("common.samsungHome")}
         >
           <Icon icon={House} />
         </HomeControl>
         <NetworkStatus status={env.status} />
       </div>
-      <nav class="view-tabs" aria-label={t("home.views")}>
+      <nav class={styles.tabs} data-header-tabs aria-label={t("home.views")}>
         <HeaderFocusIndicator env={env} group="tabs" />
         <HomeControl
           env={env}
           id="home-tab"
           controlKey="home-tab"
-          className={"view-tab" + (page === "home" ? " active" : "")}
+          className={styles.tab}
           title={t("home.home")}
           pressed={page === "home"}
         >
@@ -50,7 +64,7 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
           env={env}
           id="apps-tab"
           controlKey="apps-tab"
-          className={"view-tab" + (page === "apps" ? " active" : "")}
+          className={styles.tab}
           title={t("home.allApps")}
           pressed={page === "apps"}
         >

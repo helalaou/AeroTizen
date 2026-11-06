@@ -4,7 +4,9 @@ Use the [component ownership map](component-structure.md) to find a stylesheet.
 New or migrated components import a sibling `Component.module.css`. Keep layout
 and state selectors with their component, and remove the old global rules when
 migrating. All Settings controls, sections and the drawer now use modules;
-the global `settings.css` sheet has been removed. Home styles migrate separately.
+the global `settings.css` sheet has been removed. Home header and status components
+also use modules; `home-header.css` and `clock.css` have been removed. Remaining
+Home content styles migrate separately.
 Keep theme paint in
 `launcher/css/themes.css`, which defines the default Classic values and the
 `body.glass-ui` overrides. Prefer role names such as `--settings-surface`,
@@ -63,8 +65,12 @@ class. Keep width and layout constraints with the component; the utility only
 owns wrapping, clipping and ellipsis. Choice labels retain their two-line default
 and use a nested local modifier when a single-line result is requested.
 
-Do not add extra IDs or theme selectors to beat an earlier rule. The Clock owns
-expanded header clearance; the header and Home styles supply compact defaults.
+Do not add extra IDs or theme selectors to beat an earlier rule. `HomeHeader` owns
+header clearance, `HeaderStatus` owns status placement, and `Clock` owns its layout
+variants. Weather receives the clock layout and weather-only state as explicit
+props. Their modules do not depend on a parent's private class or body clock mode.
+Tests use `data-home-header`, `data-header-focus`, `data-clock-part` and
+`data-weather-part`; semantic IDs remain available for integrations.
 
 App brand data sets `--app-background` on AppCard and AppOption. The card style
 uses that value, while Settings can supply its focused surface through a normal
@@ -96,8 +102,8 @@ state. Do not override the shared motion durations in theme or component rules.
 Keep keyframes with their component until multiple components need the same
 effect. A shared CSS Module can then own the keyframes and reusable animation class.
 
-Settings focus indicators, controls and the drawer use this policy. This removes
-their repeated media queries and reduced-motion `!important` rules. New and migrated
+Settings focus indicators, controls, the drawer and the Home header use this policy.
+This removes their repeated media queries and reduced-motion `!important` rules. New and migrated
 components should use the same tokens. Keep a local media query only when an effect
 needs different behavior, such as replacing movement with a static alternative.
 Existing Home/input rules keep their local handling until migrated; the policy
@@ -126,9 +132,12 @@ Native/background adapters also own page transparency; dynamic
 geometry, progress and brand custom properties remain explicit inline data.
 
 The global `[hidden]` rule must override component display rules, including SVG
-status hosts. The remaining `!important` declarations also cover reduced motion
-and native/preview visibility. Keep these exceptions documented. Normal focus,
-selection, theme and layout rules must use the cascade without `!important`.
+status hosts. `base.css` owns native/preview visibility for `[data-home-header]`;
+the Settings rule has enough specificity to keep the header visible and dimmed
+when native TV is active. It does not need `!important`. Remaining legacy sheets
+still use `!important` for reduced motion and native/preview visibility. Keep
+these exceptions documented. Normal focus, selection, theme and layout rules must
+use the cascade without `!important`.
 
 ## Checks and compatibility
 

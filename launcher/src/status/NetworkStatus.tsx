@@ -5,6 +5,7 @@ import { useStore } from "../shared/hooks/useStore";
 import { useTranslation } from "../shared/i18n/useTranslation";
 import { Icon } from "../shared/icons/Icon";
 
+import styles from "./NetworkStatus.module.css";
 import { getNetworkPresentation } from "./presentation/network";
 
 const NETWORK_ICONS = {
@@ -25,7 +26,7 @@ export const NetworkStatus = ({ status }: { status: StatusStores }) => {
     <Icon
       icon={NETWORK_ICONS[presentation.symbol]}
       id="network"
-      class={"status-icon" + (kind === "offline" ? " offline" : "")}
+      class={styles.icon}
       hidden={visible ? undefined : true}
       style={{ display: visible ? undefined : "none" }}
       label={t(presentation.label)}

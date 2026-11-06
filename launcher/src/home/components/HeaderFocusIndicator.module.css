@@ -1,0 +1,35 @@
+.indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  pointer-events: none;
+  border: 2px solid var(--focus);
+  background: var(--header-focus-surface);
+  box-shadow: var(--header-focus-shadow);
+  transition:
+    transform var(--motion-duration-header-focus) cubic-bezier(0.2, 0.72, 0.25, 1),
+    opacity var(--motion-duration-focus) ease-out;
+
+  &[data-motion="false"] {
+    transition: none;
+  }
+}
+
+.shortcuts {
+  opacity: 0;
+  border-radius: 50%;
+
+  &[data-visible="true"] {
+    opacity: 1;
+  }
+}
+
+.tabs {
+  border-color: transparent;
+  border-radius: 19px;
+
+  &[data-focused="true"] {
+    border-color: var(--focus);
+  }
+}
