@@ -7,6 +7,7 @@ export interface InputSource {
   readonly active?: boolean;
   readonly connected?: boolean;
   readonly editName?: string;
+  readonly ipControl?: boolean;
   readonly number?: number;
   readonly raw?: unknown;
   readonly type: string;
@@ -67,6 +68,7 @@ export interface LauncherConfig {
   KEY: Record<"LEFT" | "RIGHT" | "UP" | "DOWN" | "ENTER" | "BACK" | "ESC" | "IME_DONE" | "IME_CANCEL", number>;
   LEGACY_STORAGE_KEYS: string[];
   LONG_PRESS_MS: number;
+  SERVICE_ID: string;
   SPEED: { MIN: number; MAX: number; STEP: number };
   STORAGE_KEY: string;
 }

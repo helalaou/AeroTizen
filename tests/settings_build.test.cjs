@@ -64,13 +64,21 @@ test("compilation preserves runtime scripts, CSS, service and app identity", () 
   );
   for (const directory of ["js", "css", "service"]) {
     for (const file of readdirSync(path.join(root, "launcher", directory))) {
-      if (directory === "js" && file === "build-info.js") {
+      if (
+        (directory === "js" && file === "build-info.js") ||
+        (directory === "service" && file === "ip-control-probe.js")
+      ) {
         continue;
       }
       assert.equal(read(output, `${directory}/${file}`), read(path.join(root, "launcher"), `${directory}/${file}`));
     }
   }
   assert.equal(read(output, "config.xml"), read(path.join(root, "launcher"), "config.xml"));
+});
+
+test("the production package excludes the development IP Control probe", () => {
+  assert.equal(existsSync(path.join(output, "service/ip-control-probe.js")), false);
+  assert.doesNotMatch(read(output, "js/launcher-ui.js"), /AeroTizen\.IpControlProbeReply/);
 });
 
 test("legacy views remain test fixtures and cannot enter the compiled runtime", () => {

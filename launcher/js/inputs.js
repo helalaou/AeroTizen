@@ -4,8 +4,11 @@
   "use strict";
 
   var tz = A.tizen;
-  var inputs = (A.inputs = { sources: [], watching: false });
+  var inputs = (A.inputs = { sources: [], sourcesReady: false, watching: false });
   var listeners = [];
+  var reported = [];
+  var learned = [];
+  var openLearned;
 
   inputs.subscribe = function (listener) {
     listeners.push(listener);
@@ -24,6 +27,28 @@
   }
 
   inputs.refresh = publish;
+
+  function publishSources() {
+    var additional = learned.filter(function (source) {
+      return !reported.some(function (item) {
+        return item.type === "HDMI" && Number(item.number) === source.number;
+      });
+    });
+    inputs.sources = reported.concat(additional).sort(function (a, b) {
+      return (
+        (a.type === "TV") - (b.type === "TV") || Number(!!b.connected) - Number(!!a.connected) || a.number - b.number
+      );
+    });
+    publish();
+  }
+
+  inputs.setIpControlPorts = function (ports, open) {
+    learned = ports.map(function (number) {
+      return { type: "HDMI", number: number, ipControl: true };
+    });
+    openLearned = open;
+    publishSources();
+  };
 
   inputs.portName = function (s) {
     return s.type === "TV" ? "Live TV" : s.type + " " + s.number;
@@ -61,7 +86,11 @@
   };
 
   inputs.alwaysVisible = function (s) {
-    return !!(s && s.type === "HDMI" && (A.settings.getSnapshot().hdmiKeepVisible || {})[String(s.number)] === true);
+    return !!(
+      s &&
+      s.type === "HDMI" &&
+      (s.ipControl || (A.settings.getSnapshot().hdmiKeepVisible || {})[String(s.number)] === true)
+    );
   };
 
   inputs.isVisible = function (s) {
@@ -78,13 +107,14 @@
   inputs.load = function () {
     if (!tz || !tz.systeminfo) {
       // desktop browser preview
-      inputs.sources = [
+      reported = [
         { type: "HDMI", number: 1, editName: "Xbox", connected: true },
         { type: "HDMI", number: 2, connected: false },
         { type: "HDMI", number: 3, editName: "PC", connected: false },
         { type: "TV", number: 1, connected: true },
       ];
-      return publish();
+      inputs.sourcesReady = true;
+      return publishSources();
     }
     try {
       tz.systeminfo.getPropertyValue(
@@ -140,18 +170,11 @@
             }
             unique[id] = preferred;
           });
-          inputs.sources = Object.keys(unique)
-            .map(function (id) {
-              return unique[id];
-            })
-            .sort(function (a, b) {
-              return (
-                (a.type === "TV") - (b.type === "TV") ||
-                Number(b.connected) - Number(a.connected) ||
-                a.number - b.number
-              );
-            });
-          publish();
+          reported = Object.keys(unique).map(function (id) {
+            return unique[id];
+          });
+          inputs.sourcesReady = true;
+          publishSources();
         },
         publish
       );
@@ -165,6 +188,10 @@
   }
 
   inputs.show = function (s) {
+    if (s && s.ipControl && openLearned) {
+      openLearned(s.number);
+      return;
+    }
     // Native Live TV owns channel selection and remote control, unlike the
     // upstream embedded TVWindow. If unsupported, preserve TVWindow fallback.
     if (

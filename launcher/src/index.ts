@@ -14,6 +14,7 @@ import { mountHome } from "./home/index";
 import { createClockPlatform } from "./platform/tizen/createClockPlatform";
 import { createNetworkPlatform } from "./platform/tizen/createNetworkPlatform";
 import { defaultTemperatureUnit } from "./platform/tizen/defaultTemperatureUnit";
+import { mountIpControlInputs } from "./platform/tizen/probeIpControl";
 import { createClockService } from "./services/createClockService";
 import { createLauncherUpdates } from "./services/createLauncherUpdates";
 import { createNetworkService } from "./services/createNetworkService";
@@ -95,7 +96,10 @@ const previousCommands = {
   hideToast: runtime.hideToast,
 };
 Object.assign(runtime, toast.bridge, { applyBackground: backgrounds.apply });
+const disposeIpControl =
+  import.meta.env.DEV || import.meta.env.MODE === "tv-dev" ? mountIpControlInputs(runtime) : undefined;
 const dispose = () => {
+  disposeIpControl?.();
   Object.assign(runtime, previousCommands);
   window.Fireplace = previousFireplace;
   fireplace.dispose();

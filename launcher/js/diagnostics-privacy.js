@@ -232,6 +232,7 @@
         "home",
         "leave",
         "live_tv",
+        "hdmi",
         "open",
         "restore",
         "samsung_home",

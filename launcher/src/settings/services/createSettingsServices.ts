@@ -51,4 +51,11 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
   clearHomeFocus: () => runtime.homeScreen?.blur(),
   showPreviewMessage: () => runtime.toast(runtime.translate("wallpaper.previewing")),
   hidePreviewMessage: () => runtime.hideToast(),
+  async learnIpControlInput() {
+    const result = await runtime.inputs.learnIpControl?.();
+    if (result?.status === "added") {
+      runtime.toast(runtime.translate("inputs.ipProbe.added", { port: result.port }));
+    }
+    return result ?? { status: "unavailable" };
+  },
 });

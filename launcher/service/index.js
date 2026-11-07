@@ -820,6 +820,11 @@ module.exports.onStart = function () {
   }
   started = true;
   diagnostics.record("service.start");
+  try {
+    require("./ip-control-probe")(typeof tizen !== "undefined" ? tizen : null);
+  } catch (e) {
+    /* Optional pairing probe is included only in development builds. */
+  }
   setTimeout(function () {
     diagnosticContext.start();
   }, 0);

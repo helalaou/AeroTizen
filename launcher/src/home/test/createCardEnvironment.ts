@@ -25,7 +25,9 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
       label: (source, defaultLabel) => source.editName ?? defaultLabel ?? runtime.inputs.portName(source),
       portName: (source) => `${source.type} ${source.number}`,
       refresh: () => undefined,
+      setIpControlPorts: () => undefined,
       show: () => undefined,
+      sourcesReady: true,
       subscribe: () => () => undefined,
     },
   };

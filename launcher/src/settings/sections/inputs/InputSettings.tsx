@@ -6,6 +6,7 @@ import { SettingsSection } from "../../components/SettingsSection/SettingsSectio
 import type { SettingsSectionProps } from "../../types";
 
 import { InputName } from "./InputName/InputName";
+import { IpControlProbe } from "./IpControlProbe";
 
 const LIVE_TV_VISIBILITY_OPTIONS = [
   { value: true, labelKey: "common.show" },
@@ -72,6 +73,7 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => {
           ))}
         </ControlGroup>
       </SettingsSection>
+      {(import.meta.env.DEV || import.meta.env.MODE === "tv-dev") && <IpControlProbe />}
     </>
   );
 };

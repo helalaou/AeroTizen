@@ -15,7 +15,7 @@ export const SettingsFocusIndicator = ({
   sidebar?: boolean;
 }) => {
   const { language } = useTranslation();
-  const { navigation, drawer } = useSettingsEnvironment();
+  const { navigation, drawer, panes } = useSettingsEnvironment();
   const key = useStore(navigation);
   const state = useStore(drawer);
   const [style, setStyle] = useState({
@@ -32,21 +32,36 @@ export const SettingsFocusIndicator = ({
       setVisible(false);
       return;
     }
-    const rect = target.getBoundingClientRect();
-    const parent = host.getBoundingClientRect();
-    setStyle({
-      transform:
-        "translate3d(" +
-        (rect.left - parent.left + host.scrollLeft) +
-        "px," +
-        (rect.top - parent.top + host.scrollTop) +
-        "px,0)",
-      width: rect.width + "px",
-      height: rect.height + "px",
-      borderRadius: getComputedStyle(target).borderRadius,
-    });
-    setVisible(Boolean(rect.width && rect.height));
-  }, [container, key, navigation, state, language]);
+    const measure = () => {
+      const rect = target.getBoundingClientRect();
+      const parent = host.getBoundingClientRect();
+      setStyle({
+        transform:
+          "translate3d(" +
+          (rect.left - parent.left + host.scrollLeft) +
+          "px," +
+          (rect.top - parent.top + host.scrollTop) +
+          "px,0)",
+        width: rect.width + "px",
+        height: rect.height + "px",
+        borderRadius: getComputedStyle(target).borderRadius,
+      });
+      setVisible(Boolean(rect.width && rect.height));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(host);
+    observer.observe(target);
+    // New rows can move the focused control without changing its size or key.
+    const pane = panes.get(state.category);
+    if (!sidebar && pane) {
+      observer.observe(pane);
+    }
+    return () => observer.disconnect();
+  }, [container, key, navigation, state, language, panes, sidebar]);
   return (
     <div
       aria-hidden="true"

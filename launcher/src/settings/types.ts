@@ -21,6 +21,7 @@ import type {
   WeatherLocation,
 } from "../contracts/preferences";
 import type { LauncherUpdateNotice } from "../contracts/updates";
+import type { LearnIpControlResult } from "../platform/tizen/probeIpControl";
 import type { MessageKey } from "../shared/i18n/catalogues";
 import type { Navigation } from "../shared/navigation/createNavigation";
 import type { MutableStore, Store } from "../shared/state/createStore";
@@ -52,6 +53,7 @@ export interface SettingsServices {
   describeApp(app: InstalledApp): AppPresentation;
   finishEditing(): void;
   hidePreviewMessage(): void;
+  learnIpControlInput(): Promise<LearnIpControlResult>;
   openStore(): void;
   previewBackground(preview: BackgroundPreview | null): void;
   refreshWeather(): void;

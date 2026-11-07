@@ -9,7 +9,7 @@
   var tz = A.tizen,
     cfg = A.config;
   var homePending = false,
-    livePending = false;
+    viewerPending = false;
 
   function report(name, action, operation, reason) {
     var log = window.AeroDiagnostics;
@@ -199,41 +199,46 @@
 
   // Unlike tvwindow's embedded TV picture, the native viewer owns
   // channel selection and remote-control interactions.
-  function openNativeLiveTV(videoSource) {
-    if (livePending) {
+  function openNativeViewer(videoSource, selectHdmi) {
+    if (viewerPending) {
       return true;
     }
     if (!tz || !tz.application || typeof tz.application.launch !== "function") {
       // Older devices keep the upstream embedded TVWindow behaviour.
       return false;
     }
-    var operation = report("request", "live_tv");
-    livePending = true;
+    var action = selectHdmi ? "hdmi" : "live_tv";
+    var operation = report("request", action);
+    viewerPending = true;
     var finished = false;
     function failed(reason, detail) {
       if (finished) {
         return;
       }
       finished = true;
-      livePending = false;
-      report("failed", "live_tv", operation, reason);
+      viewerPending = false;
+      report("failed", action, operation, reason);
       rearmWatcher();
-      A.toast(A.translate("handoff.liveTvFailed", { reason: detail || reason }));
+      A.toast(
+        selectHdmi
+          ? A.translate("inputs.switchFailed")
+          : A.translate("handoff.liveTvFailed", { reason: detail || reason })
+      );
     }
     function accepted() {
       if (finished) {
         return;
       }
       finished = true;
-      livePending = false;
-      report("accepted", "live_tv", operation);
+      viewerPending = false;
+      report("accepted", action, operation);
       // A Tizen launch success callback only confirms that launch was
       // accepted. It does not guarantee the native viewer took focus.
       window.setTimeout(function () {
         if (!document.hidden) {
-          report("visibility_unconfirmed", "live_tv", operation);
+          report("visibility_unconfirmed", action, operation);
           rearmWatcher();
-          A.toast(A.translate("handoff.liveTvNoFocus"));
+          A.toast(selectHdmi ? A.translate("inputs.switchFailed") : A.translate("handoff.liveTvNoFocus"));
         }
       }, 2100);
     }
@@ -267,7 +272,22 @@
         appControlFallback();
       }
     }
-    function selectTuner() {
+    function selectSource() {
+      if (selectHdmi) {
+        selectHdmi().then(
+          function (success) {
+            if (success) {
+              launchViewer();
+            } else {
+              failed("IP Control source selection failed");
+            }
+          },
+          function () {
+            failed("IP Control source selection failed");
+          }
+        );
+        return;
+      }
       // A previous HDMI selection must not carry over into native Live TV.
       if (!videoSource || !tz.tvwindow || !tz.tvwindow.setSource) {
         launchViewer();
@@ -290,7 +310,7 @@
         failed("TV tuner selection is unavailable", A.translate("handoff.tunerUnavailable"));
       }
     }
-    leaveBeforeLaunch(selectTuner, failed);
+    leaveBeforeLaunch(selectSource, failed);
     return true;
   }
 
@@ -299,7 +319,10 @@
   A.homewatch.resume = rearmWatcher;
   A.homewatch.suspendForExternal = leaveBeforeLaunch;
   A.homewatch.openSamsungHome = openSamsungHome;
-  A.homewatch.openNativeLiveTV = openNativeLiveTV;
+  A.homewatch.openNativeLiveTV = openNativeViewer;
+  A.homewatch.openNativeHdmi = function (selectHdmi) {
+    return openNativeViewer(null, selectHdmi);
+  };
 
   // Ported from the working launcher: returning from a Samsung system app
   // can reload the page without a visibilitychange event. The existing

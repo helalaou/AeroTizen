@@ -112,6 +112,28 @@ test("input discovery and refresh publish data without rendering tiles", () => {
   assert.equal(updates, 3);
 });
 
+test("a learned HDMI port is visible and uses IP Control until Tizen reports it", () => {
+  const report = { connected: [{ type: "HDMI", number: 1 }] };
+  const h = harness({}, report, null, false);
+  const { inputs, tizen } = h.A;
+  inputs.load();
+  let opened;
+  inputs.setIpControlPorts([5], (number) => (opened = number));
+  const learned = inputs.sources.find((source) => source.number === 5);
+  assert.equal(inputs.isVisible(learned), true);
+  inputs.show(learned);
+  assert.equal(opened, 5);
+
+  const native = { type: "HDMI", number: 5 };
+  report.connected.push(native);
+  inputs.load();
+  const fifth = inputs.sources.filter((source) => source.number === 5);
+  assert.equal(fifth.length, 1);
+  tizen.tvwindow.setSource = (source) => (opened = source);
+  inputs.show(fifth[0]);
+  assert.equal(opened, native);
+});
+
 test("a recognised Samsung HDMI label survives standby with filtering enabled", () => {
   const h = harness(
     {},

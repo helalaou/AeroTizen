@@ -16,6 +16,8 @@ import type { MessageKey } from "../../shared/i18n/catalogues";
 import type { Translate } from "../../shared/i18n/createTranslations";
 import type { Store } from "../../shared/state/createStore";
 
+import type { LearnIpControlResult } from "./probeIpControl";
+
 // The unmigrated TV services are accessed through this boundary, not a screen's types.
 export interface LauncherRuntime {
   applyBackground(): void;
@@ -40,7 +42,11 @@ export interface LauncherRuntime {
   };
   hideToast(): void;
   homeScreen?: HomeBridge;
-  homewatch: { useSamsungHome(): void; openSamsungHome?(): void };
+  homewatch: {
+    openNativeHdmi?(select: () => Promise<boolean>): boolean;
+    openSamsungHome?(): void;
+    useSamsungHome(): void;
+  };
   inputs: {
     sources: InputSource[];
     watching: boolean;
@@ -48,9 +54,12 @@ export interface LauncherRuntime {
     hasRecognizedDevice?(source: InputSource): boolean;
     isVisible(source: InputSource): boolean;
     label(source: InputSource, defaultLabel?: string): string;
+    learnIpControl?(): Promise<LearnIpControlResult>;
     portName(source: InputSource): string;
     refresh(): void;
+    setIpControlPorts(ports: number[], open: (port: number) => void): void;
     show(source: InputSource): void;
+    sourcesReady: boolean;
     subscribe(listener: () => void): () => void;
   };
   network: NetworkService;
