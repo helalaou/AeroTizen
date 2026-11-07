@@ -3,9 +3,10 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
+const { installClock } = require("./helpers/clock.cjs");
 const { installSettings } = require("./helpers/settings.cjs");
 
-function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = false, measure, view = true } = {}) {
+function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = false, measure, view = true, now } = {}) {
   const storage = new Map([[legacy ? "hearth.home.v1" : "aerotizen.settings.v1", JSON.stringify(saved)]]);
   const elements = {
     date: {},
@@ -23,7 +24,6 @@ function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = fal
   const timers = [];
   const context = vm.createContext({
     window: {
-      setInterval: (fn) => timers.push(fn),
       AeroTizen: A,
       navigator: { languages: [locale], language: locale },
       Intl: intl,
@@ -31,16 +31,15 @@ function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = fal
       getComputedStyle: measure ? () => ({ fontWeight: "700", fontSize: "36px", fontFamily: "Arial" }) : undefined,
     },
     document: measure ? { createElement: () => ({ getContext: () => ({ measureText: measure }) }) } : undefined,
-    setInterval: (fn) => timers.push(fn),
+    setInterval: (tick, delay) => timers.push({ tick, delay }),
     AeroTizen: A,
     localStorage: {
       getItem: (key) => storage.get(key),
       setItem: (key, value) => storage.set(key, value),
     },
   });
-  for (const file of ["config.js", "clock.js"]) {
-    vm.runInContext(fs.readFileSync(path.join(__dirname, "../launcher/js", file), "utf8"), context);
-  }
+  vm.runInContext(fs.readFileSync(path.join(__dirname, "../launcher/js/config.js"), "utf8"), context);
+  installClock(context, now);
   installSettings(context);
   if (view)
     vm.runInNewContext(fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"), {
@@ -399,7 +398,7 @@ test("custom clock fields preserve locale digits, separators and leading day per
 });
 
 test("clock publication does not query view hosts and starts one shared timer", () => {
-  const { A, elements, timers } = runtime({ view: false });
+  const { A, elements, timers } = runtime({ view: false, now: () => sample.getTime() });
   A.$ = () => {
     throw new Error("Clock publication must not query DOM hosts");
   };
@@ -411,11 +410,13 @@ test("clock publication does not query view hosts and starts one shared timer", 
   A.clock.start();
   A.clock.start();
   assert.equal(timers.length, 1);
+  assert.equal(timers[0].delay, 10_000);
   assert.equal(updates, 1);
+  timers[0].tick();
   A.clock.tick();
-  assert.equal(updates, 2);
+  assert.equal(updates, 3, "manual and scheduled ticks publish even when the timestamp matches");
   unsubscribe();
   A.clock.tick();
-  assert.equal(updates, 2);
+  assert.equal(updates, 3);
   assert.equal(elements.time.textContent, undefined);
 });

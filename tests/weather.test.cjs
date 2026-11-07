@@ -642,9 +642,8 @@ test("old preferences keep the default visibility; location and visibility persi
     },
   });
   context.AeroTizen = context.window.AeroTizen = {};
-  for (const file of ["config.js", "clock.js"]) {
-    vm.runInContext(fs.readFileSync(path.join(root, "launcher/js", file), "utf8"), context);
-  }
+  vm.runInContext(fs.readFileSync(path.join(root, "launcher/js/config.js"), "utf8"), context);
+  require("./helpers/clock.cjs").installClock(context);
   require("./helpers/settings.cjs").installSettings(context);
   const settings = context.AeroTizen.settings;
   settings.load();
@@ -671,9 +670,8 @@ function preferences({ locale = "en-GB", intl = Intl, saved = {}, legacy = false
       setItem: (key, value) => storage.set(key, value),
     },
   });
-  for (const file of ["config.js", "clock.js"]) {
-    vm.runInContext(fs.readFileSync(path.join(root, "launcher/js", file), "utf8"), context);
-  }
+  vm.runInContext(fs.readFileSync(path.join(root, "launcher/js/config.js"), "utf8"), context);
+  require("./helpers/clock.cjs").installClock(context);
   require("./helpers/settings.cjs").installSettings(context);
   A.settings.load();
   return { A, storage, context };
