@@ -6,12 +6,15 @@ import { createLauncherApp } from "./app/createLauncherApp";
 import { mountToast } from "./app/mountToast";
 import type { BackgroundState } from "./backgrounds/createBackgrounds";
 import { mountBackgrounds } from "./backgrounds/mountBackgrounds";
+import type { ClockService } from "./contracts/launcher";
 import type { SettingsService } from "./contracts/preferences";
 import type { NetworkService } from "./contracts/status";
 import { mountFireplace } from "./fireplace/mountFireplace";
 import { mountHome } from "./home/index";
+import { createClockPlatform } from "./platform/tizen/createClockPlatform";
 import { createNetworkPlatform } from "./platform/tizen/createNetworkPlatform";
 import { defaultTemperatureUnit } from "./platform/tizen/defaultTemperatureUnit";
+import { createClockService } from "./services/createClockService";
 import { createLauncherUpdates } from "./services/createLauncherUpdates";
 import { createNetworkService } from "./services/createNetworkService";
 import { createSettingsService } from "./services/createSettingsService";
@@ -28,8 +31,21 @@ if (!backgroundHost || !home || !settingsHost || !toastHost || !weatherPhotoHost
 }
 const runtime = window.AeroTizen;
 const hotData = import.meta.hot
-  ? (import.meta.hot.data as { backgrounds?: BackgroundState; network?: NetworkService; preferences?: SettingsService })
+  ? (import.meta.hot.data as {
+      backgrounds?: BackgroundState;
+      clock?: ClockService;
+      network?: NetworkService;
+      preferences?: SettingsService;
+    })
   : undefined;
+const clock =
+  hotData?.clock ||
+  createClockService({
+    platform: createClockPlatform(window, () => runtime.settings?.getSnapshot().numerals ?? "latn"),
+    now: () => Date.now(),
+    timers: window,
+  });
+runtime.clock = clock;
 const settings =
   hotData?.preferences ||
   createSettingsService({
@@ -42,7 +58,7 @@ const settings =
     },
     speedRange: runtime.config.SPEED,
     locale: {
-      timeFormat: () => runtime.clock.defaultTimeFormat(),
+      timeFormat: clock.defaultTimeFormat,
       tempUnit: () =>
         defaultTemperatureUnit(navigator.languages?.length ? navigator.languages : [navigator.language], Intl),
     },
@@ -104,6 +120,7 @@ try {
     import.meta.hot.accept();
     import.meta.hot.dispose(() => {
       hotData.backgrounds = backgrounds.getState();
+      hotData.clock = clock;
       hotData.preferences = settings;
       hotData.network = network;
       app.dispose();

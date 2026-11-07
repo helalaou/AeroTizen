@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
+const { installClock } = require("./helpers/clock.cjs");
 const { installSettings } = require("./helpers/settings.cjs");
 
 function loadSettings(storage, defaults = {}) {
@@ -20,9 +21,8 @@ function loadSettings(storage, defaults = {}) {
     AeroTizen: A,
     localStorage,
   });
-  for (const file of ["config.js", "clock.js"]) {
-    vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "launcher", "js", file), "utf8"), context);
-  }
+  vm.runInContext(fs.readFileSync(path.join(__dirname, "../launcher/js/config.js"), "utf8"), context);
+  installClock(context);
   installSettings(context, defaults);
   A.settings.load();
   return { settings: A.settings, store };

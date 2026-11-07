@@ -40,6 +40,12 @@ export interface BackgroundOption extends Background {
   readonly preview: string;
   readonly requiresWebGL: boolean;
 }
+export interface ClockPlatform {
+  dateTimeFormat(locales: string[], options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat;
+  getDatePattern(): string;
+  getLocales(): string[];
+  getTimePattern(): string;
+}
 export interface ClockService extends Store<number> {
   DATE_FORMATS: ReadonlyArray<{ id: DateFormat; format(date: Date): string }>;
   dateStyle(format: SettingsValues["dateFormat"]): DateFormat;
@@ -48,7 +54,7 @@ export interface ClockService extends Store<number> {
   formatTime(date: Date, format: TimeFormat): string;
   formatTimeParts?(date: Date, format: TimeFormat): { hour: string; minute: string; dayPeriod: string } | null;
   measureTime(format: TimeFormat, font: string, measureText: (value: string) => number): number;
-  subscribe(listener: () => void): () => void;
+  start(): void;
   tick(): void;
 }
 export type ClockFormatter = Pick<

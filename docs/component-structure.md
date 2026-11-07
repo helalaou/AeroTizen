@@ -74,6 +74,16 @@ the same service directly. TV services also use `getSnapshot()`, `subscribe()` a
 View teardown releases view subscriptions. The runtime preference service survives
 development hot reload so existing TV-service subscriptions remain active.
 
+## Clock ownership
+
+`services/createClockService.ts` owns time snapshots, formatting and the width cache.
+Home reads the shared clock directly. The clock starts at boot, ticks every 10 seconds,
+and refreshes on resume. Hot reload retains the service and its timer. Weather and
+Continue Watching receive the same ticks to check expiry and system time corrections.
+
+`platform/tizen/createClockPlatform.ts` supplies TV date/time patterns and browser
+locales. Format choices stay in the preference service. The clock reads live time.
+
 ## Network ownership
 
 `services/createNetworkService.ts` owns live network state. Views read its snapshots

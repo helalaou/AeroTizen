@@ -69,9 +69,7 @@ function harness({ settings = {}, tizen, online = true } = {}) {
       return intervals.length;
     },
   });
-  for (const file of ["clock.js"]) {
-    vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "launcher/js", file), "utf8"), context);
-  }
+  require("./helpers/clock.cjs").installClock(context);
   require("./helpers/network.cjs").installNetwork(context);
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"), {
     ...context,

@@ -40,6 +40,7 @@ test("status consumers share service subscriptions, recheck expiry and release t
   const consumer1 = stores.weather.subscribe(() => {});
   const consumer2 = stores.weather.subscribe(() => {});
   assert.deepEqual([clock.count, network.count, weather.count, preferences.count], [1, 0, 1, 1]);
+  assert.equal(stores.time, clock, "clock views subscribe directly to the service");
   assert.equal(stores.network, network, "network views subscribe directly to the service");
   clock.set(100);
   assert.equal(stores.time.getSnapshot(), 100);
@@ -56,5 +57,5 @@ test("status consumers share service subscriptions, recheck expiry and release t
   stores.dispose();
   assert.deepEqual([clock.count, network.count, weather.count, preferences.count], [0, 0, 0, 0]);
   clock.set(200);
-  assert.equal(stores.time.getSnapshot(), 100);
+  assert.equal(stores.time.getSnapshot(), 200);
 });
