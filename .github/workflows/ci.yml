@@ -34,7 +34,6 @@ jobs:
     outputs:
       cli: ${{ steps.select.outputs.cli }}
       launcher: ${{ steps.select.outputs.launcher }}
-      code: ${{ steps.select.outputs.code }}
       readme_only: ${{ steps.select.outputs.readme_only }}
       format_contributing: ${{ steps.select.outputs.format_contributing }}
     steps:
@@ -42,14 +41,43 @@ jobs:
         with:
           fetch-depth: 2
           persist-credentials: false
-      - name: Select test jobs
+      - name: Record the tested PR checkout
+        id: pr-checkout
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          checkout=$(git rev-parse HEAD)
+          head=$(git rev-parse HEAD^2)
+          [[ "$checkout" == "$GITHUB_SHA" && "$head" == "$PR_HEAD" ]]
+          base=$(git rev-parse HEAD^1)
+          tree=$(git rev-parse 'HEAD^{tree}')
+          printf 'base=%s\ntree=%s\n' "$base" "$tree" >> "$GITHUB_OUTPUT"
+      - name: Check for a successful PR run
+        id: reuse
+        if: github.event_name == 'push' && !github.event.forced
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: python3 tools/ci_reuse.py
+      # The jobs API preserves this step name after GitHub removes the PR merge ref.
+      - name: >-
+          ${{ steps.pr-checkout.outputs.tree != '' && format('Select test jobs for PR #{0} (base {1}, tree {2})', github.event.pull_request.number, steps.pr-checkout.outputs.base, steps.pr-checkout.outputs.tree) || 'Select test jobs' }}
         id: select
         shell: python
         env:
           BEFORE: ${{ github.event.before }}
+          REUSED_PR_CI_RUN: ${{ steps.reuse.outputs.run }}
         run: |
           import os
           import subprocess
+
+          if os.environ["REUSED_PR_CI_RUN"]:
+              with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+                  print("cli=false\nlauncher=false", file=output)
+              raise SystemExit(0)
 
           # Compare the PR merge commit to its base parent, or use the push's previous tip.
           base = "HEAD^1" if os.environ["GITHUB_EVENT_NAME"] == "pull_request" else os.environ["BEFORE"]
@@ -62,18 +90,53 @@ jobs:
               path for path in paths
               if path not in (b"README.md", b"CONTRIBUTING.md") and not path.startswith(b"docs/")
           ]
+
+          launcher_files = {
+              b".prettierignore",
+              b".prettierrc.json",
+              b"eslint.config.js",
+              b"package-lock.json",
+              b"package.json",
+              b"playwright.config.cjs",
+              b"stylelint.config.cjs",
+              b"tests/fixtures/legacy-dom.js",
+              b"tools/build-launcher.mjs",
+              b"tools/dev-build-badge.mjs",
+              b"tools/translation-lint.cjs",
+              b"tsconfig.json",
+              b"tsconfig.node.json",
+              b"vite.config.mts",
+          }
+          # These files define launcher contracts tested by the CLI or Windows Home jobs.
+          shared_launcher_files = {
+              b"launcher/config.xml",
+              b"tests/diagnostics.test.cjs",
+              b"tests/home_store.test.cjs",
+              b"tests/watcher.test.cjs",
+          }
+
+          def test_scope(path):
+              if path in shared_launcher_files or path.startswith((b"launcher/service/", b"launcher/js/diagnostics")):
+                  return "shared"
+              if path.startswith(b"cli/"):
+                  return "cli"
+              if path in launcher_files or path.startswith((b"launcher/", b"tests/browser/", b"tests/fixtures/legacy-launcher/")):
+                  return "launcher"
+              if path.startswith(b"tests/helpers/") and path.endswith(b".cjs"):
+                  return "launcher"
+              if path.startswith(b"tests/") and path.count(b"/") == 1 and path.endswith((b".test.cjs", b".browser.js")):
+                  return "launcher"
+              return "shared"
+
           # Shared or unknown paths, empty diffs, and unavailable history run the full suite.
-          shared = not paths or any(
-              not path.startswith((b"cli/", b"launcher/")) for path in code_paths
-          )
-          cli = shared or any(path.startswith(b"cli/") for path in code_paths)
-          launcher = shared or any(path.startswith(b"launcher/") for path in code_paths)
-          code = cli or launcher
+          scopes = {test_scope(path) for path in code_paths}
+          shared = not paths or "shared" in scopes
+          cli = shared or "cli" in scopes
+          launcher = shared or "launcher" in scopes
           outputs = {
               "cli": cli,
               "launcher": launcher,
-              "code": code,
-              "readme_only": not code and b"README.md" in paths,
+              "readme_only": not (cli or launcher) and b"README.md" in paths,
               "format_contributing": not launcher and b"CONTRIBUTING.md" in paths,
           }
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
@@ -86,7 +149,7 @@ jobs:
   python-310:
     name: python (3.10)
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    if: ${{ !cancelled() && needs.changes.outputs.cli != 'false' }}
     runs-on: ubuntu-latest
     env:
       PYTHON_VERSION: "3.10"
@@ -123,7 +186,7 @@ jobs:
   python-312:
     name: python (3.12)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.code != 'false' || needs.changes.outputs.readme_only == 'true') }}
+    if: ${{ !cancelled() && (needs.changes.outputs.cli != 'false' || needs.changes.outputs.readme_only == 'true') }}
     runs-on: ubuntu-latest
     env:
       PYTHON_VERSION: "3.12"
@@ -132,7 +195,7 @@ jobs:
   python-313:
     name: python (3.13)
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    if: ${{ !cancelled() && needs.changes.outputs.cli != 'false' }}
     runs-on: ubuntu-latest
     env:
       PYTHON_VERSION: "3.13"
@@ -197,9 +260,11 @@ jobs:
         if: needs.changes.outputs.launcher != 'false'
       - run: npm test
         if: needs.changes.outputs.launcher != 'false'
+      - run: npm run test:components
+        if: needs.changes.outputs.launcher != 'false'
       - run: npx playwright install --with-deps chromium
         if: needs.changes.outputs.launcher != 'false'
-      - run: npx playwright test
+      - run: npx playwright test --workers=3
         if: needs.changes.outputs.launcher != 'false'
       - uses: actions/setup-python@v5
         if: inputs.release_component == 'launcher'
@@ -232,7 +297,7 @@ jobs:
   windows-home:
     # These tests exercise both the CLI and the launcher service.
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    if: ${{ !cancelled() && needs.changes.outputs.cli != 'false' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

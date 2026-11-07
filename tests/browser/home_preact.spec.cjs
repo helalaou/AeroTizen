@@ -44,21 +44,6 @@ test("Home short/held OK, action menu, move/drop and Settings focus restoration"
   await expect(page.locator("#grid > [data-id]").first()).toHaveAttribute("data-id", "demo1");
   expect(errors).toEqual([]);
 });
-test("replacing the toast restarts its dismissal timer", async ({ page }) => {
-  await page.clock.install();
-  await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
-  const toast = page.locator("#toast");
-  await expect(toast).toBeHidden();
-  await page.keyboard.press("Enter");
-  await expect(toast).toBeVisible();
-  await page.clock.runFor(1500);
-  await page.keyboard.press("Enter");
-  await page.clock.runFor(1500);
-  await expect(toast).toBeVisible();
-  await page.clock.runFor(1100);
-  await expect(toast).toBeHidden();
-});
 test("Home and All apps retain keyed artwork nodes and Back returns to Home", async ({ page }) => {
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.ready);

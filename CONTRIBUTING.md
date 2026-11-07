@@ -40,6 +40,7 @@ npm run lint        # ESLint and Stylelint; each rejects warnings
 npm run typecheck  # strict TypeScript checks for the launcher and Vite config
 npm run build      # type checks, then compiled Home and Settings in dist/launcher
 npm test           # launcher tests: tests/*.test.cjs, run in a Node sandbox
+npm run test:components # Preact component tests in launcher/src
 npx playwright install chromium # once per Playwright version; CI also installs OS dependencies
 npm run test:browser # compiled Settings and legacy comparison, with managed local servers
 ```
@@ -47,6 +48,11 @@ npm run test:browser # compiled Settings and legacy comparison, with managed loc
 Changes limited to `README.md`, `CONTRIBUTING.md`, and `docs/` skip the test suites.
 CI still checks README contributor markers and contributor guide formatting when
 those files change. Store data that tests read in `tests/fixtures/`.
+
+Put component tests next to the source file, for example `ChoiceOption.test.tsx`.
+Use Preact Testing Library to check what the user sees or can activate. Use
+Playwright for browser layout, remote navigation between components, and full
+launcher flows such as saving settings and reloading.
 
 Use Node.js 22.12 or newer, or Node 20.19+ within the 20.x series, as required by Vite.
 CI uses the latest Node 20.x. The watcher tests use mock clocks and network replies to cover the Art Mode protocol, status checks,

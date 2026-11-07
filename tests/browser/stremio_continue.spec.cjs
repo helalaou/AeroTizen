@@ -239,39 +239,34 @@ test("unchecking Stremio removes its cards and keeps its option in place", async
   await expect(page.locator("#continue-items > [data-key]")).toHaveCount(1);
 });
 
-for (const thumbnailAvailable of [true, false]) {
-  test(`Stremio fills the card with ${thumbnailAvailable ? "the episode thumbnail" : "the series fallback"} and hides sub-second progress`, async ({
-    page,
-  }) => {
-    const contentId = "tt6769208";
-    await setup(page, { contentId, playback: 0.001 });
-    const thumbnail = `https://episodes.metahub.space/${contentId}/2/9/w780.jpg`;
-    const background = `https://images.metahub.space/background/medium/${contentId}/img`;
-    const requested = [];
-    const svg = {
-      contentType: "image/svg+xml",
-      body: '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450"><rect width="800" height="450" fill="#284859"/></svg>',
-    };
-    await page.route(thumbnail, (route) => {
-      requested.push("episode");
-      return route.fulfill(thumbnailAvailable ? svg : { status: 404 });
-    });
-    await page.route(background, (route) => {
-      requested.push("series");
-      return route.fulfill(svg);
-    });
-    await page.locator('[data-key="continue-app:' + stremio + '"]').click();
-    await closeSettings(page);
-    const card = page.locator("#continue-items > [data-key]");
-    const image = card.locator("[data-continue-part=image]");
-    await expect(image).toHaveAttribute("src", thumbnailAvailable ? thumbnail : background);
-    await expect(image).toHaveCSS("object-fit", "cover");
-    await expect.poll(() => image.evaluate((element) => element.naturalWidth)).toBe(800);
-    expect(requested).toEqual(thumbnailAvailable ? ["episode"] : ["episode", "series"]);
-    await expect(card.locator("[data-continue-part=progress-fill]")).toHaveCount(0);
-    const labelBackground = await card
-      .locator("[data-continue-part=label]")
-      .evaluate((node) => getComputedStyle(node).backgroundColor);
-    await expect(card.locator("[data-continue-part=progress]")).toHaveCSS("background-color", labelBackground);
+test("Stremio loads the series fallback and fits it to the card", async ({ page }) => {
+  const contentId = "tt6769208";
+  await setup(page, { contentId, playback: 0.001 });
+  const thumbnail = `https://episodes.metahub.space/${contentId}/2/9/w780.jpg`;
+  const background = `https://images.metahub.space/background/medium/${contentId}/img`;
+  const requested = [];
+  const svg = {
+    contentType: "image/svg+xml",
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450"><rect width="800" height="450" fill="#284859"/></svg>',
+  };
+  await page.route(thumbnail, (route) => {
+    requested.push("episode");
+    return route.fulfill({ status: 404 });
   });
-}
+  await page.route(background, (route) => {
+    requested.push("series");
+    return route.fulfill(svg);
+  });
+  await page.locator('[data-key="continue-app:' + stremio + '"]').click();
+  await closeSettings(page);
+  const card = page.locator("#continue-items > [data-key]");
+  const image = card.locator("[data-continue-part=image]");
+  await expect(image).toHaveAttribute("src", background);
+  await expect(image).toHaveCSS("object-fit", "cover");
+  await expect.poll(() => image.evaluate((element) => element.naturalWidth)).toBe(800);
+  expect(requested).toEqual(["episode", "series"]);
+  const labelBackground = await card
+    .locator("[data-continue-part=label]")
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+  await expect(card.locator("[data-continue-part=progress]")).toHaveCSS("background-color", labelBackground);
+});

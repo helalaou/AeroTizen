@@ -1,30 +1,20 @@
 const { createTestSettings } = require("./helpers/settings.cjs");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
 const test = require("node:test");
-const vm = require("node:vm");
-function setup(level, standard, online = true, view = true) {
-  const attrs = {},
-    requests = [],
-    timers = [];
-  const el = {
-    setAttribute(k, v) {
-      attrs[k] = v;
-    },
-    removeAttribute(k) {
-      delete attrs[k];
-    },
-    classList: { toggle() {} },
-  };
+function setup({ level, standard, online = true, settings = {}, tizen = true } = {}) {
+  const requests = [],
+    timers = [],
+    listeners = [];
   const A = {
-    settings: createTestSettings({}),
-    $: () => el,
-    tizen: {
+    settings: createTestSettings(settings),
+    tizen: tizen && {
       systeminfo: {
         getPropertyValue(key, yes, no) {
           requests.push({ key, yes, no });
         },
-        addPropertyValueChangeListener() {},
+        addPropertyValueChangeListener(key, listener) {
+          listeners.push({ key, listener });
+        },
         removePropertyValueChangeListener() {},
       },
     },
@@ -45,15 +35,10 @@ function setup(level, standard, online = true, view = true) {
     setInterval: (fn) => timers.push(fn),
   };
   require("./helpers/network.cjs").installNetwork(context);
-  if (view)
-    vm.runInNewContext(
-      fs.readFileSync(require("node:path").join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"),
-      context,
-    );
   A.network.start();
   return {
     A,
-    attrs,
+    listeners,
     requests,
     timers,
     wifi() {
@@ -70,25 +55,25 @@ test("Samsung levels 1..5 use discrete bars; unsupported levels keep standard Ti
     [4, 1],
     [5, 1],
   ]) {
-    const h = setup(level);
+    const h = setup({ level });
     h.wifi();
-    assert.equal(h.attrs["data-net-level"], String(expected));
+    assert.equal(h.A.network.getSnapshot().strength, expected);
     assert.equal(h.requests.length, 1);
   }
   for (const level of [undefined, null, 0, 6, 1.5, "5", new Error("denied")]) {
-    const h = setup(level, 0.4);
+    const h = setup({ level, standard: 0.4 });
     h.wifi();
-    assert.equal(h.attrs["data-net-level"], "0.4");
+    assert.equal(h.A.network.getSnapshot().strength, 0.4);
   }
 });
 test("invalid strength is unavailable, never represented as measured weak Wi-Fi", () => {
   for (const signal of [undefined, null, -1, 2, NaN, "0.2"]) {
-    const h = setup(undefined, signal);
+    const h = setup({ standard: signal });
     h.wifi();
-    assert.equal(h.attrs["data-net-level"], "unknown");
-    assert.equal(h.attrs["aria-label"], "Wi-Fi (signal unavailable)");
+    assert.equal(h.A.network.getSnapshot().strength, null);
+    assert.equal(h.A.network.getSnapshot().kind, "wifi");
   }
-  const zero = setup(undefined, 0);
+  const zero = setup({ standard: 0 });
   zero.wifi();
   assert.equal(zero.A.network.getSnapshot().strength, 0, "zero remains a measured signal level");
 });
@@ -96,9 +81,9 @@ test("unknown and failed network reports never invent Wi-Fi or offline", () => {
   const h = setup();
   h.requests[0].no();
   assert.equal(h.A.network.getSnapshot().kind, "unknown");
-  const off = setup(undefined, undefined, false);
+  const off = setup({ online: false });
   off.requests[0].no();
-  assert.equal(off.attrs["data-net-kind"], "offline");
+  assert.equal(off.A.network.getSnapshot().kind, "offline");
 });
 test("late Wi-Fi callbacks cannot overwrite a newer Ethernet report; start is idempotent", () => {
   const h = setup();
@@ -106,13 +91,13 @@ test("late Wi-Fi callbacks cannot overwrite a newer Ethernet report; start is id
   h.A.network.refresh();
   h.requests[2].yes({ networkType: "ETHERNET" });
   h.requests[1].yes({ signalStrength: 0.1 });
-  assert.equal(h.attrs["data-net-kind"], "ethernet");
+  assert.equal(h.A.network.getSnapshot().kind, "ethernet");
   h.A.network.start();
   assert.equal(h.timers.length, 1);
 });
 
 test("network snapshots publish without DOM access and retain identity for unchanged data", () => {
-  const h = setup(3, undefined, true, false);
+  const h = setup({ level: 3 });
   h.A.$ = () => {
     throw new Error("Network detection must not query DOM hosts");
   };
@@ -131,5 +116,35 @@ test("network snapshots publish without DOM access and retain identity for uncha
   assert.equal(updates, 2);
   unsubscribe();
   assert.equal(updates, 2);
-  assert.deepEqual(h.attrs, {});
+});
+
+test("offline browser snapshots respect network visibility before and after a poll", () => {
+  const { A, timers } = setup({ online: false, tizen: false, settings: { showNetwork: false } });
+  assert.deepEqual(A.network.getSnapshot(), { kind: "offline", strength: null, visible: false });
+  timers[0]();
+  assert.equal(A.network.getSnapshot().visible, false);
+  A.settings.update({ showNetwork: true });
+  assert.deepEqual(A.network.getSnapshot(), { kind: "offline", strength: null, visible: true });
+});
+
+test("delayed Tizen replies and network change notifications preserve hidden visibility", () => {
+  const { A, requests, listeners, timers } = setup();
+  assert.equal(A.network.getSnapshot().visible, true);
+  A.settings.update({ showNetwork: false });
+  assert.equal(requests[0].key, "NETWORK");
+  requests[0].yes({ networkType: "WIFI" });
+  assert.equal(requests[1].key, "WIFI_NETWORK");
+  requests[1].yes({ signalStrength: 0.8 });
+  assert.deepEqual(A.network.getSnapshot(), { kind: "wifi", strength: 0.8, visible: false });
+
+  assert.equal(listeners[0].key, "NETWORK");
+  listeners[0].listener();
+  requests[2].yes({ networkType: "ETHERNET" });
+  assert.deepEqual(A.network.getSnapshot(), { kind: "ethernet", strength: null, visible: false });
+
+  timers[0]();
+  requests[3].no();
+  assert.equal(A.network.getSnapshot().visible, false);
+  A.settings.update({ showNetwork: true });
+  assert.deepEqual(A.network.getSnapshot(), { kind: "unknown", strength: null, visible: true });
 });

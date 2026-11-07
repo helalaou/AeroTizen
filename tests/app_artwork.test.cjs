@@ -6,80 +6,16 @@ const vm = require("node:vm");
 
 const root = path.join(__dirname, "../launcher");
 
-function runtime(tv = false, loading = false) {
-  const images = [],
-    timers = new Map(),
-    pending = [];
-  let nextTimer = 0;
-  class Element {
-    constructor() {
-      this.children = [];
-      this.style = {};
-      this.attributes = {};
-      this.className = "";
-      this.hidden = false;
-      this.classList = {
-        add: (name) => {
-          this.className += " " + name;
-        },
-        contains: (name) => this.className.split(/\s+/).includes(name),
-      };
-    }
-    appendChild(child) {
-      this.children.push(child);
-      return child;
-    }
-    removeChild(child) {
-      this.children.splice(this.children.indexOf(child), 1);
-    }
-    setAttribute(name, value) {
-      this.attributes[name] = value;
-    }
-  }
-  class Image extends Element {
-    constructor() {
-      super();
-      images.push(this);
-    }
-  }
-  const A = {
-    tizen: tv ? {} : null,
-    el: (tag, className, text) => Object.assign(new Element(), { className: className || "", textContent: text }),
-  };
+function runtime(tv = false) {
+  const A = { tizen: tv ? {} : null };
   const context = vm.createContext({
-    window: {
-      AeroStartup: {
-        afterLoad(fn) {
-          if (loading) pending.push(fn);
-          else fn();
-        },
-      },
-      AeroTizen: A,
-      LOGOS: { netflix: "M0 0", youtube: "M0 0" },
-    },
+    window: { AeroTizen: A, LOGOS: { netflix: "M0 0", youtube: "M0 0" } },
     AeroTizen: A,
-    Image,
-    setTimeout: (fn) => {
-      timers.set(++nextTimer, fn);
-      return nextTimer;
-    },
-    clearTimeout: (id) => timers.delete(id),
   });
   for (const file of ["config.js", "app-catalog.js", "app-lookup.js", "artwork.js", "brands.js"]) {
     vm.runInContext(fs.readFileSync(path.join(root, "js", file), "utf8"), context);
   }
-  vm.runInContext(
-    fs.readFileSync(path.join(root, "../tests/fixtures/legacy-launcher/js/brands-view.js"), "utf8"),
-    context,
-  );
-  return {
-    A,
-    images,
-    timers,
-    load() {
-      pending.splice(0).forEach((fn) => fn());
-    },
-  };
+  return { A };
 }
 
 test("browser previews keep the previous icons without requesting artwork", () => {
@@ -141,69 +77,8 @@ test("a TV-provided store ID takes precedence over model-specific catalogue IDs"
   );
 });
 
-test("Samsung artwork fills the card without losing selection or click handling", () => {
-  const { A, images, timers } = runtime(true);
-  let clicks = 0;
-  const tile = A.tiles.app({ id: "app", name: "YouTube" }, "on", () => {
-    clicks++;
-  });
-  const fallback = tile.children[0];
-  const arrow = A.el("div", "move-arrow");
-  tile.appendChild(arrow);
-  images[0].onerror();
-  assert.equal(images[1].src, "/opt/share/webappservice/apps_icon/FirstScreen/111299001912/250x250.png");
-  images[1].onload();
-  assert.equal(fallback.hidden, true);
-  assert.ok(tile.classList.contains("has-artwork"));
-  assert.ok(tile.classList.contains("on"));
-  assert.ok(tile.children.includes(arrow));
-  assert.equal(tile.attributes["aria-label"], "YouTube");
-  tile.onclick();
-  assert.equal(clicks, 1);
-  assert.equal(timers.size, 0);
-});
-
-test("failed or stalled Samsung artwork leaves the previous brand fallback visible", () => {
-  const { A, images, timers } = runtime(true);
-  const tile = A.tiles.app({ id: "unknown", name: "YouTube" }, "focused");
-  const timeout = timers.values().next().value;
-  timeout();
-  assert.equal(images[0].onload, null);
-  assert.equal(images[0].onerror, null);
-  images[1].onerror();
-  const fallback = tile.children[0];
-  assert.equal(fallback.hidden, false);
-  assert.ok(fallback.innerHTML.includes("<svg"));
-  assert.equal(fallback.children[0].textContent, "YouTube");
-  assert.equal(images.length, 2);
-  assert.equal(tile.classList.contains("has-artwork"), false);
-  assert.ok(tile.classList.contains("focused"));
-  assert.equal(timers.size, 0);
-});
-
-test("unknown apps retain their original icon and readable label if all images fail", () => {
-  const { A, images, timers } = runtime(true);
-  const tile = A.tiles.app({
-    id: "unknown",
-    name: "Unknown app",
-    icon: "/opt/usr/apps/unknown/icon.png",
-    storeId: "123456",
-  });
-  const fallback = tile.children[0];
-  assert.equal(images[0].src, "/opt/usr/apps/unknown/icon.png");
-  images[1].onerror();
-  images[2].onerror();
-  assert.equal(fallback.hidden, false);
-  assert.ok(fallback.children.includes(images[0]));
-  assert.equal(fallback.children[1].textContent, "Unknown app");
-  assert.equal(timers.size, 0);
-  images[0].onerror();
-  assert.equal(fallback.children.length, 1);
-  assert.equal(fallback.children[0].textContent, "Unknown app");
-});
-
 test("Settings can read brand and artwork data without creating DOM nodes or image timers", () => {
-  const { A, images, timers } = runtime(true);
+  const { A } = runtime(true);
   const known = A.tiles.describe({ id: "111299001912", name: "YouTube" });
   assert.equal(known.title, "YouTube");
   assert.equal(known.logoPath, "M0 0");
@@ -217,22 +92,4 @@ test("Settings can read brand and artwork data without creating DOM nodes or ima
   assert.equal(unknown.label, "Unknown app");
   assert.equal(unknown.useAppIcon, true);
   assert.equal(unknown.logoPath, null);
-  assert.equal(images.length, 0);
-  assert.equal(timers.size, 0);
-});
-
-test("app artwork and unknown icons cannot hold the initial page load", () => {
-  const { A, images, load } = runtime(true, true);
-  let selected = false;
-  const tile = A.tiles.app({ id: "unknown", name: "Unknown app", icon: "/icon.png", storeId: "123456" }, "", () => {
-    selected = true;
-  });
-  assert.equal(images.length, 1);
-  assert.equal(images[0].src, undefined);
-  assert.equal(tile.children[0].children[1].textContent, "Unknown app");
-  tile.onclick();
-  assert.equal(selected, true);
-  load();
-  assert.equal(images[0].src, "/icon.png");
-  assert.equal(images[1].src, "/opt/share/webappservice/apps_icon/all/123456/304x304.png");
 });
