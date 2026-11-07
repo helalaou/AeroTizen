@@ -45,6 +45,22 @@ npx playwright install chromium # once per Playwright version; CI also installs 
 npm run test:browser # compiled Settings and legacy comparison, with managed local servers
 ```
 
+### Mirror a physical TV for local testing
+
+On a Mac with `uv` and the .NET 6 SDK, wake the TV and check that its [paired root bridge](docs/root-cli.md)
+is online. Run this command from the repository root.
+
+```bash
+uv run tools/tv_mirror.py --tv TV_IP
+```
+
+The command builds a temporary capture helper and opens `http://127.0.0.1:8765/` on the Mac. The
+video-only preview runs for three minutes by default. Set `--seconds` to change the duration or press
+Ctrl+C to stop. The preview stays on the Mac and the TV and Mac must be on the same trusted network.
+The capture path has been verified on the 2024 Samsung Frame QE65LS03DAUXXU running Tizen 9.
+
+### Development checks
+
 Changes limited to `README.md`, `CONTRIBUTING.md`, and `docs/` skip the test suites.
 CI still checks README contributor markers and contributor guide formatting when
 those files change. Store data that tests read in `tests/fixtures/`.
