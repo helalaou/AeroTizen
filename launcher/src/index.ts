@@ -96,8 +96,7 @@ const previousCommands = {
   hideToast: runtime.hideToast,
 };
 Object.assign(runtime, toast.bridge, { applyBackground: backgrounds.apply });
-const disposeIpControl =
-  import.meta.env.DEV || import.meta.env.MODE === "tv-dev" ? mountIpControlInputs(runtime) : undefined;
+const disposeIpControl = mountIpControlInputs(runtime);
 const dispose = () => {
   disposeIpControl?.();
   Object.assign(runtime, previousCommands);

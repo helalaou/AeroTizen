@@ -47,6 +47,7 @@ export interface SettingsServices {
   applyWeatherVisibility(): void;
   backgrounds: readonly BackgroundOption[];
   backgroundWebGL: BackgroundGraphics;
+  canLearnIpControlInput(): boolean;
   clearHomeFocus(): void;
   clock: ClockFormatter;
   config: LauncherConfig;

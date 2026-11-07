@@ -64,10 +64,7 @@ test("compilation preserves runtime scripts, CSS, service and app identity", () 
   );
   for (const directory of ["js", "css", "service"]) {
     for (const file of readdirSync(path.join(root, "launcher", directory))) {
-      if (
-        (directory === "js" && file === "build-info.js") ||
-        (directory === "service" && file === "ip-control-probe.js")
-      ) {
+      if (directory === "js" && file === "build-info.js") {
         continue;
       }
       assert.equal(read(output, `${directory}/${file}`), read(path.join(root, "launcher"), `${directory}/${file}`));
@@ -76,9 +73,11 @@ test("compilation preserves runtime scripts, CSS, service and app identity", () 
   assert.equal(read(output, "config.xml"), read(path.join(root, "launcher"), "config.xml"));
 });
 
-test("the production package excludes the development IP Control probe", () => {
-  assert.equal(existsSync(path.join(output, "service/ip-control-probe.js")), false);
-  assert.doesNotMatch(read(output, "js/launcher-ui.js"), /AeroTizen\.IpControlProbeReply/);
+test("the production launcher bundles IP Control and excludes the browser mock", () => {
+  assert.ok(existsSync(path.join(output, "service/ip-control-probe.js")));
+  const bundle = read(output, "js/launcher-ui.js");
+  assert.match(bundle, /AeroTizen\.IpControlProbeReply/);
+  assert.doesNotMatch(bundle, /mockHdmi/);
 });
 
 test("legacy views remain test fixtures and cannot enter the compiled runtime", () => {

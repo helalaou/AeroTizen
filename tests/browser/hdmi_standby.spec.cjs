@@ -24,6 +24,7 @@ test("Preact standby overrides persist without confusing custom labels with devi
   await expect(page.locator("#inputs")).not.toContainText("Custom console label");
   await page.locator("#gear").click();
   await openCategory(page, "sources");
+  await expect(page.getByRole("button", { name: "Find and add input" })).toHaveCount(0);
   await page.locator('[data-key="hdmi-keep:2:true"]').click();
   await closeSettings(page);
   await expect(page.locator("#inputs")).toContainText("Custom console label");
@@ -38,7 +39,7 @@ test("Preact standby overrides persist without confusing custom labels with devi
   expect(errors).toEqual([]);
 });
 
-test("the development button adds the active missing port and restores a working tile", async ({ page }) => {
+test("the standard launcher adds the active missing port and restores a working tile", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
@@ -106,7 +107,7 @@ test("the development button adds the active missing port and restores a working
       },
     };
   });
-  await page.goto("http://127.0.0.1:8172/");
+  await page.goto("/");
   await page.waitForFunction(() => AeroTizen.inputs.sourcesReady);
   const tile = page.getByRole("button", { name: "HDMI 5", exact: true });
   await expect(tile).toHaveCount(0);

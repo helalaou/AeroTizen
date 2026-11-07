@@ -11,16 +11,14 @@ const root = fileURLToPath(new URL("./", import.meta.url));
 const source = path.join(root, "launcher");
 
 // Copy the explicit production page and runtime assets; source views are bundled separately.
-const widgetAssets = (output: string, includeProbe: boolean): Plugin => ({
+const widgetAssets = (output: string): Plugin => ({
   name: "aerotizen-widget-assets",
   apply: "build",
   async buildStart() {
     await rm(output, { recursive: true, force: true });
     await cp(source, output, {
       recursive: true,
-      filter: (file) =>
-        file !== path.join(source, "src") &&
-        (includeProbe || file !== path.join(source, "service/ip-control-probe.js")),
+      filter: (file) => file !== path.join(source, "src"),
     });
     await mkdir(path.join(output, "licenses"), { recursive: true });
     await cp(path.join(root, "node_modules/preact/LICENSE"), path.join(output, "licenses/preact.txt"));
@@ -55,7 +53,7 @@ export default defineConfig(({ mode }) => {
       // Lightning CSS encodes major.minor.patch in three bytes, including in development.
       lightningcss: { targets: { chrome: 69 << 16 } },
     },
-    plugins: [preact({ devToolsEnabled: false }), widgetAssets(output, mode === "tv-dev"), developmentEntry],
+    plugins: [preact({ devToolsEnabled: false }), widgetAssets(output), developmentEntry],
     server: { host: "0.0.0.0", port: 8019, strictPort: true },
     test: {
       include: ["src/**/*.test.{ts,tsx}"],

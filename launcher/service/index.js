@@ -823,7 +823,7 @@ module.exports.onStart = function () {
   try {
     require("./ip-control-probe")(typeof tizen !== "undefined" ? tizen : null);
   } catch (e) {
-    /* Optional pairing probe is included only in development builds. */
+    /* HomeWatcher can start on TVs where IP Control setup is unavailable. */
   }
   setTimeout(function () {
     diagnosticContext.start();

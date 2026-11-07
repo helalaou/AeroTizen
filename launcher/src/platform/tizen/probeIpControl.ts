@@ -76,6 +76,13 @@ const request = (serviceId: string, command: Command, timeoutMs: number): Promis
   });
 };
 export const mountIpControlInputs = (runtime: LauncherRuntime) => {
+  const ports = messagePorts();
+  if (
+    typeof ports?.requestTrustedLocalMessagePort !== "function" ||
+    typeof ports.requestTrustedRemoteMessagePort !== "function"
+  ) {
+    return;
+  }
   const { inputs, config, homewatch } = runtime;
   let disposed = false;
   let revision = 0;
@@ -97,7 +104,7 @@ export const mountIpControlInputs = (runtime: LauncherRuntime) => {
     }
   };
   const restore = async (attempts: number) => {
-    if (disposed || !messagePorts()) {
+    if (disposed) {
       return;
     }
     const current = revision;
