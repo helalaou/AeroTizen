@@ -1,98 +1,85 @@
-# PC-managed native Home
+# Home button and startup
 
-Apply needs the updated CLI and a compatible signed launcher. The PC owns the original
-Home backup and transaction receipts. Apply and restore run from the CLI; the
-launcher does not change these native settings from its UI. The TV then operates
-without a running PC or watcher polling.
+Both Home options run on the TV after setup and work without root.
 
-Native Home is experimental. The latest controlled Frame tests passed Home from
-YouTube, Prime Video and Samsung Home with the original Art return target.
-Samsung Home checks waited 10 seconds after opening the page.
-The earlier Art return override was removed after it reproduced Samsung's loading
-spinner. New applies preserve the original Art target. The same restore command
-still accepts backups and recovery records from that version. See the
-[profile comparison](home-profile-isolation-tv-20261026.json).
+| Option | What happens when you press Home |
+| --- | --- |
+| **Watcher (default)** | The background service detects a return to Samsung Home and reopens AeroTizen. |
+| **Native Home (experimental)** | The TV routes Home directly to AeroTizen and the watcher stops. Startup support depends on the TV and firmware. |
 
-## Compatibility and testing on another TV
+## Watcher limits
 
-There is no model or firmware allowlist. Apply and restore require a successful SDK UID 901
-query, a 32-bit ARM Tizen runtime, complete typed Home/startup values and the required native
-libraries/functions. The writer resolves getter and setter symbols before watcher handoff
-or native writes, without calling setters as a probe. Apply also needs an eligible installed
-launcher and its persistent control service. Restore does not need the apply-only eligibility
-function, including after uninstall.
+- Return works from Samsung Home and Netflix on tested TVs. YouTube, Prime Video,
+  Stremio, Spotify and HbbTV apps can leave the TV on Samsung Home because they
+  do not report visibility. Use **Back** or open AeroTizen from the Samsung app row.
+- The watcher pauses in Live TV and YouTube. On the tested Frame, Native Home
+  returned from both.
+- The watcher waits while Art Mode is active or if the TV does not report its Art
+  Mode or power state. Watcher cold boot is unverified on the tested 2024 Frame.
 
-The backup must still match the connected TV, model, firmware, OS version and architecture.
-Checksums, original-state checks, durable PC receipts, per-write readback and rollback remain
-in force. A compatible API does not prove write permission or physical Home/boot behaviour.
-A setter failure attempts rollback; preserve the backup and inspect status after any failure.
-Physical results cover the Tizen 9 Frame and a contributor's Tizen 9 S90C. The
-[S90C report](home-s90c-tv-20261027.json) confirms Home-only, boot, YouTube/Prime returns
-and installed-app restore. It does not cover absent-app restore or PR37 integration.
+## Native Home setup
 
-For PR testing, use the CLI and signed launcher from the same checkout. Install the CLI with
-`python -m pip install -e .`, then build both helpers with `python cli/tools/build_home_query.py`
-and `python cli/tools/build_home_control.py` (requires the .NET 6 SDK). Install the signed launcher
-from the same checkout; a released CLI or launcher may lack the new control protocol.
+Install the CLI and launcher from the [Quick Start](../README.md#quick-start).
+Check your model in the [TV reports](tv-compatibility.md). Run `aerotizen --version`
+to identify your CLI. If you run from the extracted folder, use `./aerotizen` on
+macOS or Linux, or `.\aerotizen.exe` in PowerShell. Replace `TV_IP` with the TV address.
 
-Run `home apply --yes`, restart fully, and record what opens. Test Home from video apps
-and Samsung menus, then restore and confirm Samsung Home works again.
-Report the CLI commit, model, firmware and observed results, with private device IDs and paths
-removed. Passing local tests or preflight does not establish support for another TV. Restore
-after uninstall is still awaiting a controlled physical test; restore before normal uninstall.
+### Before first launch
 
-## Setup
-
-Before opening the compatible launcher, save the original Home values:
+Before you open AeroTizen, save the original Home and startup settings:
 
 ```sh
 aerotizen --tv TV_IP home status
 aerotizen --tv TV_IP home backup
 ```
 
-Then open AeroTizen on the TV to start its control service:
-
-```sh
-aerotizen home apply                                     # offline preview
-aerotizen --tv TV_IP home apply --yes
-```
-
 Keep any existing valid original backup. On some TVs, opening AeroTizen changes
 only `db/appfw/booting_appid_backup` to `DclHome001.Home`. Apply accepts that
 specific difference from the saved original. A new backup requires original values.
+See [backup behaviour](home-read-only.md#backup-behavior).
 
-The original is saved once in the PC's
-`~/.config/aerotizen/backups/<TV identity>/original-home.json`.
-Before the native writer runs, its request and baseline bytes are durably saved
-under the adjacent `transactions/` directory. Apply needs no TV backup endpoint.
-Apply sets both Home bindings, then tries to assign both startup app IDs to AeroTizen.
-It skips any ID the TV has already assigned. After both IDs match, apply enables
-Smart Hub autostart and checks the settings again. If the TV rejects startup setup,
-apply keeps the Home bindings only if it can verify both original startup IDs and
-the saved autostart setting. The receipt records the result.
-After apply or restore, disconnect TV/One Connect power for 60 seconds, then restart.
-In the Frame profile comparison above, AeroTizen took about 30 seconds to appear
-with Home and boot enabled. This was an estimate from the screen; browser render
-marks do not measure the full power-to-screen delay.
+The CLI saves `original-home.json` in `~/.config/aerotizen/backups/<TV identity>/`.
+Keep the **whole folder**, including the `transactions/` directory. Later backups
+keep the original file and report if the current settings differ.
 
-Art Mode keeps Samsung's original return target, sleep and sensor settings.
-One Home press from Art opens Samsung's Art page; a second opens AeroTizen.
-Night Mode was left on. The latest short return test does not repeat the earlier
-[two-minute Night Mode comparison](home-pc-roundtrip-tv-20261025.json).
+### Apply Native Home
 
-Running `home backup` after apply keeps the validated original file unchanged.
-It reports that the current native settings differ from the original; it does
-not capture the AeroTizen assignment as a new original. A missing original still
-blocks apply and restore. No Samsung defaults are guessed.
+Open AeroTizen to start its control service. Preview the change, then apply it:
+
+```sh
+aerotizen home apply
+aerotizen --tv TV_IP home apply --yes
+```
+
+CLI 3.0.0 sets both Home bindings and tries to assign both startup app IDs. When
+both IDs match, it enables Smart Hub autostart. If startup setup fails, it keeps
+the Home bindings only if it can verify the original startup settings. Check the
+result in the CLI.
+
+For the old `--boot` workflow, see the [CLI 2.6.0 instructions](https://github.com/helalaou/AeroTizen/blob/cli-v2.6.0/README.md#choose-how-home-works).
+
+### Verify on the TV
+
+Disconnect TV or One Connect power for 60 seconds, then restart. Check which app
+opens. Press Home from YouTube, Prime Video and Samsung Home. On the tested Frame,
+AeroTizen took about 30 seconds to appear with native startup enabled. Home from
+Art Mode opened Samsung's Art page first. A second Home press opened AeroTizen.
+Samsung Home remains available in AeroTizen Settings.
 
 ## Restore and transfer to another PC
 
-The same command restores with or without AeroTizen installed:
+Restore before uninstalling AeroTizen. The CLI uses your saved Home and startup
+settings and re-enables the watcher if AeroTizen is installed:
 
 ```sh
 aerotizen home restore                                  # offline preview
 aerotizen --tv TV_IP home restore --yes
 ```
+
+Disconnect TV or One Connect power for 60 seconds. Reconnect it and check that
+Home opens Samsung Home. Keep the backup on the PC after uninstall.
+
+### Recovery and backup transfer
 
 The CLI checks the TV's native application registry, including both launcher and
 service registrations. If installed, restore uses the persistent watcher handoff.
@@ -138,6 +125,29 @@ If Samsung's HTTP API on port 8001 is unavailable, Home commands can use model a
 platform metadata from a valid original backup for the connected TV. The CLI still
 checks the device identity, firmware, CPU and native values over SDB. The first
 backup needs live model metadata.
+
+## Compatibility and testing on another TV
+
+Apply and restore check for an SDK UID 901 connection, a 32-bit ARM Tizen runtime,
+complete Home and startup values, and the required native functions. Apply also
+checks the launcher and its control service. A failed compatibility check stops
+before any Home writes or watcher handoff. The backup must match the TV, firmware,
+OS and architecture. The CLI saves the write request and baseline under
+`transactions/` before it writes. A failed write or verification attempts rollback.
+Keep the whole backup folder and check `home status` if a change fails. If the
+Home helper cannot start, use the [read-only runtime probe](home-runtime-probe.md).
+
+The [Frame comparison](home-profile-isolation-tv-20261026.json) covers Home return
+from YouTube, Prime Video and Samsung Home. Samsung Home checks waited 10 seconds.
+The test also found that changing the Art return target caused a Samsung loading
+spinner. Current builds keep the original Art target and accept backups from the
+earlier build. See the [Night Mode comparison](home-pc-roundtrip-tv-20261025.json)
+and the [65-inch S90C report](home-s90c-tv-20261027.json) for the conditions tested.
+
+For development tests, use the CLI and signed launcher from the same checkout.
+Build the native helpers as described in [development setup](../CONTRIBUTING.md#development-setup).
+Record the CLI commit, launcher build, TV model, firmware, Home return, startup and
+restore results. Remove private paths and device IDs before you share a report.
 
 ## Service query diagnostics
 
