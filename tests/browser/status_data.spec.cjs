@@ -65,14 +65,10 @@ test("status views update from shared data without querying status markup", asyn
   await expect(page.locator("#network")).toHaveAttribute("data-net-kind", "offline");
   await page.evaluate(() => {
     AeroTizen.settings.update({ showNetwork: false });
-
-    AeroTizen.network.updateVisibility();
   });
   await expect(page.locator("#network")).toBeHidden();
   await page.evaluate(() => {
     AeroTizen.settings.update({ showNetwork: true });
-
-    AeroTizen.network.updateVisibility();
   });
   await expect(page.locator("#network")).toBeVisible();
   await page.clock.fastForward(2 * 60 * 60 * 1000 + 10000);

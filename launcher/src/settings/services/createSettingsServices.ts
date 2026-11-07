@@ -39,7 +39,6 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
   applyWeatherVisibility: () => platform.weather.updateVisibility(),
   applyLocationVisibility: () => platform.weather.updateDisplay(),
   refreshWeather: () => platform.weather.refresh(),
-  applyNetworkVisibility: () => runtime.network.updateVisibility(),
   applyInputs: () => runtime.inputs.refresh(),
   applyCardSize: () => runtime.homeScreen?.render(),
   openStore: () => runtime.apps.openStore(),

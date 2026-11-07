@@ -7,10 +7,13 @@ import { mountToast } from "./app/mountToast";
 import type { BackgroundState } from "./backgrounds/createBackgrounds";
 import { mountBackgrounds } from "./backgrounds/mountBackgrounds";
 import type { SettingsService } from "./contracts/preferences";
+import type { NetworkService } from "./contracts/status";
 import { mountFireplace } from "./fireplace/mountFireplace";
 import { mountHome } from "./home/index";
+import { createNetworkPlatform } from "./platform/tizen/createNetworkPlatform";
 import { defaultTemperatureUnit } from "./platform/tizen/defaultTemperatureUnit";
 import { createLauncherUpdates } from "./services/createLauncherUpdates";
+import { createNetworkService } from "./services/createNetworkService";
 import { createSettingsService } from "./services/createSettingsService";
 import { mountSettings } from "./settings/index";
 
@@ -25,7 +28,7 @@ if (!backgroundHost || !home || !settingsHost || !toastHost || !weatherPhotoHost
 }
 const runtime = window.AeroTizen;
 const hotData = import.meta.hot
-  ? (import.meta.hot.data as { backgrounds?: BackgroundState; preferences?: SettingsService })
+  ? (import.meta.hot.data as { backgrounds?: BackgroundState; network?: NetworkService; preferences?: SettingsService })
   : undefined;
 const settings =
   hotData?.preferences ||
@@ -48,6 +51,14 @@ runtime.settings = settings;
 if (!hotData?.preferences) {
   settings.load();
 }
+const network =
+  hotData?.network ||
+  createNetworkService({
+    platform: createNetworkPlatform(window),
+    settings,
+    timers: window,
+  });
+runtime.network = network;
 const weather = window.Weather;
 const backgrounds = mountBackgrounds(
   backgroundHost,
@@ -94,6 +105,7 @@ try {
     import.meta.hot.dispose(() => {
       hotData.backgrounds = backgrounds.getState();
       hotData.preferences = settings;
+      hotData.network = network;
       app.dispose();
       dispose();
     });
