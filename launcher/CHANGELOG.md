@@ -1,5 +1,36 @@
 # Changelog
 
+## [2.7.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.6.0...launcher-v2.7.0) (2026-11-07)
+
+
+### Features
+
+* add Stremio Continue Watching on rooted TVs ([#141](https://github.com/helalaou/AeroTizen/issues/141)) ([0d188b7](https://github.com/helalaou/AeroTizen/commit/0d188b782b3ee1e2478ca7da07f75ed701548316))
+* **i18n:** add Italian launcher translation ([#27](https://github.com/helalaou/AeroTizen/issues/27)) ([4db4421](https://github.com/helalaou/AeroTizen/commit/4db44211d0f44144ed8050a2d7de6c172acb78ff))
+* **launcher:** add Arabic translation with right-to-left layout ([#149](https://github.com/helalaou/AeroTizen/issues/149)) ([50c87f8](https://github.com/helalaou/AeroTizen/commit/50c87f8e8961801eb9c997edaa658295884e3185))
+* **launcher:** add Back to top and dock Home inputs ([#132](https://github.com/helalaou/AeroTizen/issues/132)) ([4b13b45](https://github.com/helalaou/AeroTizen/commit/4b13b457db0bf11b3c2229b29f2eb049812ff033))
+* **launcher:** add custom colours and gradients ([#175](https://github.com/helalaou/AeroTizen/issues/175)) ([ff231b6](https://github.com/helalaou/AeroTizen/commit/ff231b670a11a69b52673e302810db0bd41ad395)), closes [#138](https://github.com/helalaou/AeroTizen/issues/138)
+* **launcher:** add French translation ([#150](https://github.com/helalaou/AeroTizen/issues/150)) ([92eb694](https://github.com/helalaou/AeroTizen/commit/92eb6945f3fc6a17791db8f3f826eff2d03aab35))
+* **launcher:** add language support ([#121](https://github.com/helalaou/AeroTizen/issues/121)) ([38729f1](https://github.com/helalaou/AeroTizen/commit/38729f1fc574469fa03e9f4e04ca8441d29b240f))
+* **launcher:** add Russian translation catalogue ([#128](https://github.com/helalaou/AeroTizen/issues/128)) ([1f5aafa](https://github.com/helalaou/AeroTizen/commit/1f5aafa20145236f50700d748cdd298499c6fa91))
+* **launcher:** fill in the Settings About page ([#153](https://github.com/helalaou/AeroTizen/issues/153)) ([1ca2bab](https://github.com/helalaou/AeroTizen/commit/1ca2babb502f68aa8a85b2e7521b07aa687d156a))
+* **launcher:** note that the language setting only changes AeroTizen ([#156](https://github.com/helalaou/AeroTizen/issues/156)) ([1e0a5aa](https://github.com/helalaou/AeroTizen/commit/1e0a5aa2f1e42201fc9fc92999355296031a65c6))
+* **launcher:** refine Home and Settings layouts ([#125](https://github.com/helalaou/AeroTizen/issues/125)) ([b8a49fb](https://github.com/helalaou/AeroTizen/commit/b8a49fba4c8141e8ca7c29188055209dcbeb4799))
+* **launcher:** show available updates and release notes in Settings ([#126](https://github.com/helalaou/AeroTizen/issues/126)) ([6b50641](https://github.com/helalaou/AeroTizen/commit/6b50641b89a60fbc35e9d9c162e96b79bd6c109a))
+* **launcher:** simplify app layouts and add Home scrolling ([#165](https://github.com/helalaou/AeroTizen/issues/165)) ([a6e54f8](https://github.com/helalaou/AeroTizen/commit/a6e54f8082a96f56f198918fe9192210477b7023))
+
+
+### Bug Fixes
+
+* **launcher:** correct Home scrolling and wallpaper controls ([#134](https://github.com/helalaou/AeroTizen/issues/134)) ([093c2d5](https://github.com/helalaou/AeroTizen/commit/093c2d5f341c9486ff4806608dbf9984052396cc))
+* **launcher:** enable Spotify in Continue Watching ([#142](https://github.com/helalaou/AeroTizen/issues/142)) ([c2fda89](https://github.com/helalaou/AeroTizen/commit/c2fda89b41fc20293e91b058f815e7c13ce41253))
+* **launcher:** refresh installed apps on return ([#157](https://github.com/helalaou/AeroTizen/issues/157)) ([3d4273b](https://github.com/helalaou/AeroTizen/commit/3d4273bc4c6128bf171c7ad73f27efe2419ac294))
+
+
+### Performance Improvements
+
+* **launcher:** render particle backgrounds with WebGL 1 ([#119](https://github.com/helalaou/AeroTizen/issues/119)) ([773c410](https://github.com/helalaou/AeroTizen/commit/773c4108f2ff3049f10649d91f4e2a9165b8cf8d))
+
 ## [2.6.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.5.0...launcher-v2.6.0) (2026-11-03)
 
 
