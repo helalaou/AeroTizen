@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.0.0](https://github.com/helalaou/AeroTizen/compare/cli-v2.6.0...cli-v3.0.0) (2026-11-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cli:** configure Home and startup with one command ([#147](https://github.com/helalaou/AeroTizen/issues/147))
+
+### Features
+
+* add Stremio Continue Watching on rooted TVs ([#141](https://github.com/helalaou/AeroTizen/issues/141)) ([0d188b7](https://github.com/helalaou/AeroTizen/commit/0d188b782b3ee1e2478ca7da07f75ed701548316))
+* distinguish TV dev builds and the root helper ([#155](https://github.com/helalaou/AeroTizen/issues/155)) ([4ab3560](https://github.com/helalaou/AeroTizen/commit/4ab356039a55a4c51c967364be3d430df10e419c))
+* **launcher:** note that the language setting only changes AeroTizen ([#156](https://github.com/helalaou/AeroTizen/issues/156)) ([1e0a5aa](https://github.com/helalaou/AeroTizen/commit/1e0a5aa2f1e42201fc9fc92999355296031a65c6))
+
+
+### Bug Fixes
+
+* **cli:** configure Home and startup with one command ([#147](https://github.com/helalaou/AeroTizen/issues/147)) ([d3d6d13](https://github.com/helalaou/AeroTizen/commit/d3d6d1394e325f244a9869fc24e4c5219959ee40))
+* **release:** isolate CLI package and preserve root installs ([#98](https://github.com/helalaou/AeroTizen/issues/98)) ([bd4e5dc](https://github.com/helalaou/AeroTizen/commit/bd4e5dc589254560060507df186d22d824772894))
+
 ## [2.6.0](https://github.com/helalaou/AeroTizen/compare/cli-v2.5.0...cli-v2.6.0) (2026-11-03)
 
 
