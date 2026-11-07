@@ -235,8 +235,8 @@
       return;
     }
     // Samsung's preloaded Cobalt YouTube sometimes reports visible=false.
-    // The V992.56 device-tested fix waits for /leave acknowledgement before
-    // launching; otherwise HomeWatcher can immediately reclaim the screen.
+    // In Watcher mode, wait for /leave before launching so HomeWatcher does
+    // not immediately reclaim the screen.
     var isYouTube = /^youtube$/i.test(String(app.name || "").trim());
     if (isYouTube && A.homewatch && A.homewatch.suspendForExternal) {
       function youtubeFailed(reason, detail, error) {
