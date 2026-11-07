@@ -60,8 +60,10 @@ def launcher(tmp_path):
     runtime = root / "dist/launcher"
     shutil.copytree(app, runtime)
     (runtime / "index.html").write_text(
+        '<link rel="stylesheet" href="js/launcher-ui.css">'
         '<div id="home-root"></div><div id="settings-root"></div><script src="js/launcher-ui.js"></script>'
     )
+    (runtime / "js/launcher-ui.css").write_text(".home { display: grid; }")
     (runtime / "js/launcher-ui.js").write_text("compiled Home and Settings")
     (runtime / "licenses").mkdir()
     (runtime / "licenses/i18next.txt").write_text("MIT License")
@@ -84,6 +86,7 @@ def test_launcher_is_unsigned_deterministic_and_has_verified_manifest(launcher, 
             "css/style.css",
             "icon.png",
             "index.html",
+            "js/launcher-ui.css",
             "js/launcher-ui.js",
             "js/main.js",
             "licenses/i18next.txt",
@@ -182,7 +185,14 @@ def test_launcher_rejects_stale_compiled_manifest(launcher, tmp_path):
 
 
 @pytest.mark.parametrize(
-    "name", ["js/launcher-ui.js", "licenses/i18next.txt", "licenses/preact.txt", "licenses/lucide-preact.txt"]
+    "name",
+    [
+        "js/launcher-ui.css",
+        "js/launcher-ui.js",
+        "licenses/i18next.txt",
+        "licenses/preact.txt",
+        "licenses/lucide-preact.txt",
+    ],
 )
 def test_launcher_requires_ui_runtime_and_licenses(launcher, tmp_path, name):
     (launcher / "dist/launcher" / name).unlink()
@@ -223,6 +233,11 @@ def test_launcher_rejects_legacy_renderer_assets(launcher, tmp_path, name):
     [
         ('<div id="home-root"></div>', "Preact Settings mount"),
         ('<div id="home-root"></div><div id="settings-root"></div>', "shared UI script"),
+        (
+            '<div id="home-root"></div><div id="settings-root"></div>'
+            '<script src="js/launcher-ui.js"></script>',
+            "shared UI stylesheet",
+        ),
     ],
 )
 def test_launcher_requires_both_views_and_the_shared_bundle(launcher, tmp_path, html, error):
