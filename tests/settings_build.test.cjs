@@ -25,6 +25,7 @@ test("compiled launcher uses the production page, local scripts and the Preact l
   const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((match) => match[1]);
   assert.ok(scripts.includes("js/launcher-ui.js"));
   assert.ok(!scripts.includes("js/settings.js"), "settings are owned by the TypeScript service");
+  assert.ok(!scripts.includes("js/network.js"), "network status is owned by the TypeScript service");
   assert.ok(scripts.indexOf("js/launcher-ui.js") < scripts.indexOf("js/main.js"), "views mount before boot");
   for (const file of scripts) {
     assert.ok(existsSync(path.join(output, file)), file);

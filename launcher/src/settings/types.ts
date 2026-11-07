@@ -42,7 +42,6 @@ export interface SettingsServices {
   applyClock(): void;
   applyInputs(): void;
   applyLocationVisibility(): void;
-  applyNetworkVisibility(): void;
   applySpeed(speed: number): void;
   applyWeatherVisibility(): void;
   backgrounds: readonly BackgroundOption[];

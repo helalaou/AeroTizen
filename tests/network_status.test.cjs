@@ -3,7 +3,6 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const test = require("node:test");
 const vm = require("node:vm");
-const source = fs.readFileSync(require("node:path").join(__dirname, "../launcher/js/network.js"), "utf8");
 function setup(level, standard, online = true, view = true) {
   const attrs = {},
     requests = [],
@@ -26,6 +25,7 @@ function setup(level, standard, online = true, view = true) {
           requests.push({ key, yes, no });
         },
         addPropertyValueChangeListener() {},
+        removePropertyValueChangeListener() {},
       },
     },
   };
@@ -44,7 +44,7 @@ function setup(level, standard, online = true, view = true) {
     navigator: { onLine: online },
     setInterval: (fn) => timers.push(fn),
   };
-  vm.runInNewContext(source, context);
+  require("./helpers/network.cjs").installNetwork(context);
   if (view)
     vm.runInNewContext(
       fs.readFileSync(require("node:path").join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"),
@@ -88,11 +88,14 @@ test("invalid strength is unavailable, never represented as measured weak Wi-Fi"
     assert.equal(h.attrs["data-net-level"], "unknown");
     assert.equal(h.attrs["aria-label"], "Wi-Fi (signal unavailable)");
   }
+  const zero = setup(undefined, 0);
+  zero.wifi();
+  assert.equal(zero.A.network.getSnapshot().strength, 0, "zero remains a measured signal level");
 });
 test("unknown and failed network reports never invent Wi-Fi or offline", () => {
   const h = setup();
   h.requests[0].no();
-  assert.equal(h.attrs["data-net-kind"], "unknown");
+  assert.equal(h.A.network.getSnapshot().kind, "unknown");
   const off = setup(undefined, undefined, false);
   off.requests[0].no();
   assert.equal(off.attrs["data-net-kind"], "offline");
@@ -124,11 +127,9 @@ test("network snapshots publish without DOM access and retain identity for uncha
   assert.equal(Object.isFrozen(wifi), true);
   assert.equal(initial.kind, "unknown");
   h.A.settings.update({ showNetwork: false });
-  h.A.network.updateVisibility();
   assert.equal(h.A.network.getSnapshot().visible, false);
   assert.equal(updates, 2);
   unsubscribe();
-  h.A.network.updateVisibility();
   assert.equal(updates, 2);
   assert.deepEqual(h.attrs, {});
 });

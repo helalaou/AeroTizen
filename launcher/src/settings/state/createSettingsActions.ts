@@ -117,7 +117,7 @@ export const createSettingsActions = (
       ),
     setDateFormat: (dateFormat) => commit({ dateFormat }, services.applyClock),
     setNumerals: (numerals) => commit({ numerals }, services.applyClock),
-    setNetworkVisible: (showNetwork) => commit({ showNetwork }, services.applyNetworkVisibility),
+    setNetworkVisible: (showNetwork) => commit({ showNetwork }),
     setLiveTvVisible: (showLiveTv) => commit({ showLiveTv }, services.applyInputs),
     setHomeCardColumns: (homeCardColumns) => commit({ homeCardColumns }, services.applyCardSize),
     setHomeAppLayout: (homeAppLayout) => commit({ homeAppLayout }, services.applyCardSize),

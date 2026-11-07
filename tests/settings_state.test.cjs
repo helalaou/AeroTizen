@@ -50,7 +50,6 @@ const harness = () => {
     "applyLocationVisibility",
     "refreshWeather",
     "applyClock",
-    "applyNetworkVisibility",
     "applyInputs",
     "applyCardSize",
     "applySpeed",
@@ -146,7 +145,7 @@ test("actions persist preferences and invoke only the relevant service", () => {
     ["setLocationVisible", false, "weatherShowLocation", "applyLocationVisibility"],
     ["setTempUnit", "F", "tempUnit", "refreshWeather"],
     ["setDateFormat", "iso", "dateFormat", "applyClock"],
-    ["setNetworkVisible", false, "showNetwork", "applyNetworkVisibility"],
+    ["setNetworkVisible", false, "showNetwork", null],
     ["setLiveTvVisible", false, "showLiveTv", "applyInputs"],
     ["setHomeCardColumns", 5, "homeCardColumns", "applyCardSize"],
     ["setHomeAppLayout", "scroll", "homeAppLayout", "applyCardSize"],
@@ -157,7 +156,7 @@ test("actions persist preferences and invoke only the relevant service", () => {
     h.calls.length = 0;
     h.actions[action](value);
     assert.deepEqual(h.settings.getSnapshot()[key], value);
-    assert.deepEqual(h.calls, [[service]]);
+    assert.deepEqual(h.calls, service ? [[service]] : []);
   }
   assert.equal(h.saves, cases.length);
   h.actions.setTimeFormat("none");

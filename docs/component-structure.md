@@ -74,6 +74,24 @@ the same service directly. TV services also use `getSnapshot()`, `subscribe()` a
 View teardown releases view subscriptions. The runtime preference service survives
 development hot reload so existing TV-service subscriptions remain active.
 
+## Network ownership
+
+`services/createNetworkService.ts` owns live network state. Views read its snapshots
+directly through `useStore`; `createStatusStores` does not copy network state or
+subscribe to it. Settings changes update indicator visibility without a TV query.
+Unchanged readings retain snapshot identity and do not notify consumers.
+
+Boot starts the service after the first frame. One 60-second interval and one platform
+subscription are shared across views and retained during development hot reload.
+`dispose()` cancels pending delivery and releases the interval, platform watch,
+settings subscription and consumers.
+
+`platform/tizen/createNetworkPlatform.ts` owns Samsung/Tizen calls and browser
+online/offline events. It preserves Samsung signal-level and standard Tizen fallbacks,
+including unavailable readings. Native watch IDs are released through the
+[SystemInfo API](https://developer.samsung.com/smarttv/develop/api-references/tizen-web-device-api-references/systeminfo-api.html).
+Cancelled discovery cannot start a later Wi-Fi query or publish a stale reading.
+
 ## DOM and style ownership
 
 Only `src/index.ts` discovers the Home, Settings, wallpaper, Fireplace and toast mount hosts. Preact renders the

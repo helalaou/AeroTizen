@@ -3,8 +3,8 @@ import type { StatusStores } from "../contracts/status";
 import type { LauncherPlatform, LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import { createStore } from "../shared/state/createStore";
 
-// Views share one subscription to each existing service. They never start a
-// poller or make a forecast request. Clock ticks also recheck cache expiry.
+// Clock and weather still bridge existing services. Network views read the shared
+// service directly. Clock ticks also recheck weather cache expiry.
 export const createStatusStores = (
   runtime: Pick<LauncherRuntime, "clock" | "network">,
   platform: Pick<LauncherPlatform, "weather">,
@@ -13,7 +13,6 @@ export const createStatusStores = (
 ): StatusStores => {
   const time = createStore(runtime.clock.getSnapshot());
   const weather = createStore(platform.weather.getSnapshot());
-  const network = createStore(runtime.network.getSnapshot());
   const unsubscribers = [
     runtime.clock.subscribe(() =>
       transaction(() => {
@@ -22,18 +21,16 @@ export const createStatusStores = (
       }),
     ),
     platform.weather.subscribe(() => transaction(() => weather.set(platform.weather.getSnapshot()))),
-    runtime.network.subscribe(() => transaction(() => network.set(runtime.network.getSnapshot()))),
     settings.subscribe(() =>
       transaction(() => {
         weather.set(platform.weather.getSnapshot());
-        network.set(runtime.network.getSnapshot());
       }),
     ),
   ];
   return {
     time,
     weather,
-    network,
+    network: runtime.network,
     dispose() {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     },

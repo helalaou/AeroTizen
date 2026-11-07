@@ -69,9 +69,10 @@ function harness({ settings = {}, tizen, online = true } = {}) {
       return intervals.length;
     },
   });
-  for (const file of ["clock.js", "network.js"]) {
+  for (const file of ["clock.js"]) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "launcher/js", file), "utf8"), context);
   }
+  require("./helpers/network.cjs").installNetwork(context);
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"), {
     ...context,
     window: {
@@ -125,7 +126,6 @@ test("network visibility applies on startup and changes immediately in the brows
   h.intervals[0].fn();
   assert.equal(h.elements.network.hasAttribute("hidden"), true);
   h.A.settings.update({ showNetwork: true });
-  h.A.network.updateVisibility();
   assert.equal(h.elements.network.hasAttribute("hidden"), false);
   assert.equal(h.elements.network.getAttribute("aria-label"), "Offline");
 });
@@ -141,6 +141,7 @@ test("delayed network responses and change listeners cannot reveal a hidden indi
       addPropertyValueChangeListener(property, listener) {
         listeners.push({ property, listener });
       },
+      removePropertyValueChangeListener() {},
     },
   };
   const h = harness({ tizen });
@@ -149,7 +150,6 @@ test("delayed network responses and change listeners cannot reveal a hidden indi
   assert.equal(indicator.hasAttribute("hidden"), false);
   assert.equal(requests[0].property, "NETWORK");
   h.A.settings.update({ showNetwork: false });
-  h.A.network.updateVisibility();
   requests[0].success({ networkType: "WIFI" });
   assert.equal(requests[1].property, "WIFI_NETWORK");
   requests[1].success({ signalStrength: 0.8 });
@@ -166,7 +166,6 @@ test("delayed network responses and change listeners cannot reveal a hidden indi
   requests[3].failure();
   assert.equal(indicator.hasAttribute("hidden"), true);
   h.A.settings.update({ showNetwork: true });
-  h.A.network.updateVisibility();
   assert.equal(indicator.hasAttribute("hidden"), false);
   assert.equal(indicator.getAttribute("aria-label"), "Network status unavailable");
 });
