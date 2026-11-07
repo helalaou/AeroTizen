@@ -148,17 +148,9 @@ namespace AeroTizen.Home
         {
             if (platform.LauncherInstalled()) throw new Exception("AeroTizen is installed; watcher coordination is required.");
         }
-        private static Snapshot Write(IPlatform platform, Snapshot desired, bool requireAbsent = false)
+        private static void WriteStrings(IPlatform platform, Snapshot desired, string[] keys, bool requireAbsent = false)
         {
-            if (platform.Read().Main != desired.Main)
-            {
-                if (requireAbsent) RequireAbsent(platform);
-                platform.SetMain(desired.Main);
-                var actual = platform.Read();
-                if (actual.Main != desired.Main) throw new ReadbackException("Home operation readback failed.", "home_operation", desired, actual);
-            }
-            // Read each key after assigning Home. Firmware can set startup IDs itself.
-            foreach (string key in Keys)
+            foreach (string key in keys)
             {
                 if (platform.Read().Strings[key] == desired.Strings[key]) continue;
                 if (requireAbsent) RequireAbsent(platform);
@@ -170,6 +162,18 @@ namespace AeroTizen.Home
                 var actual = platform.Read();
                 if (actual.Strings[key] != desired.Strings[key]) throw new ReadbackException("Setting readback failed: " + key, key, desired, actual);
             }
+        }
+        private static Snapshot Write(IPlatform platform, Snapshot desired, bool requireAbsent = false)
+        {
+            if (platform.Read().Main != desired.Main)
+            {
+                if (requireAbsent) RequireAbsent(platform);
+                platform.SetMain(desired.Main);
+                var actual = platform.Read();
+                if (actual.Main != desired.Main) throw new ReadbackException("Home operation readback failed.", "home_operation", desired, actual);
+            }
+            // Read each key after assigning Home. Firmware can set startup IDs itself.
+            WriteStrings(platform, desired, Keys, requireAbsent);
             if (platform.Read().AutoStart != desired.AutoStart)
             {
                 if (requireAbsent) RequireAbsent(platform);
@@ -194,6 +198,36 @@ namespace AeroTizen.Home
                     return false;
             }
             return true;
+        }
+        private static Snapshot WriteBoot(IPlatform platform, Snapshot desired, Snapshot original)
+        {
+            try
+            {
+                var after = Write(platform, desired);
+                if (after.AutoStart == 1) return after;
+            }
+            catch (ReadbackException error) when (error.Failure.Observed.AutoStart != 1 && StartupRejected(error.Failure, original))
+            {
+                // Some TVs reject direct startup ID writes but assign both IDs when autostart is enabled.
+            }
+
+            desired.AutoStart = 1;
+            try { platform.SetAutoStart(1); }
+            catch (Exception error)
+            {
+                throw new ReadbackException("Autostart write failed.", "boot", desired, platform.Read(), error);
+            }
+            var final = platform.Read();
+            if (Same(final, desired)) return final;
+
+            var failure = new ReadbackException("Native boot readback failed.", "boot", desired, final);
+            // Enabling autostart can leave a startup ID at its original value. Retry only when the other values match.
+            if (final.AutoStart != 1 || !StartupRejected(failure.Failure, original)) throw failure;
+
+            WriteStrings(platform, desired, StartupKeys);
+            final = platform.Read();
+            if (!Same(final, desired)) throw new ReadbackException("Native boot retry readback failed.", "boot", desired, final);
+            return final;
         }
         private static Result RestoreAbsent(IPlatform platform, Request request, Snapshot before)
         {
@@ -260,22 +294,11 @@ namespace AeroTizen.Home
                     foreach (string key in StartupKeys) desired.Strings[key] = Target;
                 }
                 nativeStarted = true;
-                bool startupSettingsRestored = false;
+                VerificationFailure startupFailure = null;
                 Snapshot after;
                 try
                 {
-                    after = Write(platform, desired);
-                    if (request.Boot && after.AutoStart != 1)
-                    {
-                        desired.AutoStart = 1;
-                        try { platform.SetAutoStart(1); }
-                        catch (Exception error)
-                        {
-                            throw new ReadbackException("Autostart write failed.", "boot", desired, platform.Read(), error);
-                        }
-                        after = platform.Read();
-                        if (!Same(after, desired)) throw new ReadbackException("Native boot readback failed.", "boot", desired, after);
-                    }
+                    after = request.Boot ? WriteBoot(platform, desired, request.Original) : Write(platform, desired);
                 }
                 catch (ReadbackException error) when (request.Action == "apply" && StartupRejected(error.Failure, request.Original))
                 {
@@ -283,12 +306,12 @@ namespace AeroTizen.Home
                     foreach (string key in StartupKeys) desired.Strings[key] = request.Original.Strings[key];
                     desired.AutoStart = request.Original.AutoStart;
                     after = Write(platform, desired);
-                    startupSettingsRestored = true;
+                    startupFailure = error.Failure;
                 }
                 watcher = Change(platform, watcher, request.Action == "apply" ? "native" : "watcher",
                     request.Action == "apply" ? request.Transaction : null,
                     request.Action == "apply" ? request.BaselineHash : null);
-                return new Result { Success = true, StartupSettingsRestored = startupSettingsRestored, After = after, Watcher = watcher };
+                return new Result { Success = true, Failure = startupFailure, StartupSettingsRestored = startupFailure != null, After = after, Watcher = watcher };
             }
             catch (Exception error)
             {
