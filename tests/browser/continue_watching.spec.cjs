@@ -22,6 +22,17 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   const errors = [],
     reads = [];
   let primePlayback = 75;
+
+  async function waitForEmptyChannel4() {
+    await expect
+      .poll(async () => {
+        // Each retry starts after the intercepted response arrives.
+        await page.clock.runFor(2000);
+        return page.evaluate(() => AeroTizen.continueWatching.sources.find((s) => s.name === "Channel 4").status);
+      })
+      .toBe("No items available");
+  }
+
   page.on("pageerror", (e) => errors.push(e.message));
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("https://artwork.test/**", (route) =>
@@ -135,11 +146,7 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   await expect(page.locator("[data-settings-card=source]")).not.toContainText(["BBC iPlayer"]);
   expect(reads).toEqual([]);
   for (const id of [prime, itv, channel4]) await page.locator('[data-key="continue-app:' + id + '"]').click();
-  // Exercise both bounded empty-feed retries using the installed browser clock.
-  await page.clock.runFor(4500);
-  await expect
-    .poll(() => page.evaluate(() => AeroTizen.continueWatching.sources.find((s) => s.name === "Channel 4").status))
-    .toBe("No items available");
+  await waitForEmptyChannel4();
   await expect(page.locator("[data-settings-card=source]")).not.toContainText(["5 items"]);
   await expect(page.locator("[data-settings-card=source]").first()).toHaveCSS("width", "160px");
   await expect(page.locator("[data-settings-card=source]").first()).toHaveCSS("height", "160px");
@@ -206,11 +213,7 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
     AeroTizen.continueWatching.refresh();
   });
   await expect(page.locator("#continue-items > [data-key]")).toHaveCount(7);
-  // Exercise both bounded empty-feed retries using the installed browser clock.
-  await page.clock.runFor(4500);
-  await expect
-    .poll(() => page.evaluate(() => AeroTizen.continueWatching.sources.find((s) => s.name === "Channel 4").status))
-    .toBe("No items available");
+  await waitForEmptyChannel4();
   expect(
     await page.evaluate(() =>
       window.savedCards.every(
