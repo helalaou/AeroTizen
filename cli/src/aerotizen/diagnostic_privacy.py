@@ -108,6 +108,7 @@ ENUMS = {
             "watch",
             "samsung_home",
             "live_tv",
+            "hdmi",
             "/home",
             "/leave",
             "/watch",
