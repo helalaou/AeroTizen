@@ -356,7 +356,7 @@ def test_native_policy_failure_boundaries_run_on_host_without_tizen():
         timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "POLICY_TESTS_PASSED=111" in result.stdout
+    assert "POLICY_TESTS_PASSED=114" in result.stdout
 
 
 @pytest.mark.parametrize("alias", [[], ["--boot"]])
