@@ -2,13 +2,15 @@
 
 The commands manage `org.aerotizen.roothelper`, a hidden .NET service.
 They do not write Home assignments, launcher startup values or Art Mode settings.
-The root process also hosts the optional Stremio Continue Watching reader.
+Use CLI 3.0.0 for setup, status, upgrades, and removal. Its root helper also
+supports [Stremio in Continue Watching](launcher.md#stremio).
 
 ## User flow
 
 1. Leave Developer Mode On with Host PC IP set to the computer. Run
    `aerotizen --tv TV_IP root setup` to preview, then add `--yes` to install.
-2. Follow the printed TV steps: change Host PC IP to `127.0.0.1` and fully restart.
+2. Keep Developer Mode on and set Host PC IP to `127.0.0.1` as instructed.
+   Disconnect TV or One Connect power for 60 seconds. Reconnect power and restart.
 3. Run `aerotizen --tv TV_IP root setup --yes --wait 240` to finish. Completion
    needs the paired root server from a new boot, a verified TV identity, the actual
    dedicated startup flag and completed SDK/app staging cleanup. Initial PC-driven
