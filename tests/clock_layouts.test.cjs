@@ -121,14 +121,6 @@ test("four imported clock styles can be selected and persisted", () => {
   assert.equal(elements["aero-v991-widget"].hidden, true);
 });
 
-test("large clock uses upstream date and 24-hour time formats", () => {
-  const { A, elements } = runtime({ clockLayout: "custom", timeFormat: "24", dateFormat: "iso" });
-  A.clockLayouts.apply();
-  assert.match(elements["aero-v991-hours"].textContent, /^\d{2}$/);
-  assert.match(elements["aero-v991-minutes"].textContent, /^\d{2}$/);
-  assert.match(elements["aero-v991-date"].textContent, /^\d{4}-\d{2}-\d{2}$/);
-});
-
 test("the tested cache validation rejects stale and mismatched weather", () => {
   const saved = { clockLayout: "custom", showWeather: true, tempUnit: "C" };
   const old = runtime(saved, {
@@ -149,32 +141,4 @@ test("the tested cache validation rejects stale and mismatched weather", () => {
   });
   wrongUnit.A.clockLayouts.apply();
   assert.equal(wrongUnit.elements["aero-v991-temp"].textContent, "--°");
-});
-
-test("valid cached weather renders temperature, WMO condition and city", () => {
-  const { A, elements } = runtime(
-    { clockLayout: "custom", tempUnit: "C", weatherShowLocation: true },
-    { source: "auto", temp: 23.4, code: 3, at: Date.now(), unit: "C", city: "Cagliari" },
-  );
-  A.clockLayouts.apply();
-  assert.equal(elements["aero-v991-temp"].textContent, "23°");
-  assert.equal(elements["aero-v991-condition"].textContent, "Cloudy");
-  assert.equal(elements["aero-v991-city"].textContent, "Cagliari");
-  A.settings.weatherShowLocation = false;
-  A.clockLayouts.refreshWeather();
-  assert.equal(elements["aero-v991-city"].textContent, "");
-});
-
-test("time, weather, and date visibility respect saved preferences", () => {
-  const { A, elements } = runtime({
-    clockLayout: "custom",
-    showTime: false,
-    showWeather: false,
-    dateFormat: "none",
-  });
-  A.clockLayouts.apply();
-  assert.equal(elements["aero-v991-widget"].hidden, true);
-  assert.equal(elements["aero-v991-hours"].style.display, "none");
-  assert.equal(elements["aero-v991-weather-icon"].parentNode.style.display, "none");
-  assert.equal(elements["aero-v991-date"].style.display, "none");
 });

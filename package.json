@@ -10,6 +10,7 @@
     "build:dev": "npm run build -- --dev",
     "dev": "vite",
     "test": "node --test tests/*.test.cjs",
+    "test:components": "vitest run",
     "test:browser": "npm run build && playwright test",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
     "lint:js": "eslint launcher tests eslint.config.js playwright.config.cjs vite.config.mts \"tools/*.{mjs,cjs}\" stylelint.config.cjs --max-warnings=0",
@@ -19,6 +20,7 @@
     "@eslint/js": "^9.39.0",
     "@playwright/test": "1.64.1",
     "@preact/preset-vite": "2.10.6",
+    "@testing-library/preact": "3.2.6",
     "@types/babel__core": "7.20.5",
     "@types/node": "20.19.43",
     "@typescript-eslint/eslint-plugin": "8.72.0",
@@ -32,11 +34,13 @@
     "eslint-plugin-simple-import-sort": "14.0.0",
     "eslint-plugin-unused-imports": "4.4.1",
     "globals": "^16.5.0",
+    "jsdom": "27.4.0",
     "pngjs": "7.0.0",
     "prettier": "3.9.10",
     "stylelint": "17.16.0",
     "typescript": "6.0.3",
-    "vite": "8.3.5"
+    "vite": "8.3.5",
+    "vitest": "4.1.12"
   },
   "dependencies": {
     "i18next": "26.7.1",

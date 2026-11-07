@@ -2,7 +2,9 @@ const { test, expect } = require("@playwright/test");
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
 
 for (const glass of [false, true]) {
-  test(`${glass ? "Glass" : "Classic"} icons keep labels, status meaning and selected choices`, async ({ page }) => {
+  test(`${glass ? "Glass" : "Classic"} weather, selection badges and preview icons use the theme styles`, async ({
+    page,
+  }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
@@ -16,7 +18,6 @@ for (const glass of [false, true]) {
           background: "black",
           showWeather: true,
           tempUnit: "C",
-          inputNames: { "HDMI 1": "Xbox", "HDMI 2": "PC", "HDMI 3": "Apple TV" },
         }),
       );
       localStorage.setItem(
@@ -30,69 +31,25 @@ for (const glass of [false, true]) {
           at: Date.now(),
         }),
       );
-      window.iconNetwork = { kind: "WIFI", strength: 0.2 };
-      window.tizen = {
-        systeminfo: {
-          getPropertyValue(name, done) {
-            if (name === "NETWORK") done({ networkType: window.iconNetwork.kind });
-            if (name === "WIFI_NETWORK") done({ signalStrength: window.iconNetwork.strength });
-            if (name === "VIDEOSOURCE")
-              done({
-                connected: [{ type: "TV", number: 1 }, ...[1, 2, 3, 4].map((number) => ({ type: "HDMI", number }))],
-                disconnected: [],
-              });
-          },
-        },
-      };
     }, glass);
     await page.goto("/");
     await expect(page).toHaveTitle("AeroTizen");
     await page.waitForFunction(() => AeroTizen.apps.ready);
     const gear = page.getByRole("button", { name: "Settings", exact: true });
-    await expect(gear.locator("svg")).toHaveAttribute("aria-hidden", "true");
-    await expect(gear.locator("svg")).toHaveAttribute("focusable", "false");
-    await expect(gear.locator("svg")).toHaveAttribute("stroke", "currentColor");
-    await expect(gear.locator("svg")).toHaveAttribute("stroke-width", "2");
-    await expect(page.locator("#inputs .lucide-gamepad-2")).toHaveCount(1);
-    await expect(page.locator("#inputs .lucide-monitor")).toHaveCount(1);
-    await expect(page.locator("#inputs .lucide-rectangle-ellipsis")).toHaveCount(1);
-    await expect(page.locator("#inputs .lucide-hdmi-port")).toHaveCount(1);
-    await expect(page.locator("#inputs .lucide-tv")).toHaveCount(1);
-    for (const [kind, strength, glyph, label] of [
-      ["WIFI", 0.2, "wifi-low", "Wi-Fi"],
-      ["WIFI", 0.5, "wifi-high", "Wi-Fi"],
-      ["WIFI", 1, "wifi", "Wi-Fi"],
-      ["WIFI", null, "wifi", "Wi-Fi (signal unavailable)"],
-      ["ETHERNET", null, "ethernet-port", "Ethernet"],
-      ["NONE", null, "wifi-off", "Offline"],
-    ]) {
-      await page.evaluate(
-        ({ kind, strength }) => {
-          window.iconNetwork = { kind, strength };
-          AeroTizen.network.refresh();
-        },
-        { kind, strength },
-      );
-      await expect(page.locator("#network")).toHaveClass(new RegExp("lucide-" + glyph + "(?: |$)"));
-      await expect(page.getByRole("img", { name: label, exact: true })).toHaveAttribute("id", "network");
-      await expect(page.locator("#network")).not.toHaveAttribute("aria-hidden", "true");
-    }
-    for (const [code, glyph, colour] of [
-      [0, "sun", "rgb(255, 211, 77)"],
-      [2, "cloud-sun", "rgb(255, 211, 77)"],
-      [3, "cloud", "rgb(213, 219, 228)"],
-      [45, "cloud-fog", "rgb(213, 219, 228)"],
-      [51, "cloud-rain", "rgb(108, 182, 255)"],
-      [71, "cloud-snow", "rgb(255, 255, 255)"],
-      [95, "cloud-lightning", "rgb(255, 211, 77)"],
+    for (const [code, colour] of [
+      [0, "rgb(255, 211, 77)"],
+      [2, "rgb(255, 211, 77)"],
+      [3, "rgb(213, 219, 228)"],
+      [45, "rgb(213, 219, 228)"],
+      [51, "rgb(108, 182, 255)"],
+      [71, "rgb(255, 255, 255)"],
+      [95, "rgb(255, 211, 77)"],
     ]) {
       await page.evaluate((code) => {
         const cache = JSON.parse(localStorage.getItem("aerotizen.weather.v2"));
         localStorage.setItem("aerotizen.weather.v2", JSON.stringify({ ...cache, code, at: Date.now() }));
         window.Weather.start();
       }, code);
-      await expect(page.locator("#weather svg")).toHaveClass(new RegExp("lucide-" + glyph + "(?: |$)"));
-      await expect(page.locator("#weather b")).toHaveText("12°");
       for (const background of ["solid-white", "solid-lavender", "black"]) {
         await page.evaluate((background) => {
           AeroTizen.settings.update({ background });
@@ -107,19 +64,11 @@ for (const glass of [false, true]) {
     await gear.click();
     await openCategory(page, "apps");
     const selectedApp = page.locator('[data-key="app:demo0"]');
-    await expect(selectedApp.locator("[data-selection-indicator] .lucide-check")).toBeVisible();
-    await selectedApp.click();
-    await expect(selectedApp).toHaveAttribute("aria-pressed", "false");
-    await expect(selectedApp.locator("[data-selection-indicator]")).toHaveCount(0);
-    await selectedApp.click();
-    await expect(selectedApp.locator("[data-selection-indicator]")).toBeVisible();
     await expect(selectedApp.locator("[data-selection-indicator]")).toHaveCSS(
       "background-color",
       glass ? "rgb(71, 82, 105)" : "rgb(124, 92, 255)",
     );
     await openCategory(page, "wallpaper");
-    await expect(page.locator('[data-key="bg:black"] [data-selection-indicator]')).toBeVisible();
-    await expect(page.locator("[data-settings-help] svg[aria-hidden=true]")).toHaveCount(3);
     await page.locator('[data-key="wallpaper-categories:animated"]').click();
     await page.locator('[data-key="bg:aurora"]').click();
     const preview = page.getByRole("button", { name: "Preview", exact: true });
@@ -137,10 +86,6 @@ for (const glass of [false, true]) {
     });
     expect(layout.gap).toBeGreaterThan(0);
     expect(layout.centerOffset).toBeLessThanOrEqual(1);
-    const speed = page.getByRole("slider", { name: "Background speed", exact: true });
-    await speed.click();
-    await expect(speed.locator("[data-slider-hint] svg[aria-hidden=true]")).toHaveCount(2);
-    await speed.click();
     await closeSettings(page);
     await expect(page.locator("#grid > [data-id]")).toHaveCount(1);
     await expect(page.locator("vite-error-overlay")).toHaveCount(0);

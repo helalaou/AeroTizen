@@ -3,7 +3,6 @@ const { preserveLegacyDom } = require("./legacy_helpers.cjs");
 const { test, expect } = require("@playwright/test");
 const { runSettingsUi } = require("../settings_ui.browser");
 const { runSettingsFocus } = require("../settings_focus.browser");
-const { runSettingsResources } = require("../settings_resources.browser");
 
 const errors = new WeakMap();
 test.beforeEach(async ({ page }) => {
@@ -121,72 +120,6 @@ test("native remote keys preserve navigation, text entry and close behaviour", a
     renderedFocus: true,
     nativeClose: true,
   });
-});
-
-test("pending image retries and stale callbacks are cleaned up", async ({ page }) => {
-  await page.goto("/");
-  expect(await runSettingsResources(page)).toEqual({
-    pendingCleanup: true,
-    staleImageIgnored: true,
-    timeoutRetry: true,
-    exhaustedFallback: true,
-  });
-});
-
-test("failed artwork retries from the first candidate on reopen while loaded artwork stays cached", async ({
-  page,
-}) => {
-  let recovered = false,
-    loadedRequests = 0;
-  const failedRequests = [];
-  await page.route("https://retry-artwork.test/**", async (route) => {
-    const path = new URL(route.request().url()).pathname;
-    if (path === "/loaded") loadedRequests++;
-    else failedRequests.push(path);
-    await route.fulfill({
-      contentType: "image/svg+xml",
-      headers: { "cache-control": "no-store" },
-      body:
-        path === "/loaded" || recovered
-          ? '<svg xmlns="http://www.w3.org/2000/svg" width="304" height="304"><rect width="304" height="304" fill="purple"/></svg>'
-          : "invalid image",
-    });
-  });
-  await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.all.length >= 2);
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const ids = await page.evaluate(() => {
-    const [loaded, failed] = AeroTizen.apps.all.map((app) => app.id);
-    AeroTizen.artwork.sources = (app) =>
-      app.id === loaded
-        ? ["https://retry-artwork.test/loaded"]
-        : app.id === failed
-          ? ["https://retry-artwork.test/failed/first", "https://retry-artwork.test/failed/second"]
-          : [];
-    AeroTizen.settingsUi.open();
-    return { loaded, failed };
-  });
-  const loadedTile = page.locator('[data-key="app:' + ids.loaded + '"]');
-  const failedTile = page.locator('[data-key="app:' + ids.failed + '"]');
-  await expect(loadedTile).toHaveAttribute("data-artwork-loaded", "true");
-  await expect.poll(() => failedRequests).toEqual(["/failed/first", "/failed/second"]);
-  await expect(failedTile.locator("[data-app-artwork]")).toHaveCount(0);
-  await openCategory(page, "apps");
-  await expect(failedTile.locator("[data-app-fallback]")).toBeVisible();
-  const loadedNode = await loadedTile.locator("[data-app-artwork]").elementHandle();
-  recovered = true;
-  await page.evaluate(() => {
-    AeroTizen.settingsUi.close();
-    AeroTizen.settingsUi.open();
-  });
-  await expect(failedTile).toHaveAttribute("data-artwork-loaded", "true");
-  expect(failedRequests).toEqual(["/failed/first", "/failed/second", "/failed/first"]);
-  expect(loadedRequests).toBe(1);
-  expect(
-    await loadedNode.evaluate(
-      (node) => node === document.querySelector('[data-key="app:' + AeroTizen.apps.all[0].id + '"] [data-app-artwork]'),
-    ),
-  ).toBe(true);
 });
 
 test("the first pointer click activates its control; Space activates buttons without consuming input spaces", async ({

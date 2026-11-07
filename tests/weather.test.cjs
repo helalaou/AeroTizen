@@ -155,34 +155,44 @@ test("saved location bypasses IP lookup and retains its chosen coordinates", () 
   assert.equal(h.el.nodes.span.textContent, "London");
 });
 
-test("hide location removes the name and preserves temperature and icon without fetching", () => {
-  const h = harness({ saved: cached() });
+test("changing location visibility preserves the cached reading without fetching", () => {
+  const h = harness({ saved: cached(), view: false });
   h.start();
+  assert.equal(h.weather.getSnapshot().city, "London");
   h.preferences.weatherShowLocation = false;
   h.weather.updateDisplay();
-  assert.equal(h.el.hidden, false);
-  assert.equal(h.el.nodes.b.textContent, "12°");
-  assert.ok(h.el.html.includes("<svg"));
-  assert.equal(h.el.querySelector("span"), null);
+  const { city, code, showLocation, temperature, visible } = h.weather.getSnapshot();
+  assert.deepEqual(
+    { city, code, showLocation, temperature, visible },
+    {
+      city: "",
+      code: 3,
+      showLocation: false,
+      temperature: 12,
+      visible: true,
+    },
+  );
   assert.equal(h.requests.length, 0);
   h.preferences.weatherShowLocation = true;
   h.weather.updateDisplay();
-  assert.equal(h.el.nodes.span.textContent, "London");
+  assert.equal(h.weather.getSnapshot().showLocation, true);
+  assert.equal(h.weather.getSnapshot().city, "London");
 });
 
-test("hidden location stays hidden when cached weather loads and when requests complete", () => {
+test("location visibility survives a forecast and restart from cache", () => {
   const h = harness({
     saved: cached(),
     settings: { weatherShowLocation: false, weatherLocation: london },
+    view: false,
   });
   h.start();
   h.requests[0].respond(conditions());
-  assert.equal(h.el.querySelector("span"), null);
-  const reboot = harness({ saved: h.cached(), settings: h.preferences });
+  assert.equal(h.weather.getSnapshot().showLocation, false);
+  const reboot = harness({ saved: h.cached(), settings: h.preferences, view: false });
   reboot.start();
   assert.equal(reboot.requests.length, 0);
-  assert.equal(reboot.el.querySelector("span"), null);
-  assert.equal(reboot.el.nodes.b.textContent, "12°");
+  assert.equal(reboot.weather.getSnapshot().showLocation, false);
+  assert.equal(reboot.weather.getSnapshot().temperature, 12);
 });
 
 test("changing location clears the old reading and ignores an old forecast response", () => {

@@ -1,3 +1,5 @@
+/// <reference types="vitest/config" />
+
 import preact from "@preact/preset-vite";
 import { cp, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
@@ -53,6 +55,11 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [preact({ devToolsEnabled: false }), widgetAssets(output), developmentEntry],
     server: { host: "0.0.0.0", port: 8019, strictPort: true },
+    test: {
+      include: ["src/**/*.test.{ts,tsx}"],
+      environment: "jsdom",
+      setupFiles: ["src/test/setup.ts"],
+    },
     build: {
       target: ["chrome69", "es2018"],
       cssTarget: "chrome69",
