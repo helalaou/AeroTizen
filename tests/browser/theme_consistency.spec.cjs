@@ -47,50 +47,56 @@ for (const glassSettings of [false, true]) {
       };
     });
     expect(homeLayout).toEqual({ gridGap: 40, continueGap: 40 });
-    const headings = page.locator(".home-section-heading");
+    const headings = page.locator("[data-home-section-heading]");
     await expect(headings).toHaveCount(2);
     for (const heading of await headings.all()) {
       await expect(heading).toHaveCSS("font-size", "21px");
       await expect(heading).toHaveCSS("text-transform", "uppercase");
     }
     const colour = glassSettings ? "rgb(237, 242, 255)" : "rgb(124, 92, 255)";
-    expect(await page.locator("#grid .tile.focused").evaluate((n) => getComputedStyle(n).boxShadow)).toContain(colour);
+    expect(
+      await page.locator("#grid [data-id][data-focused=true]").evaluate((n) => getComputedStyle(n).boxShadow),
+    ).toContain(colour);
     await page.keyboard.down("Enter");
     await expect(page.getByRole("menu")).toBeVisible();
     await page.keyboard.up("Enter");
-    expect(
-      await page.locator(".app-actions-menu__focus-indicator").evaluate((n) => getComputedStyle(n).borderColor),
-    ).toBe(colour);
+    expect(await page.locator("[data-app-actions-focus]").evaluate((n) => getComputedStyle(n).borderColor)).toBe(
+      colour,
+    );
     expect(await page.getByRole("menu").evaluate((n) => getComputedStyle(n).backgroundImage === "none")).toBe(
       !glassSettings,
     );
     await page.keyboard.press("Escape");
     await page.keyboard.press("ArrowDown");
-    await expect(page.locator(".continue-card")).toHaveClass(/focused/);
-    expect(await page.locator(".continue-card").evaluate((n) => getComputedStyle(n).boxShadow)).toContain(colour);
-    expect(await page.locator(".continue-progress-fill").evaluate((n) => getComputedStyle(n).backgroundColor)).toBe(
+    await expect(page.locator("#continue-items > [data-key]")).toHaveAttribute("data-focused", "true");
+    expect(await page.locator("#continue-items > [data-key]").evaluate((n) => getComputedStyle(n).boxShadow)).toContain(
       colour,
     );
-    expect(await page.locator(".continue-card").evaluate((n) => getComputedStyle(n).backgroundImage)).toBe(
-      glassSettings ? "linear-gradient(160deg, rgba(86, 97, 116, 0.84), rgba(22, 29, 42, 0.94))" : "none",
-    );
+    expect(
+      await page.locator("[data-continue-part=progress-fill]").evaluate((n) => getComputedStyle(n).backgroundColor),
+    ).toBe(colour);
+    expect(
+      await page.locator("#continue-items > [data-key]").evaluate((n) => getComputedStyle(n).backgroundImage),
+    ).toBe(glassSettings ? "linear-gradient(160deg, rgba(86, 97, 116, 0.84), rgba(22, 29, 42, 0.94))" : "none");
     await page.keyboard.press("ArrowDown");
-    const source = page.locator("#inputs .focused");
+    const source = page.locator("#inputs [data-focused=true]");
     await expect(source).toHaveCount(1);
     expect(
       await source.evaluate((n) => getComputedStyle(n).boxShadow + " " + getComputedStyle(n).borderColor),
     ).toContain(glassSettings ? "255, 255, 255" : "124, 92, 255");
     await page.locator("#gear").click();
     await page.locator('[data-key="section:appearance"]').click();
-    const choices = await page.locator('[data-section-pane="appearance"] .pill.unit').evaluateAll((nodes) =>
-      nodes
-        .filter((n) => n.getBoundingClientRect().height)
-        .map((n) => ({
-          height: n.getBoundingClientRect().height,
-          font: getComputedStyle(n).fontSize,
-          minWidth: getComputedStyle(n).minWidth,
-        })),
-    );
+    const choices = await page
+      .locator('[data-section-pane="appearance"] [role=button][aria-pressed]')
+      .evaluateAll((nodes) =>
+        nodes
+          .filter((n) => n.getBoundingClientRect().height)
+          .map((n) => ({
+            height: n.getBoundingClientRect().height,
+            font: getComputedStyle(n).fontSize,
+            minWidth: getComputedStyle(n).minWidth,
+          })),
+      );
     expect(choices.length).toBeGreaterThan(3);
     for (const choice of choices) {
       expect(choice.height).toBe(72);
@@ -109,15 +115,17 @@ for (const glassSettings of [false, true]) {
     await expect(vertical).toHaveAttribute("aria-pressed", "true");
     await expect(compact).toHaveAttribute("aria-pressed", "false");
     await expect(vertical).not.toHaveCSS("background-color", unselectedFill);
-    await expect(page.locator("#clock-layouts .selection-indicator")).toHaveCount(0);
-    const statusChoices = await page.locator('[data-section-pane="status"] .pill.unit').evaluateAll((nodes) =>
-      nodes
-        .filter((n) => n.getBoundingClientRect().height)
-        .map((n) => ({
-          height: n.getBoundingClientRect().height,
-          font: getComputedStyle(n).fontSize,
-        })),
-    );
+    await expect(page.locator("#clock-layouts [data-selection-indicator]")).toHaveCount(0);
+    const statusChoices = await page
+      .locator('[data-section-pane="status"] [role=button][aria-pressed]')
+      .evaluateAll((nodes) =>
+        nodes
+          .filter((n) => n.getBoundingClientRect().height)
+          .map((n) => ({
+            height: n.getBoundingClientRect().height,
+            font: getComputedStyle(n).fontSize,
+          })),
+      );
     for (const choice of statusChoices) {
       expect(choice.height).toBe(72);
       expect(choice.font).toBe("20px");
@@ -133,7 +141,7 @@ for (const glassSettings of [false, true]) {
       );
     expect(appsGap).toBe(30);
     const icons = await page
-      .locator("#all-apps > .tile")
+      .locator("#all-apps > [data-settings-card]")
       .evaluateAll((nodes) => nodes.map((n) => [n.offsetWidth, n.offsetHeight]));
     for (const size of icons) expect(size).toEqual([160, 160]);
     await page.screenshot({ path: info.outputPath("settings-standard-icons.png") });

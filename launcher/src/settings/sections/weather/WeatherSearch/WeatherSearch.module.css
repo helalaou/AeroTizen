@@ -1,0 +1,29 @@
+.search {
+  display: flex;
+  align-items: stretch;
+  min-height: 64px;
+  border: 2px solid var(--border-control);
+  border-radius: var(--control-radius);
+  background: var(--surface-control);
+
+  &:focus-within {
+    border-color: var(--settings-focus-border);
+  }
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 18px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 20px;
+
+  &::placeholder {
+    color: var(--settings-subtitle);
+  }
+}

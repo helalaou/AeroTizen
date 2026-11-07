@@ -51,7 +51,7 @@ for (const height of [720, 1080])
         };
       }, glass);
       await page.goto("/");
-      await expect(page.locator(".continue-card")).toHaveCount(1);
+      await expect(page.locator("#continue-items > [data-key]")).toHaveCount(1);
       const slots = await page.locator("#gear, #samsung-home-shortcut, #network").evaluateAll((nodes) =>
         nodes.map((node) => {
           const rect = node.getBoundingClientRect();
@@ -69,24 +69,30 @@ for (const height of [720, 1080])
       expect(slots[1].y).toBe(slots[2].y);
       expect(slots[1].x - slots[0].x).toBe(slots[2].x - slots[1].x);
       await page.keyboard.press("ArrowDown");
-      await expect(page.locator(".continue-card")).toHaveClass(/focused/);
-      await expect(page.locator(".continue-viewport")).toHaveCSS("overflow", "visible");
+      await expect(page.locator("#continue-items > [data-key]")).toHaveAttribute("data-focused", "true");
+      await expect(page.locator("#continue-section [data-horizontal-scroller]")).toHaveCSS("overflow", "hidden");
       // The box shadow lies outside the transformed border box. Include its full
       // scaled 9px radius rather than checking only the card's content rectangle.
       await expect
         .poll(() =>
-          page.locator(".continue-card").evaluate((card) => {
+          page.locator("#continue-items > [data-key]").evaluate((card) => {
             const r = card.getBoundingClientRect(),
-              clip = card.closest(".content-viewport").getBoundingClientRect();
+              clip = card.closest("[data-home-viewport]").getBoundingClientRect(),
+              rowClip = card.closest("[data-horizontal-scroller]").getBoundingClientRect();
             const scale = r.width / card.offsetWidth,
               ring = 9 * scale;
-            return r.top - ring >= clip.top && r.bottom + ring <= clip.bottom && r.left - ring >= clip.left;
+            return (
+              r.top - ring >= Math.max(clip.top, rowClip.top) &&
+              r.bottom + ring <= Math.min(clip.bottom, rowClip.bottom) &&
+              r.left - ring >= Math.max(clip.left, rowClip.left) &&
+              r.right + ring <= Math.min(clip.right, rowClip.right)
+            );
           }),
         )
         .toBe(true);
       await page.screenshot({ path: info.outputPath("complete-focus-ring.png") });
       await page.keyboard.press("ArrowUp");
-      await expect(page.locator("#grid > .tile")).toHaveClass(/focused/);
+      await expect(page.locator("#grid > [data-id]")).toHaveAttribute("data-focused", "true");
       expect(errors).toEqual([]);
     });
   }
@@ -129,14 +135,14 @@ for (const height of [720, 1080])
           { count, glass },
         );
         await page.goto("/");
-        const cards = page.locator("#inputs > .tile");
+        const cards = page.locator("#inputs > [data-input-card]");
         await expect(cards).toHaveCount(count);
         const widths = await cards.evaluateAll((nodes) => nodes.map((node) => node.offsetWidth));
         expect(widths.every((width) => width <= (glass ? 354 : 576))).toBe(true);
         if (!count) {
           await expect(page.locator("#inputs-section")).toBeHidden();
           await page.keyboard.press("ArrowDown");
-          await expect(page.locator("#grid > .tile")).toHaveClass(/focused/);
+          await expect(page.locator("#grid > [data-id]")).toHaveAttribute("data-focused", "true");
           return;
         }
         if (glass && count < 5) {
@@ -155,14 +161,14 @@ for (const height of [720, 1080])
           for (const gap of spacing) expect(gap).toBeCloseTo(11, 1);
         }
         await page.keyboard.press("ArrowDown");
-        await expect(page.locator("#inputs > .focused")).toHaveCount(1);
+        await expect(page.locator("#inputs > [data-focused=true]")).toHaveCount(1);
         for (let i = 0; i < count; i++) await page.keyboard.press("ArrowLeft");
-        await expect(cards.first()).toHaveClass(/focused/);
+        await expect(cards.first()).toHaveAttribute("data-focused", "true");
         if (count > 1) {
           await page.keyboard.press("ArrowRight");
-          await expect(cards.nth(1)).toHaveClass(/focused/);
+          await expect(cards.nth(1)).toHaveAttribute("data-focused", "true");
           await page.keyboard.press("ArrowLeft");
-          await expect(cards.first()).toHaveClass(/focused/);
+          await expect(cards.first()).toHaveAttribute("data-focused", "true");
         }
         await page.screenshot({ path: info.outputPath("source-dock.png") });
       });

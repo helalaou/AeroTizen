@@ -21,7 +21,6 @@ const setHidden = (page, value) =>
 
 test("opening About marks a stable launcher update as seen across restarts", async ({ page }) => {
   const errors = [];
-  await page.setViewportSize({ width: 1280, height: 720 });
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   let checks = 0;
@@ -57,21 +56,22 @@ test("opening About marks a stable launcher update as seen across restarts", asy
   await page.goto("/");
   await expect(page).toHaveTitle("AeroTizen");
   const gear = page.locator("#gear");
-  const homeDot = gear.locator(".home-update-dot");
+  const homeDot = gear.locator("[data-home-update-notice]");
   const about = page.locator('[data-section-pane="about"]');
   const notes = about.getByRole("list");
   const aboutCategory = page.locator('[data-key="section:about"]');
-  const categoryDot = aboutCategory.locator(".settings-update-dot");
+  const categoryDot = aboutCategory.locator("[data-settings-update-notice]");
   await expect(homeDot).toBeVisible();
   await expect(gear).toHaveAccessibleName(/Update available/);
   await gear.click();
   await expect(categoryDot).toBeVisible();
   for (let i = 0; i < 7; i++) await page.keyboard.press("ArrowDown");
   await expect(aboutCategory).toBeFocused();
+  await expect(aboutCategory).toHaveAttribute("data-current", "true");
   await expect(categoryDot).toBeVisible();
   await page.keyboard.press("ArrowRight");
   await expect(about).toBeVisible();
-  await expect(about.getByText("AeroTizen " + installed)).toBeVisible();
+  await expect(about.getByText("AeroTizen version: " + installed)).toBeVisible();
   await expect(about.getByText("Update available: " + update)).toBeVisible();
   await expect(notes.locator("li")).toHaveText(["Add a clock layout", "Keep HDMI sources visible"]);
   await expect(notes).toBeVisible();
@@ -136,11 +136,11 @@ test("a newer installed launcher re-arms the notice for a further release", asyn
     { installedVersion: olderInstalled, latestVersion: installed, latest: update },
   );
   await page.goto("/");
-  await expect(page.locator("#gear .home-update-dot")).toBeVisible();
+  await expect(page.locator("#gear [data-home-update-notice]")).toBeVisible();
   await page.locator("#gear").click();
-  await expect(page.locator('[data-key="section:about"] .settings-update-dot')).toBeVisible();
+  await expect(page.locator('[data-key="section:about"] [data-settings-update-notice]')).toBeVisible();
   await page.locator('[data-key="section:about"]').click();
-  await expect(page.locator("#gear .home-update-dot")).toHaveCount(0);
+  await expect(page.locator("#gear [data-home-update-notice]")).toHaveCount(0);
   await expect(page.getByText("Update available: " + update)).toBeVisible();
   await expect(page.getByRole("heading", { name: "What’s new" })).toHaveCount(0);
 });

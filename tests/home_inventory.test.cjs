@@ -2,26 +2,24 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createHomeInventory } = loadTypeScript("launcher/src/home/state/createHomeInventory.ts");
-const { createSettingsStore } = loadTypeScript("launcher/src/services/createSettingsStore.ts");
+const { createSettingsService } = loadTypeScript("launcher/src/services/createSettingsService.ts");
 
 test("Home inventories publish stable immutable data and respond to preference changes", () => {
   const appListeners = new Set(),
     inputListeners = new Set(),
-    feedListeners = new Set(),
-    preferenceListeners = new Set();
+    feedListeners = new Set();
   const subscribe = (listeners) => (listener) => {
     listeners.add(listener);
     return () => listeners.delete(listener);
   };
-  const source = {
-    home: [],
-    showLiveTv: true,
-    save() {
-      [...preferenceListeners].forEach((fn) => fn());
-    },
-    subscribe: subscribe(preferenceListeners),
-  };
-  const settings = createSettingsStore(source, { home: [], showLiveTv: true });
+  const settings = createSettingsService({
+    defaults: { home: [], showLiveTv: true },
+    storage: { getItem: () => null, setItem() {} },
+    storageKey: "settings",
+    legacyStorageKeys: [],
+    speedRange: { MIN: 0.25, MAX: 3 },
+    locale: { timeFormat: () => "24", tempUnit: () => "C" },
+  });
   const runtime = {
     apps: { all: [{ id: "one", name: "One" }], ready: false, subscribe: subscribe(appListeners) },
     inputs: {
@@ -31,7 +29,7 @@ test("Home inventories publish stable immutable data and respond to preference c
       ],
       isVisible(input) {
         assert.equal(this, runtime.inputs);
-        return input.type !== "TV" || source.showLiveTv;
+        return input.type !== "TV" || settings.getSnapshot().showLiveTv;
       },
       subscribe: subscribe(inputListeners),
     },
@@ -68,5 +66,4 @@ test("Home inventories publish stable immutable data and respond to preference c
   settings.update({ showLiveTv: true });
   assert.equal(inventory.getSnapshot(), latest);
   settings.dispose();
-  assert.equal(preferenceListeners.size, 0);
 });

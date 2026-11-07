@@ -1,0 +1,122 @@
+.header {
+  --header-height: 112px;
+  --header-min-height: 0px;
+  --header-padding-top: 0px;
+  --header-padding-bottom: 0px;
+  --header-align: center;
+  --header-shortcuts-offset: 0px;
+  display: flex;
+  justify-content: space-between;
+  align-items: var(--header-align);
+  height: var(--header-height);
+  min-height: var(--header-min-height);
+  padding: var(--header-padding-top) 64px var(--header-padding-bottom);
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 4;
+
+  &[data-expanded="true"] {
+    --header-height: auto;
+    --header-min-height: 325px;
+    --header-padding-top: 26px;
+    --header-padding-bottom: 40px;
+    --header-align: flex-start;
+    --header-shortcuts-offset: 13px;
+  }
+}
+
+.shortcuts {
+  display: flex;
+  align-items: center;
+  position: relative;
+  gap: 0;
+  margin-top: var(--header-shortcuts-offset);
+}
+
+.shortcut {
+  position: relative;
+  z-index: 1;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  margin-right: 18px;
+  border: var(--header-gear-border) solid transparent;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg);
+  background: transparent;
+  outline: none;
+
+  > svg {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.nativeShortcut {
+  border: 2px solid transparent;
+  transition: color var(--motion-duration-feedback) linear;
+}
+
+.notice {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--update-notice);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.tabs {
+  position: absolute;
+  left: 50%;
+  top: 24px;
+  transform: translate3d(-50%, 0, 0);
+  display: flex;
+  flex-shrink: 0;
+  align-items: stretch;
+  gap: 0;
+  padding: 7px;
+  height: 76px;
+  min-height: 76px;
+  border: 1px solid var(--header-tab-border);
+  border-radius: 28px;
+  background: var(--header-tab-surface);
+  box-shadow: var(--header-tab-shadow);
+  isolation: var(--header-tab-isolation);
+}
+
+.tab {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 155px;
+  height: 60px;
+  padding: 0 25px;
+  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
+  font-size: 25px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  transform: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--header-tab-text);
+  cursor: pointer;
+  transition: color var(--motion-duration-focus) ease-out;
+  gap: var(--header-tab-gap);
+  outline: none;
+  &:last-child {
+    min-width: 205px;
+  }
+  &[aria-pressed="true"],
+  &[data-focused="true"] {
+    color: var(--fg);
+  }
+}

@@ -31,7 +31,7 @@
 
   inputs.label = function (s, defaultLabel) {
     var port = inputs.portName(s);
-    return A.settings.inputNames[port] || s.editName || defaultLabel || port;
+    return A.settings.getSnapshot().inputNames[port] || s.editName || defaultLabel || port;
   };
 
   // A configured device can appear in VIDEOSOURCE.disconnected while asleep.
@@ -61,14 +61,14 @@
   };
 
   inputs.alwaysVisible = function (s) {
-    return !!(s && s.type === "HDMI" && (A.settings.hdmiKeepVisible || {})[String(s.number)] === true);
+    return !!(s && s.type === "HDMI" && (A.settings.getSnapshot().hdmiKeepVisible || {})[String(s.number)] === true);
   };
 
   inputs.isVisible = function (s) {
     if (s.type === "TV") {
-      return A.settings.showLiveTv !== false;
+      return A.settings.getSnapshot().showLiveTv !== false;
     }
-    if (s.type !== "HDMI" || A.settings.hideDisconnectedHdmi !== true) {
+    if (s.type !== "HDMI" || A.settings.getSnapshot().hideDisconnectedHdmi !== true) {
       return true;
     }
     return s.connected === true || s.active === true || inputs.hasRecognizedDevice(s) || inputs.alwaysVisible(s);
@@ -197,7 +197,10 @@
   }
 
   inputs.show = function (s) {
-    var useHdmiViewer = s.type === "HDMI" && A.settings.hdmiNativeViewer === true;
+    if (!s) {
+      return;
+    }
+    var useHdmiViewer = s.type === "HDMI" && A.settings.getSnapshot().hdmiNativeViewer;
     if ((s.type === "TV" || useHdmiViewer) && A.homewatch && typeof A.homewatch.openNativeViewer === "function") {
       var hdmi = useHdmiViewer
         ? {

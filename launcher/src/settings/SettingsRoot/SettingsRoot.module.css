@@ -1,0 +1,20 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 0;
+  margin: 0;
+  background: var(--settings-overlay);
+  overflow: hidden;
+  z-index: 100;
+
+  &[data-colour-picker-open="true"] {
+    background: transparent;
+  }
+
+  &[data-previewing="true"] {
+    visibility: hidden;
+  }
+}

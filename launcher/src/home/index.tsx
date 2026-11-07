@@ -8,7 +8,7 @@ import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import type { Translations } from "../shared/i18n/createTranslations";
 import { TranslationContext } from "../shared/i18n/useTranslation";
 
-import { Home } from "./Home";
+import { Home } from "./components/Home/Home";
 import { createHomeController } from "./state/createHomeController";
 import { createHomeInventory } from "./state/createHomeInventory";
 
@@ -21,11 +21,10 @@ export const mountHome = (
   updates: LauncherUpdateNotice,
 ) => {
   const document = mount.ownerDocument;
-  // Apply shell mode before any Home focus geometry is measured.
+  // Apply the shell appearance before any Home focus geometry is measured.
   const syncShell = () => {
     const values = settings.getSnapshot();
     document.body.classList.toggle("glass-ui", values.glassSettings);
-    document.body.classList.toggle("clock-layout-compact", values.clockLayout !== "custom");
   };
   syncShell();
   const unsubscribeShell = settings.subscribe(syncShell);
@@ -39,15 +38,14 @@ export const mountHome = (
       status,
       updates,
       rows,
+      appItems: createRef<HTMLDivElement>(),
+      appViewport: createRef<HTMLDivElement>(),
       continueItems: createRef<HTMLDivElement>(),
       continueViewport: createRef<HTMLDivElement>(),
       nodes: new Map(),
       showMoveInstructions: () => runtime.toast(translations.getSnapshot().t("home.moveInstructions")),
       describe: (app) => runtime.tiles.describe(app),
-      columns: (values) =>
-        [3, 4, 5].includes(Number(values.homeCardColumns))
-          ? Number(values.homeCardColumns)
-          : runtime.config.CARD_COLUMNS[values.cardSize === "small" ? "small" : "big"],
+      columns: (values) => values.homeCardColumns,
     },
     flushSync,
   );
@@ -61,7 +59,7 @@ export const mountHome = (
     render(null, mount);
     inventory.dispose();
     unsubscribeShell();
-    document.body.classList.remove("glass-ui", "clock-layout-compact");
+    document.body.classList.remove("glass-ui");
   };
   try {
     render(

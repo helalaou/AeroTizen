@@ -22,6 +22,17 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   const errors = [],
     reads = [];
   let primePlayback = 75;
+
+  async function waitForEmptyChannel4() {
+    await expect
+      .poll(async () => {
+        // Each retry starts after the intercepted response arrives.
+        await page.clock.runFor(2000);
+        return page.evaluate(() => AeroTizen.continueWatching.sources.find((s) => s.name === "Channel 4").status);
+      })
+      .toBe("No items available");
+  }
+
   page.on("pageerror", (e) => errors.push(e.message));
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("https://artwork.test/**", (route) =>
@@ -131,34 +142,30 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   await page.locator("#gear").click();
   await openCategory(page, "apps");
   await page.locator('[data-key="continue-watching:true"]').click();
-  await expect(page.locator(".continue-option")).toHaveCount(3);
-  await expect(page.locator(".continue-option")).not.toContainText(["BBC iPlayer"]);
+  await expect(page.locator("[data-settings-card=source]")).toHaveCount(3);
+  await expect(page.locator("[data-settings-card=source]")).not.toContainText(["BBC iPlayer"]);
   expect(reads).toEqual([]);
   for (const id of [prime, itv, channel4]) await page.locator('[data-key="continue-app:' + id + '"]').click();
-  // Exercise both bounded empty-feed retries using the installed browser clock.
-  await page.clock.runFor(4500);
-  await expect
-    .poll(() => page.evaluate(() => AeroTizen.continueWatching.sources.find((s) => s.name === "Channel 4").status))
-    .toBe("No items available");
-  await expect(page.locator(".continue-option")).not.toContainText(["5 items"]);
-  await expect(page.locator(".continue-option").first()).toHaveCSS("width", "160px");
-  await expect(page.locator(".continue-option").first()).toHaveCSS("height", "160px");
-  await expect(page.locator(".continue-option.has-artwork")).toHaveCount(3);
+  await waitForEmptyChannel4();
+  await expect(page.locator("[data-settings-card=source]")).not.toContainText(["5 items"]);
+  await expect(page.locator("[data-settings-card=source]").first()).toHaveCSS("width", "160px");
+  await expect(page.locator("[data-settings-card=source]").first()).toHaveCSS("height", "160px");
+  await expect(page.locator("[data-settings-card=source][data-artwork-loaded=true]")).toHaveCount(3);
   await page.screenshot({ path: info.outputPath("continue-watching-selection.png") });
   await closeSettings(page);
-  await expect(page.locator(".continue-card")).toHaveCount(7);
-  await expect(page.locator(".continue-card").first()).toContainText("Recent episode 0");
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(7);
+  await expect(page.locator("#continue-items > [data-key]").first()).toContainText("Recent episode 0");
   await expect(page.locator(".continue-source")).toHaveCount(0);
-  await expect(page.locator(".continue-app-icon")).toHaveCount(7);
-  await expect(page.locator(".continue-app-icon .app-artwork")).toHaveCount(7);
-  await expect(page.locator(".continue-label .continue-app-icon")).toHaveCount(0);
+  await expect(page.locator("[data-continue-part=source-badge]")).toHaveCount(7);
+  await expect(page.locator("[data-continue-part=source-badge] [data-app-artwork]")).toHaveCount(7);
+  await expect(page.locator("[data-continue-part=label] [data-continue-part=source-badge]")).toHaveCount(0);
   expect(
     await page
-      .locator(".continue-card")
+      .locator("#continue-items > [data-key]")
       .first()
       .evaluate((n) => {
-        const frame = n.querySelector(".continue-image-wrap"),
-          icon = n.querySelector(".continue-app-icon");
+        const frame = n.querySelector("[data-continue-part=artwork]"),
+          icon = n.querySelector("[data-continue-part=source-badge]");
         // Check layout coordinates independently of the parent card's focus transform.
         return (
           icon.offsetTop === frame.offsetTop + 12 &&
@@ -168,53 +175,51 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   ).toBe(true);
   expect(
     await page
-      .locator(".continue-image-wrap")
+      .locator("[data-continue-part=artwork]")
       .first()
       .evaluate((n) => n.clientWidth / n.clientHeight),
   ).toBeCloseTo(16 / 9, 2);
-  await expect(page.locator(".continue-image-wrap").first()).toHaveCSS("height", "233px");
-  await expect(page.locator(".continue-image").first()).toHaveCSS("object-fit", "contain");
-  const episodic = page.locator(".continue-card").first(),
-    episodeTitle = episodic.locator(".continue-title");
+  await expect(page.locator("[data-continue-part=artwork]").first()).toHaveCSS("height", "233px");
+  await expect(page.locator("[data-continue-part=image]").first()).toHaveCSS("object-fit", "contain");
+  const episodic = page.locator("#continue-items > [data-key]").first(),
+    episodeTitle = episodic.locator("[data-continue-part=title]");
   await expect(episodeTitle).toHaveCSS("white-space", "nowrap");
   await expect(episodeTitle).toHaveCSS("text-overflow", "ellipsis");
   expect(await episodeTitle.evaluate((n) => n.scrollWidth > n.clientWidth && n.clientHeight <= 31)).toBe(true);
-  const video = page.locator(".continue-card").last(),
-    videoTitle = video.locator(".continue-title");
-  await expect(video.locator(".continue-episode")).toHaveCount(0);
+  const video = page.locator("#continue-items > [data-key]").last(),
+    videoTitle = video.locator("[data-continue-part=title]");
+  await expect(video.locator("[data-continue-part=episode]")).toHaveCount(0);
   await expect(videoTitle).toHaveCSS("-webkit-line-clamp", "2");
   expect(
     await videoTitle.evaluate((n) => n.clientHeight >= 59 && n.clientHeight <= 60 && n.scrollHeight > n.clientHeight),
   ).toBe(true);
   expect(
     await episodic.evaluate((n) => {
-      const frame = n.querySelector(".continue-image-wrap"),
-        bar = n.querySelector(".continue-progress"),
-        label = n.querySelector(".continue-label");
+      const frame = n.querySelector("[data-continue-part=artwork]"),
+        bar = n.querySelector("[data-continue-part=progress]"),
+        label = n.querySelector("[data-continue-part=label]");
       return (
         frame.offsetTop + frame.offsetHeight === bar.offsetTop && bar.offsetTop + bar.offsetHeight === label.offsetTop
       );
     }),
   ).toBe(true);
-  await expect(episodic.locator(".continue-progress-fill")).toHaveCSS("width", "207px");
+  await expect(episodic.locator("[data-continue-part=progress-fill]")).toHaveCSS("width", "207px");
   expect(await episodeTitle.evaluate((n) => n.clientWidth)).toBe(382);
   await page.evaluate(() => {
-    window.savedCards = [...document.querySelectorAll(".continue-card")];
-    window.savedIcons = window.savedCards.map((n) => n.querySelector(".continue-app-icon .app-artwork"));
+    window.savedCards = [...document.querySelectorAll("#continue-items > [data-key]")];
+    window.savedIcons = window.savedCards.map((n) =>
+      n.querySelector("[data-continue-part=source-badge] [data-app-artwork]"),
+    );
     AeroTizen.continueWatching.refresh();
   });
-  await expect(page.locator(".continue-card")).toHaveCount(7);
-  // Exercise both bounded empty-feed retries using the installed browser clock.
-  await page.clock.runFor(4500);
-  await expect
-    .poll(() => page.evaluate(() => AeroTizen.continueWatching.sources.find((s) => s.name === "Channel 4").status))
-    .toBe("No items available");
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(7);
+  await waitForEmptyChannel4();
   expect(
     await page.evaluate(() =>
       window.savedCards.every(
         (n, i) =>
-          n === document.querySelectorAll(".continue-card")[i] &&
-          window.savedIcons[i] === n.querySelector(".continue-app-icon .app-artwork"),
+          n === document.querySelectorAll("#continue-items > [data-key]")[i] &&
+          window.savedIcons[i] === n.querySelector("[data-continue-part=source-badge] [data-app-artwork]"),
       ),
     ),
   ).toBe(true);
@@ -223,29 +228,32 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   expect(reads.length).toBe(settledReads);
   primePlayback = 90;
   await page.evaluate(() => AeroTizen.continueWatching.refresh());
-  await expect.poll(() => video.locator(".continue-progress-fill").evaluate((n) => n.clientWidth)).toBe(124);
+  await expect.poll(() => video.locator("[data-continue-part=progress-fill]").evaluate((n) => n.clientWidth)).toBe(124);
   expect(
     await page.evaluate(() =>
       window.savedCards
         .slice(0, -1)
         .every(
           (n, i) =>
-            n === document.querySelectorAll(".continue-card")[i] &&
-            window.savedIcons[i] === n.querySelector(".continue-app-icon .app-artwork"),
+            n === document.querySelectorAll("#continue-items > [data-key]")[i] &&
+            window.savedIcons[i] === n.querySelector("[data-continue-part=source-badge] [data-app-artwork]"),
         ),
     ),
   ).toBe(true);
   // Preact updates the changed keyed record in place; progress above verifies fresh data.
-  expect(await page.evaluate(() => window.savedCards[6] === document.querySelectorAll(".continue-card")[6])).toBe(true);
+  expect(
+    await page.evaluate(() => window.savedCards[6] === document.querySelectorAll("#continue-items > [data-key]")[6]),
+  ).toBe(true);
   await page.keyboard.press("ArrowDown"); // app row -> Continue Watching
-  await expect(page.locator(".continue-card").nth(2)).toHaveClass(/focused/);
+  // A partial grid row starts in its first column; select the nearest visible feed card.
+  await expect(page.locator("#continue-items > [data-key]").nth(1)).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("ArrowLeft");
   await page.keyboard.press("ArrowLeft");
-  await expect(page.locator(".continue-card").first()).toHaveClass(/focused/);
+  await expect(page.locator("#continue-items > [data-key]").first()).toHaveAttribute("data-focused", "true");
   await page.screenshot({ path: info.outputPath("continue-watching-episode-title.png") });
   for (let i = 0; i < 6; i++) await page.keyboard.press("ArrowRight");
-  const last = page.locator(".continue-card").last();
-  await expect(last).toHaveClass(/focused/);
+  const last = page.locator("#continue-items > [data-key]").last();
+  await expect(last).toHaveAttribute("data-focused", "true");
   await expect
     .poll(async () => {
       const rect = await last.boundingBox();
@@ -263,7 +271,7 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   await page.locator("#home-tab").click();
   await expect(page.locator("#continue-section")).toBeVisible();
   await page.reload();
-  await expect(page.locator(".continue-card")).toHaveCount(7);
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(7);
   await page.locator("#gear").click();
   await openCategory(page, "apps");
   await page.locator('[data-key="continue-watching:false"]').click();
@@ -272,6 +280,6 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   await expect(page.locator("#continue-section")).toBeHidden();
   await page.waitForTimeout(100);
   expect(reads.length).toBe(stopped);
-  expect(await page.evaluate(() => AeroTizen.settings.continueWatchingApps.length)).toBe(3);
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().continueWatchingApps.length)).toBe(3);
   expect(errors).toEqual([]);
 });

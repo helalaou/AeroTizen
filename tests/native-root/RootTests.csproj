@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../cli/native/root-bridge/*.cs" Link="Bridge/%(Filename)%(Extension)" />
+    <Compile Include="../../cli/native/stremio-bridge/*.cs" Link="Stremio/%(Filename)%(Extension)" />
     <Compile Include="../../cli/native/root-common/*.cs" Link="Common/%(Filename)%(Extension)" />
     <Compile Include="../../cli/native/untethered-probe/*.cs" Link="Probe/%(Filename)%(Extension)" />
     <Compile Include="../../cli/native/root-helper/PerBootGate.cs" Link="PerBootGate.cs" />

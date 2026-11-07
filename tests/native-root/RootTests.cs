@@ -172,7 +172,7 @@ internal static class RootTests
                 Reject(() => new Bundle(args[2]), "Proof-only reader accepted a service launch");
                 Console.WriteLine("ROOT_SERVICE_BUNDLE_CHECKS_PASSED=" + checks); return 0;
             }
-            Gates(); ReadinessTests.Run(Check, Reject); return 0;
+            Gates(); ReadinessTests.Run(Check, Reject); StremioProtocolTests.Run(); return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
     }

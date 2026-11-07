@@ -8,21 +8,19 @@ test("an unset Home list and a saved empty list preserve their distinct views an
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.ready);
   await page.evaluate(() => {
-    AeroTizen.settings.home = null;
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ home: null });
   });
-  await expect(page.locator("#grid > .tile")).toHaveCount(1);
-  await expect(page.locator("#grid > .tile")).toHaveAttribute("data-id", "__fire");
+  await expect(page.locator("#grid > [data-id]")).toHaveCount(1);
+  await expect(page.locator("#grid > [data-id]")).toHaveAttribute("data-id", "__fire");
   await page.evaluate(() => {
-    AeroTizen.settings.home = [];
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ home: [] });
   });
-  await expect(page.locator("#grid > .tile")).toHaveCount(0);
-  await expect(page.locator("#inputs > .tile").first()).toHaveClass(/focused/);
+  await expect(page.locator("#grid > [data-id]")).toHaveCount(0);
+  await expect(page.locator("#inputs > [data-input-card]").first()).toHaveAttribute("data-focused", "true");
   await page.locator("#gear").click();
   await expect(page.locator("#editor")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.locator("#editor")).toBeHidden();
-  await expect(page.locator("#grid > .tile")).toHaveCount(0);
+  await expect(page.locator("#grid > [data-id]")).toHaveCount(0);
   expect(errors).toEqual([]);
 });

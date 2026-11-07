@@ -1,0 +1,10 @@
+.icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.mirror {
+  [dir="rtl"] & {
+    transform: scaleX(-1);
+  }
+}

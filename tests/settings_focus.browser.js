@@ -7,8 +7,8 @@ const runSettingsFocus = async (page) => {
   await page.waitForFunction(() => AeroTizen.apps.all.length > 0);
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
-    AeroTizen.settings.background = "aurora";
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ background: "aurora" });
+
     AeroTizen.settingsUi.open();
   });
   await page.locator('[data-key="section:wallpaper"]').click();
@@ -28,16 +28,16 @@ const runSettingsFocus = async (page) => {
   await page.keyboard.press("Enter");
   await page.waitForFunction(
     () =>
-      AeroTizen.settings.inputNames["HDMI 1"] === "React draft" &&
+      AeroTizen.settings.getSnapshot().inputNames["HDMI 1"] === "React draft" &&
       document.activeElement?.getAttribute("data-key") === "name:HDMI 1",
   );
   const focused = await page.evaluate(() => {
     const controls = [...document.querySelectorAll("#editor [data-key]")];
-    if (controls.filter((control) => control.classList.contains("focused")).length !== 1)
-      throw new Error("Focus class is not unique");
+    if (controls.filter((control) => control.matches("[data-focused=true]")).length !== 1)
+      throw new Error("Rendered focus is not unique");
     if (controls.filter((control) => control.tabIndex === 0).length !== 1)
       throw new Error("Tab position is not unique");
-    if (!document.activeElement.classList.contains("focused"))
+    if (!document.activeElement.matches("[data-focused=true]"))
       throw new Error("Browser focus and rendered state differ");
     return true;
   });

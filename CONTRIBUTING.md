@@ -40,6 +40,7 @@ npm run lint        # ESLint and Stylelint; each rejects warnings
 npm run typecheck  # strict TypeScript checks for the launcher and Vite config
 npm run build      # type checks, then compiled Home and Settings in dist/launcher
 npm test           # launcher tests: tests/*.test.cjs, run in a Node sandbox
+npm run test:components # Preact component tests in launcher/src
 npx playwright install chromium # once per Playwright version; CI also installs OS dependencies
 npm run test:browser # compiled Settings and legacy comparison, with managed local servers
 ```
@@ -47,6 +48,11 @@ npm run test:browser # compiled Settings and legacy comparison, with managed loc
 Changes limited to `README.md`, `CONTRIBUTING.md`, and `docs/` skip the test suites.
 CI still checks README contributor markers and contributor guide formatting when
 those files change. Store data that tests read in `tests/fixtures/`.
+
+Put component tests next to the source file, for example `ChoiceOption.test.tsx`.
+Use Preact Testing Library to check what the user sees or can activate. Use
+Playwright for browser layout, remote navigation between components, and full
+launcher flows such as saving settings and reloading.
 
 Use Node.js 22.12 or newer, or Node 20.19+ within the 20.x series, as required by Vite.
 CI uses the latest Node 20.x. The watcher tests use mock clocks and network replies to cover the Art Mode protocol, status checks,
@@ -56,7 +62,7 @@ Run `npm run format` to apply the shared Prettier rules before committing fronte
 changes. Formatting covers launcher JavaScript, TypeScript, TSX, CSS, HTML and JSON;
 JavaScript tests and legacy HTML fixtures; root frontend configuration; the launcher build script; this guide;
 and the CI workflow. ESLint covers launcher code, tests and frontend tooling.
-Stylelint checks active launcher CSS for errors and duplicate rules. Run either
+Stylelint checks global and component-module launcher CSS for errors and duplicate rules. Run either
 check alone with `npm run lint:js` or `npm run lint:css`. The TypeScript checks also
 reject unused locals and parameters. CI rejects formatting
 differences, lint warnings and errors, and type errors.
@@ -120,7 +126,7 @@ both themes. Add coverage here for new UI paths.
 | `launcher/src/contracts/`         | Screen-independent preferences, app/input/feed types and bridge protocols                       |
 | `launcher/src/backgrounds/`       | Wallpaper scenes, background bridge and canvas animation                                        |
 | `launcher/src/status/`            | Shared status views and hooks; one Clock with compact and expanded layouts                      |
-| `launcher/src/services/`          | Shared preference/status snapshots and persistence adapter                                      |
+| `launcher/src/services/`          | TypeScript preference, clock and network services and shared weather snapshots                  |
 | `launcher/src/platform/tizen/`    | Typed boundary for the existing TV and browser services                                         |
 | `launcher/src/dev.ts`             | Development entry that loads the same views before boot                                         |
 | `launcher/src/settings/`          | TypeScript/TSX Settings components, state, actions and service adapters                         |
@@ -131,20 +137,25 @@ both themes. Add coverage here for new UI paths.
 | `tests/fixtures/legacy-launcher/` | Old views used only by regression and comparison tests                                          |
 | `vite.config.mts`                 | Official Preact preset, dev server and TV bundle settings                                       |
 | `dist/launcher/`                  | Generated TV runtime with shared launcher-ui.js; no Node needed on TV                           |
-| `launcher/js/config.js`           | Launcher behaviour and settings                                                                 |
+| `launcher/js/config.js`           | Launcher behaviour and storage identities                                                       |
 | `launcher/js/app-catalog.js`      | App IDs, Samsung store IDs and optional fallback branding                                       |
 | `launcher/js/app-lookup.js`       | Shared ID lookup and legacy name compatibility                                                  |
 | `launcher/service/`               | Background service that reclaims the screen from Samsung Home                                   |
 | `tests/`                          | pytest suite (`test_*.py`, a fake TV covers the sdb protocol) and launcher tests (`*.test.cjs`) |
 | `dns/`, `docs/`                   | Ad/telemetry blocklists and the settings guide                                                  |
 
-The application creates one shared preference store and passes it to Home, Settings
-and the clock. Feature mount functions return bridges and disposers. Composition
-owns visibility handling and tears down the views before releasing the shared
-source subscription. Input discovery publishes data through `inputs.refresh()`;
+The entry point creates one TypeScript preference service and passes it to Home, Settings
+and the clock. It owns defaults, saved-data validation, migration and persistence.
+TV services use the same snapshot and update API as the UI. The service survives development
+hot reload so those services retain their subscriptions. Feature mount functions return
+bridges and disposers. Composition owns visibility handling and releases its subscriptions
+when tearing down the views. Input discovery publishes data through `inputs.refresh()`;
 production services do not render input tiles or replace a renderer at startup.
-Clock, weather and network services publish immutable snapshots. The application
-binds each status source once; views add no polling timers or forecast requests.
+Clock, weather and network services publish immutable snapshots. Views read the clock and network
+services directly. The shared clock timer also triggers weather cache expiry checks.
+The network service owns one poller and platform watch, reacts to preference changes,
+and publishes only changed readings. Its disposer releases timers and subscriptions.
+Views add no polling timers or forecast requests.
 `Clock` owns time/date presentation and uses layout variants. `WeatherStatus` and
 `NetworkStatus` own their markup. Component CSS has one owner; shared theme paint
 is defined in `launcher/css/themes.css`. Semantic IDs remain stable for service and
@@ -157,7 +168,7 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
   components and serves the legacy runtime files. TV-only features use sample data.
   For README screenshots, open `?demo=1` in a clean browser context at 1920×1080.
   It loads Glass, sample favourites and a fictional Continue Watching feed. In
-  **Settings → Appearance**, select **Square** and set **Apps per row** to **5**.
+  **Settings → Appearance**, set **App size** to **Small**.
   Add a fifth favourite to Home.
 - Run `npm run build` for the compiled runtime in `dist/launcher/`.
   Releases package this directory. The explicit production HTML mounts Home and
@@ -165,7 +176,11 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
 - Preview the compiled launcher: `python3 -m http.server -d dist/launcher`, then
   open http://localhost:8000 at 1920×1080. The old comparison page is isolated in
   `tests/fixtures/legacy-launcher/` and is served by the browser test runner.
-- On the TV: `aerotizen install ./dist/launcher`, then `aerotizen inspect launcher`.
+- For TV development, run `npm run build:dev`, then `aerotizen install ./dist/launcher-dev`.
+  The app name and orange icon badge show the first eight characters of the content
+  build ID, for example `AeroTizen Dev 12AB34CD`. The build prints the app name.
+  It keeps the package ID, so installing it replaces a copy with that same ID.
+- Run `aerotizen inspect launcher` to inspect the TV build.
   This restarts the launcher in debug mode and exposes Chrome DevTools at
   http://localhost:9222/json. Press Ctrl+C to stop forwarding.
 - Keep legacy scripts ES5-compatible. Compiled Settings targets Chromium 69, the 2020
@@ -178,8 +193,8 @@ port, use `aerotizen inspect APPID --port 9223`.
 The separate `aerotizen-inspect` Python command has been replaced by `aerotizen inspect`.
 
 `aerotizen install launcher` installs the latest published launcher, even when a
-`launcher` directory exists in the current directory. Build first, then use
-`aerotizen install ./dist/launcher` to test local changes. For a fork's published app, use
+`launcher` directory exists in the current directory. Use `aerotizen install ./dist/launcher`
+for a local build without the badge. For a fork's published app, use
 `aerotizen install launcher --release-repo OWNER/REPO`.
 
 ## Releases

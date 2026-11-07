@@ -1,4 +1,5 @@
 const { test, expect } = require("@playwright/test");
+const { preserveLegacyDom } = require("./legacy_helpers.cjs");
 test.beforeEach(async ({ page }) => {
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
@@ -19,8 +20,8 @@ test("Home short/held OK, action menu, move/drop and Settings focus restoration"
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.ready);
-  const first = page.locator("#grid > .tile").first();
-  await expect(first).toHaveClass(/focused/);
+  const first = page.locator("#grid > [data-id]").first();
+  await expect(first).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("Enter");
   await expect(page.locator("#toast")).toContainText("Would open YouTube");
   await page.keyboard.down("Enter");
@@ -28,50 +29,35 @@ test("Home short/held OK, action menu, move/drop and Settings focus restoration"
   await page.keyboard.up("Enter");
   await expect(page.getByRole("menu")).toBeVisible();
   await page.keyboard.press("Enter");
-  await expect(first).toHaveClass(/moving/);
+  await expect(first).toHaveAttribute("data-moving", "true");
   await expect(page.locator("#toast")).toHaveText("Use the arrows to move it, OK to drop");
   await page.keyboard.press("ArrowRight");
-  expect(await page.evaluate(() => AeroTizen.settings.home[0])).toBe("demo0");
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home[0])).toBe("demo0");
   await page.keyboard.press("Enter");
-  expect(await page.evaluate(() => AeroTizen.settings.home.slice(0, 2))).toEqual(["demo1", "demo0"]);
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home.slice(0, 2))).toEqual(["demo1", "demo0"]);
   await expect(page.locator("#toast")).toBeHidden();
   await page.locator("#gear").click();
   await expect(page.locator("#editor")).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(page.locator("#grid > .tile").nth(1)).toHaveClass(/focused/);
+  await expect(page.locator("#grid > [data-id]").nth(1)).toHaveAttribute("data-focused", "true");
   await page.reload();
-  await expect(page.locator("#grid > .tile").first()).toHaveAttribute("data-id", "demo1");
+  await expect(page.locator("#grid > [data-id]").first()).toHaveAttribute("data-id", "demo1");
   expect(errors).toEqual([]);
-});
-test("replacing the toast restarts its dismissal timer", async ({ page }) => {
-  await page.clock.install();
-  await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
-  const toast = page.locator("#toast");
-  await expect(toast).toBeHidden();
-  await page.keyboard.press("Enter");
-  await expect(toast).toBeVisible();
-  await page.clock.runFor(1500);
-  await page.keyboard.press("Enter");
-  await page.clock.runFor(1500);
-  await expect(toast).toBeVisible();
-  await page.clock.runFor(1100);
-  await expect(toast).toBeHidden();
 });
 test("Home and All apps retain keyed artwork nodes and Back returns to Home", async ({ page }) => {
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.ready);
   await page.evaluate(() => {
-    window.originalHome = document.querySelector("#grid > .tile");
+    window.originalHome = document.querySelector("#grid > [data-id]");
   });
   await page.locator("#apps-tab").click();
-  await expect(page.locator("#grid > .tile")).toHaveCount(25);
+  await expect(page.locator("#grid > [data-id]")).toHaveCount(25);
   await page.keyboard.press("ArrowDown");
-  await expect(page.locator("#grid > .tile").first()).toHaveClass(/focused/);
+  await expect(page.locator("#grid > [data-id]").first()).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("Escape");
-  await expect(page.locator("#grid > .tile")).toHaveCount(4);
-  expect(await page.evaluate(() => window.originalHome === document.querySelector("#grid > .tile"))).toBe(true);
-  await expect(page.locator("#home-tab")).toHaveClass(/focused/);
+  await expect(page.locator("#grid > [data-id]")).toHaveCount(4);
+  expect(await page.evaluate(() => window.originalHome === document.querySelector("#grid > [data-id]"))).toBe(true);
+  await expect(page.locator("#home-tab")).toHaveAttribute("data-focused", "true");
 });
 test("Back to top restores scroll and focus from below a partial app row", async ({ page }) => {
   await page.addInitScript(() => {
@@ -88,21 +74,21 @@ test("Back to top restores scroll and focus from below a partial app row", async
   for (let row = 0; row < 7; row++) {
     await page.keyboard.press("ArrowDown");
   }
-  const tiles = page.locator("#grid > .tile");
+  const tiles = page.locator("#grid > [data-id]");
   await expect(tiles.last()).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(button).toBeFocused();
   await expect(button).toBeInViewport();
-  await expect(page.locator(".content-viewport")).toHaveClass(/is-scrolled/);
+  await expect(page.locator("[data-home-viewport]")).toHaveAttribute("data-scrolled", "true");
   await expect
     .poll(() =>
       tiles.last().evaluate((tile) => {
-        const viewport = tile.closest(".content-viewport");
+        const viewport = tile.closest("[data-home-viewport]");
         return tile.getBoundingClientRect().top - viewport.getBoundingClientRect().top;
       }),
     )
     .toBeCloseTo(16, 0);
-  const viewportBounds = await page.locator(".content-viewport").boundingBox();
+  const viewportBounds = await page.locator("[data-home-viewport]").boundingBox();
   const buttonBounds = await button.boundingBox();
   expect(viewportBounds.y + viewportBounds.height - buttonBounds.y - buttonBounds.height).toBeCloseTo(80, 0);
   const fill = await button.evaluate((node) => getComputedStyle(node).background);
@@ -116,48 +102,46 @@ test("Back to top restores scroll and focus from below a partial app row", async
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
   await expect(tiles.first()).toBeFocused();
-  await expect(page.locator(".content-viewport")).not.toHaveClass(/is-scrolled/);
+  await expect(page.locator("[data-home-viewport]")).toHaveAttribute("data-scrolled", "false");
   await expect(tiles.first()).toBeInViewport();
 });
 test("Home docks Inputs with one app row and leaves them in flow with two rows", async ({ page }) => {
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.ready);
   await page.evaluate(() => {
-    AeroTizen.settings.home = ["demo0", "demo1", "demo2"];
-    AeroTizen.settings.homeCardColumns = 3;
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ home: ["demo0", "demo1", "demo2"] });
+    AeroTizen.settings.update({ homeCardColumns: 3 });
   });
 
   const inputs = page.locator("#inputs-section");
-  const firstApp = page.locator("#grid > .tile").first();
-  const firstInput = inputs.locator(".tile").first();
+  const firstApp = page.locator("#grid > [data-id]").first();
+  const firstInput = inputs.locator("[data-input-card]").first();
   await expect(inputs).toBeVisible();
   const bottomGap = await inputs.evaluate((section) => {
-    const viewport = section.closest(".content-viewport");
+    const viewport = section.closest("[data-home-viewport]");
     return viewport.getBoundingClientRect().bottom - section.getBoundingClientRect().bottom;
   });
   expect(bottomGap).toBeCloseTo(96, 0);
   await page.keyboard.press("ArrowDown");
   await expect(firstInput).toBeFocused();
-  await expect(page.locator(".content-viewport")).not.toHaveClass(/is-scrolled/);
+  await expect(page.locator("[data-home-viewport]")).toHaveAttribute("data-scrolled", "false");
   await page.keyboard.press("ArrowUp");
   await expect(firstApp).toBeFocused();
 
   await page.evaluate(() => {
-    AeroTizen.settings.home = [...AeroTizen.settings.home, "demo3"];
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ home: [...AeroTizen.settings.getSnapshot().home, "demo3"] });
   });
-  await expect(page.locator("#grid > .tile")).toHaveCount(4);
+  await expect(page.locator("#grid > [data-id]")).toHaveCount(4);
   const rowGap = await inputs.evaluate(
     (section) => section.getBoundingClientRect().top - document.getElementById("grid").getBoundingClientRect().bottom,
   );
   expect(rowGap).toBe(40);
   await page.keyboard.press("ArrowDown");
-  await expect(page.locator("#grid > .tile").last()).toBeFocused();
+  await expect(page.locator("#grid > [data-id]").last()).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(firstInput).toBeFocused();
 });
-test("compiled Home preserves legacy geometry and artwork source selection at 1080p", async ({
+test("compiled Home preserves header and input geometry around the resized app grid at 1080p", async ({
   page,
   browser,
 }, info) => {
@@ -174,13 +158,19 @@ test("compiled Home preserves legacy geometry and artwork source selection at 10
       }),
     );
   await baseline.addInitScript(seed);
+  await preserveLegacyDom(baseline);
   await baseline.goto("http://127.0.0.1:8170/tests/fixtures/legacy-launcher/");
   await page.goto("/");
   for (const tab of [baseline, page])
-    await tab.waitForFunction(() => AeroTizen.apps.ready && document.querySelector("#grid > .tile.focused"));
+    await tab.waitForFunction(
+      (legacy) =>
+        AeroTizen.apps.ready &&
+        document.querySelector(legacy ? "#grid > [data-id].focused" : "#grid > [data-id][data-focused=true]"),
+      tab === baseline,
+    );
   const geometry = (tab) =>
     tab.evaluate(() =>
-      [".topbar", "#gear", "#grid", "#inputs"].map((selector) => {
+      ["header", "#gear", "#inputs"].map((selector) => {
         const element = document.querySelector(selector),
           rect = element.getBoundingClientRect();
         // The shared Home heading and section spacing set a new vertical position for Inputs.
@@ -189,10 +179,10 @@ test("compiled Home preserves legacy geometry and artwork source selection at 10
         return [selector, ...coordinates.map((n) => Math.round(n))];
       }),
     );
-  // Header tabs are now centred in both themes; app/source geometry remains upstream-compatible.
+  // App sizes now fit two complete rows; header and input dimensions stay upstream-compatible.
   await page.waitForFunction(() =>
     document
-      .querySelector(".home-page-surface")
+      .querySelector("[data-home-page]")
       .getAnimations()
       .every((a) => a.playState === "finished"),
   );

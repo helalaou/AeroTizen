@@ -1,0 +1,24 @@
+.kicker {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--settings-kicker);
+  letter-spacing: 2px;
+}
+
+.title {
+  margin: 0;
+  font-size: 37px;
+  font-weight: 500;
+
+  &[data-variant="section"] {
+    font-size: 24px;
+  }
+}
+
+.description {
+  margin: 6px 0 0;
+  color: var(--settings-subtitle);
+  font-size: 20px;
+  line-height: 1.3;
+}

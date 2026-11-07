@@ -33,6 +33,9 @@ def rig(tmp_path, monkeypatch):
         "home": {"assignment": "original", "startup": "original"},
         "fail": None,
         "others": "a" * 64,
+        "managed": managed,
+        "packages": {},
+        "installs": 0,
     }
 
     class Session:
@@ -45,6 +48,9 @@ def rig(tmp_path, monkeypatch):
         def __exit__(self, *args):
             pass
 
+        def connect(self):
+            return self
+
         @contextmanager
         def ownership(self):
             yield self
@@ -54,11 +60,20 @@ def rig(tmp_path, monkeypatch):
 
         def install_native(self, data, name):
             saved = root_state.load(path)
-            assert saved["phase"] == "prepared"
+            assert saved["phase"] in ("prepared", "active")
             assert saved["original_registration"] is None
             assert saved["public_config"]["installation_id"] == saved["installation_id"]
+            upgrading = saved["phase"] == "active"
+            if upgrading:
+                assert saved["upgrade"]["package_sha256"] == root_package.digest(data)
+                if state.get("clear_on_upgrade"):
+                    state["automatic"] = False
             state["installed"] = True
             state["installation"] = saved["installation_id"]
+            state["configuration_sha256"] = state["packages"][data]
+            state["installs"] += 1
+            if upgrading and state.pop("lose_install_reply", False):
+                raise OSError("install reply lost")
             return "install completed"
 
         def uninstall(self, app):
@@ -76,13 +91,17 @@ def rig(tmp_path, monkeypatch):
             if operation == "remove":
                 state["live"] = False
                 return {"prepared_for_removal": True}
-            return {
+            result = {
                 "boot_id": state["boot"],
                 "automatic_startup_enabled": state["automatic"],
                 "origin": state["origin"],
                 "bootstrap_completed": True,
                 "helper_installed": state["installed"],
             }
+            if state.get("runtime_version"):
+                result["runtime_version"] = state["runtime_version"]
+                result["configuration_sha256"] = state["configuration_sha256"]
+            return result
 
     def status(*args):
         return {
@@ -127,6 +146,7 @@ def rig(tmp_path, monkeypatch):
                 {
                     "row": row,
                     "installation_id": state.get("installation"),
+                    "configuration_sha256": state.get("configuration_sha256"),
                     "other_rows_sha256": state["others"],
                 },
             )
@@ -137,7 +157,7 @@ def rig(tmp_path, monkeypatch):
         manifest = json.loads(base64.b64decode(request["files"]["probe.json"]))
         saved = root_state.load(path)
         assert saved["attempts"][-1]["nonce"] == manifest["nonce"]
-        assert saved["phase"] in ("root_requested", "removing")
+        assert saved["phase"] in ("root_requested", "removing", "active")
         operation = manifest["service"]["operation"]
         state["root_calls"].append((operation, manifest["nonce"]))
         if state["fail"] == "before":
@@ -145,6 +165,11 @@ def rig(tmp_path, monkeypatch):
             raise OSError("lost before root")
         if operation == "install":
             state["automatic"] = state["live"] = True
+        if operation == "upgrade":
+            assert saved["phase"] == "active"
+            assert root_package.digest(request["root_json"].encode()) == state["configuration_sha256"]
+            assert json.loads(request["pairing_json"])["token"] == saved["token"]
+            state["automatic"] = True
         if state["fail"] == "after":
             state["fail"] = None
             raise OSError("completion reply lost")
@@ -158,13 +183,18 @@ def rig(tmp_path, monkeypatch):
                 "same_boot": True,
                 "nonce": manifest["nonce"],
                 "bridge_ready": operation == "install",
+                "startup_repaired": operation == "upgrade",
                 "cleanup_verified": operation == "remove",
             },
         )
 
-    def package(output, receipt, *args):
-        output.write_bytes(b"signed helper fixture")
-        return root_package.public_config(receipt, managed)
+    def package(output, receipt, payload, *args):
+        config = root_package.public_config(receipt, payload)
+        digest = root_package.digest(root_package.config_bytes(config))
+        signed = b"signed helper fixture " + digest.encode()
+        state["packages"][signed] = digest
+        output.write_bytes(signed)
+        return config
 
     certificates = tmp_path / "certs/fixture-duid"
     certificates.mkdir(parents=True)
@@ -363,12 +393,86 @@ def test_foreign_helper_is_not_uninstalled(rig):
     assert state["removed_apps"] == []
 
 
-@pytest.mark.parametrize("operation", ["setup", "remove"])
+@pytest.mark.parametrize("operation", ["setup", "upgrade", "remove"])
 def test_cli_mutation_is_preview_only_by_default(tmp_path, monkeypatch, capsys, operation):
     monkeypatch.setattr(cli, "STATE_DIR", str(tmp_path))
     monkeypatch.setattr("sys.argv", ["aerotizen", "--tv", "192.0.2.20", "root", operation, "--json"])
     monkeypatch.setattr(control, "setup", lambda *a, **k: pytest.fail("preview wrote TV"))
+    monkeypatch.setattr(control, "upgrade", lambda *a, **k: pytest.fail("preview wrote TV"))
     monkeypatch.setattr(control, "remove", lambda *a, **k: pytest.fail("preview wrote TV"))
     cli.main()
     assert json.loads(capsys.readouterr().out)["preview"] is True
     assert not (tmp_path / "root").exists()
+
+
+def ready_for_upgrade(rig, monkeypatch):
+    state, path, setup, _ = rig
+    setup()
+    state["boot"], state["origin"], state["developer"] = str(uuid.uuid4()), "boot", "127.0.0.1"
+    assert setup()["setup_complete"] is True
+    original = root_state.load(path)
+    state["managed"]["bin/AeroTizenRootBridge.dll"] = b"new managed bridge fixture"
+    monkeypatch.setattr(root_package, "new_pairing", lambda *a: pytest.fail("upgrade replaced pairing"))
+    return (
+        state,
+        path,
+        original,
+        lambda: control.upgrade(state["host"], receipt_path=path, state_dir=path.parents[2]),
+    )
+
+
+@pytest.mark.parametrize("reset_startup", [False, True])
+@pytest.mark.parametrize("installed_version", [None, "0.2.0"])
+def test_upgrade_preserves_pairing_and_requires_a_new_automatic_boot(
+    rig, monkeypatch, reset_startup, installed_version
+):
+    state, path, original, upgrade = ready_for_upgrade(rig, monkeypatch)
+    state["clear_on_upgrade"] = reset_startup
+    state["runtime_version"] = installed_version
+    first = upgrade()
+    assert first["upgrade_complete"] is False
+    assert "Restart the TV" in first["next_step"]
+    assert upgrade()["upgrade_complete"] is False
+    assert state["installs"] == 2 and state["automatic"] is True
+    assert [operation for operation, _ in state["root_calls"]] == (
+        ["install", "upgrade"] if reset_startup else ["install"]
+    )
+    state["boot"], state["runtime_version"] = str(uuid.uuid4()), root_state.RUNTIME_VERSION
+    assert upgrade()["upgrade_complete"] is True
+    assert upgrade()["upgrade_complete"] is True
+    saved = root_state.load(path)
+    assert "upgrade" not in saved
+    for key in ("installation_id", "token", "server_pfx", "certificate_sha256", "original_pc_host"):
+        assert saved[key] == original[key]
+    assert state["installs"] == 2 and not state["removed_apps"]
+
+
+def test_upgrade_resumes_after_lost_install_reply_and_restores_startup(rig, monkeypatch):
+    state, path, original, upgrade = ready_for_upgrade(rig, monkeypatch)
+    state["clear_on_upgrade"] = state["lose_install_reply"] = True
+    with pytest.raises(OSError, match="install reply lost"):
+        upgrade()
+    assert "upgrade" in root_state.load(path) and state["automatic"] is False
+    # A user who rebooted early can restore the PC host temporarily and retry.
+    state["live"], state["developer"] = False, original["original_pc_host"]
+    recovery = upgrade()
+    assert recovery["upgrade_complete"] is False
+    assert "Set Developer Mode Host PC IP back to 127.0.0.1" in recovery["next_step"]
+    assert state["automatic"] is True and state["installs"] == 2
+    assert root_state.load(path)["token"] == original["token"]
+
+
+def test_upgrade_refuses_an_unknown_package_before_installing(rig, monkeypatch):
+    state, path, _, upgrade = ready_for_upgrade(rig, monkeypatch)
+    state["configuration_sha256"] = "e" * 64
+    with pytest.raises(DeviceSessionError, match="does not match the saved pairing"):
+        upgrade()
+    assert state["installs"] == 1 and "upgrade" not in root_state.load(path)
+
+
+def test_upgrade_rejects_a_different_build_with_the_same_version(rig, monkeypatch):
+    state, path, _, upgrade = ready_for_upgrade(rig, monkeypatch)
+    state["runtime_version"] = root_state.RUNTIME_VERSION
+    with pytest.raises(DeviceSessionError, match="same version but does not match this build"):
+        upgrade()
+    assert state["installs"] == 1 and "upgrade" not in root_state.load(path)

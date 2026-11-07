@@ -44,19 +44,19 @@ test("diagnostics persist across reload without changing launcher navigation or 
   });
   await page.goto("/");
   await expect(page).toHaveTitle(/AeroTizen/);
-  await expect(page.locator("#grid > .tile").first()).toBeVisible();
+  await expect(page.locator("#grid > [data-id]").first()).toBeVisible();
   const first = await page.evaluate(
     () => window.AeroDiagnostics.snapshot().records.find((item) => item.event === "ui.start").id,
   );
   await page.keyboard.press("ArrowRight");
-  await expect(page.locator("#grid > .tile.focused")).toHaveCount(1);
+  await expect(page.locator("#grid > [data-id][data-focused=true]")).toHaveCount(1);
   await page.evaluate(() => AeroTizen.settingsUi.open());
   await expect(page.locator("#editor")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.locator("#editor")).toBeHidden();
   await expect.poll(async () => (await persistedEvents(page)).some((item) => item.id === first)).toBe(true);
   await page.reload();
-  await expect(page.locator("#grid > .tile").first()).toBeVisible();
+  await expect(page.locator("#grid > [data-id]").first()).toBeVisible();
   await expect
     .poll(() => page.evaluate((id) => window.AeroDiagnostics.snapshot().records.some((item) => item.id === id), first))
     .toBe(true);
@@ -106,7 +106,7 @@ test("cold-start UI events reach a late service without leaving the launcher", a
     };
   });
   await page.goto("/");
-  await expect(page.locator("#grid > .tile").first()).toBeVisible();
+  await expect(page.locator("#grid > [data-id]").first()).toBeVisible();
   await expect.poll(() => delivered.some((item) => item.event === "ui.loaded"), { timeout: 8000 }).toBe(true);
   expect(delivered.some((item) => item.event === "ui.start")).toBe(true);
   expect(await page.evaluate(() => document.hidden)).toBe(false);
@@ -133,7 +133,7 @@ test("legacy UI logs migrate asynchronously without writing the old localStorage
     };
   });
   await page.goto("/");
-  await expect(page.locator("#grid > .tile").first()).toBeVisible();
+  await expect(page.locator("#grid > [data-id]").first()).toBeVisible();
   await expect.poll(async () => (await persistedEvents(page)).some((item) => item.event === "ui.loaded")).toBe(true);
   await expect.poll(() => page.evaluate(() => localStorage.getItem("aerotizen.diagnostics.v1"))).toBe(null);
   expect(await page.evaluate(() => window.legacyWrites)).toBe(0);
@@ -200,7 +200,7 @@ for (const unavailable of [false, true]) {
       };
     }, unavailable);
     await page.goto("/");
-    await expect(page.locator("#grid > .tile").first()).toBeVisible();
+    await expect(page.locator("#grid > [data-id]").first()).toBeVisible();
     await page.evaluate(() => {
       const launch = AeroTizen.apps.launch;
       AeroTizen.apps.launch = function (app) {
@@ -270,7 +270,7 @@ test("personal text is excluded before IndexedDB persistence and loopback delive
     };
   }, poison);
   await page.goto("/");
-  await expect(page.locator("#grid > .tile").first()).toBeVisible();
+  await expect(page.locator("#grid > [data-id]").first()).toBeVisible();
   await page.evaluate((poison) => {
     window.AeroBuildInfo.owner = poison;
     window.AeroDiagnostics.record("app.launch_requested", {
@@ -288,7 +288,7 @@ test("personal text is excluded before IndexedDB persistence and loopback delive
     window.AeroDiagnostics.flush();
   }, poison);
   await page.keyboard.press("ArrowRight");
-  await expect(page.locator("#grid > .tile.focused")).toHaveCount(1);
+  await expect(page.locator("#grid > [data-id][data-focused=true]")).toHaveCount(1);
   await expect
     .poll(async () => (await persistedEvents(page)).some((item) => item.event === "app.launch_requested"))
     .toBe(true);

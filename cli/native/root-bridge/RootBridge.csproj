@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../root-common/*.cs" Link="Common/%(Filename)%(Extension)" />
+    <Compile Include="../stremio-bridge/*.cs" Link="Stremio/%(Filename)%(Extension)" />
     <Compile Include="../untethered-probe/Bundle.cs" Link="Bundle.cs" />
     <Compile Include="../untethered-probe/ServiceLaunch.cs" Link="ServiceLaunch.cs" />
     <Compile Include="../untethered-probe/Probe.cs" Link="Probe.cs" />

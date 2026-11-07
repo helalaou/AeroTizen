@@ -1,0 +1,20 @@
+.viewport {
+  &[data-enabled="true"] {
+    overflow: hidden;
+    margin: -32px calc(-1 * var(--home-side-padding));
+    padding: 32px var(--home-side-padding);
+  }
+}
+
+.track {
+  &[data-enabled="true"] {
+    position: relative;
+    display: grid;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    justify-content: start;
+    transition: transform var(--motion-duration-scroll) ease-out;
+    will-change: transform;
+  }
+}

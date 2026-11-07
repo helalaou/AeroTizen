@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from aerotizen import releases
+from aerotizen import releases, root_package, root_state
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("build_release", ROOT / "tools/build_release.py")
@@ -60,8 +60,10 @@ def launcher(tmp_path):
     runtime = root / "dist/launcher"
     shutil.copytree(app, runtime)
     (runtime / "index.html").write_text(
+        '<link rel="stylesheet" href="js/launcher-ui.css">'
         '<div id="home-root"></div><div id="settings-root"></div><script src="js/launcher-ui.js"></script>'
     )
+    (runtime / "js/launcher-ui.css").write_text(".home { display: grid; }")
     (runtime / "js/launcher-ui.js").write_text("compiled Home and Settings")
     (runtime / "licenses").mkdir()
     (runtime / "licenses/i18next.txt").write_text("MIT License")
@@ -84,6 +86,7 @@ def test_launcher_is_unsigned_deterministic_and_has_verified_manifest(launcher, 
             "css/style.css",
             "icon.png",
             "index.html",
+            "js/launcher-ui.css",
             "js/launcher-ui.js",
             "js/main.js",
             "licenses/i18next.txt",
@@ -182,7 +185,14 @@ def test_launcher_rejects_stale_compiled_manifest(launcher, tmp_path):
 
 
 @pytest.mark.parametrize(
-    "name", ["js/launcher-ui.js", "licenses/i18next.txt", "licenses/preact.txt", "licenses/lucide-preact.txt"]
+    "name",
+    [
+        "js/launcher-ui.css",
+        "js/launcher-ui.js",
+        "licenses/i18next.txt",
+        "licenses/preact.txt",
+        "licenses/lucide-preact.txt",
+    ],
 )
 def test_launcher_requires_ui_runtime_and_licenses(launcher, tmp_path, name):
     (launcher / "dist/launcher" / name).unlink()
@@ -223,6 +233,11 @@ def test_launcher_rejects_legacy_renderer_assets(launcher, tmp_path, name):
     [
         ('<div id="home-root"></div>', "Preact Settings mount"),
         ('<div id="home-root"></div><div id="settings-root"></div>', "shared UI script"),
+        (
+            '<div id="home-root"></div><div id="settings-root"></div>'
+            '<script src="js/launcher-ui.js"></script>',
+            "shared UI stylesheet",
+        ),
     ],
 )
 def test_launcher_requires_both_views_and_the_shared_bundle(launcher, tmp_path, html, error):
@@ -291,6 +306,27 @@ def test_cli_release_requires_the_home_helper_before_freezing(tmp_path):
     source.mkdir(parents=True)
     (source / "__init__.py").write_text('__version__ = "2.2.0"\n')
     with pytest.raises(ValueError, match="Home helper"):
+        cli_build.build_cli(tmp_path, tmp_path / "output")
+    assert not (tmp_path / "output").exists()
+
+
+def test_cli_release_rejects_root_runtime_from_a_different_version(tmp_path):
+    helpers = tmp_path / "src/aerotizen/helpers"
+    helpers.mkdir(parents=True)
+    (helpers.parent / "__init__.py").write_text(f'__version__ = "{root_state.RUNTIME_VERSION}"\n')
+    for name in ("home-query.json", "home-control.json"):
+        (helpers / name).touch()
+    (helpers / "root-runtime.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "version": root_state.VERSION,
+                "files": dict.fromkeys(root_package.MANAGED),
+                "manifest": '<manifest version="0.0.0"/>',
+            }
+        )
+    )
+    with pytest.raises(ValueError, match="Root helper version does not match this CLI"):
         cli_build.build_cli(tmp_path, tmp_path / "output")
     assert not (tmp_path / "output").exists()
 

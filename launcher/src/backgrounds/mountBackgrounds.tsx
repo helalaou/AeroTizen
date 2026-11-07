@@ -1,15 +1,15 @@
 import { render } from "preact";
 
-import type { BackgroundGraphics } from "../contracts/backgrounds";
+import type { BackgroundGraphics, BackgroundPreview } from "../contracts/backgrounds";
 import type { WeatherPhotoSource } from "../contracts/status";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import { createStore } from "../shared/state/createStore";
 
-import { BackgroundSceneView } from "./BackgroundSceneView";
+import { BackgroundSceneView } from "./BackgroundSceneView/BackgroundSceneView";
 import type { BackgroundState } from "./createBackgrounds";
 import { createBackgrounds } from "./createBackgrounds";
 import { createWeatherPhoto } from "./createWeatherPhoto";
-import { WeatherPhotoView } from "./WeatherPhotoView";
+import { WeatherPhotoView } from "./WeatherPhotoView/WeatherPhotoView";
 import { probeWebGL } from "./webglParticles";
 
 export const mountBackgrounds = (
@@ -20,6 +20,7 @@ export const mountBackgrounds = (
   previous?: BackgroundState,
 ) => {
   let generation = 0;
+  let previewBackground: BackgroundPreview | null = null;
   const status = createStore<boolean | undefined>(undefined);
   const webGL: BackgroundGraphics = {
     getSnapshot: status.getSnapshot,
@@ -44,13 +45,21 @@ export const mountBackgrounds = (
   });
   const photo = createWeatherPhoto(
     weather,
-    () => runtime.settings.weatherPhoto === true && !runtime.inputs.watching,
+    () =>
+      previewBackground === null && runtime.settings.getSnapshot().weatherPhoto === true && !runtime.inputs.watching,
     window,
   );
   const { getSnapshot } = photo;
   const restoreWallpaper = () => {
     if (!runtime.inputs.watching) {
-      backgrounds.bridge.apply(runtime.settings.background, runtime.settings.speed);
+      const settings = runtime.settings.getSnapshot();
+      if (previewBackground?.kind === "solid") {
+        backgrounds.bridge.apply("custom", settings.speed, previewBackground.colour);
+      } else if (previewBackground?.kind === "gradient") {
+        backgrounds.bridge.apply("custom-gradient", settings.speed, undefined, previewBackground.gradient);
+      } else {
+        backgrounds.bridge.apply(settings.background, settings.speed, settings.customColour, settings.customGradient);
+      }
     }
   };
   const unsubscribe = photo.subscribe(() => {
@@ -59,15 +68,20 @@ export const mountBackgrounds = (
     }
   });
   render(<WeatherPhotoView onVisible={backgrounds.bridge.suspend} photo={photo} />, photoHost);
+  const apply = () => {
+    const previous = getSnapshot();
+    photo.update();
+    // The subscription restores the wallpaper when an active photo clears.
+    if (!previous && !getSnapshot()) {
+      restoreWallpaper();
+    }
+  };
   return {
     ...backgrounds,
-    apply() {
-      const previous = getSnapshot();
-      photo.update();
-      // The subscription restores the wallpaper when an active photo clears.
-      if (!previous && !getSnapshot()) {
-        restoreWallpaper();
-      }
+    apply,
+    previewBackground(preview: BackgroundPreview | null) {
+      previewBackground = preview;
+      apply();
     },
     dispose() {
       unsubscribe();

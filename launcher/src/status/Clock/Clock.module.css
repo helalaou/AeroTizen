@@ -1,0 +1,184 @@
+.compactDate {
+  font-size: 36px;
+  font-weight: 400;
+}
+
+.compactTime {
+  font-size: 36px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  width: 8ch;
+  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+[dir="rtl"] .compactTime {
+  text-align: left;
+}
+
+.compactTime[data-format="24"] {
+  width: 5ch;
+}
+
+.expanded {
+  width: 470px;
+  flex: 0 0 470px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  text-align: right;
+  color: var(--clock-text);
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  text-shadow: var(--clock-shadow);
+  pointer-events: none;
+  contain: layout style;
+}
+
+.digit {
+  display: block;
+  min-width: 160px;
+}
+
+.date {
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 400;
+  margin-top: 13px;
+  white-space: nowrap;
+}
+
+.digits {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 114px;
+  font-weight: 300;
+  letter-spacing: -5px;
+  line-height: 0.87;
+  white-space: nowrap;
+  font-family: "SamsungOne", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings:
+    "tnum" 1,
+    "lnum" 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.vertical {
+  .digits {
+    font-size: 118px;
+    font-weight: 300;
+    line-height: 0.85;
+    letter-spacing: -7px;
+  }
+
+  .date {
+    font-weight: 400;
+    letter-spacing: 0.2px;
+  }
+}
+
+.horizontal {
+  width: 640px;
+  flex-basis: 640px;
+
+  .digits {
+    flex-direction: row;
+    align-items: baseline;
+    font-size: 110px;
+    font-family: "SamsungOne", "Helvetica Neue", Arial, sans-serif;
+    font-weight: 300;
+    line-height: 1.05;
+    letter-spacing: -5px;
+  }
+
+  .hours::after {
+    content: ":";
+    margin-left: 2px;
+    margin-right: 5px;
+    opacity: 0.77;
+    font-weight: 200;
+  }
+
+  .digit {
+    min-width: 0;
+  }
+
+  .date {
+    font-size: 29px;
+    font-weight: 400;
+    letter-spacing: 0.2px;
+  }
+}
+
+.minimal {
+  .digits {
+    flex-direction: column;
+    font-family: "Helvetica Neue", "SamsungOne", "Segoe UI", Arial, sans-serif;
+    font-size: 82px;
+    font-weight: 100;
+    letter-spacing: 7px;
+    line-height: 1.08;
+    color: var(--clock-minimal-text);
+    text-shadow: var(--clock-minimal-shadow);
+  }
+
+  .digit {
+    min-width: 0;
+  }
+
+  .date {
+    font-size: 23px;
+    font-weight: 300;
+    letter-spacing: 1.15px;
+    margin-top: 18px;
+    color: var(--clock-minimal-date-text);
+  }
+}
+
+.bold {
+  .digits {
+    flex-direction: column;
+    font-family: "Arial Black", "SamsungOne", "Segoe UI", Arial, sans-serif;
+    font-size: 126px;
+    font-weight: 900;
+    letter-spacing: -11px;
+    line-height: 0.79;
+    color: var(--clock-bold-text);
+    -webkit-text-stroke: 1.9px var(--clock-bold-stroke);
+    text-shadow: var(--clock-bold-shadow);
+  }
+
+  .digit {
+    min-width: 0;
+  }
+
+  .date {
+    font-family: "SamsungOne", "Segoe UI", Arial, sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 1.7px;
+    text-transform: uppercase;
+    margin-top: 19px;
+  }
+}
+
+[dir="rtl"] .expanded {
+  text-align: left;
+}
+
+[dir="rtl"] .expanded .digits {
+  direction: ltr;
+  align-items: flex-start;
+}
+
+.period {
+  font-size: 0.2em;
+  letter-spacing: 0;
+}

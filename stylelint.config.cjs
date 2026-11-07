@@ -1,4 +1,10 @@
 module.exports = {
+  overrides: [
+    {
+      files: ["launcher/src/**/*.module.css"],
+      rules: { "max-nesting-depth": 2, "selector-max-id": 0 },
+    },
+  ],
   rules: {
     "at-rule-no-unknown": true,
     "block-no-empty": true,

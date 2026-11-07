@@ -1,0 +1,16 @@
+.control {
+  outline: none;
+
+  &[data-focused="true"] {
+    z-index: var(--settings-control-focus-z-index, auto);
+    border-color: transparent;
+    outline: var(--settings-control-focus-outline, none);
+    outline-offset: 0;
+    box-shadow: none;
+    transform: none;
+    color: var(--control-focused-text);
+    transition:
+      color var(--motion-duration-feedback) linear,
+      background-color var(--motion-duration-feedback) linear;
+  }
+}

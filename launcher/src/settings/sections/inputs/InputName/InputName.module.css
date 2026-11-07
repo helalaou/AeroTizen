@@ -1,0 +1,60 @@
+.control {
+  --input-name-underline: var(--input-underline);
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 10px 16px;
+  border: 2px solid var(--border-control);
+  border-radius: var(--control-radius);
+  color: var(--control-text);
+  background: var(--surface-control);
+  transform: none;
+  flex: 0 1 360px;
+  min-width: 0;
+  max-width: 100%;
+  height: 72px;
+  min-height: 64px;
+  margin-left: 0;
+  font-size: 20px;
+  line-height: 24px;
+  white-space: normal;
+  text-align: left;
+
+  &[data-focused="true"] {
+    --input-name-underline: var(--focus);
+
+    color: var(--control-focused-text);
+    background: var(--choice-focused-surface);
+  }
+}
+
+.port {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 20px;
+  white-space: nowrap;
+}
+
+.field {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0;
+  max-width: 100%;
+  font: inherit;
+  color: var(--control-text);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--input-name-underline);
+  outline: none;
+  padding: 4px 2px;
+
+  &::placeholder {
+    color: var(--input-placeholder);
+  }
+
+  &:focus {
+    border-bottom-color: var(--focus);
+  }
+}

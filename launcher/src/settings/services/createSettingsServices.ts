@@ -6,13 +6,7 @@ import type { SettingsServices } from "../types";
 // receive data/commands; none can call the legacy tile DOM constructors.
 export const createSettingsServices = (runtime: LauncherRuntime, platform: LauncherPlatform): SettingsServices => ({
   config: runtime.config,
-  clock: {
-    dateStyle: runtime.clock.dateStyle,
-    formatDate: runtime.clock.formatDate,
-    subscribe: runtime.clock.subscribe,
-    formatTime: runtime.clock.formatTime,
-    DATE_FORMATS: runtime.clock.DATE_FORMATS,
-  },
+  clock: runtime.clock,
   backgrounds: platform.backgrounds.list.map((background) => ({
     ...background,
     preview: platform.backgrounds.preview(background),
@@ -33,12 +27,12 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
     };
   },
   applyBackground: () => runtime.applyBackground(),
+  previewBackground: (preview) => platform.previewBackground(preview),
   applySpeed: (speed) => platform.backgrounds.setSpeed(speed),
   applyClock: () => runtime.clock.tick(),
   applyWeatherVisibility: () => platform.weather.updateVisibility(),
   applyLocationVisibility: () => platform.weather.updateDisplay(),
   refreshWeather: () => platform.weather.refresh(),
-  applyNetworkVisibility: () => runtime.network.updateVisibility(),
   applyInputs: () => runtime.inputs.refresh(),
   applyCardSize: () => runtime.homeScreen?.render(),
   openStore: () => runtime.apps.openStore(),
@@ -52,13 +46,9 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
     }
   },
   finishEditing() {
-    runtime.settings.save();
     runtime.homeScreen?.render();
   },
-  clearHomeFocus: () => {
-    runtime.homeScreen?.blur();
-    runtime.clearFocus();
-  },
+  clearHomeFocus: () => runtime.homeScreen?.blur(),
   showPreviewMessage: () => runtime.toast(runtime.translate("wallpaper.previewing")),
   hidePreviewMessage: () => runtime.hideToast(),
 });

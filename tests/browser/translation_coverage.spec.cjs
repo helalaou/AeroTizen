@@ -50,10 +50,11 @@ const findUntranslated = (page) =>
         const languageOption = element.closest('[data-key^="language:"]');
         const languageCode = languageOption?.getAttribute("data-key").slice("language:".length);
         if (
-          (text === "AEROTIZEN" && element.matches(".settings-drawer__kicker")) ||
+          (text === "AEROTIZEN" && element.matches("[data-product-name]")) ||
           (languageCode && text === languageNames[languageCode]) ||
-          (text === releaseNote && element.matches(".about-release-notes li")) ||
-          (text === "aerotizen update launcher" && element.matches(".about-update-command code")) ||
+          (text === releaseNote && element.matches("[data-release-notes] li")) ||
+          (text === "aerotizen update launcher" && element.matches("[data-update-command] code")) ||
+          (text === "github.com/helalaou/AeroTizen" && element.matches("[data-about-facts] code")) ||
           (dates.includes(text) && element.closest('#date, #date-formats [data-key]:not([data-key="date:none"])'))
         ) {
           return;
@@ -121,7 +122,6 @@ for (const glassSettings of [false, true]) {
   }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.setViewportSize({ width: 1280, height: 720 });
     await page.clock.setFixedTime(new Date("2026-06-10T13:05:00Z"));
     await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
     await page.route("https://api.github.com/repos/helalaou/AeroTizen/releases?*", (route) =>
@@ -196,11 +196,11 @@ for (const glassSettings of [false, true]) {
     const translatedWidth = await homeTab.evaluate((element) => element.getBoundingClientRect().width);
     expect(translatedWidth).toBeGreaterThan(englishWidth);
     await expect
-      .poll(() => page.locator(".header-focus-indicator--tabs").evaluate((element) => parseFloat(element.style.width)))
+      .poll(() => page.locator("[data-header-focus=tabs]").evaluate((element) => parseFloat(element.style.width)))
       .toBeCloseTo(translatedWidth);
     await expectTextFits(homeTab);
     await expectTextFits(page.locator('[data-key="language:auto"]'));
-    await expect(page.locator(".settings-drawer__active-title")).toHaveText(pseudoText("settings.language.title"));
+    await expect(page.locator("[data-settings-title]")).toHaveText(pseudoText("settings.language.title"));
 
     await expectTranslatedScreen(page, "Language");
 
@@ -230,10 +230,22 @@ for (const glassSettings of [false, true]) {
     };
     await visit("appearance", "appearance.title");
     await visit("apps", "continue.tvOnly");
-    await visit("wallpaper", "scene.black", '[data-key="bg:black"] span');
+    await visit("wallpaper", "scene.black", '[data-key="bg:black"] [data-wallpaper-label]');
+    await page.locator('[data-key="bg:custom"]').click();
+    await expect(page.locator("[data-colour-picker]")).toBeVisible();
+    await expectTranslatedScreen(page, "custom colour picker");
+    await expectTextFits(page.locator("#colour-picker-title"));
+    await page.keyboard.press("Escape");
     for (const group of ["photo", "gradient", "animated"]) {
       await page.locator(`[data-key="wallpaper-categories:${group}"]`).click();
       await expectTranslatedScreen(page, `wallpaper ${group}`);
+      if (group === "gradient") {
+        await page.locator('[data-key="bg:custom-gradient"]').click();
+        await expect(page.locator("[data-colour-picker]")).toBeVisible();
+        await expectTranslatedScreen(page, "custom gradient picker");
+        await expectTextFits(page.locator("#colour-picker-title"));
+        await page.keyboard.press("Escape");
+      }
     }
     await visit("status", "clock.layout");
     await visit("weather", "weather.visibility");
@@ -253,9 +265,9 @@ for (const glassSettings of [false, true]) {
     await page.keyboard.press("Escape");
     await openCategory(page, "about");
     const about = page.locator('[data-section-pane="about"]');
-    await expect(about.locator(".about-release-notes li")).toHaveText(releaseNote);
+    await expect(about.locator("[data-release-notes] li")).toHaveText(releaseNote);
     await expect(about.getByRole("heading", { name: pseudoText("settings.about.whatsNew") })).toBeVisible();
-    await expect(about.locator(".about-update-command")).toContainText(pseudoText("settings.about.runOnComputer"));
+    await expect(about.locator("[data-update-command]")).toContainText(pseudoText("settings.about.runOnComputer"));
     await expectTranslatedScreen(page, "About");
 
     await closeSettings(page);

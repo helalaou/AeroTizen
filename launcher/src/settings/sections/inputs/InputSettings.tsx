@@ -1,10 +1,11 @@
 import type { InputOption } from "../../../contracts/launcher";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../../components/ChoiceGroup";
-import { SettingsSection } from "../../components/SettingsSection";
+import { ControlGroup } from "../../components/ControlGroup/ControlGroup";
+import { SettingsSection } from "../../components/SettingsSection/SettingsSection";
 import type { SettingsSectionProps } from "../../types";
 
-import { InputName } from "./InputName";
+import { InputName } from "./InputName/InputName";
 
 const LIVE_TV_VISIBILITY_OPTIONS = [
   { value: true, labelKey: "common.show" },
@@ -51,7 +52,7 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => {
         <ChoiceGroup
           id="hdmi-playback"
           label={t("inputs.hdmiPlayback")}
-          value={settings.hdmiNativeViewer === true}
+          value={settings.hdmiNativeViewer}
           options={HDMI_PLAYBACK_OPTIONS}
           onSelect={actions.setHdmiNativeViewer}
         />
@@ -79,11 +80,11 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => {
         </div>
       </SettingsSection>
       <SettingsSection title={t("inputs.names")}>
-        <div id="input-names" class="units">
+        <ControlGroup id="input-names">
           {inputs.map((input) => (
             <InputName key={input.port} {...input} name={settings.inputNames[input.port]} actions={actions} />
           ))}
-        </div>
+        </ControlGroup>
       </SettingsSection>
     </>
   );

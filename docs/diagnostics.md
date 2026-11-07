@@ -1,6 +1,8 @@
 # Diagnostic logs
 
-Use a current CLI and launcher build. Reproduce the problem, then run:
+Use a current CLI and launcher build. Replace `TV_IP` with your TV's address.
+In Windows PowerShell, use `.\aerotizen.exe` in place of `./aerotizen`.
+Reproduce the problem, then run:
 
 ```sh
 ./aerotizen --tv TV_IP logs export --output aerotizen-report.zip
@@ -8,7 +10,21 @@ Use a current CLI and launcher build. Reproduce the problem, then run:
 
 This creates a ZIP you can attach to a bug report. Existing files are never overwritten.
 Include the steps you took and what appeared on the TV. Logs cannot confirm what was
-visible on screen. No report is sent or uploaded automatically.
+visible on screen. No report is sent or uploaded automatically. If the TV is unavailable,
+run `./aerotizen logs export` for a report with computer logs only.
+
+## Developer connection
+
+Find the local IPv4 address of your computer on the network that the TV uses:
+
+- **macOS:** Open **System Settings → Network** and select the active connection.
+- **Windows:** Run `ipconfig`. Find the IPv4 address of the active network adapter.
+- **Linux:** Run `ip route get TV_IP`. Use the address after `src`.
+
+Enter that address as **Host PC IP** on the TV. Use the TV's own address for `--tv`.
+If `status` does not show an `sdb banner`, check the Host PC IP and disconnect TV
+or One Connect power for 60 seconds before you try again. If discovery fails, use
+the TV address from its network settings.
 
 ## PC logs
 

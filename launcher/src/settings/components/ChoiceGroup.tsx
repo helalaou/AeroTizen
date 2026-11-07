@@ -1,9 +1,11 @@
 import type { MessageKey } from "../../shared/i18n/catalogues";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 
-import { ChoiceOption } from "./ChoiceOption";
+import { ChoiceOption } from "./ChoiceOption/ChoiceOption";
+import { ControlGroup } from "./ControlGroup/ControlGroup";
 
 interface Props<T extends string | boolean> {
+  grid?: boolean;
   id: string;
   label: string;
   onSelect: (value: T) => void;
@@ -11,10 +13,10 @@ interface Props<T extends string | boolean> {
   value: T;
 }
 
-export const ChoiceGroup = <T extends string | boolean>({ id, value, options, onSelect, label }: Props<T>) => {
+export const ChoiceGroup = <T extends string | boolean>({ id, value, options, onSelect, label, grid }: Props<T>) => {
   const { t } = useTranslation();
   return (
-    <div id={id} class="units choice-group" role="group" aria-label={label}>
+    <ControlGroup id={id} label={label} grid={grid}>
       {options.map((option) => (
         <ChoiceOption
           key={String(option.value)}
@@ -25,6 +27,6 @@ export const ChoiceGroup = <T extends string | boolean>({ id, value, options, on
           {"labelKey" in option ? t(option.labelKey) : option.label}
         </ChoiceOption>
       ))}
-    </div>
+    </ControlGroup>
   );
 };

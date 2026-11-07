@@ -2,8 +2,12 @@ import { focusControl } from "../../shared/navigation/focusControl";
 import { createStore } from "../../shared/state/createStore";
 import type { HomeEnvironment, HomeMenuChoice, HomeState, Page } from "../types";
 
+import { revealHorizontalItem } from "./horizontalScroll";
+
 const HEADER_KEYS = ["gear", "samsung-home-shortcut", "home-tab", "apps-tab"] as const;
+// Reserve 16px for the focus outline beyond the 112px top and 80px bottom fades.
 const TOP_SCROLL_CLEARANCE = 128;
+const BOTTOM_SCROLL_CLEARANCE = 96;
 const APPS_END_CLEARANCE = 16;
 const HOME_MENU_CHOICES = [
   { action: "move", label: "home.move" },
@@ -34,6 +38,7 @@ const getScrollOffset = ({
   top,
   bottom,
   origin,
+  limit,
 }: {
   selected: string;
   rows: Rows;
@@ -41,12 +46,13 @@ const getScrollOffset = ({
   top: number;
   bottom: number;
   origin: number;
+  limit: number;
 }) => {
   if (rows[0].includes(selected) || rows[1]?.includes(selected)) {
     return 0;
   }
-  if (bottom - previous > 1000) {
-    return bottom - 1000;
+  if (bottom - previous > limit) {
+    return bottom - limit;
   }
   if (top - previous < origin + TOP_SCROLL_CLEARANCE) {
     return Math.max(0, top - origin - TOP_SCROLL_CLEARANCE);
@@ -66,7 +72,7 @@ const getVerticalColumn = ({
   selected,
   page,
   nodes,
-  viewport,
+  getViewport,
 }: {
   rows: Rows;
   row: number;
@@ -74,27 +80,27 @@ const getVerticalColumn = ({
   selected: string;
   page: Page;
   nodes: ReadonlyMap<string, HTMLElement>;
-  viewport: HTMLElement | null;
+  getViewport(key: string): HTMLElement | null;
 }) => {
   if (target === 0) {
     return rows[0].indexOf(page === "home" ? "home-tab" : "apps-tab");
   }
+  if (row === 0) {
+    return 0;
+  }
   const column = row === 0 ? 0 : rows[row].indexOf(selected);
-  if (!selected.startsWith("continue:") && !rows[target][0]?.startsWith("continue:")) {
+  if (!getViewport(selected) && !getViewport(rows[target][0])) {
     return column;
   }
   const from = nodes.get(selected)?.getBoundingClientRect();
   if (!from) {
     return column;
   }
-  const bounds = viewport?.getBoundingClientRect();
+  const bounds = getViewport(rows[target][0])?.getBoundingClientRect();
   const nearest = rows[target].reduce(
     (nearest, key, column) => {
       const rect = nodes.get(key)?.getBoundingClientRect();
-      if (
-        !rect ||
-        (key.startsWith("continue:") && bounds && (rect.right <= bounds.left || rect.left >= bounds.right))
-      ) {
+      if (!rect || (bounds && (rect.right <= bounds.left || rect.left >= bounds.right))) {
         return nearest;
       }
       const distance = Math.abs(rect.left + rect.right - from.left - from.right);
@@ -122,6 +128,7 @@ export const createHomeController = (
     continueOffset: 0,
     selected: "",
     active: true,
+    appOffset: 0,
     moving: null,
     draft: null,
     menu: null,
@@ -154,12 +161,27 @@ export const createHomeController = (
   };
   const ids = () =>
     state.getSnapshot().page === "home" ? homeIds() : inventory.getSnapshot().apps.map((app) => app.id);
+  const scrollApps = () => state.getSnapshot().page === "home" && settings.getSnapshot().homeAppLayout === "scroll";
+  const getScroller = (key: string) => {
+    if (key.startsWith("continue:")) {
+      return {
+        track: env.continueItems.current,
+        viewport: env.continueViewport.current,
+        offset: "continueOffset",
+      } as const;
+    }
+    if (key.startsWith("app:") && scrollApps()) {
+      return { track: env.appItems.current, viewport: env.appViewport.current, offset: "appOffset" } as const;
+    }
+    return null;
+  };
   const sourceKey = (source: { type: string; number?: number }) => "input:" + source.type + ":" + source.number;
   const rows = (): readonly (readonly string[])[] => {
     const columns = env.columns(settings.getSnapshot());
     const all = ids();
-    const appRows = Array.from({ length: Math.ceil(all.length / columns) }, (_, index) =>
-      all.slice(index * columns, (index + 1) * columns).map((id) => "app:" + id),
+    const rowLength = scrollApps() ? Math.max(1, all.length) : columns;
+    const appRows = Array.from({ length: Math.ceil(all.length / rowLength) }, (_, index) =>
+      all.slice(index * rowLength, (index + 1) * rowLength).map((id) => "app:" + id),
     );
     const appLayout = [HEADER_KEYS, ...appRows];
     if (state.getSnapshot().page !== "home") {
@@ -202,17 +224,15 @@ export const createHomeController = (
       return;
     }
     focusControl(node);
-    const listNode = env.continueItems.current;
-    if (selected.startsWith("continue:") && listNode) {
-      const viewport = env.continueViewport.current;
-      if (viewport) {
-        const previous = state.getSnapshot().continueOffset;
-        const offset = Math.max(
-          0,
-          Math.min(Math.max(previous, node.offsetLeft + node.offsetWidth - listNode.clientWidth), node.offsetLeft),
-        );
-        update({ continueOffset: offset });
-      }
+    const scroller = getScroller(selected);
+    if (scroller?.track && scroller.viewport) {
+      const offset = revealHorizontalItem(
+        scroller.track,
+        node,
+        state.getSnapshot()[scroller.offset],
+        document.documentElement.dir === "rtl",
+      );
+      update({ [scroller.offset]: offset });
     }
     const mainTop = main.getBoundingClientRect().top;
     const lastAppRow = pending.page === "apps" ? list[list.length - 2] : undefined;
@@ -226,7 +246,8 @@ export const createHomeController = (
       return;
     }
     const rect = node.getBoundingClientRect();
-    const origin = main.parentElement?.getBoundingClientRect().top || 0;
+    const viewportBounds = main.parentElement?.getBoundingClientRect();
+    const origin = viewportBounds?.top || 0;
     const scroll = getScrollOffset({
       selected,
       rows: list,
@@ -234,6 +255,7 @@ export const createHomeController = (
       top: rect.top - mainTop + origin,
       bottom: rect.bottom - mainTop + origin,
       origin,
+      limit: (viewportBounds?.bottom || document.documentElement.clientHeight) - BOTTOM_SCROLL_CLEARANCE,
     });
     update({ appsEndOffset, scroll });
   };
@@ -338,7 +360,9 @@ export const createHomeController = (
   const keydown = (code: number, event: Pick<KeyboardEvent, "preventDefault">) =>
     transaction(() => {
       const current = state.getSnapshot();
-      const delta = code === K.LEFT || code === K.UP ? -1 : 1;
+      // Rows run right to left in RTL languages, so Left moves to the next item there.
+      const rtl = window.document?.documentElement.dir === "rtl";
+      const delta = code === K.UP || (code === K.LEFT && !rtl) || (code === K.RIGHT && rtl) ? -1 : 1;
       if (![K.LEFT, K.RIGHT, K.UP, K.DOWN, K.BACK, K.ESC, K.ENTER].includes(code)) {
         return;
       }
@@ -367,6 +391,9 @@ export const createHomeController = (
             enterDown = code === K.ENTER;
             endMove();
           }
+          return;
+        }
+        if (scrollApps() && (code === K.UP || code === K.DOWN)) {
           return;
         }
         const home = [...homeIds()];
@@ -417,7 +444,7 @@ export const createHomeController = (
             selected: current.selected,
             page: current.page,
             nodes,
-            viewport: env.continueViewport.current,
+            getViewport: (key) => getScroller(key)?.viewport || null,
           });
       select(all[target][Math.max(0, Math.min(all[target].length - 1, column))]);
     });

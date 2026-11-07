@@ -1,0 +1,60 @@
+.arrow {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  z-index: 4;
+  background: var(--reorder-surface);
+  box-shadow: var(--reorder-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--reorder-icon);
+  animation: nudge var(--motion-duration-reorder) ease-in-out infinite alternate;
+
+  &[data-direction="left"] {
+    left: -34px;
+    top: 50%;
+    margin-top: -32px;
+    --dx: -6px;
+    --dy: 0;
+  }
+
+  &[data-direction="right"] {
+    right: -34px;
+    top: 50%;
+    margin-top: -32px;
+    --dx: 6px;
+    --dy: 0;
+  }
+
+  &[data-direction="up"] {
+    top: -34px;
+    left: 50%;
+    margin-left: -32px;
+    --dx: 0;
+    --dy: -6px;
+  }
+
+  &[data-direction="down"] {
+    bottom: -34px;
+    left: 50%;
+    margin-left: -32px;
+    --dx: 0;
+    --dy: 6px;
+  }
+
+  > svg {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@keyframes nudge {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(var(--dx), var(--dy));
+  }
+}

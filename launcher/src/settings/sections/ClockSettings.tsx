@@ -1,8 +1,9 @@
 import type { ClockFormatter } from "../../contracts/launcher";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../components/ChoiceGroup";
-import { ChoiceOption } from "../components/ChoiceOption";
-import { SettingsSection } from "../components/SettingsSection";
+import { ChoiceOption } from "../components/ChoiceOption/ChoiceOption";
+import { ControlGroup } from "../components/ControlGroup/ControlGroup";
+import { SettingsSection } from "../components/SettingsSection/SettingsSection";
 import type { SettingsSectionProps } from "../types";
 
 const CLOCK_LAYOUT_OPTIONS = [
@@ -20,12 +21,17 @@ const NETWORK_VISIBILITY_OPTIONS = [
 
 const TIME_FORMATS = ["12", "24"] as const;
 
+const NUMERAL_OPTIONS = [
+  { value: "latn", labelKey: "clock.digitsWestern" },
+  { value: "arab", labelKey: "clock.digitsArabic" },
+] as const;
+
 interface Props extends SettingsSectionProps {
   clock: ClockFormatter;
   openedAt: number;
 }
 export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const now = new Date(openedAt);
   const dateStyle = clock.dateStyle(settings.dateFormat);
   return (
@@ -33,6 +39,7 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
       <SettingsSection title={t("clock.layout")}>
         <ChoiceGroup
           id="clock-layouts"
+          grid
           label={t("clock.layout")}
           value={settings.clockLayout === "classic" ? "classic" : settings.aeroClockStyle}
           options={CLOCK_LAYOUT_OPTIONS}
@@ -40,7 +47,7 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
         />
       </SettingsSection>
       <SettingsSection title={t("clock.dateAndTime")}>
-        <div id="time-formats" class="units">
+        <ControlGroup id="time-formats">
           {TIME_FORMATS.map((format) => (
             <ChoiceOption
               key={format}
@@ -58,8 +65,8 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
           >
             {t("clock.noTime")}
           </ChoiceOption>
-        </div>
-        <div id="date-formats" class="units">
+        </ControlGroup>
+        <ControlGroup id="date-formats">
           {clock.DATE_FORMATS.map((format) => (
             <ChoiceOption
               key={format.id}
@@ -70,8 +77,19 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
               {format.id === "none" ? t("clock.noDate") : format.format(now)}
             </ChoiceOption>
           ))}
-        </div>
+        </ControlGroup>
       </SettingsSection>
+      {language === "ar" && (
+        <SettingsSection title={t("clock.digits")}>
+          <ChoiceGroup
+            id="numerals"
+            label={t("clock.digits")}
+            value={settings.numerals}
+            options={NUMERAL_OPTIONS}
+            onSelect={actions.setNumerals}
+          />
+        </SettingsSection>
+      )}
       <SettingsSection title={t("appearance.network")}>
         <ChoiceGroup
           id="network-visibility"

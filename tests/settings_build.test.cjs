@@ -24,11 +24,24 @@ test("compiled launcher uses the production page, local scripts and the Preact l
   assert.doesNotMatch(html, /type="module"|https?:[^"']+\.js|@vite\/client|\/src\//);
   const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map((match) => match[1]);
   assert.ok(scripts.includes("js/launcher-ui.js"));
+  assert.ok(!scripts.includes("js/settings.js"), "settings are owned by the TypeScript service");
+  assert.ok(!scripts.includes("js/network.js"), "network status is owned by the TypeScript service");
   assert.ok(scripts.indexOf("js/launcher-ui.js") < scripts.indexOf("js/main.js"), "views mount before boot");
   for (const file of scripts) {
     assert.ok(existsSync(path.join(output, file)), file);
     parse(read(output, file), { ecmaVersion: 2018, sourceType: "script" });
   }
+  const stylesheets = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(stylesheets.includes("js/launcher-ui.css"), "the TV page loads the compiled component styles");
+  for (const file of stylesheets) assert.ok(existsSync(path.join(output, file)), file);
+  const componentStyles = read(output, "js/launcher-ui.css");
+  assert.match(componentStyles, /var\(--choice-selected-surface\)/);
+  assert.match(componentStyles, /data-focused/);
+  assert.doesNotMatch(
+    componentStyles,
+    /#editor|:global\(|:is\(|:where\(|@layer\b|\binset:/,
+    "component styles have no editor dependency or unsupported Chromium 69 selectors",
+  );
   assert.equal(existsSync(path.join(output, "src")), false, "TypeScript source is not a TV runtime asset");
   assert.doesNotMatch(read(output, "js/launcher-ui.js"), /@vite\/client|@prefresh|preact\/debug/);
   assert.match(read(output, "licenses/preact.txt"), /MIT License/);
@@ -47,7 +60,7 @@ test("compiled launcher uses the production page, local scripts and the Preact l
 test("compilation preserves runtime scripts, CSS, service and app identity", () => {
   assert.deepEqual(
     readdirSync(path.join(output, "js")).sort(),
-    [...readdirSync(path.join(root, "launcher/js")), "launcher-ui.js"].sort(),
+    [...readdirSync(path.join(root, "launcher/js")), "launcher-ui.js", "launcher-ui.css"].sort(),
   );
   for (const directory of ["js", "css", "service"]) {
     for (const file of readdirSync(path.join(root, "launcher", directory))) {
@@ -63,8 +76,10 @@ test("compilation preserves runtime scripts, CSS, service and app identity", () 
 test("legacy views remain test fixtures and cannot enter the compiled runtime", () => {
   for (const file of [
     "settings-ui.js",
+    "settings.js",
     "home-screen.js",
     "continue-row.js",
+    "clock.js",
     "clock-layouts.js",
     "inputs-view.js",
     "status-view.js",

@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 
-test.use({ locale: "ja-JP", viewport: { width: 1280, height: 720 } });
+test.use({ locale: "ja-JP" });
 
 test("language selection uses the English fallback offline and persists through reload", async ({ page }) => {
   const errors = [];
@@ -17,11 +17,16 @@ test("language selection uses the English fallback offline and persists through 
 
   const auto = page.getByRole("button", { name: "Use TV language" });
   const english = page.getByRole("button", { name: "English" });
+  const firstLanguage = page.locator('[data-key^="language:"]').nth(1);
   await expect(auto).toHaveAttribute("aria-pressed", "true");
   await expect(auto).toBeFocused();
   await page.keyboard.press("ArrowRight");
-  await expect(english).toBeFocused();
+  await expect(firstLanguage).toBeFocused();
   await page.keyboard.press("Enter");
+  await expect(firstLanguage).toHaveAttribute("aria-pressed", "true");
+  await expect(firstLanguage).toBeFocused();
+
+  await english.click();
   await expect(english).toHaveAttribute("aria-pressed", "true");
   await expect(english).toBeFocused();
 

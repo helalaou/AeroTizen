@@ -1,4 +1,4 @@
-import type { BackgroundBridge } from "../../contracts/backgrounds";
+import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
 import type {
   AppPresentation,
   ClockService,
@@ -10,8 +10,8 @@ import type {
   LauncherConfig,
   SettingsBridge,
 } from "../../contracts/launcher";
-import type { SettingsSource, WeatherLocation } from "../../contracts/preferences";
-import type { NetworkSnapshot, WeatherPhotoSource, WeatherSnapshot } from "../../contracts/status";
+import type { SettingsService, WeatherLocation } from "../../contracts/preferences";
+import type { NetworkService, WeatherPhotoSource, WeatherSnapshot } from "../../contracts/status";
 import type { MessageKey } from "../../shared/i18n/catalogues";
 import type { Translate } from "../../shared/i18n/createTranslations";
 import type { Store } from "../../shared/state/createStore";
@@ -28,7 +28,6 @@ export interface LauncherRuntime {
     playFireplace(): void;
     subscribe(listener: () => void): () => void;
   };
-  clearFocus(): void;
   clock: ClockService;
   config: LauncherConfig;
   continueWatching: {
@@ -54,8 +53,8 @@ export interface LauncherRuntime {
     show(source: InputSource): void;
     subscribe(listener: () => void): () => void;
   };
-  network: Store<NetworkSnapshot> & { updateVisibility(): void; refresh(): void };
-  settings: SettingsSource;
+  network: NetworkService;
+  settings: SettingsService;
   settingsUi?: SettingsBridge;
   tiles: { describe(app: InstalledApp): AppPresentation };
   toast(message: string): void;
@@ -64,6 +63,7 @@ export interface LauncherRuntime {
 
 export interface LauncherPlatform {
   backgrounds: BackgroundBridge;
+  previewBackground(preview: BackgroundPreview | null): void;
   weather: Store<WeatherSnapshot> &
     WeatherPhotoSource & {
       updateVisibility(): void;

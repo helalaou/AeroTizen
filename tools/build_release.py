@@ -75,6 +75,7 @@ def build_launcher(root, output, tag=None):
             "config.xml",
             "index.html",
             "icon.png",
+            "js/launcher-ui.css",
             "licenses/i18next.txt",
             "licenses/preact.txt",
             "licenses/lucide-preact.txt",
@@ -107,6 +108,8 @@ def build_launcher(root, output, tag=None):
             raise ValueError(f"Compiled launcher is missing the Preact {view} mount")
     if 'src="js/launcher-ui.js"' not in html:
         raise ValueError("Compiled launcher is missing the shared UI script")
+    if 'href="js/launcher-ui.css"' not in html:
+        raise ValueError("Compiled launcher is missing the shared UI stylesheet link")
 
     output.mkdir(parents=True, exist_ok=True)
     package = output / f"aerotizen-launcher-{version}.wgt"

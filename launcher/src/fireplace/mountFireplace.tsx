@@ -1,44 +1,14 @@
 import { render } from "preact";
-import { useLayoutEffect, useRef } from "preact/hooks";
 
-import { useStore } from "../shared/hooks/useStore";
 import type { Translate } from "../shared/i18n/createTranslations";
-import type { Store } from "../shared/state/createStore";
 import { createStore } from "../shared/state/createStore";
 
-import { FIRE_HEIGHT, FIRE_WIDTH, startFireAnimation } from "./startFireAnimation";
+import type { FireplaceState } from "./FireplaceView/FireplaceView";
+import { FireplaceView } from "./FireplaceView/FireplaceView";
 import { startFireAudio } from "./startFireAudio";
 
 const MAX_VOLUME = 10;
 const VOLUME_NOTICE_MS = 1500;
-
-interface FireplaceState {
-  readonly open: boolean;
-  readonly volume: number;
-  readonly volumeVisible: boolean;
-}
-
-const FireplaceView = ({ state, translate }: { state: Store<FireplaceState>; translate: Translate }) => {
-  const { open, volume, volumeVisible } = useStore(state);
-  const canvas = useRef<HTMLCanvasElement>(null);
-  useLayoutEffect(() => {
-    if (open && canvas.current) {
-      return startFireAnimation(canvas.current);
-    }
-  }, [open]);
-  if (!open) {
-    return null;
-  }
-  return (
-    <div id="fireplace" class="fireplace">
-      <canvas id="fire-canvas" ref={canvas} width={FIRE_WIDTH} height={FIRE_HEIGHT} />
-      <div class="hearth" />
-      <div id="fire-volume" class={volumeVisible ? "fire-volume show" : "fire-volume"}>
-        {volume === 0 ? translate("fireplace.muted") : translate("fireplace.volume", { level: volume })}
-      </div>
-    </div>
-  );
-};
 
 export const mountFireplace = (host: HTMLElement, translate: Translate) => {
   const state = createStore<FireplaceState>({ open: false, volume: 6, volumeVisible: false });

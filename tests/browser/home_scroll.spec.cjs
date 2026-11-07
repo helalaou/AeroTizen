@@ -16,9 +16,9 @@ test("Home interpolates the top fade without replacing its mask and keeps the bo
   );
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.ready);
-  const viewport = page.locator(".content-viewport"),
-    mask = page.locator(".content-mask");
-  await expect(viewport).not.toHaveClass(/is-scrolled/);
+  const viewport = page.locator("[data-home-viewport]"),
+    mask = page.locator("[data-home-mask]");
+  await expect(viewport).toHaveAttribute("data-scrolled", "false");
   const bottom = await viewport.evaluate((n) => getComputedStyle(n).webkitMaskImage);
   expect(bottom).toContain("calc(100% - 80px)");
   const image = await mask.evaluate((n) => getComputedStyle(n).webkitMaskImage);
@@ -26,21 +26,22 @@ test("Home interpolates the top fade without replacing its mask and keeps the bo
   const top = await viewport.evaluate((n) => n.getBoundingClientRect().top);
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("ArrowDown");
-  await expect(viewport).toHaveClass(/is-scrolled/);
+  await expect(viewport).toHaveAttribute("data-scrolled", "true");
   await expect(mask).toHaveCSS("-webkit-mask-position-y", "0px");
   expect(await mask.evaluate((n) => getComputedStyle(n).webkitMaskImage)).toBe(image);
   expect(await viewport.evaluate((n) => getComputedStyle(n).webkitMaskImage)).toBe(bottom);
   expect(await viewport.evaluate((n) => n.getBoundingClientRect().top)).toBe(top);
-  expect(await page.locator(".topbar").evaluate((n) => n.getBoundingClientRect().top)).toBe(0);
+  expect(await page.locator("[data-home-header]").evaluate((n) => n.getBoundingClientRect().top)).toBe(0);
   await page.screenshot({ path: info.outputPath("scrolled-fade.png") });
   await page.keyboard.press("ArrowUp");
   await page.keyboard.press("ArrowUp");
-  await expect(viewport).not.toHaveClass(/is-scrolled/);
+  await expect(viewport).toHaveAttribute("data-scrolled", "false");
   await expect(mask).toHaveCSS("-webkit-mask-position-y", "-112px");
   expect(await mask.evaluate((n) => getComputedStyle(n).transitionProperty)).toContain("mask-position");
   const midpoint = await page.evaluate(() => {
-    const mask = document.querySelector(".content-mask");
+    const mask = document.querySelector("[data-home-mask]");
     getComputedStyle(mask).webkitMaskPositionY;
+    AeroTizen.homeScreen.keydown(40, { preventDefault() {} });
     AeroTizen.homeScreen.keydown(40, { preventDefault() {} });
     getComputedStyle(mask).webkitMaskPositionY;
     const motion = mask.getAnimations().find((a) => a.transitionProperty?.includes("mask-position"));
@@ -55,5 +56,6 @@ test("Home interpolates the top fade without replacing its mask and keeps the bo
   expect(midpoint).toBeGreaterThan(-112);
   expect(midpoint).toBeLessThan(0);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  expect(await mask.evaluate((n) => getComputedStyle(n).transitionProperty)).toBe("none");
+  const durations = await mask.evaluate((n) => getComputedStyle(n).transitionDuration.split(",").map(parseFloat));
+  expect(durations.every((duration) => duration === 0)).toBe(true);
 });

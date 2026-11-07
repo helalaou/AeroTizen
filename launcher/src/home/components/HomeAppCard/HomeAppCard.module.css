@@ -1,0 +1,31 @@
+.card {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--app-card-size);
+  height: var(--app-card-size);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--home-app-gap, 22px);
+  background: var(--app-background, var(--card));
+  transform: translateZ(0);
+  transition: transform var(--motion-duration-focus) ease-out;
+
+  &[data-focused="true"] {
+    transform: translateZ(0) scale(1.035);
+    box-shadow: var(--home-card-focus-shadow);
+    z-index: 2;
+  }
+
+  &[data-moving="true"] {
+    overflow: visible;
+    box-shadow: var(--home-card-move-shadow);
+
+    &:not([data-focused="true"]) {
+      transform: translateZ(0) scale(1.06) translateY(-8px);
+      z-index: 3;
+    }
+  }
+}

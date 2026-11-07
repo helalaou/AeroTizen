@@ -1,0 +1,222 @@
+.card {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 576px;
+  height: 124px;
+  padding: 0 28px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 22px;
+  background: var(--input-card-surface);
+  transform: translateZ(0);
+  transition: transform var(--motion-duration-focus) ease-out;
+
+  &[data-focused="true"] {
+    transform: translateZ(0) scale(1.035);
+    box-shadow: var(--input-focus-shadow);
+    z-index: 2;
+  }
+
+  &[data-disconnected="true"] {
+    opacity: 0.42;
+
+    &[data-focused="true"] {
+      opacity: 0.8;
+    }
+  }
+
+  &[data-variant="glass"] {
+    z-index: 1;
+    max-width: none;
+    height: 120px;
+    padding: 11px 6px 8px;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    gap: 5px;
+    border: 2px solid var(--input-card-border);
+    border-radius: 27px;
+    background: var(--input-card-surface);
+    box-shadow: var(--input-card-shadow);
+    transition:
+      background-color var(--motion-duration-focus) ease,
+      transform var(--motion-duration-focus) ease;
+
+    &[data-compact="true"] {
+      flex: 0 0 354px;
+      width: 354px;
+      min-width: 354px;
+      max-width: 354px;
+    }
+
+    .icon {
+      flex: 0 0 42px;
+      width: 56px;
+      height: 42px;
+      border-radius: 0;
+    }
+
+    .icon > svg {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+    }
+
+    .label {
+      flex: 0 1 auto;
+      width: 100%;
+      max-width: none;
+      font-family: "SamsungOne", "Roboto", Arial, sans-serif;
+      font-size: 22px;
+      line-height: 1.13;
+    }
+
+    .subtitle {
+      margin-top: 5px;
+      font-size: 15px;
+      letter-spacing: 0.25px;
+      line-height: 1.2;
+      text-shadow: none;
+    }
+
+    &[data-disconnected="true"] {
+      --input-text: var(--input-empty-text);
+      --input-icon-text: var(--input-empty-text);
+      --input-subtitle-text: var(--input-empty-subtitle-text);
+
+      opacity: 0.37;
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    &[data-status="connected"],
+    &[data-status="active"] {
+      --input-status-text: var(--input-connected-status-text, #a3f4d9);
+      --input-status-border: var(--input-connected-status-border, rgba(132, 233, 197, 0.3));
+      --input-status-surface: var(--input-connected-status-surface, rgba(12, 66, 53, 0.36));
+
+      border-color: var(--input-connected-border, rgba(106, 239, 201, 0.45));
+      background: var(
+        --input-connected-surface,
+        linear-gradient(165deg, rgba(97, 217, 182, 0.18), rgba(255, 255, 255, 0.04) 73%)
+      );
+      box-shadow: var(--input-connected-shadow, inset 0 1px rgba(184, 255, 235, 0.18), 0 4px 14px rgba(0, 0, 0, 0.12));
+    }
+
+    &[data-status="recognized"] {
+      --input-status-text: var(--input-recognized-status-text, #f3d69b);
+      --input-status-border: var(--input-recognized-status-border, rgba(239, 204, 133, 0.28));
+      --input-status-surface: var(--input-recognized-status-surface, rgba(90, 60, 19, 0.33));
+
+      border-color: var(--input-recognized-border, rgba(245, 210, 145, 0.4));
+      background: var(
+        --input-recognized-surface,
+        linear-gradient(165deg, rgba(210, 159, 85, 0.14), rgba(255, 255, 255, 0.035) 76%)
+      );
+    }
+
+    &[data-status="live"] {
+      --input-status-text: var(--input-live-status-text, #dae7ff);
+      --input-status-border: var(--input-live-status-border, rgba(191, 212, 255, 0.25));
+    }
+
+    &[data-status="pinned"] {
+      --input-status-text: var(--input-pinned-status-text, #dce9ff);
+    }
+
+    &[data-focused="true"] {
+      --input-text: var(--input-focus-text);
+      --input-icon-text: var(--input-focus-text);
+      --input-subtitle-text: var(--input-focus-subtitle-text);
+      --input-status-text: var(--input-focus-text);
+      --input-status-border: var(--input-focus-status-border);
+      --input-status-surface: var(--input-focus-status-surface);
+
+      opacity: 1;
+      z-index: 5;
+      border-color: var(--input-focus-border);
+      background: var(--input-focus-surface);
+      box-shadow: var(--input-focus-shadow);
+      /* Preserve the 3D compositing hint through CSS minification. */
+      transform: translateZ(0) translateY(-1px) scale(1.015);
+    }
+
+    &[data-disconnected="true"][data-focused="true"] {
+      --input-subtitle-text: var(--input-empty-focus-subtitle-text);
+    }
+  }
+}
+
+.icon {
+  display: flex;
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--input-icon-badge);
+  color: var(--input-icon-text);
+
+  > svg {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 auto;
+    border-radius: 0;
+  }
+}
+
+.label {
+  font-size: 30px;
+  font-weight: 500;
+  color: var(--input-text);
+  text-shadow: var(--input-label-shadow);
+  max-width: 60%;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.subtitle {
+  font-size: 21px;
+  font-weight: 400;
+  color: var(--input-subtitle-text);
+  margin-top: 4px;
+}
+
+.status {
+  position: absolute;
+  top: 7px;
+  right: 12px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border: 1px solid var(--input-status-border);
+  border-radius: 12px;
+  background: var(--input-status-surface);
+  color: var(--input-status-text);
+  font:
+    600 12px/1.1 "SamsungOne",
+    "Roboto",
+    Arial,
+    sans-serif;
+  letter-spacing: 0.45px;
+  white-space: nowrap;
+  pointer-events: none;
+
+  &::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    flex: 0 0 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+}

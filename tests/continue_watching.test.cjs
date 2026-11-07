@@ -1,3 +1,4 @@
+const { createTestSettings } = require("./helpers/settings.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
@@ -19,8 +20,7 @@ const card = (id, timestamp = 1000, extra = {}) => ({
   ...extra,
 });
 function harness() {
-  const settingsListeners = [],
-    appListeners = [],
+  const appListeners = [],
     clockListeners = [],
     requests = [],
     timers = new Map(),
@@ -34,11 +34,10 @@ function harness() {
   const A = {
     translate: translateEnglish,
     config: { HIDDEN_APPS: /service|companion|dummy/i },
-    settings: {
+    settings: createTestSettings({
       continueWatching: false,
       continueWatchingApps: [],
-      subscribe: (fn) => settingsListeners.push(fn),
-    },
+    }),
     apps: {
       inventory: [{ id: source.id, packageId: "pkg", name: "Video" }],
       ready: true,
@@ -90,7 +89,7 @@ function harness() {
     this.aborted = true;
     this.onabort?.();
   };
-  vm.runInNewContext(fs.readFileSync("launcher/js/continue-watching.js", "utf8"), {
+  const context = vm.createContext({
     window: { AeroTizen: A, performance: { now: () => elapsed } },
     document,
     XMLHttpRequest,
@@ -101,6 +100,9 @@ function harness() {
     },
     clearTimeout: (id) => timers.delete(id),
   });
+  for (const script of ["continue-watching.js", "samsung-continue.js"]) {
+    vm.runInContext(fs.readFileSync("launcher/js/" + script, "utf8"), context);
+  }
   const cw = A.continueWatching;
   return {
     A,
@@ -114,7 +116,6 @@ function harness() {
     get reads() {
       return reads;
     },
-    save: () => settingsListeners.forEach((fn) => fn()),
     age: (ms) => {
       now += ms;
       elapsed += ms;
@@ -124,9 +125,7 @@ function harness() {
     },
     tick: () => clockListeners.slice().forEach((fn) => fn()),
     enable() {
-      A.settings.continueWatching = true;
-      A.settings.continueWatchingApps = [source.id];
-      this.save();
+      A.settings.update({ continueWatching: true, continueWatchingApps: [source.id] });
     },
     respond(index, data, status = 200) {
       Object.assign(requests[index], { status, responseText: JSON.stringify(data) });
@@ -155,8 +154,8 @@ test("disabled is inert, and disabling or hiding aborts reads and rejects late c
   assert.equal(url.origin, "http://localhost:9013");
   assert.equal(url.searchParams.get("module"), "EBHelper");
   assert.equal(url.searchParams.get("func"), "GetItems");
-  h.A.settings.continueWatching = false;
-  h.save();
+  h.A.settings.update({ continueWatching: false });
+
   h.respond(0, [card("late")]);
   assert.equal(h.cw.items.length, 0);
   assert.equal(h.timers.size, 0);
@@ -182,11 +181,13 @@ test("source discovery groups hidden services by package and ignores preview-onl
     { id: source.id, packageId: "pkg", name: "Renamed app - promotional text" },
     { id: "other.app", packageId: "other", name: "Video" },
   ];
-  assert.deepEqual(plain(h.cw.discover(inventory)), [
-    { ...source, name: "Renamed app", icon: "", status: "Not selected" },
-  ]);
+  h.A.apps.inventory = inventory;
+  h.A.settings.update({ continueWatching: true });
+  h.cw.start();
+  assert.deepEqual(plain(h.cw.sources), [{ ...source, name: "Renamed app", icon: "", status: "Not selected" }]);
   h.A.catalog.storeId = () => null;
-  assert.equal(h.cw.discover(inventory)[0].status, "App ID unavailable");
+  h.cw.refresh();
+  assert.equal(h.cw.sources[0].status, "App ID unavailable");
 });
 test("normalization keeps zero progress and distinct episodes, rejects other apps, deduplicates and orders true activity", () => {
   const h = harness();
@@ -243,8 +244,8 @@ test("empty feed retries are bounded; settled feeds do not poll; returning refre
   h.advance(2000);
   h.respond(6, []);
   assert.equal(h.cw.items.length, 0);
-  h.A.settings.continueWatchingApps = [];
-  h.save();
+  h.A.settings.update({ continueWatchingApps: [] });
+
   const before = h.requests.length;
   h.advance(30000);
   assert.equal(h.requests.length, before);
@@ -290,8 +291,8 @@ test("refresh keeps unchanged items and updates only changed records; deselectio
   assert.equal(h.cw.items[1], second);
   h.cw.open(h.cw.items[1]);
   assert.equal(h.launches.length, 1);
-  h.A.settings.continueWatchingApps = [];
-  h.save();
+  h.A.settings.update({ continueWatchingApps: [] });
+
   assert.equal(h.cw.items.length, 0);
   h.enable();
   assert.equal(h.cw.items.length, 0, "deselected records are not retained");
@@ -342,8 +343,7 @@ test("startup retries have a fixed limit and are cancelled when disabled or hidd
     h.advance(2000);
     h.respond(1, []);
     if (action === "disable") {
-      h.A.settings.continueWatching = false;
-      h.save();
+      h.A.settings.update({ continueWatching: false });
     } else {
       h.document.hidden = true;
       h.events.visibilitychange();
@@ -406,8 +406,8 @@ test("startup retries survive wall-clock changes and still end after five elapse
 function twoSources(h) {
   h.A.apps.inventory.push({ id: "other.app", packageId: "other", name: "Other" });
   h.A.catalog.storeId = (id) => (id === source.id ? "123" : "456");
-  h.A.settings.continueWatching = true;
-  h.A.settings.continueWatchingApps = [source.id, "other.app"];
+  h.A.settings.update({ continueWatching: true });
+  h.A.settings.update({ continueWatchingApps: [source.id, "other.app"] });
   h.cw.start();
   return (id) => h.requests.findIndex((request) => request.header[1] === id);
 }
@@ -464,8 +464,8 @@ test("clock correction reorders settled feeds without more reads and keeps futur
   h.tick();
   assert.equal(updates, 0);
   h.document.hidden = false;
-  h.A.settings.continueWatching = false;
-  h.save();
+  h.A.settings.update({ continueWatching: false });
+
   updates = 0;
   h.setWall(corrected);
   h.tick();

@@ -1,0 +1,46 @@
+.grid {
+  --app-card-small: 332px;
+  --app-card-medium: 368px;
+  --app-card-large: 400px;
+  --app-card-size: var(--app-card-small);
+  --app-columns: 5;
+
+  display: grid;
+  grid-template-columns: repeat(var(--app-columns), var(--app-card-size));
+  justify-content: center;
+  gap: 30px 32px;
+  /* Keep focused cards and reorder controls clear of the header and fade. */
+  margin: 24px 0 40px;
+
+  &[data-page="home"] {
+    margin-bottom: 0;
+  }
+
+  &[data-columns="3"] {
+    --app-card-size: var(--app-card-large);
+    --app-columns: 3;
+  }
+
+  &[data-columns="4"] {
+    --app-card-size: var(--app-card-medium);
+    --app-columns: 4;
+  }
+
+  &[data-expanded="true"] {
+    --app-card-small: 216px;
+    --app-card-medium: 240px;
+    --app-card-large: 264px;
+
+    margin-top: 6px;
+  }
+
+  &[data-scroll="true"] {
+    --app-card-small: 308px;
+
+    &[data-expanded="true"] {
+      --app-card-small: 252px;
+      --app-card-medium: 292px;
+      --app-card-large: 312px;
+    }
+  }
+}

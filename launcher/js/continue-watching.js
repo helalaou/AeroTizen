@@ -1,23 +1,22 @@
-// Optional, read-only Samsung Continue Watching feeds. No root or account login.
+// Shared Continue Watching state and feed lifecycle.
 (function (A) {
   "use strict";
 
   var cw = (A.continueWatching = { sources: [], items: [], messageKey: "" });
   var listeners = [],
-    requests = [],
+    providers = [],
     timers = [],
     generation = 0,
     started = false,
     signature = "";
   var feeds = Object.create(null),
+    candidates = Object.create(null),
     startupUntil = 0,
     clockWall = 0,
     clockElapsed = 0;
   var CLOCK_CHANGE_MS = 1000;
   var STARTUP_RETRIES = [2000, 5000, 15000, 30000, 60000, 60000, 60000, 60000],
     REFRESH_RETRIES = [2000, 2000];
-  var PREFIX = "http://samsung.com/tv/metadata/";
-  var ENDPOINT = "http://localhost:9013/?module=EBHelper&func=GetItems";
 
   // A cold TV can correct its date after launch. Retry limits use elapsed time.
   function retryTime() {
@@ -52,70 +51,39 @@
     generation++;
     timers.forEach(clearTimeout);
     timers = [];
-    var pending = requests;
-    requests = [];
-    pending.forEach(function (xhr) {
-      xhr.abort();
+    providers.forEach(function (provider) {
+      provider.cancel();
     });
   }
 
-  // Hidden companion services can declare support for their foreground package.
-  // Resolve store IDs by exact installed identity; never join on display names.
-  cw.discover = function (inventory) {
-    var groups = Object.create(null),
-      found = [];
-    inventory.forEach(function (app) {
-      var key = app.packageId || app.id;
-      if (!groups[key]) {
-        groups[key] = { apps: [], supported: false };
-      }
-      groups[key].apps.push(app);
-      try {
-        var metadata = A.tizen.application.getAppMetaData(app.id);
-        groups[key].supported =
-          groups[key].supported ||
-          metadata.some(function (entry) {
-            return (
-              entry &&
-              ((entry.key === PREFIX + "app_support_continue_watching" && entry.value === "true") ||
-                (entry.key === PREFIX + "use.continue_watching" && entry.value === "bg_service"))
-            );
-          });
-      } catch (e) {
-        /* unavailable metadata does not establish support */
-      }
-    });
-    Object.keys(groups).forEach(function (key) {
-      var group = groups[key];
-      if (!group.supported) {
-        return;
-      }
-      var foreground = group.apps.filter(function (app) {
-        return app.show !== false && app.name && !A.config.HIDDEN_APPS.test(app.id);
-      });
-      if (!foreground.length) {
-        return;
-      }
-      foreground.sort(function (a, b) {
-        return Number(!!A.catalog.storeId(b.id)) - Number(!!A.catalog.storeId(a.id));
-      });
-      var app = foreground[0],
-        storeId = A.catalog.storeId(app.id);
-      found.push({
-        id: app.id,
-        name: A.tiles.shortName(app.name),
-        icon: app.iconPath || "",
-        storeId: storeId || "",
-        status: storeId ? "Not selected" : "App ID unavailable",
-      });
-    });
-    return found.sort(function (a, b) {
-      return a.name.localeCompare(b.name);
-    });
+  // Adapters discover installed candidates, read records, and open cards.
+  // Adapters with a readiness check retry that check during startup and hide on read failure.
+  cw.register = function (provider) {
+    providers.push(provider);
   };
+
+  function discover(inventory) {
+    var found = Object.create(null);
+    providers.forEach(function (provider) {
+      provider.discover(inventory).forEach(function (source) {
+        // An earlier adapter can claim an app even while its feed is unavailable.
+        if (!found[source.id]) {
+          found[source.id] = { source: source, provider: provider };
+        }
+      });
+    });
+    return found;
+  }
+
+  function byName(a, b) {
+    return a.name.localeCompare(b.name);
+  }
 
   function text(value, limit) {
     return typeof value === "string" ? value.slice(0, limit) : "";
+  }
+  function imageUrl(value) {
+    return typeof value === "string" && /^https?:\/\//i.test(value) ? text(value, 4000) : "";
   }
   function nonnegative(value) {
     return typeof value === "number" && isFinite(value) && value >= 0 ? value : 0;
@@ -135,7 +103,8 @@
     var byId = Object.create(null),
       result = [];
     records.slice(0, 200).forEach(function (record) {
-      if (!record || String(record.app_id) !== source.storeId) {
+      var storeId = record && record.app_id;
+      if (!record || (typeof storeId === "number" ? String(storeId) : storeId) !== source.storeId) {
         return;
       }
       var title = text(record.content_title, 300),
@@ -156,8 +125,16 @@
         duration: nonnegative(record.duration),
         playback: nonnegative(record.playback),
         timestamp: activity(record.timestamp),
-        image: /^https?:\/\//i.test(record.image_url) ? text(record.image_url, 4000) : "",
+        image: imageUrl(record.image_url),
       };
+      var thumbnail = imageUrl(record.thumbnail_url),
+        background = imageUrl(record.background_url);
+      if (thumbnail) {
+        item.thumbnailImage = thumbnail;
+      }
+      if (background) {
+        item.backgroundImage = background;
+      }
       var previous = byId[id];
       if (!previous) {
         byId[id] = item;
@@ -211,89 +188,122 @@
     var changed = Math.abs(wall - clockWall - (elapsed - clockElapsed)) > CLOCK_CHANGE_MS;
     clockWall = wall;
     clockElapsed = elapsed;
-    if (changed && cw.items.length && A.settings.continueWatching === true && !document.hidden) {
+    if (changed && cw.items.length && A.settings.getSnapshot().continueWatching === true && !document.hidden) {
       merge();
     }
   }
-  function read(source, token, attempt, warmup) {
+  function updateMessage() {
+    cw.messageKey = !A.apps.ready ? "continue.findingApps" : !cw.sources.length ? "continue.noApps" : "";
+  }
+  function isSelected(source) {
+    return !!source.storeId && A.settings.getSnapshot().continueWatchingApps.indexOf(source.id) >= 0;
+  }
+
+  function remove(source) {
+    cw.sources = cw.sources.filter(function (entry) {
+      return entry !== source;
+    });
+    delete feeds[source.id];
+    updateMessage();
+    merge();
+  }
+
+  // A cold TV can start its feeds late. All startup retries share one deadline.
+  function retry(attempt, warmup, fn) {
+    var delays = warmup ? STARTUP_RETRIES : REFRESH_RETRIES,
+      remaining = warmup ? startupUntil - retryTime() : Infinity;
+    if (attempt >= delays.length || remaining <= 0) {
+      return false;
+    }
+    later(fn, Math.min(delays[attempt], remaining));
+    return true;
+  }
+
+  function check(candidate, token, attempt) {
     if (token !== generation) {
       return;
     }
-    var xhr = new XMLHttpRequest(),
-      settled = false,
-      delays = warmup ? STARTUP_RETRIES : REFRESH_RETRIES;
-    requests.push(xhr);
-    function finish(error, data, records) {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      var index = requests.indexOf(xhr);
-      if (index >= 0) {
-        requests.splice(index, 1);
-      }
+    var source = candidate.source;
+    candidate.provider.check(source, function (available) {
       if (token !== generation) {
         return;
       }
-      // Publishers can become ready after the launcher on a cold TV. Keep a
-      // bounded five-minute startup window; settled feeds do not keep polling.
+      var visible = cw.sources.indexOf(source) >= 0;
+      if (!available) {
+        if (visible) {
+          remove(source);
+        }
+        retry(attempt, true, function () {
+          check(candidate, token, attempt + 1);
+        });
+        return;
+      }
+      if (!visible) {
+        cw.sources.push(source);
+        cw.sources.sort(byName);
+        updateMessage();
+      }
+      if (!isSelected(source)) {
+        if (!visible) {
+          merge();
+        }
+        return;
+      }
+      source.status = "Checking for items";
+      publish();
+      read(candidate, token, 0, false);
+    });
+  }
+
+  function read(candidate, token, attempt, warmup) {
+    if (token !== generation) {
+      return;
+    }
+    var source = candidate.source,
+      checked = !!candidate.provider.check;
+    candidate.provider.read(source, function (error, records) {
+      if (token !== generation) {
+        return;
+      }
+      var count = 0;
+      if (!error) {
+        count = checked ? records.length : cw.normalize(source, records).length;
+      }
+      // Checked feeds retry readiness. An empty history is a valid result.
       if (
-        ((error && warmup) || (!error && !data.length)) &&
-        attempt < delays.length &&
-        (!warmup || retryTime() < startupUntil)
+        !checked &&
+        (error ? warmup : !count) &&
+        retry(attempt, warmup, function () {
+          read(candidate, token, attempt + 1, warmup);
+        })
       ) {
         source.status = "Checking for items";
         publish();
-        var delay = warmup ? Math.min(delays[attempt], startupUntil - retryTime()) : delays[attempt];
-        later(function () {
-          read(source, token, attempt + 1, warmup);
-        }, delay);
         return;
       }
+      if (error && checked) {
+        remove(source);
+        return;
+      }
+      feeds[source.id] = error ? [] : records.slice(0, 200);
       if (error) {
         source.status = "Unavailable";
-        feeds[source.id] = [];
-        merge();
-        return;
+      } else if (!count) {
+        source.status = "No items available";
+      } else {
+        source.status = checked ? "Available" : count + (count === 1 ? " item" : " items");
       }
-      feeds[source.id] = records.slice(0, 200);
-      source.status = data.length ? data.length + (data.length === 1 ? " item" : " items") : "No items available";
       merge();
-    }
-    xhr.onload = function () {
-      try {
-        if (xhr.status !== 200 || xhr.responseText.length > 2000000) {
-          throw new Error("Unavailable feed");
-        }
-        var records = JSON.parse(xhr.responseText);
-        finish(null, cw.normalize(source, records), records);
-      } catch (e) {
-        finish(true);
-      }
-    };
-    xhr.onerror = xhr.ontimeout = function () {
-      finish(true);
-    };
-    xhr.onabort = function () {
-      finish(true);
-    };
-    try {
-      // app_id alone is not a cache key. Keep each source and retry fresh.
-      var key = source.storeId + "-" + Date.now() + "-" + token + "-" + attempt;
-      xhr.open("GET", ENDPOINT + "&_aerotizen=" + encodeURIComponent(key), true);
-      xhr.timeout = 5000;
-      xhr.setRequestHeader("app_id", source.storeId);
-      xhr.send();
-    } catch (e) {
-      finish(true);
-    }
+    });
   }
 
-  cw.refresh = function () {
+  cw.refresh = function (choicesChanged) {
+    var previous = cw.sources;
     cancel();
+    candidates = Object.create(null);
     cw.sources = [];
     cw.messageKey = "";
-    if (A.settings.continueWatching !== true) {
+    if (A.settings.getSnapshot().continueWatching !== true) {
       feeds = Object.create(null);
       cw.items = [];
       publish();
@@ -306,61 +316,59 @@
       publish();
       return;
     }
-    cw.sources = cw.discover(A.apps.inventory || []);
-    cw.messageKey = !A.apps.ready ? "continue.findingApps" : !cw.sources.length ? "continue.noApps" : "";
+    candidates = discover(A.apps.inventory || []);
     var token = generation,
-      warmup = retryTime() < startupUntil,
-      selected = cw.sources.filter(function (source) {
-        return source.storeId && A.settings.continueWatchingApps.indexOf(source.id) >= 0;
+      discovered = Object.keys(candidates).map(function (id) {
+        return candidates[id];
       });
-    Object.keys(feeds).forEach(function (id) {
+    discovered.forEach(function (candidate) {
+      var source = candidate.source;
       if (
-        !selected.some(function (source) {
-          return source.id === id;
+        !candidate.provider.check ||
+        previous.some(function (entry) {
+          return entry.id === source.id;
         })
       ) {
+        if (isSelected(source)) {
+          source.status = "Checking for items";
+        }
+        cw.sources.push(source);
+      }
+    });
+    cw.sources.sort(byName);
+    updateMessage();
+    Object.keys(feeds).forEach(function (id) {
+      if (!candidates[id] || !isSelected(candidates[id].source)) {
         delete feeds[id];
       }
     });
-    selected.forEach(function (source) {
-      source.status = "Checking for items";
-    });
     merge();
-    // Refresh on app discovery, source selection and return to AeroTizen.
-    // Startup allows late publishers; ordinary empty results have two retries.
     if (!document.hidden) {
-      selected.forEach(function (source) {
-        read(source, token, 0, warmup);
+      var warmup = retryTime() < startupUntil;
+      // Keep an unchecked, verified source available without another request.
+      discovered.forEach(function (candidate) {
+        var source = candidate.source;
+        if (candidate.provider.check) {
+          if (choicesChanged !== true || isSelected(source) || cw.sources.indexOf(source) < 0) {
+            check(candidate, token, 0);
+          }
+        } else if (isSelected(source)) {
+          read(candidate, token, 0, warmup);
+        }
       });
     }
   };
 
   cw.open = function (item) {
-    if (
-      !A.tizen ||
-      !cw.items.some(function (current) {
-        return current === item;
-      })
-    ) {
+    if (cw.items.indexOf(item) < 0) {
       return;
     }
-    try {
-      var data = [new A.tizen.ApplicationControlData("PAYLOAD", [JSON.stringify({ values: item.payload })])];
-      var control = new A.tizen.ApplicationControl(
-        "http://tizen.org/appcontrol/operation/view",
-        null,
-        null,
-        null,
-        data
-      );
-      A.homewatch.watch(item.sourceId);
-      A.tizen.application.launchAppControl(control, item.sourceId, null, function () {
-        A.toast(A.translate("apps.openFailed", { name: item.title }));
-      });
-    } catch (e) {
-      A.toast(A.translate("apps.openFailed", { name: item.title }));
+    var candidate = candidates[item.sourceId];
+    if (candidate) {
+      candidate.provider.open(item);
     }
   };
+
   cw.start = function () {
     if (started) {
       return;
@@ -374,10 +382,13 @@
     }
     A.apps.subscribe(cw.refresh);
     A.settings.subscribe(function () {
-      var next = JSON.stringify([A.settings.continueWatching, A.settings.continueWatchingApps]);
+      var next = JSON.stringify([
+        A.settings.getSnapshot().continueWatching,
+        A.settings.getSnapshot().continueWatchingApps,
+      ]);
       if (signature !== next) {
         signature = next;
-        cw.refresh();
+        cw.refresh(true);
       }
     });
     document.addEventListener("visibilitychange", function () {
@@ -387,7 +398,10 @@
         cw.refresh();
       }
     });
-    signature = JSON.stringify([A.settings.continueWatching, A.settings.continueWatchingApps]);
+    signature = JSON.stringify([
+      A.settings.getSnapshot().continueWatching,
+      A.settings.getSnapshot().continueWatchingApps,
+    ]);
     cw.refresh();
   };
 })(window.AeroTizen);

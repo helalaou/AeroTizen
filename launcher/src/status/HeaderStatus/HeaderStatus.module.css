@@ -1,0 +1,20 @@
+.status {
+  --header-status-margin: 0px;
+
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-left: var(--header-status-margin);
+
+  &[data-expanded="true"] {
+    --header-status-margin: auto;
+
+    gap: 0;
+  }
+
+  [dir="rtl"] & {
+    margin-left: 0;
+    margin-right: var(--header-status-margin);
+  }
+}

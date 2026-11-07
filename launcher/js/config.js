@@ -38,37 +38,6 @@ AeroTizen.config = {
   FIREPLACE_ID: "__fire",
   FIREPLACE_VIDEO: "WuHSBSLK3_A",
 
-  CARD_COLUMNS: { big: 3, small: 5 }, // Settings → App cards
   LONG_PRESS_MS: 600,
   SPEED: { MIN: 0.25, MAX: 3, STEP: 0.25 },
-
-  DEFAULTS: {
-    home: null, // null selects defaults on first launch; [] keeps an empty Home.
-    cardSize: "big",
-    glassSettings: false, // Optional Preact Glass categories and source dock.
-    homeCardMode: "square", // Square Samsung artwork remains the default.
-    homeCardColumns: null, // null preserves the existing Big/Small column count.
-    background: "aurora",
-    weatherPhoto: false, // Opt-in AI-generated scenes using the existing forecast.
-    speed: 1,
-    showWeather: true,
-    showTime: true,
-    showNetwork: true,
-    tempUnit: null, // Select the locale's weather unit when first loaded.
-    weatherLocation: null,
-    weatherShowLocation: true,
-    dateFormat: "short",
-    language: "auto",
-    // Existing installs continue using the unchanged compact header.
-    clockLayout: "classic",
-    aeroClockStyle: "vertical",
-    timeFormat: null, // Detect 12/24-hour format when first loaded.
-    continueWatching: false,
-    continueWatchingApps: [],
-    showLiveTv: true,
-    hideDisconnectedHdmi: false,
-    hdmiNativeViewer: false,
-    hdmiKeepVisible: {}, // Optional per-port exception for an unidentified device.
-    inputNames: {},
-  },
 };

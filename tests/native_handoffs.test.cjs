@@ -1,3 +1,4 @@
+const { createTestSettings } = require("./helpers/settings.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 ("use strict");
 const assert = require("node:assert/strict");
@@ -81,7 +82,7 @@ function harness(options = {}) {
     tvwindow: {
       setSource(source, success, failure, target) {
         inputs.push({ source, target });
-        if (options.sourceFails) failure({ name: "NoSource" });
+        if (options.sourceFails) failure({ name: "InvalidValuesError" });
         else success();
       },
       show(success) {
@@ -135,7 +136,7 @@ function harness(options = {}) {
         return null;
       },
     },
-    settings: { inputNames: {}, showLiveTv: true, hideDisconnectedHdmi: false },
+    settings: createTestSettings({ inputNames: {}, showLiveTv: true, hideDisconnectedHdmi: false }),
     tiles: {
       shortName: (name) => name,
       ICONS: { tv: "tv", hdmi: "hdmi", box: "box", pc: "pc", game: "game" },
@@ -311,9 +312,16 @@ test("HDMI uses TVWindow by default", () => {
   assert.equal(h.requests.length, 0);
 });
 
+test("missing input selection does not start playback", () => {
+  const h = harness();
+  h.A.inputs.show(null);
+  assert.deepEqual(h.inputs, []);
+  assert.deepEqual(h.requests, []);
+});
+
 test("opt-in HDMI handoff waits for /leave and selects the raw source before opening Samsung viewer", () => {
   const h = harness();
-  h.A.settings.hdmiNativeViewer = true;
+  h.A.settings.update({ hdmiNativeViewer: true });
   const raw = { type: "HDMI", number: 2, signal: false };
   h.A.inputs.show({ type: "HDMI", number: 2, raw });
   h.A.inputs.show({ type: "HDMI", number: 3 });
@@ -331,7 +339,7 @@ test("opt-in HDMI handoff waits for /leave and selects the raw source before ope
 
 test("opt-in HDMI uses TVWindow if the launch API is unavailable", () => {
   const h = harness({ noNativeLaunch: true });
-  h.A.settings.hdmiNativeViewer = true;
+  h.A.settings.update({ hdmiNativeViewer: true });
   h.A.inputs.show({ type: "HDMI", number: 2 });
   assert.deepEqual(h.requests, []);
   assert.deepEqual(h.embedded, ["shown"]);
@@ -339,7 +347,7 @@ test("opt-in HDMI uses TVWindow if the launch API is unavailable", () => {
 
 test("HDMI viewer rejection rearms the watcher and opens the embedded input", () => {
   const h = harness({ launchFails: "org.tizen.tv-viewer", appControlFails: true });
-  h.A.settings.hdmiNativeViewer = true;
+  h.A.settings.update({ hdmiNativeViewer: true });
   h.A.inputs.show({ type: "HDMI", number: 2 });
   h.requests[0].resolve(200);
   assert.deepEqual(
@@ -350,9 +358,25 @@ test("HDMI viewer rejection rearms the watcher and opens the embedded input", ()
   assert.deepEqual(h.embedded, ["shown"]);
 });
 
+test("HDMI source selection failure records the Tizen error name and tries the embedded path", () => {
+  const h = harness({ sourceFails: true });
+  h.A.settings.update({ hdmiNativeViewer: true });
+  const source = { type: "HDMI", number: 2 };
+  h.A.inputs.show(source);
+  h.requests[0].resolve(200);
+  assert.deepEqual(h.launches, []);
+  assert.deepEqual(h.inputs, [
+    { source, target: "MAIN" },
+    { source, target: "MAIN" },
+  ]);
+  const { data } = h.log.snapshot().records.find(({ event }) => event === "handoff.failed");
+  assert.equal(data.reason, "source selection failed");
+  assert.equal(data.error, "InvalidValuesError");
+});
+
 test("HDMI handoff without watcher acknowledgement opens only the embedded input", () => {
   const h = harness();
-  h.A.settings.hdmiNativeViewer = true;
+  h.A.settings.update({ hdmiNativeViewer: true });
   h.A.inputs.show({ type: "HDMI", number: 2 });
   h.requests[0].fail();
   assert.deepEqual(h.launches, []);
@@ -362,7 +386,7 @@ test("HDMI handoff without watcher acknowledgement opens only the embedded input
 
 test("an old viewer focus timer cannot rearm the watcher during a newer handoff", () => {
   const h = harness({ visible: true });
-  h.A.settings.hdmiNativeViewer = true;
+  h.A.settings.update({ hdmiNativeViewer: true });
   h.A.inputs.show({ type: "HDMI", number: 2 });
   h.requests[0].resolve(200);
   h.A.inputs.show({ type: "HDMI", number: 3 });

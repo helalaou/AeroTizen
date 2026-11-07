@@ -1,16 +1,13 @@
 import { render } from "preact";
 
+import { Toast } from "./Toast/Toast";
+
 const TOAST_DURATION_MS = 2500;
 
 export const mountToast = (host: HTMLElement) => {
   let timer: number | undefined;
   const renderMessage = (message: string | null) => {
-    render(
-      <div id="toast" class="toast" hidden={message === null}>
-        {message}
-      </div>,
-      host,
-    );
+    render(<Toast message={message} />, host);
   };
   const hideToast = () => {
     window.clearTimeout(timer);

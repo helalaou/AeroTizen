@@ -1,0 +1,9 @@
+.panel {
+  box-sizing: border-box;
+  border: 1px solid var(--settings-border);
+  border-radius: var(--settings-radius);
+  background: var(--settings-surface);
+  box-shadow: var(--settings-shadow);
+  color: var(--settings-text);
+  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
+}

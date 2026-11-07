@@ -9,6 +9,8 @@
   --update-notice: #ffd34f;
 }
 body {
+  --toast-surface: var(--card);
+  --fireplace-notice-surface: rgba(0, 0, 0, 0.55);
   --surface-control: rgba(236, 242, 255, 0.08);
   --border-control: rgba(255, 255, 255, 0.12);
   --settings-text: #f7f8fa;
@@ -19,17 +21,53 @@ body {
   --settings-heading-divider: rgba(255, 255, 255, 0.14);
   --settings-kicker: rgba(235, 241, 249, 0.69);
   --settings-close-surface: rgba(255, 255, 255, 0.07);
+  --app-label-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --settings-store-surface: linear-gradient(135deg, #2c2c30, #161618);
+  --settings-store-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18);
+  --settings-slider-surface: var(--card);
+  --settings-slider-track: #3a3a40;
+  --settings-slider-thumb: #fff;
+  --settings-slider-thumb-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --settings-slider-adjusting-shadow: 0 0 0 4px #000, 0 0 0 8px var(--focus);
+  --wallpaper-label-text: #fff;
+  --wallpaper-label-surface: rgba(0, 0, 0, 0.72);
+  --wallpaper-label-shadow: 0 1px 4px #000;
   --settings-overlay: rgba(0, 0, 13, 0.35);
   --settings-focused-surface: rgba(236, 242, 255, 0.15);
   --header-tab-surface: rgba(28, 28, 30, 0.7);
   --header-tab-border: #444448;
   --header-tab-shadow: none;
   --header-tab-text: var(--muted);
+  --header-tab-isolation: auto;
+  --header-tab-gap: normal;
+  --clock-text: #f3f7ff;
+  --clock-shadow: 0 3px 16px rgba(0, 0, 0, 0.6);
+  --clock-minimal-text: rgba(248, 251, 255, 0.93);
+  --clock-minimal-shadow: 0 2px 11px rgba(0, 0, 0, 0.33);
+  --clock-minimal-date-text: rgba(238, 244, 251, 0.85);
+  --clock-bold-text: #fff;
+  --clock-bold-stroke: rgba(255, 255, 255, 0.85);
+  --clock-bold-shadow: 0 5px 18px rgba(0, 0, 0, 0.4);
+  --weather-expanded-text: #e8eff8;
+  --weather-location-text: rgba(235, 241, 249, 0.82);
+  --weather-minimal-text: rgba(245, 250, 255, 0.88);
+  --weather-icon-sun: #ffd34d;
+  --weather-icon-cloud: #d5dbe4;
+  --weather-icon-rain: #6cb6ff;
+  --weather-icon-snow: #fff;
   --header-focus-surface: rgba(124, 92, 255, 0.16);
   --header-focus-shadow: none;
   --header-gear-border: 0px;
   --back-to-top-surface: #30343f;
   --back-to-top-border: #a1a9ba;
+  --back-to-top-focus-shadow: 0 0 0 2px var(--bg), 0 0 0 5px var(--focus);
+  --home-card-focus-shadow: 0 0 0 4px var(--bg), 0 0 0 9px var(--focus), 0 18px 40px rgba(0, 0, 0, 0.6);
+  --home-card-move-shadow: 0 0 0 4px var(--bg), 0 0 0 9px var(--focus), 0 28px 50px rgba(0, 0, 0, 0.7);
+  --home-section-heading-text: rgba(250, 252, 255, 0.85);
+  --home-section-heading-shadow: 0 2px 9px rgba(0, 0, 0, 0.42);
+  --reorder-surface: rgba(255, 255, 255, 0.95);
+  --reorder-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  --reorder-icon: #111;
   --settings-surface: #1c1c1e;
   --settings-main-surface: #141416;
   --settings-border: #444448;
@@ -41,11 +79,50 @@ body {
   --settings-sidebar-focus-shadow: none;
   --settings-content-focus-shadow: none;
   --choice-selected-surface: var(--focus);
+  --choice-selected-border: var(--border-control);
   --choice-focused-surface: rgba(124, 92, 255, 0.25);
+  --control-text: #fff;
+  --control-focused-text: #fff;
+  --control-radius: 17px;
+  --input-placeholder: #77777f;
+  --input-underline: #4a4a50;
   --selection-surface: var(--focus);
+  --selection-text: #fff;
   --input-icon-badge: #2c2c30;
+  --input-icon-text: var(--fg);
+  --input-text: #f0f0f3;
+  --input-label-shadow: var(--app-label-shadow);
+  --input-subtitle-text: var(--muted);
+  --input-dock-border: transparent;
+  --input-dock-surface: transparent;
+  --input-dock-shadow: none;
+  --input-dock-shine: none;
+  --input-card-border: transparent;
+  --input-card-surface: var(--card);
+  --input-card-shadow: none;
+  --input-focus-shadow: var(--home-card-focus-shadow);
+  --input-empty-text: rgba(255, 255, 255, 0.89);
+  --input-empty-subtitle-text: rgba(237, 242, 250, 0.64);
+  --input-focus-text: #fff;
+  --input-focus-subtitle-text: rgba(255, 255, 255, 0.83);
+  --input-empty-focus-subtitle-text: rgba(255, 255, 255, 0.88);
+  --input-focus-border: rgba(255, 255, 255, 0.95);
+  --input-focus-surface: linear-gradient(
+    170deg,
+    rgba(255, 255, 255, 0.23),
+    rgba(255, 255, 255, 0.09) 47%,
+    rgba(255, 255, 255, 0.04)
+  );
+  --input-status-text: rgba(255, 255, 255, 0.87);
+  --input-status-border: rgba(255, 255, 255, 0.2);
+  --input-status-surface: rgba(0, 0, 0, 0.25);
+  --input-focus-status-border: rgba(255, 255, 255, 0.55);
+  --input-focus-status-surface: rgba(15, 21, 30, 0.44);
   --continue-surface: var(--card);
   --continue-shadow: none;
+  --continue-focus-shadow: var(--home-card-focus-shadow);
+  --continue-artwork-surface: #101014;
+  --continue-badge-shadow: 0 2px 8px #0008;
   --continue-label-surface: transparent;
   --continue-episode-text: #ccc;
   --continue-progress-track: #555;
@@ -53,9 +130,37 @@ body {
   --menu-border: var(--settings-border);
   --menu-shadow: var(--settings-shadow);
   --menu-focus-surface: rgba(124, 92, 255, 0.18);
+  --menu-text: #fff;
+  --menu-option-text: rgba(243, 246, 255, 0.79);
+  --menu-backdrop: rgba(5, 8, 16, 0.53);
   --network-offline: #ff6b6b;
 }
 body.glass-ui {
+  --input-icon-badge: transparent;
+  --input-icon-text: #fff;
+  --input-text: #fff;
+  --input-label-shadow: 0 1px 6px rgba(0, 0, 0, 0.33);
+  --input-subtitle-text: rgba(255, 255, 255, 0.83);
+  --input-dock-border: rgba(255, 255, 255, 0.31);
+  --input-dock-surface: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.2),
+    rgba(60, 68, 78, 0.44) 18%,
+    rgba(20, 25, 35, 0.63) 62%,
+    rgba(15, 20, 28, 0.71)
+  );
+  --input-dock-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.24), inset 0 -1px rgba(255, 255, 255, 0.09), 0 13px 32px rgba(0, 0, 0, 0.27);
+  --input-dock-shine: linear-gradient(to bottom, rgba(255, 255, 255, 0.075), transparent);
+  --input-card-border: rgba(255, 255, 255, 0.18);
+  --input-card-surface: linear-gradient(
+    170deg,
+    rgba(255, 255, 255, 0.145),
+    rgba(255, 255, 255, 0.035) 70%,
+    rgba(255, 255, 255, 0.055)
+  );
+  --input-card-shadow: inset 0 1px rgba(255, 255, 255, 0.16), 0 4px 13px rgba(0, 0, 0, 0.1);
+  --input-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.28), 0 7px 18px rgba(0, 0, 0, 0.25);
   --focus: #edf2ff;
   --focus-glow: rgba(237, 242, 255, 0.23);
   --header-tab-surface: linear-gradient(
@@ -67,6 +172,8 @@ body.glass-ui {
   );
   --header-tab-shadow: inset 0 1px rgba(255, 255, 255, 0.24), 0 13px 32px rgba(0, 0, 0, 0.27);
   --header-tab-text: rgba(234, 239, 247, 0.78);
+  --header-tab-isolation: isolate;
+  --header-tab-gap: 12px;
   --header-focus-surface: rgba(236, 242, 255, 0.16);
   --header-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.2);
   --header-gear-border: 2px;
@@ -84,11 +191,40 @@ body.glass-ui {
   --choice-selected-border: rgba(201, 225, 255, 0.55);
   --choice-focused-surface: rgba(236, 242, 255, 0.15);
   --selection-surface: #475269;
-  --input-icon-badge: transparent;
   --continue-surface: linear-gradient(160deg, rgba(86, 97, 116, 0.84), rgba(22, 29, 42, 0.94));
   --continue-shadow: inset 0 1px rgba(255, 255, 255, 0.24), 0 10px 24px rgba(0, 0, 0, 0.28);
   --continue-label-surface: rgba(18, 25, 38, 0.38);
   --continue-episode-text: #d5deec;
   --continue-progress-track: rgba(217, 227, 242, 0.24);
   --menu-focus-surface: rgba(236, 242, 255, 0.18);
+}
+
+/* Solid colours keep their full range. Floating Home text follows luminance. */
+:root[data-light-background="true"] body {
+  --clock-text: #15151b;
+  --clock-shadow: none;
+  --clock-minimal-text: #15151b;
+  --clock-minimal-shadow: none;
+  --clock-minimal-date-text: #303038;
+  --clock-bold-text: #15151b;
+  --clock-bold-stroke: #15151b;
+  --clock-bold-shadow: none;
+  --weather-expanded-text: #15151b;
+  --weather-location-text: #303038;
+  --weather-minimal-text: #15151b;
+  --weather-icon-contrast: currentColor;
+  --home-section-heading-text: #15151b;
+  --home-section-heading-shadow: none;
+  --network-offline: #a01429;
+}
+
+:root[data-light-background="true"] [data-header-shortcuts],
+:root[data-light-background="true"] [data-header-status] {
+  --fg: #15151b;
+  --muted: #303038;
+}
+
+:root[data-light-background="true"] [data-header-shortcuts] {
+  --header-focus-surface: rgba(0, 0, 0, 0.12);
+  --header-focus-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.55);
 }

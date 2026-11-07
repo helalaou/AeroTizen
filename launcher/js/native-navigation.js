@@ -11,7 +11,7 @@
     viewerPending = false,
     viewerRequest = 0;
 
-  function report(name, action, operation, reason) {
+  function report(name, action, operation, reason, errorName) {
     var log = window.AeroDiagnostics;
     if (!log) {
       return null;
@@ -19,6 +19,9 @@
     var data = { action: action, operation_id: operation };
     if (reason) {
       data.reason = reason;
+    }
+    if (errorName) {
+      data.error = errorName;
     }
     var id = log.record("handoff." + name, data);
     if (name !== "request" && log.flush) {
@@ -148,13 +151,13 @@
     var request = ++viewerRequest;
     viewerPending = true;
     var finished = false;
-    function failed(reason, detail) {
+    function failed(reason, detail, errorName) {
       if (finished) {
         return;
       }
       finished = true;
       viewerPending = false;
-      report("failed", action, operation, reason);
+      report("failed", action, operation, reason, errorName);
       rearmWatcher();
       if (hdmi) {
         hdmi.fallback();
@@ -224,13 +227,14 @@
             var reason = error && (error.name || error.message);
             failed(
               "source selection failed",
-              A.translate("handoff.tunerFailed", { reason: reason || A.translate("handoff.sourceError") })
+              A.translate("handoff.tunerFailed", { reason: reason || A.translate("handoff.sourceError") }),
+              error && error.name
             );
           },
           "MAIN"
         );
       } catch (error) {
-        failed("source selection failed", A.translate("handoff.tunerUnavailable"));
+        failed("source selection failed", A.translate("handoff.tunerUnavailable"), error && error.name);
       }
     }
     leaveBeforeLaunch(selectSource, failed);

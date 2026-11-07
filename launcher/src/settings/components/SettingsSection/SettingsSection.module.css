@@ -1,0 +1,9 @@
+.section {
+  & + & {
+    margin-top: var(--settings-section-spacing, 0px);
+  }
+}
+
+.header {
+  margin: 5px 0 15px;
+}

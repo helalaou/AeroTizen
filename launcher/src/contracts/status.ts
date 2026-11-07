@@ -32,6 +32,19 @@ export interface NetworkSnapshot {
   readonly visible: boolean;
 }
 
+export type NetworkReading = Readonly<Omit<NetworkSnapshot, "visible">>;
+
+export interface NetworkPlatform {
+  read(done: (reading: NetworkReading) => void): () => void;
+  subscribe(listener: () => void): () => void;
+}
+
+export interface NetworkService extends Store<NetworkSnapshot> {
+  dispose(): void;
+  refresh(): void;
+  start(): void;
+}
+
 export interface StatusStores {
   dispose(): void;
   readonly network: Store<NetworkSnapshot>;

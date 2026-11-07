@@ -5,7 +5,11 @@ const path = require("node:path");
 
 // Do not use page.route here: routing disables the browser's HTTP cache.
 async function fixture(page, initialRecords) {
-  const source = await fs.readFile(path.join(__dirname, "../../launcher/js/continue-watching.js"), "utf8");
+  const [service, adapter] = await Promise.all(
+    ["continue-watching.js", "samsung-continue.js"].map((name) =>
+      fs.readFile(path.join(__dirname, "../../launcher/js", name), "utf8"),
+    ),
+  );
   const requests = [];
   let origin,
     records = initialRecords;
@@ -22,15 +26,18 @@ async function fixture(page, initialRecords) {
     } else if (url.pathname === "/reader.js") {
       response.writeHead(200, { "Content-Type": "text/javascript" });
       response.end(
-        source.replace(
-          "http://localhost:9013/?module=EBHelper&func=GetItems",
-          origin + "/feed?module=EBHelper&func=GetItems",
-        ),
+        service +
+          "\n" +
+          adapter.replace(
+            "http://localhost:9013/?module=EBHelper&func=GetItems",
+            origin + "/feed?module=EBHelper&func=GetItems",
+          ),
       );
     } else {
       response.writeHead(200, { "Content-Type": "text/html" });
       response.end(`<!doctype html><title>Continue Watching cache regression</title><div id="items"></div><script>
         var listeners = [], completed = 0;
+        var preferences = { continueWatching: true, continueWatchingApps: ['prime'] };
         var send = XMLHttpRequest.prototype.send;
         XMLHttpRequest.prototype.send = function () {
           this.addEventListener('loadend', function () { completed++; });
@@ -40,15 +47,17 @@ async function fixture(page, initialRecords) {
           config: { HIDDEN_APPS: /hidden/ },
           apps: { inventory: [{ id: 'prime', packageId: 'prime', name: 'Prime' },
             { id: 'youtube', packageId: 'youtube', name: 'YouTube' }], ready: true, subscribe: function () {} },
-          settings: { continueWatching: true, continueWatchingApps: ['prime'], subscribe: function (fn) { listeners.push(fn); } },
+          settings: { getSnapshot: function () { return preferences; },
+            update: function (patch) { preferences = Object.assign({}, preferences, patch); listeners.forEach(function (fn) { fn(); }); },
+            subscribe: function (fn) { listeners.push(fn); } },
           catalog: { storeId: function (id) { return id === 'prime' ? '123' : '456'; } },
           tiles: { shortName: function (name) { return name; } },
           tizen: { application: { getAppMetaData: function () {
             return [{ key: 'http://samsung.com/tv/metadata/app_support_continue_watching', value: 'true' }];
           } } }
         };
-        function select(sources) { AeroTizen.settings.continueWatchingApps = sources; listeners.forEach(function (fn) { fn(); }); }
-        function stop() { AeroTizen.settings.continueWatching = false; listeners.forEach(function (fn) { fn(); }); }
+        function select(sources) { AeroTizen.settings.update({ continueWatchingApps: sources }); }
+        function stop() { AeroTizen.settings.update({ continueWatching: false }); }
       </script><script src="/reader.js"></script><script>
         AeroTizen.continueWatching.subscribe(function () {
           var target = document.getElementById('items'); target.textContent = '';

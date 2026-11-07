@@ -14,7 +14,7 @@ import { createSettingsBridge } from "./services/createSettingsBridge";
 import { createSettingsInventory } from "./services/createSettingsInventory";
 import { createSettingsServices } from "./services/createSettingsServices";
 import { SettingsProvider } from "./SettingsProvider";
-import { SettingsRoot } from "./SettingsRoot";
+import { SettingsRoot } from "./SettingsRoot/SettingsRoot";
 import { createSettingsActions } from "./state/createSettingsActions";
 import type { SettingsEnvironment, ViewState } from "./types";
 
@@ -32,11 +32,12 @@ export const mountSettings = (
     mounted: false,
     openedAt: 0,
     adjusting: false,
+    colourPicker: null,
   });
   const inventory = createSettingsInventory(runtime);
   const services = createSettingsServices(runtime, platform);
   const actions = createSettingsActions(settings, services, view, flushSync);
-  const bridge = createSettingsBridge(settings, view, services, flushSync);
+  const bridge = createSettingsBridge(view, services, flushSync);
   const root = createRef<HTMLDivElement>();
   const drawer = createStore<import("./layout/categories").SettingsDrawerState>({
     category: "appearance",

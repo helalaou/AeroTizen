@@ -1,5 +1,4 @@
 import type { ContinueItem } from "./contracts/launcher";
-import type { LauncherRuntime } from "./platform/tizen/launcherRuntime";
 
 // Fictional programme metadata for the browser preview.
 const programmes = [
@@ -26,14 +25,15 @@ const artwork = (dark: string, light: string, index: number) =>
 
 if (new URLSearchParams(location.search).get("demo") === "1" && !("tizen" in window)) {
   const runtime = window.AeroTizen;
-  const config = runtime.config as LauncherRuntime["config"] & { STORAGE_KEY: string; LEGACY_STORAGE_KEYS: string[] };
+  const config = runtime.config;
   config.STORAGE_KEY += ".demo";
   config.LEGACY_STORAGE_KEYS = [];
-  config.DEFAULTS.continueWatching = true;
-  config.DEFAULTS.glassSettings = true;
-  config.DEFAULTS.cardSize = "small";
-  config.DEFAULTS.homeCardMode = "rectangle";
-  config.DEFAULTS.home = ["demo0", "demo1", "demo3", "demo6"];
+  config.DEFAULTS = {
+    continueWatching: true,
+    glassSettings: true,
+    homeCardColumns: 5,
+    home: ["demo0", "demo1", "demo3", "demo6"],
+  };
 
   const items: ContinueItem[] = programmes.map(
     ([name, sourceName, app, season, episode, playback, dark, light], index) => ({

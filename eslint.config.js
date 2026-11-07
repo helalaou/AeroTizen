@@ -34,7 +34,7 @@ module.exports = [
     },
   },
   {
-    files: ["launcher/js/**/*.js", "tests/fixtures/legacy-launcher/js/**/*.js"],
+    files: ["launcher/js/**/*.js", "tests/fixtures/legacy-launcher/js/**/*.js", "tests/fixtures/legacy-dom.js"],
     languageOptions: {
       ecmaVersion: 5,
       sourceType: "script",
@@ -50,6 +50,27 @@ module.exports = [
     rules: {
       eqeqeq: "error",
       "no-var": "off",
+    },
+  },
+  {
+    files: ["launcher/js/**/*.js"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "MemberExpression[property.name='classList']:not([object.type='MemberExpression'][object.object.name='document'][object.property.name='body'])",
+          message: "Legacy services must use UI bridge commands instead of changing component classes.",
+        },
+        {
+          selector: "AssignmentExpression[left.property.name='className']",
+          message: "Preact owns component classes. Legacy services must use UI bridge commands.",
+        },
+        {
+          selector: "CallExpression[callee.property.name='setAttribute'][arguments.0.value='class']",
+          message: "Preact owns component classes. Legacy services must use UI bridge commands.",
+        },
+      ],
     },
   },
   {
@@ -128,7 +149,7 @@ module.exports = [
     },
   },
   {
-    files: ["launcher/src/**/*.{ts,tsx}", "vite.config.mts", "tools/build-launcher.mjs"],
+    files: ["launcher/src/**/*.{ts,tsx}", "vite.config.mts", "tools/*.mjs"],
     plugins: { "simple-import-sort": simpleImportSort },
     rules: {
       "simple-import-sort/imports": ["error", { groups: [["^\\u0000"], ["^@?\\w"], ["^@", "^"], ["^\\./"]] }],
@@ -152,7 +173,7 @@ module.exports = [
     },
   },
   {
-    files: ["launcher/src/**/*.{ts,tsx}", "vite.config.mts", "tools/build-launcher.mjs", "*.config.{js,cjs}"],
+    files: ["launcher/src/**/*.{ts,tsx}", "vite.config.mts", "tools/*.mjs", "*.config.{js,cjs}"],
     rules: {
       "no-var": "error",
       "prefer-const": "error",
@@ -169,7 +190,7 @@ module.exports = [
     },
   },
   {
-    files: ["tools/build-launcher.mjs"],
+    files: ["tools/*.mjs"],
     languageOptions: { sourceType: "module", globals: { ...globals.node } },
   },
   {

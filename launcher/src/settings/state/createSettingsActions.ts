@@ -1,6 +1,10 @@
+import { colourToChannels, normalizeColour } from "../../backgrounds/colours";
+import { normalizeGradient } from "../../backgrounds/gradients";
 import type { SettingsStore, SettingsValues } from "../../contracts/preferences";
 import type { MutableStore } from "../../shared/state/createStore";
 import type { SettingsActions, SettingsServices, ViewState } from "../types";
+
+import { adjustDraftColour, draftBackground } from "./colourPicker";
 
 export const createSettingsActions = (
   settings: SettingsStore,
@@ -12,9 +16,75 @@ export const createSettingsActions = (
     transaction(() => {
       settings.update(patch);
       after?.();
-      settings.refresh();
     });
   return {
+    openColourPicker() {
+      const hex = normalizeColour(settings.getSnapshot().customColour);
+      transaction(() =>
+        view.set({
+          ...view.getSnapshot(),
+          adjusting: false,
+          colourPicker: { kind: "solid", colour: colourToChannels(hex) },
+        }),
+      );
+    },
+    openGradientPicker() {
+      const gradient = normalizeGradient(settings.getSnapshot().customGradient);
+      transaction(() =>
+        view.set({
+          ...view.getSnapshot(),
+          adjusting: false,
+          colourPicker: {
+            kind: "gradient",
+            colours: [colourToChannels(gradient.start), colourToChannels(gradient.end)],
+            activeStop: 0,
+            angle: gradient.angle,
+          },
+        }),
+      );
+    },
+    setGradientStop(stop) {
+      const current = view.getSnapshot();
+      const draft = current.colourPicker;
+      if (draft?.kind === "gradient") {
+        transaction(() => view.set({ ...current, colourPicker: { ...draft, activeStop: stop } }));
+      }
+    },
+    adjustGradientAngle(direction) {
+      const current = view.getSnapshot();
+      const draft = current.colourPicker;
+      if (draft?.kind === "gradient") {
+        const angle = (((draft.angle + direction) % 360) + 360) % 360;
+        transaction(() => view.set({ ...current, colourPicker: { ...draft, angle } }));
+      }
+    },
+    adjustColour(channel, direction) {
+      const current = view.getSnapshot();
+      const colour = current.colourPicker;
+      if (colour) {
+        transaction(() => view.set({ ...current, colourPicker: adjustDraftColour(colour, channel, direction) }));
+      }
+    },
+    closeColourPicker(apply) {
+      const colour = view.getSnapshot().colourPicker;
+      if (!colour) {
+        return;
+      }
+      transaction(() => {
+        if (apply) {
+          const preview = draftBackground(colour);
+          const patch: Partial<SettingsValues> =
+            preview.kind === "solid"
+              ? { background: "custom", customColour: preview.colour, weatherPhoto: false }
+              : { background: "custom-gradient", customGradient: preview.gradient, weatherPhoto: false };
+          commit(patch, () => {
+            services.applyWeatherVisibility();
+            services.applyBackground();
+          });
+        }
+        view.set({ ...view.getSnapshot(), colourPicker: null });
+      });
+    },
     setGlassSettings: (glassSettings) => commit({ glassSettings }),
     setWeatherPhoto: (weatherPhoto) =>
       commit({ weatherPhoto }, () => {
@@ -46,11 +116,11 @@ export const createSettingsActions = (
         services.applyClock,
       ),
     setDateFormat: (dateFormat) => commit({ dateFormat }, services.applyClock),
-    setNetworkVisible: (showNetwork) => commit({ showNetwork }, services.applyNetworkVisibility),
+    setNumerals: (numerals) => commit({ numerals }, services.applyClock),
+    setNetworkVisible: (showNetwork) => commit({ showNetwork }),
     setLiveTvVisible: (showLiveTv) => commit({ showLiveTv }, services.applyInputs),
-    setCardSize: (cardSize) => commit({ cardSize }, services.applyCardSize),
-    setHomeCardMode: (homeCardMode) => commit({ homeCardMode }, services.applyCardSize),
     setHomeCardColumns: (homeCardColumns) => commit({ homeCardColumns }, services.applyCardSize),
+    setHomeAppLayout: (homeAppLayout) => commit({ homeAppLayout }, services.applyCardSize),
     setHdmiVisibility: (hideDisconnectedHdmi) => commit({ hideDisconnectedHdmi }, services.applyInputs),
     setHdmiNativeViewer: (hdmiNativeViewer) => commit({ hdmiNativeViewer }),
     setHdmiKeepVisible: (port, keep) =>

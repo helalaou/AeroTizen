@@ -1,0 +1,65 @@
+.control {
+  --settings-control-focus-outline: 4px solid var(--settings-focus-border);
+
+  --slider-arrow-size: 48px;
+  --slider-label-size: 27px;
+
+  padding: 18px 22px;
+  border-radius: 14px;
+  background: var(--surface-control);
+}
+
+.label {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--slider-label-size);
+  margin-bottom: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.adjustment {
+  display: flex;
+  align-items: center;
+  direction: ltr;
+}
+
+.arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--slider-arrow-size);
+  height: var(--slider-arrow-size);
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--surface-control);
+  color: var(--settings-text);
+  cursor: pointer;
+}
+
+.track {
+  position: relative;
+  flex: 1;
+  margin: 0 20px;
+  height: 22px;
+  border-radius: 11px;
+}
+
+.thumb {
+  position: absolute;
+  top: -7px;
+  width: 18px;
+  height: 36px;
+  margin-left: -9px;
+  border: 3px solid var(--settings-slider-thumb);
+  border-radius: 7px;
+  background: var(--settings-slider-track);
+  box-shadow: var(--settings-slider-thumb-shadow);
+}
+
+.control[data-compact="true"] {
+  --slider-arrow-size: 44px;
+  --slider-label-size: 25px;
+
+  padding: 12px 18px;
+}

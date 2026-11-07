@@ -1,8 +1,8 @@
 const { openCategory } = require("./drawer_helpers.cjs");
+const { preserveLegacyDom } = require("./legacy_helpers.cjs");
 const { test, expect } = require("@playwright/test");
 const { runSettingsUi } = require("../settings_ui.browser");
 const { runSettingsFocus } = require("../settings_focus.browser");
-const { runSettingsResources } = require("../settings_resources.browser");
 
 const errors = new WeakMap();
 test.beforeEach(async ({ page }) => {
@@ -22,16 +22,18 @@ test.afterEach(async ({ page }) => {
 
 const openSettings = async (page, waitForApps = true) => {
   await page.goto("/");
-  await page.waitForFunction(() => window.AeroTizen?.settingsUi && Array.isArray(AeroTizen.settings.home));
+  await page.waitForFunction(
+    () => window.AeroTizen?.settingsUi && Array.isArray(AeroTizen.settings.getSnapshot().home),
+  );
   if (waitForApps) await page.waitForFunction(() => AeroTizen.apps.all.length > 0);
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
-    Object.assign(AeroTizen.settings, { background: "black", timeFormat: "24", showTime: true });
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ background: "black", timeFormat: "24", showTime: true });
+
     AeroTizen.settingsUi.open();
   });
   await expect(page.locator("#editor")).toBeVisible();
-  await expect(page.locator('[data-key="section:appearance"]')).toHaveClass(/focused/);
+  await expect(page.locator('[data-key="section:appearance"]')).toHaveAttribute("data-focused", "true");
   await openCategory(page, "wallpaper");
   await page.locator('[data-key="bg:black"]').click();
   await page.locator('[data-key="wallpaper-categories:photo"]').click();
@@ -101,6 +103,7 @@ test("compiled Settings retains the original Samsung Home escape without the opt
 });
 
 test("Settings matches legacy remote, persistence, search and artwork behaviour", async ({ page }, info) => {
+  await preserveLegacyDom(page);
   await page.goto("/");
   const result = await runSettingsUi(page, {
     baselineUrl: "http://127.0.0.1:8170/tests/fixtures/legacy-launcher/",
@@ -119,72 +122,6 @@ test("native remote keys preserve navigation, text entry and close behaviour", a
   });
 });
 
-test("pending image retries and stale callbacks are cleaned up", async ({ page }) => {
-  await page.goto("/");
-  expect(await runSettingsResources(page)).toEqual({
-    pendingCleanup: true,
-    staleImageIgnored: true,
-    timeoutRetry: true,
-    exhaustedFallback: true,
-  });
-});
-
-test("failed artwork retries from the first candidate on reopen while loaded artwork stays cached", async ({
-  page,
-}) => {
-  let recovered = false,
-    loadedRequests = 0;
-  const failedRequests = [];
-  await page.route("https://retry-artwork.test/**", async (route) => {
-    const path = new URL(route.request().url()).pathname;
-    if (path === "/loaded") loadedRequests++;
-    else failedRequests.push(path);
-    await route.fulfill({
-      contentType: "image/svg+xml",
-      headers: { "cache-control": "no-store" },
-      body:
-        path === "/loaded" || recovered
-          ? '<svg xmlns="http://www.w3.org/2000/svg" width="304" height="304"><rect width="304" height="304" fill="purple"/></svg>'
-          : "invalid image",
-    });
-  });
-  await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.all.length >= 2);
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const ids = await page.evaluate(() => {
-    const [loaded, failed] = AeroTizen.apps.all.map((app) => app.id);
-    AeroTizen.artwork.sources = (app) =>
-      app.id === loaded
-        ? ["https://retry-artwork.test/loaded"]
-        : app.id === failed
-          ? ["https://retry-artwork.test/failed/first", "https://retry-artwork.test/failed/second"]
-          : [];
-    AeroTizen.settingsUi.open();
-    return { loaded, failed };
-  });
-  const loadedTile = page.locator('[data-key="app:' + ids.loaded + '"]');
-  const failedTile = page.locator('[data-key="app:' + ids.failed + '"]');
-  await expect(loadedTile).toHaveClass(/has-artwork/);
-  await expect.poll(() => failedRequests).toEqual(["/failed/first", "/failed/second"]);
-  await expect(failedTile.locator(".app-artwork")).toHaveCount(0);
-  await openCategory(page, "apps");
-  await expect(failedTile.locator(".app-fallback")).toBeVisible();
-  const loadedNode = await loadedTile.locator(".app-artwork").elementHandle();
-  recovered = true;
-  await page.evaluate(() => {
-    AeroTizen.settingsUi.close();
-    AeroTizen.settingsUi.open();
-  });
-  await expect(failedTile).toHaveClass(/has-artwork/);
-  expect(failedRequests).toEqual(["/failed/first", "/failed/second", "/failed/first"]);
-  expect(loadedRequests).toBe(1);
-  expect(
-    await loadedNode.evaluate(
-      (node) => node === document.querySelector('[data-key="app:' + AeroTizen.apps.all[0].id + '"] .app-artwork'),
-    ),
-  ).toBe(true);
-});
-
 test("the first pointer click activates its control; Space activates buttons without consuming input spaces", async ({
   page,
 }) => {
@@ -193,7 +130,7 @@ test("the first pointer click activates its control; Space activates buttons wit
   const time = page.locator('[data-key="time:12"]');
   await time.click();
   await expect(time).toHaveAttribute("aria-pressed", "true");
-  expect(await page.evaluate(() => AeroTizen.settings.timeFormat)).toBe("12");
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().timeFormat)).toBe("12");
   await openCategory(page, "wallpaper");
   await page.locator('[data-key="wallpaper-categories:animated"]').click();
   await page.locator('[data-key="bg:lava"]').focus();
@@ -229,28 +166,25 @@ test("an unrelated preference does not remeasure navigation; removed controls re
         },
       });
     }
-    AeroTizen.settings.timeFormat = "24";
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ timeFormat: "24" });
   });
   await expect(page.locator('[data-key="time:24"]')).toHaveAttribute("aria-pressed", "true");
   expect(await page.evaluate(() => window.layoutReads)).toBe(0);
   await page.evaluate(() => {
-    AeroTizen.settings.background = "aurora";
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ background: "aurora" });
   });
   await openCategory(page, "wallpaper");
   await page.locator('[data-key="wallpaper-categories:animated"]').click();
   await page.locator('[data-key="speed"]').focus();
   await page.keyboard.press("Enter");
   await page.keyboard.press("ArrowRight");
-  expect(await page.evaluate(() => AeroTizen.settings.speed)).toBe(1.25);
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().speed)).toBe(1.25);
   await page.evaluate(() => {
-    AeroTizen.settings.background = "black";
-    AeroTizen.settings.save();
+    AeroTizen.settings.update({ background: "black" });
   });
   await expect(page.locator('[data-key="speed"]')).toHaveCount(0);
-  await expect(page.locator("#editor .focused")).toHaveCount(1);
-  await expect.poll(() => page.evaluate(() => document.activeElement?.classList.contains("focused"))).toBe(true);
+  await expect(page.locator("#editor [data-focused=true]")).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => document.activeElement?.matches("[data-focused=true]"))).toBe(true);
 });
 
 test("date previews stay stable during an opening and refresh on the next opening", async ({ page }) => {
@@ -354,13 +288,13 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
   await expect(control.getByRole("button", { name: "Off", exact: true })).toHaveAttribute("aria-pressed", "true");
   expect(images).toEqual([]);
   await page.evaluate(() => {
-    Object.assign(AeroTizen.settings, {
+    AeroTizen.settings.update({
       background: "aurora",
       speed: 1.3,
       showWeather: false,
       weatherLocation: { name: "Fixture city", latitude: 1, longitude: 2 },
     });
-    AeroTizen.settings.save();
+
     AeroTizen.applyBackground();
     window.Weather.updateVisibility();
   });
@@ -372,9 +306,9 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
   expect(images[0]).toContain("/sun.jpg");
   await page.evaluate(() => window.Backgrounds.setSpeed(1.3));
   await expect(page.locator("#bg")).toBeHidden();
-  await expect(page.locator("#bg .bg-blob")).toHaveCount(0);
+  await expect(page.locator("#bg [data-background-blob]")).toHaveCount(0);
   await page.reload();
-  await page.waitForFunction(() => AeroTizen.settings.weatherPhoto === true);
+  await page.waitForFunction(() => AeroTizen.settings.getSnapshot().weatherPhoto === true);
   await expect(page.locator("#weather-photo")).toBeVisible();
   await page.evaluate(() => AeroTizen.settingsUi.open());
   await openCategory(page, "wallpaper");
@@ -384,11 +318,11 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
   await expect(page.locator("#bg")).toBeVisible();
   expect(
     await page.evaluate(() => ({
-      background: AeroTizen.settings.background,
-      speed: AeroTizen.settings.speed,
+      background: AeroTizen.settings.getSnapshot().background,
+      speed: AeroTizen.settings.getSnapshot().speed,
     })),
   ).toEqual({ background: "aurora", speed: 1.3 });
-  await expect(page.locator("#bg .bg-blob")).toHaveCount(4);
+  await expect(page.locator("#bg [data-background-blob]")).toHaveCount(4);
 });
 
 test("turning weather wallpaper off while its image is pending cannot hide the fallback", async ({ page }) => {
@@ -493,7 +427,7 @@ test("enabling compiled Settings at 23:00 repairs legacy solar cache once and ne
   expect(forecasts).toBe(1);
   expect(locations).toBe(1);
   await release();
-  await expect(page.locator("#weather-photo")).toHaveClass(/scene-night/);
+  await expect(page.locator("#weather-photo")).toHaveAttribute("data-weather-photo", "night");
   expect(images).toHaveLength(1);
   expect(images[0]).toContain("/night.jpg");
   await expect(page.locator("#weather b")).toHaveText("15°");

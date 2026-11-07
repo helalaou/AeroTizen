@@ -5,6 +5,9 @@ import { useStore } from "../../shared/hooks/useStore";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import type { Direction } from "../../shared/navigation/createNavigation";
 import { categories } from "../layout/categories";
+import type { ColourPickerDraft } from "../state/colourPicker";
+import { COLOUR_CONTROLS } from "../state/colourPicker";
+import { createKeyAcceleration } from "../state/createKeyAcceleration";
 import type { SettingsInventorySnapshot } from "../types";
 
 import { useSettingsEnvironment } from "./useSettingsEnvironment";
@@ -15,6 +18,10 @@ interface Layout extends SettingsInventorySnapshot {
   locationLabel?: string;
 }
 const SPACE_KEY = 32;
+const PICKER_FOCUS = {
+  solid: { entry: "colour:hue", return: "bg:custom" },
+  gradient: { entry: "gradient:stop:0", return: "bg:custom-gradient" },
+};
 
 export const useSettingsNavigation = (
   active: boolean,
@@ -41,14 +48,25 @@ export const useSettingsNavigation = (
     return { [KEY.LEFT]: "left", [KEY.RIGHT]: "right", [KEY.UP]: "up", [KEY.DOWN]: "down" };
   }, [services.config]);
   const category = useStore(drawer);
+  const pickerKind = useStore(view).colourPicker?.kind ?? null;
+  const pickerOpen = pickerKind !== null;
+  const acceleration = useMemo(() => createKeyAcceleration(), []);
   const previousDrawer = useRef<typeof category>();
+  const previousPicker = useRef<ColourPickerDraft["kind"] | null>(null);
   useLayoutEffect(() => {
     if (active && !previousDrawer.current && category.expanded) {
       drawer.set({ ...category, expanded: false });
     }
     navigation.invalidate();
-    navigation.setScope?.(category.expanded ? categoryContent.current : categoryMenu.current);
-    if (previousDrawer.current !== category) {
+    const drawerScope = category.expanded ? categoryContent.current : categoryMenu.current;
+    navigation.setScope?.(pickerOpen ? root.current : drawerScope);
+    if (pickerKind !== previousPicker.current) {
+      acceleration.reset();
+      const kind = pickerKind ?? previousPicker.current;
+      if (kind) {
+        navigation.reset(pickerKind ? PICKER_FOCUS[kind].entry : PICKER_FOCUS[kind].return);
+      }
+    } else if (previousDrawer.current !== category) {
       if (categoryScroll.current) {
         categoryScroll.current.scrollTop = 0;
       }
@@ -58,6 +76,7 @@ export const useSettingsNavigation = (
       navigation.reset(key);
     }
     previousDrawer.current = active ? category : undefined;
+    previousPicker.current = pickerKind;
     if (active && !previewing) {
       navigation.focus();
     } else {
@@ -77,6 +96,10 @@ export const useSettingsNavigation = (
     navigation,
     settings,
     category,
+    pickerOpen,
+    pickerKind,
+    acceleration,
+    root,
     drawer,
     categoryContent,
     categoryMenu,
@@ -94,11 +117,16 @@ export const useSettingsNavigation = (
       }
     };
     window.addEventListener("resize", resize);
+    const resetAcceleration = () => acceleration.reset();
+    window.addEventListener("keyup", resetAcceleration);
+    window.addEventListener("blur", resetAcceleration);
+    document.addEventListener("visibilitychange", resetAcceleration);
     const unregister = bridge.register({
       focus: () => {
         flushSync(() => navigation.focus());
       },
       blur: () => {
+        acceleration.reset();
         const activeElement = document.activeElement;
         if (activeElement instanceof HTMLElement && root.current?.contains(activeElement)) {
           activeElement.blur();
@@ -107,13 +135,46 @@ export const useSettingsNavigation = (
       },
       keydown: (code, event) => {
         const K = services.config.KEY;
+        // Remote input and native focus can arrive before the next render.
+        const currentDrawer = drawer.getSnapshot();
         if (view.getSnapshot().previewing) {
           event.preventDefault();
           flushSync(() => view.set({ ...view.getSnapshot(), previewing: false }));
           return;
         }
         const current = navigation.current();
-        if (!category.expanded) {
+        if (view.getSnapshot().colourPicker) {
+          event.preventDefault();
+          const control = COLOUR_CONTROLS.find((control) => current?.dataset.key === "colour:" + control.value);
+          const angle = current?.dataset.key === "gradient:angle";
+          if ((control || angle) && (code === K.LEFT || code === K.RIGHT)) {
+            const direction = (code === K.LEFT ? -1 : 1) * acceleration.step(code, current?.dataset.key || "");
+            if (control) {
+              actions.adjustColour(control.value, direction);
+            } else {
+              actions.adjustGradientAngle(direction);
+            }
+            return;
+          }
+          acceleration.reset();
+          if (code === K.BACK || code === K.ESC) {
+            actions.closeColourPicker(false);
+          } else if (code === K.ENTER || code === SPACE_KEY) {
+            current?.click();
+          } else {
+            const direction = directions[code];
+            if (direction) {
+              flushSync(() => navigation.move(direction));
+            }
+          }
+          return;
+        }
+        // The sidebar sits on the right in right-to-left languages, so the keys that
+        // open a section and return to the sidebar swap sides with it.
+        const rtl = document.documentElement.dir === "rtl";
+        const into = rtl ? K.LEFT : K.RIGHT;
+        const out = rtl ? K.RIGHT : K.LEFT;
+        if (!currentDrawer.expanded) {
           event.preventDefault();
           if (code === K.BACK || code === K.ESC) {
             bridge.close();
@@ -121,7 +182,7 @@ export const useSettingsNavigation = (
             flushSync(() => {
               navigation.move(code === K.UP ? "up" : "down");
               const next = categories.find((item) => navigation.getSnapshot() === "section:" + item.id);
-              if (next && next.id !== category.category) {
+              if (next && next.id !== currentDrawer.category) {
                 drawer.set({ category: next.id, expanded: false });
               }
             });
@@ -129,19 +190,23 @@ export const useSettingsNavigation = (
             if (code === K.ENTER || code === SPACE_KEY) {
               current.click();
             }
-          } else if (code === K.RIGHT || code === K.ENTER || code === SPACE_KEY) {
-            flushSync(() => drawer.set({ ...category, expanded: true }));
+          } else if (code === into || code === K.ENTER || code === SPACE_KEY) {
+            const focusedCategory = categories.find((item) => current?.dataset.key === "section:" + item.id);
+            flushSync(() => drawer.set({ category: focusedCategory?.id ?? currentDrawer.category, expanded: true }));
           }
           return;
         }
-        const leftLeavesPane =
-          code === K.LEFT &&
+        const pane = categoryContent.current?.getBoundingClientRect();
+        const atSidebarEdge = (box: DOMRect) =>
+          rtl ? box.right >= (pane?.right || 0) - 64 : box.left <= (pane?.left || 0) + 64;
+        const leavesPane =
+          code === out &&
           current &&
-          (current.getBoundingClientRect().left <= (categoryContent.current?.getBoundingClientRect().left || 0) + 64 ||
-            (current.dataset.key === "settings-close" && !navigation.firstKey(panes.get(category.category))));
-        if ((code === K.BACK || code === K.ESC || leftLeavesPane) && !view.getSnapshot().adjusting) {
+          (atSidebarEdge(current.getBoundingClientRect()) ||
+            (current.dataset.key === "settings-close" && !navigation.firstKey(panes.get(currentDrawer.category))));
+        if ((code === K.BACK || code === K.ESC || leavesPane) && !view.getSnapshot().adjusting) {
           event.preventDefault();
-          flushSync(() => drawer.set({ ...category, expanded: false }));
+          flushSync(() => drawer.set({ ...currentDrawer, expanded: false }));
           return;
         }
         if (view.getSnapshot().adjusting) {
@@ -178,7 +243,24 @@ export const useSettingsNavigation = (
     return () => {
       unregister();
       window.removeEventListener("resize", resize);
+      window.removeEventListener("keyup", resetAcceleration);
+      window.removeEventListener("blur", resetAcceleration);
+      document.removeEventListener("visibilitychange", resetAcceleration);
+      acceleration.reset();
       navigation.clear();
     };
-  }, [active, actions, bridge, navigation, root, services, view, category, drawer, categoryContent, directions, panes]);
+  }, [
+    active,
+    actions,
+    bridge,
+    navigation,
+    root,
+    services,
+    view,
+    drawer,
+    categoryContent,
+    directions,
+    panes,
+    acceleration,
+  ]);
 };
