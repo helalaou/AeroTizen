@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 
-async function setup(page, version = "10.0") {
+async function setup(page, version = "10.0", legacyWorks = true) {
   const requests = [];
   const errors = [];
   let releaseLeave;
@@ -13,40 +13,44 @@ async function setup(page, version = "10.0") {
       body: "export class Service { constructor(id) { window.testWatcher.serviceId = id; } start() { window.testWatcher.starts++; window.testWatcher.up = true; return Promise.resolve(); } }",
     }),
   );
-  await page.addInitScript((version) => {
-    window.testWatcher = { up: false, starts: 0, legacyStarts: 0, launches: [] };
-    function mapModule() {
-      const script = document.createElement("script");
-      script.type = "importmap";
-      script.textContent = JSON.stringify({ imports: { "wrt:service": "/test-wrt-service.js" } });
-      document.documentElement.appendChild(script);
-    }
-    if (document.documentElement) mapModule();
-    else document.addEventListener("DOMContentLoaded", mapModule);
-    localStorage.setItem(
-      "aerotizen.settings.v1",
-      JSON.stringify({ home: ["youtube.app"], background: "black", showWeather: false }),
-    );
-    window.tizen = {
-      systeminfo: { getCapability: () => version },
-      ApplicationControl: function () {},
-      application: {
-        getAppsInfo(done) {
-          done([
-            { id: "youtube.app", name: "YouTube", packageId: "Youtube001" },
-            { id: "regular.app", name: "Other app", packageId: "Regular001" },
-          ]);
+  await page.addInitScript(
+    ({ version, legacyWorks }) => {
+      window.testWatcher = { up: false, starts: 0, legacyStarts: 0, launches: [] };
+      function mapModule() {
+        const script = document.createElement("script");
+        script.type = "importmap";
+        script.textContent = JSON.stringify({ imports: { "wrt:service": "/test-wrt-service.js" } });
+        document.documentElement.appendChild(script);
+      }
+      if (document.documentElement) mapModule();
+      else document.addEventListener("DOMContentLoaded", mapModule);
+      localStorage.setItem(
+        "aerotizen.settings.v1",
+        JSON.stringify({ home: ["youtube.app"], background: "black", showWeather: false }),
+      );
+      window.tizen = {
+        systeminfo: { getCapability: () => version },
+        ApplicationControl: function () {},
+        application: {
+          getAppsInfo(done) {
+            done([
+              { id: "youtube.app", name: "YouTube", packageId: "Youtube001" },
+              { id: "regular.app", name: "Other app", packageId: "Regular001" },
+            ]);
+          },
+          launchAppControl() {
+            window.testWatcher.legacyStarts++;
+            if (legacyWorks) window.testWatcher.up = true;
+          },
+          launch(id, done) {
+            window.testWatcher.launches.push(id);
+            if (done) done();
+          },
         },
-        launchAppControl() {
-          window.testWatcher.legacyStarts++;
-        },
-        launch(id, done) {
-          window.testWatcher.launches.push(id);
-          if (done) done();
-        },
-      },
-    };
-  }, version);
+      };
+    },
+    { version, legacyWorks },
+  );
   await page.route("http://127.0.0.1:47790/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     requests.push(path);
@@ -76,7 +80,7 @@ async function setup(page, version = "10.0") {
     });
   });
   await page.goto("/");
-  await page.waitForFunction(() => window.testWatcher.starts === 1 && AeroTizen.apps.ready);
+  await page.waitForFunction(() => window.testWatcher.up && AeroTizen.apps.ready);
   await expect.poll(() => requests.filter((path) => path === "/apps").length).toBeGreaterThan(0);
   return {
     requests,
@@ -90,10 +94,15 @@ async function setup(page, version = "10.0") {
 }
 
 for (const version of ["9.0", "10.0"]) {
-  test("normal startup uses wrt:service on Tizen " + version, async ({ page }) => {
+  test("normal startup selects the expected method on Tizen " + version, async ({ page }) => {
     const { requests, errors } = await setup(page, version);
-    expect(await page.evaluate(() => window.testWatcher.serviceId)).toBe("DclHome001.Watcher");
-    expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(0);
+    if (version === "9.0") {
+      expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(1);
+      expect(await page.evaluate(() => window.testWatcher.starts)).toBe(0);
+    } else {
+      expect(await page.evaluate(() => window.testWatcher.serviceId)).toBe("DclHome001.Watcher");
+      expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(0);
+    }
     expect(requests).toContain("/");
     expect(requests.some((path) => path.startsWith("/diagnostics/native-home"))).toBe(false);
     await page.locator("#gear").click();
@@ -102,6 +111,14 @@ for (const version of ["9.0", "10.0"]) {
     expect(errors).toEqual([]);
   });
 }
+
+test("Tizen 9 falls back to wrt only when AppControl leaves the service unavailable", async ({ page }) => {
+  const { errors } = await setup(page, "9.0", false);
+  expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(1);
+  expect(await page.evaluate(() => window.testWatcher.starts)).toBe(1);
+  expect(await page.evaluate(() => window.testWatcher.serviceId)).toBe("DclHome001.Watcher");
+  expect(errors).toEqual([]);
+});
 
 test("YouTube waits for recovered service readiness and leave acknowledgement", async ({ page }) => {
   const h = await setup(page);

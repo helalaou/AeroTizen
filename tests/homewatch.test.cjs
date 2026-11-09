@@ -164,7 +164,7 @@ test("failed Samsung launch releases the temporary leave state", () => {
   assert.ok(h.requests[1].url.endsWith("/home"));
 });
 
-for (const version of ["9.0", "10.0"]) {
+for (const version of ["10.0"]) {
   test("Tizen " + version + " shares one wrt startup attempt and waits for a valid HTTP reply", async () => {
     const h = harness({ version });
     let ready = 0;
@@ -191,7 +191,7 @@ for (const version of ["9.0", "10.0"]) {
   });
 }
 
-for (const version of ["6.0", "8.0"]) {
+for (const version of ["6.0", "8.0", "9.0"]) {
   test("Tizen " + version + " keeps AppControl startup but still verifies HTTP readiness", () => {
     const h = harness({ version });
     let ready = 0;
@@ -213,6 +213,43 @@ test("an already running service needs no launch or module import", () => {
   assert.equal(ready, 1);
   assert.equal(h.calls.length, 0);
   assert.equal(h.scripts.length, 0);
+});
+
+test("inventory retry does not restart a service that already answers HTTP", () => {
+  const h = harness({ version: "9.0" });
+  h.A.homewatch.reportApps(["one"]);
+  h.requests[0].reply({});
+  let ready = 0;
+  h.A.homewatch.start(() => ready++);
+  h.requests[1].reply();
+  h.requests[2].fail();
+  h.advance(200);
+  h.requests[3].reply();
+  h.requests[4].reply({});
+  assert.equal(ready, 1);
+  assert.equal(h.calls.length, 0);
+  assert.equal(h.scripts.length, 0);
+});
+
+test("Tizen 9 tries wrt only after the existing start fails its HTTP readiness checks", async () => {
+  const h = harness({ version: "9.0" });
+  let ready = 0;
+  h.A.homewatch.start(() => ready++);
+  h.requests[0].fail();
+  assert.equal(h.calls[0].service, true);
+  h.requests[1].fail();
+  h.advance(200);
+  assert.equal(h.scripts.length, 0);
+  h.advance(1300);
+  h.requests[2].fail();
+  assert.equal(h.scripts.length, 1);
+  assert.equal(ready, 0);
+  h.loadWrt();
+  await Promise.resolve();
+  h.requests[3].reply();
+  assert.equal(ready, 1);
+  assert.equal(h.calls.length, 2);
+  assert.equal(h.calls[1].wrt, true);
 });
 
 test("module errors and timeouts clean up and reject late callbacks", () => {

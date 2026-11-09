@@ -1,6 +1,9 @@
 # Watcher startup test for issue 188
 
-This build starts the background watcher through `wrt:service` on Tizen 9 and 10.
+This build starts the background watcher through `wrt:service` on Tizen 10.
+Tizen 9 keeps the existing AppControl start first. It tries `wrt:service` only if
+the service still does not answer after 1.5 seconds of readiness checks. Older
+versions keep AppControl without the module fallback.
 It waits for an HTTP reply from the service. If a watcher request fails, it starts
 the service, restores its app inventory and retries the request once. A failed
 YouTube handoff still needs a confirmed watcher pause before YouTube can open.

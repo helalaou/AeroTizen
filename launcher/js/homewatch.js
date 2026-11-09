@@ -75,6 +75,8 @@
     var timer;
     var pending;
     var script;
+    var platformVersion = 0;
+    var legacySince = 0;
     var since = Date.now();
     var deadline = setTimeout(function () {
       finish(false, attempt.reason || "service_start_timeout");
@@ -152,9 +154,14 @@
             finish(true);
           }
         },
-        unavailable,
+        retry,
         750
       );
+    }
+    function retry() {
+      if (active()) {
+        timer = setTimeout(poll, 200);
+      }
     }
     function unavailable() {
       if (!active()) {
@@ -162,13 +169,15 @@
       }
       if (!attempt.launched) {
         launch();
+      } else if (platformVersion >= 9 && attempt.method === "app_control" && Date.now() - legacySince >= 1500) {
+        useWrt();
       } else {
-        timer = setTimeout(poll, 200);
+        retry();
       }
     }
-    function accepted() {
+    function accepted(method) {
       if (active()) {
-        record("service.launch_accepted", { method: attempt.method });
+        record("service.launch_accepted", { method: method });
       }
     }
     function launchWrt() {
@@ -178,9 +187,14 @@
       try {
         var result = new Service(cfg.SERVICE_ID).start();
         if (result && typeof result.then === "function") {
-          result.then(accepted, function () {
-            attempt.reason = "service_start_rejected";
-          });
+          result.then(
+            function () {
+              accepted("wrt_service");
+            },
+            function () {
+              attempt.reason = "service_start_rejected";
+            }
+          );
         }
       } catch (e) {
         attempt.reason = "service_start_rejected";
@@ -196,38 +210,47 @@
       window.removeEventListener("aero-wrt-service", loaded);
       launchWrt();
     }
+    function useWrt() {
+      attempt.method = "wrt_service";
+      attempt.reason = null;
+      record("service.launch_requested", { method: attempt.method });
+      if (Service) {
+        launchWrt();
+        return;
+      }
+      window.addEventListener("aero-wrt-service", loaded);
+      script = document.createElement("script");
+      script.type = "module";
+      script.textContent =
+        // eslint-disable-next-line launcher-i18n/translated-copy -- Native module source, not displayed copy.
+        "import { Service } from 'wrt:service'; window.dispatchEvent(new CustomEvent('aero-wrt-service', { detail: Service }));";
+      script.onerror = function () {
+        finish(false, "service_module_failed");
+      };
+      document.body.appendChild(script);
+    }
     function launch() {
       attempt.launched = true;
-      var version = 0;
       try {
-        version = parseFloat(tz.systeminfo.getCapability("http://tizen.org/feature/platform.version"));
+        platformVersion = parseFloat(tz.systeminfo.getCapability("http://tizen.org/feature/platform.version"));
       } catch (e) {
         /* Keep the existing service operation when the platform version is unavailable. */
       }
-      attempt.method = version >= 9 ? "wrt_service" : "app_control";
-      record("service.launch_requested", { method: attempt.method });
-      if (version >= 9) {
-        if (Service) {
-          launchWrt();
-          return;
-        }
-        window.addEventListener("aero-wrt-service", loaded);
-        script = document.createElement("script");
-        script.type = "module";
-        script.textContent =
-          // eslint-disable-next-line launcher-i18n/translated-copy -- Native module source, not displayed copy.
-          "import { Service } from 'wrt:service'; window.dispatchEvent(new CustomEvent('aero-wrt-service', { detail: Service }));";
-        script.onerror = function () {
-          finish(false, "service_module_failed");
-        };
-        document.body.appendChild(script);
+      if (platformVersion >= 10) {
+        useWrt();
         return;
       }
+      // Existing Tizen 9 installs keep AppControl first. Only a missing HTTP reply enables its fallback.
+      attempt.method = "app_control";
+      legacySince = Date.now();
+      record("service.launch_requested", { method: attempt.method });
       try {
         tz.application.launchAppControl(
           new tz.ApplicationControl("http://tizen.org/appcontrol/operation/service"),
           cfg.SERVICE_ID,
-          accepted,
+          function () {
+            accepted("app_control");
+          },
           function () {
             attempt.reason = "service_start_rejected";
           }
