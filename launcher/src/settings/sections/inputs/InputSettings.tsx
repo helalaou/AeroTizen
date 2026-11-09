@@ -17,6 +17,11 @@ const INPUT_VISIBILITY_OPTIONS = [
   { value: true, labelKey: "inputs.hideDisconnected" },
 ] as const;
 
+const HDMI_PLAYBACK_OPTIONS = [
+  { value: false, labelKey: "inputs.embeddedPlayback" },
+  { value: true, labelKey: "inputs.samsungViewer" },
+] as const;
+
 interface Props extends SettingsSectionProps {
   inputs: readonly InputOption[];
 }
@@ -41,6 +46,15 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => {
           value={settings.hideDisconnectedHdmi}
           options={INPUT_VISIBILITY_OPTIONS}
           onSelect={actions.setHdmiVisibility}
+        />
+      </SettingsSection>
+      <SettingsSection title={t("inputs.hdmiPlayback")} description={t("inputs.hdmiPlaybackHint")}>
+        <ChoiceGroup
+          id="hdmi-playback"
+          label={t("inputs.hdmiPlayback")}
+          value={settings.hdmiNativeViewer}
+          options={HDMI_PLAYBACK_OPTIONS}
+          onSelect={actions.setHdmiNativeViewer}
         />
       </SettingsSection>
       <SettingsSection title={t("inputs.keepVisible")} description={t("inputs.keepHint")}>
