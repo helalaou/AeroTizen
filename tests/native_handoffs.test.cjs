@@ -124,8 +124,9 @@ function harness(options = {}) {
       STORE_APP_IDS: options.storeIds || [],
     },
     homewatch: {
-      watch(id) {
+      watch(id, done) {
         watch.push(id);
+        if (done) done();
       },
       resume() {
         resume.push(true);
@@ -327,6 +328,16 @@ test("regular apps still use the original /watch launch sequence", () => {
     h.launches.map((r) => r.id),
     ["netflix.app"],
   );
+});
+
+test("confirmed Native Home app launches keep working without a watcher acknowledgement", () => {
+  const storage = routingStorage();
+  const h = harness(storage);
+  h.A.apps.launch({ id: "netflix.app", name: "Netflix" });
+  assert.equal(h.launches.length, 0);
+  storage.reads[0](nativeRouting);
+  assert.deepEqual(h.watch, []);
+  assert.deepEqual(h.launches, [{ id: "netflix.app", method: "launch" }]);
 });
 
 test("Samsung Home requires the /leave acknowledgement", () => {

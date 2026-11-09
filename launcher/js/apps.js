@@ -8,6 +8,15 @@
   var listeners = [];
   var latestRequest = 0;
 
+  function prepareWatch(appId, ready, failed) {
+    if (A.homewatch.prepareAppLaunch) {
+      A.homewatch.prepareAppLaunch(appId, ready, failed);
+    } else {
+      A.homewatch.watch(appId);
+      ready();
+    }
+  }
+
   apps.subscribe = function (listener) {
     listeners.push(listener);
     return function () {
@@ -227,8 +236,17 @@
           null,
           data
         );
-        A.homewatch.watch(cfg.HBBTV_APP_ID);
-        tz.application.launchAppControl(control, cfg.HBBTV_APP_ID, accepted, failed);
+        prepareWatch(
+          cfg.HBBTV_APP_ID,
+          function () {
+            try {
+              tz.application.launchAppControl(control, cfg.HBBTV_APP_ID, accepted, failed);
+            } catch (e) {
+              failed(e);
+            }
+          },
+          failed
+        );
       } catch (e) {
         failed(e);
       }
@@ -258,14 +276,17 @@
       }, youtubeFailed);
       return;
     }
-    // Preserve upstream app /watch behaviour when the optional handoff
-    // module is absent and for all non-YouTube / HbbTV applications.
-    A.homewatch.watch(app.id);
-    try {
-      tz.application.launch(app.id, accepted, failed);
-    } catch (error) {
-      failed(error);
-    }
+    prepareWatch(
+      app.id,
+      function () {
+        try {
+          tz.application.launch(app.id, accepted, failed);
+        } catch (error) {
+          failed(error);
+        }
+      },
+      failed
+    );
   };
 
   apps.openStore = function () {
@@ -278,8 +299,17 @@
       if (!id) {
         return A.toast(A.translate("apps.storeFailed"));
       }
-      A.homewatch.watch(id);
-      tz.application.launch(id, null, next);
+      prepareWatch(
+        id,
+        function () {
+          try {
+            tz.application.launch(id, null, next);
+          } catch (error) {
+            next();
+          }
+        },
+        next
+      );
     })();
   };
 
@@ -294,19 +324,27 @@
     if (!tz || !yt) {
       return window.Fireplace.open();
     }
-    A.homewatch.watch(yt.id);
-    try {
-      var data = [new tz.ApplicationControlData("PAYLOAD", [JSON.stringify({ values: "v=" + cfg.FIREPLACE_VIDEO })])];
-      tz.application.launchAppControl(
-        new tz.ApplicationControl("http://tizen.org/appcontrol/operation/view", null, null, null, data),
-        yt.id,
-        null,
-        function () {
-          window.Fireplace.open();
-        }
-      );
-    } catch (e) {
+    function fallback() {
       window.Fireplace.open();
     }
+    prepareWatch(
+      yt.id,
+      function () {
+        try {
+          var data = [
+            new tz.ApplicationControlData("PAYLOAD", [JSON.stringify({ values: "v=" + cfg.FIREPLACE_VIDEO })]),
+          ];
+          tz.application.launchAppControl(
+            new tz.ApplicationControl("http://tizen.org/appcontrol/operation/view", null, null, null, data),
+            yt.id,
+            null,
+            fallback
+          );
+        } catch (e) {
+          fallback();
+        }
+      },
+      fallback
+    );
   };
 })(window.AeroTizen);

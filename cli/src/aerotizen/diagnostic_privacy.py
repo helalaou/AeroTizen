@@ -35,6 +35,9 @@ EVENTS = set(
         "handoff.failed",
         "handoff.visibility_unconfirmed",
         "service.start",
+        "service.start_failed",
+        "service.ready",
+        "service.launch_accepted",
         "service.exit",
         "service.mode",
         "service.request",
@@ -134,6 +137,8 @@ ENUMS = {
     ),
     "method": set(
         [
+            "app_control",
+            "wrt_service",
             "capability",
             "duid",
             "applist",
@@ -202,6 +207,9 @@ REASONS = set(
         "Samsung Home escape",
         "launcher returned",
         "service exit",
+        "service_module_failed",
+        "service_start_rejected",
+        "service_start_timeout",
         "HomeWatcher unavailable",
         "HomeWatcher request failed",
         "launch denied",

@@ -22,10 +22,13 @@
       "home.native_result",
       "home.prepared",
       "service.exit",
+      "service.launch_accepted",
       "service.launch_requested",
       "service.mode",
       "service.request",
+      "service.ready",
       "service.start",
+      "service.start_failed",
       "service.unavailable",
       "ui.appcontrol",
       "ui.error",
@@ -113,6 +116,9 @@
       "os_release_fields_missing",
       "os_release_unavailable",
       "service exit",
+      "service_module_failed",
+      "service_start_rejected",
+      "service_start_timeout",
       "unknown",
       "watched app visible or status unavailable"
     ],
@@ -254,6 +260,7 @@
         "update"
       ],
       "method": [
+        "app_control",
         "applist",
         "capability",
         "debug_launch",
@@ -266,7 +273,8 @@
         "shell",
         "shell_bounded",
         "tcp_request",
-        "uninstall"
+        "uninstall",
+        "wrt_service"
       ],
       "mode": ["blocked", "hold", "native", "stock", "unknown", "watcher"],
       "status": ["accepted", "confirmed", "failed", "ok", "unavailable", "unconfirmed"],
@@ -457,6 +465,8 @@
         if (data && typeof data === "object") {
           [
             "action",
+            "method",
+            "duration_ms",
             "mode",
             "operation",
             "app_id",
