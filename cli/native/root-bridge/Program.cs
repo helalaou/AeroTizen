@@ -167,6 +167,7 @@ namespace AeroTizen.Root
         }
         private static void Configure(string stage, string installation, string nonce)
         {
+            ServiceLaunch.RequireScopeRunner();
             if (!Regex.IsMatch(stage ?? "", "\\A/home/owner/share/tmp/sdk_tools/arsetup-[a-f0-9]{16}\\z")) throw new IOException("Invalid setup directory");
             var settings = RootSettings.Load(); settings.VerifyFiles();
             if (settings.Installation != installation) throw new IOException("Setup installation identity differs");
@@ -260,8 +261,8 @@ namespace AeroTizen.Root
         internal static string SetupLaunch(string installation, string nonce)
         {
             RootSettings.Hex(installation, 32); RootSettings.Hex(nonce, 32);
-            return "exec 3>&-; exec /usr/bin/dotnet " + Bundle.Quote(RootPaths.Package + "/bin/AeroTizenRootBridge.dll")
-                + " --serve " + Bundle.Quote(installation) + " " + Bundle.Quote(nonce) + " setup </dev/null >/dev/null 2>&1";
+            return "exec 3>&-; exec " + ServiceLaunch.ServerCommand(installation, nonce, "setup")
+                + " </dev/null >/dev/null 2>&1";
         }
         internal static string RegistrationSql()
         {
@@ -283,6 +284,7 @@ namespace AeroTizen.Root
                 {
                     RootPaths.RequireTv(false);
                     if (RootPaths.getuid() != 901 || RootPaths.geteuid() != 901) throw new IOException("Preflight requires SDK context");
+                    ServiceLaunch.RequireScopeRunner();
                     using (var file = File.OpenRead("/opt/dbspace/.pkgmgr_parser.db"))
                     {
                         var owner = RootPaths.Metadata(file);

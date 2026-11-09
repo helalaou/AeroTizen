@@ -6,6 +6,8 @@ import shlex
 import shutil
 import sqlite3
 import subprocess
+import tarfile
+import time
 import uuid
 import zipfile
 from pathlib import Path
@@ -119,8 +121,9 @@ def test_native_per_boot_archive_factory_matches_its_validator(native_root, tmp_
         path = tmp_path / "installed" / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
+    nonce = uuid.uuid4().hex
     result = subprocess.run(
-        [*native_root, "--bundle", str(tmp_path / "installed"), str(tmp_path / "runtime"), uuid.uuid4().hex],
+        [*native_root, "--bundle", str(tmp_path / "installed"), str(tmp_path / "runtime"), nonce],
         capture_output=True,
         text=True,
         timeout=20,
@@ -133,6 +136,11 @@ def test_native_per_boot_archive_factory_matches_its_validator(native_root, tmp_
         timeout=20,
     )
     assert framed.returncode == 0, framed.stderr
+    archive = next((tmp_path / "runtime").glob("archive-root-*.tar.gz"))
+    with tarfile.open(archive, "r:gz") as source:
+        script = source.extractfile("launch.sh").read().decode("ascii")
+    command = script.strip().splitlines()[-1]
+    check_isolated_launch(command, tmp_path / "boot-launch", "sh", receipt["installation_id"], nonce, "boot")
 
 
 @pytest.mark.parametrize("shell_name", ["sh", "bash", "dash"])
@@ -140,27 +148,63 @@ def test_detached_setup_child_cannot_keep_the_sdk_callback_open(native_root, tmp
     shell = shutil.which(shell_name)
     if not shell:
         pytest.skip(shell_name + " required")
+    installation, nonce = uuid.uuid4().hex, uuid.uuid4().hex
     result = subprocess.run(
-        [*native_root, "--setup-launch", uuid.uuid4().hex, uuid.uuid4().hex],
+        [*native_root, "--setup-launch", installation, nonce],
         capture_output=True,
         text=True,
         check=True,
         timeout=15,
     )
+    check_isolated_launch(result.stdout, tmp_path, shell_name, installation, nonce, "setup")
+
+
+def check_isolated_launch(source, tmp_path, shell_name, installation, nonce, origin):
+    shell = shutil.which(shell_name)
+    if not shell:
+        pytest.skip(shell_name + " required")
+    tmp_path.mkdir(exist_ok=True)
     marker = tmp_path / "detached"
+    scope_marker = tmp_path / "scope-requested"
     stub = tmp_path / "dotnet"
+    runner = tmp_path / "systemd-run"
+    runner.write_text(
+        f"#!{shell}\nset -eu\n"
+        'test "$1" = --quiet\ntest "$2" = --scope\n'
+        + 'test "$3" = '
+        + shlex.quote(f"--unit=aerotizen-root-{installation}-{nonce}.scope")
+        + '\ntest "$4" = --\nprintf scoped > '
+        + shlex.quote(str(scope_marker))
+        + '\nshift 4\nexec "$@"\n'
+    )
+    runner.chmod(0o700)
     # Isolate the closed-descriptor probe: dash treats its redirection error as fatal.
     stub.write_text(
-        f"#!{shell}\nif ( : >&3 ) 2>/dev/null; then exit 70; fi\n"
+        f"#!{shell}\nset -eu\nif ( : >&3 ) 2>/dev/null; then exit 70; fi\n"
+        + 'test "$#" -eq 5\ntest "$1" = '
+        + shlex.quote(f"/opt/usr/apps/{root_state.APP_ID}/bin/AeroTizenRootBridge.dll")
+        + '\ntest "$2" = --serve\ntest "$3" = '
+        + shlex.quote(installation)
+        + '\ntest "$4" = '
+        + shlex.quote(nonce)
+        + '\ntest "$5" = '
+        + shlex.quote(origin)
+        + "\n"
         + "printf detached > "
         + shlex.quote(str(marker))
         + "\n"
     )
     stub.chmod(0o700)
     command = "exec 3>" + shlex.quote(str(tmp_path / "sdk-callback")) + "; "
-    command += result.stdout.replace("/usr/bin/dotnet", shlex.quote(str(stub)))
+    command += source.replace("/usr/bin/systemd-run", shlex.quote(str(runner))).replace(
+        "/usr/bin/dotnet", shlex.quote(str(stub))
+    )
     completed = subprocess.run([shell, "-c", command], timeout=5)
     assert completed.returncode == 0
+    deadline = time.monotonic() + 2
+    while not marker.exists() and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert scope_marker.read_text() == "scoped"
     assert marker.read_text() == "detached"
 
 
