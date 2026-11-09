@@ -68,6 +68,7 @@ function launch(file, report) {
       report.execution.reply = "query_received";
     } catch (e) {
       report.execution.reply = "no_valid_query";
+      if (!error) report.status = "no_query_result";
     }
     running = false;
     try {

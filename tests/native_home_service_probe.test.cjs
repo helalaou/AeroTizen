@@ -189,6 +189,17 @@ test("execution timeout and malformed output retain no raw output", (t) => {
   assert.ok(!JSON.stringify(report).includes("secret"));
 });
 
+test("a successful process exit without a helper reply cannot report query completion", (t) => {
+  const h = harness(t);
+  h.request("POST");
+  h.timers.shift()();
+  h.launches[0].done(null, "");
+  const report = h.request().body;
+  assert.equal(report.status, "no_query_result");
+  assert.equal(report.query, null);
+  assert.equal(report.native_home_supported, null);
+});
+
 test("helper imports only native getters and memory release", () => {
   const code = fs.readFileSync(path.join(__dirname, "../cli/native/home-service-probe/HomeServiceProbe.cs"), "utf8");
   const names = [...code.matchAll(/extern\s+\w+\s+(\w+)\(/g)].map((match) => match[1]).sort();

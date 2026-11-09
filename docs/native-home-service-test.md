@@ -97,7 +97,8 @@ Share the JSON, or the last Console error if collection stops. `query_completed`
 means the helper returned. Check each getter's `status` in `query` for API access.
 `execution_failed` records a permission, process or runtime failure. `interrupted`
 means a launch marker survived without a completion report. Missing metadata is
-reported as unavailable. Raw process output, device identifiers, network addresses,
+reported as unavailable. `no_query_result` means the process exited without a valid
+helper reply. Raw process output, device identifiers, network addresses,
 tokens and signing material are excluded from the report.
 
 To return to the stable launcher after collecting the result, stop the inspector
