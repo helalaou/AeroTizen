@@ -73,6 +73,8 @@ To test before publication, [install a local build from `main`](docs/manage-inst
 
 Both options run on the TV after setup and work without root.
 
+> **Tizen 10:** Native Home is reported not to work. Use the watcher instead.
+
 ### Set up Native Home
 
 Check the [TV reports](docs/tv-compatibility.md). Replace `TV_IP` with your TV's
