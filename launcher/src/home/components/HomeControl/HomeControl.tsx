@@ -1,7 +1,7 @@
 import type { ComponentChildren } from "preact";
 import { useCallback, useRef } from "preact/hooks";
 
-import { useStore } from "../../../shared/hooks/useStore";
+import { useStoreSelector } from "../../../shared/hooks/useStore";
 import type { HomeEnvironment } from "../../types";
 
 import styles from "./HomeControl.module.css";
@@ -39,8 +39,7 @@ export const HomeControl = ({
   registered?: boolean;
   preserveSelection?: boolean;
 }) => {
-  const state = useStore(env.state);
-  const focused = registered && state.active && state.selected === controlKey;
+  const focused = useStoreSelector(env.state, (state) => registered && state.active && state.selected === controlKey);
   const own = useRef<HTMLDivElement | null>(null);
   const register = useCallback(
     (node: HTMLDivElement | null) => {

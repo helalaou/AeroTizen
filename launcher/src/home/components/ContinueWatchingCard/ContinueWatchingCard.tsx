@@ -1,3 +1,4 @@
+import { memo } from "preact/compat";
 import { useMemo, useState } from "preact/hooks";
 
 import type { ContinueItem } from "../../../contracts/launcher";
@@ -11,7 +12,7 @@ import styles from "./ContinueWatchingCard.module.css";
 
 const MIN_PLAYBACK_SECONDS = 1;
 
-export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item: ContinueItem }) => {
+export const ContinueWatchingCard = memo(({ env, item }: { env: HomeEnvironment; item: ContinueItem }) => {
   const { t } = useTranslation();
   const app = useMemo(
     () => ({ id: item.sourceId, name: item.sourceName, icon: item.sourceIcon }),
@@ -89,7 +90,7 @@ export const ContinueWatchingCard = ({ env, item }: { env: HomeEnvironment; item
       </div>
     </HomeControl>
   );
-};
+});
 // Artwork errors are local to each keyed feed item; changing its URL permits retry.
 const useArtwork = (url?: string) => {
   const [failed, setFailed] = useState<string | undefined>();

@@ -70,6 +70,16 @@ Use Preact Testing Library to check what the user sees or can activate. Use
 Playwright for browser layout, remote navigation between components, and full
 launcher flows such as saving settings and reloading.
 
+For a local performance audit, serve a compiled build and run
+`node tools/benchmark-launcher.mjs --url http://localhost:8000/ --cpu 4 --output /tmp/launcher-performance.json`.
+The audit measures synthetic arrow-key handling, time to two animation frames,
+style/layout work, startup readiness, retained heap and idle main-thread work.
+It compares animated/static wallpaper, hidden status widgets and Performance mode.
+Use the same browser, CPU throttle and sample count for before/after builds.
+Desktop CPU throttling does not reproduce TV hardware or physical remote latency.
+On slower TVs, **Settings → Appearance → Performance mode** stops wallpaper motion
+and UI transitions. Time, date and weather visibility remain separate settings.
+
 Use Node.js 22.12 or newer, or Node 20.19+ within the 20.x series, as required by Vite.
 CI uses the latest Node 20.x. The watcher tests use mock clocks and network replies to cover the Art Mode protocol, status checks,
 relaunch cancellation and app visibility, without contacting a TV.

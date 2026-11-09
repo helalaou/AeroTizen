@@ -34,6 +34,7 @@ export interface SettingsValues {
   inputNames: Record<string, string>;
   language: string;
   numerals: "latn" | "arab";
+  performanceMode: boolean;
   showLiveTv: boolean;
   showNetwork: boolean;
   showTime: boolean;

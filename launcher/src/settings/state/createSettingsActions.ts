@@ -86,6 +86,7 @@ export const createSettingsActions = (
       });
     },
     setGlassSettings: (glassSettings) => commit({ glassSettings }),
+    setPerformanceMode: (performanceMode) => commit({ performanceMode }, services.applyBackground),
     setWeatherPhoto: (weatherPhoto) =>
       commit({ weatherPhoto }, () => {
         services.applyWeatherVisibility();

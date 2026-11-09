@@ -10,12 +10,13 @@ export const useClockWidth = (
   format: TimeFormat,
   timestamp: number,
   appearance: string,
+  visible = true,
 ) => {
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const [width, setWidth] = useState<number>();
   useLayoutEffect(() => {
     const node = ref.current;
-    if (!node) {
+    if (!node || !visible) {
       return;
     }
     const style = getComputedStyle(node);
@@ -26,7 +27,10 @@ export const useClockWidth = (
     }
     const font = style.fontWeight + " " + style.fontSize + " " + style.fontFamily;
     context.font = font;
+    if (clock.measureTimeDeferred) {
+      return clock.measureTimeDeferred(format, font, (value) => context.measureText(value).width, setWidth);
+    }
     setWidth(clock.measureTime(format, font, (value) => context.measureText(value).width));
-  }, [ref, clock, format, timestamp, appearance]);
+  }, [ref, clock, format, timestamp, appearance, visible]);
   return width;
 };

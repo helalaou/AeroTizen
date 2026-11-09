@@ -15,13 +15,14 @@ const WAVE_LAYERS = [
   },
 ] as const;
 
-export const WaveBackground = ({ speed }: { speed: number }) => (
+export const WaveBackground = ({ speed, performanceMode = false }: { speed: number; performanceMode?: boolean }) => (
   <>
     {WAVE_LAYERS.map((layer) => (
       <div
         key={layer.name}
         class={styles.wave}
         data-background-wave={layer.name}
+        data-static={performanceMode ? "true" : undefined}
         style={{ animationDuration: layer.seconds / speed + "s" }}
       >
         <svg viewBox="0 0 1920 200" preserveAspectRatio="none" aria-hidden="true" focusable="false">

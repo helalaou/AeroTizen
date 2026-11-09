@@ -1,6 +1,6 @@
 import type { ComponentChildren } from "preact";
 
-import { useStore } from "../../../shared/hooks/useStore";
+import { useStoreSelector } from "../../../shared/hooks/useStore";
 import type { HomeEnvironment } from "../../types";
 import { HomeControl } from "../HomeControl/HomeControl";
 import { ReorderControls } from "../ReorderControls/ReorderControls";
@@ -24,8 +24,7 @@ export const HomeAppCard = ({
   className?: string;
   background?: string;
 }) => {
-  const { moving } = useStore(env.state);
-  const isMoving = moving === id;
+  const isMoving = useStoreSelector(env.state, (state) => state.moving === id);
   return (
     <HomeControl
       env={env}

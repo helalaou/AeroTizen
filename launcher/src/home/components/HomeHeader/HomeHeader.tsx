@@ -1,6 +1,6 @@
 import { House, Settings } from "lucide-preact";
 
-import { useStore } from "../../../shared/hooks/useStore";
+import { useStore, useStoreSelector } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { Icon } from "../../../shared/icons/Icon/Icon";
 import { HeaderStatus } from "../../../status/HeaderStatus/HeaderStatus";
@@ -13,7 +13,8 @@ import styles from "./HomeHeader.module.css";
 
 export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
   const { t } = useTranslation();
-  const { page, active } = useStore(env.state);
+  const page = useStoreSelector(env.state, (state) => state.page);
+  const active = useStoreSelector(env.state, (state) => state.active);
   const { unread } = useStore(env.updates);
   const settings = useStore(env.settings);
   const settingsTitle = t(unread ? "settings.about.homeNotice" : "common.settings");

@@ -18,13 +18,23 @@ export const Clock = ({
   children,
 }: {
   layout: ClockLayout;
-  settings: Pick<SettingsSnapshot, "showTime" | "dateFormat" | "showWeather" | "timeFormat" | "glassSettings">;
+  settings: Pick<
+    SettingsSnapshot,
+    "showTime" | "dateFormat" | "showWeather" | "timeFormat" | "glassSettings" | "language" | "numerals"
+  >;
   clock: ClockService;
   value: ReturnType<typeof useClock>;
   children: ComponentChildren;
 }) => {
   const time = useRef<HTMLSpanElement>(null);
-  const width = useClockWidth(time, clock, settings.timeFormat, value.timestamp, layout + ":" + settings.glassSettings);
+  const width = useClockWidth(
+    time,
+    clock,
+    settings.timeFormat,
+    value.timestamp,
+    [layout, settings.glassSettings, settings.language, settings.numerals].join(":"),
+    settings.showTime,
+  );
   return layout === "compact" ? (
     <>
       {children}

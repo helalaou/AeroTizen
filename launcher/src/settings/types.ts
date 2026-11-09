@@ -84,6 +84,7 @@ export interface SettingsActions {
   setLocationVisible(visible: boolean): void;
   setNetworkVisible(visible: boolean): void;
   setNumerals(numerals: "latn" | "arab"): void;
+  setPerformanceMode(enabled: boolean): void;
   setSpeed(direction: number): void;
   setTempUnit(unit: TemperatureUnit): void;
   setTimeFormat(format: TimeFormat | "none"): void;
