@@ -47,6 +47,7 @@ function harness(options = {}) {
     };
   }
   const tz = {
+    filesystem: options.filesystem,
     ApplicationControl: function (op) {
       this.operation = op;
     },
@@ -151,7 +152,12 @@ function harness(options = {}) {
       listeners[name] = handler;
     },
     setTimeout(fn, ms) {
-      timers.push({ fn, ms });
+      const timer = { fn, ms };
+      timers.push(timer);
+      return timer;
+    },
+    clearTimeout(timer) {
+      timers.splice(timers.indexOf(timer), 1);
     },
     Backgrounds: { suspend: () => backgrounds.push("suspended") },
   };
@@ -177,6 +183,98 @@ function harness(options = {}) {
     log,
   };
 }
+
+const nativeRouting = {
+  mode: "native",
+  transaction: "a".repeat(32),
+  baseline_sha256: "b".repeat(64),
+};
+const watcherRouting = { mode: "watcher", transaction: null, baseline_sha256: null };
+const leaveUrl = "http://127.0.0.1:47790/leave";
+
+function routingStorage() {
+  const reads = [];
+  return {
+    reads,
+    filesystem: {
+      resolve(filePath, success, failure, mode) {
+        assert.equal(filePath, "wgt-private/aerotizen-home-routing-v1.json");
+        assert.equal(mode, "r");
+        reads.push((routing) => {
+          if (routing === undefined) {
+            failure({ name: "NotFoundError" });
+          } else {
+            const text = JSON.stringify(routing);
+            success({ fileSize: text.length, readAsText: (read) => read(text) });
+          }
+        });
+      },
+    },
+  };
+}
+
+const handoffs = [
+  { name: "YouTube", id: "youtube.app", open: (A) => A.apps.launch({ id: "youtube.app", name: "YouTube" }) },
+  { name: "Samsung Home", id: "com.samsung.tv.csfs", open: (A) => A.homewatch.openSamsungHome() },
+  { name: "Live TV", id: "org.tizen.tv-viewer", open: (A) => A.inputs.show({ type: "TV", number: 1 }) },
+];
+
+for (const { name, id, open } of handoffs) {
+  for (const { mode, routing } of [
+    { mode: "Native Home", routing: nativeRouting },
+    { mode: "Watcher mode", routing: watcherRouting },
+    { mode: "unknown mode", routing: undefined },
+  ]) {
+    test(`${name} skips /leave only in confirmed Native Home (${mode})`, () => {
+      const storage = routingStorage();
+      const h = harness(storage);
+      open(h.A);
+      assert.deepEqual(h.launches, []);
+      assert.deepEqual(h.requests, []);
+      assert.equal(storage.reads.length, 1);
+      storage.reads[0](routing);
+
+      if (routing === nativeRouting) {
+        assert.deepEqual(h.requests, []);
+      } else {
+        assert.deepEqual(h.launches, []);
+        assert.deepEqual(
+          h.requests.map((request) => request.url),
+          [leaveUrl],
+        );
+        h.requests[0].resolve(200);
+      }
+      assert.deepEqual(h.launches, [{ id, method: "launch" }]);
+    });
+  }
+}
+
+test("a later handoff reads Home routing again and rejects an incomplete Native Home record", () => {
+  const storage = routingStorage();
+  const h = harness(storage);
+  h.A.homewatch.openSamsungHome();
+  storage.reads[0](nativeRouting);
+  h.A.homewatch.openSamsungHome();
+  storage.reads[1]({ mode: "native" });
+  assert.equal(h.launches.length, 1);
+  assert.equal(h.requests[0].url, leaveUrl);
+});
+
+test("a late Native Home read cannot bypass a /leave already requested after a storage timeout", () => {
+  const storage = routingStorage();
+  const h = harness(storage);
+  h.A.homewatch.openSamsungHome();
+  h.timers[0].fn();
+  storage.reads[0](nativeRouting);
+  assert.deepEqual(h.launches, []);
+  assert.deepEqual(
+    h.requests.map((request) => request.url),
+    [leaveUrl],
+  );
+  h.requests[0].fail();
+  assert.deepEqual(h.launches, []);
+  assert.match(h.toasts[0], /HomeWatcher unavailable/);
+});
 
 test("YouTube/Cobalt waits for a confirmed /leave before starting", () => {
   const h = harness();

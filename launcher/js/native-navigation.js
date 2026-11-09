@@ -44,9 +44,79 @@
     }
   }
 
-  // Explicit Samsung Home escape waits for /leave before opening the native UI.
-  // Otherwise HomeWatcher may immediately reclaim the launcher.
+  // Read the service's persisted Home routing state without waiting for it to start.
+  // Read it for each handoff because the CLI can apply or restore Home at any time.
+  function readNativeHome(done) {
+    if (!tz || !tz.filesystem || !tz.filesystem.resolve) {
+      done(false);
+      return;
+    }
+    var settled = false;
+    var timer = window.setTimeout(unavailable, 500);
+    function finish(confirmed) {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      window.clearTimeout(timer);
+      done(confirmed);
+    }
+    function unavailable() {
+      finish(false);
+    }
+    function read(contents) {
+      var confirmed = false;
+      try {
+        var routing = JSON.parse(contents);
+        confirmed =
+          routing &&
+          routing.mode === "native" &&
+          typeof routing.transaction === "string" &&
+          /^[a-f0-9]{32}$/.test(routing.transaction) &&
+          typeof routing.baseline_sha256 === "string" &&
+          /^[a-f0-9]{64}$/.test(routing.baseline_sha256);
+      } catch (ignored) {
+        /* Unreadable routing state keeps the existing handoff. */
+      }
+      finish(confirmed);
+    }
+    try {
+      tz.filesystem.resolve(
+        "wgt-private/aerotizen-home-routing-v1.json",
+        function (file) {
+          if (settled) {
+            return;
+          }
+          try {
+            if (file.fileSize > 0 && file.fileSize <= 4096) {
+              file.readAsText(read, unavailable, "UTF-8");
+              return;
+            }
+          } catch (ignored) {
+            /* Use the existing handoff if the file cannot be read. */
+          }
+          unavailable();
+        },
+        unavailable,
+        "r"
+      );
+    } catch (ignored) {
+      unavailable();
+    }
+  }
+
   function leaveBeforeLaunch(onReady, onFailure) {
+    readNativeHome(function (confirmed) {
+      if (confirmed) {
+        onReady();
+      } else {
+        requestLeave(onReady, onFailure);
+      }
+    });
+  }
+
+  // HomeWatcher can reclaim the screen in Watcher mode. Wait for it to pause.
+  function requestLeave(onReady, onFailure) {
     var xhr,
       settled = false;
     function fail(reason, detail) {
@@ -81,10 +151,8 @@
     }
   }
 
-  // Use the same acknowledged /leave handoff as the hardware-tested V992.56.
-  // The upstream watcher remains paused until AeroTizen regains foreground;
-  // its existing visibility handler then re-arms /home. This deliberately
-  // avoids changes to the Frame Art Mode or physical-HOME watcher code.
+  // If the handoff paused the watcher, it stays paused until AeroTizen returns
+  // to the foreground. The existing visibility handler then re-arms /home.
 
   function openSamsungHome() {
     if (homePending) {
@@ -105,7 +173,6 @@
     function succeeded() {
       homePending = false;
       report("accepted", "samsung_home", operation);
-      // Leave HomeWatcher paused while native Samsung Home is visible.
     }
     function controlFallback() {
       try {
@@ -241,8 +308,8 @@
     return true;
   }
 
-  // YouTube/Cobalt also needs an acknowledged /leave to avoid premature
-  // HOME relaunch when its Samsung status never reports visible=true.
+  // YouTube/Cobalt needs the Watcher mode handoff when its Samsung status never
+  // reports visible=true.
   A.homewatch.resume = rearmWatcher;
   A.homewatch.suspendForExternal = leaveBeforeLaunch;
   A.homewatch.openSamsungHome = openSamsungHome;
