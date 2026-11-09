@@ -122,7 +122,7 @@ class Sdb:
         """Open a stream to `name` (e.g. "shell:0 vd_applist") and return all output."""
         return self._service(name)
 
-    def _service(self, name, deadline=None, max_output=None):
+    def _service(self, name, deadline=None, max_output=None, *, on_acknowledged=None):
         local_id = self._next_id
         self._next_id += 1
         self._send(OPEN, local_id, 0, name.encode() + b"\0")
@@ -138,6 +138,8 @@ class Sdb:
             if arg1 != local_id:
                 continue
             if cmd == OKAY:
+                if remote_id is None and on_acknowledged is not None:
+                    on_acknowledged()
                 remote_id = arg0
             elif cmd == WRTE:
                 out += payload
@@ -149,10 +151,16 @@ class Sdb:
                     self._send(CLSE, local_id, arg0)
                 return out.decode(errors="replace")
 
-    def shell_bounded(self, command, timeout=30, max_output=131072):
+    def shell_bounded(self, command, timeout=30, max_output=131072, *, on_acknowledged=None):
+        """Run a shell request and optionally report the TV's first stream OKAY."""
         previous = self.sock.gettimeout()
         try:
-            return self._service(f"shell:{command}", time.monotonic() + timeout, max_output)
+            return self._service(
+                f"shell:{command}",
+                time.monotonic() + timeout,
+                max_output,
+                on_acknowledged=on_acknowledged,
+            )
         finally:
             if self.sock is not None:
                 self.sock.settimeout(previous)

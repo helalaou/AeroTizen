@@ -48,10 +48,14 @@ PYTHONPATH=cli/src python3 cli/tools/probe_sdk_execution.py --tv TV_IP
 ```
 
 A repeatable delay gives evidence that the TV executed the command. A quick
-return on both attempts means the probe observed no delay. This can help
-identify firmware that blocks the command. The JSON includes selected SDB
-capabilities, timings and reply categories. It excludes IP addresses and raw
-TV replies.
+return on both attempts means the probe observed no delay. Each command also
+reports `stream_acknowledged`. If true, the TV opened that SDB stream. If false
+with a reply category, the TV closed the stream without sending an acknowledgment.
+A transport error can also leave this field false, with no reply category.
+The timing test checks whether the command executed.
+
+The JSON includes selected SDB capabilities, timings and reply categories.
+It excludes IP addresses and raw TV replies.
 
 Build a ZIP for a tester from the repository root. The tester needs Python 3
 and can run the ZIP directly.

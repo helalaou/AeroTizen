@@ -1,6 +1,8 @@
+from unittest.mock import Mock
+
 import pytest
 
-from aerotizen.sdb import Sdb, SdbError
+from aerotizen.sdb import CLSE, OKAY, Sdb, SdbError
 
 
 def test_handshake_reads_banner(fake_tv):
@@ -14,6 +16,22 @@ def test_shell_returns_output(fake_tv):
     tv = fake_tv({"0 getduid": "ABCDEF123\n"})
     with Sdb("127.0.0.1", port=tv.port, timeout=5) as client:
         assert client.duid() == "ABCDEF123"
+
+
+@pytest.mark.parametrize("acknowledged", [False, True])
+def test_shell_bounded_reports_only_the_matching_stream_acknowledgment(monkeypatch, acknowledged):
+    client = Sdb("127.0.0.1")
+    client.sock = Mock()
+    frames = [(OKAY, 90, 99, b"")]
+    if acknowledged:
+        frames.extend([(OKAY, 100, 1, b""), (OKAY, 100, 1, b"")])
+    frames.append((CLSE, 100, 1, b""))
+    monkeypatch.setattr(client, "_send", Mock())
+    monkeypatch.setattr(client, "_recv", Mock(side_effect=frames))
+    on_acknowledged = Mock()
+
+    assert client.shell_bounded("probe", on_acknowledged=on_acknowledged) == ""
+    assert on_acknowledged.call_count == int(acknowledged)
 
 
 def test_push_uploads_bytes_in_chunks(fake_tv):

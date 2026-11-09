@@ -15,15 +15,24 @@ COMMAND_TIMEOUT = 6
 MAX_REPLY_BYTES = 4096
 
 
-def sample(session, *, delayed):
+def sample(session, record, *, delayed):
     # Match the envelope used by sdk.py. The random suffix refers to a package
     # that we never upload. The only command on the TV is a no-op or a short wait.
     payload = b"/bin/sleep 2" if delayed else b"/bin/true"
     encoded = base64.b64encode(payload).decode("ascii")
     name = f"new2.tpk`printf${{IFS}}%s${{IFS}}{encoded}|base64${{IFS}}-d|bash`-{secrets.token_hex(8)}.tpk"
+    record["stream_acknowledged"] = False
+
+    def acknowledge():
+        record["stream_acknowledged"] = True
+
     started = time.monotonic()
-    reply = session.shell_bounded(f"0 appinstall tpk {name}", COMMAND_TIMEOUT, MAX_REPLY_BYTES)
-    elapsed = round((time.monotonic() - started) * 1000)
+    try:
+        reply = session.shell_bounded(
+            f"0 appinstall tpk {name}", COMMAND_TIMEOUT, MAX_REPLY_BYTES, on_acknowledged=acknowledge
+        )
+    finally:
+        record["elapsed_ms"] = round((time.monotonic() - started) * 1000)
 
     # Package manager output can include paths. Report only the reply category.
     reply = reply.strip().lower()
@@ -35,7 +44,7 @@ def sample(session, *, delayed):
         category = "invalid_command"
     else:
         category = "other_output"
-    return {"elapsed_ms": elapsed, "reply": category}
+    record["reply"] = category
 
 
 def collect(session, report):
@@ -45,20 +54,17 @@ def collect(session, report):
         for key in CAPABILITIES
         if (value := caps.get(key)) is not None
     }
-    report["warmup"] = sample(session, delayed=False)
+    warmup = report["warmup"] = {}
+    sample(session, warmup, delayed=False)
     samples = report["samples"] = []
-    for delay_first in (False, True):
-        # Reverse the second pair to reduce the effect of drift between requests.
-        first = sample(session, delayed=delay_first)
-        second = sample(session, delayed=not delay_first)
-        control, delayed = (second, first) if delay_first else (first, second)
-        samples.append(
-            {
-                "control": control,
-                "delay": delayed,
-                "difference_ms": delayed["elapsed_ms"] - control["elapsed_ms"],
-            }
-        )
+    # Reverse the second pair to reduce the effect of drift between requests.
+    for order in (("control", "delay"), ("delay", "control")):
+        pair = {}
+        samples.append(pair)
+        for role in order:
+            record = pair[role] = {}
+            sample(session, record, delayed=role == "delay")
+        pair["difference_ms"] = pair["delay"]["elapsed_ms"] - pair["control"]["elapsed_ms"]
     if all(1500 <= pair["difference_ms"] <= 3500 for pair in samples):
         return "delay_observed"
     if all(pair["control"]["elapsed_ms"] < 1000 and pair["delay"]["elapsed_ms"] < 1000 for pair in samples):
@@ -70,7 +76,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tv", required=True, type=ipaddress.IPv4Address, help="TV IPv4 address")
     args = parser.parse_args()
-    report = {"probe": "aerotizen-sdb-execution", "schema_version": 1}
+    report = {"probe": "aerotizen-sdb-execution", "schema_version": 2}
     try:
         with Sdb(str(args.tv), timeout=COMMAND_TIMEOUT).connect(attempts=1) as session:
             report["result"] = collect(session, report)
