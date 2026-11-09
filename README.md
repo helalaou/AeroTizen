@@ -120,6 +120,7 @@ or see [CONTRIBUTING.md](CONTRIBUTING.md) for development and testing.
   </tr>
   <tr>
     <td align="center"><a href="https://github.com/cheack"><img src="https://github.com/cheack.png?size=100" width="64" height="64" alt="cheack"><br><sub>cheack</sub></a></td>
+    <td align="center"><a href="https://github.com/gabriel1larocca"><img src="https://github.com/gabriel1larocca.png?size=100" width="64" height="64" alt="gabriel1larocca"><br><sub>gabriel1larocca</sub></a></td>
   </tr>
 </table>
 <!-- contributors:end -->
