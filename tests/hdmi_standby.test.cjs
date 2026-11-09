@@ -11,6 +11,8 @@ const source = fs.readFileSync(path.join(__dirname, "../launcher/js/inputs.js"),
 
 function harness(settings = {}, report = {}, selected = null, legacyView = true) {
   const tiles = [];
+  const intervals = [];
+  const listeners = {};
   const root = {
     children: tiles,
     set textContent(value) {
@@ -67,12 +69,15 @@ function harness(settings = {}, report = {}, selected = null, legacyView = true)
         assert.equal(property, "VIDEOSOURCE");
         cb(report);
       },
-      addPropertyValueChangeListener() {},
+      addPropertyValueChangeListener(name, callback) {
+        listeners[name] = callback;
+      },
     },
   };
+  const document = { hidden: false, addEventListener() {} };
   vm.runInNewContext(source, {
-    window: { AeroTizen: A, addEventListener() {} },
-    document: { addEventListener() {} },
+    window: { AeroTizen: A, addEventListener() {}, setInterval: (callback) => intervals.push(callback) },
+    document,
     AeroTizen: A,
   });
   if (legacyView) {
@@ -83,6 +88,9 @@ function harness(settings = {}, report = {}, selected = null, legacyView = true)
   return {
     A,
     tiles,
+    intervals,
+    listeners,
+    document,
     get builds() {
       return builds;
     },
@@ -170,7 +178,7 @@ test("Show all retains empty ports and Hide Live TV still works", () => {
   assert.equal(h.tiles[0].classes.has("off"), true);
 });
 
-test("selected source remains reachable even when firmware reports disconnected", () => {
+test("a disconnected selected source is not active or visible with filtering enabled", () => {
   const h = harness(
     {},
     {
@@ -179,11 +187,63 @@ test("selected source remains reachable even when firmware reports disconnected"
     { type: "HDMI", number: 2 },
   );
   h.A.inputs.load();
-  assert.deepEqual(
-    h.tiles.map((x) => x.name),
-    ["HDMI 2"],
-  );
+  assert.equal(h.tiles.length, 0);
+  assert.equal(h.A.inputs.sources[0].active, false);
+  assert.equal(h.A.inputs.sources[0].connected, false);
+});
+
+test("only a connected selected HDMI source is active", () => {
+  const h = harness({}, { connected: [{ type: "HDMI", number: 2 }] }, { type: "HDMI", number: 2 });
+  h.A.inputs.load();
   assert.equal(h.A.inputs.sources[0].active, true);
+  assert.equal(h.tiles.length, 1);
+});
+
+test("a missed unplug event is corrected by one foreground refresh timer", () => {
+  const report = { connected: [{ type: "HDMI", number: 1 }], disconnected: [] };
+  const h = harness({}, report, { type: "HDMI", number: 1 });
+  h.A.inputs.load();
+  h.A.inputs.load();
+  assert.equal(h.intervals.length, 1);
+  assert.equal(h.A.inputs.sources[0].active, true);
+  report.connected = [];
+  report.disconnected = [{ type: "HDMI", number: 1 }];
+  h.document.hidden = true;
+  h.intervals[0]();
+  assert.equal(h.A.inputs.sources[0].connected, true, "hidden launcher does not poll");
+  h.document.hidden = false;
+  h.intervals[0]();
+  assert.equal(h.A.inputs.sources[0].connected, false);
+  assert.equal(h.A.inputs.sources[0].active, false);
+  assert.equal(h.tiles.length, 0);
+});
+
+test("a late discovery response cannot restore a disconnected port's old active state", () => {
+  const h = harness({}, {}, { type: "HDMI", number: 1 });
+  const pending = [];
+  h.A.tizen.systeminfo.getPropertyValue = (_name, done) => pending.push(done);
+  h.A.inputs.load();
+  h.A.inputs.load();
+  pending[1]({ disconnected: [{ type: "HDMI", number: 1 }] });
+  pending[0]({ connected: [{ type: "HDMI", number: 1 }] });
+  assert.equal(h.A.inputs.sources[0].connected, false);
+  assert.equal(h.A.inputs.sources[0].active, false);
+  assert.equal(h.tiles.length, 0);
+});
+
+test("hot-plug refresh clears ACTIVE but preserves a recognised standby label", () => {
+  const report = { connected: [{ type: "HDMI", number: 1, editName: "PC" }], disconnected: [] };
+  const h = harness({}, report, { type: "HDMI", number: 1 });
+  h.A.inputs.load();
+  report.disconnected = report.connected;
+  report.connected = [];
+  h.listeners.VIDEOSOURCE();
+  assert.equal(h.A.inputs.sources[0].active, false);
+  assert.equal(h.A.inputs.sources[0].connected, false);
+  assert.deepEqual(
+    h.tiles.map((tile) => tile.name),
+    ["PC"],
+  );
 });
 
 test("duplicated ports prefer connected raw sources without dropping recognised names", () => {

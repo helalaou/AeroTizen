@@ -161,6 +161,7 @@ function harness(options = {}) {
     addEventListener(name, handler) {
       listeners[name] = handler;
     },
+    setInterval() {},
     setTimeout(fn, ms) {
       const timer = { fn, ms };
       timers.push(timer);
@@ -682,4 +683,108 @@ test("Home requests while no input is open do not hide the TV window", () => {
   const h = harness({ visible: true });
   h.listeners.appcontrol();
   assert.deepEqual(h.embedded, []);
+});
+
+test("HDMI selection refreshes a stale tile and blocks a disconnected port in either viewer", () => {
+  for (const native of [false, true]) {
+    const h = harness({ visible: true });
+    h.A.settings.update({ hdmiNativeViewer: native });
+    const stale = { type: "HDMI", number: 1, connected: true };
+    h.tz.systeminfo.getPropertyValue = (_name, done) => done({ disconnected: [{ type: "HDMI", number: 1 }] });
+    h.A.inputs.show(stale);
+    assert.equal(h.A.inputs.sources[0].connected, false);
+    assert.equal(h.A.inputs.watching, false);
+    assert.deepEqual(h.inputs, []);
+    assert.deepEqual(h.launches, []);
+    assert.deepEqual(h.toasts, ["Could not show HDMI 1"]);
+  }
+});
+
+test("failed HDMI refresh does not open the cached input", () => {
+  const h = harness({ visible: true });
+  h.tz.systeminfo.getPropertyValue = (_name, _done, fail) => fail();
+  h.A.inputs.show({ type: "HDMI", number: 1, connected: true });
+  assert.deepEqual(h.inputs, []);
+  assert.deepEqual(h.toasts, ["Could not show HDMI 1"]);
+});
+
+test("unplugging the embedded input restores Home", () => {
+  const h = harness({ visible: true });
+  let connected = true;
+  h.tz.systeminfo.getPropertyValue = (_name, done) =>
+    done({
+      connected: connected ? [{ type: "HDMI", number: 1 }] : [],
+      disconnected: connected ? [] : [{ type: "HDMI", number: 1 }],
+    });
+  h.A.inputs.show({ type: "HDMI", number: 1 });
+  assert.equal(h.A.inputs.watching, true);
+  connected = false;
+  h.A.inputs.load();
+  assert.equal(h.A.inputs.watching, false);
+  assert.deepEqual(h.embedded, ["shown", "hidden"]);
+  assert.deepEqual(h.backgrounds, ["suspended", "restored"]);
+});
+
+for (const stage of ["setSource", "show"]) {
+  test(`Back cancels pending ${stage} and late callbacks cannot hide Home`, () => {
+    const h = harness({ visible: true });
+    let complete;
+    h.tz.tvwindow[stage] = (...args) => {
+      complete = stage === "setSource" ? args[1] : args[0];
+    };
+    h.A.inputs.show({ type: "HDMI", number: 1 });
+    assert.equal(h.A.inputs.watching, true, "key routing can leave before firmware responds");
+    h.A.inputs.leave();
+    complete();
+    assert.equal(h.A.inputs.watching, false);
+    assert.equal(h.backgrounds.includes("suspended"), false);
+    assert.equal(h.timers.filter((timer) => timer.ms === 8000).length, 0);
+  });
+
+  test(`a stalled ${stage} restores Home after the input timeout`, () => {
+    const h = harness({ visible: true });
+    h.tz.tvwindow[stage] = () => {};
+    h.A.inputs.show({ type: "HDMI", number: 1 });
+    h.timers.find((timer) => timer.ms === 8000).fn();
+    assert.equal(h.A.inputs.watching, false);
+    assert.deepEqual(h.embedded, ["hidden"]);
+    assert.deepEqual(h.toasts, ["Could not show HDMI 1"]);
+  });
+}
+
+test("an asynchronous show exception restores Home", () => {
+  const h = harness({ visible: true });
+  let complete;
+  h.tz.tvwindow.setSource = (_source, done) => {
+    complete = done;
+  };
+  h.tz.tvwindow.show = () => {
+    throw new Error("Unavailable");
+  };
+  h.A.inputs.show({ type: "HDMI", number: 1 });
+  complete();
+  assert.equal(h.A.inputs.watching, false);
+  assert.deepEqual(h.toasts, ["Could not show HDMI 1"]);
+});
+
+test("HDMI uses the fresh native source record instead of the cached tile", () => {
+  const h = harness({ visible: true });
+  const raw = { type: "HDMI", number: 1, editName: "New PC" };
+  h.tz.systeminfo.getPropertyValue = (_name, done) => done({ connected: [raw] });
+  h.A.inputs.show({ type: "HDMI", number: 1, editName: "Old PC" });
+  assert.equal(h.inputs[0].source, raw);
+  assert.equal(h.A.inputs.watching, true);
+});
+
+test("a delayed HDMI refresh cannot open a video window after the launcher hides", () => {
+  const h = harness({ visible: true });
+  let complete;
+  h.tz.systeminfo.getPropertyValue = (_name, done) => {
+    complete = done;
+  };
+  h.A.inputs.show({ type: "HDMI", number: 1 });
+  h.document.hidden = true;
+  complete({ connected: [{ type: "HDMI", number: 1 }] });
+  assert.deepEqual(h.inputs, []);
+  assert.equal(h.A.inputs.watching, false);
 });
