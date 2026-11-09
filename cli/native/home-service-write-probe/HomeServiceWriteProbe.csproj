@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AssemblyName>AeroTizenServiceHomeWriteProbe</AssemblyName>
+    <StartupObject>HomeServiceWriteProbe</StartupObject>
+    <OutputType>Exe</OutputType>
+    <UseAppHost>false</UseAppHost>
+    <RollForward>Major</RollForward>
+    <Deterministic>true</Deterministic>
+    <DebugType>none</DebugType>
+    <PathMap>$(MSBuildProjectDirectory)=/_/home-service-write-probe</PathMap>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../home-service-probe/HomeServiceProbe.cs" Link="HomeServiceProbe.cs"/>
+  </ItemGroup>
+</Project>

@@ -261,5 +261,22 @@
   "wallpaper.firstColour": "اللون الأول",
   "wallpaper.secondColour": "اللون الثاني",
   "wallpaper.direction": "الاتجاه",
-  "wallpaper.gradientHint": "OK لاختيار لون. أعلى/أسفل: اختر أداة. يمين/يسار: اضبط. اضغط مطولاً للضبط أسرع."
+  "wallpaper.gradientHint": "OK لاختيار لون. أعلى/أسفل: اختر أداة. يمين/يسار: اضبط. اضغط مطولاً للضبط أسرع.",
+  "nativeTest.title": "اختبارات Home الأصلي",
+  "nativeTest.hint": "إصدار اختبار مؤقت. يعيد اختبار الكتابة كتابة القيم الحالية. يُشغَّل كل اختبار مرة واحدة.",
+  "nativeTest.get": "اختبار القراءة",
+  "nativeTest.set": "اختبار الكتابة",
+  "nativeTest.refresh": "تحديث النتائج",
+  "nativeTest.loading": "جارٍ الاتصال بخدمة الخلفية…",
+  "nativeTest.ready": "شغّل اختبار القراءة أولاً.",
+  "nativeTest.getPassed": "نجحت القراءة. اختبار الكتابة متاح.",
+  "nativeTest.getBlocked": "انتهت القراءة. الكتابة محظورة. راجع النتائج.",
+  "nativeTest.setPassed": "نجحت الكتابة. ما زالت جميع القيم متطابقة.",
+  "nativeTest.failed": "فشل الاختبار. راجع النتائج المحفوظة.",
+  "nativeTest.interrupted": "توقف الاختبار قبل اكتماله. تظهر النتائج المحفوظة.",
+  "nativeTest.offline": "توقفت الخدمة عن الاستجابة. أعد فتح هذه الشاشة أو حدّث النتائج.",
+  "nativeTest.tvRequired": "شغّل هذه الاختبارات على التلفاز.",
+  "nativeTest.getRunning": "جارٍ اختبار القراءة…",
+  "nativeTest.setRunning": "جارٍ اختبار الكتابة…",
+  "nativeTest.changed": "فشل اختبار الكتابة. تختلف القيم عن اختبار القراءة. راجع النتائج."
 }

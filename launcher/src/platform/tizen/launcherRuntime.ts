@@ -40,7 +40,11 @@ export interface LauncherRuntime {
   };
   hideToast(): void;
   homeScreen?: HomeBridge;
-  homewatch: { useSamsungHome(): void; openSamsungHome?(): void };
+  homewatch: {
+    useSamsungHome(): void;
+    openSamsungHome?(): void;
+    ensureService?(done: () => void, failed: (reason: string) => void): void;
+  };
   inputs: {
     sources: InputSource[];
     watching: boolean;

@@ -1,113 +1,86 @@
-# Temporary Native Home service test for issue 188
+# Temporary Native Home API tests for issue 188
 
 **DO NOT MERGE. Tester build for the QN80H on Tizen 10.**
 
-This test asks whether AeroTizen's background service can start a bundled .NET
-helper and read the TV's Home settings. The helper imports only getters and memory
-release. The service saves a report in its own private app storage before it
-starts the process. The report is diagnostic evidence, not a Native Home backup.
-`native_home_supported` stays `null`, including after successful reads.
+The test screen has Get test, Set test and Refresh results buttons. Get test reads
+Home and startup settings. Set test writes those same values back and checks them
+after each setter. It becomes available only after all required getters succeed.
+Each test runs once. A saved attempt blocks another execution after a restart.
 
-Other TVs have stopped their shared web-service host during a similar process
-launch. If the request loses its connection, reopen AeroTizen, reconnect the
-inspector and run the same console script to collect the saved result. A saved
-attempt blocks a second execution, including after the service or TV restarts.
+## Install and run
 
-## Install the test build
-
-Extract the tester ZIP. Keep the existing Samsung signing certificates and use
-the installed CLI. Replace `TV_IP` with the TV address.
+Extract the tester ZIP. Keep the existing Samsung signing certificates. Use the
+installed CLI and replace TV_IP with the TV address.
 
 ```sh
 ./aerotizen --tv TV_IP install ./AeroTizen-native-home-test.wgt
 ```
 
-The CLI signs the supplied package. The test uses the normal AeroTizen package ID,
-so it replaces the installed launcher. It has an orange development badge and a
-name beginning with `AeroTizen Dev`. Disconnect TV power for 60 seconds after the
-install, then open this development app from Apps.
+The CLI signs the supplied WGT. It uses the normal launcher package ID and replaces
+the installed launcher. The orange badge and the name beginning with AeroTizen Dev
+identify the test build. Disconnect TV power for 60 seconds after installation,
+then open the development app from Apps.
 
-Start the inspector and leave the command running.
+1. Open Settings, then About. Native Home tests appears first.
+2. Select Get test. Wait for its result. The screen shows values or native errors.
+3. If Get test passes, select Set test. It reports each setter and its readback.
+4. Use Up and Down to focus and scroll through the result rows.
+
+Set test uses the saved Get test result. Before each setter, it checks the current
+UID, firmware and all values against that result. It writes only the matching
+current value. A changed or unreadable value stops the test. Each native call has
+a saved progress record, so a helper failure can show its last attempted setter.
+
+The permission test does not assign AeroTizen as a new Home target. Successful
+reads and same-value writes still need a separate Home assignment and restore
+implementation, followed by physical Home-button tests. `native_home_supported`
+stays `null`.
+
+## If the service stops
+
+Similar process launches stopped the shared web-service host on other Samsung TVs.
+The screen shows a connection failure if it can still run. If the app closes,
+reopen AeroTizen and return to Settings, About. Select Refresh results to load the
+saved attempt. This starts the background service when needed and retrieves the
+report. It does not repeat either native test.
+
+The service persists a marker before process creation. Each helper has a
+five-second timeout and a 32 KiB output limit. An interrupted attempt stays
+blocked. Raw command output, device identifiers, network addresses, tokens and
+signing material are excluded from the report.
+
+## Share results
+
+Share the displayed result and error codes. For the full JSON, start the inspector
+and open the AeroTizen Console in Chrome at chrome://inspect/#devices.
+Configure localhost:9222, then select Inspect for the AeroTizen target.
 
 ```sh
 ./aerotizen --tv TV_IP inspect launcher --port 9222
 ```
 
-In Chrome, open `chrome://inspect/#devices`, configure `localhost:9222` and inspect
-the AeroTizen target. Paste the following script into its Console. It starts the
-background service through `wrt:service`, waits for its HTTP endpoint, and requests
-the test once. The final JSON is copied to the clipboard for review and sharing.
+The following optional export only retrieves the saved results and copies them
+to the clipboard. The tests are controlled by the TV buttons.
 
 ```js
-(async function () {
-  if (!window.__aeroNativeHomeService) {
-    await new Promise(function (resolve, reject) {
-      var timer;
-      function ready() {
-        clearTimeout(timer);
-        window.removeEventListener("aero-native-home-service", ready);
-        resolve();
-      }
-      window.addEventListener("aero-native-home-service", ready);
-      timer = setTimeout(function () {
-        window.removeEventListener("aero-native-home-service", ready);
-        reject(new Error("wrt:service did not load"));
-      }, 5000);
-      var script = document.createElement("script");
-      script.type = "module";
-      script.textContent =
-        "import { Service } from 'wrt:service'; window.__aeroNativeHomeService = Service; window.dispatchEvent(new Event('aero-native-home-service'));";
-      document.body.appendChild(script);
-    });
-  }
-  await new window.__aeroNativeHomeService("DclHome001.Watcher").start();
-  var endpoint = "http://127.0.0.1:47790/diagnostics/native-home";
-  var headers = { "X-AeroTizen-Home-Probe": "read-only-v1" };
-  async function request(method) {
-    var response = await fetch(endpoint, { method: method, headers: headers, cache: "no-store" });
-    var result = await response.json();
-    if (!response.ok) throw new Error(JSON.stringify(result));
-    return result;
-  }
-  var report;
-  for (var attempt = 0; attempt < 10; attempt += 1) {
-    try {
-      report = await request("GET");
-      break;
-    } catch (error) {
-      if (attempt === 9) throw error;
-      await new Promise(function (resolve) { setTimeout(resolve, 500); });
-    }
-  }
-  console.log("Native Home service preflight", JSON.stringify(report));
-  if (report.status === "not_run") report = await request("POST");
-  for (var poll = 0; poll < 12 && report.status === "launch_requested"; poll += 1) {
-    await new Promise(function (resolve) { setTimeout(resolve, 1000); });
-    report = await request("GET");
-  }
-  console.log(JSON.stringify(report, null, 2));
+fetch("http://127.0.0.1:47790/diagnostics/native-home", {
+  headers: { "X-AeroTizen-Home-Probe": "diagnostic-v2" },
+  cache: "no-store"
+}).then(function (response) {
+  return response.json();
+}).then(function (report) {
+  console.log(report);
   copy(JSON.stringify(report, null, 2));
-  return report;
-})().catch(function (error) {
-  console.error("Native Home test stopped", error.message);
 });
 ```
 
-Share the JSON, or the last Console error if collection stops. `query_completed`
-means the helper returned. Check each getter's `status` in `query` for API access.
-`execution_failed` records a permission, process or runtime failure. `interrupted`
-means a launch marker survived without a completion report. Missing metadata is
-reported as unavailable. `no_query_result` means the process exited without a valid
-helper reply. Raw process output, device identifiers, network addresses,
-tokens and signing material are excluded from the report.
-
-To return to the stable launcher after collecting the result, stop the inspector
-with Ctrl+C, then run `./aerotizen --tv TV_IP install launcher`.
+To return to the stable launcher, stop the inspector with Ctrl+C, then run
+`./aerotizen --tv TV_IP install launcher`.
 
 ## Build from this branch
 
-The build host needs the .NET 6 SDK and the repository's Node dependencies.
-The tester needs neither Node nor .NET.
+The build host needs the .NET 6 SDK and the repository's Node dependencies. The
+tester uses the installed CLI and the TV remote.
 
 ```sh
 npm ci
@@ -115,13 +88,11 @@ python3 cli/tools/build_home_service_probe.py --dotnet /path/to/dotnet
 npm run build:dev
 ```
 
-Create the unsigned `.wgt` by zipping the contents of `dist/launcher-dev` with
-`config.xml` at the archive root. Include the entire `native-home-probe/`
-directory. The standard release packaging selects JavaScript assets and omits
-this temporary helper, so use the supplied tester package for this test.
+Zip the contents of dist/launcher-dev with config.xml at the WGT archive root.
+Include the entire native-home-probe directory. The standard release packaging
+omits these temporary managed payloads, so use the supplied tester WGT.
 
-The test endpoint accepts only an empty POST with the fixed diagnostic header.
-GET reads the saved report and never starts a process. No process runs at service
-startup. Every launch uses the fixed helper path, a five-second timeout and a
-32 KiB output limit. The earlier SDB timing probe remains available separately in
-[the runtime probe guide](home-runtime-probe.md).
+The two managed assemblies keep getter imports separate from setter imports.
+The setter policy is exercised by tests/native-home-service/ServiceWriteTests.cs
+without loading Tizen libraries. The earlier SDB timing probe remains available
+in the [runtime probe guide](home-runtime-probe.md).

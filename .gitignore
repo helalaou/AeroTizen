@@ -23,6 +23,8 @@ tests/native-root/bin/
 tests/native-root/obj/
 tests/native-home/bin/
 tests/native-home/obj/
+tests/native-home-service/bin/
+tests/native-home-service/obj/
 tests/native-untethered/bin/
 tests/native-untethered/obj/
 tests/native-boot-probe/bin/

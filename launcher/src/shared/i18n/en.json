@@ -261,5 +261,22 @@
   "wallpaper.firstColour": "First colour",
   "wallpaper.secondColour": "Second colour",
   "wallpaper.direction": "Direction",
-  "wallpaper.gradientHint": "OK selects a colour. Up/Down: choose a control. Left/Right: adjust. Hold to adjust faster."
+  "wallpaper.gradientHint": "OK selects a colour. Up/Down: choose a control. Left/Right: adjust. Hold to adjust faster.",
+  "nativeTest.title": "Native Home tests",
+  "nativeTest.hint": "Temporary test build. Set test writes back the current values. Each test runs once.",
+  "nativeTest.get": "Get test",
+  "nativeTest.set": "Set test",
+  "nativeTest.refresh": "Refresh results",
+  "nativeTest.loading": "Connecting to the background service…",
+  "nativeTest.ready": "Run Get test first.",
+  "nativeTest.getPassed": "Get test passed. Set test is available.",
+  "nativeTest.getBlocked": "Get test finished. Set test is blocked. See results.",
+  "nativeTest.setPassed": "Set test passed. All values still match.",
+  "nativeTest.failed": "The test failed. See the saved results.",
+  "nativeTest.interrupted": "The test stopped before completion. Saved results are shown.",
+  "nativeTest.offline": "The service stopped responding. Reopen this screen or select Refresh results.",
+  "nativeTest.tvRequired": "Run these tests on the TV.",
+  "nativeTest.getRunning": "Running Get test…",
+  "nativeTest.setRunning": "Running Set test…",
+  "nativeTest.changed": "Set test failed. Values differ from Get test. Review the results."
 }

@@ -1,4 +1,4 @@
-"""Build the temporary read-only #188 helper into the launcher test package."""
+"""Build the temporary #188 getter and same-value setter test helpers."""
 
 import argparse
 import hashlib
@@ -10,7 +10,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / "cli/native/home-service-probe"
 OUTPUT = ROOT / "launcher/native-home-probe"
 
 
@@ -21,28 +20,36 @@ def main():
     if not args.dotnet:
         parser.error("Install the .NET 6 SDK or pass --dotnet PATH.")
     with TemporaryDirectory(prefix="aerotizen-service-home-") as temporary:
-        subprocess.run(
-            [
-                args.dotnet,
-                "build",
-                str(SOURCE / "HomeServiceProbe.csproj"),
-                "-c",
-                "Release",
-                "-o",
-                temporary,
-                "--nologo",
-                "-p:UseSharedCompilation=false",
-            ],
-            env={**os.environ, "DOTNET_CLI_TELEMETRY_OPTOUT": "1", "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1"},
-            check=True,
-        )
         OUTPUT.mkdir(parents=True, exist_ok=True)
         hashes = {}
-        for suffix in (".dll", ".runtimeconfig.json"):
-            name = "AeroTizenServiceHomeProbe" + suffix
-            data = (Path(temporary) / name).read_bytes()
-            (OUTPUT / name).write_bytes(data)
-            hashes[name] = hashlib.sha256(data).hexdigest()
+        for project, assembly in (
+            ("home-service-probe/HomeServiceProbe", "AeroTizenServiceHomeProbe"),
+            ("home-service-write-probe/HomeServiceWriteProbe", "AeroTizenServiceHomeWriteProbe"),
+        ):
+            subprocess.run(
+                [
+                    args.dotnet,
+                    "build",
+                    str(ROOT / "cli/native" / (project + ".csproj")),
+                    "-c",
+                    "Release",
+                    "-o",
+                    temporary,
+                    "--nologo",
+                    "-p:UseSharedCompilation=false",
+                ],
+                env={
+                    **os.environ,
+                    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+                    "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1",
+                },
+                check=True,
+            )
+            for suffix in (".dll", ".runtimeconfig.json"):
+                name = assembly + suffix
+                data = (Path(temporary) / name).read_bytes()
+                (OUTPUT / name).write_bytes(data)
+                hashes[name] = hashlib.sha256(data).hexdigest()
         (OUTPUT / "manifest.json").write_text(
             json.dumps({"schema_version": 1, "files": hashes}, indent=2) + "\n"
         )

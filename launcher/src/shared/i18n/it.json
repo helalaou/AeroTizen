@@ -261,5 +261,22 @@
   "wallpaper.firstColour": "Colore 1",
   "wallpaper.secondColour": "Colore 2",
   "wallpaper.direction": "Direzione",
-  "wallpaper.gradientHint": "OK seleziona un colore. Su/Giù: scegli un controllo. Sinistra/Destra: regola. Tieni premuto per accelerare."
+  "wallpaper.gradientHint": "OK seleziona un colore. Su/Giù: scegli un controllo. Sinistra/Destra: regola. Tieni premuto per accelerare.",
+  "nativeTest.title": "Test Home nativa",
+  "nativeTest.hint": "Versione di test temporanea. Il test di scrittura riscrive i valori attuali. Ogni test viene eseguito una sola volta.",
+  "nativeTest.get": "Test lettura",
+  "nativeTest.set": "Test scrittura",
+  "nativeTest.refresh": "Aggiorna risultati",
+  "nativeTest.loading": "Connessione al servizio in background…",
+  "nativeTest.ready": "Esegui prima il test di lettura.",
+  "nativeTest.getPassed": "Lettura riuscita. Il test di scrittura è disponibile.",
+  "nativeTest.getBlocked": "Lettura terminata. Scrittura bloccata. Consulta i risultati.",
+  "nativeTest.setPassed": "Scrittura riuscita. Tutti i valori corrispondono.",
+  "nativeTest.failed": "Test non riuscito. Consulta i risultati salvati.",
+  "nativeTest.interrupted": "Il test si è interrotto. Sono mostrati i risultati salvati.",
+  "nativeTest.offline": "Il servizio non risponde. Riapri questa schermata o aggiorna i risultati.",
+  "nativeTest.tvRequired": "Esegui questi test sul televisore.",
+  "nativeTest.getRunning": "Test di lettura in corso…",
+  "nativeTest.setRunning": "Test di scrittura in corso…",
+  "nativeTest.changed": "Test di scrittura non riuscito. I valori differiscono dal test di lettura. Consulta i risultati."
 }

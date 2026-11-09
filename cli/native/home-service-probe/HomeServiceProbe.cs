@@ -53,23 +53,32 @@ internal static class HomeServiceProbe
         catch (Exception error) { return Unavailable(error.GetType().Name); }
     }
 
+    internal static object Read()
+    {
+        var environment = new Dictionary<string, string>();
+        foreach (string line in File.ReadAllLines("/etc/os-release"))
+        {
+            var match = Regex.Match(line, "\\A(ID|VERSION_ID|BUILD_ID)=[\"']?([A-Za-z0-9._+-]+)[\"']?\\z");
+            if (match.Success) environment[match.Groups[1].Value] = match.Groups[2].Value;
+        }
+        if (!environment.ContainsKey("ID") || environment["ID"] != "tizen") throw new PlatformNotSupportedException();
+        uint? uid = null;
+        try { uid = getuid(); } catch (Exception) { /* Getter failures below remain reportable. */ }
+        var settings = new Dictionary<string, object>();
+        foreach (string key in StringKeys) settings[key] = StringValue(key);
+        settings["db/menu/smart_hub/ontvsetting/auto_start"] = AutoStart();
+        return new {
+            schema_version = 1, read_only = true, uid, architecture_bits = IntPtr.Size * 8,
+            os_release = environment, main_operation = StringValue(MainOperation, true), settings
+        };
+    }
+
     public static int Main(string[] args)
     {
         try
         {
             if (args.Length != 0) throw new ArgumentException();
-            // This probe must also fail harmlessly when accidentally run on a developer computer.
-            if (!Regex.IsMatch(File.ReadAllText("/etc/os-release"), "(?m)^ID=[\"']?tizen[\"']?\\r?$"))
-                throw new PlatformNotSupportedException();
-            uint? uid = null;
-            try { uid = getuid(); } catch (Exception) { /* Getter failures below remain reportable. */ }
-            var settings = new Dictionary<string, object>();
-            foreach (string key in StringKeys) settings[key] = StringValue(key);
-            settings["db/menu/smart_hub/ontvsetting/auto_start"] = AutoStart();
-            Console.WriteLine("AEROTIZEN_SERVICE_HOME=" + JsonSerializer.Serialize(new {
-                schema_version = 1, read_only = true, uid, architecture_bits = IntPtr.Size * 8,
-                main_operation = StringValue(MainOperation, true), settings
-            }));
+            Console.WriteLine("AEROTIZEN_SERVICE_HOME=" + JsonSerializer.Serialize(Read()));
             return 0;
         }
         catch (Exception error)

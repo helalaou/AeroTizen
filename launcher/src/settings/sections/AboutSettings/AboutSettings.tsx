@@ -5,6 +5,7 @@ import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { SettingsHint } from "../../components/SettingsHint/SettingsHint";
 import { SettingsSection } from "../../components/SettingsSection/SettingsSection";
 import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
+import { NativeHomeTests } from "../NativeHomeTests/NativeHomeTests";
 
 import styles from "./AboutSettings.module.css";
 
@@ -24,6 +25,7 @@ export const AboutSettings = ({ active }: { active: boolean }) => {
   }, [active, drawer, state, unread, updates]);
   return (
     <>
+      <NativeHomeTests active={active && state.category === "about" && state.expanded} />
       <SettingsSection
         title={t("settings.about.installedVersion", { version: installedVersion })}
         description={latestVersion ? t("settings.about.updateVersion", { version: latestVersion }) : undefined}
