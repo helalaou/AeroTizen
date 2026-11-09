@@ -37,3 +37,105 @@ test("Preact standby overrides persist without confusing custom labels with devi
   await expect(page.locator("#inputs")).not.toContainText("Custom console label");
   expect(errors).toEqual([]);
 });
+
+test("HDMI playback preference survives reload and changes how the Inputs tile opens", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+  await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+  await page.addInitScript(() => {
+    window.hdmiCalls = [];
+    window.tizen = {
+      application: {
+        getAppsInfo: (done) => done([]),
+        launch(id, done) {
+          window.hdmiCalls.push(id);
+          done();
+        },
+      },
+      systeminfo: {
+        getPropertyValue(name, done) {
+          if (name === "VIDEOSOURCE") done({ connected: [{ type: "HDMI", number: 2 }], disconnected: [] });
+        },
+      },
+      tvwindow: {
+        setSource(source, done) {
+          window.hdmiCalls.push(source.type + " " + source.number);
+          done();
+        },
+        show(done) {
+          window.hdmiCalls.push("embedded");
+          done();
+        },
+      },
+    };
+  });
+  await page.goto("/");
+  await expect(page).toHaveTitle("AeroTizen");
+  const hdmiTile = page.getByRole("button", { name: "HDMI 2", exact: true });
+  await hdmiTile.click();
+  await expect.poll(() => page.evaluate(() => window.hdmiCalls)).toEqual(["HDMI 2", "embedded"]);
+
+  await page.reload();
+  await page.locator("#gear").click();
+  await openCategory(page, "sources");
+  await expect(page.getByRole("button", { name: "Inside AeroTizen" })).toHaveAttribute("aria-pressed", "true");
+  const samsungViewer = page.getByRole("button", { name: "Samsung viewer", exact: true });
+  await samsungViewer.click();
+  await expect(samsungViewer).toHaveAttribute("aria-pressed", "true");
+  await page.reload();
+
+  await hdmiTile.click();
+  await expect.poll(() => page.evaluate(() => window.hdmiCalls)).toEqual(["HDMI 2", "org.tizen.tv-viewer"]);
+  expect(errors).toEqual([]);
+});
+
+for (const hidesLauncher of [true, false]) {
+  test(`Samsung HDMI viewer ${hidesLauncher ? "does not warn after a quick Home return" : "warns if it never takes focus"}`, async ({
+    page,
+  }) => {
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+    await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+    await page.addInitScript((hide) => {
+      localStorage.setItem(
+        "aerotizen.settings.v1",
+        JSON.stringify({ background: "black", showWeather: false, hdmiNativeViewer: true }),
+      );
+      window.viewerAccepted = false;
+      window.tizen = {
+        application: {
+          getAppsInfo: (done) => done([]),
+          launch(_id, done) {
+            done();
+            window.viewerAccepted = true;
+            if (hide) {
+              Object.defineProperty(document, "hidden", { configurable: true, value: true });
+              document.dispatchEvent(new Event("visibilitychange"));
+              Object.defineProperty(document, "hidden", { configurable: true, value: false });
+              document.dispatchEvent(new Event("visibilitychange"));
+            }
+          },
+        },
+        systeminfo: {
+          getPropertyValue(name, done) {
+            if (name === "VIDEOSOURCE") done({ connected: [{ type: "HDMI", number: 2 }], disconnected: [] });
+          },
+        },
+        tvwindow: { setSource: (_source, done) => done() },
+      };
+    }, hidesLauncher);
+    await page.goto("/");
+    await page.getByRole("button", { name: "HDMI 2", exact: true }).click();
+    await page.waitForFunction(() => window.viewerAccepted);
+    if (hidesLauncher) {
+      // Wait past the production focus deadline to prove the warning remains absent.
+      await page.waitForTimeout(2300);
+      await expect(page.locator("#toast")).toBeHidden();
+    } else {
+      await expect(page.locator("#toast")).toHaveText("Samsung viewer did not open HDMI 2");
+    }
+    expect(errors).toEqual([]);
+  });
+}

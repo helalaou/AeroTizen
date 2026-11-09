@@ -93,6 +93,7 @@ export const normalizeSettings = (
     continueWatchingApps: ids(data.continueWatchingApps, 100),
     showLiveTv: boolean(data.showLiveTv, defaults.showLiveTv),
     hideDisconnectedHdmi: boolean(data.hideDisconnectedHdmi, defaults.hideDisconnectedHdmi),
+    hdmiNativeViewer: boolean(data.hdmiNativeViewer, defaults.hdmiNativeViewer),
     hdmiKeepVisible: dictionary<boolean>(data.hdmiKeepVisible, "boolean"),
     inputNames: dictionary<string>(data.inputNames, "string"),
   };

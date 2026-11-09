@@ -22,6 +22,7 @@ function harness(options = {}) {
     backgrounds = [];
   const listeners = {},
     documentListeners = {},
+    documentHandlers = {},
     watch = [],
     resume = [];
   const log = require("../launcher/js/diagnostics")("ui", {
@@ -83,7 +84,7 @@ function harness(options = {}) {
     tvwindow: {
       setSource(source, success, failure, target) {
         inputs.push({ source, target });
-        if (options.sourceFails) failure({ name: "NoSource" });
+        if (options.sourceFails) failure({ name: "InvalidValuesError" });
         else success();
       },
       show(success) {
@@ -104,7 +105,16 @@ function harness(options = {}) {
   }
   const document = {
     addEventListener(name, handler) {
-      documentListeners[name] = handler;
+      if (!documentHandlers[name]) {
+        documentHandlers[name] = [];
+        documentListeners[name] = () => documentHandlers[name].slice().forEach((callback) => callback());
+      }
+      documentHandlers[name].push(handler);
+    },
+    removeEventListener(name, handler) {
+      const handlers = documentHandlers[name] || [];
+      const index = handlers.indexOf(handler);
+      if (index >= 0) handlers.splice(index, 1);
     },
     hidden: options.visible === true ? false : true,
     body: { classList: { add() {}, remove() {} } },
@@ -402,12 +412,96 @@ test("old firmware without the viewer launch API uses upstream TVWindow", () => 
   assert.equal(h.embedded.length, 1);
 });
 
-test("HDMI always uses TVWindow and never touches native Home or watcher", () => {
+test("HDMI uses TVWindow by default", () => {
   const h = harness();
   h.A.inputs.show({ type: "HDMI", number: 2 });
   assert.equal(h.embedded.length, 1);
   assert.equal(h.launches.length, 0);
   assert.equal(h.requests.length, 0);
+});
+
+test("missing input selection does not start playback", () => {
+  const h = harness();
+  h.A.inputs.show(null);
+  assert.deepEqual(h.inputs, []);
+  assert.deepEqual(h.requests, []);
+});
+
+test("opt-in HDMI handoff waits for /leave and selects the raw source before opening Samsung viewer", () => {
+  const h = harness();
+  h.A.settings.update({ hdmiNativeViewer: true });
+  const raw = { type: "HDMI", number: 2, signal: false };
+  h.A.inputs.show({ type: "HDMI", number: 2, raw });
+  h.A.inputs.show({ type: "HDMI", number: 3 });
+  assert.equal(h.launches.length, 0);
+  assert.equal(h.inputs.length, 0);
+  assert.equal(h.requests.length, 1);
+  assert.equal(h.requests[0].url, "http://127.0.0.1:47790/leave");
+  h.requests[0].resolve(200);
+  assert.deepEqual(h.inputs, [{ source: raw, target: "MAIN" }]);
+  assert.equal(h.inputs[0].source, raw);
+  assert.deepEqual(h.launches, [{ id: "org.tizen.tv-viewer", method: "launch" }]);
+  assert.deepEqual(h.embedded, []);
+  assert.equal(h.log.snapshot().records[0].data.action, "hdmi");
+});
+
+test("opt-in HDMI uses TVWindow if the launch API is unavailable", () => {
+  const h = harness({ noNativeLaunch: true });
+  h.A.settings.update({ hdmiNativeViewer: true });
+  h.A.inputs.show({ type: "HDMI", number: 2 });
+  assert.deepEqual(h.requests, []);
+  assert.deepEqual(h.embedded, ["shown"]);
+});
+
+test("HDMI viewer rejection rearms the watcher and opens the embedded input", () => {
+  const h = harness({ launchFails: "org.tizen.tv-viewer", appControlFails: true });
+  h.A.settings.update({ hdmiNativeViewer: true });
+  h.A.inputs.show({ type: "HDMI", number: 2 });
+  h.requests[0].resolve(200);
+  assert.deepEqual(
+    h.launches.map(({ method }) => method),
+    ["launch", "appcontrol"],
+  );
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
+  assert.deepEqual(h.embedded, ["shown"]);
+});
+
+test("HDMI source selection failure records the Tizen error name and tries the embedded path", () => {
+  const h = harness({ sourceFails: true });
+  h.A.settings.update({ hdmiNativeViewer: true });
+  const source = { type: "HDMI", number: 2 };
+  h.A.inputs.show(source);
+  h.requests[0].resolve(200);
+  assert.deepEqual(h.launches, []);
+  assert.deepEqual(h.inputs, [
+    { source, target: "MAIN" },
+    { source, target: "MAIN" },
+  ]);
+  const { data } = h.log.snapshot().records.find(({ event }) => event === "handoff.failed");
+  assert.equal(data.reason, "source selection failed");
+  assert.equal(data.error, "InvalidValuesError");
+});
+
+test("HDMI handoff without watcher acknowledgement opens only the embedded input", () => {
+  const h = harness();
+  h.A.settings.update({ hdmiNativeViewer: true });
+  h.A.inputs.show({ type: "HDMI", number: 2 });
+  h.requests[0].fail();
+  assert.deepEqual(h.launches, []);
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
+  assert.deepEqual(h.embedded, ["shown"]);
+});
+
+test("an old viewer focus timer cannot rearm the watcher during a newer handoff", () => {
+  const h = harness({ visible: true });
+  h.A.settings.update({ hdmiNativeViewer: true });
+  h.A.inputs.show({ type: "HDMI", number: 2 });
+  h.requests[0].resolve(200);
+  h.A.inputs.show({ type: "HDMI", number: 3 });
+  h.timers.find((timer) => timer.ms === 2100).fn();
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/leave");
+  assert.equal(h.requests.length, 2);
+  assert.deepEqual(h.toasts, []);
 });
 
 test("native Live TV fallback rearms when launch accepted but never takes focus", () => {
@@ -417,6 +511,59 @@ test("native Live TV fallback rearms when launch accepted but never takes focus"
   assert.equal(h.timers[0].ms, 2100);
   h.timers[0].fn();
   assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
+});
+
+for (const type of ["TV", "HDMI"]) {
+  test(`${type} returning Home before the focus timer runs does not report a failed handoff`, () => {
+    const h = harness({ visible: true });
+    h.A.settings.update({ hdmiNativeViewer: true });
+    h.A.inputs.show({ type, number: 1 });
+    h.requests[0].resolve(200);
+    const focusTimer = h.timers.find((timer) => timer.ms === 2100);
+    h.document.hidden = true;
+    h.documentListeners.visibilitychange();
+    h.document.hidden = false;
+    h.documentListeners.visibilitychange();
+    // A timer already queued before suspension must also remain harmless.
+    focusTimer.fn();
+    assert.deepEqual(h.toasts, []);
+    assert.equal(h.requests.length, 1, "the focus check must not rearm the watcher after a successful handoff");
+    assert.equal(
+      h.log.snapshot().records.filter((record) => record.event === "handoff.visibility_unconfirmed").length,
+      0,
+    );
+  });
+
+  test(`${type} hiding before the launch callback also confirms the handoff`, () => {
+    const h = harness({ visible: true });
+    h.A.settings.update({ hdmiNativeViewer: true });
+    h.tz.application.launch = (_id, accepted) => {
+      h.document.hidden = true;
+      h.documentListeners.visibilitychange();
+      accepted();
+    };
+    h.A.inputs.show({ type, number: 1 });
+    h.requests[0].resolve(200);
+    h.document.hidden = false;
+    h.documentListeners.visibilitychange();
+    h.timers.filter((timer) => timer.ms === 2100).forEach((timer) => timer.fn());
+    assert.deepEqual(h.toasts, []);
+    assert.equal(h.requests.length, 1);
+    assert.equal(
+      h.log.snapshot().records.filter((record) => record.event === "handoff.visibility_unconfirmed").length,
+      0,
+    );
+  });
+}
+
+test("HDMI still reports an accepted launch that never hides the launcher", () => {
+  const h = harness({ visible: true });
+  h.A.settings.update({ hdmiNativeViewer: true });
+  h.A.inputs.show({ type: "HDMI", number: 2 });
+  h.requests[0].resolve(200);
+  h.timers.find((timer) => timer.ms === 2100).fn();
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
+  assert.match(h.toasts[0], /Samsung viewer did not open HDMI 2/);
 });
 
 test("on page reload native handoff re-arms HomeWatcher", () => {
@@ -460,7 +607,7 @@ test("launch outcomes correlate with requests and preserve failure handoffs", ()
 
 test("Live TV acceptance remains separate from unconfirmed visibility", () => {
   const h = harness({ visible: true });
-  h.A.homewatch.openNativeLiveTV();
+  h.A.homewatch.openNativeViewer();
   h.requests[0].resolve(200);
   h.timers.find((timer) => timer.ms === 2100).fn();
   assert.deepEqual(

@@ -1,5 +1,5 @@
 // TV inputs, named by the user or the TV, with visibility settings for Live TV and HDMI ports.
-// Selected inputs are shown full screen inside the launcher.
+// Inputs can open in Samsung's viewer or use the embedded TV window.
 (function (A) {
   "use strict";
 
@@ -164,18 +164,7 @@
     return inputs.label(s, s.type === "TV" ? A.translate("inputs.liveTv") : undefined);
   }
 
-  inputs.show = function (s) {
-    // Native Live TV owns channel selection and remote control, unlike the
-    // upstream embedded TVWindow. If unsupported, preserve TVWindow fallback.
-    if (
-      s &&
-      s.type === "TV" &&
-      A.homewatch &&
-      typeof A.homewatch.openNativeLiveTV === "function" &&
-      A.homewatch.openNativeLiveTV(s.raw || s) !== false
-    ) {
-      return;
-    }
+  function showEmbedded(s) {
     if (!tz || !tz.tvwindow) {
       return A.toast(A.translate("inputs.wouldSwitch", { input: displayLabel(s) }));
     }
@@ -205,6 +194,27 @@
     } catch (e) {
       A.toast(A.translate("inputs.switchFailed"));
     }
+  }
+
+  inputs.show = function (s) {
+    if (!s) {
+      return;
+    }
+    var useHdmiViewer = s.type === "HDMI" && A.settings.getSnapshot().hdmiNativeViewer;
+    if ((s.type === "TV" || useHdmiViewer) && A.homewatch && typeof A.homewatch.openNativeViewer === "function") {
+      var hdmi = useHdmiViewer
+        ? {
+            label: displayLabel(s),
+            fallback: function () {
+              showEmbedded(s);
+            },
+          }
+        : null;
+      if (A.homewatch.openNativeViewer(s.raw || s, hdmi)) {
+        return;
+      }
+    }
+    showEmbedded(s);
   };
 
   inputs.leave = function () {
