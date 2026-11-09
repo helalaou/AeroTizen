@@ -37,6 +37,40 @@ alternative runtime execution, key-rule changes and restore testing are separate
 work. The reporter's model can be supplied separately with the report; the probe
 does not query the TV's HTTP identity endpoint.
 
+## Check SDB execution after a transport timeout
+
+The execution probe compares a no-op with a two-second delay using the same SDB
+command format as `home status`. It opens no callback listener and uploads no
+files. Close any active inspector or SDB session first.
+
+```sh
+PYTHONPATH=cli/src python3 cli/tools/probe_sdk_execution.py --tv TV_IP
+```
+
+A repeatable delay gives evidence that the TV executed the command. A quick
+return on both attempts means the probe observed no delay. This can help
+identify firmware that blocks the command. The JSON includes selected SDB
+capabilities, timings and reply categories. It excludes IP addresses and raw
+TV replies.
+
+Build a ZIP for a tester from the repository root. The tester needs Python 3
+and can run the ZIP directly.
+
+```sh
+python3 - <<'PY'
+from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
+
+Path("dist").mkdir(exist_ok=True)
+with ZipFile("dist/aerotizen-sdb-probe-188.zip", "w", compression=ZIP_DEFLATED) as archive:
+    archive.write("cli/tools/probe_sdk_execution.py", "__main__.py")
+    for name in ("__init__.py", "sdb.py"):
+        archive.write(f"cli/src/aerotizen/{name}", f"aerotizen/{name}")
+    archive.write("LICENSE")
+PY
+python3 dist/aerotizen-sdb-probe-188.zip --tv TV_IP
+```
+
 ## Test the PR code from source
 
 The probe needs Python 3.10 or newer on the computer. For a source install, it also
