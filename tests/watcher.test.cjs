@@ -138,6 +138,7 @@ function harness(options = {}) {
             read: (done) => done(null, "VERSION_ID=9.0.0\nBUILD_ID=test"),
           });
       if (name === "./diagnostics-store") return (tz, ready) => ready(options.diagnosticsStorage || null);
+      if (name === "./native-home-diagnostic") return options.nativeHomeDiagnostic;
       if (name === "./artmode")
         return (config) => {
           artOptions = config;
@@ -967,6 +968,26 @@ test("pending diagnostic storage does not delay Home requests or native mode con
   completions.shift()(null);
   h.advance(500);
   assert.equal(saves.length, 2);
+});
+
+test("native Home diagnostic uses its own handler without changing watcher mode", () => {
+  const calls = [];
+  const h = harness({
+    capability: false,
+    nativeHomeDiagnostic(req, res, tz) {
+      calls.push({ url: req.url, tz });
+      res.writeHead(200);
+      res.end(JSON.stringify({ status: "not_run" }));
+    },
+  });
+  h.api.onStart();
+  h.advance(0);
+  assert.equal(calls.length, 0);
+  assert.equal(h.control("/diagnostics/native-home").status, "not_run");
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0].tz.application);
+  assert.equal(h.state().homeControl.mode, "watcher");
+  assert.equal(h.launches.length, 0);
 });
 
 let failed = 0;

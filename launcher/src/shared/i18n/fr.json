@@ -261,5 +261,22 @@
   "wallpaper.firstColour": "Couleur 1",
   "wallpaper.secondColour": "Couleur 2",
   "wallpaper.direction": "Direction",
-  "wallpaper.gradientHint": "OK sélectionne une couleur. Haut/Bas : choisir un réglage. Gauche/Droite : ajuster. Maintenir pour accélérer."
+  "wallpaper.gradientHint": "OK sélectionne une couleur. Haut/Bas : choisir un réglage. Gauche/Droite : ajuster. Maintenir pour accélérer.",
+  "nativeTest.title": "Tests Home natif",
+  "nativeTest.hint": "Version de test temporaire. Le test d’écriture réécrit les valeurs actuelles. Chaque test s’exécute une seule fois.",
+  "nativeTest.get": "Tester la lecture",
+  "nativeTest.set": "Tester l’écriture",
+  "nativeTest.refresh": "Actualiser",
+  "nativeTest.loading": "Connexion au service en arrière-plan…",
+  "nativeTest.ready": "Lancez d’abord le test de lecture.",
+  "nativeTest.getPassed": "Lecture réussie. Le test d’écriture est disponible.",
+  "nativeTest.getBlocked": "Lecture terminée. L’écriture est bloquée. Consultez les résultats.",
+  "nativeTest.setPassed": "Écriture réussie. Toutes les valeurs correspondent.",
+  "nativeTest.failed": "Le test a échoué. Consultez les résultats enregistrés.",
+  "nativeTest.interrupted": "Le test s’est arrêté. Les résultats enregistrés sont affichés.",
+  "nativeTest.offline": "Le service ne répond plus. Rouvrez cet écran ou actualisez les résultats.",
+  "nativeTest.tvRequired": "Exécutez ces tests sur le téléviseur.",
+  "nativeTest.getRunning": "Test de lecture en cours…",
+  "nativeTest.setRunning": "Test d’écriture en cours…",
+  "nativeTest.changed": "Échec du test d’écriture. Les valeurs diffèrent du test de lecture. Consultez les résultats."
 }

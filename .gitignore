@@ -18,10 +18,13 @@ cli/native/**/obj/
 cli/src/aerotizen/helpers/home-query.json
 cli/src/aerotizen/helpers/home-control.json
 cli/src/aerotizen/helpers/root-runtime.json
+launcher/native-home-probe/
 tests/native-root/bin/
 tests/native-root/obj/
 tests/native-home/bin/
 tests/native-home/obj/
+tests/native-home-service/bin/
+tests/native-home-service/obj/
 tests/native-untethered/bin/
 tests/native-untethered/obj/
 tests/native-boot-probe/bin/

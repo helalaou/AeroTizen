@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <StartupObject>ServiceWriteTests</StartupObject>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../cli/native/home-service-probe/HomeServiceProbe.cs" Link="HomeServiceProbe.cs"/>
+    <Compile Include="../../cli/native/home-service-write-probe/HomeServiceWriteProbe.cs" Link="HomeServiceWriteProbe.cs"/>
+  </ItemGroup>
+</Project>

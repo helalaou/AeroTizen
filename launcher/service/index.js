@@ -835,6 +835,11 @@ module.exports.onStart = function () {
   server = http.createServer(function (req, res) {
     var url = require("url").parse(req.url, true),
       query = url.query;
+    // Temporary #188 tester endpoint. Loading the service never runs the probe.
+    if (url.pathname === "/diagnostics/native-home" || url.pathname === "/diagnostics/native-home/set") {
+      require("./native-home-diagnostic")(req, res, typeof tizen !== "undefined" ? tizen : null);
+      return;
+    }
     if (url.pathname === "/diagnostics/logs" || url.pathname === "/diagnostics/events") {
       diagnosticRequest(req, res, url.pathname);
       return;

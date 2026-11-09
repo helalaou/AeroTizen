@@ -64,8 +64,67 @@
     }
   }
 
+  // The temporary test screen starts the Tizen 9/10 service without DevTools.
+  function ensureService(done, failed) {
+    if (!tz) {
+      failed("tv_required");
+      return;
+    }
+    var version = 0;
+    try {
+      version = parseFloat(tz.systeminfo.getCapability("http://tizen.org/feature/platform.version"));
+    } catch (e) {
+      /* Older TVs use the existing service operation. */
+    }
+    if (!(version >= 9)) {
+      start();
+      done();
+      return;
+    }
+    var finished = false;
+    var timer;
+    function finish(error) {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      clearTimeout(timer);
+      window.removeEventListener("aero-native-home-service", loaded);
+      if (error) {
+        failed("service_start_failed");
+      } else {
+        done();
+      }
+    }
+    function loaded(event) {
+      try {
+        var Service = event.detail;
+        new Service(cfg.SERVICE_ID).start().then(function () {
+          finish(null);
+        }, finish);
+      } catch (error) {
+        finish(error);
+      }
+    }
+    window.addEventListener("aero-native-home-service", loaded);
+    timer = setTimeout(function () {
+      finish(new Error("Service timeout"));
+    }, 5000);
+    var script = document.createElement("script");
+    script.type = "module";
+
+    script.textContent =
+      // eslint-disable-next-line launcher-i18n/translated-copy -- Native module source, not displayed copy.
+      "import { Service } from 'wrt:service'; window.dispatchEvent(new CustomEvent('aero-native-home-service', { detail: Service }));";
+    script.onerror = function () {
+      finish(new Error("Service module unavailable"));
+    };
+    document.body.appendChild(script);
+  }
+
   A.homewatch = {
     start: start,
+    ensureService: ensureService,
     // The launcher is about to open `appId`; Home inside it should come back here.
     watch: function (appId) {
       tell("/watch?id=" + encodeURIComponent(A.catalog.preloadedStoreId(appId) || appId));
