@@ -266,5 +266,7 @@
   "wallpaper.firstColour": "First colour",
   "wallpaper.secondColour": "Second colour",
   "wallpaper.direction": "Direction",
-  "wallpaper.gradientHint": "OK selects a colour. Up/Down: choose a control. Left/Right: adjust. Hold to adjust faster."
+  "wallpaper.gradientHint": "OK selects a colour. Up/Down: choose a control. Left/Right: adjust. Hold to adjust faster.",
+  "appearance.performanceMode": "Performance mode",
+  "appearance.performanceHint": "Disables background animations and UI transitions for smoother navigation."
 }

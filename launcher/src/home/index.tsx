@@ -25,6 +25,7 @@ export const mountHome = (
   const syncShell = () => {
     const values = settings.getSnapshot();
     document.body.classList.toggle("glass-ui", values.glassSettings);
+    document.documentElement.setAttribute("data-performance-mode", String(values.performanceMode));
   };
   syncShell();
   const unsubscribeShell = settings.subscribe(syncShell);
@@ -60,6 +61,7 @@ export const mountHome = (
     inventory.dispose();
     unsubscribeShell();
     document.body.classList.remove("glass-ui");
+    document.documentElement.removeAttribute("data-performance-mode");
   };
   try {
     render(

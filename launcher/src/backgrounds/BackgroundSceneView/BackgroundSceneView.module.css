@@ -6,6 +6,11 @@
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
   animation-direction: alternate;
+
+  &[data-static="true"] {
+    animation: none;
+    will-change: auto;
+  }
 }
 .drift0 {
   animation-name: drift0;

@@ -266,5 +266,7 @@
   "wallpaper.firstColour": "Первый цвет",
   "wallpaper.secondColour": "Второй цвет",
   "wallpaper.direction": "Направление",
-  "wallpaper.gradientHint": "OK выбирает цвет. Вверх/Вниз: выбрать параметр. Влево/Вправо: изменить. Удерживайте для ускорения."
+  "wallpaper.gradientHint": "OK выбирает цвет. Вверх/Вниз: выбрать параметр. Влево/Вправо: изменить. Удерживайте для ускорения.",
+  "appearance.performanceMode": "Режим производительности",
+  "appearance.performanceHint": "Отключает анимацию фона и переходы интерфейса для более плавной навигации."
 }

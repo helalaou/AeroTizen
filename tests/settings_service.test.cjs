@@ -27,6 +27,26 @@ const harness = (saved = {}, overrides = {}) => {
   return { service, data, reads, writes };
 };
 
+test("performance mode stays off for fresh and existing preferences until explicitly enabled", () => {
+  for (const saved of [
+    {},
+    { "aerotizen.settings.v1": JSON.stringify({ background: "snow" }) },
+    { "hearth.home.v1": JSON.stringify({ favorites: ["video.app"] }) },
+    { "aerotizen.settings.v1": JSON.stringify({ performanceMode: "true" }) },
+  ]) {
+    const h = harness(saved);
+    h.service.load();
+    assert.equal(h.service.getSnapshot().performanceMode, false);
+    assert.equal(JSON.parse(h.data.get("aerotizen.settings.v1")).performanceMode, false);
+    h.service.update({ performanceMode: true });
+    h.service.load();
+    assert.equal(h.service.getSnapshot().performanceMode, true);
+    h.service.update({ performanceMode: false });
+    h.service.load();
+    assert.equal(h.service.getSnapshot().performanceMode, false);
+  }
+});
+
 test("the current key wins without reading older storage; derived and unknown fields are never saved", () => {
   const h = harness({
     "aerotizen.settings.v1": JSON.stringify({ background: "snow", home: [], unrelated: true }),

@@ -789,8 +789,11 @@ def test_installation_uncertainty_never_bypasses_service(monkeypatch, tmp_path, 
             status["watcher"]["reachable"] = False
     monkeypatch.setattr(home, "read_status", lambda *args: status)
     monkeypatch.setattr(sdk, "run", lambda *args: pytest.fail("No writer allowed"))
-    with pytest.raises(home.HomeError):
+    with pytest.raises(home.HomeError) as raised:
         home_control.change(object(), {}, action, state_dir=tmp_path)
+    if case == "installed_service_offline":
+        assert "Open the launcher from the TV's Apps menu" in str(raised.value)
+        assert "aerotizen launch DclHome001.Home" in str(raised.value)
     assert not list(tmp_path.rglob("transactions/*.json"))
 
 

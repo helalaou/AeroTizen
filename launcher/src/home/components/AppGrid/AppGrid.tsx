@@ -1,6 +1,6 @@
 import type { InstalledApp } from "../../../contracts/launcher";
 import type { SettingsSnapshot } from "../../../contracts/preferences";
-import { useStore } from "../../../shared/hooks/useStore";
+import { useStoreSelector } from "../../../shared/hooks/useStore";
 import type { HomeEnvironment, Page } from "../../types";
 import { AppCard } from "../AppCard";
 import { FireplaceCard } from "../FireplaceCard/FireplaceCard";
@@ -27,7 +27,7 @@ export const AppGrid = ({
   active: boolean;
   label: string;
 }) => {
-  const { appOffset } = useStore(env.state);
+  const appOffset = useStoreSelector(env.state, (state) => state.appOffset);
   const scroll = page === "home" && settings.homeAppLayout === "scroll";
   return (
     <HorizontalScroller

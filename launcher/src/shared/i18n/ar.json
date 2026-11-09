@@ -266,5 +266,7 @@
   "wallpaper.firstColour": "اللون الأول",
   "wallpaper.secondColour": "اللون الثاني",
   "wallpaper.direction": "الاتجاه",
-  "wallpaper.gradientHint": "OK لاختيار لون. أعلى/أسفل: اختر أداة. يمين/يسار: اضبط. اضغط مطولاً للضبط أسرع."
+  "wallpaper.gradientHint": "OK لاختيار لون. أعلى/أسفل: اختر أداة. يمين/يسار: اضبط. اضغط مطولاً للضبط أسرع.",
+  "appearance.performanceMode": "وضع الأداء",
+  "appearance.performanceHint": "يعطّل الرسوم المتحركة للخلفية وانتقالات الواجهة لتنقّل أكثر سلاسة."
 }

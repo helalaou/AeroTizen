@@ -266,5 +266,7 @@
   "wallpaper.firstColour": "Primeira cor",
   "wallpaper.secondColour": "Segunda cor",
   "wallpaper.direction": "Direção",
-  "wallpaper.gradientHint": "OK seleciona uma cor. Cima/Baixo: escolha um controle. Esquerda/Direita: ajuste. Segure para ajustar mais rápido."
+  "wallpaper.gradientHint": "OK seleciona uma cor. Cima/Baixo: escolha um controle. Esquerda/Direita: ajuste. Segure para ajustar mais rápido.",
+  "appearance.performanceMode": "Modo de desempenho",
+  "appearance.performanceHint": "Desativa as animações de fundo e as transições da interface para uma navegação mais fluida."
 }

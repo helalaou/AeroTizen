@@ -328,7 +328,35 @@ test("clock output follows a changed system time zone without reloading", () => 
   const instant = new Date("2026-01-01T13:00:00Z");
   assert.equal(A.clock.formatTime(instant, "24"), "13:00");
   timeZone = "Asia/Tokyo";
+  A.clock.tick();
   assert.equal(A.clock.formatTime(instant, "24"), "22:00");
+});
+
+test("clock formatters are reused until the next tick", () => {
+  let constructors = 0;
+  const intl = {
+    DateTimeFormat: function (locales, options) {
+      constructors++;
+      return new Intl.DateTimeFormat(locales, options);
+    },
+  };
+  const { A } = runtime({ intl, view: false });
+  const format = () => {
+    A.clock.defaultTimeFormat();
+    A.clock.formatTime(sample, "24");
+    A.clock.formatTimeParts(sample, "24");
+    A.clock.formatDate(sample, "short");
+  };
+  format();
+  const warmed = constructors;
+  A.clock.start();
+  format();
+  assert.equal(constructors, warmed, "boot retains formatters from the first render");
+  for (let i = 0; i < 30; i++) format();
+  assert.equal(constructors, warmed);
+  A.clock.tick();
+  format();
+  assert.equal(constructors, warmed + 3);
 });
 
 test("older Intl keeps a stable fitting clock without repeated layout measurement", () => {

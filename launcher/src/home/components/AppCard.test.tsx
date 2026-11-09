@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
+import * as imageSequence from "../../shared/hooks/useImageSequence";
 import { createCardEnvironment } from "../test/createCardEnvironment";
 
 import { AppCard } from "./AppCard";
@@ -12,6 +13,25 @@ const fallback = (card: HTMLElement) => card.querySelector<HTMLElement>("[data-a
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
+
+test("parent updates retain static artwork while focus and app data still update", async () => {
+  const reads = vi.spyOn(imageSequence, "useImageSequence");
+  try {
+    const env = createCardEnvironment(`app:${app.id}`, { artwork: sources });
+    const { rerender } = render(<AppCard env={env} app={app} active />);
+    const initial = reads.mock.calls.length;
+    rerender(<AppCard env={env} app={app} active />);
+    expect(reads).toHaveBeenCalledTimes(initial);
+    await act(() => env.state.set({ ...env.state.getSnapshot(), selected: "other" }));
+    expect(screen.getByRole("button", { name: app.name }).getAttribute("data-focused")).toBeNull();
+    expect(reads).toHaveBeenCalledTimes(initial);
+    rerender(<AppCard env={env} app={{ ...app, name: "Updated app" }} active />);
+    expect(screen.getByRole("button", { name: "Updated app" })).toBeTruthy();
+    expect(reads.mock.calls.length).toBeGreaterThan(initial);
+  } finally {
+    reads.mockRestore();
+  }
+});
 
 test("successful fallback artwork preserves the card's name, focus and click handler", () => {
   const env = createCardEnvironment(`app:${app.id}`, { artwork: sources, useAppIcon: false });

@@ -270,7 +270,9 @@ def change(session, info, action, *, backup=None, state_dir=None):
         raise home.HomeError("Cannot confirm whether AeroTizen is installed; no write was attempted.")
     if installed and status["watcher"].get("reachable") is not True:
         raise home.HomeError(
-            "AeroTizen is installed but its control service is unavailable; start it and retry."
+            "AeroTizen is installed but its control service is unavailable. "
+            "Open the launcher from the TV's Apps menu, or run 'aerotizen launch DclHome001.Home', "
+            "then retry."
         )
     if not installed and (action == "apply" or status["watcher"]["reachable"]):
         raise home.HomeError(
