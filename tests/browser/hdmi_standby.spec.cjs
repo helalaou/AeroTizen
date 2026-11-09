@@ -89,3 +89,53 @@ test("HDMI playback preference survives reload and changes how the Inputs tile o
   await expect.poll(() => page.evaluate(() => window.hdmiCalls)).toEqual(["HDMI 2", "org.tizen.tv-viewer"]);
   expect(errors).toEqual([]);
 });
+
+for (const hidesLauncher of [true, false]) {
+  test(`Samsung HDMI viewer ${hidesLauncher ? "does not warn after a quick Home return" : "warns if it never takes focus"}`, async ({
+    page,
+  }) => {
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+    await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+    await page.addInitScript((hide) => {
+      localStorage.setItem(
+        "aerotizen.settings.v1",
+        JSON.stringify({ background: "black", showWeather: false, hdmiNativeViewer: true }),
+      );
+      window.viewerAccepted = false;
+      window.tizen = {
+        application: {
+          getAppsInfo: (done) => done([]),
+          launch(_id, done) {
+            done();
+            window.viewerAccepted = true;
+            if (hide) {
+              Object.defineProperty(document, "hidden", { configurable: true, value: true });
+              document.dispatchEvent(new Event("visibilitychange"));
+              Object.defineProperty(document, "hidden", { configurable: true, value: false });
+              document.dispatchEvent(new Event("visibilitychange"));
+            }
+          },
+        },
+        systeminfo: {
+          getPropertyValue(name, done) {
+            if (name === "VIDEOSOURCE") done({ connected: [{ type: "HDMI", number: 2 }], disconnected: [] });
+          },
+        },
+        tvwindow: { setSource: (_source, done) => done() },
+      };
+    }, hidesLauncher);
+    await page.goto("/");
+    await page.getByRole("button", { name: "HDMI 2", exact: true }).click();
+    await page.waitForFunction(() => window.viewerAccepted);
+    if (hidesLauncher) {
+      // Wait past the production focus deadline to prove the warning remains absent.
+      await page.waitForTimeout(2300);
+      await expect(page.locator("#toast")).toBeHidden();
+    } else {
+      await expect(page.locator("#toast")).toHaveText("Samsung viewer did not open HDMI 2");
+    }
+    expect(errors).toEqual([]);
+  });
+}

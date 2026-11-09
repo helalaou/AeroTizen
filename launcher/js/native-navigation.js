@@ -218,12 +218,28 @@
     var request = ++viewerRequest;
     viewerPending = true;
     var finished = false;
+    var viewerWasHidden = false;
+    var focusTimer = null;
+    function cancelFocusCheck() {
+      document.removeEventListener("visibilitychange", viewerVisibilityChanged);
+      if (focusTimer !== null) {
+        window.clearTimeout(focusTimer);
+        focusTimer = null;
+      }
+    }
+    function viewerVisibilityChanged() {
+      if (document.hidden) {
+        viewerWasHidden = true;
+        cancelFocusCheck();
+      }
+    }
     function failed(reason, detail, errorName) {
       if (finished) {
         return;
       }
       finished = true;
       viewerPending = false;
+      cancelFocusCheck();
       report("failed", action, operation, reason, errorName);
       rearmWatcher();
       if (hdmi) {
@@ -241,8 +257,16 @@
       report("accepted", action, operation);
       // A Tizen launch success callback only confirms that launch was
       // accepted. It does not guarantee the native viewer took focus.
-      window.setTimeout(function () {
-        if (request === viewerRequest && !document.hidden) {
+      if (viewerWasHidden || document.hidden) {
+        cancelFocusCheck();
+        return;
+      }
+      // Hidden pages can suspend timers until Home returns. A completed
+      // hide/show cycle must not then be reported as a failed launch.
+      focusTimer = window.setTimeout(function () {
+        focusTimer = null;
+        cancelFocusCheck();
+        if (request === viewerRequest && !viewerWasHidden && !document.hidden) {
           report("visibility_unconfirmed", action, operation);
           rearmWatcher();
           A.toast(
@@ -275,6 +299,7 @@
       }
     }
     function launchViewer() {
+      document.addEventListener("visibilitychange", viewerVisibilityChanged);
       try {
         tz.application.launch("org.tizen.tv-viewer", accepted, appControlFallback);
       } catch (error) {

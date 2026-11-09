@@ -22,6 +22,7 @@ function harness(options = {}) {
     backgrounds = [];
   const listeners = {},
     documentListeners = {},
+    documentHandlers = {},
     watch = [],
     resume = [];
   const log = require("../launcher/js/diagnostics")("ui", {
@@ -104,7 +105,16 @@ function harness(options = {}) {
   }
   const document = {
     addEventListener(name, handler) {
-      documentListeners[name] = handler;
+      if (!documentHandlers[name]) {
+        documentHandlers[name] = [];
+        documentListeners[name] = () => documentHandlers[name].slice().forEach((callback) => callback());
+      }
+      documentHandlers[name].push(handler);
+    },
+    removeEventListener(name, handler) {
+      const handlers = documentHandlers[name] || [];
+      const index = handlers.indexOf(handler);
+      if (index >= 0) handlers.splice(index, 1);
     },
     hidden: options.visible === true ? false : true,
     body: { classList: { add() {}, remove() {} } },
@@ -501,6 +511,59 @@ test("native Live TV fallback rearms when launch accepted but never takes focus"
   assert.equal(h.timers[0].ms, 2100);
   h.timers[0].fn();
   assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
+});
+
+for (const type of ["TV", "HDMI"]) {
+  test(`${type} returning Home before the focus timer runs does not report a failed handoff`, () => {
+    const h = harness({ visible: true });
+    h.A.settings.update({ hdmiNativeViewer: true });
+    h.A.inputs.show({ type, number: 1 });
+    h.requests[0].resolve(200);
+    const focusTimer = h.timers.find((timer) => timer.ms === 2100);
+    h.document.hidden = true;
+    h.documentListeners.visibilitychange();
+    h.document.hidden = false;
+    h.documentListeners.visibilitychange();
+    // A timer already queued before suspension must also remain harmless.
+    focusTimer.fn();
+    assert.deepEqual(h.toasts, []);
+    assert.equal(h.requests.length, 1, "the focus check must not rearm the watcher after a successful handoff");
+    assert.equal(
+      h.log.snapshot().records.filter((record) => record.event === "handoff.visibility_unconfirmed").length,
+      0,
+    );
+  });
+
+  test(`${type} hiding before the launch callback also confirms the handoff`, () => {
+    const h = harness({ visible: true });
+    h.A.settings.update({ hdmiNativeViewer: true });
+    h.tz.application.launch = (_id, accepted) => {
+      h.document.hidden = true;
+      h.documentListeners.visibilitychange();
+      accepted();
+    };
+    h.A.inputs.show({ type, number: 1 });
+    h.requests[0].resolve(200);
+    h.document.hidden = false;
+    h.documentListeners.visibilitychange();
+    h.timers.filter((timer) => timer.ms === 2100).forEach((timer) => timer.fn());
+    assert.deepEqual(h.toasts, []);
+    assert.equal(h.requests.length, 1);
+    assert.equal(
+      h.log.snapshot().records.filter((record) => record.event === "handoff.visibility_unconfirmed").length,
+      0,
+    );
+  });
+}
+
+test("HDMI still reports an accepted launch that never hides the launcher", () => {
+  const h = harness({ visible: true });
+  h.A.settings.update({ hdmiNativeViewer: true });
+  h.A.inputs.show({ type: "HDMI", number: 2 });
+  h.requests[0].resolve(200);
+  h.timers.find((timer) => timer.ms === 2100).fn();
+  assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
+  assert.match(h.toasts[0], /Samsung viewer did not open HDMI 2/);
 });
 
 test("on page reload native handoff re-arms HomeWatcher", () => {
