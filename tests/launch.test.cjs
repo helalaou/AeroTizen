@@ -249,6 +249,9 @@ test("watcher follows host visibility rather than the wrapper identity", async (
   assert.equal(watcher.request("/").seen, true);
   watcher.statuses[host].visible = false;
   await watcher.tick();
+  assert.deepEqual(watcher.launches, [], "grace period prevents immediate relaunch");
+  watcher.advance(1800);
+  await watcher.tick();
   assert.deepEqual(watcher.launches, [watcher.self]);
 });
 

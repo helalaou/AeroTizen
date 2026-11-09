@@ -10,7 +10,8 @@ window.AeroTizen.catalog = {
       "variants": [
         {
           "appId": "9Ur5IzDKqV.TizenYouTube",
-          "storeId": "111299001912"
+          "storeId": "111299001912",
+          "preloaded": true
         }
       ],
       "legacy": {
@@ -129,7 +130,13 @@ window.AeroTizen.catalog = {
     {
       "key": "max",
       "name": "Max",
-      "variants": [],
+      "variants": [
+        {
+          "appId": "fjpfQryJuR.HBOMaxCTV",
+          "storeId": "3202311033168",
+          "preloaded": true
+        }
+      ],
       "legacy": {
         "brandPrefixes": ["max"]
       },
@@ -300,7 +307,8 @@ window.AeroTizen.catalog = {
       "variants": [
         {
           "appId": "MCmYXNxgcu.DisneyPlus",
-          "storeId": "3201901017640"
+          "storeId": "3201901017640",
+          "preloaded": true
         }
       ],
       "legacy": {

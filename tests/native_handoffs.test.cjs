@@ -79,7 +79,13 @@ function harness(options = {}) {
         } else if (success) success();
       },
     },
-    systeminfo: { addPropertyValueChangeListener() {} },
+    systeminfo: {
+      addPropertyValueChangeListener() {},
+      getCapability(key) {
+        if (key === "http://tizen.org/feature/platform.version" && options.platform) return options.platform;
+        throw new Error("unsupported capability");
+      },
+    },
     tvwindow: {
       setSource(source, success, failure, target) {
         inputs.push({ source, target });
@@ -292,6 +298,40 @@ test("YouTube/Cobalt waits for a confirmed /leave before starting", () => {
   );
   assert.equal(h.watch.length, 0);
   assert.equal(h.resume.length, 0, "watcher stays paused until return to AeroTizen");
+});
+
+test("Tizen 10 watches YouTube like other apps instead of pausing the watcher", () => {
+  const h = harness({ platform: "10.0" });
+  h.A.apps.launch({ id: "youtube.app", name: "YouTube" });
+  assert.ok(
+    h.requests.every((r) => !r.url.endsWith("/leave")),
+    "no /leave pause on Tizen 10",
+  );
+  assert.deepEqual(h.watch, ["youtube.app"]);
+  assert.deepEqual(
+    h.launches.map((r) => r.id),
+    ["youtube.app"],
+  );
+});
+
+test("repeat taps while a launch waits for HomeWatcher are ignored", () => {
+  const h = harness();
+  let release;
+  h.A.homewatch.prepareAppLaunch = (id, ready) => {
+    h.watch.push(id);
+    release = ready;
+  };
+  h.A.apps.launch({ id: "app.one", name: "One" });
+  h.A.apps.launch({ id: "app.one", name: "One" });
+  h.A.apps.launch({ id: "app.two", name: "Two" });
+  assert.deepEqual(h.watch, ["app.one"], "later taps wait for the first handoff");
+  release();
+  assert.deepEqual(
+    h.launches.map((r) => r.id),
+    ["app.one"],
+  );
+  h.A.apps.launch({ id: "app.two", name: "Two" });
+  assert.deepEqual(h.watch, ["app.one", "app.two"], "a new tap works once the first settles");
 });
 
 test("YouTube rejects an unavailable /leave handoff without racing the watcher", () => {

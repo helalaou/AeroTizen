@@ -8,9 +8,37 @@
   var listeners = [];
   var latestRequest = 0;
 
+  // Tizen 10 (QN80H) reports YouTube visible=true while it is on screen, so HomeWatcher can watch
+  // it like any other app and return on Home. Older firmware keeps the /leave pause below.
+  function reportsYouTubeVisibility() {
+    try {
+      return parseFloat(tz.systeminfo.getCapability("http://tizen.org/feature/platform.version")) >= 10;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // A cold-booted Tizen 10 TV starts HomeWatcher ~18 s after the launcher. A second tap during that
+  // wait superseded the first handoff and both failed, so later taps wait for the pending one.
+  var handoffPending = false;
+
   function prepareWatch(appId, ready, failed) {
     if (A.homewatch.prepareAppLaunch) {
-      A.homewatch.prepareAppLaunch(appId, ready, failed);
+      if (handoffPending) {
+        return;
+      }
+      handoffPending = true;
+      A.homewatch.prepareAppLaunch(
+        appId,
+        function () {
+          handoffPending = false;
+          ready();
+        },
+        function () {
+          handoffPending = false;
+          failed.apply(null, arguments);
+        }
+      );
     } else {
       A.homewatch.watch(appId);
       ready();
@@ -256,7 +284,7 @@
     // In Watcher mode, wait for /leave before launching so HomeWatcher does
     // not immediately reclaim the screen.
     var isYouTube = /^youtube$/i.test(String(app.name || "").trim());
-    if (isYouTube && A.homewatch && A.homewatch.suspendForExternal) {
+    if (isYouTube && A.homewatch && A.homewatch.suspendForExternal && !reportsYouTubeVisibility()) {
       function youtubeFailed(reason, detail, error) {
         outcome("failed", error || { name: "HandoffError", message: reason || "Launch failed" });
         if (A.homewatch.resume) {
