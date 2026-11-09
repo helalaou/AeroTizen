@@ -20,6 +20,7 @@ not establish that result. Use the full model code from your TV to find a match.
 | Samsung 65" Crystal UHD CU7172 (UE65CU7172UXXH) | 2023 | Tizen 9.0 | Yes | Native | Unknown | Native Home works |
 | Samsung 65" OLED S90C (QE65S90CATXZT) | 2023 | Tizen 7.0 / 9.0 | Yes | Native | Yes | [Native Home, startup and restore tested on Tizen 9](home-s90c-tv-20261027.json). |
 | Samsung 55" OLED S90C (TQ55S90CATXXC) | 2023 | Tizen 9.0 | Yes | Native | Unknown | Startup from standby passed ([#118](https://github.com/helalaou/AeroTizen/issues/118)). |
+| Samsung 55" BU8000 (UE55BU8000KXXC) | 2022 | Tizen 6.5 | Yes | Native (HDMI limits) | Yes | [#192](https://github.com/helalaou/AeroTizen/issues/192) |
 | Samsung 75" QLED Q60B (QE75Q60BAUXXC) | 2022 | Tizen 6.5 | Unknown | Unknown | Unknown | — |
 | Samsung 55" QLED Q60B (QE55Q60BAUXZT) | 2022 | Tizen 6.5 | Yes | Native | Yes | Native Home and cold boot work ([#115](https://github.com/helalaou/AeroTizen/issues/115)) |
 | Samsung 55" OLED S95B (QE55S95BATXXC) | 2022 | Tizen 6.5 | Unknown | Unknown | Issue reported | Cold boot issue ([#47](https://github.com/helalaou/AeroTizen/issues/47)) |
