@@ -129,9 +129,14 @@ window.AeroTizen.catalog = {
     {
       "key": "max",
       "name": "Max",
-      "variants": [],
+      "variants": [
+        {
+          "appId": "5b8c3eb16b.BeamCTVDev",
+          "storeId": "3202301029760"
+        }
+      ],
       "legacy": {
-        "brandPrefixes": ["max"]
+        "brandPrefixes": ["max", "hbo max"]
       },
       "fallback": {
         "background": "#002be7",
@@ -207,7 +212,12 @@ window.AeroTizen.catalog = {
     {
       "key": "twitch",
       "name": "Twitch",
-      "variants": [],
+      "variants": [
+        {
+          "appId": "Jz7aUrV2Q4.Twitch",
+          "storeId": "3202203026841"
+        }
+      ],
       "legacy": {
         "brandPrefixes": ["twitch"]
       },
@@ -225,7 +235,12 @@ window.AeroTizen.catalog = {
     {
       "key": "crunchyroll",
       "name": "Crunchyroll",
-      "variants": [],
+      "variants": [
+        {
+          "appId": "OGLLvqej7u.CrunchyrollWebApp",
+          "storeId": "3202302030097"
+        }
+      ],
       "legacy": {
         "brandPrefixes": ["crunchyroll"]
       },
