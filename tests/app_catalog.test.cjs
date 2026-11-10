@@ -1,4 +1,5 @@
 const { installApps } = require("./helpers/apps.cjs");
+const { installHomeWatcher } = require("./helpers/homewatch.cjs");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -242,9 +243,10 @@ test("watcher requests keep the preloaded store IDs from the shared catalogue", 
     XMLHttpRequest: Request,
     document: { addEventListener() {} },
   });
-  for (const name of ["config.js", "homewatch.js"]) {
+  for (const name of ["config.js"]) {
     vm.runInContext(script(name), context);
   }
+  installHomeWatcher(context);
   A.homewatch.watch("org.tizen.netflix-app");
   A.homewatch.watch("org.tizen.primevideo");
   A.homewatch.watch("com.samsung.tv.aria-video");

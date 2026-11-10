@@ -32,7 +32,7 @@ test("compiled launcher uses the production page, local scripts and the Preact l
   assert.ok(!scripts.includes("js/native-navigation.js"), "native navigation is owned by the typed adapter");
   assert.ok(!scripts.includes("js/apps.js"), "apps are owned by the TypeScript service");
   assert.ok(!scripts.includes("js/inputs.js"), "inputs are owned by the TypeScript service");
-  for (const file of ["app-catalog.js", "app-lookup.js", "artwork.js", "brands.js"]) {
+  for (const file of ["app-catalog.js", "app-lookup.js", "artwork.js", "brands.js", "homewatch.js"]) {
     assert.ok(!scripts.includes("js/" + file), "app identity and presentation use typed imports");
     assert.equal(existsSync(path.join(output, "js", file)), false, file);
   }

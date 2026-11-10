@@ -769,9 +769,9 @@ for (const legacy of [true, false]) {
 
   test("port does not replace the upstream Frame-aware watcher service", () => {
     const html = get("index.html");
-    assert.ok(html.indexOf('src="js/homewatch.js"') >= 0);
+    assert.ok(!html.includes('src="js/homewatch.js"'));
     assert.ok(!html.includes('src="js/native-navigation.js"'));
-    assert.ok(html.indexOf('src="js/launcher-ui.js"') > html.indexOf('src="js/homewatch.js"'));
+    assert.match(get("src/index.ts"), /createHomeWatcherService/);
     const service = get("service/index.js");
     assert.match(service, /FRAME_HIDDEN_GRACE/);
     assert.match(service, /createArtMode/);

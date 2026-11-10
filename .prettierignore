@@ -10,3 +10,6 @@ tests/fixtures/legacy-launcher/js/logos.js
 
 # Frozen app identity and presentation migration baseline.
 tests/fixtures/app-presentation/js/
+
+# Frozen HomeWatcher client before its TypeScript migration.
+tests/fixtures/homewatch/homewatch.js

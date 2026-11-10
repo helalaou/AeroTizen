@@ -40,10 +40,11 @@ for (const [name, url] of [
       await page.evaluate(() => ({
         tiles: typeof AeroTizen.tiles,
         artwork: typeof AeroTizen.artwork,
-        watcherLookup: typeof AeroTizen.catalog.preloadedStoreId,
+        catalogue: typeof AeroTizen.catalog,
+        watcherDispose: typeof AeroTizen.homewatch.dispose,
       })),
-    ).toEqual({ tiles: "undefined", artwork: "undefined", watcherLookup: "function" });
-    for (const script of ["app-catalog.js", "app-lookup.js", "artwork.js", "brands.js"]) {
+    ).toEqual({ tiles: "undefined", artwork: "undefined", catalogue: "undefined", watcherDispose: "function" });
+    for (const script of ["app-catalog.js", "app-lookup.js", "artwork.js", "brands.js", "homewatch.js"]) {
       await expect(page.locator('script[src$="/' + script + '"]')).toHaveCount(0);
     }
     await expect(page.locator("#home-root #grid > [data-id]")).toHaveCount(2);

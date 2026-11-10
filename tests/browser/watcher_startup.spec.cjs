@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 
-async function setup(page, version = "10.0", legacyWorks = true) {
+async function setup(page, version = "10.0", legacyWorks = true, url = "http://127.0.0.1:8171/") {
   const requests = [];
   const errors = [];
   let releaseHandoff;
@@ -79,7 +79,7 @@ async function setup(page, version = "10.0", legacyWorks = true) {
       }),
     });
   });
-  await page.goto("/");
+  await page.goto(url);
   await page.waitForFunction(() => window.testWatcher.up && AeroTizen.apps.getSnapshot().ready);
   await expect.poll(() => requests.filter((path) => path === "/apps").length).toBeGreaterThan(0);
   return {
@@ -93,68 +93,76 @@ async function setup(page, version = "10.0", legacyWorks = true) {
   };
 }
 
-for (const version of ["9.0", "10.0"]) {
-  test("normal startup selects the expected method on Tizen " + version, async ({ page }) => {
-    const { requests, errors } = await setup(page, version);
-    if (version === "9.0") {
-      expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(1);
-      expect(await page.evaluate(() => window.testWatcher.starts)).toBe(0);
-    } else {
-      expect(await page.evaluate(() => window.testWatcher.serviceId)).toBe("DclHome001.Watcher");
-      expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(0);
-    }
-    expect(requests).toContain("/");
-    expect(requests.some((path) => path.startsWith("/diagnostics/native-home"))).toBe(false);
-    await page.locator("#gear").click();
-    await page.locator('[data-key="section:about"]').click();
-    await expect(page.getByText("Native Home tests", { exact: true })).toHaveCount(0);
-    expect(errors).toEqual([]);
-  });
-}
-
-test("Tizen 9 falls back to wrt only when AppControl leaves the service unavailable", async ({ page }) => {
-  const { errors } = await setup(page, "9.0", false);
-  expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(1);
-  expect(await page.evaluate(() => window.testWatcher.starts)).toBe(1);
-  expect(await page.evaluate(() => window.testWatcher.serviceId)).toBe("DclHome001.Watcher");
-  expect(errors).toEqual([]);
-});
-
-for (const { version, path, legacyStarts, wrtStarts } of [
-  { version: "9.0", path: "/leave", legacyStarts: 2, wrtStarts: 0 },
-  { version: "10.0", path: "/watch", legacyStarts: 0, wrtStarts: 2 },
+for (const [build, url] of [
+  ["compiled", "http://127.0.0.1:8171/"],
+  ["development", "http://127.0.0.1:8172/"],
 ]) {
-  test(
-    "Tizen " + version + " YouTube waits for recovered service and " + path + " acknowledgement",
-    async ({ page }) => {
-      const h = await setup(page, version);
-      h.hold(path);
+  test.describe(build, () => {
+    const open = (page, version, legacyWorks) => setup(page, version, legacyWorks, url);
+    for (const version of ["9.0", "10.0"]) {
+      test("normal startup selects the expected method on Tizen " + version, async ({ page }) => {
+        const { requests, errors } = await open(page, version);
+        if (version === "9.0") {
+          expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(1);
+          expect(await page.evaluate(() => window.testWatcher.starts)).toBe(0);
+        } else {
+          expect(await page.evaluate(() => window.testWatcher.serviceId)).toBe("DclHome001.Watcher");
+          expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(0);
+        }
+        expect(requests).toContain("/");
+        expect(requests.some((path) => path.startsWith("/diagnostics/native-home"))).toBe(false);
+        await page.locator("#gear").click();
+        await page.locator('[data-key="section:about"]').click();
+        await expect(page.getByText("Native Home tests", { exact: true })).toHaveCount(0);
+        expect(errors).toEqual([]);
+      });
+    }
+
+    test("Tizen 9 falls back to wrt only when AppControl leaves the service unavailable", async ({ page }) => {
+      const { errors } = await open(page, "9.0", false);
+      expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(1);
+      expect(await page.evaluate(() => window.testWatcher.starts)).toBe(1);
+      expect(await page.evaluate(() => window.testWatcher.serviceId)).toBe("DclHome001.Watcher");
+      expect(errors).toEqual([]);
+    });
+
+    for (const { version, path, legacyStarts, wrtStarts } of [
+      { version: "9.0", path: "/leave", legacyStarts: 2, wrtStarts: 0 },
+      { version: "10.0", path: "/watch", legacyStarts: 0, wrtStarts: 2 },
+    ]) {
+      test(
+        "Tizen " + version + " YouTube waits for recovered service and " + path + " acknowledgement",
+        async ({ page }) => {
+          const h = await open(page, version);
+          h.hold(path);
+          await page.evaluate(() => {
+            window.testWatcher.up = false;
+          });
+          await page.locator('#grid > [data-id="youtube.app"]').click();
+          await expect.poll(h.waiting).toBe(true);
+          expect(await page.evaluate(() => window.testWatcher.starts)).toBe(wrtStarts);
+          expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(legacyStarts);
+          expect(await page.evaluate(() => window.testWatcher.launches)).toEqual([]);
+          if (version === "10.0") expect(h.requests).not.toContain("/leave");
+          h.release();
+          await page.waitForFunction(() => window.testWatcher.launches.includes("youtube.app"));
+          expect(await page.evaluate(() => window.testWatcher.launches)).toEqual(["youtube.app"]);
+          expect(h.errors).toEqual([]);
+        },
+      );
+    }
+
+    test("a regular app recovers the watcher before the launcher can freeze", async ({ page }) => {
+      const h = await open(page);
       await page.evaluate(() => {
         window.testWatcher.up = false;
       });
-      await page.locator('#grid > [data-id="youtube.app"]').click();
-      await expect.poll(h.waiting).toBe(true);
-      expect(await page.evaluate(() => window.testWatcher.starts)).toBe(wrtStarts);
-      expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(legacyStarts);
-      expect(await page.evaluate(() => window.testWatcher.launches)).toEqual([]);
-      if (version === "10.0") expect(h.requests).not.toContain("/leave");
-      h.release();
-      await page.waitForFunction(() => window.testWatcher.launches.includes("youtube.app"));
-      expect(await page.evaluate(() => window.testWatcher.launches)).toEqual(["youtube.app"]);
+      await page.evaluate(() => AeroTizen.apps.launch({ id: "regular.app", name: "Other app" }));
+      await page.waitForFunction(() => window.testWatcher.launches.includes("regular.app"));
+      expect(await page.evaluate(() => window.testWatcher.starts)).toBe(2);
+      expect(await page.evaluate(() => window.testWatcher.launches)).toEqual(["regular.app"]);
+      expect(h.requests).toContain("/watch");
       expect(h.errors).toEqual([]);
-    },
-  );
-}
-
-test("a regular app recovers the watcher before the launcher can freeze", async ({ page }) => {
-  const h = await setup(page);
-  await page.evaluate(() => {
-    window.testWatcher.up = false;
+    });
   });
-  await page.evaluate(() => AeroTizen.apps.launch({ id: "regular.app", name: "Other app" }));
-  await page.waitForFunction(() => window.testWatcher.launches.includes("regular.app"));
-  expect(await page.evaluate(() => window.testWatcher.starts)).toBe(2);
-  expect(await page.evaluate(() => window.testWatcher.launches)).toEqual(["regular.app"]);
-  expect(h.requests).toContain("/watch");
-  expect(h.errors).toEqual([]);
-});
+}

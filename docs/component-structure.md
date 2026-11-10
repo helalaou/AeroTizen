@@ -80,9 +80,9 @@ development hot reload so existing TV-service subscriptions remain active.
 `shared/apps/` owns the readonly JSON catalogue, indexed app/store lookups, title
 formatting, artwork priority and package-icon classification. Home and Settings
 import the pure presentation helpers. App launch and feed adapters import name
-formatting and receive catalogue lookups as explicit dependencies. The typed entry
-publishes only `catalog.preloadedStoreId` for the remaining `homewatch.js` caller;
-there are no runtime artwork or tile-presentation globals.
+formatting and receive catalogue lookups as explicit dependencies. The watcher
+service also receives its preloaded lookup directly. There are no runtime catalogue,
+artwork or tile-presentation globals.
 
 `services/createAppsService.ts` owns the installed-app inventory, visible app records,
 watcher IDs and the existing `aerotizen.apps.v1` label cache. Home, Settings and Continue
@@ -147,7 +147,24 @@ Neither fixture is part of the TV package.
 Native Home routing validation and watcher handoff preparation. App composition creates
 one adapter before app and input services and publishes its existing command bridge.
 Preact views invoke commands through those services; the adapter does not render markup.
-`homewatch.js` still owns watcher startup, transport and recovery.
+`services/createHomeWatcherService.ts` owns watcher readiness, shared startup attempts,
+bounded request recovery, inventory replay and transition cancellation. It receives
+the catalogue lookup, clock, timers and platform explicitly. The service stays alive
+through development hot reload; disposal cancels pending HTTP and module loading,
+clears readiness timers and removes its visibility listener.
+
+`platform/tizen/createHomeWatcherPlatform.ts` owns HTTP/JSON transport, platform
+version reads, AppControl service startup, the on-demand `wrt:service` module and
+the original Samsung Home escape. Service requests retain their 1500 ms timeout;
+readiness and inventory probes retain 750 ms, a 200 ms retry delay and the 30-second
+startup deadline. Tizen 9 keeps AppControl first with the existing delayed fallback;
+Tizen 10 starts with `wrt:service`. HTTP protocol and app-ID checks establish readiness,
+and inventory is restored before a recovered handoff resumes. No view starts polling.
+The background `launcher/service/` code remains a separate runtime.
+
+The `tests/fixtures/homewatch/` snapshot is frozen before this migration. The same
+startup and handoff cases run against it and the typed client; lifecycle cases also
+verify disposal and idle request counts. The full-launcher fixture stays unchanged.
 
 Each handoff reads the routing file again, with the existing 4096-byte limit and
 500 ms deadline. Confirmed Native Home bypasses the watcher handshake; other modes

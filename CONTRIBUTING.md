@@ -93,7 +93,7 @@ check alone with `npm run lint:js` or `npm run lint:css`. The TypeScript checks 
 reject unused locals and parameters. CI rejects formatting
 differences, lint warnings and errors, and type errors.
 
-Frozen generated logos, app-presentation snapshots and build/test output are excluded
+Frozen generated logos, app-presentation/HomeWatcher snapshots and build/test output are excluded
 from formatting. The diagnostic privacy schema and older catalogue fixture have a
 dedicated override because their data objects must remain valid JSON. The current
 app catalogue is plain JSON imported into the typed bundle. Legacy JavaScript keeps
@@ -199,8 +199,10 @@ Stremio first. Feed cancellation and permanent disposal are
 separate: hiding the launcher during a valid app handoff must not suppress the launch.
 Composition creates one typed native-navigation adapter before the app and input services.
 It owns Native Home routing reads, watcher handoff commands and native viewer focus checks.
-The existing `homewatch.js` retains watcher startup and transport. Hot reload keeps the
-adapter and pending handoffs; permanent disposal releases its timers, requests and listeners.
+The typed HomeWatcher service owns startup, readiness, inventory replay and bounded
+request recovery. Its Tizen adapter owns HTTP and native service launch operations.
+Hot reload keeps both services and pending handoffs; permanent disposal releases their
+timers, requests, module loading and listeners. The catalogue is injected directly.
 Clock, weather and network services publish immutable snapshots. Views read these
 services directly. The weather service subscribes to the shared clock for cache expiry checks.
 The network service owns one poller and platform watch, reacts to preference changes,
