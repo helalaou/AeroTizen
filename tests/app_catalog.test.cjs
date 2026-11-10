@@ -117,6 +117,18 @@ test("each app variant retains its paired store ID", () => {
   assert.equal(A.catalog.artworkStoreId({ id: "456" }), "456");
 });
 
+test("HBO Max variants retain both verified app and store ID pairs", () => {
+  const { A } = runtime();
+  for (const [id, storeId] of [
+    ["5b8c3eb16b.BeamCTVDev", "3202301029760"],
+    ["fjpfQryJuR.HBOMaxCTV", "3202311033168"],
+  ]) {
+    assert.equal(A.catalog.storeId(id), storeId);
+    assert.equal(A.catalog.artworkStoreId({ id, name: "Renamed app" }), storeId);
+    assert.equal(A.catalog.brand({ id, name: "Renamed app" }).logo.slug, "max");
+  }
+});
+
 test("unknown IDs remain unknown and preloaded mappings do not use name aliases", () => {
   const { A } = runtime();
   for (const id of ["unknown.app", "constructor", "__proto__"]) {
@@ -127,7 +139,11 @@ test("unknown IDs remain unknown and preloaded mappings do not use name aliases"
   assert.equal(A.catalog.preloadedStoreId("org.tizen.netflix-app"), "3201907018807");
   assert.equal(A.catalog.preloadedStoreId("org.tizen.primevideo"), "3201910019365");
   assert.equal(A.catalog.preloadedStoreId("netflix"), null);
-  assert.equal(A.catalog.preloadedStoreId("9Ur5IzDKqV.TizenYouTube"), null);
+  // On a QN80H (Tizen 10), :8001 reports YouTube visible only under its store ID.
+  assert.equal(A.catalog.preloadedStoreId("9Ur5IzDKqV.TizenYouTube"), "111299001912");
+  assert.equal(A.catalog.preloadedStoreId("MCmYXNxgcu.DisneyPlus"), "3201901017640");
+  assert.equal(A.catalog.preloadedStoreId("fjpfQryJuR.HBOMaxCTV"), "3202311033168");
+  assert.equal(A.catalog.brand({ id: "fjpfQryJuR.HBOMaxCTV", name: "HBO Max" }).logo.slug, "max");
 });
 
 test("preloaded Apple TV resolves its store ID and branding by ID", () => {

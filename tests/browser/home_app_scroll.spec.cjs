@@ -1,9 +1,12 @@
 const { test, expect } = require("@playwright/test");
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
+const { watcherStatus } = require("./watcher_helpers.cjs");
 
 async function prepare(page, { glass = false, language = "en", layout = "grid" } = {}) {
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
-  await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+  await page.route("http://127.0.0.1:47790/**", (route) =>
+    route.fulfill({ json: watcherStatus(route.request().url()) }),
+  );
   await page.route("http://localhost:9013/**", (route) =>
     route.fulfill({
       headers: { "access-control-allow-origin": "*" },

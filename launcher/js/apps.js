@@ -8,6 +8,46 @@
   var listeners = [];
   var latestRequest = 0;
 
+  // Tizen 10 (QN80H) reports YouTube visible=true while it is on screen, so HomeWatcher can watch
+  // it like any other app and return on Home. Older firmware keeps the /leave pause below.
+  function reportsYouTubeVisibility() {
+    try {
+      return parseFloat(tz.systeminfo.getCapability("http://tizen.org/feature/platform.version")) >= 10;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // A cold-booted Tizen 10 TV starts HomeWatcher ~18 s after the launcher. A second tap during that
+  // wait superseded the first handoff and both failed, so later taps wait for the pending one.
+  var handoffPending = false;
+
+  function prepareWatch(appId, ready, failed) {
+    if (A.homewatch.prepareAppLaunch) {
+      if (handoffPending) {
+        return;
+      }
+      handoffPending = true;
+      A.homewatch.prepareAppLaunch(
+        appId,
+        function () {
+          handoffPending = false;
+          ready();
+        },
+        function (error) {
+          handoffPending = false;
+          if (error && error.cancelled === true) {
+            return;
+          }
+          failed.apply(null, arguments);
+        }
+      );
+    } else {
+      A.homewatch.watch(appId);
+      ready();
+    }
+  }
+
   apps.subscribe = function (listener) {
     listeners.push(listener);
     return function () {
@@ -227,8 +267,17 @@
           null,
           data
         );
-        A.homewatch.watch(cfg.HBBTV_APP_ID);
-        tz.application.launchAppControl(control, cfg.HBBTV_APP_ID, accepted, failed);
+        prepareWatch(
+          cfg.HBBTV_APP_ID,
+          function () {
+            try {
+              tz.application.launchAppControl(control, cfg.HBBTV_APP_ID, accepted, failed);
+            } catch (e) {
+              failed(e);
+            }
+          },
+          failed
+        );
       } catch (e) {
         failed(e);
       }
@@ -238,8 +287,11 @@
     // In Watcher mode, wait for /leave before launching so HomeWatcher does
     // not immediately reclaim the screen.
     var isYouTube = /^youtube$/i.test(String(app.name || "").trim());
-    if (isYouTube && A.homewatch && A.homewatch.suspendForExternal) {
+    if (isYouTube && A.homewatch && A.homewatch.suspendForExternal && !reportsYouTubeVisibility()) {
       function youtubeFailed(reason, detail, error) {
+        if (reason && reason.cancelled === true) {
+          return;
+        }
         outcome("failed", error || { name: "HandoffError", message: reason || "Launch failed" });
         if (A.homewatch.resume) {
           A.homewatch.resume();
@@ -258,14 +310,17 @@
       }, youtubeFailed);
       return;
     }
-    // Preserve upstream app /watch behaviour when the optional handoff
-    // module is absent and for all non-YouTube / HbbTV applications.
-    A.homewatch.watch(app.id);
-    try {
-      tz.application.launch(app.id, accepted, failed);
-    } catch (error) {
-      failed(error);
-    }
+    prepareWatch(
+      app.id,
+      function () {
+        try {
+          tz.application.launch(app.id, accepted, failed);
+        } catch (error) {
+          failed(error);
+        }
+      },
+      failed
+    );
   };
 
   apps.openStore = function () {
@@ -278,8 +333,17 @@
       if (!id) {
         return A.toast(A.translate("apps.storeFailed"));
       }
-      A.homewatch.watch(id);
-      tz.application.launch(id, null, next);
+      prepareWatch(
+        id,
+        function () {
+          try {
+            tz.application.launch(id, null, next);
+          } catch (error) {
+            next();
+          }
+        },
+        next
+      );
     })();
   };
 
@@ -294,19 +358,27 @@
     if (!tz || !yt) {
       return window.Fireplace.open();
     }
-    A.homewatch.watch(yt.id);
-    try {
-      var data = [new tz.ApplicationControlData("PAYLOAD", [JSON.stringify({ values: "v=" + cfg.FIREPLACE_VIDEO })])];
-      tz.application.launchAppControl(
-        new tz.ApplicationControl("http://tizen.org/appcontrol/operation/view", null, null, null, data),
-        yt.id,
-        null,
-        function () {
-          window.Fireplace.open();
-        }
-      );
-    } catch (e) {
+    function fallback() {
       window.Fireplace.open();
     }
+    prepareWatch(
+      yt.id,
+      function () {
+        try {
+          var data = [
+            new tz.ApplicationControlData("PAYLOAD", [JSON.stringify({ values: "v=" + cfg.FIREPLACE_VIDEO })]),
+          ];
+          tz.application.launchAppControl(
+            new tz.ApplicationControl("http://tizen.org/appcontrol/operation/view", null, null, null, data),
+            yt.id,
+            null,
+            fallback
+          );
+        } catch (e) {
+          fallback();
+        }
+      },
+      fallback
+    );
   };
 })(window.AeroTizen);

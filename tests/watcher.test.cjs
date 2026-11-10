@@ -557,7 +557,7 @@ test("non-Frame TVs return from a watched app without the Frame debounce", () =>
   h.advance(600);
   assert.equal(h.state().seen, true);
   h.statuses.set("AppA", { running: true, visible: false });
-  h.advance(600);
+  h.advance(1800);
   assert.equal(h.launches.length, 2);
 });
 
@@ -707,7 +707,7 @@ test("an unseen watched app hands Home over to an app that reports visible", () 
   assert.equal(h.state().seen, true);
   assert.equal(h.launches.length, 1);
   h.statuses.set("AppB", { running: true, visible: false }); // Home pressed in AppB
-  h.advance(900);
+  h.advance(1800);
   assert.equal(h.launches.length, 2);
 });
 

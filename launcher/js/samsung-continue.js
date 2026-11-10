@@ -115,6 +115,19 @@
   }
 
   function open(item) {
+    function failed(error) {
+      if (error && error.cancelled === true) {
+        return;
+      }
+      A.toast(A.translate("apps.openFailed", { name: item.title }));
+    }
+    function launch() {
+      try {
+        A.tizen.application.launchAppControl(control, item.sourceId, null, failed);
+      } catch (e) {
+        failed();
+      }
+    }
     try {
       var data = [new A.tizen.ApplicationControlData("PAYLOAD", [JSON.stringify({ values: item.payload })])];
       var control = new A.tizen.ApplicationControl(
@@ -124,12 +137,14 @@
         null,
         data
       );
-      A.homewatch.watch(item.sourceId);
-      A.tizen.application.launchAppControl(control, item.sourceId, null, function () {
-        A.toast(A.translate("apps.openFailed", { name: item.title }));
-      });
+      if (A.homewatch.prepareAppLaunch) {
+        A.homewatch.prepareAppLaunch(item.sourceId, launch, failed);
+      } else {
+        A.homewatch.watch(item.sourceId);
+        launch();
+      }
     } catch (e) {
-      A.toast(A.translate("apps.openFailed", { name: item.title }));
+      failed();
     }
   }
 

@@ -1,4 +1,5 @@
 const { test, expect } = require("@playwright/test");
+const { watcherStatus } = require("./watcher_helpers.cjs");
 
 async function persistedEvents(page) {
   return page.evaluate(
@@ -151,7 +152,11 @@ for (const unavailable of [false, true]) {
       const batch = route.request().method() === "POST" ? route.request().postDataJSON().records : [];
       return route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({ schema_version: 1, accepted: batch.length }),
+        body: JSON.stringify({
+          ...watcherStatus(route.request().url()),
+          schema_version: 1,
+          accepted: batch.length,
+        }),
       });
     });
     await page.addInitScript((unavailable) => {

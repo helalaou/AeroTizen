@@ -1,11 +1,14 @@
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
 const { test, expect } = require("@playwright/test");
+const { watcherStatus } = require("./watcher_helpers.cjs");
 
 test("Preact standby overrides persist without confusing custom labels with device recognition", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
-  await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+  await page.route("http://127.0.0.1:47790/**", (route) =>
+    route.fulfill({ json: watcherStatus(route.request().url()) }),
+  );
   await page.addInitScript(() => {
     if (!localStorage.getItem("aerotizen.settings.v1"))
       localStorage.setItem(
@@ -42,7 +45,9 @@ test("HDMI playback preference survives reload and changes how the Inputs tile o
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
-  await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+  await page.route("http://127.0.0.1:47790/**", (route) =>
+    route.fulfill({ json: watcherStatus(route.request().url()) }),
+  );
   await page.addInitScript(() => {
     window.hdmiCalls = [];
     window.tizen = {
@@ -97,7 +102,9 @@ for (const hidesLauncher of [true, false]) {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
-    await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+    await page.route("http://127.0.0.1:47790/**", (route) =>
+      route.fulfill({ json: watcherStatus(route.request().url()) }),
+    );
     await page.addInitScript((hide) => {
       localStorage.setItem(
         "aerotizen.settings.v1",
@@ -143,7 +150,9 @@ for (const hidesLauncher of [true, false]) {
 // Flow: connected HDMI tile -> unplug/switch -> updated status or usable Home.
 async function mockHdmi(page, { stage = "ready", hideDisconnected = false } = {}) {
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
-  await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+  await page.route("http://127.0.0.1:47790/**", (route) =>
+    route.fulfill({ json: watcherStatus(route.request().url()) }),
+  );
   await page.addInitScript(
     ({ stage, hideDisconnected }) => {
       localStorage.setItem(

@@ -8,6 +8,21 @@ const vm = require("node:vm");
 const create = require("../launcher/js/diagnostics");
 const source = fs.readFileSync(require.resolve("../launcher/js/diagnostics"), "utf8");
 
+test("watcher startup logs retain the method, readiness duration and bounded failure reason", () => {
+  const logger = create("ui");
+  logger.record("service.launch_accepted", { method: "wrt_service" });
+  logger.record("service.ready", { method: "wrt_service", duration_ms: 450 });
+  logger.record("service.start_failed", { method: "app_control", reason: "service_start_timeout" });
+  const records = logger.snapshot().records;
+  assert.deepEqual(
+    records.map((record) => record.event),
+    ["service.launch_accepted", "service.ready", "service.start_failed"],
+  );
+  assert.equal(records[1].data.method, "wrt_service");
+  assert.equal(records[1].data.duration_ms, 450);
+  assert.equal(records[2].data.reason, "service_start_timeout");
+});
+
 test("TV logs retain recent events within both count and encoded response limits", () => {
   const logger = create("service");
   for (let i = 0; i < 500; i++)

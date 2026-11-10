@@ -47,7 +47,16 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
       body: '<svg xmlns="http://www.w3.org/2000/svg" width="304" height="304"><rect width="304" height="304" fill="#43306b"/><circle cx="152" cy="152" r="84" fill="#b8a5ff"/></svg>',
     }),
   );
-  await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+  await page.route("http://127.0.0.1:47790/**", (route) =>
+    route.fulfill({
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({
+        homeControl: { protocol: 1, app_id: "DclHome001.Home", mode: "watcher" },
+        heartbeats: 1,
+        watched: new URL(route.request().url()).searchParams.get("id"),
+      }),
+    }),
+  );
   await page.route("http://localhost:9013/**", (route) => {
     const id = route.request().headers().app_id;
     reads.push(id);
@@ -262,10 +271,12 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
     .toBeLessThanOrEqual(1870);
   await page.screenshot({ path: info.outputPath("continue-watching-home.png") });
   await page.keyboard.press("Enter");
-  expect(await page.evaluate(() => window.testLaunches.at(-1))).toMatchObject({
-    id: prime,
-    control: { data: [{ key: "PAYLOAD", value: [JSON.stringify({ values: "watch?id=p1" })] }] },
-  });
+  await expect
+    .poll(() => page.evaluate(() => window.testLaunches.at(-1)))
+    .toMatchObject({
+      id: prime,
+      control: { data: [{ key: "PAYLOAD", value: [JSON.stringify({ values: "watch?id=p1" })] }] },
+    });
   await page.locator("#apps-tab").click();
   await expect(page.locator("#continue-section")).toBeHidden();
   await page.locator("#home-tab").click();

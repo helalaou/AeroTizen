@@ -53,7 +53,15 @@ export default defineConfig(({ mode }) => {
       // Lightning CSS encodes major.minor.patch in three bytes, including in development.
       lightningcss: { targets: { chrome: 69 << 16 } },
     },
-    plugins: [preact({ devToolsEnabled: false }), widgetAssets(output), developmentEntry],
+    plugins: [
+      preact({
+        devToolsEnabled: false,
+        // The legacy runtime loads as classic scripts and cannot accept Prefresh imports.
+        exclude: [/node_modules/, /\/launcher\/js\//],
+      }),
+      widgetAssets(output),
+      developmentEntry,
+    ],
     server: { host: "0.0.0.0", port: 8019, strictPort: true },
     test: {
       include: ["src/**/*.test.{ts,tsx}"],

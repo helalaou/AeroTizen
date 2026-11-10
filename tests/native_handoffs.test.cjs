@@ -80,7 +80,13 @@ function harness(options = {}) {
         } else if (success) success();
       },
     },
-    systeminfo: { addPropertyValueChangeListener() {} },
+    systeminfo: {
+      addPropertyValueChangeListener() {},
+      getCapability(key) {
+        if (key === "http://tizen.org/feature/platform.version" && options.platform) return options.platform;
+        throw new Error("unsupported capability");
+      },
+    },
     tvwindow: {
       setSource(source, success, failure, target) {
         inputs.push({ source, target });
@@ -134,8 +140,9 @@ function harness(options = {}) {
       STORE_APP_IDS: options.storeIds || [],
     },
     homewatch: {
-      watch(id) {
+      watch(id, done) {
         watch.push(id);
+        if (done) done();
       },
       resume() {
         resume.push(true);
@@ -304,6 +311,40 @@ test("YouTube/Cobalt waits for a confirmed /leave before starting", () => {
   assert.equal(h.resume.length, 0, "watcher stays paused until return to AeroTizen");
 });
 
+test("Tizen 10 watches YouTube like other apps instead of pausing the watcher", () => {
+  const h = harness({ platform: "10.0" });
+  h.A.apps.launch({ id: "youtube.app", name: "YouTube" });
+  assert.ok(
+    h.requests.every((r) => !r.url.endsWith("/leave")),
+    "no /leave pause on Tizen 10",
+  );
+  assert.deepEqual(h.watch, ["youtube.app"]);
+  assert.deepEqual(
+    h.launches.map((r) => r.id),
+    ["youtube.app"],
+  );
+});
+
+test("repeat taps while a launch waits for HomeWatcher are ignored", () => {
+  const h = harness();
+  let release;
+  h.A.homewatch.prepareAppLaunch = (id, ready) => {
+    h.watch.push(id);
+    release = ready;
+  };
+  h.A.apps.launch({ id: "app.one", name: "One" });
+  h.A.apps.launch({ id: "app.one", name: "One" });
+  h.A.apps.launch({ id: "app.two", name: "Two" });
+  assert.deepEqual(h.watch, ["app.one"], "later taps wait for the first handoff");
+  release();
+  assert.deepEqual(
+    h.launches.map((r) => r.id),
+    ["app.one"],
+  );
+  h.A.apps.launch({ id: "app.two", name: "Two" });
+  assert.deepEqual(h.watch, ["app.one", "app.two"], "a new tap works once the first settles");
+});
+
 test("YouTube rejects an unavailable /leave handoff without racing the watcher", () => {
   const h = harness();
   h.A.apps.launch({ id: "youtube.app", name: "YouTube" });
@@ -338,6 +379,16 @@ test("regular apps still use the original /watch launch sequence", () => {
     h.launches.map((r) => r.id),
     ["netflix.app"],
   );
+});
+
+test("confirmed Native Home app launches keep working without a watcher acknowledgement", () => {
+  const storage = routingStorage();
+  const h = harness(storage);
+  h.A.apps.launch({ id: "netflix.app", name: "Netflix" });
+  assert.equal(h.launches.length, 0);
+  storage.reads[0](nativeRouting);
+  assert.deepEqual(h.watch, []);
+  assert.deepEqual(h.launches, [{ id: "netflix.app", method: "launch" }]);
 });
 
 test("Samsung Home requires the /leave acknowledgement", () => {

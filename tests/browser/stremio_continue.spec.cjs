@@ -1,5 +1,6 @@
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
 const { test, expect } = require("@playwright/test");
+const { watcherStatus } = require("./watcher_helpers.cjs");
 const stremio = "IkWsFHtOY9.Stremio",
   prime = "org.tizen.primevideo",
   youtube = "9Ur5IzDKqV.TizenYouTube",
@@ -10,7 +11,9 @@ async function setup(page, options = {}) {
     errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
-  await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+  await page.route("http://127.0.0.1:47790/**", (route) =>
+    route.fulfill({ json: watcherStatus(route.request().url()) }),
+  );
   await page.route("http://localhost:9013/**", (route) =>
     route.fulfill({
       headers: { "access-control-allow-origin": "*" },
@@ -149,7 +152,7 @@ test("root helper and installed Stremio enable an opt-in source; loss hides it b
   await expect(page.locator("#continue-items > [data-key]").first()).toContainText("Stremio programme");
   await expect(page.locator("#continue-items > [data-key]").first()).toContainText("S2 E9");
   await page.locator("#continue-items > [data-key]").first().click();
-  expect(await page.evaluate(() => window.stremioLaunches)).toEqual([stremio]);
+  await expect.poll(() => page.evaluate(() => window.stremioLaunches)).toEqual([stremio]);
   await page.evaluate(() => {
     window.savedStremio = document.querySelector("#continue-items > [data-key]");
     AeroTizen.continueWatching.refresh();

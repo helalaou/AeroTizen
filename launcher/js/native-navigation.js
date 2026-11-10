@@ -34,6 +34,10 @@
     if (!tz) {
       return;
     }
+    if (A.homewatch.request) {
+      A.homewatch.request("/home");
+      return;
+    }
     try {
       var xhr = new XMLHttpRequest();
       xhr.open("GET", cfg.SERVICE_URL + "/home", true);
@@ -115,8 +119,39 @@
     });
   }
 
+  // Keep the UI alive until /watch is acknowledged; hidden pages cannot finish service recovery.
+  function prepareAppLaunch(appId, onReady, onFailure) {
+    readNativeHome(function (confirmed) {
+      if (confirmed) {
+        onReady();
+      } else {
+        A.homewatch.watch(appId, onReady, onFailure);
+      }
+    });
+  }
+
   // HomeWatcher can reclaim the screen in Watcher mode. Wait for it to pause.
   function requestLeave(onReady, onFailure) {
+    if (A.homewatch.request) {
+      A.homewatch.request(
+        "/leave",
+        function (status) {
+          if (!status || status.leaving !== true) {
+            onFailure("HomeWatcher request failed", A.translate("handoff.watcherRequestFailed"));
+            return;
+          }
+          onReady();
+        },
+        function (error) {
+          if (error && error.cancelled === true) {
+            onFailure(error);
+            return;
+          }
+          onFailure("HomeWatcher unavailable", A.translate("handoff.watcherUnavailable"));
+        }
+      );
+      return;
+    }
     var xhr,
       settled = false;
     function fail(reason, detail) {
@@ -166,6 +201,9 @@
     homePending = true;
     function failed(reason, detail) {
       homePending = false;
+      if (reason && reason.cancelled === true) {
+        return;
+      }
       report("failed", "samsung_home", operation, reason);
       rearmWatcher();
       A.toast(A.translate("handoff.homeFailed", { reason: detail || reason }));
@@ -240,6 +278,9 @@
       finished = true;
       viewerPending = false;
       cancelFocusCheck();
+      if (reason && reason.cancelled === true) {
+        return;
+      }
       report("failed", action, operation, reason, errorName);
       rearmWatcher();
       if (hdmi) {
@@ -337,6 +378,7 @@
   // reports visible=true.
   A.homewatch.resume = rearmWatcher;
   A.homewatch.suspendForExternal = leaveBeforeLaunch;
+  A.homewatch.prepareAppLaunch = prepareAppLaunch;
   A.homewatch.openSamsungHome = openSamsungHome;
   A.homewatch.openNativeViewer = openNativeViewer;
 
