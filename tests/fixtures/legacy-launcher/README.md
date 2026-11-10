@@ -40,3 +40,7 @@ TypeScript owner, with the frozen status renderer used only as a test consumer.
 The comparison page loads its existing frozen `js/continue-watching.js` explicitly.
 Production uses `launcher/src/services/createContinueWatchingService.ts` with the
 Samsung and Stremio provider adapters; its tests exercise the TypeScript owner.
+
+`js/apps.js` preserves the final standalone app runtime. The comparison page loads it
+explicitly; active app discovery, caching and commands use the TypeScript app service
+and Tizen adapter. Production packages exclude this fixture.

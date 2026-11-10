@@ -19,7 +19,7 @@ for (const glassSettings of [false, true]) {
         }
       }, glassSettings);
       await page.goto("/");
-      await page.waitForFunction(() => AeroTizen.apps.ready);
+      await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await expect(page.locator("#apps-tab")).toContainText("Tutte le app");
       await page.locator("#gear").click();
       await openCategory(page, "language");

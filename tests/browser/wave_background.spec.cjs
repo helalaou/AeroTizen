@@ -18,7 +18,10 @@ const open = async (page, background = "waves", url = "/") => {
     }
   }, background);
   await page.goto(url);
-  await page.waitForFunction(() => AeroTizen.apps.ready && AeroTizen.homeScreen);
+  await page.waitForFunction(
+    (legacy) => (legacy ? AeroTizen.apps.ready : AeroTizen.apps.getSnapshot().ready) && AeroTizen.homeScreen,
+    url.includes("/tests/fixtures/legacy-launcher/"),
+  );
 };
 
 const durations = (page) =>

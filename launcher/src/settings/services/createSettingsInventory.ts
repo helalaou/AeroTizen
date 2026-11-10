@@ -9,7 +9,7 @@ export const createSettingsInventory = (
   runtime: Pick<LauncherRuntime, "apps" | "inputs" | "continueWatching">,
 ): SettingsInventory => {
   const read = (previous?: SettingsInventorySnapshot): SettingsInventorySnapshot => {
-    const apps = snapshotList(runtime.apps.all, previous?.apps);
+    const apps = runtime.apps.getSnapshot().all;
     const inputs = snapshotList<InputOption>(
       runtime.inputs.sources
         .filter((source) => source.type !== "TV")

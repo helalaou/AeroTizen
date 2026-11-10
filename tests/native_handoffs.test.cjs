@@ -1,3 +1,4 @@
+const { installApps } = require("./helpers/apps.cjs");
 const { createTestSettings } = require("./helpers/settings.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 ("use strict");
@@ -10,7 +11,6 @@ const vm = require("node:vm");
 const get = (file) => fs.readFileSync(path.join(__dirname, "../launcher/", file), "utf8");
 const nativeSource = get("js/native-navigation.js");
 const inputSource = get("js/inputs.js");
-const appsSource = get("js/apps.js");
 
 function harness(options = {}) {
   const requests = [],
@@ -182,7 +182,7 @@ function harness(options = {}) {
   const context = { window, document, XMLHttpRequest: Request };
   vm.runInNewContext(nativeSource, context, { filename: "native-navigation.js" });
   vm.runInNewContext(inputSource, context, { filename: "inputs.js" });
-  vm.runInNewContext(appsSource, context, { filename: "apps.js" });
+  installApps(context);
   return {
     A,
     backgrounds,
@@ -629,7 +629,7 @@ test("port does not replace the upstream Frame-aware watcher service", () => {
   const html = get("index.html");
   assert.ok(html.indexOf('src="js/homewatch.js"') >= 0);
   assert.ok(html.indexOf('src="js/native-navigation.js"') > html.indexOf('src="js/homewatch.js"'));
-  assert.ok(html.indexOf('src="js/apps.js"') > html.indexOf('src="js/native-navigation.js"'));
+  assert.ok(html.indexOf('src="js/launcher-ui.js"') > html.indexOf('src="js/native-navigation.js"'));
   const service = get("service/index.js");
   assert.match(service, /FRAME_HIDDEN_GRACE/);
   assert.match(service, /createArtMode/);

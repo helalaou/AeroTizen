@@ -22,7 +22,7 @@ for (const glass of [false, true]) {
       glass,
     );
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     await expect(page.locator("#gear")).not.toHaveAttribute("data-focused", "true");
     await page.evaluate(() => {
       const now = Date.now();

@@ -146,7 +146,7 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   );
   await page.clock.install();
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.clock.fastForward(300001); // Exercise ordinary refreshes after the startup window.
   await expect(page.locator("#continue-section")).toBeHidden();
   expect(reads).toEqual([]);

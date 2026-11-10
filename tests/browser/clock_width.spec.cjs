@@ -39,7 +39,7 @@ for (const locale of ["en-GB", "ko-KR"]) {
         };
       });
       await page.goto("/");
-      await page.waitForFunction(() => AeroTizen.apps.ready && window.clockWidthAudit.count >= 1441);
+      await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready && window.clockWidthAudit.count >= 1441);
       expect(await page.evaluate(() => window.clockWidthAudit.maxBlock)).toBeLessThanOrEqual(60);
       const expected = await page.evaluate(() => {
         window.clockWidthAudit.active = false;

@@ -23,7 +23,7 @@ test.beforeEach(async ({ page }) => {
 
 test("clock layouts are in one group and keep remote navigation stable on selection", async ({ page }) => {
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.locator("#gear").click();
   await openCategory(page, "status");
   await expect(page.locator("#clock-layouts [role=button]:visible")).toHaveCount(5);

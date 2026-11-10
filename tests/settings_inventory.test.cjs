@@ -4,6 +4,7 @@ const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createSettingsInventory } = loadTypeScript("launcher/src/settings/services/createSettingsInventory.ts");
 
 test("inventory publishes immutable app and input snapshots and disposes both subscriptions", () => {
+  let appSnapshot = Object.freeze({ all: Object.freeze([Object.freeze({ id: "one", name: "One" })]) });
   const appListeners = new Set(),
     inputListeners = new Set();
   const subscribe = (listeners) => (listener) => {
@@ -11,7 +12,7 @@ test("inventory publishes immutable app and input snapshots and disposes both su
     return () => listeners.delete(listener);
   };
   const runtime = {
-    apps: { all: [{ id: "one", name: "One" }], subscribe: subscribe(appListeners) },
+    apps: { getSnapshot: () => appSnapshot, subscribe: subscribe(appListeners) },
     inputs: {
       sources: [
         { type: "HDMI", number: 1, editName: "Console" },
@@ -28,10 +29,11 @@ test("inventory publishes immutable app and input snapshots and disposes both su
   [...appListeners, ...inputListeners].forEach((listener) => listener());
   assert.equal(inventory.getSnapshot(), initial, "unchanged callbacks retain snapshot identity");
   assert.deepEqual(initial.inputs, [{ port: "HDMI 1", placeholder: "Console" }]);
-  runtime.apps.all[0].name = "Renamed";
+  appSnapshot = Object.freeze({ all: Object.freeze([Object.freeze({ id: "one", name: "Renamed" })]) });
   [...appListeners].forEach((listener) => listener());
   const renamed = inventory.getSnapshot();
   assert.equal(renamed.apps[0].name, "Renamed");
+  assert.equal(renamed.apps, appSnapshot.all, "Settings shares the app service array");
   assert.equal(initial.apps[0].name, "One", "source mutation cannot change an old snapshot");
   assert.equal(renamed.inputs, initial.inputs, "independent inventory retains identity");
   runtime.inputs.sources.push({ type: "HDMI", number: 2 });
@@ -51,12 +53,13 @@ test("inventory publishes immutable app and input snapshots and disposes both su
 
 test("feed status updates reach Settings and release their subscription", () => {
   const listeners = new Set();
+  const appSnapshot = Object.freeze({ all: Object.freeze([]) });
   let feed = Object.freeze({
     sources: Object.freeze([Object.freeze({ id: "app", name: "Video", storeId: "123", status: "Not selected" })]),
     messageKey: "",
   });
   const runtime = {
-    apps: { all: [], subscribe: () => () => {} },
+    apps: { getSnapshot: () => appSnapshot, subscribe: () => () => {} },
     inputs: { sources: [], subscribe: () => () => {} },
     continueWatching: {
       getSnapshot: () => feed,

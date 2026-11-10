@@ -1,3 +1,4 @@
+const { installApps } = require("./helpers/apps.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 const assert = require("node:assert/strict");
 const { EventEmitter } = require("node:events");
@@ -50,9 +51,10 @@ function appHarness(metadata, options = {}) {
     toast: (message) => calls.toast.push(message),
   };
   const context = vm.createContext({ window: { AeroTizen: A }, AeroTizen: A });
-  for (const file of ["config.js", "app-catalog.js", "app-lookup.js", "apps.js"]) {
+  for (const file of ["config.js", "app-catalog.js", "app-lookup.js"]) {
     vm.runInContext(fs.readFileSync(path.join(launcher, "js", file), "utf8"), context);
   }
+  installApps(context);
   return { A, calls };
 }
 
@@ -137,14 +139,14 @@ test("watcher inventory includes an installed HbbTV host without adding a host t
     loaded = true;
   });
   assert.equal(loaded, true);
-  assert.deepEqual(plain(A.apps.realIds), [host, "normal.app", "3201907018807"]);
+  assert.deepEqual(plain(A.apps.getSnapshot().realIds), [host, "normal.app", "3201907018807"]);
   assert.deepEqual(
-    plain(A.apps.all).map((app) => app.id),
+    plain(A.apps.getSnapshot().all).map((app) => app.id),
     ["org.tizen.netflix-app", "normal.app"],
   );
   const absent = appHarness([], { installed: [installed[1]] });
   absent.A.apps.load(() => {});
-  assert.deepEqual(plain(absent.A.apps.realIds), ["normal.app"]);
+  assert.deepEqual(plain(absent.A.apps.getSnapshot().realIds), ["normal.app"]);
 });
 
 test("desktop preview launches without consulting TV metadata", () => {

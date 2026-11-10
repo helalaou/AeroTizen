@@ -45,7 +45,7 @@ test("Fireplace remote controls update volume and stop drawing and audio on clos
     };
   });
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   const tile = page.getByRole("button", { name: "Fireplace" });
   const overlay = page.locator("#fireplace");
   const volume = page.locator("#fire-volume");

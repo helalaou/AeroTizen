@@ -17,7 +17,7 @@ for (const [build, url] of [
     );
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto(url);
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     const tabs = page.locator("[data-header-focus=tabs]");
     const shortcuts = page.locator("[data-header-focus=shortcuts]");
     await page.locator("#apps-tab").click();

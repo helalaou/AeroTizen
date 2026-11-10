@@ -80,7 +80,7 @@ async function setup(page, version = "10.0", legacyWorks = true) {
     });
   });
   await page.goto("/");
-  await page.waitForFunction(() => window.testWatcher.up && AeroTizen.apps.ready);
+  await page.waitForFunction(() => window.testWatcher.up && AeroTizen.apps.getSnapshot().ready);
   await expect.poll(() => requests.filter((path) => path === "/apps").length).toBeGreaterThan(0);
   return {
     requests,

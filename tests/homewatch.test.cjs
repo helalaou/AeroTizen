@@ -1,4 +1,5 @@
 "use strict";
+const { installApps } = require("./helpers/apps.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -6,7 +7,6 @@ const vm = require("node:vm");
 const { test } = require("node:test");
 const source = fs.readFileSync(__dirname + "/../launcher/js/homewatch.js", "utf8");
 const nativeSource = fs.readFileSync(__dirname + "/../launcher/js/native-navigation.js", "utf8");
-const appsSource = fs.readFileSync(__dirname + "/../launcher/js/apps.js", "utf8");
 const healthy = { homeControl: { protocol: 1, app_id: "Home", mode: "watcher" }, heartbeats: 1 };
 
 function harness(options = {}) {
@@ -112,7 +112,7 @@ function harness(options = {}) {
   };
   vm.runInNewContext(source, context);
   if (options.native) vm.runInNewContext(nativeSource, context);
-  if (options.apps) vm.runInNewContext(appsSource, context);
+  if (options.apps) installApps(context);
   function advance(ms) {
     const end = clock + ms;
     for (;;) {
@@ -513,7 +513,10 @@ for (const action of ["app", "store", "fireplace"]) {
       h.A.apps.openStore();
     }
     if (action === "fireplace") {
-      h.A.apps.all = [{ id: "youtube.app", name: "YouTube" }];
+      h.A.tizen.application.getAppsInfo = (done) => done([{ id: "youtube.app", name: "YouTube" }]);
+      h.A.config.STORE_PACKAGE = /^$/;
+      h.A.config.HIDDEN_APPS = /service/;
+      h.A.apps.load();
       h.A.apps.playFireplace();
     }
     h.A.homewatch.openSamsungHome();

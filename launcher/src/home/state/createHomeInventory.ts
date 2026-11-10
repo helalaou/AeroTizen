@@ -10,13 +10,14 @@ export const createHomeInventory = (
   transaction: (action: () => void) => void,
 ) => {
   const read = (previous?: Inventory): Inventory => {
-    const apps = snapshotList(runtime.apps.all, previous?.apps);
+    const appSnapshot = runtime.apps.getSnapshot();
+    const apps = appSnapshot.all;
     const inputs = snapshotList(
       runtime.inputs.sources.filter((source) => runtime.inputs.isVisible(source)),
       previous?.inputs,
     );
     const items = runtime.continueWatching.getSnapshot().items;
-    const ready = runtime.apps.ready;
+    const ready = appSnapshot.ready;
     return previous &&
       apps === previous.apps &&
       inputs === previous.inputs &&

@@ -19,7 +19,7 @@ test("Home short/held OK, action menu, move/drop and Settings focus restoration"
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   const first = page.locator("#grid > [data-id]").first();
   await expect(first).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("Enter");
@@ -46,7 +46,7 @@ test("Home short/held OK, action menu, move/drop and Settings focus restoration"
 });
 test("Home and All apps retain keyed artwork nodes and Back returns to Home", async ({ page }) => {
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.evaluate(() => {
     window.originalHome = document.querySelector("#grid > [data-id]");
   });
@@ -66,7 +66,7 @@ test("Back to top restores scroll and focus from below a partial app row", async
     localStorage.setItem(key, JSON.stringify({ ...settings, homeCardColumns: 4 }));
   });
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   const button = page.getByRole("button", { name: "Back to top" });
   await expect(button).toHaveCount(0);
   await page.locator("#apps-tab").click();
@@ -107,7 +107,7 @@ test("Back to top restores scroll and focus from below a partial app row", async
 });
 test("Home docks Inputs with one app row and leaves them in flow with two rows", async ({ page }) => {
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.evaluate(() => {
     AeroTizen.settings.update({ home: ["demo0", "demo1", "demo2"] });
     AeroTizen.settings.update({ homeCardColumns: 3 });
@@ -164,7 +164,7 @@ test("compiled Home preserves header and input geometry around the resized app g
   for (const tab of [baseline, page])
     await tab.waitForFunction(
       (legacy) =>
-        AeroTizen.apps.ready &&
+        (legacy ? AeroTizen.apps.ready : AeroTizen.apps.getSnapshot().ready) &&
         document.querySelector(legacy ? "#grid > [data-id].focused" : "#grid > [data-id][data-focused=true]"),
       tab === baseline,
     );

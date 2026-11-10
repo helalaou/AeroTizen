@@ -65,7 +65,7 @@ try {
     const start = performance.now();
     await page.goto(values.url);
     await page.waitForFunction(
-      () => window.AeroTizen?.apps.ready && document.querySelector("#grid [data-focused=true]"),
+      () => window.AeroTizen?.apps.getSnapshot().ready && document.querySelector("#grid [data-focused=true]"),
     );
     await page.evaluate(() => document.fonts.ready);
     const readyMs = performance.now() - start;

@@ -4,17 +4,20 @@ import { createLauncherApp } from "./app/createLauncherApp";
 import { mountToast } from "./app/mountToast";
 import type { BackgroundState } from "./backgrounds/createBackgrounds";
 import { mountBackgrounds } from "./backgrounds/mountBackgrounds";
+import type { AppsService } from "./contracts/apps";
 import type { ContinueWatchingService } from "./contracts/continueWatching";
 import type { ClockService } from "./contracts/launcher";
 import type { SettingsService } from "./contracts/preferences";
 import type { NetworkService, WeatherService } from "./contracts/status";
 import { mountFireplace } from "./fireplace/mountFireplace";
 import { mountHome } from "./home/index";
+import { createAppsPlatform } from "./platform/tizen/createAppsPlatform";
 import { createClockPlatform } from "./platform/tizen/createClockPlatform";
 import { createContinueWatchingPlatform } from "./platform/tizen/createContinueWatchingPlatform";
 import { createNetworkPlatform } from "./platform/tizen/createNetworkPlatform";
 import { createWeatherPlatform } from "./platform/tizen/createWeatherPlatform";
 import { defaultTemperatureUnit } from "./platform/tizen/defaultTemperatureUnit";
+import { createAppsService } from "./services/createAppsService";
 import { createClockService } from "./services/createClockService";
 import { createContinueWatchingService } from "./services/createContinueWatchingService";
 import { createLauncherUpdates } from "./services/createLauncherUpdates";
@@ -36,6 +39,7 @@ const runtime = window.AeroTizen;
 const hotData = import.meta.hot
   ? (import.meta.hot.data as {
       backgrounds?: BackgroundState;
+      apps?: AppsService;
       clock?: ClockService;
       continueWatching?: ContinueWatchingService;
       network?: NetworkService;
@@ -72,6 +76,18 @@ runtime.settings = settings;
 if (!hotData?.preferences) {
   settings.load();
 }
+const apps =
+  hotData?.apps ||
+  createAppsService({
+    catalog: runtime.catalog,
+    config: runtime.config,
+    platform: createAppsPlatform(window),
+    storage: {
+      getItem: (key) => localStorage.getItem(key),
+      setItem: (key, value) => localStorage.setItem(key, value),
+    },
+  });
+runtime.apps = apps;
 const network =
   hotData?.network ||
   createNetworkService({
@@ -151,6 +167,7 @@ try {
     import.meta.hot.accept();
     import.meta.hot.dispose(() => {
       hotData.backgrounds = backgrounds.getState();
+      hotData.apps = apps;
       hotData.clock = clock;
       hotData.preferences = settings;
       hotData.network = network;

@@ -1,6 +1,7 @@
 import type { MessageKey } from "../shared/i18n/catalogues";
 import type { Store } from "../shared/state/createStore";
 
+import type { AppsConfig } from "./apps";
 import type { DateFormat, SettingsDefaults, SettingsValues, TimeFormat } from "./preferences";
 
 export interface InputSource {
@@ -67,7 +68,7 @@ export type ClockFormatter = Pick<
   ClockService,
   "dateStyle" | "formatDate" | "formatTime" | "subscribe" | "DATE_FORMATS"
 >;
-export interface LauncherConfig {
+export interface LauncherConfig extends AppsConfig {
   DEFAULTS?: Partial<SettingsDefaults>;
   FIREPLACE_ID: string;
   KEY: Record<"LEFT" | "RIGHT" | "UP" | "DOWN" | "ENTER" | "BACK" | "ESC" | "IME_DONE" | "IME_CANCEL", number>;

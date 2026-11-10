@@ -16,7 +16,7 @@ for (const glass of [false, true])
         }
       }, glass);
       await page.goto("/");
-      await page.waitForFunction(() => AeroTizen.apps.ready);
+      await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await page.locator("#gear").click();
       await openCategory(page, "appearance");
       await expect(page.locator("#home-card-mode, #card-sizes")).toHaveCount(0);
@@ -80,7 +80,7 @@ test("a saved rectangle layout opens as squares and retains its row count", asyn
     );
   });
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await expect(page.locator("#grid")).toHaveAttribute("data-columns", "5");
   const size = await page
     .locator("#grid > [data-id]")
@@ -121,7 +121,7 @@ for (const glass of [false, true]) {
       );
     }, glass);
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     for (const clock of ["classic", "vertical", "horizontal", "minimal", "bold"]) {
       const sizes = [];
       for (const columns of [5, 4, 3]) {

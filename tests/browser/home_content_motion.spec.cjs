@@ -25,7 +25,7 @@ for (const [build, url] of [
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto(url);
     await expect(page).toHaveTitle("AeroTizen");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     const card = page.locator('#grid > [data-id="demo0"]');
     const rows = page.locator("[data-home-content]");
     const surface = page.locator("[data-home-page]");

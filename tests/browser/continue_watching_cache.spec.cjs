@@ -70,7 +70,7 @@ async function fixture(page, initialRecords) {
         };
         window.AeroTizen = {
           config: { HIDDEN_APPS: /hidden/ },
-          apps: { inventory: [{ id: 'prime', packageId: 'prime', name: 'Prime' },
+          apps: { getSnapshot: function () { return this; }, subscribeDiscovery: function () { return function () {}; }, inventory: [{ id: 'prime', packageId: 'prime', name: 'Prime' },
             { id: 'youtube', packageId: 'youtube', name: 'YouTube' }], ready: true, subscribe: function () { return function () {}; } },
           settings: { getSnapshot: function () { return preferences; },
             update: function (patch) { preferences = Object.assign({}, preferences, patch); listeners.forEach(function (fn) { fn(); }); },

@@ -1,3 +1,4 @@
+const { installApps } = require("./helpers/apps.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -175,7 +176,7 @@ test("preloaded Apple TV passes discovery and uses its store ID in the watcher i
   };
   const context = vm.createContext({ window: { AeroTizen: A }, AeroTizen: A });
   vm.runInContext(script("config.js"), context);
-  vm.runInContext(script("apps.js"), context);
+  installApps(context);
   assert.equal(A.config.STORE_PACKAGE.test(appleTV.packageId), false);
   let loaded = false;
   A.apps.load(() => {
@@ -183,15 +184,15 @@ test("preloaded Apple TV passes discovery and uses its store ID in the watcher i
   });
   assert.equal(loaded, true);
   assert.deepEqual(
-    Array.from(A.apps.all, (app) => ({ ...app })),
+    Array.from(A.apps.getSnapshot().all, (app) => ({ ...app })),
     [{ id: appleTV.id, name: "Apple TV", icon: "apple-tv.png" }],
   );
-  assert.deepEqual(Array.from(A.apps.realIds), ["3201807016597"]);
+  assert.deepEqual(Array.from(A.apps.getSnapshot().realIds), ["3201807016597"]);
 
   appleTV.show = false;
   A.apps.load(() => {});
-  assert.equal(A.apps.all.length, 0);
-  assert.equal(A.apps.realIds.length, 0);
+  assert.equal(A.apps.getSnapshot().all.length, 0);
+  assert.equal(A.apps.getSnapshot().realIds.length, 0);
 });
 
 test("watcher requests keep the preloaded store IDs from the shared catalogue", () => {

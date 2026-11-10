@@ -88,12 +88,12 @@
     if (!A.settings.getSnapshot().homeInitialized) {
       A.settings.update({ home: A.apps.defaultHome() });
     }
-    var nextIds = A.apps.realIds.slice().sort().join(",");
+    var nextIds = A.apps.getSnapshot().realIds.slice().sort().join(",");
     if (nextIds !== appIds) {
       appIds = nextIds;
       clearTimeout(reportAppsTimer);
       reportAppsTimer = setTimeout(function () {
-        A.homewatch.reportApps(A.apps.realIds);
+        A.homewatch.reportApps(A.apps.getSnapshot().realIds);
       }, 1500);
     }
   }

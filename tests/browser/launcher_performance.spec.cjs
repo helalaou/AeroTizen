@@ -20,7 +20,9 @@ test.beforeEach(async ({ page }) => {
 
 test("first-row navigation does not format the clock or measure layout", async ({ page }) => {
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready && document.querySelector("#grid [data-focused=true]"));
+  await page.waitForFunction(
+    () => AeroTizen.apps.getSnapshot().ready && document.querySelector("#grid [data-focused=true]"),
+  );
   const result = await page.evaluate(() => {
     const calls = { format: 0, rect: 0 };
     const originals = new Map();
@@ -60,7 +62,7 @@ for (const glassSettings of [false, true]) {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     await page.evaluate((glass) => AeroTizen.settings.update({ glassSettings: glass }), glassSettings);
     const blob = page.locator("[data-background-blob]").first();
     await expect(blob).not.toHaveCSS("animation-name", "none");

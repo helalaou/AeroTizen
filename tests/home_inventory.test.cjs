@@ -21,8 +21,9 @@ test("Home inventories publish stable immutable data and respond to preference c
     locale: { timeFormat: () => "24", tempUnit: () => "C" },
   });
   let feed = Object.freeze({ items: Object.freeze([]) });
+  let appSnapshot = Object.freeze({ all: Object.freeze([Object.freeze({ id: "one", name: "One" })]), ready: false });
   const runtime = {
-    apps: { all: [{ id: "one", name: "One" }], ready: false, subscribe: subscribe(appListeners) },
+    apps: { getSnapshot: () => appSnapshot, subscribe: subscribe(appListeners) },
     inputs: {
       sources: [
         { type: "TV", number: 1 },
@@ -43,10 +44,11 @@ test("Home inventories publish stable immutable data and respond to preference c
   [...appListeners, ...inputListeners, ...feedListeners].forEach((fn) => fn());
   assert.equal(inventory.getSnapshot(), first);
   assert.equal(updates, 0);
-  runtime.apps.all[0].name = "Renamed";
+  appSnapshot = Object.freeze({ ...appSnapshot, all: Object.freeze([Object.freeze({ id: "one", name: "Renamed" })]) });
   [...appListeners].forEach((fn) => fn());
   assert.equal(first.apps[0].name, "One");
   assert.equal(inventory.getSnapshot().apps[0].name, "Renamed");
+  assert.equal(inventory.getSnapshot().apps, appSnapshot.all, "Home shares the app service array");
   assert.equal(inventory.getSnapshot().inputs, first.inputs);
   assert.equal(Object.isFrozen(inventory.getSnapshot().apps[0]), true);
   settings.update({ showLiveTv: false });
@@ -54,7 +56,7 @@ test("Home inventories publish stable immutable data and respond to preference c
     inventory.getSnapshot().inputs.map((input) => input.type),
     ["HDMI"],
   );
-  runtime.apps.ready = true;
+  appSnapshot = Object.freeze({ ...appSnapshot, ready: true });
   [...appListeners].forEach((fn) => fn());
   assert.equal(inventory.getSnapshot().ready, true);
   feed = Object.freeze({ items: Object.freeze([Object.freeze({ key: "one", title: "Episode" })]) });

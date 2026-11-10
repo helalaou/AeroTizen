@@ -15,7 +15,7 @@ test("Home interpolates the top fade without replacing its mask and keeps the bo
     ),
   );
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   const viewport = page.locator("[data-home-viewport]"),
     mask = page.locator("[data-home-mask]");
   const maskY = () => mask.evaluate((n) => new DOMMatrix(getComputedStyle(n).transform).m42);

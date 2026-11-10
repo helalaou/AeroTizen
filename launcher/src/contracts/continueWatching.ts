@@ -1,18 +1,11 @@
 import type { Store } from "../shared/state/createStore";
 
+import type { AppRecord } from "./apps";
 import type { ContinueItem, ContinueSource } from "./launcher";
 
 export interface ContinueFeedItem extends ContinueItem {
   readonly payload: string;
   readonly timestamp: number;
-}
-
-export interface ContinueInstalledApp {
-  readonly iconPath?: string;
-  readonly id: string;
-  readonly name?: string;
-  readonly packageId?: string;
-  readonly show?: boolean;
 }
 
 export interface ContinueWatchingSnapshot {
@@ -25,7 +18,7 @@ export interface ContinueWatchingSnapshot {
 export interface ContinueWatchingProvider {
   cancel(): void;
   check?(source: ContinueSource, done: (available: boolean) => void): void;
-  discover(inventory: readonly ContinueInstalledApp[]): readonly ContinueSource[];
+  discover(inventory: readonly AppRecord[]): readonly ContinueSource[];
   open(item: ContinueFeedItem): void;
   read(source: ContinueSource, done: (error: boolean, records?: unknown) => void): void;
 }

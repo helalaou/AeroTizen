@@ -14,7 +14,7 @@ for (const clockLayout of ["classic", "custom"]) {
       clockLayout,
     );
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     const geometry = () =>
       page.evaluate(() =>
         ["[data-header-tabs]", "#home-tab", "#apps-tab", "#gear", "#samsung-home-shortcut", "#network"].map((s) => {
