@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 for (const [name, url] of [
   ["compiled", "http://127.0.0.1:8171/"],
@@ -129,57 +129,60 @@ for (const [name, url] of [
   });
 }
 
-test("Continue Watching demo is opt-in, local to Vite and uses separate preferences", async ({ page }) => {
-  await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
-  await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-  await page.goto("http://127.0.0.1:8172/");
-  await page.waitForFunction(
-    () => AeroTizen.apps.getSnapshot().ready && Array.isArray(AeroTizen.settings.getSnapshot().home),
-  );
-  await expect(page.locator("#continue-section")).toBeHidden();
-  const original = await page.evaluate(() => localStorage.getItem("aerotizen.settings.v1"));
-  await page.goto("http://127.0.0.1:8172/?demo=1");
-  await expect(page.locator("#continue-section")).toBeVisible();
-  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(5);
-  await expect(
-    page.locator("[data-continue-part=source-badge] :is([data-app-artwork], [data-app-fallback]):visible"),
-  ).toHaveCount(5);
-  for (const glass of [false, true]) {
-    await page.evaluate((glass) => AeroTizen.settings.update({ glassSettings: glass }), glass);
-    await page.waitForFunction((glass) => document.body.classList.contains("glass-ui") === glass, glass);
-    const fill = await page
-      .locator("#grid > [data-id]")
-      .first()
-      .evaluate((node) => getComputedStyle(node).background);
-    for (const badge of await page.locator("[data-continue-part=source-badge]").all()) {
-      await expect(badge).toHaveCSS("background", fill);
+test.describe("automatic development preview", () => {
+  test.use({ previewPlatforms: false });
+  test("local development opens the full preview and preserves settings with or without the old query", async ({
+    page,
+  }) => {
+    await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+    await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+    await page.goto("http://127.0.0.1:8172/");
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
+    await expect(page.locator("#continue-section")).toBeVisible();
+    await expect(page.locator("#continue-items > [data-key]")).toHaveCount(5);
+    await expect(
+      page.locator("[data-continue-part=source-badge] :is([data-app-artwork], [data-app-fallback]):visible"),
+    ).toHaveCount(5);
+    for (const glass of [false, true]) {
+      await page.evaluate((glass) => AeroTizen.settings.update({ glassSettings: glass }), glass);
+      await page.waitForFunction((glass) => document.body.classList.contains("glass-ui") === glass, glass);
+      const fill = await page
+        .locator("#grid > [data-id]")
+        .first()
+        .evaluate((node) => getComputedStyle(node).background);
+      for (const badge of await page.locator("[data-continue-part=source-badge]").all()) {
+        await expect(badge).toHaveCSS("background", fill);
+      }
     }
-  }
-  await expect(page.locator("[data-continue-part=progress-fill]")).toHaveCount(4);
-  const unplayed = page.getByRole("button", { name: "Paper Moons · Prime Video" });
-  await expect(unplayed.locator("[data-continue-part=progress-fill]")).toHaveCount(0);
-  const labelBackground = await unplayed
-    .locator("[data-continue-part=label]")
-    .evaluate((node) => getComputedStyle(node).backgroundColor);
-  await expect(unplayed.locator("[data-continue-part=progress]")).toHaveCSS("background-color", labelBackground);
-  const longTitle = page
-    .getByRole("button", { name: /Signal North and the Last Broadcast/ })
-    .locator("[data-continue-part=title]");
-  expect(await longTitle.evaluate((node) => node.clientHeight === 60 && node.scrollHeight > node.clientHeight)).toBe(
-    true,
-  );
-  const heights = await page
-    .locator("#continue-items > [data-key]")
-    .evaluateAll((cards) => cards.map((card) => card.offsetHeight));
-  expect(heights).toEqual(Array(5).fill(318));
-  await expect(page.locator("[data-continue-part=image]").first()).toHaveJSProperty("complete", true);
-  expect(
-    await page
-      .locator("[data-continue-part=image]")
-      .first()
-      .evaluate((image) => image.naturalWidth),
-  ).toBeGreaterThan(0);
-  expect(await page.evaluate(() => localStorage.getItem("aerotizen.settings.v1"))).toBe(original);
-  await page.goto("http://127.0.0.1:8171/?demo=1");
-  await expect(page.locator("#continue-section")).toBeHidden();
+    await expect(page.locator("[data-continue-part=progress-fill]")).toHaveCount(4);
+    const unplayed = page.getByRole("button", { name: "Paper Moons · Prime Video" });
+    await expect(unplayed.locator("[data-continue-part=progress-fill]")).toHaveCount(0);
+    const labelBackground = await unplayed
+      .locator("[data-continue-part=label]")
+      .evaluate((node) => getComputedStyle(node).backgroundColor);
+    await expect(unplayed.locator("[data-continue-part=progress]")).toHaveCSS("background-color", labelBackground);
+    const longTitle = page
+      .getByRole("button", { name: /Signal North and the Last Broadcast/ })
+      .locator("[data-continue-part=title]");
+    expect(await longTitle.evaluate((node) => node.clientHeight === 60 && node.scrollHeight > node.clientHeight)).toBe(
+      true,
+    );
+    const heights = await page
+      .locator("#continue-items > [data-key]")
+      .evaluateAll((cards) => cards.map((card) => card.offsetHeight));
+    expect(heights).toEqual(Array(5).fill(318));
+    await expect(page.locator("[data-continue-part=image]").first()).toHaveJSProperty("complete", true);
+    expect(
+      await page
+        .locator("[data-continue-part=image]")
+        .first()
+        .evaluate((image) => image.naturalWidth),
+    ).toBeGreaterThan(0);
+    await page.evaluate(() => AeroTizen.settings.update({ timeFormat: "24" }));
+    const saved = await page.evaluate(() => localStorage.getItem(AeroTizen.config.STORAGE_KEY));
+    await page.goto("http://127.0.0.1:8172/?demo=1");
+    await expect(page.locator("#continue-items > [data-key]")).toHaveCount(5);
+    expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().timeFormat)).toBe("24");
+    expect(await page.evaluate(() => localStorage.getItem(AeroTizen.config.STORAGE_KEY))).toBe(saved);
+  });
 });

@@ -5,6 +5,7 @@ import type { HomeWatcherService } from "../../contracts/homeWatcher";
 import type { InputsService } from "../../contracts/inputs";
 import type { ClockService, HomeBridge, LauncherConfig, SettingsBridge } from "../../contracts/launcher";
 import type { NativeNavigation, NativeNavigationCommands } from "../../contracts/nativeNavigation";
+import type { PlatformOverrides } from "../../contracts/platformOverrides";
 import type { SettingsService } from "../../contracts/preferences";
 import type { NetworkService, WeatherService } from "../../contracts/status";
 import type { Translate } from "../../shared/i18n/createTranslations";
@@ -28,6 +29,7 @@ export interface LauncherRuntime {
   inputs: InputsService;
   nativeNavigation: NativeNavigation;
   network: NetworkService;
+  platforms?: PlatformOverrides;
   settings: SettingsService;
   settingsUi?: SettingsBridge;
   tizen?: (AppsTizen & HomeWatcherTizen & InputsTizen & StremioTizen & NativeNavigationTizen) | null;

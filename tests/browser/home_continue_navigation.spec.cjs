@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 for (const scenario of [
   { size: "small", count: 5, columns: 5, initial: 3, scrolled: 6 },

@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createAppsService } = loadTypeScript("launcher/src/services/createAppsService.ts");
 const { createAppsPlatform } = loadTypeScript("launcher/src/platform/tizen/createAppsPlatform.ts");
+const { createPreviewPlatforms } = loadTypeScript("launcher/src/dev/createPreviewPlatforms.ts");
 
 const config = {
   DEFAULT_HOME_APPS: ["youtube", "video"],
@@ -23,7 +24,7 @@ function harness(options = {}) {
   const launches = [];
   const calls = { dispose: 0, store: 0, fireplace: [] };
   const platform = {
-    preview: !!options.preview,
+    cacheInventory: !options.preview,
     readInstalled(done) {
       const request = { done, cancelled: false };
       requests.push(request);
@@ -38,7 +39,7 @@ function harness(options = {}) {
   };
   const service = createAppsService({
     config,
-    platform,
+    platform: options.preview ? createPreviewPlatforms(() => true).apps(platform) : platform,
     catalog: { preloadedStoreId: (id) => (id === "preloaded" ? "12345" : null) },
     storage: { getItem: (key) => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) },
   });

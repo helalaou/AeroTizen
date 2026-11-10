@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const { openCategory } = require("./drawer_helpers.cjs");
 
 const openSolid = async (page, glass) => {
@@ -231,7 +231,7 @@ test("demo preview reopens the current custom colour before and after a reload",
   await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ json: {} }));
   await page.addInitScript(() => {
-    const key = "aerotizen.settings.v1.demo";
+    const key = "aerotizen.settings.v1";
     if (!localStorage.getItem(key)) {
       localStorage.setItem(
         key,
@@ -239,7 +239,7 @@ test("demo preview reopens the current custom colour before and after a reload",
       );
     }
   });
-  await page.goto("http://127.0.0.1:8172/?demo=1");
+  await page.goto("http://127.0.0.1:8172/");
   await expect.poll(() => rootColour(page)).toBe("rgb(51, 102, 153)");
   await page.locator("#gear").click();
   await openCategory(page, "wallpaper");

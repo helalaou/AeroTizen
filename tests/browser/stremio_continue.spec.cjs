@@ -1,5 +1,5 @@
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const { watcherStatus } = require("./watcher_helpers.cjs");
 const stremio = "IkWsFHtOY9.Stremio",
   prime = "org.tizen.primevideo",

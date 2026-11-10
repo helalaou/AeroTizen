@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 test("status views update from shared data without querying status markup", async ({ page, context }) => {
   const errors = [];

@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 for (const clockLayout of ["classic", "custom"]) {
   test(`${clockLayout} header keeps tab and Samsung Home geometry across appearance changes`, async ({
     page,

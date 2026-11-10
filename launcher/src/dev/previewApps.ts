@@ -1,4 +1,4 @@
-import type { InstalledApp } from "../../contracts/launcher";
+import type { InstalledApp } from "../contracts/launcher";
 
 // Preserve preview IDs before sorting, including the partial last row.
 const NAMES = [
@@ -29,7 +29,9 @@ const NAMES = [
   "Twitch",
 ] as const;
 
-export const demoApps: readonly InstalledApp[] = Object.freeze(
+export const previewAppId = (name: (typeof NAMES)[number]) => "demo" + NAMES.indexOf(name);
+
+export const previewApps: readonly InstalledApp[] = Object.freeze(
   NAMES.map((name, index) => Object.freeze({ id: "demo" + index, name, icon: "" })).sort((left, right) =>
     left.name.localeCompare(right.name),
   ),

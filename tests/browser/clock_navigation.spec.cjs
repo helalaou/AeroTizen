@@ -1,5 +1,5 @@
 const { openCategory } = require("./drawer_helpers.cjs");
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 const errors = new WeakMap();
 test.afterEach(async ({ page }) => expect(errors.get(page)).toEqual([]));

@@ -138,8 +138,6 @@
   "scene.wine": "Vino",
   "scene.rose": "Rosa",
   "common.on": "Attivato",
-  "continue.demoFeed": "Questa demo mostra programmi di esempio.",
-  "continue.demoPlayback": "Programma di esempio",
   "continue.settings": "Impostazioni Continua a guardare",
   "continue.hint": "Mostra i programmi salvati dalle app scelte. Gli elenchi condivisi possono differire da quelli dell’app.",
   "continue.chooseApps": "Scegli le app qui sotto. Gli elenchi si aggiornano al ritorno ad {{appName}}.",

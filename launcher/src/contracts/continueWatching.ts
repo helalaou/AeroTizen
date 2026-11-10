@@ -10,7 +10,7 @@ export interface ContinueFeedItem extends ContinueItem {
 
 export interface ContinueWatchingSnapshot {
   readonly items: readonly ContinueFeedItem[];
-  readonly messageKey: "" | "continue.findingApps" | "continue.noApps" | "continue.tvOnly" | "continue.demoFeed";
+  readonly messageKey: "" | "continue.findingApps" | "continue.noApps" | "continue.tvOnly";
   readonly sources: readonly ContinueSource[];
 }
 

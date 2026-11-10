@@ -221,17 +221,25 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
 
 - Run `npm run dev`, then open http://localhost:8019 at 1920×1080. The server also
   prints a network URL for another device. Vite supplies hot updates for Home and Settings
-  components and serves the legacy runtime files. TV-only features use sample data.
-  For README screenshots, open `?demo=1` in a clean browser context at 1920×1080.
-  It loads Glass, sample favourites and a fictional Continue Watching feed. In
+  components and serves the legacy runtime files. The plain URL opens the full browser
+  preview with sample apps, inputs and a fictional Continue Watching feed. It uses one
+  settings store; existing local preferences take priority, and older `.demo` preferences
+  are carried over when no local preferences exist. A fresh browser context loads Glass
+  and sample favourites. For README screenshots, use a clean context at 1920×1080. In
   **Settings → Appearance**, set **App size** to **Small**.
   Add a fifth favourite to Home.
 - Run `npm run build` for the compiled runtime in `dist/launcher/`.
   Releases package this directory. The explicit production HTML mounts Home and
   Settings from one `js/launcher-ui.js` bundle. Edit the TSX components for view changes.
 - Preview the compiled launcher: `python3 -m http.server -d dist/launcher`, then
-  open http://localhost:8000 at 1920×1080. The old comparison page is isolated in
+  open http://localhost:8000 at 1920×1080. This is the TV runtime: without native APIs,
+  it does not generate sample apps or input devices. The old comparison page is isolated in
   `tests/fixtures/legacy-launcher/` and is served by the browser test runner.
+- Browser fixtures and their artwork live under `launcher/src/dev/`, imported only
+  by the Vite entry or explicit browser-test setup. Production and TV-dev builds use
+  `src/index.ts`; the build rejects rendered modules from `src/dev/`. Browser tests
+  inject sample platform adapters through a shared fixture, while native SDK tests
+  keep their own adapters. Boundary tests disable those samples and check both TV builds.
 - For TV development, run `npm run build:dev`, then `aerotizen install ./dist/launcher-dev`.
   The app name and orange icon badge show the first eight characters of the content
   build ID, for example `AeroTizen Dev 12AB34CD`. The build prints the app name.

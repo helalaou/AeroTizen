@@ -55,6 +55,11 @@ test("compiled launcher uses the production page, local scripts and the Preact l
   );
   assert.equal(existsSync(path.join(output, "src")), false, "TypeScript source is not a TV runtime asset");
   assert.doesNotMatch(read(output, "js/launcher-ui.js"), /@vite\/client|@prefresh|preact\/debug/);
+  assert.doesNotMatch(
+    read(output, "js/launcher-ui.js"),
+    /After the Tide|A Quiet Orbit|Preview001|demo0|continue\.demoFeed|continue\.demoPlayback/,
+    "sample inventory, programmes and preview-only copy cannot enter the TV bundle",
+  );
   assert.match(read(output, "licenses/preact.txt"), /MIT License/);
   assert.equal(read(output, "licenses/i18next.txt"), read(path.join(root, "node_modules/i18next"), "LICENSE"));
   assert.equal(

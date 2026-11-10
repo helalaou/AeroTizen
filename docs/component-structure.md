@@ -77,6 +77,14 @@ development hot reload so existing TV-service subscriptions remain active.
 
 ## App inventory ownership
 
+`src/dev/` owns browser-only sample apps, input devices, fictional programmes and
+generated artwork. The Vite entry installs the full preview without a query flag.
+Production composition accepts optional typed platform overrides but imports no
+preview data. Missing native APIs preserve cached apps and report unavailable
+discovery; they do not create fictional inventory. Both TV build modes reject
+development modules in their rendered bundle. Browser tests inject preview adapters
+explicitly, and boundary tests run without them against the real TV bundles.
+
 `shared/apps/` owns the readonly JSON catalogue, indexed app/store lookups, title
 formatting, artwork priority and package-icon classification. Home and Settings
 import the pure presentation helpers. App launch and feed adapters import name
