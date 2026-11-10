@@ -19,8 +19,9 @@ export const createSettingsInventory = (
         })),
       previous?.inputs,
     );
-    const continueSources = snapshotList(runtime.continueWatching?.sources || [], previous?.continueSources);
-    const continueMessage = runtime.continueWatching?.messageKey || "";
+    const continueSnapshot = runtime.continueWatching?.getSnapshot();
+    const continueSources = continueSnapshot?.sources || previous?.continueSources || Object.freeze([]);
+    const continueMessage = continueSnapshot?.messageKey || "";
     return previous &&
       continueSources === previous.continueSources &&
       continueMessage === previous.continueMessage &&

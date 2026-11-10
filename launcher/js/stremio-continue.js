@@ -242,7 +242,8 @@
     });
   }
 
-  A.continueWatching.register({
+  A.continueWatchingProviders = A.continueWatchingProviders || [];
+  A.continueWatchingProviders.push({
     discover: discover,
     check: checkAvailability,
     read: read,

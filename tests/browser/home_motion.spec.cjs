@@ -29,9 +29,10 @@ for (const [build, url] of [
       await expect(page).toHaveTitle("AeroTizen");
       await page.waitForFunction(() => AeroTizen.apps.ready && AeroTizen.inputs.sources.length === 4);
       await page.evaluate(() => {
-        AeroTizen.continueWatching.items = [
-          { key: "motion", title: "Motion fixture", sourceName: "YouTube", sourceId: "demo0" },
-        ];
+        const snapshot = AeroTizen.continueWatching.getSnapshot();
+        const items = [{ key: "motion", title: "Motion fixture", sourceName: "YouTube", sourceId: "demo0" }];
+        const next = { ...snapshot, items };
+        AeroTizen.continueWatching.getSnapshot = () => next;
         AeroTizen.homeScreen.refreshApps();
       });
       const card = page.locator("#continue-items > [data-key]");

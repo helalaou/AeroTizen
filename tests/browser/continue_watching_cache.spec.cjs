@@ -3,13 +3,29 @@ const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
+let service;
+test.beforeAll(async () => {
+  const { build } = await import("vite");
+  const bundle = await build({
+    configFile: false,
+    logLevel: "silent",
+    build: {
+      write: false,
+      target: ["chrome69", "es2018"],
+      lib: {
+        entry: path.join(__dirname, "../../launcher/src/services/createContinueWatchingService.ts"),
+        name: "ContinueWatchingModule",
+        formats: ["iife"],
+      },
+    },
+  });
+  const bundles = Array.isArray(bundle) ? bundle : [bundle];
+  service = bundles.flatMap((entry) => entry.output).find((file) => file.type === "chunk").code;
+});
+
 // Do not use page.route here: routing disables the browser's HTTP cache.
 async function fixture(page, initialRecords) {
-  const [service, adapter] = await Promise.all(
-    ["continue-watching.js", "samsung-continue.js"].map((name) =>
-      fs.readFile(path.join(__dirname, "../../launcher/js", name), "utf8"),
-    ),
-  );
+  const adapter = await fs.readFile(path.join(__dirname, "../../launcher/js/samsung-continue.js"), "utf8");
   const requests = [];
   let origin,
     records = initialRecords;
@@ -31,7 +47,16 @@ async function fixture(page, initialRecords) {
           adapter.replace(
             "http://localhost:9013/?module=EBHelper&func=GetItems",
             origin + "/feed?module=EBHelper&func=GetItems",
-          ),
+          ) +
+          `\nAeroTizen.continueWatching = ContinueWatchingModule.createContinueWatchingService({
+            apps: AeroTizen.apps, settings: AeroTizen.settings,
+            providers: AeroTizen.continueWatchingProviders,
+            clock: { subscribe: function () { return function () {}; } },
+            now: function () { return Date.now(); }, elapsed: function () { return performance.now(); },
+            timers: window,
+            platform: { isAvailable: function () { return true; }, isHidden: function () { return document.hidden; },
+              subscribeVisibility: function () { return function () {}; } }
+          });`,
       );
     } else {
       response.writeHead(200, { "Content-Type": "text/html" });
@@ -46,10 +71,10 @@ async function fixture(page, initialRecords) {
         window.AeroTizen = {
           config: { HIDDEN_APPS: /hidden/ },
           apps: { inventory: [{ id: 'prime', packageId: 'prime', name: 'Prime' },
-            { id: 'youtube', packageId: 'youtube', name: 'YouTube' }], ready: true, subscribe: function () {} },
+            { id: 'youtube', packageId: 'youtube', name: 'YouTube' }], ready: true, subscribe: function () { return function () {}; } },
           settings: { getSnapshot: function () { return preferences; },
             update: function (patch) { preferences = Object.assign({}, preferences, patch); listeners.forEach(function (fn) { fn(); }); },
-            subscribe: function (fn) { listeners.push(fn); } },
+            subscribe: function (fn) { listeners.push(fn); return function () { listeners.splice(listeners.indexOf(fn), 1); }; } },
           catalog: { storeId: function (id) { return id === 'prime' ? '123' : '456'; } },
           tiles: { shortName: function (name) { return name; } },
           tizen: { application: { getAppMetaData: function () {
@@ -61,7 +86,7 @@ async function fixture(page, initialRecords) {
       </script><script src="/reader.js"></script><script>
         AeroTizen.continueWatching.subscribe(function () {
           var target = document.getElementById('items'); target.textContent = '';
-          AeroTizen.continueWatching.items.forEach(function (item) {
+          AeroTizen.continueWatching.getSnapshot().items.forEach(function (item) {
             var node = document.createElement('p'); node.textContent = item.title; target.appendChild(node);
           });
         });

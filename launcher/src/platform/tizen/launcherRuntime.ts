@@ -1,9 +1,12 @@
 import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
 import type {
+  ContinueInstalledApp,
+  ContinueWatchingProvider,
+  ContinueWatchingService,
+} from "../../contracts/continueWatching";
+import type {
   AppPresentation,
   ClockService,
-  ContinueItem,
-  ContinueSource,
   HomeBridge,
   InputSource,
   InstalledApp,
@@ -12,7 +15,6 @@ import type {
 } from "../../contracts/launcher";
 import type { SettingsService } from "../../contracts/preferences";
 import type { NetworkService, WeatherService } from "../../contracts/status";
-import type { MessageKey } from "../../shared/i18n/catalogues";
 import type { Translate } from "../../shared/i18n/createTranslations";
 
 // The unmigrated TV services are accessed through this boundary, not a screen's types.
@@ -21,6 +23,7 @@ export interface LauncherRuntime {
   apps: {
     all: InstalledApp[];
     ready: boolean;
+    inventory?: readonly ContinueInstalledApp[];
     byId(id: string): InstalledApp | null;
     launch(app: InstalledApp): void;
     openStore(): void;
@@ -29,14 +32,8 @@ export interface LauncherRuntime {
   };
   clock: ClockService;
   config: LauncherConfig;
-  continueWatching: {
-    items: ContinueItem[];
-    messageKey: MessageKey | "";
-    sources: ContinueSource[];
-    open(item: ContinueItem): void;
-    start(): void;
-    subscribe(listener: () => void): () => void;
-  };
+  continueWatching: ContinueWatchingService;
+  continueWatchingProviders?: readonly ContinueWatchingProvider[];
   hideToast(): void;
   homeScreen?: HomeBridge;
   homewatch: { useSamsungHome(): void; openSamsungHome?(): void };

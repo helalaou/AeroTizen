@@ -138,6 +138,28 @@ including unavailable readings. Native watch IDs are released through the
 [SystemInfo API](https://developer.samsung.com/smarttv/develop/api-references/tizen-web-device-api-references/systeminfo-api.html).
 Cancelled discovery cannot start a later Wi-Fi query or publish a stale reading.
 
+## Continue Watching ownership
+
+`services/createContinueWatchingService.ts` owns feed selection, bounded source records,
+immutable snapshots and retry timers. Home and Settings read its item/source arrays without
+copying them. Unchanged records retain their identity, including while status changes, so
+feed refreshes do not reload card artwork. Normalization validates provider records, retains
+zero-progress episodes and sorts by viewing activity, with a maximum of thirty visible items.
+
+Samsung and Stremio adapters register in `continueWatchingProviders` before the bundle loads.
+They retain discovery, transport, request cancellation and native launch commands. The first
+provider to claim an app keeps it, including while its readiness check is pending. The service
+receives these adapters, preferences, app inventory, the shared clock, visibility, wall time,
+monotonic time and timers as dependencies; it does not query the DOM or Tizen APIs.
+
+Startup retries share one five-minute monotonic deadline across refreshes and clock corrections.
+Settled feeds do not poll. Returning to the launcher refreshes feeds; hiding it or changing
+selection cancels pending reads and retries. Shared clock ticks revalidate saved timestamps
+after a system-time correction without another request. Hot reload retains the service and
+its subscriptions. `dispose()` cancels requests and timers, releases app/preference/clock and
+visibility subscriptions, and rejects late replies. The legacy comparison page retains its
+existing frozen JavaScript service outside the TV package.
+
 ## DOM and style ownership
 
 The Settings focus indicator measures after the view has committed. Resize and structural

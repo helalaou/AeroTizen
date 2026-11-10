@@ -20,6 +20,7 @@ test("Home inventories publish stable immutable data and respond to preference c
     speedRange: { MIN: 0.25, MAX: 3 },
     locale: { timeFormat: () => "24", tempUnit: () => "C" },
   });
+  let feed = Object.freeze({ items: Object.freeze([]) });
   const runtime = {
     apps: { all: [{ id: "one", name: "One" }], ready: false, subscribe: subscribe(appListeners) },
     inputs: {
@@ -33,7 +34,7 @@ test("Home inventories publish stable immutable data and respond to preference c
       },
       subscribe: subscribe(inputListeners),
     },
-    continueWatching: { items: [], subscribe: subscribe(feedListeners) },
+    continueWatching: { getSnapshot: () => feed, subscribe: subscribe(feedListeners) },
   };
   const inventory = createHomeInventory(runtime, settings, (fn) => fn());
   const first = inventory.getSnapshot();
@@ -56,9 +57,10 @@ test("Home inventories publish stable immutable data and respond to preference c
   runtime.apps.ready = true;
   [...appListeners].forEach((fn) => fn());
   assert.equal(inventory.getSnapshot().ready, true);
-  runtime.continueWatching.items.push({ key: "one", title: "Episode" });
+  feed = Object.freeze({ items: Object.freeze([Object.freeze({ key: "one", title: "Episode" })]) });
   [...feedListeners].forEach((fn) => fn());
   assert.equal(inventory.getSnapshot().items[0].title, "Episode");
+  assert.equal(inventory.getSnapshot().items, feed.items, "Home reads the shared feed snapshot without copying");
   assert.equal(first.items.length, 0);
   const latest = inventory.getSnapshot();
   inventory.dispose();

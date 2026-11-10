@@ -53,11 +53,6 @@ function harness(options = {}) {
     },
   };
   const A = {
-    continueWatching: {
-      register(adapter) {
-        provider = adapter;
-      },
-    },
     catalog: { storeId: (id) => (id === app.id ? "3202306031311" : null) },
     tiles: { shortName: (name) => name },
     tizen: {
@@ -79,6 +74,7 @@ function harness(options = {}) {
     },
     clearTimeout: (id) => timers.delete(id),
   });
+  provider = A.continueWatchingProviders[0];
   return {
     provider,
     discover(inventory, done) {

@@ -24,7 +24,8 @@ for (const glassSettings of [false, true]) {
     await page.goto("/");
     await page.waitForFunction(() => AeroTizen.apps.ready);
     await page.evaluate(() => {
-      AeroTizen.continueWatching.items = [
+      const snapshot = AeroTizen.continueWatching.getSnapshot();
+      const items = [
         {
           key: "theme-fixture",
           title: "Theme fixture",
@@ -37,6 +38,8 @@ for (const glassSettings of [false, true]) {
         },
       ];
       AeroTizen.inputs.sources = [{ type: "HDMI", number: 1, connected: true }];
+      const next = { ...snapshot, items };
+      AeroTizen.continueWatching.getSnapshot = () => next;
       AeroTizen.homeScreen.refreshApps();
     });
     const homeLayout = await page.evaluate(() => {
