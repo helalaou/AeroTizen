@@ -6,7 +6,7 @@ test("an unset Home list and a saved empty list preserve their distinct views an
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.evaluate(() => {
     AeroTizen.settings.update({ home: null });
   });

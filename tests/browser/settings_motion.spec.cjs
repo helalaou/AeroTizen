@@ -27,7 +27,7 @@ for (const [build, url] of [
       await page.emulateMedia({ reducedMotion: "no-preference" });
       await page.goto(url);
       await expect(page).toHaveTitle("AeroTizen");
-      await page.waitForFunction(() => AeroTizen.apps.ready);
+      await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await page.locator("#gear").click();
 
       const sidebar = page.locator('[data-settings-focus="sidebar"]');
@@ -84,7 +84,7 @@ for (const [build, url] of [
       await page.screenshot({ path: info.outputPath("reduced-motion-settings.png") });
       await closeSettings(page);
       await page.reload();
-      await page.waitForFunction(() => AeroTizen.apps.ready);
+      await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await page.locator("#gear").click();
       await expectReduced();
       await page.emulateMedia({ reducedMotion: "no-preference" });

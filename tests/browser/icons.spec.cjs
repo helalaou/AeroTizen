@@ -39,7 +39,7 @@ for (const glass of [false, true]) {
     }, glass);
     await page.goto("/");
     await expect(page).toHaveTitle("AeroTizen");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     const gear = page.getByRole("button", { name: "Settings", exact: true });
     for (const [code, colour] of [
       [0, "rgb(255, 211, 77)"],

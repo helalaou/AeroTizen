@@ -1,9 +1,6 @@
+import type { AppHandoff, AppsService } from "../../contracts/apps";
 import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
-import type {
-  ContinueInstalledApp,
-  ContinueWatchingProvider,
-  ContinueWatchingService,
-} from "../../contracts/continueWatching";
+import type { ContinueWatchingProvider, ContinueWatchingService } from "../../contracts/continueWatching";
 import type {
   AppPresentation,
   ClockService,
@@ -17,26 +14,20 @@ import type { SettingsService } from "../../contracts/preferences";
 import type { NetworkService, WeatherService } from "../../contracts/status";
 import type { Translate } from "../../shared/i18n/createTranslations";
 
+import type { AppsTizen } from "./createAppsPlatform";
+
 // The unmigrated TV services are accessed through this boundary, not a screen's types.
 export interface LauncherRuntime {
   applyBackground(): void;
-  apps: {
-    all: InstalledApp[];
-    ready: boolean;
-    inventory?: readonly ContinueInstalledApp[];
-    byId(id: string): InstalledApp | null;
-    launch(app: InstalledApp): void;
-    openStore(): void;
-    playFireplace(): void;
-    subscribe(listener: () => void): () => void;
-  };
+  apps: AppsService;
+  catalog: { preloadedStoreId(id: string): string | null };
   clock: ClockService;
   config: LauncherConfig;
   continueWatching: ContinueWatchingService;
   continueWatchingProviders?: readonly ContinueWatchingProvider[];
   hideToast(): void;
   homeScreen?: HomeBridge;
-  homewatch: { useSamsungHome(): void; openSamsungHome?(): void };
+  homewatch: AppHandoff & { useSamsungHome(): void; openSamsungHome?(): void };
   inputs: {
     sources: InputSource[];
     watching: boolean;
@@ -52,7 +43,8 @@ export interface LauncherRuntime {
   network: NetworkService;
   settings: SettingsService;
   settingsUi?: SettingsBridge;
-  tiles: { describe(app: InstalledApp): AppPresentation };
+  tiles: { describe(app: InstalledApp): AppPresentation; shortName(name: string): string };
+  tizen?: AppsTizen | null;
   toast(message: string): void;
   translate: Translate;
   weather: WeatherService;

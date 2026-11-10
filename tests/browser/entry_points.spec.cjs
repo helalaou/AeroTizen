@@ -122,7 +122,9 @@ test("Continue Watching demo is opt-in, local to Vite and uses separate preferen
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
   await page.goto("http://127.0.0.1:8172/");
-  await page.waitForFunction(() => AeroTizen.apps.ready && Array.isArray(AeroTizen.settings.getSnapshot().home));
+  await page.waitForFunction(
+    () => AeroTizen.apps.getSnapshot().ready && Array.isArray(AeroTizen.settings.getSnapshot().home),
+  );
   await expect(page.locator("#continue-section")).toBeHidden();
   const original = await page.evaluate(() => localStorage.getItem("aerotizen.settings.v1"));
   await page.goto("http://127.0.0.1:8172/?demo=1");

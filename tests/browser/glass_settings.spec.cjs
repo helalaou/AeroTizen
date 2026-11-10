@@ -19,7 +19,7 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
       );
   });
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   const checkTabPlate = async () =>
     expect
       .poll(() =>
@@ -122,7 +122,7 @@ for (const language of ["en", "ar"])
         { language, glass },
       );
       await page.goto("/");
-      await page.waitForFunction(() => AeroTizen.apps.ready);
+      await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await page.locator("#gear").click();
       const into = language === "ar" ? "ArrowLeft" : "ArrowRight";
       for (const [category, key] of [
@@ -164,7 +164,7 @@ for (const language of ["en", "ar"])
         { glass, language },
       );
       await page.goto("/");
-      await page.waitForFunction(() => AeroTizen.apps.ready);
+      await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await page.locator("#gear").click();
       // Check authored longhands as well as geometry: inset is unavailable on Chromium 69.
       const bounds = await page.locator("#editor").evaluate((el) => {

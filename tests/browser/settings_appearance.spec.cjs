@@ -18,7 +18,7 @@ for (const glassSettings of [false, true]) {
         );
     }, glassSettings);
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     await expect(page.locator('#home-root [data-focused="true"]')).toHaveCount(1);
     await page.locator("#gear").click();
     await expect(page.locator('#home-root [data-focused="true"]')).toHaveCount(0);

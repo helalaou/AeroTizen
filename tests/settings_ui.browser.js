@@ -27,7 +27,10 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       localStorage.clear();
     });
     await page.reload();
-    await page.waitForFunction(() => window.AeroTizen && AeroTizen.apps.all.length > 0);
+    await page.waitForFunction(
+      () =>
+        window.AeroTizen && (AeroTizen.apps.getSnapshot ? AeroTizen.apps.getSnapshot() : AeroTizen.apps).all.length > 0,
+    );
     const check = await page.evaluate(async (variant) => {
       const focusSelector = variant === "preact" ? "[data-focused=true]" : ".focused";
       const A = AeroTizen,
@@ -124,12 +127,15 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       for (let i = 0; i < 10; i++) key(K.UP);
       assert(document.querySelectorAll("#editor " + focusSelector).length === 1, "top boundary keeps one focus");
       const weatherField = document.querySelector("#weather-location input");
-      const appTile = find("app:" + A.apps.all[0].id);
+      const appTile = find("app:" + (A.apps.getSnapshot ? A.apps.getSnapshot() : A.apps).all[0].id);
       find("time:24").click();
       assert(preferences().timeFormat === "24", "time setting updates");
       if (variant === "preact") {
         assert(weatherField === document.querySelector("#weather-location input"), "unrelated input identity retained");
-        assert(appTile === find("app:" + A.apps.all[0].id), "artwork node retained on clock change");
+        assert(
+          appTile === find("app:" + (A.apps.getSnapshot ? A.apps.getSnapshot() : A.apps).all[0].id),
+          "artwork node retained on clock change",
+        );
       }
       assert(JSON.parse(localStorage.getItem(A.config.STORAGE_KEY)).timeFormat === "24", "setting persisted");
       find("time:none").click();
@@ -279,7 +285,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
         );
       }
       if (variant === "preact") {
-        find("app:" + A.apps.all[0].id).click();
+        find("app:" + (A.apps.getSnapshot ? A.apps.getSnapshot() : A.apps).all[0].id).click();
         for (let i = 0; i < 60; i++) key(K.DOWN);
         assert(document.querySelector("[data-settings-drawer=scroll]").scrollTop > 0, "focus scrolls apps into view");
         key(K.ESC);
@@ -355,7 +361,9 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
   // A real pointer click waits for the pane to render before selecting an app.
   await page.locator("#all-apps [data-app-option]").first().click();
   await page.waitForFunction(
-    () => document.querySelectorAll("#all-apps [data-artwork-loaded=true]").length === AeroTizen.apps.all.length,
+    () =>
+      document.querySelectorAll("#all-apps [data-artwork-loaded=true]").length ===
+      (AeroTizen.apps.getSnapshot ? AeroTizen.apps.getSnapshot() : AeroTizen.apps).all.length,
   );
   const artwork = await page.evaluate(() => {
     const tile = document.querySelector("#all-apps [data-app-option]");

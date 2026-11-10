@@ -42,6 +42,12 @@ function harness(providers) {
       continueWatchingApps: [],
     }),
     apps: {
+      subscribeDiscovery(fn) {
+        return this.subscribe(fn);
+      },
+      getSnapshot() {
+        return this;
+      },
       inventory: [{ id: source.id, packageId: "pkg", name: "Video" }],
       ready: true,
       subscribe: (fn) => {

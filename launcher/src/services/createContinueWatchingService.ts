@@ -1,6 +1,6 @@
+import type { AppsService } from "../contracts/apps";
 import type {
   ContinueFeedItem,
-  ContinueInstalledApp,
   ContinueWatchingPlatform,
   ContinueWatchingProvider,
   ContinueWatchingService,
@@ -15,7 +15,7 @@ import { snapshotList } from "../shared/state/snapshotList";
 import { normalizeContinueItems } from "./continueWatching/normalizeItems";
 
 interface ContinueWatchingDependencies {
-  apps: { inventory?: readonly ContinueInstalledApp[]; ready: boolean; subscribe(listener: () => void): () => void };
+  apps: Pick<AppsService, "getSnapshot" | "subscribeDiscovery">;
   clock: Pick<ClockService, "subscribe">;
   elapsed(): number;
   now(): number;
@@ -94,7 +94,7 @@ export const createContinueWatchingService = ({
   const isSelected = (source: ContinueSource) =>
     !!source.storeId && settings.getSnapshot().continueWatchingApps.includes(source.id);
   const updateMessage = () => {
-    if (!apps.ready) {
+    if (!apps.getSnapshot().ready) {
       messageKey = "continue.findingApps";
     } else {
       messageKey = sources.length ? "" : "continue.noApps";
@@ -231,7 +231,7 @@ export const createContinueWatchingService = ({
       return;
     }
     providers.forEach((provider) => {
-      provider.discover(apps.inventory || []).forEach((source) => {
+      provider.discover(apps.getSnapshot().inventory).forEach((source) => {
         // An earlier adapter claims an app even while its feed is unavailable.
         if (!candidates.has(source.id)) {
           candidates.set(source.id, { source: Object.freeze({ ...source }), provider });
@@ -302,7 +302,7 @@ export const createContinueWatchingService = ({
       selectionSignature = selection();
       unsubscribers = [
         clock.subscribe(checkClock),
-        apps.subscribe(() => refresh()),
+        apps.subscribeDiscovery(() => refresh()),
         settings.subscribe(() => {
           const next = selection();
           if (selectionSignature !== next) {

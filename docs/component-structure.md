@@ -74,6 +74,32 @@ the same service directly. TV services also use `getSnapshot()`, `subscribe()` a
 View teardown releases view subscriptions. The runtime preference service survives
 development hot reload so existing TV-service subscriptions remain active.
 
+## App inventory ownership
+
+`services/createAppsService.ts` owns the installed-app inventory, visible app records,
+watcher IDs and the existing `aerotizen.apps.v1` label cache. Home, Settings and Continue
+Watching read one immutable app snapshot. Unchanged discovery retains the snapshot and
+array identities; a changed app retains the other app records. Views do not copy app data.
+`subscribeDiscovery()` reports each successful discovery to Continue Watching, including
+unchanged inventories: an appcontrol return can carry new playback data without a visibility
+event or an app-list change. This completion signal does not invalidate app snapshots.
+
+Cached labels render before package discovery. A failed, malformed or superseded read
+does not clear the current inventory or change saved favourites. An unknown favourite
+retains its ID label until discovery succeeds. Defaults remain separate from an empty
+saved Home list and are selected only after successful discovery, as before.
+
+`platform/tizen/createAppsPlatform.ts` owns Tizen package queries, metadata and launch
+commands, with the existing Home handoff bridge. It preserves HbbTV routing, the older
+YouTube visibility workaround, Tizen 10 watch preparation, repeated-tap suppression,
+app-store fallback, Fireplace playback and correlated diagnostics. Browser preview IDs
+and names remain stable. The service receives this adapter, the catalogue, config and
+storage; it has no DOM or TV API dependency.
+
+Hot reload retains the app service used by Continue Watching. Disposal cancels discovery
+delivery and rejects late handoff and launch callbacks. The old `apps.js` remains only in
+the frozen comparison fixture, outside the TV package.
+
 ## Clock ownership
 
 `services/createClockService.ts` owns time snapshots, formatting and the width cache.

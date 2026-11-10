@@ -4,7 +4,9 @@ const runSettingsFocus = async (page) => {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("https://**/*", (route) => route.fulfill({ contentType: "application/json", body: "{}" }));
   await page.reload();
-  await page.waitForFunction(() => AeroTizen.apps.all.length > 0);
+  await page.waitForFunction(
+    () => (AeroTizen.apps.getSnapshot ? AeroTizen.apps.getSnapshot() : AeroTizen.apps).all.length > 0,
+  );
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
     AeroTizen.settings.update({ background: "aurora" });

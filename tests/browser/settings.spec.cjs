@@ -26,7 +26,7 @@ const openSettings = async (page, waitForApps = true) => {
   await page.waitForFunction(
     () => window.AeroTizen?.settingsUi && Array.isArray(AeroTizen.settings.getSnapshot().home),
   );
-  if (waitForApps) await page.waitForFunction(() => AeroTizen.apps.all.length > 0);
+  if (waitForApps) await page.waitForFunction(() => AeroTizen.apps.getSnapshot().all.length > 0);
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
     AeroTizen.settings.update({ background: "black", timeFormat: "24", showTime: true });

@@ -37,7 +37,7 @@ for (const glassSettings of [false, true]) {
       );
       await page.clock.setFixedTime(new Date("2026-10-29T10:20:00Z"));
       await page.goto("/");
-      await page.waitForFunction(() => AeroTizen.apps.ready);
+      await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await expect(page.locator("[data-weather-part=location]")).toBeVisible();
       await expect(page.locator("#rows")).toHaveCSS("padding-top", "24px");
       const measure = () =>
@@ -87,7 +87,7 @@ for (const [change, css] of [
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
     await page.clock.setFixedTime(new Date("2026-10-29T10:20:00Z"));
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     const height = await page
       .locator("[data-home-header]")
       .evaluate((node) => Math.floor(node.getBoundingClientRect().height));

@@ -128,7 +128,7 @@ async function setup(page, options = {}) {
     { state, stremio, prime, youtube, secret },
   );
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.locator("#gear").click();
   await openCategory(page, "apps");
   expect(calls).toEqual([]);

@@ -19,7 +19,7 @@ for (const glassSettings of [false, true]) {
       glassSettings,
     );
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     const surface = page.locator("[data-home-page]");
     const homeAnimation = await surface.evaluate((node) => getComputedStyle(node).animationName);
     expect(homeAnimation).not.toBe("none");

@@ -1,3 +1,4 @@
+const { installApps } = require("./helpers/apps.cjs");
 const { createTestSettings } = require("./helpers/settings.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -81,7 +82,8 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
       if (id !== undefined) timers[id] = () => {};
     },
   });
-  for (const file of ["config.js", "startup.js", "apps.js"]) vm.runInContext(source(file), context);
+  for (const file of ["config.js", "startup.js"]) vm.runInContext(source(file), context);
+  installApps(context);
   return {
     A,
     calls,
@@ -116,7 +118,7 @@ for (const mode of ["deferred", "throw", "fail"])
     assert.equal(h.calls[1], "discover");
     assert.deepEqual(h.A.settings.getSnapshot().home, ["youtube.id"]);
     assert.equal(h.A.apps.byId("youtube.id").id, "youtube.id");
-    assert.equal(h.A.apps.ready, false);
+    assert.equal(h.A.apps.getSnapshot().ready, false);
   });
 
 test("late discovery refreshes once and caches labels without resetting saved Home", () => {
@@ -137,7 +139,7 @@ test("late discovery refreshes once and caches labels without resetting saved Ho
   h.fail();
   assert.equal(h.calls.filter((x) => x === "refresh").length, 1);
   assert.deepEqual(h.A.settings.getSnapshot().home, ["youtube.id"]);
-  assert.equal(h.A.apps.ready, true);
+  assert.equal(h.A.apps.getSnapshot().ready, true);
   const cached = JSON.parse(h.data["aerotizen.apps.v1"]);
   assert.equal(cached[0].name, "YouTube");
 });

@@ -3,7 +3,7 @@ test("Home columns never change standard Settings icons or artwork nodes", async
   await page.route("https://**/*", (r) => r.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (r) => r.fulfill({ body: "{}" }));
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.locator("#gear").click();
   const category = async (id) => {
     const entry = page.locator(`[data-key="section:${id}"]`);
@@ -52,7 +52,7 @@ for (const glassSettings of [false, true]) {
       );
     }, glassSettings);
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     await page.locator("#gear").click();
     await page.locator('[data-key="section:apps"]').click();
     const cards = page.locator("#all-apps > [data-settings-card]");

@@ -27,7 +27,7 @@ for (const [build, url] of [
       await page.emulateMedia({ reducedMotion: "no-preference" });
       await page.goto(url);
       await expect(page).toHaveTitle("AeroTizen");
-      await page.waitForFunction(() => AeroTizen.apps.ready && AeroTizen.inputs.sources.length === 4);
+      await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready && AeroTizen.inputs.sources.length === 4);
       await page.evaluate(() => {
         const snapshot = AeroTizen.continueWatching.getSnapshot();
         const items = [{ key: "motion", title: "Motion fixture", sourceName: "YouTube", sourceId: "demo0" }];

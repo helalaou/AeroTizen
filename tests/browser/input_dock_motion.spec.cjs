@@ -34,7 +34,7 @@ for (const [build, url] of [
       await page.emulateMedia({ reducedMotion: "no-preference" });
       await page.goto(url);
       await expect(page).toHaveTitle("AeroTizen");
-      await page.waitForFunction(() => AeroTizen.apps.ready);
+      await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await page.evaluate(() => {
         AeroTizen.inputs.sources = [
           { type: "HDMI", number: 1, connected: false, active: true },
