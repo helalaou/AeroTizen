@@ -201,6 +201,7 @@
   "wallpaper.previewing": "Previewing. Press any key to return",
   "inputs.wouldSwitch": "Would switch to {{input}}",
   "inputs.couldNotShow": "Could not show {{input}}",
+  "inputs.disconnected": "{{input}} disconnected",
   "inputs.switchFailed": "Could not switch input",
   "fireplace.muted": "Muted",
   "fireplace.volume": "Volume {{level}}",

@@ -201,6 +201,7 @@
   "wallpaper.previewing": "معاينة. اضغط أي زر للعودة",
   "inputs.wouldSwitch": "سيتم التبديل إلى {{input}}",
   "inputs.couldNotShow": "تعذر عرض {{input}}",
+  "inputs.disconnected": "{{input}} غير متصل",
   "inputs.switchFailed": "تعذر تبديل المصدر",
   "fireplace.muted": "صامت",
   "fireplace.volume": "مستوى الصوت {{level}}",

@@ -201,6 +201,7 @@
   "wallpaper.previewing": "Просмотр. Нажмите любую кнопку для возврата",
   "inputs.wouldSwitch": "Переключить на {{input}}",
   "inputs.couldNotShow": "Не удалось показать {{input}}",
+  "inputs.disconnected": "{{input}} отключён",
   "inputs.switchFailed": "Не удалось переключить источник",
   "fireplace.muted": "Звук выключен",
   "fireplace.volume": "Громкость {{level}}",

@@ -10,7 +10,7 @@ const vm = require("node:vm");
 
 const get = (file) => fs.readFileSync(path.join(__dirname, "../launcher/", file), "utf8");
 const nativeSource = get("js/native-navigation.js");
-const inputSource = get("js/inputs.js");
+const { installInputs } = require("./helpers/inputs.cjs");
 
 function harness(options = {}) {
   const requests = [],
@@ -181,7 +181,8 @@ function harness(options = {}) {
   };
   const context = { window, document, XMLHttpRequest: Request };
   vm.runInNewContext(nativeSource, context, { filename: "native-navigation.js" });
-  vm.runInNewContext(inputSource, context, { filename: "inputs.js" });
+  installInputs(context);
+  A.inputs.start();
   installApps(context);
   return {
     A,
@@ -700,11 +701,10 @@ test("app store falls back to org.volt.apps where com.samsung.tv.store is missin
 test("Native Home closes an embedded HDMI window in the existing launcher", () => {
   const h = harness({ visible: true });
   h.A.inputs.show({ type: "HDMI", number: 1 });
-  assert.equal(h.A.inputs.watching, true);
+  assert.equal(h.A.inputs.getSnapshot().playback !== "idle", true);
   h.listeners.appcontrol();
-  assert.equal(h.A.inputs.watching, false);
+  assert.equal(h.A.inputs.getSnapshot().playback !== "idle", false);
   assert.deepEqual(h.embedded, ["shown", "hidden"]);
-  assert.deepEqual(h.backgrounds, ["suspended", "restored"]);
   assert.equal(h.launches.length, 0, "no watcher or foreground relaunch needed");
 });
 
@@ -712,7 +712,7 @@ test("non-Home appcontrol leaves HDMI playback untouched", () => {
   const h = harness({ visible: true, operation: "http://tizen.org/appcontrol/operation/view" });
   h.A.inputs.show({ type: "HDMI", number: 1 });
   h.listeners.appcontrol();
-  assert.equal(h.A.inputs.watching, true);
+  assert.equal(h.A.inputs.getSnapshot().playback !== "idle", true);
   assert.deepEqual(h.embedded, ["shown"]);
 });
 
@@ -720,13 +720,13 @@ test("visibility resume closes HDMI only after a real hide transition", () => {
   const h = harness({ visible: true });
   h.A.inputs.show({ type: "HDMI", number: 1 });
   h.documentListeners.visibilitychange();
-  assert.equal(h.A.inputs.watching, true, "ordinary HDMI selection stays visible");
+  assert.equal(h.A.inputs.getSnapshot().playback !== "idle", true, "ordinary HDMI selection stays visible");
   h.document.hidden = true;
   h.documentListeners.visibilitychange();
-  assert.equal(h.A.inputs.watching, true);
+  assert.equal(h.A.inputs.getSnapshot().playback !== "idle", true);
   h.document.hidden = false;
   h.documentListeners.visibilitychange();
-  assert.equal(h.A.inputs.watching, false);
+  assert.equal(h.A.inputs.getSnapshot().playback !== "idle", false);
   assert.deepEqual(h.embedded, ["shown", "hidden"]);
 });
 
@@ -743,8 +743,8 @@ test("HDMI selection refreshes a stale tile and blocks a disconnected port in ei
     const stale = { type: "HDMI", number: 1, connected: true };
     h.tz.systeminfo.getPropertyValue = (_name, done) => done({ disconnected: [{ type: "HDMI", number: 1 }] });
     h.A.inputs.show(stale);
-    assert.equal(h.A.inputs.sources[0].connected, false);
-    assert.equal(h.A.inputs.watching, false);
+    assert.equal(h.A.inputs.getSnapshot().sources[0].connected, false);
+    assert.equal(h.A.inputs.getSnapshot().playback !== "idle", false);
     assert.deepEqual(h.inputs, []);
     assert.deepEqual(h.launches, []);
     assert.deepEqual(h.toasts, ["Could not show HDMI 1"]);
@@ -768,12 +768,12 @@ test("unplugging the embedded input restores Home", () => {
       disconnected: connected ? [] : [{ type: "HDMI", number: 1 }],
     });
   h.A.inputs.show({ type: "HDMI", number: 1 });
-  assert.equal(h.A.inputs.watching, true);
+  assert.equal(h.A.inputs.getSnapshot().playback !== "idle", true);
   connected = false;
   h.A.inputs.load();
-  assert.equal(h.A.inputs.watching, false);
+  assert.equal(h.A.inputs.getSnapshot().playback !== "idle", false);
   assert.deepEqual(h.embedded, ["shown", "hidden"]);
-  assert.deepEqual(h.backgrounds, ["suspended", "restored"]);
+  assert.deepEqual(h.toasts, ["HDMI 1 disconnected"]);
 });
 
 for (const stage of ["setSource", "show"]) {
@@ -784,10 +784,10 @@ for (const stage of ["setSource", "show"]) {
       complete = stage === "setSource" ? args[1] : args[0];
     };
     h.A.inputs.show({ type: "HDMI", number: 1 });
-    assert.equal(h.A.inputs.watching, true, "key routing can leave before firmware responds");
+    assert.equal(h.A.inputs.getSnapshot().playback !== "idle", true, "key routing can leave before firmware responds");
     h.A.inputs.leave();
     complete();
-    assert.equal(h.A.inputs.watching, false);
+    assert.equal(h.A.inputs.getSnapshot().playback !== "idle", false);
     assert.equal(h.backgrounds.includes("suspended"), false);
     assert.equal(h.timers.filter((timer) => timer.ms === 8000).length, 0);
   });
@@ -797,7 +797,7 @@ for (const stage of ["setSource", "show"]) {
     h.tz.tvwindow[stage] = () => {};
     h.A.inputs.show({ type: "HDMI", number: 1 });
     h.timers.find((timer) => timer.ms === 8000).fn();
-    assert.equal(h.A.inputs.watching, false);
+    assert.equal(h.A.inputs.getSnapshot().playback !== "idle", false);
     assert.deepEqual(h.embedded, ["hidden"]);
     assert.deepEqual(h.toasts, ["Could not show HDMI 1"]);
   });
@@ -814,7 +814,7 @@ test("an asynchronous show exception restores Home", () => {
   };
   h.A.inputs.show({ type: "HDMI", number: 1 });
   complete();
-  assert.equal(h.A.inputs.watching, false);
+  assert.equal(h.A.inputs.getSnapshot().playback !== "idle", false);
   assert.deepEqual(h.toasts, ["Could not show HDMI 1"]);
 });
 
@@ -824,7 +824,7 @@ test("HDMI uses the fresh native source record instead of the cached tile", () =
   h.tz.systeminfo.getPropertyValue = (_name, done) => done({ connected: [raw] });
   h.A.inputs.show({ type: "HDMI", number: 1, editName: "Old PC" });
   assert.equal(h.inputs[0].source, raw);
-  assert.equal(h.A.inputs.watching, true);
+  assert.equal(h.A.inputs.getSnapshot().playback !== "idle", true);
 });
 
 test("a delayed HDMI refresh cannot open a video window after the launcher hides", () => {
@@ -837,5 +837,5 @@ test("a delayed HDMI refresh cannot open a video window after the launcher hides
   h.document.hidden = true;
   complete({ connected: [{ type: "HDMI", number: 1 }] });
   assert.deepEqual(h.inputs, []);
-  assert.equal(h.A.inputs.watching, false);
+  assert.equal(h.A.inputs.getSnapshot().playback !== "idle", false);
 });

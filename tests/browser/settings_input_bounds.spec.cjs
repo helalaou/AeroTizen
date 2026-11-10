@@ -21,7 +21,9 @@ for (const glassSettings of [false, true]) {
       glassSettings,
     );
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready && AeroTizen.inputs.sources.length === 4);
+    await page.waitForFunction(
+      () => AeroTizen.apps.getSnapshot().ready && AeroTizen.inputs.getSnapshot().sources.length === 4,
+    );
     await page.locator("#gear").click();
     await page.locator('[data-key="section:sources"]').click();
     const fields = page.locator("#input-names input");

@@ -11,13 +11,15 @@ test("inventory publishes immutable app and input snapshots and disposes both su
     listeners.add(listener);
     return () => listeners.delete(listener);
   };
+  const inputSources = [
+    { type: "HDMI", number: 1, editName: "Console" },
+    { type: "TV", number: 1 },
+  ];
   const runtime = {
     apps: { getSnapshot: () => appSnapshot, subscribe: subscribe(appListeners) },
     inputs: {
-      sources: [
-        { type: "HDMI", number: 1, editName: "Console" },
-        { type: "TV", number: 1 },
-      ],
+      getSnapshot: () => ({ sources: inputSources }),
+
       portName: (source) => source.type + " " + source.number,
       subscribe: subscribe(inputListeners),
     },
@@ -36,7 +38,7 @@ test("inventory publishes immutable app and input snapshots and disposes both su
   assert.equal(renamed.apps, appSnapshot.all, "Settings shares the app service array");
   assert.equal(initial.apps[0].name, "One", "source mutation cannot change an old snapshot");
   assert.equal(renamed.inputs, initial.inputs, "independent inventory retains identity");
-  runtime.inputs.sources.push({ type: "HDMI", number: 2 });
+  inputSources.push({ type: "HDMI", number: 2 });
   [...inputListeners].forEach((listener) => listener());
   const added = inventory.getSnapshot();
   assert.equal(added.apps, renamed.apps);
@@ -60,7 +62,7 @@ test("feed status updates reach Settings and release their subscription", () => 
   });
   const runtime = {
     apps: { getSnapshot: () => appSnapshot, subscribe: () => () => {} },
-    inputs: { sources: [], subscribe: () => () => {} },
+    inputs: { getSnapshot: () => ({ sources: [] }), subscribe: () => () => {} },
     continueWatching: {
       getSnapshot: () => feed,
       subscribe(fn) {

@@ -201,6 +201,7 @@
   "wallpaper.previewing": "Anteprima. Premi un tasto per tornare",
   "inputs.wouldSwitch": "Passerebbe a {{input}}",
   "inputs.couldNotShow": "Impossibile mostrare {{input}}",
+  "inputs.disconnected": "{{input}} scollegato",
   "inputs.switchFailed": "Impossibile cambiare ingresso",
   "fireplace.muted": "Audio disattivato",
   "fireplace.volume": "Volume {{level}}",

@@ -106,13 +106,13 @@ export const createSettingsActions = (
     setDateFormat: (dateFormat) => commit({ dateFormat }, services.applyClock),
     setNumerals: (numerals) => commit({ numerals }, services.applyClock),
     setNetworkVisible: (showNetwork) => commit({ showNetwork }),
-    setLiveTvVisible: (showLiveTv) => commit({ showLiveTv }, services.applyInputs),
+    setLiveTvVisible: (showLiveTv) => commit({ showLiveTv }),
     setHomeCardColumns: (homeCardColumns) => commit({ homeCardColumns }, services.applyCardSize),
     setHomeAppLayout: (homeAppLayout) => commit({ homeAppLayout }, services.applyCardSize),
-    setHdmiVisibility: (hideDisconnectedHdmi) => commit({ hideDisconnectedHdmi }, services.applyInputs),
+    setHdmiVisibility: (hideDisconnectedHdmi) => commit({ hideDisconnectedHdmi }),
     setHdmiNativeViewer: (hdmiNativeViewer) => commit({ hdmiNativeViewer }),
     setHdmiKeepVisible: (port, keep) =>
-      commit({ hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } }, services.applyInputs),
+      commit({ hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } }),
     setTimeFormat: (format) =>
       commit(format === "none" ? { showTime: false } : { showTime: true, timeFormat: format }, services.applyClock),
     setLocation: (weatherLocation) => commit({ weatherLocation }),
@@ -128,7 +128,7 @@ export const createSettingsActions = (
       }
       const { [port]: previousName, ...otherNames } = settings.getSnapshot().inputNames;
       const inputNames = value ? { ...otherNames, [port]: value } : otherNames;
-      commit({ inputNames }, services.applyInputs);
+      commit({ inputNames });
     },
     toggleApp(id) {
       const home = settings.getSnapshot().home;
