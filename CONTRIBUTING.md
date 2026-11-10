@@ -129,8 +129,14 @@ canonical BCP 47 tag. Registered catalogues ship in the offline TV package.
 
 Use `useTranslation()` in Preact views and `A.translate()` at legacy display
 points. Translate full phrases and pass their variable parts as placeholders.
-Product names, hardware port IDs, diagnostics, and text supplied by apps, the TV,
-or users keep their original values.
+Fixed product and technical names live in
+[fixedNames.ts](launcher/src/shared/fixedNames.ts). Use these constants directly
+for standalone names. In translated phrases, use placeholders such as `{{appName}}`,
+`{{samsung}}`, or `{{hdmi}}`; the shared translator supplies their values. Keep
+placeholder names unchanged. Fixed-name placeholders may differ between languages
+when the wording differs; placeholders for values supplied by callers must match.
+Keep terms with local forms, such as Ethernet, in the catalogues. Hardware port IDs,
+diagnostics, and text supplied by apps, the TV, or users keep their original values.
 
 TypeScript derives valid translation keys from the English catalogue. ESLint
 checks legacy keys and UI literals, and the Node suite checks catalogue parity
