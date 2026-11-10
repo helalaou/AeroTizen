@@ -290,7 +290,7 @@ without a build step or an asynchronous JSON request. Keep one record per app:
   strings. Each store variant requires both fields. Add variants from TV captures
   or primary project/store metadata; do not guess missing IDs. Keep records sorted by key.
 - `sideloaded: true` marks the explicit TizenBrew exception, which has an app ID
-  and no store ID. See the [identity audit and sources](docs/app-catalog.md).
+  and no store ID.
 - `preloaded: true` marks native apps whose discovery and Home watcher use the
   Samsung store ID. Existing Netflix and Prime Video mappings are kept here.
 - `legacy.artworkNames` retains exact name matches while more IDs are verified.

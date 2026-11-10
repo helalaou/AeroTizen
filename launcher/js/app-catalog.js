@@ -1,5 +1,4 @@
 // App identities and artwork aliases. Keep records sorted by key.
-// Verified identity sources and the sideload exception: docs/app-catalog.md.
 // Lookup logic lives in app-lookup.js.
 window.AeroTizen.catalog = {
   "apps": [
