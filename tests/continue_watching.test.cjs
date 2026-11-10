@@ -121,7 +121,12 @@ function harness(providers) {
     now: () => now,
     settings: A.settings,
     providers: providers || [
-      createSamsungContinueWatchingProvider({ runtime: A, createRequest: () => new XMLHttpRequest(), now: () => now }),
+      createSamsungContinueWatchingProvider({
+        catalog: A.catalog,
+        runtime: A,
+        createRequest: () => new XMLHttpRequest(),
+        now: () => now,
+      }),
     ],
     timers: context,
     platform: {

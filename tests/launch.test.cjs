@@ -46,12 +46,11 @@ function appHarness(metadata, options = {}) {
             Object.assign(this, { operation, uri, mime, category, data });
           },
         },
-    tiles: { shortName: (name) => name },
     homewatch: { watch: (id) => calls.watch.push(id) },
     toast: (message) => calls.toast.push(message),
   };
   const context = vm.createContext({ window: { AeroTizen: A }, AeroTizen: A });
-  for (const file of ["config.js", "app-catalog.js", "app-lookup.js"]) {
+  for (const file of ["config.js"]) {
     vm.runInContext(fs.readFileSync(path.join(launcher, "js", file), "utf8"), context);
   }
   installApps(context);

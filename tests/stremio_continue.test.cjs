@@ -94,6 +94,7 @@ function createHarness(options = {}, legacy = false) {
     provider = A.continueWatchingProviders[0];
   } else {
     provider = createStremioContinueWatchingProvider({
+      catalog: A.catalog,
       runtime: A,
       createRequest: () => {
         if (options.requestThrows) throw new Error("Transport unavailable");

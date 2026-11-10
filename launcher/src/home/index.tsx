@@ -5,6 +5,7 @@ import type { SettingsStore } from "../contracts/preferences";
 import type { StatusStores } from "../contracts/status";
 import type { LauncherUpdateNotice } from "../contracts/updates";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
+import { describeApp } from "../shared/apps/appPresentation";
 import type { Translations } from "../shared/i18n/createTranslations";
 import { TranslationContext } from "../shared/i18n/useTranslation";
 
@@ -21,6 +22,7 @@ export const mountHome = (
   updates: LauncherUpdateNotice,
 ) => {
   const document = mount.ownerDocument;
+  const artworkEnvironment = { tv: !!runtime.tizen };
   // Apply the shell appearance before any Home focus geometry is measured.
   const syncShell = () => {
     const values = settings.getSnapshot();
@@ -45,7 +47,7 @@ export const mountHome = (
       continueViewport: createRef<HTMLDivElement>(),
       nodes: new Map(),
       showMoveInstructions: () => runtime.toast(translations.getSnapshot().t("home.moveInstructions")),
-      describe: (app) => runtime.tiles.describe(app),
+      describe: (app) => describeApp(app, artworkEnvironment),
       columns: (values) => values.homeCardColumns,
     },
     flushSync,

@@ -55,6 +55,7 @@ async function fixture(page, initialRecords) {
           `\nAeroTizen.continueWatching = ContinueWatchingModule.createContinueWatchingService({
             apps: AeroTizen.apps, settings: AeroTizen.settings,
             providers: [SamsungContinueWatchingModule.createSamsungContinueWatchingProvider({
+              catalog: AeroTizen.catalog,
               runtime: AeroTizen, createRequest: function () { return new XMLHttpRequest(); },
               now: function () { return Date.now(); }
             })],
