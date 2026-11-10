@@ -36,6 +36,16 @@ for (const [name, url] of [
     });
     await page.goto(url);
     await expect(page).toHaveTitle("AeroTizen");
+    expect(
+      await page.evaluate(() => ({
+        tiles: typeof AeroTizen.tiles,
+        artwork: typeof AeroTizen.artwork,
+        watcherLookup: typeof AeroTizen.catalog.preloadedStoreId,
+      })),
+    ).toEqual({ tiles: "undefined", artwork: "undefined", watcherLookup: "function" });
+    for (const script of ["app-catalog.js", "app-lookup.js", "artwork.js", "brands.js"]) {
+      await expect(page.locator('script[src$="/' + script + '"]')).toHaveCount(0);
+    }
     await expect(page.locator("#home-root #grid > [data-id]")).toHaveCount(2);
     await expect(page.locator("#home-root #grid > [data-id]").first()).toHaveAttribute("data-focused", "true");
     await page.locator("#gear").click();

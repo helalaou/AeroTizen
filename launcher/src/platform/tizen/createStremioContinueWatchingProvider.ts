@@ -1,5 +1,7 @@
 import type { AppsService } from "../../contracts/apps";
 import type { ContinueWatchingProvider } from "../../contracts/continueWatching";
+import type { AppCatalog } from "../../shared/apps/appCatalog";
+import { shortAppName } from "../../shared/apps/appNames";
 
 import type { ReadonlyTizenFilesystem } from "./readonlyFilesystem";
 
@@ -36,11 +38,10 @@ export interface StremioTizen {
 }
 
 interface Dependencies {
+  catalog: Pick<AppCatalog, "storeId">;
   createRequest(): XMLHttpRequest;
   runtime: {
     apps: Pick<AppsService, "launch">;
-    catalog: { storeId(id: string): string | null };
-    tiles: { shortName(name: string): string };
     tizen?: StremioTizen | null;
   };
   timers: Pick<Window, "setTimeout" | "clearTimeout">;
@@ -87,6 +88,7 @@ const withArtwork = (value: unknown): unknown => {
 };
 
 export const createStremioContinueWatchingProvider = ({
+  catalog,
   runtime,
   createRequest,
   timers,
@@ -241,9 +243,9 @@ export const createStremioContinueWatchingProvider = ({
         .filter((app) => app.show !== false && app.id === STREMIO_APP_ID)
         .map((app) => ({
           id: app.id,
-          name: runtime.tiles.shortName(app.name || ""),
+          name: shortAppName(app.name || ""),
           icon: app.iconPath || "",
-          storeId: runtime.catalog.storeId(app.id) || "",
+          storeId: catalog.storeId(app.id) || "",
           status: INITIAL_STATUS,
         }));
     },

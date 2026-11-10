@@ -1,5 +1,6 @@
 import type { AppHandoff, AppsConfig, AppsPlatform } from "../../contracts/apps";
 import type { InstalledApp } from "../../contracts/launcher";
+import { shortAppName } from "../../shared/apps/appNames";
 import type { Translate } from "../../shared/i18n/createTranslations";
 
 export interface AppsTizen {
@@ -23,7 +24,6 @@ interface AppsHost {
   AeroTizen: {
     config: AppsConfig;
     homewatch: AppHandoff;
-    tiles: { shortName(name: string): string };
     tizen?: AppsTizen | null;
     toast(message: string): void;
     translate: Translate;
@@ -159,7 +159,7 @@ export const createAppsPlatform = (host: AppsHost): AppsPlatform => {
         }
         log.flush?.();
       };
-      const label = runtime.tiles.shortName(app.name);
+      const label = shortAppName(app.name);
       const accepted = () => outcome("accepted");
       const failed = (error?: unknown) => {
         if (disposed) {

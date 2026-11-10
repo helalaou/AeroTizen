@@ -75,7 +75,12 @@ function harness(legacy = false, options = {}) {
     });
     provider = runtime.continueWatchingProviders[0];
   } else {
-    provider = createSamsungContinueWatchingProvider({ runtime, createRequest: () => new Request(), now: () => 1000 });
+    provider = createSamsungContinueWatchingProvider({
+      catalog: runtime.catalog,
+      runtime,
+      createRequest: () => new Request(),
+      now: () => 1000,
+    });
   }
   return {
     provider,

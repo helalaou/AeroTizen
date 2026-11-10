@@ -1,4 +1,4 @@
-// AeroTizen launcher behaviour and settings. App identities live in app-catalog.js.
+// AeroTizen launcher behaviour and settings. App identities live in src/shared/apps/appCatalog.json.
 window.AeroTizen = window.AeroTizen || {};
 
 AeroTizen.config = {

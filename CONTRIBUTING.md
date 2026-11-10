@@ -93,9 +93,10 @@ check alone with `npm run lint:js` or `npm run lint:css`. The TypeScript checks 
 reject unused locals and parameters. CI rejects formatting
 differences, lint warnings and errors, and type errors.
 
-Frozen generated logos and build/test output are excluded from formatting. The app catalogue
-and diagnostic privacy schema have a dedicated formatting override: their data objects
-must remain valid JSON because Python reads them directly. Legacy JavaScript keeps
+Frozen generated logos, app-presentation snapshots and build/test output are excluded
+from formatting. The diagnostic privacy schema and older catalogue fixture have a
+dedicated override because their data objects must remain valid JSON. The current
+app catalogue is plain JSON imported into the typed bundle. Legacy JavaScript keeps
 ES5 syntax; compiled output retains the Chromium 69 and ES2018 checks.
 
 Prettier uses double quotes, semicolons, a 120-column print width, two-space indentation,
@@ -174,8 +175,7 @@ both themes. Add coverage here for new UI paths.
 | `vite.config.mts`                 | Official Preact preset, dev server and TV bundle settings                                       |
 | `dist/launcher/`                  | Generated TV runtime with shared launcher-ui.js; no Node needed on TV                           |
 | `launcher/js/config.js`           | Launcher behaviour and storage identities                                                       |
-| `launcher/js/app-catalog.js`      | App IDs, Samsung store IDs and artwork aliases                                                  |
-| `launcher/js/app-lookup.js`       | Shared ID lookup and legacy name compatibility                                                  |
+| `launcher/src/shared/apps/`       | Readonly app identities, indexed lookups, artwork sources and presentation helpers              |
 | `launcher/service/`               | Background service that reclaims the screen from Samsung Home                                   |
 | `tests/`                          | pytest suite (`test_*.py`, a fake TV covers the sdb protocol) and launcher tests (`*.test.cjs`) |
 | `dns/`, `docs/`                   | Ad/telemetry blocklists and the settings guide                                                  |
@@ -282,8 +282,8 @@ map, component naming, navigation refs and style owners. Follow the
 
 ## Updating app metadata
 
-Edit `launcher/js/app-catalog.js`. It is a data-only script so the launcher can load it
-without a build step or an asynchronous JSON request. Keep one record per app:
+Edit `launcher/src/shared/apps/appCatalog.json`. It is bundled through typed imports,
+so loading the catalogue does not make an asynchronous request. Keep one record per app:
 
 - `key` identifies the catalogue record; `name` makes it easy to find and review.
 - `variants` pairs verified Tizen `appId` and Samsung `storeId` values. Keep IDs as
@@ -306,11 +306,12 @@ not part of the production catalogue. The old branding data is a frozen test fix
 If Samsung artwork is unavailable, the installed package icon appears smaller
 with the app name beneath it. This layout follows the loaded image source and
 does not depend on an app-specific list or focus.
-Keep the catalogue object valid JSON inside its script wrapper so Python and the
-launcher can read it. Image files and cache paths do not belong in this catalogue.
+Keep the catalogue as plain JSON. Image files and cache paths do not belong in it.
 
 Run `npm test` and `npm run lint`. Catalogue tests check complete identity pairs,
 unique IDs, the original app set, artwork aliases and preloaded watcher mappings.
+Parity tests compare the typed helpers with the frozen JavaScript snapshot from
+before their migration. The full-launcher comparison fixture remains unchanged.
 
 ## Pull requests
 

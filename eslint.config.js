@@ -34,7 +34,12 @@ module.exports = [
     },
   },
   {
-    files: ["launcher/js/**/*.js", "tests/fixtures/legacy-launcher/js/**/*.js", "tests/fixtures/legacy-dom.js"],
+    files: [
+      "launcher/js/**/*.js",
+      "tests/fixtures/legacy-launcher/js/**/*.js",
+      "tests/fixtures/app-presentation/js/**/*.js",
+      "tests/fixtures/legacy-dom.js",
+    ],
     languageOptions: {
       ecmaVersion: 5,
       sourceType: "script",

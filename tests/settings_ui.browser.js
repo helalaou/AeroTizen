@@ -338,23 +338,30 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     }
   }
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  await page.route("https://artwork.test/**", (route) =>
+  await page.route("**/opt/share/webappservice/apps_icon/**", (route) =>
     route.fulfill({
       contentType: "image/svg+xml",
-      body: route.request().url().endsWith("/bad")
+      body: route.request().url().endsWith("/304x304.png")
         ? "invalid image"
         : '<svg xmlns="http://www.w3.org/2000/svg" width="304" height="304"><rect width="304" height="304" fill="purple"/></svg>',
     }),
   );
+  await page.addInitScript(() => {
+    window.tizen = {
+      application: {
+        getAppsInfo(done) {
+          done([{ id: "111299001912", name: "YouTube", packageId: "LBUAQX1exg" }]);
+        },
+        launch() {},
+        launchAppControl() {},
+      },
+    };
+  });
+  await page.reload();
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready && AeroTizen.apps.getSnapshot().all.length === 1);
   await page.evaluate(() => {
     const A = AeroTizen;
-    const original = A.tiles.app;
-    window.settingsArtworkConstructions = 0;
-    A.tiles.app = (app) => {
-      window.settingsArtworkConstructions++;
-      return original(app);
-    };
-    A.artwork.sources = () => ["https://artwork.test/bad", "https://artwork.test/good"];
+    if (A.tiles || A.artwork) throw new Error("App presentation still depends on legacy globals");
     A.settingsUi.open();
   });
   await page.locator('[data-key="section:apps"]').click();
@@ -373,7 +380,8 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     if (tile !== document.querySelector("#all-apps [data-app-option]")) throw new Error("Clock change rebuilt artwork");
     tile.click();
     if (tile !== document.querySelector("#all-apps [data-app-option]")) throw new Error("Selection rebuilt artwork");
-    if (window.settingsArtworkConstructions !== 0) throw new Error("Settings called a legacy DOM constructor");
+    if (!tile.querySelector("[data-app-artwork]").src.endsWith("/250x250.png"))
+      throw new Error("Artwork did not advance past the invalid primary image");
     return { asynchronous: true, fallback: true, stableOnClockAndSelection: true };
   });
   // External legacy writes publish into the same Settings store.

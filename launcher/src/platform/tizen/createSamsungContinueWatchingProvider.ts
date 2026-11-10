@@ -1,6 +1,8 @@
 import type { AppRecord } from "../../contracts/apps";
 import type { ContinueWatchingProvider } from "../../contracts/continueWatching";
 import type { ContinueSource } from "../../contracts/launcher";
+import type { AppCatalog } from "../../shared/apps/appCatalog";
+import { shortAppName } from "../../shared/apps/appNames";
 
 import type { LauncherRuntime } from "./launcherRuntime";
 
@@ -25,9 +27,10 @@ type FeedRequest = Pick<
 >;
 
 interface Dependencies {
+  catalog: Pick<AppCatalog, "storeId">;
   createRequest(): FeedRequest;
   now(): number;
-  runtime: Pick<LauncherRuntime, "catalog" | "config" | "homewatch" | "tiles" | "tizen" | "toast" | "translate">;
+  runtime: Pick<LauncherRuntime, "config" | "homewatch" | "tizen" | "toast" | "translate">;
 }
 
 interface PackageGroup {
@@ -48,6 +51,7 @@ const cancelled = (error: unknown) =>
   !!error && typeof error === "object" && "cancelled" in error && error.cancelled === true;
 
 export const createSamsungContinueWatchingProvider = ({
+  catalog,
   runtime,
   createRequest,
   now,
@@ -96,17 +100,15 @@ export const createSamsungContinueWatchingProvider = ({
         const foreground = group.apps.filter(
           (app) => app.show !== false && app.name && !runtime.config.HIDDEN_APPS.test(app.id),
         );
-        foreground.sort(
-          (left, right) => Number(!!runtime.catalog.storeId(right.id)) - Number(!!runtime.catalog.storeId(left.id)),
-        );
+        foreground.sort((left, right) => Number(!!catalog.storeId(right.id)) - Number(!!catalog.storeId(left.id)));
         const app = foreground[0];
         if (!app) {
           return;
         }
-        const storeId = runtime.catalog.storeId(app.id);
+        const storeId = catalog.storeId(app.id);
         found.push({
           id: app.id,
-          name: runtime.tiles.shortName(app.name || ""),
+          name: shortAppName(app.name || ""),
           icon: app.iconPath || "",
           storeId: storeId || "",
           status: storeId ? "Not selected" : "App ID unavailable",

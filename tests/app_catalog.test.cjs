@@ -1,4 +1,5 @@
 const { installApps } = require("./helpers/apps.cjs");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -7,14 +8,10 @@ const vm = require("node:vm");
 
 const launcher = path.join(__dirname, "../launcher");
 const script = (name) => fs.readFileSync(path.join(launcher, "js", name), "utf8");
+const { appCatalog, createAppCatalog } = loadTypeScript("launcher/src/shared/apps/appCatalog.ts");
 
 function runtime(entries) {
-  const A = {},
-    context = vm.createContext({ window: { AeroTizen: A } });
-  vm.runInContext(script("app-catalog.js"), context);
-  if (entries) A.catalog.apps = entries;
-  vm.runInContext(script("app-lookup.js"), context);
-  return { A };
+  return { A: { catalog: entries ? createAppCatalog(entries) : appCatalog } };
 }
 
 test("catalogue records have unique keys and unambiguous string IDs", () => {
@@ -232,7 +229,7 @@ test("preloaded Apple TV passes discovery and uses its store ID in the watcher i
 
 test("watcher requests keep the preloaded store IDs from the shared catalogue", () => {
   const requests = [],
-    A = { tizen: {} };
+    A = { tizen: {}, catalog: appCatalog };
   class Request {
     open(method, url) {
       requests.push({ method, url });
@@ -245,7 +242,7 @@ test("watcher requests keep the preloaded store IDs from the shared catalogue", 
     XMLHttpRequest: Request,
     document: { addEventListener() {} },
   });
-  for (const name of ["config.js", "app-catalog.js", "app-lookup.js", "homewatch.js"]) {
+  for (const name of ["config.js", "homewatch.js"]) {
     vm.runInContext(script(name), context);
   }
   A.homewatch.watch("org.tizen.netflix-app");

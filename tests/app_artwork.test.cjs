@@ -1,21 +1,17 @@
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
 const test = require("node:test");
-const vm = require("node:vm");
-
-const root = path.join(__dirname, "../launcher");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { artworkSources, packageIcon } = loadTypeScript("launcher/src/shared/apps/appArtwork.ts");
+const { describeApp } = loadTypeScript("launcher/src/shared/apps/appPresentation.ts");
 
 function runtime(tv = false) {
-  const A = { tizen: tv ? {} : null };
-  const context = vm.createContext({
-    window: { AeroTizen: A },
-    AeroTizen: A,
-  });
-  for (const file of ["config.js", "app-catalog.js", "app-lookup.js", "artwork.js", "brands.js"]) {
-    vm.runInContext(fs.readFileSync(path.join(root, "js", file), "utf8"), context);
-  }
-  return { A };
+  const environment = { tv };
+  return {
+    A: {
+      artwork: { sources: (app) => artworkSources(app, environment), packageIcon },
+      tiles: { describe: (app) => describeApp(app, environment) },
+    },
+  };
 }
 
 test("browser previews use app names without requesting TV artwork", () => {

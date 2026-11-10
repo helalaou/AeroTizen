@@ -77,6 +77,13 @@ development hot reload so existing TV-service subscriptions remain active.
 
 ## App inventory ownership
 
+`shared/apps/` owns the readonly JSON catalogue, indexed app/store lookups, title
+formatting, artwork priority and package-icon classification. Home and Settings
+import the pure presentation helpers. App launch and feed adapters import name
+formatting and receive catalogue lookups as explicit dependencies. The typed entry
+publishes only `catalog.preloadedStoreId` for the remaining `homewatch.js` caller;
+there are no runtime artwork or tile-presentation globals.
+
 `services/createAppsService.ts` owns the installed-app inventory, visible app records,
 watcher IDs and the existing `aerotizen.apps.v1` label cache. Home, Settings and Continue
 Watching read one immutable app snapshot. Unchanged discovery retains the snapshot and

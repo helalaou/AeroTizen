@@ -2,17 +2,11 @@ import type { AppsService } from "../../contracts/apps";
 import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
 import type { ContinueWatchingService } from "../../contracts/continueWatching";
 import type { InputsService } from "../../contracts/inputs";
-import type {
-  AppPresentation,
-  ClockService,
-  HomeBridge,
-  InstalledApp,
-  LauncherConfig,
-  SettingsBridge,
-} from "../../contracts/launcher";
+import type { ClockService, HomeBridge, LauncherConfig, SettingsBridge } from "../../contracts/launcher";
 import type { NativeNavigation, NativeNavigationCommands, NativeWatcher } from "../../contracts/nativeNavigation";
 import type { SettingsService } from "../../contracts/preferences";
 import type { NetworkService, WeatherService } from "../../contracts/status";
+import type { AppCatalog } from "../../shared/apps/appCatalog";
 import type { Translate } from "../../shared/i18n/createTranslations";
 
 import type { AppsTizen } from "./createAppsPlatform";
@@ -24,7 +18,7 @@ import type { StremioTizen } from "./createStremioContinueWatchingProvider";
 export interface LauncherRuntime {
   applyBackground(): void;
   apps: AppsService;
-  catalog: { preloadedStoreId(id: string): string | null; storeId(id: string): string | null };
+  catalog: Pick<AppCatalog, "preloadedStoreId">;
   clock: ClockService;
   config: LauncherConfig;
   continueWatching: ContinueWatchingService;
@@ -39,7 +33,6 @@ export interface LauncherRuntime {
   network: NetworkService;
   settings: SettingsService;
   settingsUi?: SettingsBridge;
-  tiles: { describe(app: InstalledApp): AppPresentation; shortName(name: string): string };
   tizen?: (AppsTizen & InputsTizen & StremioTizen & NativeNavigationTizen) | null;
   toast(message: string): void;
   translate: Translate;

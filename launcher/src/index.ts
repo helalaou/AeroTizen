@@ -33,6 +33,7 @@ import { createNetworkService } from "./services/createNetworkService";
 import { createSettingsService } from "./services/createSettingsService";
 import { createWeatherService } from "./services/createWeatherService";
 import { mountSettings } from "./settings/index";
+import { appCatalog } from "./shared/apps/appCatalog";
 
 const backgroundHost = document.getElementById("bg");
 const home = document.getElementById("home-root");
@@ -53,6 +54,8 @@ if (
   throw new Error("Launcher mount points are missing.");
 }
 const runtime = window.AeroTizen;
+// Only the unmigrated watcher still reads this compatibility lookup.
+runtime.catalog = { preloadedStoreId: appCatalog.preloadedStoreId };
 const hotData = import.meta.hot
   ? (import.meta.hot.data as {
       backgrounds?: BackgroundState;
@@ -102,7 +105,7 @@ if (!hotData?.preferences) {
 const apps =
   hotData?.apps ||
   createAppsService({
-    catalog: runtime.catalog,
+    catalog: appCatalog,
     config: runtime.config,
     platform: createAppsPlatform(window),
     storage: {
@@ -154,11 +157,13 @@ const continueWatching =
     platform: createContinueWatchingPlatform(window),
     providers: [
       createStremioContinueWatchingProvider({
+        catalog: appCatalog,
         runtime,
         createRequest: () => new XMLHttpRequest(),
         timers: window,
       }),
       createSamsungContinueWatchingProvider({
+        catalog: appCatalog,
         runtime,
         createRequest: () => new XMLHttpRequest(),
         now: () => Date.now(),
