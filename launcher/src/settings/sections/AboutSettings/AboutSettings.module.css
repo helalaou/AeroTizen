@@ -1,5 +1,4 @@
 .info {
-  margin-bottom: 24px;
   font-size: 22px;
   line-height: 1.4;
 }
@@ -17,8 +16,8 @@
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: 10px 32px;
-  margin: 24px 0;
-  padding: 20px 0;
+  margin: 16px 0;
+  padding: 12px 0;
   border-top: 1px solid var(--settings-divider);
   border-bottom: 1px solid var(--settings-divider);
 }
@@ -32,14 +31,31 @@
   margin: 0;
 }
 
+.update {
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  border: 1px solid var(--settings-divider);
+  border-radius: 16px;
+  background: var(--surface-control);
+  overflow-wrap: break-word;
+}
+
+.updateTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
 .releaseNotes {
+  margin-top: 12px;
   font-size: 20px;
   line-height: 1.3;
-  overflow-wrap: break-word;
 }
 
 .notesTitle {
   margin: 0 0 8px;
+  font-size: inherit;
   font-weight: 500;
 }
 
@@ -55,7 +71,11 @@
 }
 
 .command {
-  --settings-hint-margin: auto 0 0;
+  --settings-hint-margin: 16px 0 0;
 
-  padding-top: 24px;
+  > code {
+    display: block;
+    margin-top: 4px;
+    color: var(--settings-text);
+  }
 }
