@@ -29,6 +29,7 @@ test("compiled launcher uses the production page, local scripts and the Preact l
   assert.ok(!scripts.includes("js/continue-watching.js"), "Continue Watching is owned by the TypeScript service");
   assert.ok(!scripts.includes("js/samsung-continue.js"), "the Samsung provider is created by typed app composition");
   assert.ok(!scripts.includes("js/stremio-continue.js"), "the Stremio provider is created by typed app composition");
+  assert.ok(!scripts.includes("js/native-navigation.js"), "native navigation is owned by the typed adapter");
   assert.ok(!scripts.includes("js/apps.js"), "apps are owned by the TypeScript service");
   assert.ok(!scripts.includes("js/inputs.js"), "inputs are owned by the TypeScript service");
   assert.ok(!scripts.includes("js/network.js"), "network status is owned by the TypeScript service");
@@ -88,6 +89,7 @@ test("legacy views remain test fixtures and cannot enter the compiled runtime", 
     "continue-watching.js",
     "samsung-continue.js",
     "stremio-continue.js",
+    "native-navigation.js",
     "apps.js",
     "clock.js",
     "weather.js",

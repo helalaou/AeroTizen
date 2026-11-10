@@ -74,6 +74,7 @@ export interface LauncherConfig extends AppsConfig {
   KEY: Record<"LEFT" | "RIGHT" | "UP" | "DOWN" | "ENTER" | "BACK" | "ESC" | "IME_DONE" | "IME_CANCEL", number>;
   LEGACY_STORAGE_KEYS: string[];
   LONG_PRESS_MS: number;
+  readonly SERVICE_URL: string;
   SPEED: { MIN: number; MAX: number; STEP: number };
   STORAGE_KEY: string;
 }

@@ -197,6 +197,10 @@ app platform adapter. The service survives hot reload and rejects replies after 
 Composition creates both typed feed providers with Continue Watching and injects
 Stremio first. Feed cancellation and permanent disposal are
 separate: hiding the launcher during a valid app handoff must not suppress the launch.
+Composition creates one typed native-navigation adapter before the app and input services.
+It owns Native Home routing reads, watcher handoff commands and native viewer focus checks.
+The existing `homewatch.js` retains watcher startup and transport. Hot reload keeps the
+adapter and pending handoffs; permanent disposal releases its timers, requests and listeners.
 Clock, weather and network services publish immutable snapshots. Views read these
 services directly. The weather service subscribes to the shared clock for cache expiry checks.
 The network service owns one poller and platform watch, reacts to preference changes,
