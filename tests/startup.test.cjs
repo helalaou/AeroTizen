@@ -36,6 +36,7 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
     continueWatching: { start() {} },
     clock: { start() {}, tick() {} },
     network: { start() {} },
+    weather: { start() {} },
     inputs: { load() {} },
     settingsUi: { isOpen: () => false },
     homewatch: { start() {}, reportApps() {}, reportStartup() {} },
@@ -58,7 +59,7 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
     AeroTizen: A,
     tizen: A.tizen,
     Backgrounds: { setSpeed() {}, apply() {} },
-    Weather: { start() {} },
+
     addEventListener: (name, fn) => {
       const previous = events[name];
       events[name] = () => {

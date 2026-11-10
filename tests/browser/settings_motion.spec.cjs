@@ -33,10 +33,32 @@ for (const [build, url] of [
       const sidebar = page.locator('[data-settings-focus="sidebar"]');
       const content = page.locator('[data-settings-focus="content"]');
       const drawer = page.locator("[data-settings-drawer=frame]");
+      const alignment = () =>
+        content.evaluate((plate) => {
+          const target = document.querySelector('#editor [data-focused="true"]');
+          if (!target || plate.dataset.visible !== "true") return Infinity;
+          const a = plate.getBoundingClientRect();
+          const b = target.getBoundingClientRect();
+          return Math.max(
+            Math.abs(a.x - b.x),
+            Math.abs(a.y - b.y),
+            Math.abs(a.width - b.width),
+            Math.abs(a.height - b.height),
+          );
+        });
+      const expectContentMotion = async () => {
+        await expect.poll(alignment).toBeLessThan(1);
+        // First positioning snaps; movement between controls keeps the shared duration.
+        await expect(content).toHaveAttribute("data-motion", "false");
+        await expect(content).toHaveCSS("transition-duration", "0s");
+        await page.keyboard.press("ArrowRight");
+        await expect(content).toHaveAttribute("data-motion", "true");
+        await expect(content).toHaveCSS("transition-duration", "0.15s, 0.1s, 0.12s");
+      };
       await expect(sidebar).toHaveCSS("transition-duration", "0.15s, 0.1s");
       await expect(drawer).toHaveCSS("animation-duration", "0.2s");
       await openCategory(page, "appearance");
-      await expect(content).toHaveCSS("transition-duration", "0.15s, 0.1s, 0.12s");
+      await expectContentMotion();
       await expect(page.locator('#editor [data-focused="true"]')).toHaveCSS("transition-duration", "0.1s, 0.1s");
 
       const expectReduced = async () => {
@@ -58,18 +80,7 @@ for (const [build, url] of [
       await page.keyboard.press("ArrowDown");
       await expect(content).toHaveAttribute("data-visible", "true");
       await expect(content).toHaveCSS("opacity", "1");
-      const alignment = await content.evaluate((plate) => {
-        const target = document.querySelector('#editor [data-focused="true"]');
-        const a = plate.getBoundingClientRect();
-        const b = target.getBoundingClientRect();
-        return Math.max(
-          Math.abs(a.x - b.x),
-          Math.abs(a.y - b.y),
-          Math.abs(a.width - b.width),
-          Math.abs(a.height - b.height),
-        );
-      });
-      expect(alignment).toBeLessThan(1);
+      await expect.poll(alignment).toBeLessThan(1);
       await page.screenshot({ path: info.outputPath("reduced-motion-settings.png") });
       await closeSettings(page);
       await page.reload();
@@ -80,7 +91,7 @@ for (const [build, url] of [
       await expect(sidebar).toHaveCSS("transition-duration", "0.15s, 0.1s");
       await expect(drawer).toHaveCSS("animation-duration", "0.2s");
       await openCategory(page, "appearance");
-      await expect(content).toHaveCSS("transition-duration", "0.15s, 0.1s, 0.12s");
+      await expectContentMotion();
       await expect(page.locator("vite-error-overlay")).toHaveCount(0);
       expect(errors).toEqual([]);
     });

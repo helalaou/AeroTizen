@@ -176,7 +176,7 @@
   "weather.title": "الطقس",
   "weather.visibility": "إظهار الطقس",
   "common.automatic": "تلقائي",
-  "weather.searchPlaceholder": "بلدة أو مدينة أو رمز بريدي",
+  "weather.searchPlaceholder": "بلدة أو مدينة أو رمز بريدي…",
   "weather.locationLabel": "موقع الطقس",
   "weather.search": "بحث",
   "weather.locationVisibility": "إظهار موقع الطقس",
@@ -266,5 +266,15 @@
   "wallpaper.direction": "الاتجاه",
   "wallpaper.gradientHint": "OK لاختيار لون. أعلى/أسفل: اختر أداة. يمين/يسار: اضبط. اضغط مطولاً للضبط أسرع.",
   "appearance.performanceMode": "وضع الأداء",
-  "appearance.performanceHint": "يعطّل الرسوم المتحركة للخلفية وانتقالات الواجهة لتنقّل أكثر سلاسة."
+  "appearance.performanceHint": "يعطّل الرسوم المتحركة للخلفية وانتقالات الواجهة لتنقّل أكثر سلاسة.",
+  "common.cancel": "إلغاء",
+  "weather.homeDisplay": "الطقس على الشاشة الرئيسية",
+  "weather.showLocationName": "إظهار اسم الموقع",
+  "weather.sharedLocationHint": "يُستخدم هذا الموقع لطقس الشاشة الرئيسية وخلفيات الطقس.",
+  "weather.automaticLocation": "تلقائي · {{location}}",
+  "weather.manualLocation": "يدوي · {{location}}",
+  "weather.changeLocation": "تغيير الموقع",
+  "weather.useAutomatic": "تحديد الموقع تلقائيًا",
+  "weather.automaticHint": "استخدام موقع تقريبي بناءً على عنوان الإنترنت الخاص بك.",
+  "weather.searchHelp": "ابحث عن بلدة أو مدينة أو رمز بريدي، ثم اختر نتيجة."
 }

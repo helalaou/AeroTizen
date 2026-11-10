@@ -10,11 +10,10 @@ import type {
   LauncherConfig,
   SettingsBridge,
 } from "../../contracts/launcher";
-import type { SettingsService, WeatherLocation } from "../../contracts/preferences";
-import type { NetworkService, WeatherPhotoSource, WeatherSnapshot } from "../../contracts/status";
+import type { SettingsService } from "../../contracts/preferences";
+import type { NetworkService, WeatherService } from "../../contracts/status";
 import type { MessageKey } from "../../shared/i18n/catalogues";
 import type { Translate } from "../../shared/i18n/createTranslations";
-import type { Store } from "../../shared/state/createStore";
 
 // The unmigrated TV services are accessed through this boundary, not a screen's types.
 export interface LauncherRuntime {
@@ -59,18 +58,12 @@ export interface LauncherRuntime {
   tiles: { describe(app: InstalledApp): AppPresentation };
   toast(message: string): void;
   translate: Translate;
+  weather: WeatherService;
 }
 
 export interface LauncherPlatform {
   backgrounds: BackgroundBridge;
   previewBackground(preview: BackgroundPreview | null): void;
-  weather: Store<WeatherSnapshot> &
-    WeatherPhotoSource & {
-      updateVisibility(): void;
-      updateDisplay(): void;
-      refresh(): void;
-      searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): void;
-    };
 }
 
 declare global {
@@ -84,6 +77,5 @@ declare global {
       volumeDown(): void;
       volumeUp(): void;
     };
-    Weather: LauncherPlatform["weather"];
   }
 }

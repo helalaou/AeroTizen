@@ -102,9 +102,7 @@
     startup.captureLaunch();
     A.continueWatching.start();
     A.network.start();
-    window.Weather.start(function () {
-      return A.settings.getSnapshot();
-    });
+    A.weather.start();
     A.inputs.load();
     A.homewatch.start();
     setTimeout(function () {

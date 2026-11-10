@@ -93,6 +93,33 @@ entire Home tree or its status widgets.
 Settings controls also subscribe to their own selected state. App and feed cards
 retain their rendered content while their scroller offset changes.
 
+## Weather ownership
+
+`services/createWeatherService.ts` owns immutable weather snapshots, the saved forecast cache,
+location search and one 20-minute refresh timer. Home reads the service directly; weather photos
+subscribe to the same owner. Settings changes update visibility, location and temperature units
+without manual UI callbacks. The service subscribes to the shared clock for cache expiry and
+system time changes; views add no timers or requests.
+
+`platform/tizen/createWeatherPlatform.ts` owns the cancellable XMLHttpRequest transport and its
+eight-second timeout. The service validates external data and ignores cancelled or superseded
+responses. Matching cache readings remain usable for two hours, including unit conversion while
+offline. The widget and photo wallpaper are separate consumers; automatic requests stop only when
+both are disabled. Explicit location searches remain available while they are disabled.
+
+The entry point retains the service through development hot reload. Starting it twice keeps one
+refresh timer and one settings/clock subscription. Disposal cancels forecasts and searches,
+stops the timer and releases its subscriptions. The legacy weather runtime is kept only in the
+frozen comparison fixture, outside the shipped package.
+
+Weather Settings groups Home visibility, location-name visibility and temperature units.
+Its shared location summary reads the resolved city even when the Home widget is hidden.
+Change location opens an editor without starting a search. Enter or IME Done submits;
+matching pending submissions share one request. Results receive remote focus. Selecting a
+location, cancelling, leaving the pane or closing Settings clears the editor and cancels
+pending delivery. Back first leaves the on-screen keyboard, then closes the editor.
+The search uses the existing service and adds no polling timer.
+
 ## Network ownership
 
 `services/createNetworkService.ts` owns live network state. Views read its snapshots
@@ -112,6 +139,12 @@ including unavailable readings. Native watch IDs are released through the
 Cancelled discovery cannot start a later Wi-Fi query or publish a stale reading.
 
 ## DOM and style ownership
+
+The Settings focus indicator measures after the view has committed. Resize and structural
+change observers keep it attached when a focused control moves without changing its key.
+Layout changes snap the content ring into place; moves between equally sized controls keep
+the shared focus animation. Measurements are coalesced into a requested frame and stop
+when the layout is idle. Observers and pending frames are released on teardown.
 
 Only `src/index.ts` discovers the Home, Settings, wallpaper, Fireplace and toast mount hosts. Preact renders the
 toast. Its mount owns the dismissal timer and exposes the existing toast commands. Components register their own

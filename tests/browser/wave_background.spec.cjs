@@ -98,7 +98,7 @@ test("weather photos unmount waves and restore them at the selected speed", asyn
   await page.clock.setFixedTime(new Date("2026-11-02T12:00:00Z"));
   await open(page);
   await page.evaluate(() => {
-    window.Weather.currentReading = () => ({
+    AeroTizen.weather.currentReading = () => ({
       code: 0,
       day: 1,
       at: Date.now(),
@@ -118,9 +118,9 @@ test("weather photos unmount waves and restore them at the selected speed", asyn
 
   await page.route("**/assets/weather/rain.jpg", (route) => route.abort());
   await page.evaluate(() => {
-    const sun = window.Weather.currentReading();
-    window.Weather.currentReading = () => ({ ...sun, code: 61 });
-    window.Weather.updateDisplay();
+    const sun = AeroTizen.weather.currentReading();
+    AeroTizen.weather.currentReading = () => ({ ...sun, code: 61 });
+    AeroTizen.applyBackground();
   });
   await expect(page.locator("#weather-photo")).toBeHidden();
   await expect(page.locator("#bg [data-background-wave]")).toHaveCount(2);

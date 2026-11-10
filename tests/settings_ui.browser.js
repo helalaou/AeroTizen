@@ -60,6 +60,9 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
           entry.click();
           entry.focus();
         }
+        if (element.closest("#weather-location-editor")?.hidden) {
+          document.querySelector('[data-key="weather:change"]').click();
+        }
         if (pane?.dataset.sectionPane === "wallpaper") {
           const group = element.closest("#bg-anim")
             ? "animated"
@@ -174,7 +177,11 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       assert(preferences().home.length === homeBeforeToggle.length, "Fireplace can be restored");
       // Search callbacks cannot apply after editing or closing. No real geocoder call.
       const callbacks = [];
-      window.Weather.searchLocations = (query, done) => callbacks.push(done);
+      const weather = variant === "preact" ? A.weather : window.Weather;
+      weather.searchLocations = (query, done) => {
+        callbacks.push(done);
+        return () => {};
+      };
       let field = document.querySelector("#weather-location input");
       input(field, "Example");
       find("weather:search").click();
@@ -394,8 +401,12 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     if (field !== find("name:HDMI 1").querySelector("input")) throw new Error("Reopen rebuilt the cached form");
     // A pending reply delivered after close + reopen must remain cancelled.
     const replies = [];
-    window.Weather.searchLocations = (query, done) => replies.push(done);
+    AeroTizen.weather.searchLocations = (query, done) => {
+      replies.push(done);
+      return () => {};
+    };
     document.querySelector('[data-key="section:weather"]').click();
+    find("weather:change").click();
     const query = find("weather:query").querySelector("input");
     query.value = "Pending";
     query.dispatchEvent(new Event("input", { bubbles: true }));

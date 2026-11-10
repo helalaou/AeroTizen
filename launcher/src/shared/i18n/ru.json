@@ -176,7 +176,7 @@
   "weather.title": "Погода",
   "weather.visibility": "Показ погоды",
   "common.automatic": "Авто",
-  "weather.searchPlaceholder": "Город или почтовый индекс",
+  "weather.searchPlaceholder": "Город или почтовый индекс…",
   "weather.locationLabel": "Местоположение для погоды",
   "weather.search": "Найти",
   "weather.locationVisibility": "Показ местоположения",
@@ -266,5 +266,15 @@
   "wallpaper.direction": "Направление",
   "wallpaper.gradientHint": "OK выбирает цвет. Вверх/Вниз: выбрать параметр. Влево/Вправо: изменить. Удерживайте для ускорения.",
   "appearance.performanceMode": "Режим производительности",
-  "appearance.performanceHint": "Отключает анимацию фона и переходы интерфейса для более плавной навигации."
+  "appearance.performanceHint": "Отключает анимацию фона и переходы интерфейса для более плавной навигации.",
+  "common.cancel": "Отмена",
+  "weather.homeDisplay": "Погода на главном экране",
+  "weather.showLocationName": "Показывать название места",
+  "weather.sharedLocationHint": "Это место используется для погоды на главном экране и погодных обоев.",
+  "weather.automaticLocation": "Автоматически · {{location}}",
+  "weather.manualLocation": "{{location}} · Вручную",
+  "weather.changeLocation": "Изменить место",
+  "weather.useAutomatic": "Определять автоматически",
+  "weather.automaticHint": "Использовать приблизительное место по вашему интернет-адресу.",
+  "weather.searchHelp": "Найдите город или почтовый индекс и выберите результат."
 }

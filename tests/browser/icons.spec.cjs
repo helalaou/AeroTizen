@@ -7,7 +7,12 @@ for (const glass of [false, true]) {
   }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+    let weatherCode = 3;
+    await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
+    await page.route("https://ipapi.co/**", (route) => route.fulfill({ json: { latitude: 1, longitude: 2 } }));
+    await page.route("https://api.open-meteo.com/**", (route) =>
+      route.fulfill({ json: { current: { temperature_2m: 12, weather_code: weatherCode } } }),
+    );
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
     await page.addInitScript((glass) => {
       localStorage.setItem(
@@ -45,11 +50,9 @@ for (const glass of [false, true]) {
       [71, "rgb(255, 255, 255)"],
       [95, "rgb(255, 211, 77)"],
     ]) {
-      await page.evaluate((code) => {
-        const cache = JSON.parse(localStorage.getItem("aerotizen.weather.v2"));
-        localStorage.setItem("aerotizen.weather.v2", JSON.stringify({ ...cache, code, at: Date.now() }));
-        window.Weather.start();
-      }, code);
+      weatherCode = code;
+      await page.evaluate(() => AeroTizen.weather.refresh());
+      await expect.poll(() => page.evaluate(() => AeroTizen.weather.getSnapshot().code)).toBe(code);
       for (const background of ["solid-white", "solid-lavender", "black"]) {
         await page.evaluate((background) => {
           AeroTizen.settings.update({ background });

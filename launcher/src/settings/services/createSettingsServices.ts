@@ -7,6 +7,7 @@ import type { SettingsServices } from "../types";
 export const createSettingsServices = (runtime: LauncherRuntime, platform: LauncherPlatform): SettingsServices => ({
   config: runtime.config,
   clock: runtime.clock,
+  weather: runtime.weather,
   backgrounds: platform.backgrounds.list.map((background) => ({
     ...background,
     preview: platform.backgrounds.preview(background),
@@ -14,25 +15,11 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
   })),
   backgroundWebGL: platform.backgrounds.webGL,
   describeApp: (app) => runtime.tiles.describe(app),
-  searchLocations(query, done) {
-    let cancelled = false;
-    platform.weather.searchLocations(query, (results) => {
-      if (!cancelled) {
-        done(results);
-      }
-    });
-    // The old client cannot abort transport; cancellation suppresses delivery.
-    return () => {
-      cancelled = true;
-    };
-  },
+  searchLocations: (query, done) => runtime.weather.searchLocations(query, done),
   applyBackground: () => runtime.applyBackground(),
   previewBackground: (preview) => platform.previewBackground(preview),
   applySpeed: (speed) => platform.backgrounds.setSpeed(speed),
   applyClock: () => runtime.clock.tick(),
-  applyWeatherVisibility: () => platform.weather.updateVisibility(),
-  applyLocationVisibility: () => platform.weather.updateDisplay(),
-  refreshWeather: () => platform.weather.refresh(),
   applyInputs: () => runtime.inputs.refresh(),
   applyCardSize: () => runtime.homeScreen?.render(),
   openStore: () => runtime.apps.openStore(),

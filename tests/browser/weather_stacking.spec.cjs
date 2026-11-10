@@ -26,7 +26,7 @@ for (const glass of [false, true]) {
     await expect(page.locator("#gear")).not.toHaveAttribute("data-focused", "true");
     await page.evaluate(() => {
       const now = Date.now();
-      window.Weather.currentReading = () => ({
+      AeroTizen.weather.currentReading = () => ({
         code: 3,
         at: now,
         solar: [{ sunrise: now - 3600000, sunset: now + 3600000 }],

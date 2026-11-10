@@ -176,7 +176,7 @@
   "weather.title": "Tempo",
   "weather.visibility": "Visibilidade do tempo",
   "common.automatic": "Automático",
-  "weather.searchPlaceholder": "Cidade ou CEP",
+  "weather.searchPlaceholder": "Cidade ou CEP…",
   "weather.locationLabel": "Local da previsão",
   "weather.search": "Buscar",
   "weather.locationVisibility": "Visibilidade do local da previsão",
@@ -266,5 +266,15 @@
   "wallpaper.direction": "Direção",
   "wallpaper.gradientHint": "OK seleciona uma cor. Cima/Baixo: escolha um controle. Esquerda/Direita: ajuste. Segure para ajustar mais rápido.",
   "appearance.performanceMode": "Modo de desempenho",
-  "appearance.performanceHint": "Desativa as animações de fundo e as transições da interface para uma navegação mais fluida."
+  "appearance.performanceHint": "Desativa as animações de fundo e as transições da interface para uma navegação mais fluida.",
+  "common.cancel": "Cancelar",
+  "weather.homeDisplay": "Clima na tela inicial",
+  "weather.showLocationName": "Mostrar nome do local",
+  "weather.sharedLocationHint": "Este local é usado no clima da tela inicial e nos papéis de parede climáticos.",
+  "weather.automaticLocation": "Automático · {{location}}",
+  "weather.manualLocation": "{{location}} · Manual",
+  "weather.changeLocation": "Alterar local",
+  "weather.useAutomatic": "Localização automática",
+  "weather.automaticHint": "Usa uma localização aproximada obtida pelo seu endereço de internet.",
+  "weather.searchHelp": "Busque uma cidade ou um código postal e selecione um resultado."
 }

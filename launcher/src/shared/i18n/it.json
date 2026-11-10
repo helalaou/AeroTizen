@@ -176,7 +176,7 @@
   "weather.title": "Meteo",
   "weather.visibility": "Visibilità del meteo",
   "common.automatic": "Automatico",
-  "weather.searchPlaceholder": "Città, località o CAP",
+  "weather.searchPlaceholder": "Città, località o CAP…",
   "weather.locationLabel": "Località meteo",
   "weather.search": "Cerca",
   "weather.locationVisibility": "Visibilità della località meteo",
@@ -266,5 +266,15 @@
   "wallpaper.direction": "Direzione",
   "wallpaper.gradientHint": "OK seleziona un colore. Su/Giù: scegli un controllo. Sinistra/Destra: regola. Tieni premuto per accelerare.",
   "appearance.performanceMode": "Modalità prestazioni",
-  "appearance.performanceHint": "Disattiva le animazioni dello sfondo e le transizioni dell’interfaccia per una navigazione più fluida."
+  "appearance.performanceHint": "Disattiva le animazioni dello sfondo e le transizioni dell’interfaccia per una navigazione più fluida.",
+  "common.cancel": "Annulla",
+  "weather.homeDisplay": "Meteo nella schermata iniziale",
+  "weather.showLocationName": "Mostra il nome della località",
+  "weather.sharedLocationHint": "Questa località viene usata per il meteo e gli sfondi meteo.",
+  "weather.automaticLocation": "Automatica · {{location}}",
+  "weather.manualLocation": "{{location}} · Manuale",
+  "weather.changeLocation": "Cambia località",
+  "weather.useAutomatic": "Località automatica",
+  "weather.automaticHint": "Usa una località approssimativa ricavata dal tuo indirizzo Internet.",
+  "weather.searchHelp": "Cerca una città o un codice postale, poi seleziona un risultato."
 }

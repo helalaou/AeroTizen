@@ -251,7 +251,12 @@ for (const glassSettings of [false, true]) {
       }
     }
     await visit("status", "clock.layout");
-    await visit("weather", "weather.visibility");
+    await visit(
+      "weather",
+      "weather.homeDisplay",
+      `[data-settings-heading-title]:text-is("${pseudoText("weather.homeDisplay")}")`,
+    );
+    await page.locator('[data-key="weather:change"]').click();
     const search = page.getByPlaceholder(pseudoText("weather.searchPlaceholder"));
     await expect(search).toHaveAccessibleName(pseudoText("weather.locationLabel"));
     await page.locator('[data-key="weather:search"]').click();

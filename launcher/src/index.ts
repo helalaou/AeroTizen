@@ -1,5 +1,3 @@
-import { flushSync } from "preact/compat";
-
 import version from "../version.txt?raw";
 
 import { createLauncherApp } from "./app/createLauncherApp";
@@ -8,16 +6,18 @@ import type { BackgroundState } from "./backgrounds/createBackgrounds";
 import { mountBackgrounds } from "./backgrounds/mountBackgrounds";
 import type { ClockService } from "./contracts/launcher";
 import type { SettingsService } from "./contracts/preferences";
-import type { NetworkService } from "./contracts/status";
+import type { NetworkService, WeatherService } from "./contracts/status";
 import { mountFireplace } from "./fireplace/mountFireplace";
 import { mountHome } from "./home/index";
 import { createClockPlatform } from "./platform/tizen/createClockPlatform";
 import { createNetworkPlatform } from "./platform/tizen/createNetworkPlatform";
+import { createWeatherPlatform } from "./platform/tizen/createWeatherPlatform";
 import { defaultTemperatureUnit } from "./platform/tizen/defaultTemperatureUnit";
 import { createClockService } from "./services/createClockService";
 import { createLauncherUpdates } from "./services/createLauncherUpdates";
 import { createNetworkService } from "./services/createNetworkService";
 import { createSettingsService } from "./services/createSettingsService";
+import { createWeatherService } from "./services/createWeatherService";
 import { mountSettings } from "./settings/index";
 
 const backgroundHost = document.getElementById("bg");
@@ -36,6 +36,7 @@ const hotData = import.meta.hot
       clock?: ClockService;
       network?: NetworkService;
       preferences?: SettingsService;
+      weather?: WeatherService;
     })
   : undefined;
 const clock =
@@ -75,7 +76,20 @@ const network =
     timers: window,
   });
 runtime.network = network;
-const weather = window.Weather;
+const weather =
+  hotData?.weather ||
+  createWeatherService({
+    platform: createWeatherPlatform(window),
+    settings,
+    clock,
+    storage: {
+      getItem: (key) => localStorage.getItem(key),
+      setItem: (key, value) => localStorage.setItem(key, value),
+    },
+    now: () => Date.now(),
+    timers: window,
+  });
+runtime.weather = weather;
 const backgrounds = mountBackgrounds(
   backgroundHost,
   weatherPhotoHost,
@@ -84,7 +98,7 @@ const backgrounds = mountBackgrounds(
   hotData && hotData.backgrounds,
 );
 window.Backgrounds = backgrounds.bridge;
-const platform = { backgrounds: backgrounds.bridge, previewBackground: backgrounds.previewBackground, weather };
+const platform = { backgrounds: backgrounds.bridge, previewBackground: backgrounds.previewBackground };
 const toast = mountToast(toastHost);
 const fireplace = mountFireplace(fireplaceHost, (key, values) => runtime.translate(key, values));
 const previousFireplace = window.Fireplace;
@@ -111,7 +125,6 @@ try {
     { home: mountHome, settings: mountSettings },
     createLauncherUpdates(version.trim()),
     settings,
-    flushSync,
   );
   if (import.meta.hot && hotData) {
     if (hotData.backgrounds) {
@@ -123,6 +136,7 @@ try {
       hotData.clock = clock;
       hotData.preferences = settings;
       hotData.network = network;
+      hotData.weather = weather;
       app.dispose();
       dispose();
     });

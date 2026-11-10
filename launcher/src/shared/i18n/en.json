@@ -176,7 +176,7 @@
   "weather.title": "Weather",
   "weather.visibility": "Weather visibility",
   "common.automatic": "Automatic",
-  "weather.searchPlaceholder": "Town, city or postcode",
+  "weather.searchPlaceholder": "Town, city or postcode…",
   "weather.locationLabel": "Weather location",
   "weather.search": "Search",
   "weather.locationVisibility": "Weather location visibility",
@@ -266,5 +266,15 @@
   "wallpaper.direction": "Direction",
   "wallpaper.gradientHint": "OK selects a colour. Up/Down: choose a control. Left/Right: adjust. Hold to adjust faster.",
   "appearance.performanceMode": "Performance mode",
-  "appearance.performanceHint": "Disables background animations and UI transitions for smoother navigation."
+  "appearance.performanceHint": "Disables background animations and UI transitions for smoother navigation.",
+  "common.cancel": "Cancel",
+  "weather.homeDisplay": "Home weather",
+  "weather.showLocationName": "Show location name",
+  "weather.sharedLocationHint": "Used by Home weather and weather wallpapers.",
+  "weather.automaticLocation": "Automatic · {{location}}",
+  "weather.manualLocation": "{{location}} · Manual",
+  "weather.changeLocation": "Change location",
+  "weather.useAutomatic": "Use automatic location",
+  "weather.automaticHint": "Use an approximate location from your internet address.",
+  "weather.searchHelp": "Search for a town, city or postcode, then select a result."
 }

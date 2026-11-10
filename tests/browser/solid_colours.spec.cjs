@@ -95,15 +95,14 @@ for (const glass of [false, true]) {
   });
 
   test(`${theme}: floating text follows light colours across every clock layout`, async ({ page }) => {
-    const errors = await openSolid(page, glass);
-    await page.evaluate(() => {
+    await page.addInitScript(() => {
       localStorage.setItem(
         "aerotizen.weather.v2",
         JSON.stringify({ temp: 12, code: 71, city: "Test city", source: "auto", unit: "C", at: Date.now() }),
       );
-      AeroTizen.settings.update({ showWeather: true });
-      window.Weather.start();
     });
+    const errors = await openSolid(page, glass);
+    await page.evaluate(() => AeroTizen.settings.update({ showWeather: true }));
     await page.locator('[data-key="bg:solid-white"]').click();
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
@@ -272,8 +271,8 @@ test("demo preview reopens the current custom colour before and after a reload",
 test("Back and external close cancel a preview, including the weather-photo background", async ({ page }) => {
   const errors = await openSolid(page, false);
   await page.evaluate(() => {
-    window.Weather.currentReading = () => ({ code: 0 });
-    window.Weather.solarPhase = () => "day";
+    AeroTizen.weather.currentReading = () => ({ code: 0 });
+    AeroTizen.weather.solarPhase = () => "day";
     AeroTizen.settings.update({ weatherPhoto: true });
     AeroTizen.applyBackground();
   });
