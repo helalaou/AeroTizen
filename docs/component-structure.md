@@ -15,7 +15,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `ContinueWatchingRow`, `ContinueWatchingCard`                        | Feed section and item presentation                                              | Immutable feed items; live launch records stay in the service                |
 | `HorizontalScroller`                                                 | Shared clipping, track movement and offset limits for horizontal app/feed rows  | Each row owns its offset; the Home controller reveals the selected card      |
 | `InputDock`, `InputCard`                                             | Input collection and one input's label, artwork and connection state            | Existing input service capabilities and commands                             |
-| `shared/components/AppFallback`                                      | Shared app logo/icon and label fallback for Home and Settings                   | App presentation, image lifetime and visibility                              |
+| `shared/components/AppFallback`                                      | Shared app-name placeholder for Home and Settings                               | App presentation, image lifetime and visibility                              |
 | `AppActionsMenu`, `ReorderControls`                                  | App actions and move/drop controls                                              | Home controller actions; menu positioning is rendered from state             |
 | `status/Clock`                                                       | One time/date view with compact, vertical, horizontal, minimal and bold layouts | Shared time snapshot and formatter; no timer                                 |
 | `WeatherStatus`, `NetworkStatus`                                     | Render status data                                                              | Shared snapshots; no requests or DOM scraping                                |
@@ -283,43 +283,43 @@ Existing semantic IDs such as `editor`, `grid`, `rows`, `weather` and `time`, an
 `data-key` values, remain stable for integration and test tools. Persisted preference
 keys and values also remain compatible.
 
-| Stylesheet                                                                                       | Owner                                                                               |
-| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| `themes.css`                                                                                     | Shared semantic paint tokens and Classic/Glass values                               |
-| `motion.css`                                                                                     | Shared UI durations and reduced-motion policy                                       |
-| `settings/components/*/*.module.css`                                                             | Shared Settings focus, choices, group layout, headings and selection badges         |
-| `settings/SettingsRoot/SettingsRoot.module.css`                                                  | Settings overlay and preview visibility                                             |
-| `settings/layout/SettingsDrawer/SettingsDrawer.module.css`                                       | Drawer frame, headings, sidebar and active pane layout                              |
-| `settings/layout/SettingsCategory/SettingsCategory.module.css`                                   | Category and Samsung Home rows, current state and update notice                     |
-| `settings/layout/SettingsHelp/SettingsHelp.module.css`                                           | Sidebar remote help                                                                 |
-| `settings/layout/SettingsFocusIndicator/SettingsFocusIndicator.module.css`                       | Measured Settings focus plate and motion preference                                 |
-| `settings/sections/inputs/InputName/InputName.module.css`                                        | Input-name field layout and focus states                                            |
-| `settings/sections/**/*.module.css`                                                              | Section layouts, app options, wallpaper controls, weather search and About          |
-| `shared/components/AppFallback/AppFallback.module.css`                                           | Shared logo/label geometry with explicit Home, favourite, source and badge variants |
-| `base.css`                                                                                       | Page sizing, fonts, hidden state and native/preview visibility                      |
-| `backgrounds/*/*.module.css`                                                                     | Blob, wave, WebGL canvas and weather-photo presentation                             |
-| `home/components/Home/Home.module.css`                                                           | Home viewport, fades, page reveals, section spacing and content clearance           |
-| `home/components/HomeHeader/HomeHeader.module.css`                                               | Header layout, shortcuts, tabs and expanded clock clearance                         |
-| `home/components/HeaderFocusIndicator/HeaderFocusIndicator.module.css`                           | Measured shortcut/tab focus plates and shared motion durations                      |
-| `status/Clock/Clock.module.css`                                                                  | Compact, vertical, horizontal, minimal and bold time/date layouts                   |
-| `status/HeaderStatus/HeaderStatus.module.css`                                                    | Compact/expanded status placement                                                   |
-| `status/WeatherStatus/WeatherStatus.module.css`, `status/NetworkStatus/NetworkStatus.module.css` | Weather and network presentation, with explicit layout/state props                  |
-| `home/components/AppGrid/AppGrid.module.css`                                                     | App sizes, columns and clock clearance                                              |
-| `home/components/HomeAppCard/HomeAppCard.module.css`                                             | Shared app/Fireplace frame and focus/moving states                                  |
-| `home/components/AppArtwork/AppArtwork.module.css`                                               | App image geometry                                                                  |
-| `home/components/FireplaceCard/FireplaceCard.module.css`                                         | Fireplace card artwork                                                              |
-| `home/components/HomeControl/HomeControl.module.css`                                             | Home control focus reset                                                            |
-| `home/components/HomeSectionHeading/HomeSectionHeading.module.css`                               | Shared Home section headings                                                        |
-| `home/components/ContinueWatchingRow/ContinueWatchingRow.module.css`                             | Continue Watching track spacing                                                     |
-| `home/components/ContinueWatchingCard/ContinueWatchingCard.module.css`                           | Card focus, artwork, source badges, titles and progress                             |
-| `home/components/HorizontalScroller/HorizontalScroller.module.css`                               | Shared horizontal viewport, track layout and motion                                 |
-| `home/components/InputDock/InputDock.module.css`                                                 | Input collection spacing and compact dock layout                                    |
-| `home/components/InputCard/InputCard.module.css`                                                 | Input frame, icon, labels, status badge and focus/state paint                       |
-| `home/components/AppActionsMenu/AppActionsMenu.module.css`                                       | App actions and menu selection                                                      |
-| `home/components/ReorderControls/ReorderControls.module.css`                                     | Reorder arrows and local motion                                                     |
-| `shared/icons/Icon/Icon.module.css`                                                              | Shared interface icon sizing                                                        |
-| `fireplace/FireplaceView/FireplaceView.module.css`                                               | Fireplace frame, canvas, hearth and volume notice                                   |
-| `app/Toast/Toast.module.css`                                                                     | Transient message layout and stacking                                               |
+| Stylesheet                                                                                       | Owner                                                                         |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `themes.css`                                                                                     | Shared semantic paint tokens and Classic/Glass values                         |
+| `motion.css`                                                                                     | Shared UI durations and reduced-motion policy                                 |
+| `settings/components/*/*.module.css`                                                             | Shared Settings focus, choices, group layout, headings and selection badges   |
+| `settings/SettingsRoot/SettingsRoot.module.css`                                                  | Settings overlay and preview visibility                                       |
+| `settings/layout/SettingsDrawer/SettingsDrawer.module.css`                                       | Drawer frame, headings, sidebar and active pane layout                        |
+| `settings/layout/SettingsCategory/SettingsCategory.module.css`                                   | Category and Samsung Home rows, current state and update notice               |
+| `settings/layout/SettingsHelp/SettingsHelp.module.css`                                           | Sidebar remote help                                                           |
+| `settings/layout/SettingsFocusIndicator/SettingsFocusIndicator.module.css`                       | Measured Settings focus plate and motion preference                           |
+| `settings/sections/inputs/InputName/InputName.module.css`                                        | Input-name field layout and focus states                                      |
+| `settings/sections/**/*.module.css`                                                              | Section layouts, app options, wallpaper controls, weather search and About    |
+| `shared/components/AppFallback/AppFallback.module.css`                                           | Shared name geometry with explicit Home, favourite, source and badge variants |
+| `base.css`                                                                                       | Page sizing, fonts, hidden state and native/preview visibility                |
+| `backgrounds/*/*.module.css`                                                                     | Blob, wave, WebGL canvas and weather-photo presentation                       |
+| `home/components/Home/Home.module.css`                                                           | Home viewport, fades, page reveals, section spacing and content clearance     |
+| `home/components/HomeHeader/HomeHeader.module.css`                                               | Header layout, shortcuts, tabs and expanded clock clearance                   |
+| `home/components/HeaderFocusIndicator/HeaderFocusIndicator.module.css`                           | Measured shortcut/tab focus plates and shared motion durations                |
+| `status/Clock/Clock.module.css`                                                                  | Compact, vertical, horizontal, minimal and bold time/date layouts             |
+| `status/HeaderStatus/HeaderStatus.module.css`                                                    | Compact/expanded status placement                                             |
+| `status/WeatherStatus/WeatherStatus.module.css`, `status/NetworkStatus/NetworkStatus.module.css` | Weather and network presentation, with explicit layout/state props            |
+| `home/components/AppGrid/AppGrid.module.css`                                                     | App sizes, columns and clock clearance                                        |
+| `home/components/HomeAppCard/HomeAppCard.module.css`                                             | Shared app/Fireplace frame and focus/moving states                            |
+| `home/components/AppArtwork/AppArtwork.module.css`                                               | App image geometry                                                            |
+| `home/components/FireplaceCard/FireplaceCard.module.css`                                         | Fireplace card artwork                                                        |
+| `home/components/HomeControl/HomeControl.module.css`                                             | Home control focus reset                                                      |
+| `home/components/HomeSectionHeading/HomeSectionHeading.module.css`                               | Shared Home section headings                                                  |
+| `home/components/ContinueWatchingRow/ContinueWatchingRow.module.css`                             | Continue Watching track spacing                                               |
+| `home/components/ContinueWatchingCard/ContinueWatchingCard.module.css`                           | Card focus, artwork, source badges, titles and progress                       |
+| `home/components/HorizontalScroller/HorizontalScroller.module.css`                               | Shared horizontal viewport, track layout and motion                           |
+| `home/components/InputDock/InputDock.module.css`                                                 | Input collection spacing and compact dock layout                              |
+| `home/components/InputCard/InputCard.module.css`                                                 | Input frame, icon, labels, status badge and focus/state paint                 |
+| `home/components/AppActionsMenu/AppActionsMenu.module.css`                                       | App actions and menu selection                                                |
+| `home/components/ReorderControls/ReorderControls.module.css`                                     | Reorder arrows and local motion                                               |
+| `shared/icons/Icon/Icon.module.css`                                                              | Shared interface icon sizing                                                  |
+| `fireplace/FireplaceView/FireplaceView.module.css`                                               | Fireplace frame, canvas, hearth and volume notice                             |
+| `app/Toast/Toast.module.css`                                                                     | Transient message layout and stacking                                         |
 
 Module paths in this table are relative to `launcher/src/`; global sheets are in
 `launcher/css/`. Generated module class names are private. Runtime and test hooks

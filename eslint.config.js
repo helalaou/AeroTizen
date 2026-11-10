@@ -22,7 +22,7 @@ module.exports = [
       "**/out/**",
       "test-results/**",
       "playwright-report/**",
-      "launcher/js/logos.js",
+      "tests/fixtures/legacy-launcher/js/logos.js",
     ],
   },
   js.configs.recommended,

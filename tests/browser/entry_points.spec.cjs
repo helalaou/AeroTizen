@@ -131,10 +131,19 @@ test("Continue Watching demo is opt-in, local to Vite and uses separate preferen
   await expect(page.locator("#continue-section")).toBeVisible();
   await expect(page.locator("#continue-items > [data-key]")).toHaveCount(5);
   await expect(
-    page.locator(
-      "[data-continue-part=source-badge] :is([data-app-artwork], [data-app-fallback] > svg, [data-app-fallback] > img):visible",
-    ),
+    page.locator("[data-continue-part=source-badge] :is([data-app-artwork], [data-app-fallback]):visible"),
   ).toHaveCount(5);
+  for (const glass of [false, true]) {
+    await page.evaluate((glass) => AeroTizen.settings.update({ glassSettings: glass }), glass);
+    await page.waitForFunction((glass) => document.body.classList.contains("glass-ui") === glass, glass);
+    const fill = await page
+      .locator("#grid > [data-id]")
+      .first()
+      .evaluate((node) => getComputedStyle(node).background);
+    for (const badge of await page.locator("[data-continue-part=source-badge]").all()) {
+      await expect(badge).toHaveCSS("background", fill);
+    }
+  }
   await expect(page.locator("[data-continue-part=progress-fill]")).toHaveCount(4);
   const unplayed = page.getByRole("button", { name: "Paper Moons · Prime Video" });
   await expect(unplayed.locator("[data-continue-part=progress-fill]")).toHaveCount(0);

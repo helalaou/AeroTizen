@@ -80,14 +80,7 @@ export interface LauncherConfig extends AppsConfig {
 }
 export interface AppPresentation {
   readonly artwork: readonly string[];
-  readonly background: string;
-  readonly label: string | null;
-  readonly largeLogo: boolean;
-  readonly logoColour: string;
-  readonly logoPath: string | null;
-  readonly textColour: string;
   readonly title: string;
-  readonly useAppIcon: boolean;
 }
 export interface NavigationHandlers {
   blur(): void;

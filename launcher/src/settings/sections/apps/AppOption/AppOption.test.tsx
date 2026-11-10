@@ -14,14 +14,7 @@ vi.mock("../../../hooks/useSettingsEnvironment", () => ({
 const app = { id: "demo", name: "Demo app" };
 const describeApp = (): AppPresentation => ({
   artwork: ["/first.png", "/second.png"],
-  background: "black",
-  label: app.name,
-  largeLogo: false,
-  logoColour: "white",
-  logoPath: null,
-  textColour: "white",
   title: app.name,
-  useAppIcon: false,
 });
 
 const artwork = (button: HTMLElement) => button.querySelector<HTMLImageElement>("[data-app-artwork]");

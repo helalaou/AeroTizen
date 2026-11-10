@@ -31,8 +31,8 @@ export const AppOption = ({
   variant = "favourite",
   disabled = false,
 }: Props) => {
-  const brand = useMemo(() => describeApp(app), [app, describeApp]);
-  const artwork = useImageSequence(brand.artwork, active);
+  const presentation = useMemo(() => describeApp(app), [app, describeApp]);
+  const artwork = useImageSequence(presentation.artwork, active);
   return (
     <SettingsAppCard
       selected={selected}
@@ -40,17 +40,16 @@ export const AppOption = ({
       data-app-option
       data-artwork-loaded={artwork.loaded ? "true" : undefined}
       focusKey={focusKey || "app:" + app.id}
-      aria-label={brand.title}
-      title={brand.title}
+      aria-label={presentation.title}
+      title={presentation.title}
       aria-disabled={disabled || undefined}
       onClick={() => {
         if (!disabled) {
           onSelect();
         }
       }}
-      style={{ "--app-background": artwork.loaded ? "transparent" : brand.background }}
     >
-      <AppFallback app={app} brand={brand} active={active} hidden={artwork.loaded} variant={variant} />
+      <AppFallback title={presentation.title} hidden={artwork.loaded} variant={variant} />
       {artwork.src ? (
         <img
           key={artwork.src}

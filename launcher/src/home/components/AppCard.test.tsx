@@ -34,7 +34,7 @@ test("parent updates retain static artwork while focus and app data still update
 });
 
 test("successful fallback artwork preserves the card's name, focus and click handler", () => {
-  const env = createCardEnvironment(`app:${app.id}`, { artwork: sources, useAppIcon: false });
+  const env = createCardEnvironment(`app:${app.id}`, { artwork: sources });
   render(<AppCard env={env} app={app} active />);
   const card = screen.getByRole("button", { name: app.name });
 
@@ -50,8 +50,8 @@ test("successful fallback artwork preserves the card's name, focus and click han
   expect(vi.getTimerCount()).toBe(0);
 });
 
-test("keeps a branded fallback visible when artwork stalls and the next candidate fails", async () => {
-  const env = createCardEnvironment(`app:${app.id}`, { artwork: sources, useAppIcon: false, logoPath: "M0 0" });
+test("keeps the app name visible when artwork stalls and the next candidate fails", async () => {
+  const env = createCardEnvironment(`app:${app.id}`, { artwork: sources });
   render(<AppCard env={env} app={app} active />);
   const card = screen.getByRole("button", { name: app.name });
   const stalled = artwork(card)!;
@@ -64,14 +64,14 @@ test("keeps a branded fallback visible when artwork stalls and the next candidat
   fireEvent.error(artwork(card)!);
 
   expect(artwork(card)).toBeNull();
-  expect(fallback(card)?.querySelector("svg")).not.toBeNull();
+  expect(fallback(card)?.querySelector("svg, img")).toBeNull();
   expect(screen.getByText(app.name).closest("[data-app-fallback]")?.hasAttribute("hidden")).toBe(false);
   expect(card.getAttribute("data-focused")).toBe("true");
   expect(vi.getTimerCount()).toBe(0);
 });
 
 test("defers inactive artwork and keeps an unknown app's label if its own icon fails too", () => {
-  const env = createCardEnvironment("", { artwork: sources });
+  const env = createCardEnvironment("", { artwork: [...sources, app.icon] });
   const { rerender } = render(<AppCard env={env} app={app} active={false} />);
   const card = screen.getByRole("button", { name: app.name });
   expect(card.querySelector("img")).toBeNull();
@@ -84,7 +84,7 @@ test("defers inactive artwork and keeps an unknown app's label if its own icon f
   expect(artwork(card)?.getAttribute("src")).toBe(sources[0]);
   fireEvent.error(artwork(card)!);
   fireEvent.error(artwork(card)!);
-  const icon = fallback(card)?.querySelector("img");
+  const icon = artwork(card);
   expect(icon?.getAttribute("src")).toBe(app.icon);
   fireEvent.error(icon!);
   expect(card.querySelector("img")).toBeNull();

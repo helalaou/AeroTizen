@@ -19,9 +19,8 @@
       add("/opt/share/webappservice/apps_icon/all/" + store + "/304x304.png");
       add("/opt/share/webappservice/apps_icon/FirstScreen/" + store + "/250x250.png");
     }
-    if (cached) {
-      add(app.icon);
-    }
+    // The installed app's own icon also covers apps outside Samsung's store cache.
+    add(app.icon);
     return result;
   }
 

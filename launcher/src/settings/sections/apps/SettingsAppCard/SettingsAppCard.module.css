@@ -11,7 +11,7 @@
   flex-direction: var(--settings-card-direction, row);
   gap: var(--settings-card-gap, 22px);
   padding: var(--settings-card-padding, 0px);
-  background: var(--settings-card-surface, var(--app-background, var(--card)));
+  background: var(--settings-card-surface, var(--app-placeholder-surface));
   box-shadow: var(--settings-card-shadow, none);
   transform: translateZ(0);
   transition: transform var(--motion-duration-focus) ease-out;

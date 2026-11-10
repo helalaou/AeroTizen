@@ -9,7 +9,7 @@ const root = path.join(__dirname, "../launcher");
 function runtime(tv = false) {
   const A = { tizen: tv ? {} : null };
   const context = vm.createContext({
-    window: { AeroTizen: A, LOGOS: { netflix: "M0 0", youtube: "M0 0" } },
+    window: { AeroTizen: A },
     AeroTizen: A,
   });
   for (const file of ["config.js", "app-catalog.js", "app-lookup.js", "artwork.js", "brands.js"]) {
@@ -18,7 +18,7 @@ function runtime(tv = false) {
   return { A };
 }
 
-test("browser previews keep the previous icons without requesting artwork", () => {
+test("browser previews use app names without requesting TV artwork", () => {
   const { A } = runtime();
   assert.deepEqual(Array.from(A.artwork.sources({ id: "demo", name: "ITVX - fresh, free streaming." })), []);
   assert.deepEqual(
@@ -77,11 +77,11 @@ test("a TV-provided store ID takes precedence over model-specific catalogue IDs"
   );
 });
 
-test("Settings can read brand and artwork data without creating DOM nodes or image timers", () => {
+test("Settings can read titles and artwork data without creating DOM nodes or image timers", () => {
   const { A } = runtime(true);
   const known = A.tiles.describe({ id: "111299001912", name: "YouTube" });
   assert.equal(known.title, "YouTube");
-  assert.equal(known.logoPath, "M0 0");
+  assert.deepEqual(Object.keys(known).sort(), ["artwork", "title"]);
   assert.equal(known.artwork.length, 2);
   const unknown = A.tiles.describe({
     id: "unknown",
@@ -89,7 +89,16 @@ test("Settings can read brand and artwork data without creating DOM nodes or ima
     icon: "local/icon.png",
   });
   assert.equal(unknown.title, "Unknown app");
-  assert.equal(unknown.label, "Unknown app");
-  assert.equal(unknown.useAppIcon, true);
-  assert.equal(unknown.logoPath, null);
+  assert.deepEqual(Array.from(unknown.artwork), ["local/icon.png"]);
+});
+
+test("TV-installed icons are artwork candidates for known and unknown apps", () => {
+  const { A } = runtime(true);
+  assert.deepEqual(Array.from(A.artwork.sources({ id: "unknown.app", name: "Unknown", icon: "local/icon.png" })), [
+    "local/icon.png",
+  ]);
+  const known = Array.from(A.artwork.sources({ id: "111299001912", name: "YouTube", icon: "local/youtube.png" }));
+  assert.equal(known[2], "local/youtube.png");
+  const cached = "/opt/share/webappservice/apps_icon/all/111299001912/304x304.png";
+  assert.equal(A.artwork.sources({ id: "111299001912", name: "YouTube", icon: cached }).length, 2);
 });
