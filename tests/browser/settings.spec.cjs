@@ -1,5 +1,6 @@
 const { openCategory } = require("./drawer_helpers.cjs");
 const { preserveLegacyDom } = require("./legacy_helpers.cjs");
+const { watcherStatus } = require("./watcher_helpers.cjs");
 const { test, expect } = require("@playwright/test");
 const { runSettingsUi } = require("../settings_ui.browser");
 const { runSettingsFocus } = require("../settings_focus.browser");
@@ -68,7 +69,7 @@ test("compiled Settings escape waits for /leave before launching native Samsung 
     (route) =>
       new Promise((resolve) => {
         acknowledge = async () => {
-          await route.fulfill({ status: 200, body: "{}" });
+          await route.fulfill({ json: watcherStatus(route.request().url()) });
           resolve();
         };
       }),
