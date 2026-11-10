@@ -133,6 +133,26 @@ The old runtime is preserved byte-for-byte in the `inputs-runtime.js` test fixtu
 The comparison page continues to use its earlier frozen `inputs.js` and input renderer.
 Neither fixture is part of the TV package.
 
+## Native navigation ownership
+
+`platform/tizen/createNativeNavigation.ts` owns Samsung Home and TV viewer commands,
+Native Home routing validation and watcher handoff preparation. App composition creates
+one adapter before app and input services and publishes its existing command bridge.
+Preact views invoke commands through those services; the adapter does not render markup.
+`homewatch.js` still owns watcher startup, transport and recovery.
+
+Each handoff reads the routing file again, with the existing 4096-byte limit and
+500 ms deadline. Confirmed Native Home bypasses the watcher handshake; other modes
+wait for its acknowledgement. Fallback HTTP retains its 1500 ms deadline, and viewer
+acceptance retains the 2100 ms focus check. The adapter adds no polling or routing cache.
+Protocol identities, paths, limits and deadlines are named constants. Routing and error
+validation use pure helpers. Read-only Tizen filesystem types are shared with Stremio.
+
+Hot reload retains the same adapter and pending handoffs. Permanent disposal aborts
+its fallback requests, clears timers, removes listeners and suppresses late callbacks.
+The unchanged `native-navigation.js` remains a comparison fixture outside TV packages;
+handoff tests run against both the frozen script and typed adapter.
+
 ## Clock ownership
 
 `services/createClockService.ts` owns time snapshots, formatting and the width cache.

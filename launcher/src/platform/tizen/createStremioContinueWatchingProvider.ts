@@ -1,6 +1,8 @@
 import type { AppsService } from "../../contracts/apps";
 import type { ContinueWatchingProvider } from "../../contracts/continueWatching";
 
+import type { ReadonlyTizenFilesystem } from "./readonlyFilesystem";
+
 const STREMIO_APP_ID = "IkWsFHtOY9.Stremio";
 const BRIDGE_ORIGIN = "http://127.0.0.1:47791";
 const BRIDGE_PATHS = {
@@ -29,20 +31,8 @@ type BridgeRequest =
   | { readonly method: "POST"; readonly path: string }
   | { readonly method: "GET"; readonly path: string; readonly maxResponseCharacters: number };
 
-interface CredentialStream {
-  close(): void;
-  read(bytes: number): string;
-}
-
-interface CredentialFile {
-  readonly fileSize: number;
-  openStream(mode: "r", done: (stream: CredentialStream) => void, failed: () => void, encoding: "UTF-8"): void;
-}
-
 export interface StremioTizen {
-  filesystem?: {
-    resolve(path: string, done: (file: CredentialFile) => void, failed: () => void, mode: "r"): void;
-  };
+  filesystem?: ReadonlyTizenFilesystem;
 }
 
 interface Dependencies {

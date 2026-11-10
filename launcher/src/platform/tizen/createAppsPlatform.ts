@@ -9,7 +9,7 @@ export interface AppsTizen {
     launch(id: string, done: (() => void) | null, failed: (error?: unknown) => void): void;
     launchAppControl(control: unknown, id: string, done: (() => void) | null, failed: (error?: unknown) => void): void;
   };
-  ApplicationControl?: new (operation: string, uri: null, mime: null, category: null, data: unknown[]) => unknown;
+  ApplicationControl?: new (operation: string, uri?: null, mime?: null, category?: null, data?: unknown[]) => unknown;
   ApplicationControlData?: new (key: string, values: string[]) => unknown;
   systeminfo?: { getCapability(key: string): string };
 }

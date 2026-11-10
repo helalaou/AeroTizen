@@ -8,6 +8,7 @@ import type { AppsService } from "./contracts/apps";
 import type { ContinueWatchingService } from "./contracts/continueWatching";
 import type { InputsService } from "./contracts/inputs";
 import type { ClockService } from "./contracts/launcher";
+import type { NativeNavigation } from "./contracts/nativeNavigation";
 import type { SettingsService } from "./contracts/preferences";
 import type { NetworkService, WeatherService } from "./contracts/status";
 import { mountFireplace } from "./fireplace/mountFireplace";
@@ -17,6 +18,7 @@ import { createAppsPlatform } from "./platform/tizen/createAppsPlatform";
 import { createClockPlatform } from "./platform/tizen/createClockPlatform";
 import { createContinueWatchingPlatform } from "./platform/tizen/createContinueWatchingPlatform";
 import { createInputsPlatform } from "./platform/tizen/createInputsPlatform";
+import { createNativeNavigation } from "./platform/tizen/createNativeNavigation";
 import { createNetworkPlatform } from "./platform/tizen/createNetworkPlatform";
 import { createSamsungContinueWatchingProvider } from "./platform/tizen/createSamsungContinueWatchingProvider";
 import { createStremioContinueWatchingProvider } from "./platform/tizen/createStremioContinueWatchingProvider";
@@ -58,11 +60,16 @@ const hotData = import.meta.hot
       clock?: ClockService;
       continueWatching?: ContinueWatchingService;
       inputs?: InputsService;
+      nativeNavigation?: NativeNavigation;
       network?: NetworkService;
       preferences?: SettingsService;
       weather?: WeatherService;
     })
   : undefined;
+const nativeNavigation = hotData?.nativeNavigation || createNativeNavigation(window);
+runtime.nativeNavigation = nativeNavigation;
+runtime.homewatch = { ...runtime.homewatch, ...nativeNavigation.commands };
+nativeNavigation.start();
 const clock =
   hotData?.clock ||
   createClockService({
@@ -212,6 +219,7 @@ try {
       hotData.backgrounds = backgrounds.getState();
       hotData.apps = apps;
       hotData.inputs = inputs;
+      hotData.nativeNavigation = nativeNavigation;
       hotData.clock = clock;
       hotData.preferences = settings;
       hotData.network = network;

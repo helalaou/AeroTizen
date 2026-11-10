@@ -1,4 +1,4 @@
-import type { AppHandoff, AppsService } from "../../contracts/apps";
+import type { AppsService } from "../../contracts/apps";
 import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
 import type { ContinueWatchingService } from "../../contracts/continueWatching";
 import type { InputsService } from "../../contracts/inputs";
@@ -10,12 +10,14 @@ import type {
   LauncherConfig,
   SettingsBridge,
 } from "../../contracts/launcher";
+import type { NativeNavigation, NativeNavigationCommands, NativeWatcher } from "../../contracts/nativeNavigation";
 import type { SettingsService } from "../../contracts/preferences";
 import type { NetworkService, WeatherService } from "../../contracts/status";
 import type { Translate } from "../../shared/i18n/createTranslations";
 
 import type { AppsTizen } from "./createAppsPlatform";
 import type { InputsTizen } from "./createInputsPlatform";
+import type { NativeNavigationTizen } from "./createNativeNavigation";
 import type { StremioTizen } from "./createStremioContinueWatchingProvider";
 
 // The unmigrated TV services are accessed through this boundary, not a screen's types.
@@ -28,17 +30,17 @@ export interface LauncherRuntime {
   continueWatching: ContinueWatchingService;
   hideToast(): void;
   homeScreen?: HomeBridge;
-  homewatch: AppHandoff & {
-    useSamsungHome(): void;
-    openSamsungHome?(): void;
-    openNativeViewer?(source: unknown, hdmi: { label: string; fallback(): void } | null): boolean;
-  };
+  homewatch: NativeWatcher &
+    Partial<NativeNavigationCommands> & {
+      useSamsungHome(): void;
+    };
   inputs: InputsService;
+  nativeNavigation: NativeNavigation;
   network: NetworkService;
   settings: SettingsService;
   settingsUi?: SettingsBridge;
   tiles: { describe(app: InstalledApp): AppPresentation; shortName(name: string): string };
-  tizen?: (AppsTizen & InputsTizen & StremioTizen) | null;
+  tizen?: (AppsTizen & InputsTizen & StremioTizen & NativeNavigationTizen) | null;
   toast(message: string): void;
   translate: Translate;
   weather: WeatherService;

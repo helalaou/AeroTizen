@@ -60,3 +60,8 @@ Production composition injects the typed Samsung provider after the typed Stremi
 tests compare it with the typed factory, including credential preparation, root gates,
 bounded feeds, artwork and cancellation. Production creates both providers directly;
 neither standalone provider script enters the TV package.
+
+`js/native-navigation.js` is the unchanged final standalone handoff adapter. The
+comparison page loads it explicitly. Handoff tests run the frozen script and typed
+adapter through the same routing, watcher, launch and focus checks. Production creates
+the typed adapter in app composition; its lifecycle tests also cover permanent disposal.
