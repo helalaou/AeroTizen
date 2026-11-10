@@ -32,8 +32,7 @@ export interface LauncherViews {
   ): MountedView<SettingsBridge>;
 }
 
-// One settings owner and one teardown path for both views. The legacy key router
-// receives bridges only after their views are mounted.
+// Both views share preferences and expose their controls after mounting.
 export const createLauncherApp = (
   runtime: LauncherRuntime,
   platform: LauncherPlatform,
@@ -119,7 +118,7 @@ export const createLauncherApp = (
     if (!document.hidden) {
       void updates.check();
     }
-    return { dispose };
+    return { dispose, home: home.bridge, settings: editor.bridge };
   } catch (error) {
     dispose();
     throw error;

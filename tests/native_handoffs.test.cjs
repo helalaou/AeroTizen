@@ -1,4 +1,5 @@
 const { installApps } = require("./helpers/apps.cjs");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createTestSettings } = require("./helpers/settings.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 ("use strict");
@@ -12,6 +13,7 @@ const vm = require("node:vm");
 const get = (file) => fs.readFileSync(path.join(__dirname, "../launcher/", file), "utf8");
 const nativeSource = fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/native-navigation.js"), "utf8");
 const { installInputs } = require("./helpers/inputs.cjs");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 
 function createHarness(options = {}, legacy = false) {
   const requests = [],
@@ -812,10 +814,7 @@ for (const legacy of [true, false]) {
   });
 
   test("app store opens com.samsung.tv.store before the org.volt.apps alias", () => {
-    const config = { window: { AeroTizen: {} } };
-    config.AeroTizen = config.window.AeroTizen;
-    vm.runInNewContext(get("js/config.js"), config, { filename: "config.js" });
-    const storeIds = Array.from(config.AeroTizen.config.STORE_APP_IDS);
+    const storeIds = launcherConfig.STORE_APP_IDS;
     assert.deepEqual(storeIds, ["com.samsung.tv.store", "org.volt.apps"]);
 
     const h = harness({ storeIds });

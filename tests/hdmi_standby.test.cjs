@@ -1,3 +1,4 @@
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createTestSettings } = require("./helpers/settings.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 // Tizen VIDEOSOURCE standby recognition, port de-duplication and visibility.
@@ -6,6 +7,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 
 // Frozen comparison runtime and renderer. The active owner is covered by
 // inputs.test.cjs, native_handoffs.test.cjs and the HDMI browser flows.
@@ -393,12 +395,8 @@ test("Settings override controls use persisted source numbers and accept remote 
 
 test("HDMI per-port exceptions survive the existing official settings storage", () => {
   const store = {};
-  const A = { clock: { defaultTimeFormat: () => "24" } };
+  const A = { clock: { defaultTimeFormat: () => "24" }, config: launcherConfig };
   const window = { AeroTizen: A, navigator: { language: "it-IT" } };
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../launcher/js/config.js"), "utf8"), {
-    window,
-    AeroTizen: A,
-  });
   const localStorage = {
     getItem: (key) => store[key] || null,
     setItem: (key, data) => {

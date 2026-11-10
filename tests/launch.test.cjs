@@ -1,4 +1,5 @@
 const { installApps } = require("./helpers/apps.cjs");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 const assert = require("node:assert/strict");
 const { EventEmitter } = require("node:events");
@@ -8,6 +9,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const launcher = path.join(__dirname, "..", "launcher");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 const metadataKey = "http://samsung.com/tv/metadata/hbbtv.link";
 const host = "org.tizen.hbbtv";
 const plain = (value) => JSON.parse(JSON.stringify(value));
@@ -33,6 +35,7 @@ function appHarness(metadata, options = {}) {
   };
   if (options.noMetadata) delete application.getAppMetaData;
   const A = {
+    config: launcherConfig,
     translate: translateEnglish,
     tizen: options.preview
       ? null
@@ -49,11 +52,7 @@ function appHarness(metadata, options = {}) {
     homewatch: { watch: (id) => calls.watch.push(id) },
     toast: (message) => calls.toast.push(message),
   };
-  const context = vm.createContext({ window: { AeroTizen: A }, AeroTizen: A });
-  for (const file of ["config.js"]) {
-    vm.runInContext(fs.readFileSync(path.join(launcher, "js", file), "utf8"), context);
-  }
-  installApps(context);
+  installApps({ window: { AeroTizen: A } });
   return { A, calls };
 }
 
