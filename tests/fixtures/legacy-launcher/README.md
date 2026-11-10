@@ -50,3 +50,8 @@ the frozen input renderer. The active input service publishes immutable source
 and playback state; the Tizen adapter keeps native source records private.
 `hdmi_standby.test.cjs` retains the frozen renderer checks. Active service,
 handoff, playback presentation and lifecycle checks exercise the TypeScript owner.
+
+`js/samsung-continue.js` is the unchanged final standalone Samsung provider. Provider
+parity tests compare its discovery, requests and native payloads with the typed factory.
+The comparison page retains its older self-contained Continue Watching runtime.
+Production composition injects the typed provider after the remaining Stremio adapter.

@@ -190,6 +190,9 @@ native source objects private. Hot reload retains one service and its device lis
 The app service owns immutable inventory and cached labels. Home, Settings and Continue
 Watching share its snapshot directly. Tizen discovery and launch handoffs stay in the
 app platform adapter. The service survives hot reload and rejects replies after disposal.
+Composition creates the typed Samsung feed provider with Continue Watching and injects
+the remaining legacy Stremio provider first. Feed cancellation and permanent disposal are
+separate: hiding the launcher during a valid app handoff must not suppress the launch.
 Clock, weather and network services publish immutable snapshots. Views read these
 services directly. The weather service subscribes to the shared clock for cache expiry checks.
 The network service owns one poller and platform watch, reacts to preference changes,

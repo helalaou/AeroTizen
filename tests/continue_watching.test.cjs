@@ -5,7 +5,9 @@ const { normalizeContinueItems } = loadTypeScript("launcher/src/services/continu
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
+const { createSamsungContinueWatchingProvider } = loadTypeScript(
+  "launcher/src/platform/tizen/createSamsungContinueWatchingProvider.ts",
+);
 const vm = require("node:vm");
 const plain = (x) => JSON.parse(JSON.stringify(x));
 const prefix = "http://samsung.com/tv/metadata/";
@@ -112,14 +114,15 @@ function harness(providers) {
     },
     clearTimeout: (id) => timers.delete(id),
   });
-  vm.runInContext(fs.readFileSync("launcher/js/samsung-continue.js", "utf8"), context);
   const cw = createContinueWatchingService({
     apps: A.apps,
     clock: A.clock,
     elapsed: () => elapsed,
     now: () => now,
     settings: A.settings,
-    providers: providers || A.continueWatchingProviders,
+    providers: providers || [
+      createSamsungContinueWatchingProvider({ runtime: A, createRequest: () => new XMLHttpRequest(), now: () => now }),
+    ],
     timers: context,
     platform: {
       isAvailable: () => !!A.tizen?.application?.getAppMetaData,
@@ -629,4 +632,21 @@ test("checked providers claim their app, expose only ready sources and ignore ca
   assert.equal(reads.length, 1);
   assert.equal(h.cw.getSnapshot().items.length, 0);
   assert.equal(ready.items.length, 1);
+});
+
+test("disposing the feed owner also blocks a pending Samsung native launch", () => {
+  const h = harness();
+  let ready;
+  h.A.homewatch.prepareAppLaunch = (_, done) => {
+    ready = done;
+  };
+  h.cw.start();
+  h.enable();
+  h.respond(0, [card("chosen")]);
+  h.cw.open(h.cw.getSnapshot().items[0]);
+  assert.equal(h.launches.length, 0);
+  h.cw.dispose();
+  h.cw.dispose();
+  ready();
+  assert.equal(h.launches.length, 0);
 });

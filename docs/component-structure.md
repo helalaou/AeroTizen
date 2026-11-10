@@ -205,7 +205,8 @@ copying them. Unchanged records retain their identity, including while status ch
 feed refreshes do not reload card artwork. Normalization validates provider records, retains
 zero-progress episodes and sorts by viewing activity, with a maximum of thirty visible items.
 
-Samsung and Stremio adapters register in `continueWatchingProviders` before the bundle loads.
+App composition creates the typed Samsung provider when it creates the feed service.
+The remaining legacy Stremio adapter registers before the bundle loads and is injected first.
 They retain discovery, transport, request cancellation and native launch commands. The first
 provider to claim an app keeps it, including while its readiness check is pending. The service
 receives these adapters, preferences, app inventory, the shared clock, visibility, wall time,
@@ -218,6 +219,15 @@ after a system-time correction without another request. Hot reload retains the s
 its subscriptions. `dispose()` cancels requests and timers, releases app/preference/clock and
 visibility subscriptions, and rejects late replies. The legacy comparison page retains its
 existing frozen JavaScript service outside the TV package.
+
+`platform/tizen/createSamsungContinueWatchingProvider.ts` owns Samsung metadata discovery,
+the existing five-second XHR transport and app-control launch payloads. Package identities,
+hidden companion metadata, response limits and per-source/per-retry cache-busting URLs stay
+unchanged. The shared service still owns retries; the provider adds no polling or view state.
+Hot reload retains the feed service and its provider. Cancelling feed requests during a
+valid native handoff does not cancel that launch. Permanent service disposal also disposes
+the Samsung provider, aborts transport and suppresses late handoff and failure callbacks.
+The standalone Samsung script remains an unchanged comparison fixture outside TV packages.
 
 ## DOM and style ownership
 

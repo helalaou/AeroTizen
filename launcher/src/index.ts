@@ -18,6 +18,7 @@ import { createClockPlatform } from "./platform/tizen/createClockPlatform";
 import { createContinueWatchingPlatform } from "./platform/tizen/createContinueWatchingPlatform";
 import { createInputsPlatform } from "./platform/tizen/createInputsPlatform";
 import { createNetworkPlatform } from "./platform/tizen/createNetworkPlatform";
+import { createSamsungContinueWatchingProvider } from "./platform/tizen/createSamsungContinueWatchingProvider";
 import { createWeatherPlatform } from "./platform/tizen/createWeatherPlatform";
 import { defaultTemperatureUnit } from "./platform/tizen/defaultTemperatureUnit";
 import { createAppsService } from "./services/createAppsService";
@@ -143,7 +144,14 @@ const continueWatching =
     elapsed: () => performance.now(),
     now: () => Date.now(),
     platform: createContinueWatchingPlatform(window),
-    providers: runtime.continueWatchingProviders || [],
+    providers: [
+      ...(runtime.continueWatchingProviders || []),
+      createSamsungContinueWatchingProvider({
+        runtime,
+        createRequest: () => new XMLHttpRequest(),
+        now: () => Date.now(),
+      }),
+    ],
     settings,
     timers: window,
   });
