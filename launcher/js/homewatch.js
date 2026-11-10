@@ -11,6 +11,9 @@
   var Service = null;
   var inventory = null;
   var transition = 0;
+  // A cold boot on Tizen 10 (QN80H) took ~18 s from the wrt:service request to the service's first
+  // reply. Waiting less gives up before it answers, and the app inventory is then never restored.
+  var START_TIMEOUT = 30000;
 
   function record(event, data) {
     if (window.AeroDiagnostics) {
@@ -80,7 +83,7 @@
     var since = Date.now();
     var deadline = setTimeout(function () {
       finish(false, attempt.reason || "service_start_timeout");
-    }, 8000);
+    }, START_TIMEOUT);
     function active() {
       return starting === attempt;
     }

@@ -148,7 +148,7 @@ test("failed watcher acknowledgement recovers once, then reports bounded failure
   h.requests[0].fail();
   h.requests[1].fail();
   assert.equal(h.messages.length, 0);
-  h.advance(8000);
+  h.advance(30000);
   assert.equal(h.calls.filter((call) => !call.service).length, 0);
   assert.equal(h.messages.length, 1);
   assert.equal(h.A.homewatch.isLeaving(), false);
@@ -262,14 +262,14 @@ test("module errors and timeouts clean up and reject late callbacks", () => {
     );
     h.requests[0].fail();
     const late = h.windowEvents["aero-wrt-service"];
-    if (timeout) h.advance(8000);
+    if (timeout) h.advance(30000);
     else h.scripts[0].onerror();
     late({
       detail: function () {
         assert.fail("late module cannot start a service");
       },
     });
-    h.advance(9000);
+    h.advance(31000);
     assert.equal(failed, 1);
     assert.equal(h.timers.size, 0);
     assert.equal(h.windowEvents["aero-wrt-service"], undefined);
@@ -286,7 +286,7 @@ test("a rejected wrt start fails once without falling back to the ineffective se
   h.requests[0].fail();
   h.loadWrt(true);
   await Promise.resolve();
-  h.advance(8000);
+  h.advance(30000);
   assert.equal(failed, 1);
   assert.equal(h.calls.length, 1);
   assert.equal(h.calls[0].wrt, true);
@@ -372,7 +372,7 @@ test("an unanswered service probe times out and ignores its late reply", () => {
     () => assert.fail("unexpected readiness"),
     () => failed++,
   );
-  h.advance(8000);
+  h.advance(30000);
   h.requests[0].reply();
   assert.equal(failed, 1);
   assert.equal(h.requests[0].aborted, true);

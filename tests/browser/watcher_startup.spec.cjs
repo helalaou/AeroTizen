@@ -3,8 +3,8 @@ const { test, expect } = require("@playwright/test");
 async function setup(page, version = "10.0", legacyWorks = true) {
   const requests = [];
   const errors = [];
-  let releaseLeave;
-  let holdLeave = false;
+  let releaseHandoff;
+  let heldPath;
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("**/test-wrt-service.js", (route) =>
@@ -63,9 +63,9 @@ async function setup(page, version = "10.0", legacyWorks = true) {
       await route.abort();
       return;
     }
-    if (path === "/leave" && holdLeave) {
+    if (path === heldPath) {
       await new Promise((resolve) => {
-        releaseLeave = resolve;
+        releaseHandoff = resolve;
       });
     }
     await route.fulfill({
@@ -85,11 +85,11 @@ async function setup(page, version = "10.0", legacyWorks = true) {
   return {
     requests,
     errors,
-    hold: () => {
-      holdLeave = true;
+    hold: (path) => {
+      heldPath = path;
     },
-    release: () => releaseLeave(),
-    waiting: () => Boolean(releaseLeave),
+    release: () => releaseHandoff(),
+    waiting: () => Boolean(releaseHandoff),
   };
 }
 
@@ -120,22 +120,31 @@ test("Tizen 9 falls back to wrt only when AppControl leaves the service unavaila
   expect(errors).toEqual([]);
 });
 
-test("YouTube waits for recovered service readiness and leave acknowledgement", async ({ page }) => {
-  const h = await setup(page);
-  h.hold();
-  await page.evaluate(() => {
-    window.testWatcher.up = false;
-  });
-  await page.locator('#grid > [data-id="youtube.app"]').click();
-  await expect.poll(h.waiting).toBe(true);
-  expect(await page.evaluate(() => window.testWatcher.starts)).toBe(2);
-  expect(await page.evaluate(() => window.testWatcher.launches)).toEqual([]);
-  h.release();
-  await page.waitForFunction(() => window.testWatcher.launches.includes("youtube.app"));
-  expect(await page.evaluate(() => window.testWatcher.launches)).toEqual(["youtube.app"]);
-  expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(0);
-  expect(h.errors).toEqual([]);
-});
+for (const { version, path, legacyStarts, wrtStarts } of [
+  { version: "9.0", path: "/leave", legacyStarts: 2, wrtStarts: 0 },
+  { version: "10.0", path: "/watch", legacyStarts: 0, wrtStarts: 2 },
+]) {
+  test(
+    "Tizen " + version + " YouTube waits for recovered service and " + path + " acknowledgement",
+    async ({ page }) => {
+      const h = await setup(page, version);
+      h.hold(path);
+      await page.evaluate(() => {
+        window.testWatcher.up = false;
+      });
+      await page.locator('#grid > [data-id="youtube.app"]').click();
+      await expect.poll(h.waiting).toBe(true);
+      expect(await page.evaluate(() => window.testWatcher.starts)).toBe(wrtStarts);
+      expect(await page.evaluate(() => window.testWatcher.legacyStarts)).toBe(legacyStarts);
+      expect(await page.evaluate(() => window.testWatcher.launches)).toEqual([]);
+      if (version === "10.0") expect(h.requests).not.toContain("/leave");
+      h.release();
+      await page.waitForFunction(() => window.testWatcher.launches.includes("youtube.app"));
+      expect(await page.evaluate(() => window.testWatcher.launches)).toEqual(["youtube.app"]);
+      expect(h.errors).toEqual([]);
+    },
+  );
+}
 
 test("a regular app recovers the watcher before the launcher can freeze", async ({ page }) => {
   const h = await setup(page);

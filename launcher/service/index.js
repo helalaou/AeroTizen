@@ -42,6 +42,7 @@ try {
 var SELF = "DclHome001.Home";
 var HIDDEN_GRACE = 250; // non-Frame: Samsung Home appears almost at once
 var FRAME_HIDDEN_GRACE = 1500; // Frame: give Art Mode time to report before reclaiming
+var WATCHED_HIDDEN_GRACE = 1500; // non-Frame: an app can briefly report invisible during transitions
 var APP_GRACE = 2500;
 var WATCH_STOP_GRACE = 1500; // a watched app must stay stopped this long before it's dropped
 var WATCH_COVER_GRACE = 10000; // an app the launcher opened may take this long to cover it
@@ -569,7 +570,8 @@ function tick() {
           if (!state.watchedHiddenSince) {
             state.watchedHiddenSince = Date.now();
           }
-          if (!isFrame() || Date.now() - state.watchedHiddenSince >= FRAME_HIDDEN_GRACE) {
+          var grace = isFrame() ? FRAME_HIDDEN_GRACE : WATCHED_HIDDEN_GRACE;
+          if (Date.now() - state.watchedHiddenSince >= grace) {
             launchSelf("home pressed in " + id);
           }
         } else if (watched.running) {
