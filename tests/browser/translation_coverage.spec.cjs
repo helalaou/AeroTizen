@@ -5,6 +5,8 @@ const path = require("node:path");
 const english = require("../../launcher/src/shared/i18n/en.json");
 const { closeSettings, openCategory } = require("./drawer_helpers.cjs");
 const { loadTypeScript } = require("../helpers/load_typescript.cjs");
+const { FIXED_NAMES } = loadTypeScript("launcher/src/shared/fixedNames.ts");
+const fixedNameValues = [...Object.values(FIXED_NAMES), FIXED_NAMES.appName.toUpperCase()];
 
 const pseudoLanguage = "en-XA";
 const pseudoCatalogueName = "Pseudo";
@@ -30,7 +32,8 @@ const releaseVersion = Number(installedVersion.split(".")[0]) + 1 + ".0.0";
 const releaseNote = "Sample launcher release note";
 const symbolise = (text) =>
   text.replace(/\{\{[^}]+\}\}|[\p{L}\p{N}]/gu, (token) => (token.startsWith("{{") ? token : "■"));
-const pseudoText = (key) => symbolise(english[key]);
+const pseudoText = (key) =>
+  symbolise(english[key]).replace(/\{\{(\w+)\}\}/g, (token, name) => FIXED_NAMES[name] ?? token);
 const devUrl = "http://127.0.0.1:8172/";
 const expectTextFits = async (locator) => {
   await expect(locator).toBeVisible();
@@ -39,7 +42,7 @@ const expectTextFits = async (locator) => {
 
 const findUntranslated = (page) =>
   page.evaluate(
-    ({ attributes, inputName, releaseNote, languageNames }) => {
+    ({ attributes, inputName, releaseNote, languageNames, fixedNameValues }) => {
       const clock = AeroTizen.clock;
       const now = new Date();
       const dates = clock.DATE_FORMATS.map((format) => format.format(now));
@@ -50,7 +53,6 @@ const findUntranslated = (page) =>
         const languageOption = element.closest('[data-key^="language:"]');
         const languageCode = languageOption?.getAttribute("data-key").slice("language:".length);
         if (
-          (text === "AEROTIZEN" && element.matches("[data-product-name]")) ||
           (languageCode && text === languageNames[languageCode]) ||
           (text === releaseNote && element.matches("[data-release-notes] li")) ||
           (text === "aerotizen update launcher" && element.matches("[data-update-command] code")) ||
@@ -68,6 +70,7 @@ const findUntranslated = (page) =>
         if (element.closest("#time, #time-formats")) {
           for (const time of times) text = text.replace(time, "");
         }
+        for (const name of fixedNameValues) text = text.replaceAll(name, "");
         if (/\p{L}/u.test(text)) {
           leftovers.push({ target: element.id || element.getAttribute("data-key") || element.tagName, field, value });
         }
@@ -88,7 +91,7 @@ const findUntranslated = (page) =>
       }
       return leftovers;
     },
-    { attributes: textAttributes, inputName, releaseNote, languageNames },
+    { attributes: textAttributes, inputName, releaseNote, languageNames, fixedNameValues },
   );
 
 const expectTranslatedScreen = async (page, state) => {

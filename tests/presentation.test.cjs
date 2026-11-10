@@ -3,13 +3,14 @@ const assert = require("node:assert/strict");
 const { test } = require("node:test");
 
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { translateEnglish } = require("./helpers/translate_english.cjs");
 const { getInputPresentation: getInputState } = loadTypeScript("launcher/src/home/presentation/inputs.ts");
 const { getNetworkPresentation: getNetworkState } = loadTypeScript("launcher/src/status/presentation/network.ts");
 const { getWeatherPresentation: getWeatherState } = loadTypeScript("launcher/src/shared/weather/conditions.ts");
 
 const getNetworkPresentation = (...args) => {
   const state = getNetworkState(...args);
-  return { ...state, label: english[state.label] };
+  return { symbol: state.symbol, label: "labelKey" in state ? translateEnglish(state.labelKey) : state.label };
 };
 
 const getWeatherPresentation = (...args) => {
