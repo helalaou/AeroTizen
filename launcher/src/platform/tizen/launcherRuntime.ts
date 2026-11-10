@@ -21,7 +21,7 @@ import type { InputsTizen } from "./createInputsPlatform";
 export interface LauncherRuntime {
   applyBackground(): void;
   apps: AppsService;
-  catalog: { preloadedStoreId(id: string): string | null };
+  catalog: { preloadedStoreId(id: string): string | null; storeId(id: string): string | null };
   clock: ClockService;
   config: LauncherConfig;
   continueWatching: ContinueWatchingService;

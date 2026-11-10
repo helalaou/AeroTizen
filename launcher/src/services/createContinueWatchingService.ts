@@ -320,6 +320,7 @@ export const createContinueWatchingService = ({
       }
       disposed = true;
       cancel();
+      providers.forEach((provider) => provider.dispose?.());
       unsubscribers.forEach((unsubscribe) => unsubscribe());
       unsubscribers = [];
       feeds.clear();

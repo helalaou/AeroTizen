@@ -14,11 +14,12 @@ export interface ContinueWatchingSnapshot {
   readonly sources: readonly ContinueSource[];
 }
 
-// The existing Samsung and Stremio adapters own discovery, transport and launching.
+// Providers own discovery, transport and native launching; the service owns feed state.
 export interface ContinueWatchingProvider {
   cancel(): void;
   check?(source: ContinueSource, done: (available: boolean) => void): void;
   discover(inventory: readonly AppRecord[]): readonly ContinueSource[];
+  dispose?(): void;
   open(item: ContinueFeedItem): void;
   read(source: ContinueSource, done: (error: boolean, records?: unknown) => void): void;
 }

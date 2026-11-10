@@ -1,31 +1,35 @@
 const { test, expect } = require("@playwright/test");
 const http = require("node:http");
-const fs = require("node:fs/promises");
 const path = require("node:path");
 
-let service;
+let service, adapter;
 test.beforeAll(async () => {
   const { build } = await import("vite");
-  const bundle = await build({
-    configFile: false,
-    logLevel: "silent",
-    build: {
-      write: false,
-      target: ["chrome69", "es2018"],
-      lib: {
-        entry: path.join(__dirname, "../../launcher/src/services/createContinueWatchingService.ts"),
-        name: "ContinueWatchingModule",
-        formats: ["iife"],
+  const compile = async (entry, name) => {
+    const bundle = await build({
+      configFile: false,
+      logLevel: "silent",
+      build: {
+        write: false,
+        target: ["chrome69", "es2018"],
+        lib: {
+          entry: path.join(__dirname, "../../launcher/src", entry),
+          name,
+          formats: ["iife"],
+        },
       },
-    },
-  });
-  const bundles = Array.isArray(bundle) ? bundle : [bundle];
-  service = bundles.flatMap((entry) => entry.output).find((file) => file.type === "chunk").code;
+    });
+    const bundles = Array.isArray(bundle) ? bundle : [bundle];
+    return bundles.flatMap((entry) => entry.output).find((file) => file.type === "chunk").code;
+  };
+  [service, adapter] = await Promise.all([
+    compile("services/createContinueWatchingService.ts", "ContinueWatchingModule"),
+    compile("platform/tizen/createSamsungContinueWatchingProvider.ts", "SamsungContinueWatchingModule"),
+  ]);
 });
 
 // Do not use page.route here: routing disables the browser's HTTP cache.
 async function fixture(page, initialRecords) {
-  const adapter = await fs.readFile(path.join(__dirname, "../../launcher/js/samsung-continue.js"), "utf8");
   const requests = [];
   let origin,
     records = initialRecords;
@@ -50,7 +54,10 @@ async function fixture(page, initialRecords) {
           ) +
           `\nAeroTizen.continueWatching = ContinueWatchingModule.createContinueWatchingService({
             apps: AeroTizen.apps, settings: AeroTizen.settings,
-            providers: AeroTizen.continueWatchingProviders,
+            providers: [SamsungContinueWatchingModule.createSamsungContinueWatchingProvider({
+              runtime: AeroTizen, createRequest: function () { return new XMLHttpRequest(); },
+              now: function () { return Date.now(); }
+            })],
             clock: { subscribe: function () { return function () {}; } },
             now: function () { return Date.now(); }, elapsed: function () { return performance.now(); },
             timers: window,
