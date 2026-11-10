@@ -158,7 +158,9 @@ test("root helper and installed Stremio enable an opt-in source; loss hides it b
     AeroTizen.continueWatching.refresh();
   });
   await expect
-    .poll(() => page.evaluate((id) => AeroTizen.continueWatching.sources.find((s) => s.id === id)?.status, stremio))
+    .poll(() =>
+      page.evaluate((id) => AeroTizen.continueWatching.getSnapshot().sources.find((s) => s.id === id)?.status, stremio),
+    )
     .toBe("Available");
   expect(
     await page.evaluate(() => window.savedStremio === document.querySelector("#continue-items > [data-key]")),
@@ -229,7 +231,7 @@ test("unchecking Stremio removes its cards and keeps its option in place", async
   await page.evaluate(() => {
     const cw = AeroTizen.continueWatching;
     window.sourceOrders = [];
-    cw.subscribe(() => window.sourceOrders.push(cw.sources.map((source) => source.id)));
+    cw.subscribe(() => window.sourceOrders.push(cw.getSnapshot().sources.map((source) => source.id)));
   });
   const requestCount = h.calls.length;
   await option.click();

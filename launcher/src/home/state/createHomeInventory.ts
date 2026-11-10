@@ -15,7 +15,7 @@ export const createHomeInventory = (
       runtime.inputs.sources.filter((source) => runtime.inputs.isVisible(source)),
       previous?.inputs,
     );
-    const items = snapshotList(runtime.continueWatching.items, previous?.items);
+    const items = runtime.continueWatching.getSnapshot().items;
     const ready = runtime.apps.ready;
     return previous &&
       apps === previous.apps &&

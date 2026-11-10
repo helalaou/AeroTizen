@@ -1,4 +1,4 @@
-import type { ContinueItem } from "./contracts/launcher";
+import type { ContinueFeedItem } from "./contracts/continueWatching";
 
 // Fictional programme metadata for the browser preview.
 const programmes = [
@@ -35,24 +35,33 @@ if (new URLSearchParams(location.search).get("demo") === "1" && !("tizen" in win
     home: ["demo0", "demo1", "demo3", "demo6"],
   };
 
-  const items: ContinueItem[] = programmes.map(
-    ([name, sourceName, app, season, episode, playback, dark, light], index) => ({
-      key: "demo-" + index,
-      title: name,
-      sourceId: "demo" + app,
-      sourceName,
-      season,
-      episode,
-      duration: 100,
-      playback,
-      image: artwork(dark, light, index),
-    }),
+  const items: readonly ContinueFeedItem[] = Object.freeze(
+    programmes.map(([name, sourceName, app, season, episode, playback, dark, light], index) =>
+      Object.freeze({
+        key: "demo-" + index,
+        title: name,
+        sourceId: "demo" + app,
+        sourceName,
+        season,
+        episode,
+        duration: 100,
+        playback,
+        image: artwork(dark, light, index),
+        payload: "",
+        timestamp: 0,
+      }),
+    ),
   );
-  runtime.continueWatching = {
+  const snapshot = Object.freeze({
     items,
-    messageKey: "continue.demoFeed",
-    sources: [],
+    messageKey: "continue.demoFeed" as const,
+    sources: Object.freeze([]),
+  });
+  runtime.continueWatching = {
+    getSnapshot: () => snapshot,
     open: () => runtime.toast(runtime.translate("continue.demoPlayback")),
+    dispose: () => undefined,
+    refresh: () => undefined,
     start: () => undefined,
     subscribe: () => () => undefined,
   };

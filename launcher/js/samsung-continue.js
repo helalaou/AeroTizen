@@ -148,5 +148,6 @@
     }
   }
 
-  A.continueWatching.register({ discover: discover, read: read, open: open, cancel: cancel });
+  A.continueWatchingProviders = A.continueWatchingProviders || [];
+  A.continueWatchingProviders.push({ discover: discover, read: read, open: open, cancel: cancel });
 })(window.AeroTizen);

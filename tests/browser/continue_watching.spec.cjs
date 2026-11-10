@@ -28,7 +28,9 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
       .poll(async () => {
         // Each retry starts after the intercepted response arrives.
         await page.clock.runFor(2000);
-        return page.evaluate(() => AeroTizen.continueWatching.sources.find((s) => s.name === "Channel 4").status);
+        return page.evaluate(
+          () => AeroTizen.continueWatching.getSnapshot().sources.find((s) => s.name === "Channel 4").status,
+        );
       })
       .toBe("No items available");
   }

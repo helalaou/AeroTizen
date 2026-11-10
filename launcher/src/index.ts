@@ -4,16 +4,19 @@ import { createLauncherApp } from "./app/createLauncherApp";
 import { mountToast } from "./app/mountToast";
 import type { BackgroundState } from "./backgrounds/createBackgrounds";
 import { mountBackgrounds } from "./backgrounds/mountBackgrounds";
+import type { ContinueWatchingService } from "./contracts/continueWatching";
 import type { ClockService } from "./contracts/launcher";
 import type { SettingsService } from "./contracts/preferences";
 import type { NetworkService, WeatherService } from "./contracts/status";
 import { mountFireplace } from "./fireplace/mountFireplace";
 import { mountHome } from "./home/index";
 import { createClockPlatform } from "./platform/tizen/createClockPlatform";
+import { createContinueWatchingPlatform } from "./platform/tizen/createContinueWatchingPlatform";
 import { createNetworkPlatform } from "./platform/tizen/createNetworkPlatform";
 import { createWeatherPlatform } from "./platform/tizen/createWeatherPlatform";
 import { defaultTemperatureUnit } from "./platform/tizen/defaultTemperatureUnit";
 import { createClockService } from "./services/createClockService";
+import { createContinueWatchingService } from "./services/createContinueWatchingService";
 import { createLauncherUpdates } from "./services/createLauncherUpdates";
 import { createNetworkService } from "./services/createNetworkService";
 import { createSettingsService } from "./services/createSettingsService";
@@ -34,6 +37,7 @@ const hotData = import.meta.hot
   ? (import.meta.hot.data as {
       backgrounds?: BackgroundState;
       clock?: ClockService;
+      continueWatching?: ContinueWatchingService;
       network?: NetworkService;
       preferences?: SettingsService;
       weather?: WeatherService;
@@ -90,6 +94,20 @@ const weather =
     timers: window,
   });
 runtime.weather = weather;
+const continueWatching =
+  hotData?.continueWatching ||
+  runtime.continueWatching ||
+  createContinueWatchingService({
+    apps: runtime.apps,
+    clock,
+    elapsed: () => performance.now(),
+    now: () => Date.now(),
+    platform: createContinueWatchingPlatform(window),
+    providers: runtime.continueWatchingProviders || [],
+    settings,
+    timers: window,
+  });
+runtime.continueWatching = continueWatching;
 const backgrounds = mountBackgrounds(
   backgroundHost,
   weatherPhotoHost,
@@ -137,6 +155,7 @@ try {
       hotData.preferences = settings;
       hotData.network = network;
       hotData.weather = weather;
+      hotData.continueWatching = continueWatching;
       app.dispose();
       dispose();
     });

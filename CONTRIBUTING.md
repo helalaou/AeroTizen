@@ -158,7 +158,7 @@ both themes. Add coverage here for new UI paths.
 | `launcher/src/contracts/`         | Screen-independent preferences, app/input/feed types and bridge protocols                       |
 | `launcher/src/backgrounds/`       | Wallpaper scenes, background bridge and canvas animation                                        |
 | `launcher/src/status/`            | Shared status views and hooks; one Clock with compact and expanded layouts                      |
-| `launcher/src/services/`          | TypeScript preference, clock, network and weather services                                      |
+| `launcher/src/services/`          | TypeScript preference, clock, network, weather and Continue Watching services                   |
 | `launcher/src/platform/tizen/`    | Typed boundary for the existing TV and browser services                                         |
 | `launcher/src/dev.ts`             | Development entry that loads the same views before boot                                         |
 | `launcher/src/settings/`          | TypeScript/TSX Settings components, state, actions and service adapters                         |
@@ -189,6 +189,9 @@ The network service owns one poller and platform watch, reacts to preference cha
 and publishes only changed readings. Its disposer releases timers and subscriptions.
 The weather service owns its refresh timer, cache, cancellable requests and preference subscription.
 Views add no polling timers or forecast requests.
+Continue Watching owns immutable feed snapshots and bounded retries. Home and Settings share
+its arrays directly; Samsung and Stremio adapters retain transport and launching. The service
+survives hot reload, and its disposer releases requests, timers and subscriptions.
 `Clock` owns time/date presentation and uses layout variants. `WeatherStatus` and
 `NetworkStatus` own their markup. Component CSS has one owner; shared theme paint
 is defined in `launcher/css/themes.css`. Semantic IDs remain stable for service and

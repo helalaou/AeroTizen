@@ -36,3 +36,7 @@ launcher package. Production uses the app-owned background view.
 comparison page loads it explicitly from this directory. Production owns weather
 in `launcher/src/services/createWeatherService.ts`; its service tests exercise that
 TypeScript owner, with the frozen status renderer used only as a test consumer.
+
+The comparison page loads its existing frozen `js/continue-watching.js` explicitly.
+Production uses `launcher/src/services/createContinueWatchingService.ts` with the
+Samsung and Stremio provider adapters; its tests exercise the TypeScript owner.

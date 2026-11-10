@@ -315,8 +315,8 @@ export const createHomeController = (
         runtime.apps.launch(app);
       }
     } else if (key.startsWith("continue:")) {
-      // Commands need the service's live record, not an immutable view snapshot.
-      const item = runtime.continueWatching.items.find((item) => item.key === key.slice(9));
+      // Use the current service record; stale cards must not launch.
+      const item = runtime.continueWatching.getSnapshot().items.find((item) => item.key === key.slice(9));
       if (item) {
         runtime.continueWatching.open(item);
       }
