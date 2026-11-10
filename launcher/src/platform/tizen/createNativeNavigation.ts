@@ -1,10 +1,11 @@
 import type { AppFailure } from "../../contracts/apps";
+import { HOME_WATCHER_PATHS as WATCHER_PATHS } from "../../contracts/homeWatcher";
 import type { NativeNavigation, NativeWatcher } from "../../contracts/nativeNavigation";
 import type { Translate } from "../../shared/i18n/createTranslations";
 
+import { SAMSUNG_HOME_APP_ID } from "./nativeApplicationIds";
 import type { ReadonlyTizenFilesystem } from "./readonlyFilesystem";
 
-const SAMSUNG_HOME_APP_ID = "com.samsung.tv.csfs";
 const TV_VIEWER_APP_ID = "org.tizen.tv-viewer";
 const MAIN_OPERATION = "http://tizen.org/appcontrol/operation/main";
 const MAIN_VIDEO_WINDOW = "MAIN";
@@ -15,7 +16,6 @@ const WATCHER_REQUEST_TIMEOUT_MS = 1_500;
 const VIEWER_FOCUS_CHECK_MS = 2_100;
 const TRANSACTION_PATTERN = /^[a-f0-9]{32}$/;
 const BASELINE_HASH_PATTERN = /^[a-f0-9]{64}$/;
-const WATCHER_PATHS = { home: "/home", leave: "/leave" } as const;
 const HTTP_SUCCESS = { minimum: 200, maximumExclusive: 300 } as const;
 const WATCHER_FAILURES = {
   setup: { reason: "HomeWatcher request failed", message: "handoff.watcherRequestFailed" },

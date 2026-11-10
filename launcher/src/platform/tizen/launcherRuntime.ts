@@ -1,15 +1,16 @@
 import type { AppsService } from "../../contracts/apps";
 import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
 import type { ContinueWatchingService } from "../../contracts/continueWatching";
+import type { HomeWatcherService } from "../../contracts/homeWatcher";
 import type { InputsService } from "../../contracts/inputs";
 import type { ClockService, HomeBridge, LauncherConfig, SettingsBridge } from "../../contracts/launcher";
-import type { NativeNavigation, NativeNavigationCommands, NativeWatcher } from "../../contracts/nativeNavigation";
+import type { NativeNavigation, NativeNavigationCommands } from "../../contracts/nativeNavigation";
 import type { SettingsService } from "../../contracts/preferences";
 import type { NetworkService, WeatherService } from "../../contracts/status";
-import type { AppCatalog } from "../../shared/apps/appCatalog";
 import type { Translate } from "../../shared/i18n/createTranslations";
 
 import type { AppsTizen } from "./createAppsPlatform";
+import type { HomeWatcherTizen } from "./createHomeWatcherPlatform";
 import type { InputsTizen } from "./createInputsPlatform";
 import type { NativeNavigationTizen } from "./createNativeNavigation";
 import type { StremioTizen } from "./createStremioContinueWatchingProvider";
@@ -18,22 +19,18 @@ import type { StremioTizen } from "./createStremioContinueWatchingProvider";
 export interface LauncherRuntime {
   applyBackground(): void;
   apps: AppsService;
-  catalog: Pick<AppCatalog, "preloadedStoreId">;
   clock: ClockService;
   config: LauncherConfig;
   continueWatching: ContinueWatchingService;
   hideToast(): void;
   homeScreen?: HomeBridge;
-  homewatch: NativeWatcher &
-    Partial<NativeNavigationCommands> & {
-      useSamsungHome(): void;
-    };
+  homewatch: HomeWatcherService & Partial<NativeNavigationCommands>;
   inputs: InputsService;
   nativeNavigation: NativeNavigation;
   network: NetworkService;
   settings: SettingsService;
   settingsUi?: SettingsBridge;
-  tizen?: (AppsTizen & InputsTizen & StremioTizen & NativeNavigationTizen) | null;
+  tizen?: (AppsTizen & HomeWatcherTizen & InputsTizen & StremioTizen & NativeNavigationTizen) | null;
   toast(message: string): void;
   translate: Translate;
   weather: WeatherService;

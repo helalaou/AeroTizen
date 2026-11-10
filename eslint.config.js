@@ -38,6 +38,7 @@ module.exports = [
       "launcher/js/**/*.js",
       "tests/fixtures/legacy-launcher/js/**/*.js",
       "tests/fixtures/app-presentation/js/**/*.js",
+      "tests/fixtures/homewatch/homewatch.js",
       "tests/fixtures/legacy-dom.js",
     ],
     languageOptions: {
@@ -79,7 +80,7 @@ module.exports = [
     },
   },
   {
-    files: ["launcher/src/**/*.{ts,tsx}", "launcher/js/**/*.js"],
+    files: ["launcher/src/**/*.{ts,tsx}", "launcher/js/**/*.js", "tests/fixtures/homewatch/homewatch.js"],
     plugins: { "launcher-i18n": { rules: { "translated-copy": translationLint } } },
     rules: { "launcher-i18n/translated-copy": "error" },
   },
