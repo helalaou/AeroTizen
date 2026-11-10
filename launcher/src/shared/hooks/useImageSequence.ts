@@ -18,6 +18,7 @@ export const useImageSequence = (sources: readonly string[], active: boolean) =>
     [key, current.index, current.loaded, active],
   );
   const attempt = useRef<Attempt | null>(null);
+  const image = useRef<HTMLImageElement | null>(null);
   useLayoutEffect(() => {
     if (!active) {
       // Retry failed sequences from the start next time; keep loaded images cached.
@@ -29,6 +30,8 @@ export const useImageSequence = (sources: readonly string[], active: boolean) =>
     if (current.loaded || !source) {
       return;
     }
+    const hasLoadedImage = () =>
+      image.current?.getAttribute("src") === source && image.current.complete && image.current.naturalWidth > 0;
     let live = true;
     const settle = (loaded: boolean) => {
       if (!live) {
@@ -38,8 +41,12 @@ export const useImageSequence = (sources: readonly string[], active: boolean) =>
       window.clearTimeout(timer);
       setState({ key, index: loaded ? current.index : current.index + 1, loaded });
     };
-    const timer = window.setTimeout(() => settle(false), IMAGE_TIMEOUT_MS);
+    const timer = window.setTimeout(() => settle(hasLoadedImage()), IMAGE_TIMEOUT_MS);
     attempt.current = { token, settle };
+    // TV cache images can finish before the current attempt receives their load event.
+    if (hasLoadedImage()) {
+      settle(true);
+    }
     return () => {
       live = false;
       window.clearTimeout(timer);
@@ -52,6 +59,7 @@ export const useImageSequence = (sources: readonly string[], active: boolean) =>
     }
   };
   return {
+    ref: image,
     src: active || current.loaded ? source : undefined,
     loaded: current.loaded,
     onLoad: () => settle(true),

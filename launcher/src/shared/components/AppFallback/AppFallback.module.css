@@ -1,87 +1,52 @@
 .fallback {
-  --fallback-logo-width: 150px;
-  --fallback-logo-height: 150px;
   --fallback-label-size: 34px;
 
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
   width: 100%;
   height: 100%;
   padding: 24px;
 }
 
 .home {
-  --fallback-logo-width: calc(var(--app-card-size) * 0.45);
-  --fallback-logo-height: calc(var(--app-card-size) * 0.45);
   --fallback-label-size: calc(var(--app-card-size) * 0.102);
 
   padding: calc(var(--app-card-size) * 0.072);
-  gap: calc(var(--app-card-size) * 0.06);
-
-  &[data-logo-only="true"] {
-    --fallback-logo-width: calc(var(--app-card-size) * 0.75);
-    --fallback-logo-height: calc(var(--app-card-size) * 0.57);
-  }
-
-  &[data-large-logo="true"] {
-    --fallback-logo-width: calc(var(--app-card-size) * 0.9);
-    --fallback-logo-height: calc(var(--app-card-size) * 0.66);
-  }
-
-  > .logo {
-    max-width: 100%;
-  }
-}
-
-.favourite,
-.source {
-  --fallback-logo-width: 92px;
-  --fallback-logo-height: 92px;
-  --fallback-label-size: 18px;
-  --fallback-label-line-height: 21px;
-}
-
-.favourite[data-logo-only="true"],
-.source[data-logo-only="true"] {
-  --fallback-logo-width: 136px;
-  --fallback-logo-height: 112px;
 }
 
 .favourite {
   --fallback-label-size: 19px;
+  --fallback-label-line-height: 21px;
 
   padding: 12px;
-  gap: 8px;
 }
 
 .source {
+  --fallback-label-size: 18px;
+  --fallback-label-line-height: 21px;
+
   padding: 14px;
-  gap: 12px;
 }
 
 .badge {
-  --fallback-logo-width: 46px;
-  --fallback-logo-height: 46px;
+  --fallback-label-size: 10px;
 
   padding: 4px;
-  gap: 0;
-
-  > .label {
-    display: none;
-  }
 }
 
-.logo {
-  flex: 0 0 auto;
-  object-fit: contain;
-  width: var(--fallback-logo-width);
-  height: var(--fallback-logo-height);
+.compact {
+  flex: 0 1 auto;
+  min-height: 0;
+  height: auto;
+  padding: 0;
 }
 
 .label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
   font-weight: 500;
   color: var(--control-text);
   text-shadow: var(--app-label-shadow);

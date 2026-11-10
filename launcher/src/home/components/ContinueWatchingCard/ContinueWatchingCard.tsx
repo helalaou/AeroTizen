@@ -18,7 +18,7 @@ export const ContinueWatchingCard = memo(({ env, item }: { env: HomeEnvironment;
     () => ({ id: item.sourceId, name: item.sourceName, icon: item.sourceIcon }),
     [item.sourceId, item.sourceName, item.sourceIcon],
   );
-  const brand = useMemo(() => env.describe(app), [env, app]);
+  const presentation = useMemo(() => env.describe(app), [env, app]);
   const episode =
     item.season > 0 && item.episode > 0 ? t("continue.episode", { season: item.season, episode: item.episode }) : "";
   const thumbnail = useArtwork(item.thumbnailImage);
@@ -53,13 +53,8 @@ export const ContinueWatchingCard = memo(({ env, item }: { env: HomeEnvironment;
             onError={artwork.onError}
           />
         )}
-        <div
-          class={styles.sourceBadge}
-          data-continue-part="source-badge"
-          aria-hidden="true"
-          style={{ "--app-background": brand.background }}
-        >
-          <AppArtwork app={app} brand={brand} active variant="badge" />
+        <div class={styles.sourceBadge} data-continue-part="source-badge" aria-hidden="true">
+          <AppArtwork presentation={presentation} active variant="badge" />
         </div>
       </div>
       <div

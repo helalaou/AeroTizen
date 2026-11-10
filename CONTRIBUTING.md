@@ -93,7 +93,7 @@ check alone with `npm run lint:js` or `npm run lint:css`. The TypeScript checks 
 reject unused locals and parameters. CI rejects formatting
 differences, lint warnings and errors, and type errors.
 
-Generated logos and build/test output are excluded from formatting. The app catalogue
+Frozen generated logos and build/test output are excluded from formatting. The app catalogue
 and diagnostic privacy schema have a dedicated formatting override: their data objects
 must remain valid JSON because Python reads them directly. Legacy JavaScript keeps
 ES5 syntax; compiled output retains the Chromium 69 and ES2018 checks.
@@ -174,7 +174,7 @@ both themes. Add coverage here for new UI paths.
 | `vite.config.mts`                 | Official Preact preset, dev server and TV bundle settings                                       |
 | `dist/launcher/`                  | Generated TV runtime with shared launcher-ui.js; no Node needed on TV                           |
 | `launcher/js/config.js`           | Launcher behaviour and storage identities                                                       |
-| `launcher/js/app-catalog.js`      | App IDs, Samsung store IDs and optional fallback branding                                       |
+| `launcher/js/app-catalog.js`      | App IDs, Samsung store IDs and artwork aliases                                                  |
 | `launcher/js/app-lookup.js`       | Shared ID lookup and legacy name compatibility                                                  |
 | `launcher/service/`               | Background service that reclaims the screen from Samsung Home                                   |
 | `tests/`                          | pytest suite (`test_*.py`, a fake TV covers the sdb protocol) and launcher tests (`*.test.cjs`) |
@@ -287,29 +287,30 @@ without a build step or an asynchronous JSON request. Keep one record per app:
 
 - `key` identifies the catalogue record; `name` makes it easy to find and review.
 - `variants` pairs verified Tizen `appId` and Samsung `storeId` values. Keep IDs as
-  strings. Add variants for known identifiers; do not guess IDs for untested apps.
+  strings. Each store variant requires both fields. Add variants from TV captures
+  or primary project/store metadata; do not guess missing IDs. Keep records sorted by key.
+- `sideloaded: true` marks the explicit TizenBrew exception, which has an app ID
+  and no store ID.
 - `preloaded: true` marks native apps whose discovery and Home watcher use the
   Samsung store ID. Existing Netflix and Prime Video mappings are kept here.
-- `fallback` holds optional background, logo, label and colour settings. A logo
-  pairs its Simple Icons `slug` with a pinned source `version`; use `null` for no
-  logo. A `null` label keeps an existing logo-only card.
-- `legacy.artworkNames` retains exact name matches; `legacy.brandPrefixes` retains
-  prefix matches. These are compatibility fallbacks while more IDs are verified.
+- `legacy.artworkNames` retains exact name matches while more IDs are verified.
 
-Both artwork and fallback branding check verified IDs first. TV-provided store IDs
-and cache paths still take precedence over catalogue artwork mappings. Apps without
-a match keep their own icon and name on the generated default background. Image
-files and cache paths do not need to be added to the catalogue.
+Artwork checks verified IDs first. TV-provided store IDs and cache paths take
+precedence over catalogue mappings. The installed app icon is the final image
+candidate, including for apps outside the catalogue. No app artwork is bundled.
 
-To add or update a fallback logo, edit its catalogue entry and run
-`python3 tools/fetch_logos.py`. The generator reads the catalogue and writes
-`launcher/js/logos.js`; do not edit the generated SVG paths. Keep the catalogue
-object valid JSON inside its script wrapper so both Python and the launcher can
-read it. Some logos require an older source version because newer Simple Icons
-releases removed them.
+Home, Settings and Continue Watching badges show the app name on a neutral,
+theme-based tile until artwork loads. Failed or missing images keep that same
+placeholder. Per-app colours, generated gradients and bundled fallback logos are
+not part of the production catalogue. The old branding data is a frozen test fixture.
+If Samsung artwork is unavailable, the installed package icon appears smaller
+with the app name beneath it. This layout follows the loaded image source and
+does not depend on an app-specific list or focus.
+Keep the catalogue object valid JSON inside its script wrapper so Python and the
+launcher can read it. Image files and cache paths do not belong in this catalogue.
 
-Run `npm test` and `npm run lint`. Catalogue tests check unique IDs, valid logo
-references, legacy matching and the preloaded IDs sent to the Home watcher.
+Run `npm test` and `npm run lint`. Catalogue tests check complete identity pairs,
+unique IDs, the original app set, artwork aliases and preloaded watcher mappings.
 
 ## Pull requests
 

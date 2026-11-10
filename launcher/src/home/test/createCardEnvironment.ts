@@ -42,14 +42,7 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     runtime: runtime as HomeEnvironment["runtime"],
     describe: (app: InstalledApp): AppPresentation => ({
       artwork: [],
-      background: "black",
-      label: app.name,
-      largeLogo: false,
-      logoColour: "white",
-      logoPath: null,
-      textColour: "white",
       title: app.name,
-      useAppIcon: true,
       ...presentation,
     }),
   };

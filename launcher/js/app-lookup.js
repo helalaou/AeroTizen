@@ -7,7 +7,7 @@
     preloaded = Object.create(null);
   catalog.apps.forEach(function (entry) {
     entry.variants.forEach(function (variant) {
-      var match = { entry: entry, storeId: variant.storeId || null };
+      var match = { storeId: variant.storeId || null };
       if (variant.appId) {
         byId[variant.appId] = match;
       }
@@ -20,22 +20,17 @@
     });
   });
 
-  function find(app, purpose) {
+  function find(app) {
     if (byId[app.id]) {
       return byId[app.id];
     }
-    var name = (app.name || "").toLowerCase();
-    if (purpose === "artwork") {
-      name = name.replace(/ - .*/, "").trim();
-    }
-    var field = purpose === "artwork" ? "artworkNames" : "brandPrefixes";
+    var name = (app.name || "").toLowerCase().replace(/ - .*/, "").trim();
     for (var i = 0; i < catalog.apps.length; i++) {
       var entry = catalog.apps[i],
-        names = (entry.legacy && entry.legacy[field]) || [];
+        names = (entry.legacy && entry.legacy.artworkNames) || [];
       for (var j = 0; j < names.length; j++) {
-        if (purpose === "artwork" ? name === names[j] : name.indexOf(names[j]) === 0) {
+        if (name === names[j]) {
           return {
-            entry: entry,
             storeId: entry.variants.length ? entry.variants[0].storeId || null : null,
           };
         }
@@ -45,12 +40,8 @@
   }
 
   catalog.artworkStoreId = function (app) {
-    var match = find(app, "artwork");
+    var match = find(app);
     return match ? match.storeId : null;
-  };
-  catalog.brand = function (app) {
-    var match = find(app, "brand");
-    return match ? match.entry.fallback || null : null;
   };
   catalog.storeId = function (appId) {
     return byId[appId] ? byId[appId].storeId : null;

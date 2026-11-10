@@ -14,7 +14,6 @@ export const HomeAppCard = ({
   registered,
   children,
   className = "",
-  background,
 }: {
   env: HomeEnvironment;
   id: string;
@@ -22,7 +21,6 @@ export const HomeAppCard = ({
   registered: boolean;
   children: ComponentChildren;
   className?: string;
-  background?: string;
 }) => {
   const isMoving = useStoreSelector(env.state, (state) => state.moving === id);
   return (
@@ -34,7 +32,6 @@ export const HomeAppCard = ({
       registered={registered}
       className={styles.card + " " + className}
       title={title}
-      style={background ? { "--app-background": background } : undefined}
     >
       {children}
       {isMoving ? <ReorderControls env={env} id={id} /> : null}

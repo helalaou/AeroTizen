@@ -65,3 +65,8 @@ neither standalone provider script enters the TV package.
 comparison page loads it explicitly. Handoff tests run the frozen script and typed
 adapter through the same routing, watcher, launch and focus checks. Production creates
 the typed adapter in app composition; its lifecycle tests also cover permanent disposal.
+
+The original `app-catalog.js`, `app-lookup.js`, `brands.js`, `artwork.js` and generated
+`logos.js` are frozen here for the branded comparison renderer. They are not maintained
+as production fallbacks. The active catalogue contains identity/artwork mappings only;
+production placeholders show the app name on a neutral theme surface.

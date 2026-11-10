@@ -1,0 +1,55 @@
+.content {
+  --app-icon-gap: 10px;
+  --app-icon-padding: 12px;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.home {
+  --app-icon-size: calc(var(--app-card-size) * 0.36);
+  --app-icon-gap: calc(var(--app-card-size) * 0.05);
+  --app-icon-padding: calc(var(--app-card-size) * 0.07);
+}
+
+.favourite,
+.source {
+  --app-icon-size: 56px;
+}
+
+.badge {
+  --app-icon-size: 14px;
+  --app-icon-gap: 2px;
+  --app-icon-padding: 1px;
+}
+
+.compact {
+  padding: var(--app-icon-padding);
+}
+
+.image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+}
+
+.icon {
+  position: static;
+  flex: 0 0 auto;
+  width: var(--app-icon-size);
+  height: var(--app-icon-size);
+  margin-bottom: var(--app-icon-gap);
+}

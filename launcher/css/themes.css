@@ -119,6 +119,7 @@ body {
   --input-focus-status-border: rgba(255, 255, 255, 0.55);
   --input-focus-status-surface: rgba(15, 21, 30, 0.44);
   --continue-surface: var(--card);
+  --app-placeholder-surface: var(--continue-surface);
   --continue-shadow: none;
   --continue-focus-shadow: var(--home-card-focus-shadow);
   --continue-artwork-surface: #101014;
