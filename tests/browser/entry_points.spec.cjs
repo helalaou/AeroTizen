@@ -138,11 +138,26 @@ test.describe("automatic development preview", () => {
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
     await page.goto("http://127.0.0.1:8172/");
     await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
+    const grid = page.locator("#grid");
+    const apps = grid.locator("> [data-id]");
+    const cards = page.locator("#continue-items > [data-key]");
+    await expect(page.locator("body")).toHaveClass(/\bglass-ui\b/);
+    await expect(grid).toHaveAttribute("data-columns", "5");
+    await expect(grid).toHaveAttribute("data-scroll", "true");
+    await expect(apps).toHaveCount(6);
+    await expect(apps.nth(4)).toHaveAccessibleName("Apple TV");
+    await expect(apps.last()).toHaveAccessibleName("Stremio");
     await expect(page.locator("#continue-section")).toBeVisible();
-    await expect(page.locator("#continue-items > [data-key]")).toHaveCount(5);
+    await expect(cards).toHaveCount(7);
     await expect(
       page.locator("[data-continue-part=source-badge] :is([data-app-artwork], [data-app-fallback]):visible"),
-    ).toHaveCount(5);
+    ).toHaveCount(7);
+    await page.locator("#home-tab").click();
+    await page.keyboard.press("ArrowDown");
+    await expect(apps.first()).toBeFocused();
+    for (let index = 0; index < 5; index++) await page.keyboard.press("ArrowRight");
+    await expect(apps.last()).toBeFocused();
+    await expect.poll(async () => Number(await grid.getAttribute("data-offset"))).toBeGreaterThan(0);
     for (const glass of [false, true]) {
       await page.evaluate((glass) => AeroTizen.settings.update({ glassSettings: glass }), glass);
       await page.waitForFunction((glass) => document.body.classList.contains("glass-ui") === glass, glass);
@@ -154,7 +169,7 @@ test.describe("automatic development preview", () => {
         await expect(badge).toHaveCSS("background", fill);
       }
     }
-    await expect(page.locator("[data-continue-part=progress-fill]")).toHaveCount(4);
+    await expect(page.locator("[data-continue-part=progress-fill]")).toHaveCount(6);
     const unplayed = page.getByRole("button", { name: "Paper Moons · Prime Video" });
     await expect(unplayed.locator("[data-continue-part=progress-fill]")).toHaveCount(0);
     const labelBackground = await unplayed
@@ -167,10 +182,8 @@ test.describe("automatic development preview", () => {
     expect(await longTitle.evaluate((node) => node.clientHeight === 60 && node.scrollHeight > node.clientHeight)).toBe(
       true,
     );
-    const heights = await page
-      .locator("#continue-items > [data-key]")
-      .evaluateAll((cards) => cards.map((card) => card.offsetHeight));
-    expect(heights).toEqual(Array(5).fill(318));
+    const heights = await cards.evaluateAll((nodes) => nodes.map((card) => card.offsetHeight));
+    expect(heights).toEqual(Array(7).fill(318));
     await expect(page.locator("[data-continue-part=image]").first()).toHaveJSProperty("complete", true);
     expect(
       await page
@@ -181,7 +194,7 @@ test.describe("automatic development preview", () => {
     await page.evaluate(() => AeroTizen.settings.update({ timeFormat: "24" }));
     const saved = await page.evaluate(() => localStorage.getItem(AeroTizen.config.STORAGE_KEY));
     await page.goto("http://127.0.0.1:8172/?demo=1");
-    await expect(page.locator("#continue-items > [data-key]")).toHaveCount(5);
+    await expect(cards).toHaveCount(7);
     expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().timeFormat)).toBe("24");
     expect(await page.evaluate(() => localStorage.getItem(AeroTizen.config.STORAGE_KEY))).toBe(saved);
   });

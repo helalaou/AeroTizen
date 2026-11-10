@@ -28,6 +28,15 @@ for (const [build, origin] of [
           overrides: typeof AeroTizen.platforms,
         })),
       ).toEqual({ apps: 0, inputs: 0, feed: 0, overrides: "undefined" });
+      const { glassSettings, homeCardColumns, homeAppLayout, continueWatching } = await page.evaluate(() =>
+        AeroTizen.settings.getSnapshot(),
+      );
+      expect({ glassSettings, homeCardColumns, homeAppLayout, continueWatching }).toEqual({
+        glassSettings: false,
+        homeCardColumns: 3,
+        homeAppLayout: "grid",
+        continueWatching: false,
+      });
       await expect(page.locator("#gear")).toBeVisible();
       await expect(page.locator("vite-error-overlay")).toHaveCount(0);
     }
@@ -42,6 +51,8 @@ test("local preview keeps existing ordinary settings ahead of old demo settings"
       JSON.stringify({
         timeFormat: "24",
         glassSettings: false,
+        homeCardColumns: 4,
+        homeAppLayout: "grid",
         home: [],
         homeInitialized: true,
         continueWatching: false,
@@ -59,6 +70,8 @@ test("local preview keeps existing ordinary settings ahead of old demo settings"
       home: AeroTizen.settings.getSnapshot().home,
     })),
   ).toEqual({ key: "aerotizen.settings.v1", format: "24", glass: false, home: [] });
+  await expect(page.locator("#grid")).toHaveAttribute("data-columns", "4");
+  await expect(page.locator("#grid")).toHaveAttribute("data-scroll", "false");
   await expect(page.locator("#continue-section")).toBeHidden();
 });
 
@@ -70,7 +83,7 @@ test("local preview carries over old demo preferences when ordinary settings do 
   await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().timeFormat)).toBe("24");
   expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().glassSettings)).toBe(false);
-  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(5);
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(7);
   expect(await page.evaluate(() => localStorage.getItem("aerotizen.settings.v1"))).not.toBeNull();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("aerotizen.settings.v1.demo")).timeFormat)).toBe(
     "24",
@@ -89,7 +102,7 @@ test("local preview still opens when browser storage is blocked", async ({ page 
     };
   });
   await page.goto("http://127.0.0.1:8172/");
-  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(5);
+  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(7);
   await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   expect(await page.evaluate(() => AeroTizen.apps.getSnapshot().all.length)).toBe(25);
   expect(errors).toEqual([]);
