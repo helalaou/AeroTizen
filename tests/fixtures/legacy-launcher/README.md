@@ -54,4 +54,9 @@ handoff, playback presentation and lifecycle checks exercise the TypeScript owne
 `js/samsung-continue.js` is the unchanged final standalone Samsung provider. Provider
 parity tests compare its discovery, requests and native payloads with the typed factory.
 The comparison page retains its older self-contained Continue Watching runtime.
-Production composition injects the typed provider after the remaining Stremio adapter.
+Production composition injects the typed Samsung provider after the typed Stremio provider.
+
+`js/stremio-continue.js` is the unchanged final standalone Stremio provider. Protocol
+tests compare it with the typed factory, including credential preparation, root gates,
+bounded feeds, artwork and cancellation. Production creates both providers directly;
+neither standalone provider script enters the TV package.

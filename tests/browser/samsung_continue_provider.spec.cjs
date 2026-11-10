@@ -68,8 +68,7 @@ for (const [build, url] of [
     const card = page.locator("#continue-items > [data-key]");
     await expect(card).toHaveText(/Provider test episode/);
     expect(requests).toHaveLength(1);
-    expect(await page.evaluate(() => AeroTizen.continueWatchingProviders.length)).toBe(1);
-    expect(await page.evaluate(() => typeof AeroTizen.continueWatchingProviders[0].check)).toBe("function");
+    expect(await page.evaluate(() => "continueWatchingProviders" in AeroTizen)).toBe(false);
     await page.evaluate(() => {
       window.savedFeedCard = document.querySelector("#continue-items > [data-key]");
       window.savedFeedItems = AeroTizen.continueWatching.getSnapshot().items;

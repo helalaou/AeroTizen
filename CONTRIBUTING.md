@@ -115,6 +115,10 @@ keep their compatibility rules. Use named option objects and static lookup maps 
 presentation data. Keep view snapshots read-only; make new arrays or objects when
 changing preferences. Mutable timers, DOM registries and private layout buffers have
 explicit owners.
+Across the repository, name protocol values, limits, durations and identifiers as constants.
+Prefer pure functions for validation and transformations, with I/O and mutable state in
+explicit owners. Reuse shared rules where useful, without combining unrelated behavior.
+These rules are recorded in [AGENTS.md](AGENTS.md) for future changes.
 Shared contracts, services, platform adapters and shared utilities cannot import
 screens or app composition; ESLint enforces this dependency rule.
 
@@ -190,8 +194,8 @@ native source objects private. Hot reload retains one service and its device lis
 The app service owns immutable inventory and cached labels. Home, Settings and Continue
 Watching share its snapshot directly. Tizen discovery and launch handoffs stay in the
 app platform adapter. The service survives hot reload and rejects replies after disposal.
-Composition creates the typed Samsung feed provider with Continue Watching and injects
-the remaining legacy Stremio provider first. Feed cancellation and permanent disposal are
+Composition creates both typed feed providers with Continue Watching and injects
+Stremio first. Feed cancellation and permanent disposal are
 separate: hiding the launcher during a valid app handoff must not suppress the launch.
 Clock, weather and network services publish immutable snapshots. Views read these
 services directly. The weather service subscribes to the shared clock for cache expiry checks.

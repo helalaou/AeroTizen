@@ -205,8 +205,8 @@ copying them. Unchanged records retain their identity, including while status ch
 feed refreshes do not reload card artwork. Normalization validates provider records, retains
 zero-progress episodes and sorts by viewing activity, with a maximum of thirty visible items.
 
-App composition creates the typed Samsung provider when it creates the feed service.
-The remaining legacy Stremio adapter registers before the bundle loads and is injected first.
+App composition creates both typed providers when it creates the feed service, with
+Stremio first. Providers do not register on a global array.
 They retain discovery, transport, request cancellation and native launch commands. The first
 provider to claim an app keeps it, including while its readiness check is pending. The service
 receives these adapters, preferences, app inventory, the shared clock, visibility, wall time,
@@ -228,6 +228,16 @@ Hot reload retains the feed service and its provider. Cancelling feed requests d
 valid native handoff does not cancel that launch. Permanent service disposal also disposes
 the Samsung provider, aborts transport and suppresses late handoff and failure callbacks.
 The standalone Samsung script remains an unchanged comparison fixture outside TV packages.
+
+`platform/tizen/createStremioContinueWatchingProvider.ts` owns the optional authenticated
+root-reader connection. Named constants retain the protocol identities, credential path,
+deadlines and response limits. Pure helpers validate protocol data and add landscape artwork
+without changing input records. Credentials stay private to the provider; streams are closed
+even after cancellation or timeout. Capability checks still gate selection, and item reads
+require that check to succeed. Missing or stale credentials can be prepared once per check.
+The existing app service opens Stremio normally. Feed cancellation clears credentials and
+aborts reads; permanent disposal also blocks future work. The standalone script is a frozen
+comparison fixture, excluded from TV packages.
 
 ## DOM and style ownership
 
