@@ -16,7 +16,15 @@ The existing `home probe`, `status`, `backup`, `apply` and `restore` routes are
 unchanged. On the reported TU8079 / Tizen 5.5, both standalone launchers exited 0
 without console startup evidence. The file-marker version also observed no
 startup marker with `dotnet-launcher-inhouse`. The app-context mode below has not
-yet been tested on that TV.
+yet been tested on that TV. On dosolly's GU65TU7179UXZG, the standard
+`dotnet-launcher --app-context` test wrote the startup marker, but no console
+results or completion marker were received. This confirms managed startup;
+it does not distinguish a later failure from lost console output.
+
+The next test is limited to that TU7179 and the same standard launcher with
+`--app-context`. The updated probe also saves its results and progress to a
+private temporary file, independent of console output. Native Home support
+remains unverified.
 
 The SDK transport starts as UID 901. The diagnostic reports its actual UID/GID,
 runtime description, process bitness, Linux capability masks, `NoNewPrivs`, and
@@ -39,9 +47,14 @@ lists, account data and signing material are excluded from the report.
 The command uploads one temporary script, a DLL and its runtime configuration to
 the standard SDK tools folder. The script prepares a temporary startup marker
 that the helper updates as soon as it enters `Main()`. The script reads the
-marker separately from the console and removes it with the other staged files.
-A TV-side watchdog attempts to terminate the
-launcher after 12 seconds, then attempts a forced stop two seconds later. The
+marker separately from the console. It also creates an empty private report
+file. The helper flushes each result and a checkpoint before each operation to
+that file, and records its own return code. Console errors do not stop the checks.
+The script reads at most 16 KiB of this file and removes both files with the
+other staged files. Settings values, argument contents and exception messages
+are not recorded. An incomplete final record is discarded after a forced stop.
+A TV-side watchdog attempts to terminate the launcher after 12 seconds, then
+attempts a forced stop two seconds later. The
 report is saved only after the transport confirms staging cleanup. If the launcher
 changes identity so it cannot be stopped, or the connection fails, the transport
 can time out and cleanup is unconfirmed. Stop and share the short error; do not
@@ -65,6 +78,17 @@ The output's parent folder must already exist. Review the report before sharing.
   or the console shows startup.
 - `launcher.errors` contains recognised error categories. An empty list can also
   mean the launcher emitted no matching message or its log was unavailable.
+- `execution.report_source`: `file` uses the flushed file results; `console` uses
+  console results when no file results arrived; `null` means neither arrived.
+  Partial file results are never combined with console results to claim completion.
+- `execution.last_stage` is the last checkpoint before an operation, or `complete`
+  after the checks. A missing result for that stage helps locate where progress
+  stopped. It does not identify the cause by itself.
+- `execution.argument_count` records only the count, never argument contents.
+- `execution.managed_exit_code` is the helper's return code, separate from the
+  launcher's exit code. `execution.error_category` is a fixed safe category for
+  a caught managed failure or unexpected arguments. Native crashes and forced
+  termination can leave only the preceding checkpoint.
 - `launcher.app_context_requested` records whether `--app-context` was selected.
   It describes the requested environment, not proof that Samsung accepted it or
   that managed code started. Use the startup and getter results for that evidence.
@@ -101,16 +125,17 @@ establishes compatibility or getter access on the issue #84 device.
 
 CleanFrame's separate [2020 Frame helper instructions](https://github.com/nthnclrk/CleanFrame/blob/main/scripts/native-home/frame-2020/README.md)
 set `APP_ID` to the installed launcher when invoking `dotnet-launcher --standalone`.
-This is a possible difference to test on the TU8079, not a confirmed fix. Its
-firmware and owner-supplied transport differ from the issue #84 TVs.
+This led to observed managed startup on dosolly's TU7179, but no getter results
+have been received. CleanFrame's firmware and owner-supplied transport differ
+from the issue #84 TVs.
 
 After reviewing the previous report, run the same selected launcher with an
 explicit AeroTizen context and a new output path:
 
 ```sh
 aerotizen --tv TV_IP home diagnose-runtime \
-  --launcher dotnet-launcher-inhouse --app-context \
-  --output home-runtime-inhouse-context.json
+  --launcher dotnet-launcher --app-context \
+  --output home-runtime-tu7179-file-report.json
 ```
 
 This mode first checks the installed-app list for `DclHome001.Home`. If it cannot
@@ -139,6 +164,8 @@ python tools/build_home_runtime_probe.py --check
 
 The existing Python test suite rebuilds and compares the committed payload when
 SDK 6.0.428 is available (as configured in CI). Local fake-TV tests cover success,
-startup failure, missing executables, timeout, altered payloads, output redaction,
-file publication and confirmed staging cleanup. They do not replace a physical TV
+startup failure, missing executables, timeout, altered payloads, hidden console
+output, partial file results, report symlinks, output redaction, file publication
+and confirmed staging cleanup. Compiled host checks also cover a hidden or closed
+console and unexpected arguments. They do not replace a physical TV
 test. Full older-TV Home support remains separate work.

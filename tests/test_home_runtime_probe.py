@@ -42,6 +42,14 @@ def managed_output(**changes):
     )
 
 
+def file_output(**changes):
+    return (
+        managed_output(argument_count="0", managed_exit_code="0", **changes)
+        .split("\n", 1)[1]
+        .replace(probe.PREFIX, probe.FILE_PREFIX)
+    )
+
+
 def result(stdout=None, exit_code=0, staging_cleaned=True):
     return {
         "stdout": managed_output() if stdout is None else stdout,
@@ -97,6 +105,53 @@ def test_runtime_and_identity_output_cannot_export_private_data():
     assert report["launcher"]["errors"] == ["assembly_load_failed"]
 
 
+def test_file_results_complete_without_console_and_do_not_duplicate_console_fields():
+    for console in ("", managed_output().split("\n", 1)[1]):
+        report = parse(result("AEROTIZEN_RUNTIME_LAUNCHER=available\n" + console + file_output()))
+        assert report["execution"]["state"] == "completed"
+        assert report["execution"]["report_source"] == "file"
+        assert report["execution"]["managed_exit_code"] == 0
+        assert report["getters"]["main_operation"] == {"status": "ok", "code": 0}
+
+
+def test_partial_file_is_not_combined_with_console_to_claim_completion():
+    partial = (
+        probe.FILE_PREFIX
+        + "started\t1\n"
+        + probe.FILE_PREFIX
+        + "stage\truntime\n"
+        + probe.FILE_PREFIX
+        + "error_category\ttype_load_failed\n"
+        + probe.FILE_PREFIX
+        + "managed_exit_code\t1\n"
+    )
+    report = parse(result(managed_output() + partial))
+    execution = report["execution"]
+    assert execution["state"] == "failed"
+    assert execution["managed_started"] is True and execution["managed_completed"] is False
+    assert execution["last_stage"] == "runtime"
+    assert execution["error_category"] == "type_load_failed"
+    assert execution["managed_exit_code"] == 1
+    assert execution["runtime"] is None
+    assert all(value is None for value in report["getters"].values())
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("stage", "private-path"),
+        ("error_category", "private-message"),
+        ("argument_count", "secret"),
+        ("managed_exit_code", "256"),
+        ("device_id", "secret"),
+    ],
+)
+def test_file_metadata_is_allowlisted(field, value):
+    output = "AEROTIZEN_RUNTIME_LAUNCHER=available\n" + probe.FILE_PREFIX + field + "\t" + value + "\n"
+    with pytest.raises(DeviceSessionError, match="invalid report"):
+        parse(result(output))
+
+
 @pytest.mark.parametrize("alteration", ["cleanup", "duplicate", "unknown", "incomplete", "status", "exit"])
 def test_invalid_reports_are_refused(alteration):
     value = result()
@@ -142,7 +197,20 @@ def test_shipped_payload_is_net30_and_matches_getter_only_source():
 
 
 @pytest.mark.parametrize(
-    "mode", ["success", "marker_only", "failure", "missing", "timeout", "ignore_term", "tamper"]
+    "mode",
+    [
+        "success",
+        "file_only",
+        "partial_file",
+        "partial_record",
+        "marker_only",
+        "failure",
+        "missing",
+        "timeout",
+        "ignore_term",
+        "tamper",
+        "report_symlink",
+    ],
 )
 @pytest.mark.parametrize("app_context", [False, True])
 def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_path, mode, app_context):
@@ -158,6 +226,29 @@ def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_
         "ignore_term": "trap '' TERM\nwhile :; do :; done\n",
         "timeout": "while :; do :; done\n",
         "marker_only": marker_only,
+        "file_only": 'printf 1 > "$2.started"\nprintf %s ' + shlex.quote(file_output()) + ' > "$2.report"\n',
+        "partial_file": (
+            'printf 1 > "$2.started"\nprintf %s '
+            + shlex.quote(
+                probe.FILE_PREFIX + "started\t1\n" + probe.FILE_PREFIX + "stage\tgetter.main_operation\n"
+            )
+            + ' > "$2.report"\nexit 139\n'
+        ),
+        "partial_record": (
+            'printf 1 > "$2.started"\nprintf %s '
+            + shlex.quote(
+                probe.FILE_PREFIX
+                + "started\t1\n"
+                + probe.FILE_PREFIX
+                + "stage\truntime\n"
+                + probe.FILE_PREFIX
+                + "runtime\t.NET Core 3."
+            )
+            + ' > "$2.report"\nexit 137\n'
+        ),
+        "report_symlink": (
+            'rm "$2.report"\nln -s ' + shlex.quote(str(tmp_path / "private-report")) + ' "$2.report"\n'
+        ),
         "failure": "exit 9\n",
     }.get(mode, "printf '%s\\n' " + shlex.quote(managed_output().split("\n", 1)[1]))
     context_check = (
@@ -165,6 +256,8 @@ def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_
     )
     executable.write_text("#!/bin/bash\n" + context_check + " || exit 21\n" + body)
     executable.chmod(0o600 if mode == "missing" else 0o700)
+    if mode == "report_symlink":
+        (tmp_path / "private-report").write_text(file_output())
     uploads = []
 
     class Session:
@@ -214,6 +307,10 @@ def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_
         report["execution"]["state"]
         == {
             "success": "completed",
+            "file_only": "completed",
+            "partial_file": "failed",
+            "partial_record": "failed",
+            "report_symlink": "failed",
             "marker_only": "failed",
             "failure": "failed",
             "missing": "missing_launcher",
@@ -223,6 +320,21 @@ def test_fake_tv_execution_checks_payload_bounds_runtime_and_cleans_staging(tmp_
         }[mode]
     )
     assert report["transport"]["staging_cleaned"]
+    if mode == "file_only":
+        assert report["execution"]["report_source"] == "file"
+        assert report["execution"]["managed_completed"] is True
+        assert report["execution"]["argument_count"] == 0
+    elif mode == "partial_file":
+        assert report["execution"]["last_stage"] == "getter.main_operation"
+        assert report["execution"]["exit_code"] == 139
+        assert report["execution"]["managed_completed"] is False
+    elif mode == "partial_record":
+        assert report["execution"]["last_stage"] == "runtime"
+        assert report["execution"]["runtime"] is None
+        assert report["execution"]["managed_started"] is True
+    elif mode == "report_symlink":
+        assert report["execution"]["report_source"] is None
+        assert (tmp_path / "private-report").read_text() == file_output()
     if mode == "marker_only":
         assert report["execution"]["managed_started"] is True
         assert report["execution"]["managed_completed"] is False
@@ -345,7 +457,8 @@ def test_output_publication_still_refuses_races(tmp_path):
     assert destination.read_text() == "keep"
 
 
-def test_compiled_probe_runs_on_host_and_skips_native_checks(tmp_path):
+@pytest.mark.parametrize("console_mode", ["normal", "hidden", "closed", "unexpected_arguments"])
+def test_compiled_probe_runs_on_host_and_skips_native_checks(tmp_path, console_mode):
     dotnet = os.environ.get("AEROTIZEN_DOTNET") or shutil.which("dotnet")
     if not dotnet:
         pytest.skip("Install .NET 6 to run the compiled diagnostic outside Tizen")
@@ -353,13 +466,36 @@ def test_compiled_probe_runs_on_host_and_skips_native_checks(tmp_path):
         (tmp_path / name).write_bytes(data)
     marker = tmp_path / (probe.FILES[0] + ".started")
     marker.write_bytes(b"0\n")
+    saved_report = tmp_path / (probe.FILES[0] + ".report")
+    saved_report.touch(mode=0o600)
+    command = [dotnet, str(tmp_path / probe.FILES[0])]
+    if console_mode == "unexpected_arguments":
+        command.append("private-argument-must-not-be-exported")
+    if console_mode == "closed":
+        command = ["/bin/bash", "-c", 'exec "$@" 1>&- 2>&-', "probe", *command]
     process = subprocess.run(
-        [dotnet, str(tmp_path / probe.FILES[0])], capture_output=True, text=True, timeout=15
+        command,
+        stdout=subprocess.PIPE if console_mode in ("normal", "unexpected_arguments") else subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=15,
     )
-    assert process.returncode == 0, process.stderr
+    assert process.returncode == (2 if console_mode == "unexpected_arguments" else 0), process.stderr
     assert marker.read_bytes() == b"1\n"
-    report = parse(result("AEROTIZEN_RUNTIME_LAUNCHER=available\n" + process.stdout))
+    report = parse(
+        result("AEROTIZEN_RUNTIME_LAUNCHER=available\n" + (process.stdout or "") + saved_report.read_text())
+    )
+    assert report["execution"]["report_source"] == "file"
+    if console_mode == "unexpected_arguments":
+        assert report["execution"]["state"] == "failed"
+        assert report["execution"]["last_stage"] == "arguments"
+        assert report["execution"]["argument_count"] == 1
+        assert report["execution"]["managed_exit_code"] == 2
+        assert report["execution"]["error_category"] == "unexpected_arguments"
+        assert "private-argument" not in saved_report.read_text() + json.dumps(report)
+        return
     assert report["execution"]["state"] == "completed"
+    assert report["execution"]["last_stage"] == "complete"
     assert report["execution"]["runtime"] is not None
     assert all(check["status"] == "skipped" for check in report["getters"].values())
 

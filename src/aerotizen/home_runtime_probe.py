@@ -12,6 +12,7 @@ from aerotizen.sdb import SdbError
 PAYLOAD_PATH = Path(__file__).parent / "helpers/home-runtime-probe.json"
 FILES = ("AeroTizenRuntimeProbe.dll", "AeroTizenRuntimeProbe.runtimeconfig.json")
 PREFIX = "AEROTIZEN_HOME_RUNTIME\t"
+FILE_PREFIX = "AEROTIZEN_HOME_RUNTIME_FILE\t"
 LIBRARIES = (
     "libvconf.so.0",
     "libcapi-appfw-app-operation-tv.so.0",
@@ -28,6 +29,29 @@ CAPABILITIES = ("CapInh", "CapPrm", "CapEff", "CapBnd", "CapAmb")
 CHECKS = (*("library." + name for name in LIBRARIES), *("getter." + name for name in GETTERS))
 STATUSES = {"ok", "absent", "unavailable", "missing_library", "missing_symbol", "skipped", "error"}
 STARTUP_MARKER_PREFIX = "AEROTIZEN_RUNTIME_STARTUP_MARKER="
+STAGES = {
+    "arguments",
+    "runtime",
+    "bitness",
+    "identity.uid",
+    "identity.gid",
+    "identity.capabilities",
+    "identity.label",
+    "platform",
+    "native_guard",
+    *CHECKS,
+    "complete",
+}
+ERROR_CATEGORIES = {
+    "missing_library",
+    "missing_symbol",
+    "type_load_failed",
+    "missing_method",
+    "access_denied",
+    "io_error",
+    "managed_exception",
+    "unexpected_arguments",
+}
 
 
 def load_helper():
@@ -49,7 +73,9 @@ def parse_output(result, capabilities, launcher, *, app_context=False):
         code = result["exit_code"]
         if type(code) is not int or not 0 <= code <= 255 or launcher not in sdk.PROBE_LAUNCHERS:
             raise ValueError("Invalid execution")
-        fields, launchers, timeouts, markers = {}, [], [], []
+        channels = {"file": {}, "console": {}}
+        stages = {"file": [], "console": []}
+        launchers, timeouts, markers = [], [], []
         launcher_errors = set()
         allowed = {
             "started",
@@ -62,6 +88,9 @@ def parse_output(result, capabilities, launcher, *, app_context=False):
             "tizen",
             "security_label",
             "NoNewPrivs",
+            "argument_count",
+            "managed_exit_code",
+            "error_category",
             *CAPABILITIES,
             *CHECKS,
         }
@@ -76,11 +105,19 @@ def parse_output(result, capabilities, launcher, *, app_context=False):
                 category = line[len(sdk.RUNTIME_ERROR_PREFIX) :]
                 if category in sdk.RUNTIME_ERROR_PATTERNS:
                     launcher_errors.add(category)
-            elif line.startswith(PREFIX):
-                key, value = line[len(PREFIX) :].split("\t")
-                if key not in allowed or key in fields:
-                    raise ValueError("Unknown or repeated field")
-                fields[key] = value
+            elif line.startswith((PREFIX, FILE_PREFIX)):
+                channel, prefix = (
+                    ("file", FILE_PREFIX) if line.startswith(FILE_PREFIX) else ("console", PREFIX)
+                )
+                key, value = line[len(prefix) :].split("\t")
+                if key == "stage":
+                    if value not in STAGES or value in stages[channel]:
+                        raise ValueError("Unknown or repeated stage")
+                    stages[channel].append(value)
+                else:
+                    if key not in allowed or key in channels[channel]:
+                        raise ValueError("Unknown or repeated field")
+                    channels[channel][key] = value
             else:
                 message = line.lower()
                 launcher_errors.update(
@@ -88,6 +125,10 @@ def parse_output(result, capabilities, launcher, *, app_context=False):
                     for category, pattern in sdk.RUNTIME_ERROR_PATTERNS.items()
                     if re.search(pattern, message)
                 )
+        # A flushed file is authoritative. Never combine partial channels into a false completion.
+        source = "file" if channels["file"] or stages["file"] else "console"
+        fields = channels[source]
+        last_stage = stages[source][-1] if stages[source] else None
         if len(launchers) != 1 or launchers[0] not in ("available", "missing") or timeouts not in ([], ["1"]):
             raise ValueError("Invalid launcher result")
         available = launchers[0] == "available"
@@ -101,6 +142,22 @@ def parse_output(result, capabilities, launcher, *, app_context=False):
             raise ValueError("Incomplete managed report")
         if not available and (code != 127 or fields or timeouts):
             raise ValueError("Invalid missing launcher")
+        for key in ("argument_count", "managed_exit_code"):
+            if key in fields and (
+                not re.fullmatch(r"\d{1,10}", fields[key])
+                or int(fields[key]) > (255 if key == "managed_exit_code" else 4294967295)
+            ):
+                raise ValueError("Invalid managed execution metadata")
+        error_category = fields.get("error_category")
+        if error_category is not None and error_category not in ERROR_CATEGORIES:
+            raise ValueError("Unknown managed error category")
+        if complete and (
+            error_category is not None
+            or fields.get("managed_exit_code", "0") != "0"
+            or fields.get("argument_count", "0") != "0"
+            or (source == "file" and not {"argument_count", "managed_exit_code"} <= fields.keys())
+        ):
+            raise ValueError("Inconsistent managed completion")
         checks = {}
         for key in CHECKS:
             if key not in fields:
@@ -132,7 +189,7 @@ def parse_output(result, capabilities, launcher, *, app_context=False):
         elif code == 0 and complete:
             state = "completed"
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "probe": "home-dotnet30-execution",
             "cli_version": __version__,
             "collected_at": datetime.now(timezone.utc).isoformat(),
@@ -155,6 +212,11 @@ def parse_output(result, capabilities, launcher, *, app_context=False):
                 "managed_started": startup_marker == "written" or fields.get("started") == "1",
                 "startup_marker": startup_marker,
                 "managed_completed": complete,
+                "report_source": source if fields or last_stage else None,
+                "last_stage": last_stage,
+                "argument_count": number("argument_count"),
+                "managed_exit_code": number("managed_exit_code"),
+                "error_category": error_category,
                 "target_framework": "netcoreapp3.0",
                 "runtime": runtime,
                 "architecture_bits": number("bits", {32, 64}),

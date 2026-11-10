@@ -6,6 +6,9 @@ using System.Runtime.InteropServices;
 internal static class RuntimeProbe
 {
     private const string Prefix = "AEROTIZEN_HOME_RUNTIME\t";
+    private const string FilePrefix = "AEROTIZEN_HOME_RUNTIME_FILE\t";
+    private static StreamWriter Report;
+    private static bool ConsoleAvailable = true;
     private static readonly string[] Libraries = {
         "libvconf.so.0", "libcapi-appfw-app-operation-tv.so.0",
         "libcapi-appfw-app-manager.so.0", "libapp-context-manager-common.so"
@@ -28,9 +31,37 @@ internal static class RuntimeProbe
     [DllImport("libcapi-appfw-app-manager.so.0")]
     private static extern int app_info_destroy(IntPtr info);
 
-    private static void Emit(string key, object value) => Console.WriteLine(Prefix + key + "\t" + value);
+    private static void Emit(string key, object value)
+    {
+        // Persist first. Samsung's launcher can hide or close the console streams.
+        if (Report != null)
+        {
+            try { Report.WriteLine(FilePrefix + key + "\t" + value); }
+            catch (Exception) { Report = null; }
+        }
+        if (ConsoleAvailable)
+        {
+            try { Console.WriteLine(Prefix + key + "\t" + value); }
+            catch (Exception) { ConsoleAvailable = false; }
+        }
+    }
+
+    private static void Stage(string name) => Emit("stage", name);
+
+    private static string ErrorCategory(Exception error)
+    {
+        if (error is DllNotFoundException) return "missing_library";
+        if (error is EntryPointNotFoundException) return "missing_symbol";
+        if (error is TypeLoadException) return "type_load_failed";
+        if (error is MissingMethodException) return "missing_method";
+        if (error is UnauthorizedAccessException) return "access_denied";
+        if (error is IOException) return "io_error";
+        return "managed_exception";
+    }
+
     private static void Check(string key, Func<string> read)
     {
+        Stage(key);
         try { Emit(key, read()); }
         catch (DllNotFoundException) { Emit(key, "missing_library,-"); }
         catch (EntryPointNotFoundException) { Emit(key, "missing_symbol,-"); }
@@ -79,8 +110,12 @@ internal static class RuntimeProbe
 
     private static void Identity()
     {
-        try { Emit("uid", getuid()); Emit("gid", getgid()); }
+        try {
+            Stage("identity.uid"); Emit("uid", getuid());
+            Stage("identity.gid"); Emit("gid", getgid());
+        }
         catch (Exception) { Emit("identity", "unavailable"); }
+        Stage("identity.capabilities");
         try
         {
             foreach (string line in File.ReadAllLines("/proc/self/status"))
@@ -94,6 +129,7 @@ internal static class RuntimeProbe
             }
         }
         catch (Exception) { }
+        Stage("identity.label");
         try
         {
             string label = File.ReadAllText("/proc/self/attr/current").Trim();
@@ -113,17 +149,46 @@ internal static class RuntimeProbe
         }
         catch (IOException) { }
         catch (UnauthorizedAccessException) { }
+        StreamWriter report = null;
+        try
+        {
+            // The SDK script creates this private, empty file. Never create another path.
+            report = new StreamWriter(new FileStream(
+                typeof(RuntimeProbe).Assembly.Location + ".report", FileMode.Open, FileAccess.Write));
+            report.AutoFlush = true;
+            Report = report;
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+        int code;
+        try { code = Run(args); }
+        catch (Exception error) { Emit("error_category", ErrorCategory(error)); code = 1; }
+        Emit("managed_exit_code", code);
+        if (code == 0) Emit("complete", 1);
+        try { if (report != null) report.Dispose(); } catch (Exception) { }
+        Report = null;
+        return code;
+    }
+
+    private static int Run(string[] args)
+    {
         Emit("started", 1);
-        if (args.Length != 0) return 2;
+        Stage("arguments");
+        Emit("argument_count", args.Length);
+        if (args.Length != 0) { Emit("error_category", "unexpected_arguments"); return 2; }
+        Stage("runtime");
         Emit("runtime", RuntimeInformation.FrameworkDescription);
+        Stage("bitness");
         Emit("bits", IntPtr.Size * 8);
         Identity();
+        Stage("platform");
         bool tizen = false;
         try {
             foreach (string line in File.ReadAllLines("/etc/os-release"))
                 if (line == "ID=tizen" || line == "ID=\"tizen\"") tizen = true;
         } catch (Exception) { }
         Emit("tizen", tizen ? 1 : 0);
+        Stage("native_guard");
         bool allowed = false;
         try { allowed = tizen && IntPtr.Size == 4 && getuid() != 0; } catch (Exception) { }
         foreach (string library in Libraries)
@@ -139,7 +204,7 @@ internal static class RuntimeProbe
         Check("getter.auto_start", () => allowed ? ReadInteger() : "skipped,-");
         Check("getter.main_operation", () => allowed ? ReadString("http://tizen.org/appcontrol/operation/main", true) : "skipped,-");
         Check("getter.launcher_registration", () => allowed ? ReadInstallation() : "skipped,-");
-        Emit("complete", 1);
+        Stage("complete");
         return 0;
     }
 }

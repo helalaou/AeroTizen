@@ -148,6 +148,7 @@ def build_standalone_probe(files, entrypoint, launcher, callback, port, token, *
             f"{shlex.quote(_path(token, name))} | sha256sum -c - >/dev/null"
         )
     marker = entrypoint + ".started"
+    report = entrypoint + ".report"
     assembly_path = shlex.quote(_path(token, entrypoint))
     classify_log = "{ message = tolower($0); " + " ".join(
         f'if (message ~ /{pattern}/) errors["{category}"] = 1;'
@@ -158,6 +159,8 @@ def build_standalone_probe(files, entrypoint, launcher, callback, port, token, *
         [
             f"probe_marker={shlex.quote(_path(token, marker))}",
             '(set -C; printf "0\\n" > "$probe_marker")',
+            f"probe_report={shlex.quote(_path(token, report))}",
+            '(set -C; : > "$probe_report")',
             # Isolate this comparison from any APP_ID inherited by the SDK shell.
             "unset APP_ID",
             # Bound startup as well as getters. Retail TVs need not have `timeout`.
@@ -184,6 +187,15 @@ def build_standalone_probe(files, entrypoint, launcher, callback, port, token, *
             "    printf '\\nAEROTIZEN_RUNTIME_STARTUP_MARKER=not_observed\\n'",
             "  fi",
             "fi",
+            # Read flushed managed results independently of the launcher's console streams.
+            'if [ -f "$probe_report" ] && [ ! -L "$probe_report" ] && [ -r "$probe_report" ]; then',
+            '  printf "\\n"',
+            # A forced stop can leave a partial final record. Keep only complete lines.
+            '  head -c 16384 "$probe_report" | while IFS= read -r report_line; do',
+            '    printf "%s\\n" "$report_line"',
+            "  done",
+            '  printf "\\n"',
+            "fi",
             # Some Samsung launchers redirect stderr to a per-process log.
             'for log in /tmp/dotnet_error."$probe_pid".*.log; do',
             '  [ -f "$log" ] && [ ! -L "$log" ] && [ -r "$log" ] || continue',
@@ -195,7 +207,7 @@ def build_standalone_probe(files, entrypoint, launcher, callback, port, token, *
             'exit "$result"',
         ]
     )
-    return _build_script(files, "\n".join(lines), callback, port, token, scratch=(marker,))
+    return _build_script(files, "\n".join(lines), callback, port, token, scratch=(marker, report))
 
 
 def run_standalone_probe(session, files, entrypoint, launcher, *, app_context=False):
