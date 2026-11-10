@@ -47,7 +47,6 @@ const harness = () => {
   for (const name of [
     "applyBackground",
     "applyClock",
-    "applyInputs",
     "applyCardSize",
     "applySpeed",
     "openStore",
@@ -143,10 +142,10 @@ test("actions persist preferences and invoke only the relevant service", () => {
     ["setTempUnit", "F", "tempUnit", null],
     ["setDateFormat", "iso", "dateFormat", "applyClock"],
     ["setNetworkVisible", false, "showNetwork", null],
-    ["setLiveTvVisible", false, "showLiveTv", "applyInputs"],
+    ["setLiveTvVisible", false, "showLiveTv"],
     ["setHomeCardColumns", 5, "homeCardColumns", "applyCardSize"],
     ["setHomeAppLayout", "scroll", "homeAppLayout", "applyCardSize"],
-    ["setHdmiVisibility", true, "hideDisconnectedHdmi", "applyInputs"],
+    ["setHdmiVisibility", true, "hideDisconnectedHdmi"],
     ["setLocation", { name: "Example", latitude: 1, longitude: 2 }, "weatherLocation", null],
   ];
   for (const [action, value, key, service] of cases) {

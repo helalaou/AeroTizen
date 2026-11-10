@@ -37,7 +37,9 @@ for (const glassSettings of [false, true]) {
           playback: 75,
         },
       ];
-      AeroTizen.inputs.sources = [{ type: "HDMI", number: 1, connected: true }];
+      const inputSnapshot = AeroTizen.inputs.getSnapshot();
+      const sources = [{ type: "HDMI", number: 1, connected: true }];
+      AeroTizen.inputs.getSnapshot = () => ({ ...inputSnapshot, sources, visibleSources: sources });
       const next = { ...snapshot, items };
       AeroTizen.continueWatching.getSnapshot = () => next;
       AeroTizen.homeScreen.refreshApps();

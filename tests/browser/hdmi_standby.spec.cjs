@@ -22,7 +22,7 @@ test("Preact standby overrides persist without confusing custom labels with devi
       );
   });
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.inputs.sources.length === 4);
+  await page.waitForFunction(() => AeroTizen.inputs.getSnapshot().sources.length === 4);
   await expect(page.locator("#inputs")).toContainText("PC");
   await expect(page.locator("#inputs")).not.toContainText("Custom console label");
   await page.locator("#gear").click();
@@ -175,6 +175,10 @@ async function mockHdmi(page, { stage = "ready", hideDisconnected = false } = {}
           },
           addPropertyValueChangeListener(name, callback) {
             if (name === "VIDEOSOURCE") tv.changed = callback;
+            return 1;
+          },
+          removePropertyValueChangeListener() {
+            delete tv.changed;
           },
         },
         tvwindow: {
@@ -250,6 +254,7 @@ test("unplug during playback returns to usable Home", async ({ page }) => {
     window.inputTest.changed();
   });
   await expect(page.locator("body")).not.toHaveClass(/\btv\b/);
+  await expect(page.locator("#toast")).toHaveText("HDMI 1 disconnected");
   await expect(page.locator("#gear")).toBeVisible();
   await page.locator("#gear").click();
   await expect(page.locator("#editor")).toBeVisible();
@@ -259,9 +264,9 @@ for (const stage of ["setSource", "show"]) {
   test(`remote Back cancels pending ${stage} and ignores a late callback`, async ({ page }) => {
     await mockHdmi(page, { stage });
     await page.getByRole("button", { name: "HDMI 1", exact: true }).click();
-    await expect.poll(() => page.evaluate(() => AeroTizen.inputs.watching)).toBe(true);
+    await expect.poll(() => page.evaluate(() => AeroTizen.inputs.getSnapshot().playback !== "idle")).toBe(true);
     await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { keyCode: 10009, bubbles: true })));
-    await expect.poll(() => page.evaluate(() => AeroTizen.inputs.watching)).toBe(false);
+    await expect.poll(() => page.evaluate(() => AeroTizen.inputs.getSnapshot().playback !== "idle")).toBe(false);
     await page.evaluate(() => window.inputTest.complete());
     await expect(page.locator("body")).not.toHaveClass(/\btv\b/);
     await page.locator("#gear").click();
@@ -273,7 +278,7 @@ for (const stage of ["setSource", "show"]) {
     await mockHdmi(page, { stage });
     await page.getByRole("button", { name: "HDMI 1", exact: true }).click();
     await page.clock.fastForward(8100);
-    await expect.poll(() => page.evaluate(() => AeroTizen.inputs.watching)).toBe(false);
+    await expect.poll(() => page.evaluate(() => AeroTizen.inputs.getSnapshot().playback !== "idle")).toBe(false);
     await expect(page.locator("#toast")).toHaveText("Could not show HDMI 1");
     await page.locator("#gear").click();
     await expect(page.locator("#editor")).toBeVisible();

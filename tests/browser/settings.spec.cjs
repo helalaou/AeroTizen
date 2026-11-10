@@ -221,7 +221,9 @@ test("late TV inventory and hot-plug updates reach Settings without a preference
         },
         addPropertyValueChangeListener(name, listener) {
           tv.listeners[name] = listener;
+          return Object.keys(tv.listeners).length;
         },
+        removePropertyValueChangeListener() {},
       },
     };
   });

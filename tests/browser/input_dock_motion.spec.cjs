@@ -36,7 +36,8 @@ for (const [build, url] of [
       await expect(page).toHaveTitle("AeroTizen");
       await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await page.evaluate(() => {
-        AeroTizen.inputs.sources = [
+        const inputSnapshot = AeroTizen.inputs.getSnapshot();
+        const sources = [
           { type: "HDMI", number: 1, connected: false, active: true },
           { type: "HDMI", number: 2, connected: false },
           { type: "HDMI", number: 3, connected: false },
@@ -47,7 +48,8 @@ for (const [build, url] of [
         AeroTizen.inputs.isVisible = () => true;
         AeroTizen.inputs.hasRecognizedDevice = (source) => source.number === 2;
         AeroTizen.inputs.alwaysVisible = (source) => source.number === 3;
-        AeroTizen.inputs.refresh();
+        AeroTizen.inputs.getSnapshot = () => ({ ...inputSnapshot, sources, visibleSources: sources });
+        AeroTizen.homeScreen.render();
       });
       const cards = page.locator("#inputs > [data-input-card]");
       await expect(cards).toHaveCount(6);

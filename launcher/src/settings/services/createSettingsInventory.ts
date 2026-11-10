@@ -11,8 +11,9 @@ export const createSettingsInventory = (
   const read = (previous?: SettingsInventorySnapshot): SettingsInventorySnapshot => {
     const apps = runtime.apps.getSnapshot().all;
     const inputs = snapshotList<InputOption>(
-      runtime.inputs.sources
-        .filter((source) => source.type !== "TV")
+      runtime.inputs
+        .getSnapshot()
+        .sources.filter((source) => source.type !== "TV")
         .map((source) => ({
           port: runtime.inputs.portName(source),
           placeholder: source.editName,

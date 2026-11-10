@@ -41,7 +41,6 @@ export interface SettingsServices {
   applyBackground(): void;
   applyCardSize(): void;
   applyClock(): void;
-  applyInputs(): void;
   applySpeed(speed: number): void;
   backgrounds: readonly BackgroundOption[];
   backgroundWebGL: BackgroundGraphics;

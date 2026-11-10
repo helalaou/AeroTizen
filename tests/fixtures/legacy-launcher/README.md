@@ -10,7 +10,7 @@ and assets from the current launcher. Its styles are frozen in this directory's
 render independent of active CSS, including the old clock selectors. Its old view
 scripts also load explicitly from this directory. Serve the repository root and open
 `/tests/fixtures/legacy-launcher/`, or run `npm run test:browser` for managed servers.
-The input view subscribes to the shared data service and keeps its tile constructors
+The input view subscribes to its frozen data service and keeps its tile constructors
 out of production. The old clock renderer is used by Node tests only; the page does not load it.
 
 Keep these fixtures until their comparison tests have equivalent active-view
@@ -44,3 +44,9 @@ Samsung and Stremio provider adapters; its tests exercise the TypeScript owner.
 `js/apps.js` preserves the final standalone app runtime. The comparison page loads it
 explicitly; active app discovery, caching and commands use the TypeScript app service
 and Tizen adapter. Production packages exclude this fixture.
+
+`js/inputs-runtime.js` preserves the final standalone input runtime for comparison with
+the frozen input renderer. The active input service publishes immutable source
+and playback state; the Tizen adapter keeps native source records private.
+`hdmi_standby.test.cjs` retains the frozen renderer checks. Active service,
+handoff, playback presentation and lifecycle checks exercise the TypeScript owner.

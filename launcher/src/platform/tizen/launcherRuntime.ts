@@ -1,11 +1,11 @@
 import type { AppHandoff, AppsService } from "../../contracts/apps";
 import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
 import type { ContinueWatchingProvider, ContinueWatchingService } from "../../contracts/continueWatching";
+import type { InputsService } from "../../contracts/inputs";
 import type {
   AppPresentation,
   ClockService,
   HomeBridge,
-  InputSource,
   InstalledApp,
   LauncherConfig,
   SettingsBridge,
@@ -15,6 +15,7 @@ import type { NetworkService, WeatherService } from "../../contracts/status";
 import type { Translate } from "../../shared/i18n/createTranslations";
 
 import type { AppsTizen } from "./createAppsPlatform";
+import type { InputsTizen } from "./createInputsPlatform";
 
 // The unmigrated TV services are accessed through this boundary, not a screen's types.
 export interface LauncherRuntime {
@@ -27,24 +28,17 @@ export interface LauncherRuntime {
   continueWatchingProviders?: readonly ContinueWatchingProvider[];
   hideToast(): void;
   homeScreen?: HomeBridge;
-  homewatch: AppHandoff & { useSamsungHome(): void; openSamsungHome?(): void };
-  inputs: {
-    sources: InputSource[];
-    watching: boolean;
-    alwaysVisible?(source: InputSource): boolean;
-    hasRecognizedDevice?(source: InputSource): boolean;
-    isVisible(source: InputSource): boolean;
-    label(source: InputSource, defaultLabel?: string): string;
-    portName(source: InputSource): string;
-    refresh(): void;
-    show(source: InputSource): void;
-    subscribe(listener: () => void): () => void;
+  homewatch: AppHandoff & {
+    useSamsungHome(): void;
+    openSamsungHome?(): void;
+    openNativeViewer?(source: unknown, hdmi: { label: string; fallback(): void } | null): boolean;
   };
+  inputs: InputsService;
   network: NetworkService;
   settings: SettingsService;
   settingsUi?: SettingsBridge;
   tiles: { describe(app: InstalledApp): AppPresentation; shortName(name: string): string };
-  tizen?: AppsTizen | null;
+  tizen?: (AppsTizen & InputsTizen) | null;
   toast(message: string): void;
   translate: Translate;
   weather: WeatherService;

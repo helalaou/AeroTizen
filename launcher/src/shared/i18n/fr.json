@@ -201,6 +201,7 @@
   "wallpaper.previewing": "Aperçu en cours. Appuyez sur une touche pour revenir",
   "inputs.wouldSwitch": "Passerait sur {{input}}",
   "inputs.couldNotShow": "Impossible d’afficher {{input}}",
+  "inputs.disconnected": "{{input}} déconnecté",
   "inputs.switchFailed": "Impossible de changer de source",
   "fireplace.muted": "Son coupé",
   "fireplace.volume": "Volume {{level}}",

@@ -28,7 +28,7 @@
       }
       return;
     }
-    if (A.inputs.watching) {
+    if (A.inputs.getSnapshot().playback !== "idle") {
       if (k === KEY.BACK || k === KEY.ESC || k === KEY.ENTER) {
         e.preventDefault();
         A.inputs.leave();
@@ -42,7 +42,7 @@
   });
 
   document.addEventListener("keyup", function (e) {
-    if (A.settingsUi.isOpen() || A.inputs.watching || window.Fireplace.isOpen()) {
+    if (A.settingsUi.isOpen() || A.inputs.getSnapshot().playback !== "idle" || window.Fireplace.isOpen()) {
       return;
     }
     A.homeScreen.keyup(e.keyCode);
@@ -68,7 +68,6 @@
   document.addEventListener("visibilitychange", function () {
     if (!document.hidden) {
       A.clock.tick();
-      A.inputs.load();
       refreshAppsOnReturn();
     }
   });
@@ -103,7 +102,7 @@
     A.continueWatching.start();
     A.network.start();
     A.weather.start();
-    A.inputs.load();
+    A.inputs.start();
     A.homewatch.start();
     setTimeout(function () {
       A.homewatch.reportStartup(startup.trace);

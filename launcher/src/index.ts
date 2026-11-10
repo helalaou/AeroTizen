@@ -6,20 +6,24 @@ import type { BackgroundState } from "./backgrounds/createBackgrounds";
 import { mountBackgrounds } from "./backgrounds/mountBackgrounds";
 import type { AppsService } from "./contracts/apps";
 import type { ContinueWatchingService } from "./contracts/continueWatching";
+import type { InputsService } from "./contracts/inputs";
 import type { ClockService } from "./contracts/launcher";
 import type { SettingsService } from "./contracts/preferences";
 import type { NetworkService, WeatherService } from "./contracts/status";
 import { mountFireplace } from "./fireplace/mountFireplace";
 import { mountHome } from "./home/index";
+import { mountInputPlayback } from "./inputs/mountInputPlayback";
 import { createAppsPlatform } from "./platform/tizen/createAppsPlatform";
 import { createClockPlatform } from "./platform/tizen/createClockPlatform";
 import { createContinueWatchingPlatform } from "./platform/tizen/createContinueWatchingPlatform";
+import { createInputsPlatform } from "./platform/tizen/createInputsPlatform";
 import { createNetworkPlatform } from "./platform/tizen/createNetworkPlatform";
 import { createWeatherPlatform } from "./platform/tizen/createWeatherPlatform";
 import { defaultTemperatureUnit } from "./platform/tizen/defaultTemperatureUnit";
 import { createAppsService } from "./services/createAppsService";
 import { createClockService } from "./services/createClockService";
 import { createContinueWatchingService } from "./services/createContinueWatchingService";
+import { createInputsService } from "./services/createInputsService";
 import { createLauncherUpdates } from "./services/createLauncherUpdates";
 import { createNetworkService } from "./services/createNetworkService";
 import { createSettingsService } from "./services/createSettingsService";
@@ -32,7 +36,16 @@ const settingsHost = document.getElementById("settings-root");
 const toastHost = document.getElementById("toast-root");
 const weatherPhotoHost = document.getElementById("weather-photo-root");
 const fireplaceHost = document.getElementById("fireplace-root");
-if (!backgroundHost || !home || !settingsHost || !toastHost || !weatherPhotoHost || !fireplaceHost) {
+const inputPlaybackHost = document.getElementById("input-playback-root");
+if (
+  !backgroundHost ||
+  !home ||
+  !settingsHost ||
+  !toastHost ||
+  !weatherPhotoHost ||
+  !fireplaceHost ||
+  !inputPlaybackHost
+) {
   throw new Error("Launcher mount points are missing.");
 }
 const runtime = window.AeroTizen;
@@ -42,6 +55,7 @@ const hotData = import.meta.hot
       apps?: AppsService;
       clock?: ClockService;
       continueWatching?: ContinueWatchingService;
+      inputs?: InputsService;
       network?: NetworkService;
       preferences?: SettingsService;
       weather?: WeatherService;
@@ -88,6 +102,16 @@ const apps =
     },
   });
 runtime.apps = apps;
+const inputs =
+  hotData?.inputs ||
+  createInputsService({
+    platform: createInputsPlatform(window),
+    settings,
+    timers: window,
+    translate: (key, values) => runtime.translate(key, values),
+    toast: (message) => runtime.toast(message),
+  });
+runtime.inputs = inputs;
 const network =
   hotData?.network ||
   createNetworkService({
@@ -143,7 +167,13 @@ const previousCommands = {
   hideToast: runtime.hideToast,
 };
 Object.assign(runtime, toast.bridge, { applyBackground: backgrounds.apply });
+const disposeInputPlayback = mountInputPlayback(inputPlaybackHost, {
+  inputs,
+  applyBackground: backgrounds.apply,
+  suspendBackground: backgrounds.bridge.suspend,
+});
 const dispose = () => {
+  disposeInputPlayback();
   Object.assign(runtime, previousCommands);
   window.Fireplace = previousFireplace;
   fireplace.dispose();
@@ -168,6 +198,7 @@ try {
     import.meta.hot.dispose(() => {
       hotData.backgrounds = backgrounds.getState();
       hotData.apps = apps;
+      hotData.inputs = inputs;
       hotData.clock = clock;
       hotData.preferences = settings;
       hotData.network = network;

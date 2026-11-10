@@ -38,7 +38,7 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
     clock: { start() {}, tick() {} },
     network: { start() {} },
     weather: { start() {} },
-    inputs: { load() {} },
+    inputs: { start() {} },
     settingsUi: { isOpen: () => false },
     homewatch: { start() {}, reportApps() {}, reportStartup() {} },
     homeScreen: {

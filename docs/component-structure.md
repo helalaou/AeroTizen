@@ -100,6 +100,39 @@ Hot reload retains the app service used by Continue Watching. Disposal cancels d
 delivery and rejects late handoff and launch callbacks. The old `apps.js` remains only in
 the frozen comparison fixture, outside the TV package.
 
+## Input ownership
+
+`services/createInputsService.ts` owns immutable source and playback snapshots. Home
+reads the service's stable visible-source array; Settings derives its editable port list
+from the same source records. Preference subscriptions update visibility directly, so
+settings actions do not issue manual input refreshes. Unchanged discovery preserves
+snapshots, arrays and individual source records.
+
+`platform/tizen/createInputsPlatform.ts` owns VIDEOSOURCE queries, the cable watch,
+native viewer handoffs and TV-window calls. Native source objects stay private to the
+adapter and are resolved by source identity when launching; view snapshots contain
+only copied source data. Discovery retains the existing connected-first, TV-last order,
+standby recognition, per-port visibility settings and connected-record preference.
+
+The service owns one five-second foreground polling fallback, one native cable watch,
+Home/visibility listeners and the eight-second pending-playback timeout. Starting it
+twice does not duplicate work. It survives hot reload; disposal removes subscriptions
+and timers, cancels pending delivery and rejects late source/playback callbacks.
+HDMI selection refreshes cable state before either viewer. Disconnects, Back, native
+Home and resume retain their existing recovery behaviour.
+An HDMI signal loss during playback returns to Home with a disconnected notice;
+failed selections and playback errors retain their separate launch-failure message.
+
+`inputs/InputPlaybackView.tsx` selects only the playback state through the shared
+external-store hook. Its layout effect synchronizes the external TV video surface
+with shell transparency and the background bridge; the service never changes DOM.
+Components own markup and focus. Playback commands run through service event handlers,
+and source polling does not rerender the playback view.
+
+The old runtime is preserved byte-for-byte in the `inputs-runtime.js` test fixture.
+The comparison page continues to use its earlier frozen `inputs.js` and input renderer.
+Neither fixture is part of the TV package.
+
 ## Clock ownership
 
 `services/createClockService.ts` owns time snapshots, formatting and the width cache.

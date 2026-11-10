@@ -7,7 +7,9 @@ const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
-const source = fs.readFileSync(path.join(__dirname, "../launcher/js/inputs.js"), "utf8");
+// Frozen comparison runtime and renderer. The active owner is covered by
+// inputs.test.cjs, native_handoffs.test.cjs and the HDMI browser flows.
+const source = fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/inputs-runtime.js"), "utf8");
 
 function harness(settings = {}, report = {}, selected = null, legacyView = true) {
   const tiles = [];

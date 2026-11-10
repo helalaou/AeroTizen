@@ -20,7 +20,6 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
   previewBackground: (preview) => platform.previewBackground(preview),
   applySpeed: (speed) => platform.backgrounds.setSpeed(speed),
   applyClock: () => runtime.clock.tick(),
-  applyInputs: () => runtime.inputs.refresh(),
   applyCardSize: () => runtime.homeScreen?.render(),
   openStore: () => runtime.apps.openStore(),
   useSamsungHome() {

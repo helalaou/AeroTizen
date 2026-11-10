@@ -28,6 +28,7 @@ test("compiled launcher uses the production page, local scripts and the Preact l
   assert.ok(!scripts.includes("js/weather.js"), "weather is owned by the TypeScript service");
   assert.ok(!scripts.includes("js/continue-watching.js"), "Continue Watching is owned by the TypeScript service");
   assert.ok(!scripts.includes("js/apps.js"), "apps are owned by the TypeScript service");
+  assert.ok(!scripts.includes("js/inputs.js"), "inputs are owned by the TypeScript service");
   assert.ok(!scripts.includes("js/network.js"), "network status is owned by the TypeScript service");
   assert.ok(scripts.indexOf("js/launcher-ui.js") < scripts.indexOf("js/main.js"), "views mount before boot");
   for (const file of scripts) {
@@ -88,6 +89,7 @@ test("legacy views remain test fixtures and cannot enter the compiled runtime", 
     "weather.js",
     "clock-layouts.js",
     "inputs-view.js",
+    "inputs.js",
     "status-view.js",
     "brands-view.js",
     "wave-background.js",

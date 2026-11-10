@@ -159,7 +159,8 @@ test("source reachability keeps active, recognised and manually pinned inputs di
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.evaluate(() => {
-    AeroTizen.inputs.sources = [1, 2, 3, 4].map((number) => ({
+    const inputSnapshot = AeroTizen.inputs.getSnapshot();
+    const sources = [1, 2, 3, 4].map((number) => ({
       type: "HDMI",
       number,
       connected: false,
@@ -168,7 +169,8 @@ test("source reachability keeps active, recognised and manually pinned inputs di
     AeroTizen.inputs.isVisible = () => true;
     AeroTizen.inputs.hasRecognizedDevice = (source) => source.number === 2;
     AeroTizen.inputs.alwaysVisible = (source) => source.number === 3;
-    AeroTizen.inputs.refresh();
+    AeroTizen.inputs.getSnapshot = () => ({ ...inputSnapshot, sources, visibleSources: sources });
+    AeroTizen.homeScreen.render();
   });
   const sources = page.locator("#inputs > [data-input-card]");
   await expect(sources).toHaveCount(4);

@@ -19,12 +19,16 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
   });
   const runtime: Pick<HomeEnvironment["runtime"], "inputs"> = {
     inputs: {
-      sources: [],
-      watching: false,
+      getSnapshot: () => ({ sources: [], visibleSources: [], playback: "idle" }),
+      alwaysVisible: () => false,
+      hasRecognizedDevice: () => false,
       isVisible: () => true,
       label: (source, defaultLabel) => source.editName ?? defaultLabel ?? runtime.inputs.portName(source),
       portName: (source) => `${source.type} ${source.number}`,
-      refresh: () => undefined,
+      dispose: () => undefined,
+      leave: () => undefined,
+      load: () => undefined,
+      start: () => undefined,
       show: () => undefined,
       subscribe: () => () => undefined,
     },

@@ -158,7 +158,7 @@ both themes. Add coverage here for new UI paths.
 | `launcher/src/contracts/`         | Screen-independent preferences, app/input/feed types and bridge protocols                       |
 | `launcher/src/backgrounds/`       | Wallpaper scenes, background bridge and canvas animation                                        |
 | `launcher/src/status/`            | Shared status views and hooks; one Clock with compact and expanded layouts                      |
-| `launcher/src/services/`          | TypeScript preferences, app inventory, clock, network, weather and Continue Watching services   |
+| `launcher/src/services/`          | TypeScript preferences, apps, inputs, clock, network, weather and Continue Watching services    |
 | `launcher/src/platform/tizen/`    | Typed boundary for the existing TV and browser services                                         |
 | `launcher/src/dev.ts`             | Development entry that loads the same views before boot                                         |
 | `launcher/src/settings/`          | TypeScript/TSX Settings components, state, actions and service adapters                         |
@@ -183,6 +183,10 @@ hot reload so those services retain their subscriptions. Feature mount functions
 bridges and disposers. Composition owns visibility handling and releases its subscriptions
 when tearing down the views. Input discovery publishes data through `inputs.refresh()`;
 production services do not render input tiles or replace a renderer at startup.
+The input service owns source snapshots, playback state and the foreground cable refresh.
+Home and Settings share its records. A Preact playback view synchronizes the native video
+surface with shell visibility; the service has no DOM dependency. The Tizen adapter keeps
+native source objects private. Hot reload retains one service and its device listeners.
 The app service owns immutable inventory and cached labels. Home, Settings and Continue
 Watching share its snapshot directly. Tizen discovery and launch handoffs stay in the
 app platform adapter. The service survives hot reload and rejects replies after disposal.
