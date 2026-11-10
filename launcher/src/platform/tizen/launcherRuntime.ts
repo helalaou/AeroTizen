@@ -1,6 +1,6 @@
 import type { AppHandoff, AppsService } from "../../contracts/apps";
 import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
-import type { ContinueWatchingProvider, ContinueWatchingService } from "../../contracts/continueWatching";
+import type { ContinueWatchingService } from "../../contracts/continueWatching";
 import type { InputsService } from "../../contracts/inputs";
 import type {
   AppPresentation,
@@ -16,6 +16,7 @@ import type { Translate } from "../../shared/i18n/createTranslations";
 
 import type { AppsTizen } from "./createAppsPlatform";
 import type { InputsTizen } from "./createInputsPlatform";
+import type { StremioTizen } from "./createStremioContinueWatchingProvider";
 
 // The unmigrated TV services are accessed through this boundary, not a screen's types.
 export interface LauncherRuntime {
@@ -25,7 +26,6 @@ export interface LauncherRuntime {
   clock: ClockService;
   config: LauncherConfig;
   continueWatching: ContinueWatchingService;
-  continueWatchingProviders?: readonly ContinueWatchingProvider[];
   hideToast(): void;
   homeScreen?: HomeBridge;
   homewatch: AppHandoff & {
@@ -38,7 +38,7 @@ export interface LauncherRuntime {
   settings: SettingsService;
   settingsUi?: SettingsBridge;
   tiles: { describe(app: InstalledApp): AppPresentation; shortName(name: string): string };
-  tizen?: (AppsTizen & InputsTizen) | null;
+  tizen?: (AppsTizen & InputsTizen & StremioTizen) | null;
   toast(message: string): void;
   translate: Translate;
   weather: WeatherService;
