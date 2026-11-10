@@ -81,7 +81,8 @@ test("Settings can read titles and artwork data without creating DOM nodes or im
   const { A } = runtime(true);
   const known = A.tiles.describe({ id: "111299001912", name: "YouTube" });
   assert.equal(known.title, "YouTube");
-  assert.deepEqual(Object.keys(known).sort(), ["artwork", "title"]);
+  assert.deepEqual(Object.keys(known).sort(), ["appIcon", "artwork", "title"]);
+  assert.equal(known.appIcon, "");
   assert.equal(known.artwork.length, 2);
   const unknown = A.tiles.describe({
     id: "unknown",
@@ -89,6 +90,7 @@ test("Settings can read titles and artwork data without creating DOM nodes or im
     icon: "local/icon.png",
   });
   assert.equal(unknown.title, "Unknown app");
+  assert.equal(unknown.appIcon, "local/icon.png");
   assert.deepEqual(Array.from(unknown.artwork), ["local/icon.png"]);
 });
 
@@ -101,4 +103,6 @@ test("TV-installed icons are artwork candidates for known and unknown apps", () 
   assert.equal(known[2], "local/youtube.png");
   const cached = "/opt/share/webappservice/apps_icon/all/111299001912/304x304.png";
   assert.equal(A.artwork.sources({ id: "111299001912", name: "YouTube", icon: cached }).length, 2);
+  assert.equal(A.artwork.packageIcon({ icon: cached }), "");
+  assert.equal(A.artwork.packageIcon({ icon: "local/icon.png" }), "local/icon.png");
 });

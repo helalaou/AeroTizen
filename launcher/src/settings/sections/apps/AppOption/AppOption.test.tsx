@@ -100,6 +100,16 @@ test("shows a check only while selected and calls onSelect when clicked", () => 
   expect(unselected.querySelector("[data-selection-indicator]")).toBeNull();
 });
 
+test("package icons stay labelled in unselected app settings tiles", () => {
+  const describePackage = () => ({ title: app.name, artwork: ["/package.png"], appIcon: "/package.png" });
+  render(<AppOption app={app} describeApp={describePackage} onSelect={vi.fn()} selected={false} active />);
+  const button = screen.getByRole("button", { name: app.name });
+  fireEvent.load(artwork(button)!);
+  expect(button.querySelector("[data-app-artwork-kind]")?.getAttribute("data-app-artwork-kind")).toBe("icon");
+  expect(button.querySelector<HTMLElement>("[data-app-fallback]")?.hidden).toBe(false);
+  expect(button.querySelector("[data-app-fallback]")?.textContent).toBe(app.name);
+});
+
 test("shows a cached primary image without waiting for another load event", () => {
   const complete = vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
   const width = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(304);

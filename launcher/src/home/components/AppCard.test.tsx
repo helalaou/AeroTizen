@@ -67,6 +67,21 @@ test("keeps the primary artwork when it is already cached before its load handle
   }
 });
 
+test("package icons keep the app name beneath them without requiring focus", () => {
+  const env = createCardEnvironment("", { artwork: [...sources, app.icon], appIcon: app.icon });
+  render(<AppCard env={env} app={app} active />);
+  const card = screen.getByRole("button", { name: app.name });
+  fireEvent.error(artwork(card)!);
+  fireEvent.error(artwork(card)!);
+  fireEvent.load(artwork(card)!);
+  expect(card.getAttribute("data-focused")).toBeNull();
+  expect(card.querySelector("[data-app-artwork-kind]")?.getAttribute("data-app-artwork-kind")).toBe("icon");
+  expect(artwork(card)?.hidden).toBe(false);
+  expect(fallback(card)?.hidden).toBe(false);
+  expect(fallback(card)?.textContent).toBe(app.name);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
 test("the deadline recognises a completed primary image when its load event was missed", async () => {
   const complete = vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(false);
   const width = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(304);

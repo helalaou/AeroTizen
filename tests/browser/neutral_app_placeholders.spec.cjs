@@ -129,8 +129,31 @@ for (const [entry, url] of [
       for (const name of [names[0], names[2]]) {
         const card = page.getByRole("button", { name, exact: true });
         await expect(card.locator("[data-app-artwork]")).toBeVisible();
-        await expect(card.locator("[data-app-fallback]")).toBeHidden();
       }
+      const loadedHome = page.getByRole("button", { name: names[0], exact: true });
+      await expect(loadedHome.locator("[data-app-fallback]")).toBeHidden();
+      await expect(loadedHome.locator("[data-app-artwork-kind]")).toHaveAttribute("data-app-artwork-kind", "artwork");
+      const localHome = page.getByRole("button", { name: names[2], exact: true });
+      await expect(localHome.locator("[data-app-artwork-kind]")).toHaveAttribute("data-app-artwork-kind", "icon");
+      await expect(localHome.locator("[data-app-fallback]")).toBeVisible();
+      await expect(localHome.locator("[data-app-fallback]")).toHaveText(names[2]);
+      const iconBounds = await localHome.evaluate((node) => {
+        const card = node.getBoundingClientRect();
+        const icon = node.querySelector("[data-app-artwork]").getBoundingClientRect();
+        const name = node.querySelector("[data-app-fallback]").getBoundingClientRect();
+        return {
+          smaller: icon.width < card.width / 2,
+          below: name.top >= icon.bottom,
+          fits: name.bottom <= card.bottom,
+        };
+      });
+      expect(iconBounds).toEqual({ smaller: true, below: true, fits: true });
+      await page.locator("#apps-tab").click();
+      const localAll = page.locator('#grid > [data-id="local.app"]');
+      await expect(localAll.locator("[data-app-artwork]")).toBeVisible();
+      await expect(localAll.locator("[data-app-fallback]")).toBeVisible();
+      await expect(localAll.locator("[data-app-fallback]")).toHaveText(names[2]);
+      await page.locator("#home-tab").click();
       await expect(
         page.getByRole("button", { name: names[1], exact: true }).locator("[data-app-fallback]"),
       ).toBeVisible();
@@ -142,6 +165,10 @@ for (const [entry, url] of [
       await expect.poll(() => failedHome.evaluate(surface)).toEqual(theme);
       await page.locator("#gear").click();
       await openCategory(page, "apps");
+      const localOption = page.locator('[data-key="app:local.app"]');
+      await expect(localOption.locator("[data-app-artwork-kind]")).toHaveAttribute("data-app-artwork-kind", "icon");
+      await expect(localOption.locator("[data-app-fallback]")).toBeVisible();
+      await expect(localOption.locator("[data-app-fallback]")).toHaveText(names[2]);
       const failed = page.locator('[data-key="app:org.tizen.primevideo"]');
       await expect(failed.locator("[data-app-fallback]")).toBeVisible();
       await expect(failed.locator("[data-app-fallback]")).toHaveText(names[1]);

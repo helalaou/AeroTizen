@@ -79,6 +79,7 @@ export interface LauncherConfig extends AppsConfig {
   STORAGE_KEY: string;
 }
 export interface AppPresentation {
+  readonly appIcon?: string;
   readonly artwork: readonly string[];
   readonly title: string;
 }

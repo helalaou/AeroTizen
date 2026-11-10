@@ -35,6 +35,13 @@
   padding: 4px;
 }
 
+.compact {
+  flex: 0 1 auto;
+  min-height: 0;
+  height: auto;
+  padding: 0;
+}
+
 .label {
   display: -webkit-box;
   -webkit-box-orient: vertical;

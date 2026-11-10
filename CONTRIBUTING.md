@@ -303,6 +303,9 @@ Home, Settings and Continue Watching badges show the app name on a neutral,
 theme-based tile until artwork loads. Failed or missing images keep that same
 placeholder. Per-app colours, generated gradients and bundled fallback logos are
 not part of the production catalogue. The old branding data is a frozen test fixture.
+If Samsung artwork is unavailable, the installed package icon appears smaller
+with the app name beneath it. This layout follows the loaded image source and
+does not depend on an app-specific list or focus.
 Keep the catalogue object valid JSON inside its script wrapper so Python and the
 launcher can read it. Image files and cache paths do not belong in this catalogue.
 

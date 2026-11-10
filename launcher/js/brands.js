@@ -11,6 +11,7 @@
     return {
       title: shortName(app.name),
       artwork: A.artwork.sources(app),
+      appIcon: A.artwork.packageIcon(app),
     };
   }
 

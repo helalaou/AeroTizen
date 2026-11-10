@@ -16,6 +16,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `HorizontalScroller`                                                 | Shared clipping, track movement and offset limits for horizontal app/feed rows  | Each row owns its offset; the Home controller reveals the selected card      |
 | `InputDock`, `InputCard`                                             | Input collection and one input's label, artwork and connection state            | Existing input service capabilities and commands                             |
 | `shared/components/AppFallback`                                      | Shared app-name placeholder for Home and Settings                               | App presentation, image lifetime and visibility                              |
+| `shared/components/AppArtworkContent`                                | Shared full-size artwork and compact package-icon/name layout                   | Image request lifetime and app identity lookup                               |
 | `AppActionsMenu`, `ReorderControls`                                  | App actions and move/drop controls                                              | Home controller actions; menu positioning is rendered from state             |
 | `status/Clock`                                                       | One time/date view with compact, vertical, horizontal, minimal and bold layouts | Shared time snapshot and formatter; no timer                                 |
 | `WeatherStatus`, `NetworkStatus`                                     | Render status data                                                              | Shared snapshots; no requests or DOM scraping                                |
@@ -306,7 +307,7 @@ keys and values also remain compatible.
 | `status/WeatherStatus/WeatherStatus.module.css`, `status/NetworkStatus/NetworkStatus.module.css` | Weather and network presentation, with explicit layout/state props            |
 | `home/components/AppGrid/AppGrid.module.css`                                                     | App sizes, columns and clock clearance                                        |
 | `home/components/HomeAppCard/HomeAppCard.module.css`                                             | Shared app/Fireplace frame and focus/moving states                            |
-| `home/components/AppArtwork/AppArtwork.module.css`                                               | App image geometry                                                            |
+| `shared/components/AppArtworkContent/AppArtworkContent.module.css`                               | Shared image geometry and compact package-icon layout                         |
 | `home/components/FireplaceCard/FireplaceCard.module.css`                                         | Fireplace card artwork                                                        |
 | `home/components/HomeControl/HomeControl.module.css`                                             | Home control focus reset                                                      |
 | `home/components/HomeSectionHeading/HomeSectionHeading.module.css`                               | Shared Home section headings                                                  |

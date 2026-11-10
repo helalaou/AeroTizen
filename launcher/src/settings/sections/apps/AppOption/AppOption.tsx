@@ -1,14 +1,12 @@
 import { useMemo } from "preact/hooks";
 
 import type { InstalledApp } from "../../../../contracts/launcher";
-import { AppFallback } from "../../../../shared/components/AppFallback/AppFallback";
+import { AppArtworkContent } from "../../../../shared/components/AppArtworkContent/AppArtworkContent";
 import { useImageSequence } from "../../../../shared/hooks/useImageSequence";
 import { SelectionIndicator } from "../../../components/SelectionIndicator/SelectionIndicator";
 import type { SettingsServices } from "../../../types";
 import type { SettingsAppVariant } from "../SettingsAppCard/SettingsAppCard";
 import { SettingsAppCard } from "../SettingsAppCard/SettingsAppCard";
-
-import styles from "./AppOption.module.css";
 
 interface Props {
   active: boolean;
@@ -49,21 +47,7 @@ export const AppOption = ({
         }
       }}
     >
-      <AppFallback title={presentation.title} hidden={artwork.loaded} variant={variant} />
-      {artwork.src ? (
-        <img
-          key={artwork.src}
-          ref={artwork.ref}
-          class={styles.artwork}
-          data-app-artwork
-          alt=""
-          src={artwork.src}
-          hidden={!artwork.loaded}
-          style={{ display: artwork.loaded ? undefined : "none" }}
-          onLoad={artwork.onLoad}
-          onError={artwork.onError}
-        />
-      ) : null}
+      <AppArtworkContent presentation={presentation} artwork={artwork} variant={variant} />
       {selected ? <SelectionIndicator /> : null}
     </SettingsAppCard>
   );

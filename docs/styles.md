@@ -80,7 +80,7 @@ Tests use `data-home-header`, `data-header-focus`, `data-clock-part` and
 
 `HomeAppCard` owns the common app/Fireplace frame, focus, moving state and reorder
 controls. `AppGrid` owns sizes, columns and compact/expanded clock clearance through
-explicit data attributes. `AppArtwork` owns image geometry; its inherited radius
+explicit data attributes. `AppArtworkContent` owns shared image geometry; its inherited radius
 keeps images rounded when moving cards expose their overflow.
 `HorizontalScroller` owns clipping and track movement for both
 app and Continue Watching rows.
@@ -115,9 +115,15 @@ fade remains fixed on the viewport.
 
 App placeholders use `--app-placeholder-surface` and theme text colour. The shared
 surface follows the theme card paint: solid in Classic and a glass gradient in Glass.
-App names stay visible while an image is pending, missing or failed. Image success
+App names stay visible while an image is pending, missing or failed. Samsung artwork
 hides the placeholder without changing the card's geometry. The Fireplace retains
 its own motif through `--app-background`; installed apps do not set this property.
+
+`AppArtworkContent` keeps Samsung cache artwork full-size. Package-icon fallbacks
+use a smaller image with the app name below it in Home, All apps, Settings and
+source badges. `AppFallback` uses its explicit compact layout for that name.
+The presentation data identifies the package icon; views do not inspect file paths
+or maintain app lists. Icon spacing uses margins for Chromium 69 compatibility.
 
 `SettingsAppCard` owns the common app-choice frame, focus, selection and disabled
 states. App, Fireplace and Store options supply their own content. `AppFallback`
