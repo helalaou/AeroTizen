@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 for (const glassSettings of [false, true]) {
   test(`${glassSettings ? "Glass" : "Classic"} theme covers Home, inputs, Continue Watching and uniform Settings choices`, async ({
     page,

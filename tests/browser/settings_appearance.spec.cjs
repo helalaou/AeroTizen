@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 for (const glassSettings of [false, true]) {
   test(`shared category drawer retains navigation when appearance changes from ${glassSettings ? "Glass" : "Classic"}`, async ({
     page,

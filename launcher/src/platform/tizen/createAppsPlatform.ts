@@ -120,7 +120,7 @@ export const createAppsPlatform = (host: AppsHost): AppsPlatform => {
     );
   };
   return {
-    preview: !application,
+    cacheInventory: !!application,
     readInstalled(done) {
       if (disposed) {
         return () => {};
@@ -133,7 +133,11 @@ export const createAppsPlatform = (host: AppsHost): AppsPlatform => {
         }
       };
       try {
-        application?.getAppsInfo(finish, () => finish(null));
+        if (application?.getAppsInfo) {
+          application.getAppsInfo(finish, () => finish(null));
+        } else {
+          finish(null);
+        }
       } catch {
         finish(null);
       }

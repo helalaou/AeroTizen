@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 test("an unset Home list and a saved empty list preserve their distinct views and focus", async ({ page }) => {
   const errors = [];

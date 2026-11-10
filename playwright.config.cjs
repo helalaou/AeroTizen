@@ -33,5 +33,12 @@ module.exports = defineConfig({
       url: "http://127.0.0.1:8172",
       timeout: 10000,
     },
+    {
+      command:
+        "node tools/build-launcher.mjs --dev && python3 -m http.server 8173 --bind 127.0.0.1 --directory dist/launcher-dev",
+      url: "http://127.0.0.1:8173",
+      timeout: 30000,
+      stderr: "ignore",
+    },
   ],
 });

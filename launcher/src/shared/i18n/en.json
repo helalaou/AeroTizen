@@ -138,8 +138,6 @@
   "scene.wine": "Wine",
   "scene.rose": "Rose",
   "common.on": "On",
-  "continue.demoFeed": "This demo shows sample programmes.",
-  "continue.demoPlayback": "Sample programme",
   "continue.settings": "Continue Watching settings",
   "continue.hint": "Show saved programmes from the apps you choose. Shared lists can differ from the app.",
   "continue.chooseApps": "Choose apps below. Lists update when you return to {{appName}}.",

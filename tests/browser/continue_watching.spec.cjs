@@ -1,5 +1,5 @@
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const prime = "org.tizen.primevideo",
   itv = "OEvCiupaFR.ITVHub",
   channel4 = "OCaxbgg9v6.chfourctv";

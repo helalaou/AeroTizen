@@ -38,6 +38,11 @@ import { createWeatherService } from "./services/createWeatherService";
 import { mountSettings } from "./settings/index";
 import { appCatalog } from "./shared/apps/appCatalog";
 
+const createPlatform = <Platform>(create: () => Platform, override?: (platform: Platform) => Platform) => {
+  const platform = create();
+  return override?.(platform) ?? platform;
+};
+
 const backgroundHost = document.getElementById("bg");
 const home = document.getElementById("home-root");
 const settingsHost = document.getElementById("settings-root");
@@ -119,7 +124,7 @@ const apps =
   createAppsService({
     catalog: appCatalog,
     config: runtime.config,
-    platform: createAppsPlatform(window),
+    platform: createPlatform(() => createAppsPlatform(window), runtime.platforms?.apps),
     storage: {
       getItem: (key) => localStorage.getItem(key),
       setItem: (key, value) => localStorage.setItem(key, value),
@@ -129,7 +134,7 @@ runtime.apps = apps;
 const inputs =
   hotData?.inputs ||
   createInputsService({
-    platform: createInputsPlatform(window),
+    platform: createPlatform(() => createInputsPlatform(window), runtime.platforms?.inputs),
     settings,
     timers: window,
     translate: (key, values) => runtime.translate(key, values),

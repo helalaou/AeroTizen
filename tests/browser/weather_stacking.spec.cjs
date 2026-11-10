@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 for (const glass of [false, true]) {
   test(`weather photos stay behind the unfocused ${glass ? "Glass" : "Classic"} header and viewport`, async ({
