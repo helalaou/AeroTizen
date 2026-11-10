@@ -50,6 +50,45 @@ test("successful fallback artwork preserves the card's name, focus and click han
   expect(vi.getTimerCount()).toBe(0);
 });
 
+test("keeps the primary artwork when it is already cached before its load handler runs", () => {
+  const complete = vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+  const width = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(304);
+  try {
+    const env = createCardEnvironment(`app:${app.id}`, { artwork: sources });
+    render(<AppCard env={env} app={app} active />);
+    const card = screen.getByRole("button", { name: app.name });
+    expect(artwork(card)?.getAttribute("src")).toBe(sources[0]);
+    expect(artwork(card)?.hidden).toBe(false);
+    expect(fallback(card)?.hidden).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    complete.mockRestore();
+    width.mockRestore();
+  }
+});
+
+test("the deadline recognises a completed primary image when its load event was missed", async () => {
+  const complete = vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(false);
+  const width = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(304);
+  try {
+    const env = createCardEnvironment(`app:${app.id}`, { artwork: sources });
+    render(<AppCard env={env} app={app} active />);
+    const card = screen.getByRole("button", { name: app.name });
+    expect(artwork(card)?.hidden).toBe(true);
+    complete.mockReturnValue(true);
+    await act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(artwork(card)?.getAttribute("src")).toBe(sources[0]);
+    expect(artwork(card)?.hidden).toBe(false);
+    expect(fallback(card)?.hidden).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    complete.mockRestore();
+    width.mockRestore();
+  }
+});
+
 test("keeps the app name visible when artwork stalls and the next candidate fails", async () => {
   const env = createCardEnvironment(`app:${app.id}`, { artwork: sources });
   render(<AppCard env={env} app={app} active />);

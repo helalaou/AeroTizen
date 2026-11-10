@@ -99,3 +99,18 @@ test("shows a check only while selected and calls onSelect when clicked", () => 
   const unselected = screen.getByRole("button", { name: app.name, pressed: false });
   expect(unselected.querySelector("[data-selection-indicator]")).toBeNull();
 });
+
+test("shows a cached primary image without waiting for another load event", () => {
+  const complete = vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+  const width = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(304);
+  try {
+    render(<AppOption app={app} describeApp={describeApp} onSelect={vi.fn()} selected active />);
+    const button = screen.getByRole("button", { name: app.name });
+    expect(artwork(button)?.getAttribute("src")).toBe("/first.png");
+    expect(artwork(button)?.hidden).toBe(false);
+    expect(button.getAttribute("data-artwork-loaded")).toBe("true");
+  } finally {
+    complete.mockRestore();
+    width.mockRestore();
+  }
+});

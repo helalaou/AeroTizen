@@ -53,6 +53,7 @@ export const AppOption = ({
       {artwork.src ? (
         <img
           key={artwork.src}
+          ref={artwork.ref}
           class={styles.artwork}
           data-app-artwork
           alt=""

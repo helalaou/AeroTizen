@@ -21,6 +21,7 @@ export const AppArtwork = ({
       {artwork.src ? (
         <img
           key={artwork.src}
+          ref={artwork.ref}
           class={styles.image}
           data-app-artwork
           alt=""
