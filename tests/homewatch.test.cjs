@@ -6,6 +6,7 @@ const vm = require("node:vm");
 const { test } = require("node:test");
 const source = fs.readFileSync(__dirname + "/../launcher/js/homewatch.js", "utf8");
 const nativeSource = fs.readFileSync(__dirname + "/../launcher/js/native-navigation.js", "utf8");
+const appsSource = fs.readFileSync(__dirname + "/../launcher/js/apps.js", "utf8");
 const healthy = { homeControl: { protocol: 1, app_id: "Home", mode: "watcher" }, heartbeats: 1 };
 
 function harness(options = {}) {
@@ -15,7 +16,8 @@ function harness(options = {}) {
     events = {},
     windowEvents = {},
     scripts = [],
-    logs = [];
+    logs = [],
+    fireplaces = [];
   const timers = new Map();
   let clock = 0,
     serial = 0;
@@ -36,6 +38,8 @@ function harness(options = {}) {
         },
       },
       application: {
+        getAppMetaData: () => [],
+        getAppsInfo: (done) => done([]),
         launch: (id, success, failed) => calls.push({ id, failed }),
         launchAppControl: (control, id, done) => {
           calls.push({ service: true, id });
@@ -45,12 +49,16 @@ function harness(options = {}) {
       ApplicationControl: function () {},
     },
     catalog: { preloadedStoreId: (id) => id },
+    tiles: { shortName: (name) => name },
     toast: (message) => messages.push(message),
   };
   const document = {
     hidden: true,
     addEventListener: (name, callback) => {
       events[name] = callback;
+    },
+    removeEventListener: (name, callback) => {
+      if (events[name] === callback) delete events[name];
     },
     createElement: () => ({}),
     body: {
@@ -84,6 +92,7 @@ function harness(options = {}) {
   const window = {
     AeroTizen: A,
     AeroDiagnostics: { record: (event, data) => logs.push({ event, data }), flush() {} },
+    Fireplace: { open: () => fireplaces.push(true) },
     addEventListener: (name, callback) => {
       windowEvents[name] = callback;
     },
@@ -103,6 +112,7 @@ function harness(options = {}) {
   };
   vm.runInNewContext(source, context);
   if (options.native) vm.runInNewContext(nativeSource, context);
+  if (options.apps) vm.runInNewContext(appsSource, context);
   function advance(ms) {
     const end = clock + ms;
     for (;;) {
@@ -126,7 +136,21 @@ function harness(options = {}) {
     }
     windowEvents["aero-wrt-service"]({ detail: Service });
   }
-  return { A, calls, requests, messages, document, events, windowEvents, scripts, logs, advance, loadWrt, timers };
+  return {
+    A,
+    calls,
+    requests,
+    messages,
+    document,
+    events,
+    windowEvents,
+    scripts,
+    logs,
+    fireplaces,
+    advance,
+    loadWrt,
+    timers,
+  };
 }
 
 test("Samsung Home escape waits for leave acknowledgement then explicitly opens stock Home", () => {
@@ -438,4 +462,90 @@ test("inventory changed during recovery is restored before readiness", async () 
   assert.match(h.requests[5].url, /\/apps\?ids=new$/);
   h.requests[5].reply({});
   assert.equal(ready, 1);
+});
+
+for (const { name, open } of [
+  { name: "YouTube", open: (h) => h.A.apps.launch({ id: "youtube.app", name: "YouTube" }) },
+  { name: "Samsung Home", open: (h) => h.A.homewatch.openSamsungHome() },
+  { name: "native viewer", open: (h) => h.A.homewatch.openNativeViewer({ type: "TV", number: 1 }) },
+]) {
+  for (const stage of ["late reply", "HTTP failure", "recovery ready", "recovery timeout"]) {
+    test("superseded " + name + " at " + stage + " leaves the newer app launch intact", () => {
+      const h = harness({ version: "9.0", native: true, apps: true });
+      open(h);
+      assert.match(h.requests[0].url, /\/leave$/);
+      const recovering = stage.startsWith("recovery");
+      if (recovering) h.requests[0].fail();
+      h.A.apps.launch({ id: "regular.app", name: "Regular" });
+      let watch = h.requests.at(-1);
+      assert.match(watch.url, /\/watch\?id=regular.app$/);
+      if (stage === "late reply") h.requests[0].reply({ leaving: true });
+      if (stage === "HTTP failure") h.requests[0].fail();
+      if (stage === "recovery ready") {
+        watch.fail();
+        h.requests[1].reply();
+        watch = h.requests.at(-1);
+        assert.match(watch.url, /\/watch\?id=regular.app$/);
+      }
+      watch.reply({ watched: "regular.app" });
+      if (stage === "recovery timeout") h.advance(30000);
+      assert.deepEqual(
+        h.calls.map((call) => call.id),
+        ["regular.app"],
+      );
+      assert.deepEqual(h.messages, []);
+      assert.ok(h.requests.every((request) => !request.url.endsWith("/home")));
+      const expectedRequests = recovering ? 3 : 2;
+      assert.equal(h.requests.length, stage === "recovery ready" ? expectedRequests + 1 : expectedRequests);
+      const before = h.requests.length;
+      open(h);
+      assert.equal(h.requests.length, before + 1, "the cancelled handoff releases its pending guard");
+    });
+  }
+}
+
+for (const action of ["app", "store", "fireplace"]) {
+  test("a superseded " + action + " preparation releases its guard without launching a fallback", () => {
+    const h = harness({ version: "10.0", native: true, apps: true });
+    if (action === "app") h.A.apps.launch({ id: "old.app", name: "Old" });
+    if (action === "store") {
+      h.A.config.STORE_APP_IDS = ["store.one", "store.two"];
+      h.A.apps.openStore();
+    }
+    if (action === "fireplace") {
+      h.A.apps.all = [{ id: "youtube.app", name: "YouTube" }];
+      h.A.apps.playFireplace();
+    }
+    h.A.homewatch.openSamsungHome();
+    const watched = decodeURIComponent(h.requests[0].url.split("id=")[1]);
+    h.requests[0].reply({ watched });
+    h.requests[1].reply({ leaving: true });
+    assert.deepEqual(
+      h.calls.map((call) => call.id),
+      ["com.samsung.tv.csfs"],
+    );
+    assert.deepEqual(h.messages, []);
+    assert.deepEqual(h.fireplaces, []);
+    assert.equal(h.requests.length, 2, "cancelled store launch does not try another ID");
+    h.A.apps.launch({ id: "next.app", name: "Next" });
+    h.requests[2].reply({ watched: "next.app" });
+    assert.deepEqual(
+      h.calls.map((call) => call.id),
+      ["com.samsung.tv.csfs", "next.app"],
+    );
+  });
+}
+
+test("cancelling an older stock Home escape preserves the newer leave state", () => {
+  const h = harness();
+  h.A.homewatch.useSamsungHome();
+  h.A.homewatch.useSamsungHome();
+  h.requests[0].reply({ leaving: true });
+  assert.equal(h.A.homewatch.isLeaving(), true);
+  h.requests[1].reply({ leaving: true });
+  assert.deepEqual(
+    h.calls.map((call) => call.id),
+    ["com.samsung.tv.csfs"],
+  );
+  assert.deepEqual(h.messages, []);
 });

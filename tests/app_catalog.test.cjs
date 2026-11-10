@@ -117,6 +117,18 @@ test("each app variant retains its paired store ID", () => {
   assert.equal(A.catalog.artworkStoreId({ id: "456" }), "456");
 });
 
+test("HBO Max variants retain both verified app and store ID pairs", () => {
+  const { A } = runtime();
+  for (const [id, storeId] of [
+    ["5b8c3eb16b.BeamCTVDev", "3202301029760"],
+    ["fjpfQryJuR.HBOMaxCTV", "3202311033168"],
+  ]) {
+    assert.equal(A.catalog.storeId(id), storeId);
+    assert.equal(A.catalog.artworkStoreId({ id, name: "Renamed app" }), storeId);
+    assert.equal(A.catalog.brand({ id, name: "Renamed app" }).logo.slug, "max");
+  }
+});
+
 test("unknown IDs remain unknown and preloaded mappings do not use name aliases", () => {
   const { A } = runtime();
   for (const id of ["unknown.app", "constructor", "__proto__"]) {

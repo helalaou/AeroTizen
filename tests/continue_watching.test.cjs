@@ -314,6 +314,19 @@ test("opening Continue Watching waits for watcher preparation before the native 
   assert.equal(h.launches[0].id, source.id);
 });
 
+test("a superseded Continue Watching handoff does not launch or report an outage", () => {
+  const h = harness();
+  const messages = [];
+  h.A.toast = (message) => messages.push(message);
+  h.A.homewatch.prepareAppLaunch = (id, done, failed) => failed({ name: "AbortError", cancelled: true });
+  h.cw.start();
+  h.enable();
+  h.respond(0, [card("cancelled")]);
+  h.cw.open(h.cw.items[0]);
+  assert.deepEqual(h.launches, []);
+  assert.deepEqual(messages, []);
+});
+
 // A cold TV can expose an empty or unavailable feed before its publisher is ready.
 test("startup recovers a late feed without reopening the launcher and stops after success", () => {
   const h = harness();

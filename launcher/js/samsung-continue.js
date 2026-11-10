@@ -115,7 +115,10 @@
   }
 
   function open(item) {
-    function failed() {
+    function failed(error) {
+      if (error && error.cancelled === true) {
+        return;
+      }
       A.toast(A.translate("apps.openFailed", { name: item.title }));
     }
     function launch() {

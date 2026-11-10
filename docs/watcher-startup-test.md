@@ -5,15 +5,21 @@ Tizen 9 keeps the existing AppControl start first. It tries `wrt:service` only i
 the service still does not answer after 1.5 seconds of readiness checks. Older
 versions keep AppControl without the module fallback.
 It waits for an HTTP reply from the service. If a watcher request fails, it starts
-the service, restores its app inventory and retries the request once. A failed
-YouTube handoff still needs a confirmed watcher pause before YouTube can open.
-Other app launches wait for their watch acknowledgement before AeroTizen can be
-hidden and frozen. Old recovery requests cannot undo a newer Home handoff.
+the service, restores its app inventory and retries the request once. Startup has
+a 30-second deadline to allow for a slow service start after a cold boot.
+On Tizen 10, YouTube waits for its watch acknowledgement like other apps. Older
+firmware keeps the confirmed watcher pause for YouTube. App launches wait for
+their acknowledgement before AeroTizen can be hidden and frozen. Repeat app taps
+are ignored while the first launch waits for the watcher. Old recovery requests
+cannot undo a newer Home handoff.
 
 This package has the normal launcher UI and the orange development badge. It
 contains no temporary Native Home tests or managed diagnostic helpers.
 
 ## Install
+
+Use a fresh development package from this branch. The earlier `0c9c8b1` archive
+does not include the changes from PR #204 or the later handoff cancellation fix.
 
 Stop any running inspector with Ctrl+C. Extract the ZIP and place the WGT beside
 your existing `aerotizen` executable. Keep your existing signing certificates.
@@ -38,8 +44,10 @@ No Console commands or Settings test buttons are needed to start the watcher.
    after power returns, and whether Home return still works after opening it.
 
 The watcher can briefly show Samsung Home before AeroTizen returns. This test
-checks startup and recovery; it does not change the Home assignment or polling
-timings. Automatic startup after wake and cold boot still needs this TV test.
+checks startup and recovery without changing the Home assignment. Watched apps
+on non-Frame TVs have a 1.5-second hidden grace period before the watcher returns
+to AeroTizen. Frame Art Mode guards remain unchanged. Automatic startup after
+wake and cold boot still needs this TV test.
 
 If a handoff fails, keep AeroTizen open and export the logs before restarting:
 

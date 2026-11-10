@@ -34,8 +34,11 @@
           handoffPending = false;
           ready();
         },
-        function () {
+        function (error) {
           handoffPending = false;
+          if (error && error.cancelled === true) {
+            return;
+          }
           failed.apply(null, arguments);
         }
       );
@@ -286,6 +289,9 @@
     var isYouTube = /^youtube$/i.test(String(app.name || "").trim());
     if (isYouTube && A.homewatch && A.homewatch.suspendForExternal && !reportsYouTubeVisibility()) {
       function youtubeFailed(reason, detail, error) {
+        if (reason && reason.cancelled === true) {
+          return;
+        }
         outcome("failed", error || { name: "HandoffError", message: reason || "Launch failed" });
         if (A.homewatch.resume) {
           A.homewatch.resume();

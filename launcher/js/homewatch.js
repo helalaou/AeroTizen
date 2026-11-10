@@ -11,6 +11,7 @@
   var Service = null;
   var inventory = null;
   var transition = 0;
+  var homeRequest = 0;
   // A cold boot on Tizen 10 (QN80H) took ~18 s from the wrt:service request to the service's first
   // reply. Waiting less gives up before it answers, and the app inventory is then never restored.
   var START_TIMEOUT = 30000;
@@ -277,13 +278,20 @@
     if (version === undefined && /^\/(home|leave|watch)(\?|$)/.test(path)) {
       version = ++transition;
     }
+    function cancelled() {
+      if (version === undefined || version === transition) {
+        return false;
+      }
+      // Clear the caller's pending state without treating a newer handoff as an outage.
+      if (failed) {
+        failed({ name: "AbortError", cancelled: true });
+      }
+      return true;
+    }
     request(
       path,
       function (value) {
-        if (version !== undefined && version !== transition) {
-          if (failed) {
-            failed();
-          }
+        if (cancelled()) {
           return;
         }
         if (window.AeroDiagnostics) {
@@ -294,17 +302,23 @@
         }
       },
       function () {
+        if (cancelled()) {
+          return;
+        }
         record("service.unavailable", { action: path.split("?")[0], error: "RequestFailed" });
         if (recover !== false) {
-          start(function () {
-            if (version !== undefined && version !== transition) {
-              if (failed) {
+          start(
+            function () {
+              if (!cancelled()) {
+                tell(path, done, failed, false, version);
+              }
+            },
+            function () {
+              if (!cancelled() && failed) {
                 failed();
               }
-              return;
             }
-            tell(path, done, failed, false, version);
-          }, failed);
+          );
         } else if (failed) {
           failed();
         }
@@ -348,8 +362,15 @@
         return;
       }
       leaving = true;
-      function failed() {
+      var request = ++homeRequest;
+      function failed(error) {
+        if (request !== homeRequest) {
+          return;
+        }
         leaving = false;
+        if (error && error.cancelled === true) {
+          return;
+        }
         A.toast(A.translate("handoff.homeTryAgain"));
       }
       tell(

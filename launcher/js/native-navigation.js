@@ -142,7 +142,11 @@
           }
           onReady();
         },
-        function () {
+        function (error) {
+          if (error && error.cancelled === true) {
+            onFailure(error);
+            return;
+          }
           onFailure("HomeWatcher unavailable", A.translate("handoff.watcherUnavailable"));
         }
       );
@@ -197,6 +201,9 @@
     homePending = true;
     function failed(reason, detail) {
       homePending = false;
+      if (reason && reason.cancelled === true) {
+        return;
+      }
       report("failed", "samsung_home", operation, reason);
       rearmWatcher();
       A.toast(A.translate("handoff.homeFailed", { reason: detail || reason }));
@@ -271,6 +278,9 @@
       finished = true;
       viewerPending = false;
       cancelFocusCheck();
+      if (reason && reason.cancelled === true) {
+        return;
+      }
       report("failed", action, operation, reason, errorName);
       rearmWatcher();
       if (hdmi) {
