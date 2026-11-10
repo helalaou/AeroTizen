@@ -78,7 +78,6 @@ export const createSettingsActions = (
               ? { background: "custom", customColour: preview.colour, weatherPhoto: false }
               : { background: "custom-gradient", customGradient: preview.gradient, weatherPhoto: false };
           commit(patch, () => {
-            services.applyWeatherVisibility();
             services.applyBackground();
           });
         }
@@ -87,11 +86,7 @@ export const createSettingsActions = (
     },
     setGlassSettings: (glassSettings) => commit({ glassSettings }),
     setPerformanceMode: (performanceMode) => commit({ performanceMode }, services.applyBackground),
-    setWeatherPhoto: (weatherPhoto) =>
-      commit({ weatherPhoto }, () => {
-        services.applyWeatherVisibility();
-        services.applyBackground();
-      }),
+    setWeatherPhoto: (weatherPhoto) => commit({ weatherPhoto }, services.applyBackground),
     setContinueWatching: (continueWatching) => commit({ continueWatching }),
     toggleContinueApp(id) {
       const selected = settings.getSnapshot().continueWatchingApps;
@@ -99,18 +94,10 @@ export const createSettingsActions = (
         continueWatchingApps: selected.includes(id) ? selected.filter((app) => app !== id) : [...selected, id],
       });
     },
-    setBackground(background) {
-      const wasPhoto = settings.getSnapshot().weatherPhoto;
-      commit({ background, weatherPhoto: false }, () => {
-        if (wasPhoto) {
-          services.applyWeatherVisibility();
-        }
-        services.applyBackground();
-      });
-    },
-    setWeatherVisible: (showWeather) => commit({ showWeather }, services.applyWeatherVisibility),
-    setLocationVisible: (weatherShowLocation) => commit({ weatherShowLocation }, services.applyLocationVisibility),
-    setTempUnit: (tempUnit) => commit({ tempUnit }, services.refreshWeather),
+    setBackground: (background) => commit({ background, weatherPhoto: false }, services.applyBackground),
+    setWeatherVisible: (showWeather) => commit({ showWeather }),
+    setLocationVisible: (weatherShowLocation) => commit({ weatherShowLocation }),
+    setTempUnit: (tempUnit) => commit({ tempUnit }),
     setClockLayout: (layout) =>
       commit(
         layout === "classic" ? { clockLayout: "classic" } : { clockLayout: "custom", aeroClockStyle: layout },
@@ -128,7 +115,7 @@ export const createSettingsActions = (
       commit({ hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } }, services.applyInputs),
     setTimeFormat: (format) =>
       commit(format === "none" ? { showTime: false } : { showTime: true, timeFormat: format }, services.applyClock),
-    setLocation: (weatherLocation) => commit({ weatherLocation }, services.refreshWeather),
+    setLocation: (weatherLocation) => commit({ weatherLocation }),
     setSpeed(direction) {
       const { MIN, MAX, STEP } = services.config.SPEED;
       const speed =

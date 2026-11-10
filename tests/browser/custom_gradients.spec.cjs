@@ -158,8 +158,8 @@ test("Back restores a weather photo after a gradient preview, and light gradient
 }) => {
   const errors = await openGradient(page, true);
   await page.evaluate(() => {
-    window.Weather.currentReading = () => ({ code: 0 });
-    window.Weather.solarPhase = () => "day";
+    AeroTizen.weather.currentReading = () => ({ code: 0 });
+    AeroTizen.weather.solarPhase = () => "day";
     AeroTizen.settings.update({ weatherPhoto: true });
     AeroTizen.applyBackground();
   });

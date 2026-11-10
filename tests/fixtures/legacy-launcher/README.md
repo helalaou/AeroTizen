@@ -31,3 +31,8 @@ active Settings uses SelectionIndicator and the shared icon components.
 fixed animation phases. The fixture uses the last standalone background runtime
 in `backgrounds.js` and its original boot script. These scripts stay outside the
 launcher package. Production uses the app-owned background view.
+
+`js/weather.js` is an unchanged copy of the final standalone weather runtime. The
+comparison page loads it explicitly from this directory. Production owns weather
+in `launcher/src/services/createWeatherService.ts`; its service tests exercise that
+TypeScript owner, with the frozen status renderer used only as a test consumer.

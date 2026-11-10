@@ -20,6 +20,7 @@ import type {
   TimeFormat,
   WeatherLocation,
 } from "../contracts/preferences";
+import type { WeatherSnapshot } from "../contracts/status";
 import type { LauncherUpdateNotice } from "../contracts/updates";
 import type { MessageKey } from "../shared/i18n/catalogues";
 import type { Navigation } from "../shared/navigation/createNavigation";
@@ -41,9 +42,7 @@ export interface SettingsServices {
   applyCardSize(): void;
   applyClock(): void;
   applyInputs(): void;
-  applyLocationVisibility(): void;
   applySpeed(speed: number): void;
-  applyWeatherVisibility(): void;
   backgrounds: readonly BackgroundOption[];
   backgroundWebGL: BackgroundGraphics;
   clearHomeFocus(): void;
@@ -54,10 +53,10 @@ export interface SettingsServices {
   hidePreviewMessage(): void;
   openStore(): void;
   previewBackground(preview: BackgroundPreview | null): void;
-  refreshWeather(): void;
   searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): () => void;
   showPreviewMessage(): void;
   useSamsungHome(): void;
+  weather: Store<WeatherSnapshot>;
 }
 export interface SettingsActions {
   adjustColour(channel: ColourChannel, direction: number): void;

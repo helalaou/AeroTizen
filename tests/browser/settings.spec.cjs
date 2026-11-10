@@ -143,6 +143,7 @@ test("the first pointer click activates its control; Space activates buttons wit
   await page.keyboard.press("Space");
   await expect(page.locator("body")).not.toHaveClass(/previewing/);
   await openCategory(page, "weather");
+  await page.locator('[data-key="weather:change"]').click();
   const input = page.getByRole("textbox", { name: "Weather location", exact: true });
   expect((await input.boundingBox()).width).toBeGreaterThan(300);
   await input.fill("A");
@@ -297,7 +298,6 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
     });
 
     AeroTizen.applyBackground();
-    window.Weather.updateVisibility();
   });
   await control.getByRole("button", { name: "Automatic (weather)", exact: true }).click();
   await expect(page.locator("#weather-photo")).toBeVisible();
@@ -341,7 +341,7 @@ test("turning weather wallpaper off while its image is pending cannot hide the f
   );
   await openSettings(page);
   await page.evaluate(() => {
-    window.Weather.currentReading = () => ({
+    AeroTizen.weather.currentReading = () => ({
       code: 0,
       day: 1,
       at: Date.now(),

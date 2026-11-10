@@ -18,6 +18,11 @@
   white-space: normal;
   text-align: center;
 
+  &[data-align="start"] {
+    justify-content: flex-start;
+    text-align: start;
+  }
+
   &[data-focused="true"] {
     background: var(--choice-focused-surface);
     color: var(--control-focused-text);

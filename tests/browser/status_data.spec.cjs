@@ -44,7 +44,6 @@ test("status views update from shared data without querying status markup", asyn
     };
     AeroTizen.settings.update({ tempUnit: "F" });
 
-    window.Weather.updateDisplay();
     AeroTizen.clock.tick();
   });
   await expect(page.locator("[data-weather-part=temperature]")).toHaveText("54°");

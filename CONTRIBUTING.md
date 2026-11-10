@@ -158,7 +158,7 @@ both themes. Add coverage here for new UI paths.
 | `launcher/src/contracts/`         | Screen-independent preferences, app/input/feed types and bridge protocols                       |
 | `launcher/src/backgrounds/`       | Wallpaper scenes, background bridge and canvas animation                                        |
 | `launcher/src/status/`            | Shared status views and hooks; one Clock with compact and expanded layouts                      |
-| `launcher/src/services/`          | TypeScript preference, clock and network services and shared weather snapshots                  |
+| `launcher/src/services/`          | TypeScript preference, clock, network and weather services                                      |
 | `launcher/src/platform/tizen/`    | Typed boundary for the existing TV and browser services                                         |
 | `launcher/src/dev.ts`             | Development entry that loads the same views before boot                                         |
 | `launcher/src/settings/`          | TypeScript/TSX Settings components, state, actions and service adapters                         |
@@ -183,10 +183,11 @@ hot reload so those services retain their subscriptions. Feature mount functions
 bridges and disposers. Composition owns visibility handling and releases its subscriptions
 when tearing down the views. Input discovery publishes data through `inputs.refresh()`;
 production services do not render input tiles or replace a renderer at startup.
-Clock, weather and network services publish immutable snapshots. Views read the clock and network
-services directly. The shared clock timer also triggers weather cache expiry checks.
+Clock, weather and network services publish immutable snapshots. Views read these
+services directly. The weather service subscribes to the shared clock for cache expiry checks.
 The network service owns one poller and platform watch, reacts to preference changes,
 and publishes only changed readings. Its disposer releases timers and subscriptions.
+The weather service owns its refresh timer, cache, cancellable requests and preference subscription.
 Views add no polling timers or forecast requests.
 `Clock` owns time/date presentation and uses layout variants. `WeatherStatus` and
 `NetworkStatus` own their markup. Component CSS has one owner; shared theme paint
