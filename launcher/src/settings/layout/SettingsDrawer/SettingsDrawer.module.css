@@ -150,10 +150,4 @@
   &[data-section-pane="apps"] {
     --settings-section-spacing: 30px;
   }
-
-  &[data-section-pane="about"] {
-    display: flex;
-    flex-direction: column;
-    min-height: 100%;
-  }
 }
