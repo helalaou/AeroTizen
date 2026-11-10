@@ -19,6 +19,11 @@ const HOME_APP_LAYOUT_OPTIONS = [
   { value: "scroll", labelKey: "appearance.scroll" },
 ] as const;
 
+const PERFORMANCE_OPTIONS = [
+  { value: false, labelKey: "common.off" },
+  { value: true, labelKey: "common.on" },
+] as const;
+
 export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) => {
   const { t } = useTranslation();
   return (
@@ -48,6 +53,15 @@ export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) 
           value={settings.homeAppLayout}
           options={HOME_APP_LAYOUT_OPTIONS}
           onSelect={actions.setHomeAppLayout}
+        />
+      </SettingsSection>
+      <SettingsSection title={t("appearance.performanceMode")} description={t("appearance.performanceHint")}>
+        <ChoiceGroup
+          id="performance-mode"
+          label={t("appearance.performanceMode")}
+          value={settings.performanceMode}
+          options={PERFORMANCE_OPTIONS}
+          onSelect={actions.setPerformanceMode}
         />
       </SettingsSection>
     </>

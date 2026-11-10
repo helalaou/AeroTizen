@@ -38,7 +38,14 @@ export const mountBackgrounds = (
     renderScene: (scene, speed) =>
       render(
         scene && (
-          <BackgroundSceneView key={generation++} scene={scene} speed={speed} webGL={webGL} reportWebGL={status.set} />
+          <BackgroundSceneView
+            key={generation++}
+            scene={scene}
+            speed={speed}
+            webGL={webGL}
+            reportWebGL={status.set}
+            performanceMode={runtime.settings.getSnapshot().performanceMode}
+          />
         ),
         layer,
       ),

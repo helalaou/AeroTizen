@@ -2,9 +2,9 @@
 
 Both Home options run on the TV after setup and work without root.
 
-| Option | What happens when you press Home |
-| --- | --- |
-| **Watcher (default)** | The background service detects a return to Samsung Home and reopens AeroTizen. |
+| Option                         | What happens when you press Home                                                                                |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| **Watcher (default)**          | The background service detects a return to Samsung Home and reopens AeroTizen.                                  |
 | **Native Home (experimental)** | The TV routes Home directly to AeroTizen and the watcher stops. Startup support depends on the TV and firmware. |
 
 ## Watcher limits
@@ -44,12 +44,26 @@ keep the original file and report if the current settings differ.
 
 ### Apply Native Home
 
-Open AeroTizen to start its control service. Preview the change, then apply it:
+Preview the change, then apply it. If the installed launcher's control service is
+unavailable, `home apply --yes` opens AeroTizen once and waits for its service:
 
 ```sh
 aerotizen home apply
 aerotizen --tv TV_IP home apply --yes
 ```
+
+The CLI validates the original backup and device before launch, then checks the
+device and service again before changing Home. It uses HTTP launch first, with
+the existing SDB connection as a fallback. The service must return the compatible
+persistent control protocol; an accepted launch request alone is insufficient.
+The readiness wait has a 15-second budget, with each TV query retaining its own
+transport timeout. A failed launch, incompatible service, or startup timeout
+stops before Home changes and reports how to retry manually. Progress goes to
+stderr so `--json` output remains valid JSON.
+
+Automatic startup is limited to `home apply --yes`. Preview, status, and backup
+remain passive. For restore with an installed launcher, open AeroTizen first if
+its control service is unavailable.
 
 CLI 3.0.0 sets both Home bindings and tries to assign both startup app IDs. When
 both IDs match, it enables Smart Hub autostart. If startup setup fails, it keeps

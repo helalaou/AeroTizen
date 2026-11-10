@@ -24,6 +24,9 @@ internal static class RootTests
         {
             string baseline = Guid.NewGuid().ToString("D"), first = Guid.NewGuid().ToString("D"), second = Guid.NewGuid().ToString("D");
             string installation = Guid.NewGuid().ToString("N");
+            Reject(() => ServiceLaunch.ServerCommand("../foreign", installation, "boot"), "Unsafe scope installation accepted");
+            Reject(() => ServiceLaunch.ServerCommand(installation, "../foreign", "boot"), "Unsafe scope nonce accepted");
+            Reject(() => ServiceLaunch.ServerCommand(installation, installation, "other"), "Unknown scope origin accepted");
             var gate = new PerBootGate(data, installation, baseline);
             Check(gate.Decision(baseline) == "waiting-for-boot", "Installation boot could trigger root");
             Reject(() => gate.Claim(baseline), "Installation boot claimed root");

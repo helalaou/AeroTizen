@@ -7,6 +7,11 @@
   will-change: transform;
   animation: waves linear infinite;
 
+  &[data-static="true"] {
+    animation: none;
+    will-change: auto;
+  }
+
   &[data-background-wave="back"] {
     bottom: 40px;
   }

@@ -26,6 +26,7 @@ export interface SettingsValues {
   dateFormat: DateFormat | "auto" | "weekday" | "dmy" | "mdy";
   glassSettings: boolean;
   hdmiKeepVisible: Record<string, boolean>;
+  hdmiNativeViewer: boolean;
   hideDisconnectedHdmi: boolean;
   home: string[];
   homeAppLayout: "grid" | "scroll";
@@ -33,6 +34,7 @@ export interface SettingsValues {
   inputNames: Record<string, string>;
   language: string;
   numerals: "latn" | "arab";
+  performanceMode: boolean;
   showLiveTv: boolean;
   showNetwork: boolean;
   showTime: boolean;

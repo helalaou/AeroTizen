@@ -2,6 +2,7 @@ import ar from "./ar.json";
 import en from "./en.json";
 import fr from "./fr.json";
 import it from "./it.json";
+import ptBR from "./pt-BR.json";
 import ru from "./ru.json";
 
 export type MessageKey = keyof typeof en;
@@ -10,6 +11,7 @@ const arabic = { name: "العربية", messages: ar, direction: "rtl" as const
 const english = { name: "English", messages: en };
 const french = { name: "Français", messages: fr };
 const italian = { name: "Italiano", messages: it };
+const brazilianPortuguese = { name: "Português (Brasil)", messages: ptBR };
 const russian = { name: "Русский", messages: ru };
 
 export const catalogues: Readonly<
@@ -19,6 +21,7 @@ export const catalogues: Readonly<
   en: english,
   fr: french,
   it: italian,
+  "pt-BR": brazilianPortuguese,
   ru: russian,
 };
 export const fallbackLanguage = "en";

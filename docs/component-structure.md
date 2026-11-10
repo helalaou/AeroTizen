@@ -83,6 +83,15 @@ Continue Watching receive the same ticks to check expiry and system time correct
 
 `platform/tizen/createClockPlatform.ts` supplies TV date/time patterns and browser
 locales. Format choices stay in the preference service. The clock reads live time.
+Formatters are shared within each tick and cleared on the next tick or resume so
+time-zone changes still take effect. Hidden time/date fields do no formatting.
+The visible compact clock checks its exact full-day width in cancellable batches
+capped at 60 measurements with a 4 ms time budget. It uses the existing minimum width until the
+scan completes and shares the exact cached result with synchronous callers.
+Home controls select their own focus state; a focus move does not render the
+entire Home tree or its status widgets.
+Settings controls also subscribe to their own selected state. App and feed cards
+retain their rendered content while their scroller offset changes.
 
 ## Network ownership
 

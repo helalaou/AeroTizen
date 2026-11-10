@@ -2,6 +2,7 @@
   --home-content-padding: 8px;
   --home-side-padding: 64px;
   --home-bottom-fade: 80px;
+  --home-top-fade: 112px;
 
   height: 1080px;
   display: flex;
@@ -31,7 +32,7 @@
 
 .mask {
   width: 100%;
-  height: 100%;
+  height: calc(100% + var(--home-top-fade));
   mask-image: linear-gradient(
     to bottom,
     transparent 0,
@@ -42,13 +43,24 @@
     rgba(0, 0, 0, 0.94) 100px,
     #000 112px
   );
-  mask-size: 100% calc(100% + 112px);
+  mask-size: 100% 100%;
   mask-repeat: no-repeat;
-  mask-position: 0 -112px;
-  transition: mask-position var(--motion-duration-viewport) cubic-bezier(0.2, 0.72, 0.25, 1);
+  transform: translateZ(0) translateY(calc(-1 * var(--home-top-fade)));
+  transition: transform var(--motion-duration-viewport) cubic-bezier(0.2, 0.72, 0.25, 1);
 
   &[data-scrolled="true"] {
-    mask-position: 0 0;
+    transform: translateZ(0) translateY(0);
+  }
+}
+
+/* Counter the mask's movement so content keeps its original position and scroll path. */
+.maskContent {
+  height: calc(100% - var(--home-top-fade));
+  transform: translateY(var(--home-top-fade));
+  transition: transform var(--motion-duration-viewport) cubic-bezier(0.2, 0.72, 0.25, 1);
+
+  &[data-scrolled="true"] {
+    transform: translateY(0);
   }
 }
 

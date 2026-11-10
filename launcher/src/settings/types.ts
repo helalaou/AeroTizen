@@ -75,6 +75,7 @@ export interface SettingsActions {
   setGlassSettings(enabled: boolean): void;
   setGradientStop(stop: 0 | 1): void;
   setHdmiKeepVisible(port: string, keep: boolean): void;
+  setHdmiNativeViewer(enabled: boolean): void;
   setHdmiVisibility(hide: boolean): void;
   setHomeAppLayout(layout: SettingsValues["homeAppLayout"]): void;
   setHomeCardColumns(columns: number): void;
@@ -83,6 +84,7 @@ export interface SettingsActions {
   setLocationVisible(visible: boolean): void;
   setNetworkVisible(visible: boolean): void;
   setNumerals(numerals: "latn" | "arab"): void;
+  setPerformanceMode(enabled: boolean): void;
   setSpeed(direction: number): void;
   setTempUnit(unit: TemperatureUnit): void;
   setTimeFormat(format: TimeFormat | "none"): void;

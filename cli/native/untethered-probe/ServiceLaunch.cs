@@ -11,9 +11,27 @@ namespace AeroTizen.UntetheredProbe
     {
         internal const string AppId = "org.aerotizen.roothelper";
         internal const string Bin = "/opt/usr/apps/" + AppId + "/bin/";
+        internal const string ScopeRunner = "/usr/bin/systemd-run";
         internal static readonly string[] Managed = { "AeroTizenRootBridge.dll", "AeroTizenRootBridge.runtimeconfig.json", "AeroTizenRootBridge.deps.json" };
         internal readonly string Operation, Installation, SetupStage;
         internal readonly Dictionary<string, string> Hashes = new Dictionary<string, string>();
+        internal static void RequireScopeRunner()
+        {
+            if (!File.Exists(ScopeRunner))
+                throw new FileNotFoundException("The root bridge requires systemd-run for process isolation", ScopeRunner);
+        }
+        internal static string ServerCommand(string installation, string nonce, string origin)
+        {
+            if (!Regex.IsMatch(installation ?? "", "\\A[a-f0-9]{32}\\z")
+                || !Regex.IsMatch(nonce ?? "", "\\A[a-f0-9]{32}\\z") || (origin != "boot" && origin != "setup"))
+                throw new InvalidDataException("Invalid root bridge launch identity");
+            // setsid detaches the terminal, but the process would still belong to
+            // sdbd.service and be killed when Samsung restarts the developer daemon.
+            string unit = "aerotizen-root-" + installation + "-" + nonce + ".scope";
+            return ScopeRunner + " --quiet --scope --unit=" + Bundle.Quote(unit)
+                + " -- /usr/bin/dotnet " + Bundle.Quote(Bin + Managed[0])
+                + " --serve " + Bundle.Quote(installation) + " " + Bundle.Quote(nonce) + " " + Bundle.Quote(origin);
+        }
         internal ServiceLaunch(JsonElement value)
         {
             string[] names = { "operation", "installation_id", "setup_stage", "files" };
@@ -47,8 +65,7 @@ namespace AeroTizen.UntetheredProbe
                 lines.Add("printf '%s  %s\\n' " + Bundle.Quote(Hashes[name]) + " " + Bundle.Quote(path) + " | sha256sum -c - >/dev/null");
             }
             if (Operation == "serve")
-                lines.Add("/usr/bin/dotnet " + Bundle.Quote(Bin + Managed[0]) + " --serve " + Bundle.Quote(Installation)
-                    + " " + Bundle.Quote(nonce) + " boot </dev/null >/dev/null 2>&1 3>&- &");
+                lines.Add(ServerCommand(Installation, nonce, "boot") + " </dev/null >/dev/null 2>&1 3>&- &");
             else
             {
                 string command = Operation == "install" ? "--install" : Operation == "upgrade" ? "--repair-startup" : "--cleanup";

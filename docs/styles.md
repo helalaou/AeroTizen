@@ -107,6 +107,12 @@ section exposes `data-home-section="inputs"` as a layout slot. Tests use
 `data-moving`, `data-reorder-arrow` and `data-app-actions-focus`. Use `data-id` to
 identify app cards and ARIA state for menu selection.
 
+The top fade uses a static mask texture. Its container moves by 112px while
+`data-home-mask-content` moves by the opposite amount with the same duration and
+easing. This keeps content geometry and the fade path unchanged and lets the
+compositor animate the fade without repainting its mask on each frame. The bottom
+fade remains fixed on the viewport.
+
 App brand data sets `--app-background` on AppCard and AppOption. The card style
 uses that value, while Settings can supply its focused surface through a normal
 state rule. Do not put state paint into an inline background style.
@@ -145,6 +151,9 @@ This removes their repeated media queries and reduced-motion `!important` rules.
 New and migrated components should use the same tokens. Keep a local media query only when an effect
 needs different behavior, such as replacing movement with a static alternative.
 The policy does not change wallpaper or JavaScript animation behavior.
+The saved Performance mode also sets these UI durations to zero. Background views
+render blobs and waves without animation, and omit WebGL canvases in this mode.
+The root `data-performance-mode` attribute is owned by the Home shell.
 
 ## Runtime DOM boundary
 

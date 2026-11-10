@@ -54,6 +54,12 @@ export interface ClockService extends Store<number> {
   formatTime(date: Date, format: TimeFormat): string;
   formatTimeParts?(date: Date, format: TimeFormat): { hour: string; minute: string; dayPeriod: string } | null;
   measureTime(format: TimeFormat, font: string, measureText: (value: string) => number): number;
+  measureTimeDeferred?(
+    format: TimeFormat,
+    font: string,
+    measureText: (value: string) => number,
+    onWidth: (width: number) => void,
+  ): () => void;
   start(): void;
   tick(): void;
 }

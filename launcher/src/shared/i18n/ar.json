@@ -157,6 +157,10 @@
   "inputs.hdmi": "منافذ HDMI",
   "inputs.hdmiHint": "اختر ما إذا كنت تريد إظهار منافذ HDMI التي يعتبرها التلفاز غير متصلة.",
   "inputs.hdmiVisibility": "إظهار HDMI",
+  "inputs.hdmiPlayback": "تشغيل HDMI",
+  "inputs.hdmiPlaybackHint": "جرّب مشغّل Samsung للتحكم في جهاز HDMI بجهاز التحكم عن بُعد. عند تشغيل المراقب، قد يفتح زر الصفحة الرئيسية شاشة Samsung Home.",
+  "inputs.embeddedPlayback": "داخل AeroTizen",
+  "inputs.samsungViewer": "مشغّل Samsung",
   "inputs.keepVisible": "إبقاء منافذ HDMI ظاهرة",
   "inputs.keepHint": "تبقى الأجهزة المعروفة في وضع الاستعداد ظاهرة تلقائيًا. استخدم التجاوز فقط لجهاز غير معروف.",
   "inputs.names": "أسماء المصادر",
@@ -214,6 +218,7 @@
   "handoff.homeFailed": "تعذر فتح واجهة Samsung الرئيسية: {{reason}}",
   "handoff.liveTvFailed": "تعذر فتح البث المباشر: {{reason}}",
   "handoff.liveTvNoFocus": "لم ينتقل التركيز إلى البث المباشر",
+  "handoff.inputNoFocus": "لم يفتح مشغّل Samsung المدخل {{input}}",
   "handoff.launchDenied": "تم رفض التشغيل",
   "handoff.launchFailed": "فشل التشغيل",
   "handoff.appControlFailed": "فشل AppControl",
@@ -261,5 +266,7 @@
   "wallpaper.firstColour": "اللون الأول",
   "wallpaper.secondColour": "اللون الثاني",
   "wallpaper.direction": "الاتجاه",
-  "wallpaper.gradientHint": "OK لاختيار لون. أعلى/أسفل: اختر أداة. يمين/يسار: اضبط. اضغط مطولاً للضبط أسرع."
+  "wallpaper.gradientHint": "OK لاختيار لون. أعلى/أسفل: اختر أداة. يمين/يسار: اضبط. اضغط مطولاً للضبط أسرع.",
+  "appearance.performanceMode": "وضع الأداء",
+  "appearance.performanceHint": "يعطّل الرسوم المتحركة للخلفية وانتقالات الواجهة لتنقّل أكثر سلاسة."
 }
