@@ -87,7 +87,7 @@ for (const glassSettings of [false, true]) {
     await expect(page.locator('[data-key="performance-mode:true"]')).toHaveAttribute("aria-pressed", "true");
     await page.screenshot({ path: info.outputPath("performance-mode-settings.png") });
     // All animated wallpaper families must stop work, including WebGL loops.
-    for (const background of ["waves", "stars", "nebula", "rain"]) {
+    for (const background of ["waves", "stars", "nebula", "rain", "stage"]) {
       await page.evaluate((background) => {
         AeroTizen.settings.update({ background });
         AeroTizen.applyBackground();
