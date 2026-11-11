@@ -61,7 +61,7 @@ for (const glass of [false, true]) {
   }) => {
     const errors = await openGradient(page, glass);
     const tiles = page.locator("#bg-still [data-wallpaper-swatch]:visible");
-    await expect(tiles).toHaveCount(15);
+    await expect(tiles).toHaveCount(16);
     await expect(tiles.first()).toHaveAttribute("data-key", "bg:custom-gradient");
     await expect(tiles.first().locator("[data-wallpaper-edit]")).toBeVisible();
     await page.screenshot({ path: test.info().outputPath(`grid-${theme}.png`) });
