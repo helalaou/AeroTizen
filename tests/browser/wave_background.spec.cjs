@@ -153,7 +153,7 @@ test("wallpaper settings hide only WebGL scenes when the context probe fails", a
   await page.locator("#gear").click();
   await openCategory(page, "wallpaper");
   await page.locator('[data-key="wallpaper-categories:animated"]').click();
-  for (const scene of ["starfield", "nebula", "rain", "snow", "fireflies"]) {
+  for (const scene of ["starfield", "nebula", "rain", "snow", "fireflies", "stage"]) {
     await expect(page.locator('[data-key="bg:' + scene + '"]')).toHaveCount(0);
   }
   await expect(page.locator('[data-key="bg:aurora"]')).toBeVisible();
