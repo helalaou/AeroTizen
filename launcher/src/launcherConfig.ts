@@ -6,7 +6,6 @@ export const launcherConfig: LauncherConfig = {
   SERVICE_URL: "http://127.0.0.1:47790",
 
   STORAGE_KEY: "aerotizen.settings.v1",
-  LEGACY_STORAGE_KEYS: ["hearth.home.v1", "declutter.home.v5"],
 
   // Remote control key codes (Tizen TV).
   KEY: {

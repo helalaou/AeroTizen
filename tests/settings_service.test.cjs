@@ -9,7 +9,6 @@ const harness = (saved = {}, overrides = {}) => {
   const writes = [];
   const service = createSettingsService({
     storageKey: "aerotizen.settings.v1",
-    legacyStorageKeys: ["hearth.home.v1", "declutter.home.v5"],
     locale: { timeFormat: () => "24", tempUnit: () => "C" },
     speedRange: { MIN: 0.25, MAX: 3 },
     storage: {
@@ -31,7 +30,6 @@ test("performance mode stays off for fresh and existing preferences until explic
   for (const saved of [
     {},
     { "aerotizen.settings.v1": JSON.stringify({ background: "snow" }) },
-    { "hearth.home.v1": JSON.stringify({ favorites: ["video.app"] }) },
     { "aerotizen.settings.v1": JSON.stringify({ performanceMode: "true" }) },
   ]) {
     const h = harness(saved);
@@ -62,47 +60,66 @@ test("the current key wins without reading older storage; derived and unknown fi
   assert.equal("unrelated" in saved, false);
 });
 
-test("historical fields migrate on load and cannot affect runtime updates", () => {
-  const h = harness({
-    "aerotizen.settings.v1": JSON.stringify({ favorites: ["video.app"], cardSize: "small" }),
-  });
+test("old storage keys are ignored when the current key is missing", () => {
+  const h = harness(
+    Object.fromEntries(
+      ["hearth.home.v1", "declutter.home.v5", "aerotizen.settings.v1.demo"].map((key) => [
+        key,
+        JSON.stringify({ background: "lava", home: ["old.app"] }),
+      ]),
+    ),
+  );
   h.service.load();
-  assert.deepEqual(h.service.getSnapshot().home, ["video.app"]);
-  assert.equal(h.service.getSnapshot().homeCardColumns, 5);
-  h.service.update({ homeCardColumns: 4 });
-  const current = h.service.getSnapshot();
-  h.service.update({ favorites: ["old.app"], cardSize: "big" });
-  assert.equal(h.service.getSnapshot(), current);
-  const saved = JSON.parse(h.data.get("aerotizen.settings.v1"));
-  assert.equal("favorites" in saved, false);
-  assert.equal("cardSize" in saved, false);
-  h.service.load();
-  assert.equal(h.service.getSnapshot(), current, "loading migrated data is stable");
+  assert.deepEqual(h.reads, ["aerotizen.settings.v1"]);
+  assert.deepEqual(h.writes, ["aerotizen.settings.v1"]);
+  assert.equal(h.service.getSnapshot().background, "aurora");
+  assert.equal(h.service.getSnapshot().homeInitialized, false);
 });
 
-test("custom backgrounds survive current and historical storage keys in the TypeScript service", () => {
-  for (const key of ["aerotizen.settings.v1", "hearth.home.v1", "declutter.home.v5"]) {
-    const h = harness({
-      [key]: JSON.stringify({
-        background: "custom-gradient",
-        customColour: "#ABCDEF",
-        customGradient: { start: "#AABBCC", end: "#112233", angle: -90 },
-      }),
-    });
-    h.service.load();
-    const before = h.service.getSnapshot();
-    assert.equal(before.customColour, "#abcdef");
-    assert.deepEqual(before.customGradient, { start: "#aabbcc", end: "#112233", angle: 270 });
-    h.service.update({ showTime: false });
-    assert.equal(h.service.getSnapshot().customGradient, before.customGradient);
-    h.service.load();
-    assert.equal(h.service.getSnapshot().background, "custom-gradient");
-    assert.equal(h.service.getSnapshot().customColour, before.customColour);
-    assert.equal(h.service.getSnapshot().customGradient, before.customGradient);
-    const stored = JSON.parse(h.data.get("aerotizen.settings.v1"));
-    assert.equal(stored.customColour, before.customColour);
-    assert.deepEqual(stored.customGradient, before.customGradient);
+test("old fields use defaults on load and cannot affect runtime updates", () => {
+  const oldFields = { favorites: ["video.app"], cardSize: "small", homeCardMode: "rectangle", glassSettings: false };
+  const h = harness(
+    { "aerotizen.settings.v1": JSON.stringify({ ...oldFields, homeCardColumns: "5", dateFormat: "dmy" }) },
+    { defaults: { homeCardColumns: 4, theme: "glass", dateFormat: "iso" } },
+  );
+  h.service.load();
+  assert.equal(h.service.getSnapshot().homeInitialized, false);
+  assert.equal(h.service.getSnapshot().homeCardColumns, 4);
+  assert.equal(h.service.getSnapshot().theme, "glass");
+  assert.equal(h.service.getSnapshot().dateFormat, "iso");
+  h.service.update({ homeCardColumns: 5, home: ["current.app"] });
+  const current = h.service.getSnapshot();
+  h.service.update(oldFields);
+  assert.equal(h.service.getSnapshot(), current);
+  const saved = JSON.parse(h.data.get("aerotizen.settings.v1"));
+  for (const field of Object.keys(oldFields)) {
+    assert.equal(field in saved, false);
   }
+  h.service.load();
+  assert.equal(h.service.getSnapshot(), current, "loading current data is stable");
+});
+
+test("custom backgrounds survive reload in the TypeScript service", () => {
+  const h = harness({
+    "aerotizen.settings.v1": JSON.stringify({
+      background: "custom-gradient",
+      customColour: "#ABCDEF",
+      customGradient: { start: "#AABBCC", end: "#112233", angle: -90 },
+    }),
+  });
+  h.service.load();
+  const before = h.service.getSnapshot();
+  assert.equal(before.customColour, "#abcdef");
+  assert.deepEqual(before.customGradient, { start: "#aabbcc", end: "#112233", angle: 270 });
+  h.service.update({ showTime: false });
+  assert.equal(h.service.getSnapshot().customGradient, before.customGradient);
+  h.service.load();
+  assert.equal(h.service.getSnapshot().background, "custom-gradient");
+  assert.equal(h.service.getSnapshot().customColour, before.customColour);
+  assert.equal(h.service.getSnapshot().customGradient, before.customGradient);
+  const stored = JSON.parse(h.data.get("aerotizen.settings.v1"));
+  assert.equal(stored.customColour, before.customColour);
+  assert.deepEqual(stored.customGradient, before.customGradient);
 });
 
 test("custom background updates validate fields before publishing or saving them", () => {

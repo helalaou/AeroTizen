@@ -68,28 +68,6 @@ for (const theme of ["classic", "glass"])
     });
   }
 
-test("a saved rectangle layout opens as squares and retains its row count", async ({ page }) => {
-  await page.route("https://**/*", (r) => r.fulfill({ body: "{}" }));
-  await page.route("http://127.0.0.1:47790/**", (r) => r.fulfill({ body: "{}" }));
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      "aerotizen.settings.v1",
-      JSON.stringify({ homeCardMode: "rectangle", homeCardColumns: null, cardSize: "small" }),
-    );
-  });
-  await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
-  await expect(page.locator("#grid")).toHaveAttribute("data-columns", "5");
-  const size = await page
-    .locator("#grid > [data-id]")
-    .first()
-    .evaluate((n) => [n.offsetWidth, n.offsetHeight]);
-  expect(size).toEqual([332, 332]);
-  await page.locator("#gear").click();
-  await openCategory(page, "appearance");
-  await expect(page.locator('[data-key="home-card-columns:5"]')).toHaveAttribute("aria-pressed", "true");
-});
-
 for (const theme of ["classic", "glass"]) {
   test(`${theme} app sizes fit two complete rows and keep focused rows inside the viewport`, async ({ page }, info) => {
     const errors = [];

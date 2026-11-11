@@ -33,7 +33,7 @@ for (const scenario of [
         ),
       }),
     );
-    await page.addInitScript(({ size, count }) => {
+    await page.addInitScript(({ columns, count }) => {
       const prime = "org.tizen.primevideo";
       const apps = Array.from({ length: count }, (_, i) => ({
         id: i ? "testpkg00" + i + ".App" : prime,
@@ -44,7 +44,7 @@ for (const scenario of [
         "aerotizen.settings.v1",
         JSON.stringify({
           home: apps.map((app) => app.id),
-          cardSize: size,
+          homeCardColumns: columns,
           background: "black",
           showWeather: false,
           continueWatching: true,

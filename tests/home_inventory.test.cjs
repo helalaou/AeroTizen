@@ -16,7 +16,6 @@ test("Home inventories publish stable immutable data and respond to preference c
     defaults: { home: [], showLiveTv: true },
     storage: { getItem: () => null, setItem() {} },
     storageKey: "settings",
-    legacyStorageKeys: [],
     speedRange: { MIN: 0.25, MAX: 3 },
     locale: { timeFormat: () => "24", tempUnit: () => "C" },
   });

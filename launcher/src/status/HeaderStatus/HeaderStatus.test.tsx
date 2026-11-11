@@ -24,7 +24,6 @@ const renderHeader = (defaults: Partial<SettingsDefaults>, sample = samples[0]) 
   const clock: ClockService = {
     ...status.time,
     DATE_FORMATS: [],
-    dateStyle: () => "iso",
     defaultTimeFormat: () => format,
     formatDate: vi.fn((_, style) => (style === "none" ? "" : date)),
     formatTime: vi.fn(() => text),
@@ -35,7 +34,6 @@ const renderHeader = (defaults: Partial<SettingsDefaults>, sample = samples[0]) 
   };
   const settings = createSettingsService({
     defaults: { timeFormat: format, showWeather: false, ...defaults },
-    legacyStorageKeys: [],
     locale: { timeFormat: () => format, tempUnit: () => "C" },
     speedRange: { MIN: 1, MAX: 10 },
     storage: { getItem: () => null, setItem: () => undefined },

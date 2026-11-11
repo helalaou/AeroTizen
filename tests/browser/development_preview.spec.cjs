@@ -75,14 +75,16 @@ test("local preview keeps existing ordinary settings ahead of old demo settings"
   await expect(page.locator("#continue-section")).toBeHidden();
 });
 
-test("local preview carries over old demo preferences when ordinary settings do not exist", async ({ page }) => {
+test("local preview uses defaults when only old demo preferences exist", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("aerotizen.settings.v1.demo", JSON.stringify({ timeFormat: "24", theme: "classic" }));
   });
   await page.goto("http://127.0.0.1:8172/");
   await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
-  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().timeFormat)).toBe("24");
-  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().theme)).toBe("classic");
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().timeFormat)).toBe(
+    await page.evaluate(() => AeroTizen.clock.defaultTimeFormat()),
+  );
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().theme)).toBe("glass");
   await expect(page.locator("#continue-items > [data-key]")).toHaveCount(7);
   expect(await page.evaluate(() => localStorage.getItem("aerotizen.settings.v1"))).not.toBeNull();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("aerotizen.settings.v1.demo")).timeFormat)).toBe(

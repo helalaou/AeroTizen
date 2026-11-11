@@ -2,7 +2,7 @@ import type { MessageKey } from "../shared/i18n/catalogues";
 import type { Store } from "../shared/state/createStore";
 
 import type { AppsConfig } from "./apps";
-import type { DateFormat, SettingsDefaults, SettingsValues, TimeFormat } from "./preferences";
+import type { DateFormat, SettingsDefaults, TimeFormat } from "./preferences";
 
 export interface InputSource {
   readonly active?: boolean;
@@ -50,9 +50,8 @@ export interface ClockPlatform {
 }
 export interface ClockService extends Store<number> {
   DATE_FORMATS: ReadonlyArray<{ id: DateFormat; format(date: Date): string }>;
-  dateStyle(format: SettingsValues["dateFormat"]): DateFormat;
   defaultTimeFormat(): TimeFormat;
-  formatDate(date: Date, format: SettingsValues["dateFormat"]): string;
+  formatDate(date: Date, format: DateFormat): string;
   formatTime(date: Date, format: TimeFormat): string;
   formatTimeParts?(date: Date, format: TimeFormat): { hour: string; minute: string; dayPeriod: string } | null;
   measureTime(format: TimeFormat, font: string, measureText: (value: string) => number): number;
@@ -65,17 +64,13 @@ export interface ClockService extends Store<number> {
   start(): void;
   tick(): void;
 }
-export type ClockFormatter = Pick<
-  ClockService,
-  "dateStyle" | "formatDate" | "formatTime" | "subscribe" | "DATE_FORMATS"
->;
+export type ClockFormatter = Pick<ClockService, "formatDate" | "formatTime" | "subscribe" | "DATE_FORMATS">;
 export interface LauncherConfig extends AppsConfig {
   readonly APP_ID: string;
   readonly DEFAULTS?: Partial<SettingsDefaults>;
   readonly KEY: Readonly<
     Record<"LEFT" | "RIGHT" | "UP" | "DOWN" | "ENTER" | "BACK" | "ESC" | "IME_DONE" | "IME_CANCEL", number>
   >;
-  readonly LEGACY_STORAGE_KEYS: readonly string[];
   readonly LONG_PRESS_MS: number;
   readonly SERVICE_ID: string;
   readonly SERVICE_URL: string;

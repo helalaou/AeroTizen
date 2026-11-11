@@ -1,5 +1,5 @@
 import type { ClockPlatform, ClockService } from "../contracts/launcher";
-import type { DateFormat, SettingsValues, TimeFormat } from "../contracts/preferences";
+import type { TimeFormat } from "../contracts/preferences";
 import { createStore } from "../shared/state/createStore";
 
 const TICK_INTERVAL_MS = 10_000;
@@ -23,16 +23,6 @@ const MONTHS = [
 ];
 
 const pad = (value: number) => String(value).padStart(2, "0");
-
-const dateStyle = (format: SettingsValues["dateFormat"]): DateFormat => {
-  if (format === "auto" || format === "weekday") {
-    return "short";
-  }
-  if (format === "dmy" || format === "mdy") {
-    return "numeric";
-  }
-  return format;
-};
 
 const numericToken = (date: Date, token: string) => {
   if (token[0] === "d") {
@@ -203,7 +193,6 @@ export const createClockService = ({
     getSnapshot: () => store.getSnapshot().time,
     subscribe: store.subscribe,
     DATE_FORMATS: dateFormats,
-    dateStyle,
     defaultTimeFormat() {
       const pattern = platform.getTimePattern();
       if (/h/.test(pattern) && /m/.test(pattern)) {
@@ -220,8 +209,7 @@ export const createClockService = ({
       return "12";
     },
     formatDate(date, format) {
-      const style = dateStyle(format);
-      return dateFormats.find(({ id }) => id === style)?.format(date) ?? readableDate(date, "short");
+      return dateFormats.find(({ id }) => id === format)?.format(date) ?? readableDate(date, "short");
     },
     formatTime(date, format) {
       return timeText(date, format, timeFormatter(format));
