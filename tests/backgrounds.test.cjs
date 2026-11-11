@@ -4,7 +4,7 @@ const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createBackgrounds } = loadTypeScript("launcher/src/backgrounds/createBackgrounds.ts");
 const { SCENES } = loadTypeScript("launcher/src/backgrounds/scenes.ts");
 
-const NEW_GRADIENTS = ["prism", "pastel", "afterglow"];
+const NEW_GRADIENTS = ["prism", "pastel", "afterglow", "twilightpeaks"];
 const GRADIENT_LAYER = /^(?:repeating-)?(?:linear|radial|conic)-gradient\(/;
 const COLOUR_LAYER = /^(?:#[0-9a-f]{3,8}|rgba?\([^)]*\))$/i;
 
