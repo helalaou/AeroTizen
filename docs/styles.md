@@ -17,6 +17,45 @@ Keep theme paint in
 surfaces, text, borders, focus and shadows. Component-specific artwork and input
 state palettes stay with their component.
 
+A theme can also change a few values that components own. A component reads such
+a variable with its own value as the fallback, for example
+`border-radius: var(--home-card-radius, 10px)`, so Classic and Glass leave them
+unset:
+
+- type: `--font-ui`, `--app-label-weight`, `--header-tab-weight`,
+  `--home-section-heading-weight`, `--home-section-heading-tracking`,
+  `--continue-title-weight`, `--clock-date-weight`, `--clock-time-weight`,
+  `--settings-title-transform`, `--settings-title-tracking`,
+  `--settings-sidebar-line-height`, `--settings-return-label-wrap`;
+- radii: `--home-card-radius`, `--continue-card-radius`,
+  `--continue-badge-radius`, `--input-card-radius`, `--input-dock-radius`,
+  `--header-tab-radius`, `--header-tab-plate-radius`, `--toast-radius`;
+- app tiles: `--home-card-shadow`, `--home-card-focus-transform`,
+  `--home-card-focus-shadow-top`, `--home-card-sheen`;
+- Continue Watching: `--continue-title-text`, `--continue-focus-label-surface`,
+  `--continue-focus-title-text`, `--continue-focus-episode-text`,
+  `--continue-artwork-mark`, `--continue-artwork-mark-shadow`;
+- inputs: `--input-connected-text`, `--input-connected-icon-text`,
+  `--input-connected-subtitle-text`, `--input-focus-icon-text`,
+  `--input-empty-opacity`;
+- header: `--header-icon-text`, `--header-icon-surface`, `--header-icon-shadow`,
+  `--header-tab-plate-surface`, `--header-tab-plate-shadow`,
+  `--header-tab-plate-border`, `--header-tab-plate-text`,
+  `--header-tab-focus-shadow`, `--header-tab-underline`,
+  `--header-tab-underline-shadow`, `--header-status-shadow`,
+  `--header-status-divider`;
+- Settings: `--choice-selected-text`, `--settings-category-icon`,
+  `--settings-store-label-shadow`, `--settings-store-subtitle-text`,
+  `--settings-scroll-ring-room`;
+- spacing and toast: `--home-row-clearance`, `--toast-text`, `--toast-shadow`.
+
+The three `--input-connected-*` text variables are declared in `themes.css`,
+where they follow the neutral input text. Four of the variables paint a layer
+that is empty until a theme sets it: `--home-card-sheen` over an app tile,
+`--continue-artwork-mark` over a Continue Watching image,
+`--header-tab-underline` under the current tab and `--header-status-divider`
+between weather, date and time.
+
 ## Cascade and state
 
 `launcher/index.html` loads tokens and base rules first, then the compiled

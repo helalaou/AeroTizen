@@ -1,8 +1,8 @@
 .heading {
-  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
+  font-family: var(--font-ui, "SamsungOne", "Roboto", Arial, sans-serif);
   font-size: 21px;
-  font-weight: 500;
-  letter-spacing: 2.5px;
+  font-weight: var(--home-section-heading-weight, 500);
+  letter-spacing: var(--home-section-heading-tracking, 2.5px);
   line-height: 1.35;
   text-transform: uppercase;
   color: var(--home-section-heading-text);

@@ -5,5 +5,5 @@
   background: var(--settings-surface);
   box-shadow: var(--settings-shadow);
   color: var(--settings-text);
-  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
+  font-family: var(--font-ui, "SamsungOne", "Roboto", Arial, sans-serif);
 }

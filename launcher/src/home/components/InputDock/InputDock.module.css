@@ -19,7 +19,7 @@
     overflow: visible;
     isolation: isolate;
     border: 1px solid var(--input-dock-border);
-    border-radius: 37px;
+    border-radius: var(--input-dock-radius, 37px);
     background: var(--input-dock-surface);
     box-shadow: var(--input-dock-shadow);
 

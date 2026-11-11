@@ -93,6 +93,9 @@ body {
   --input-text: #f0f0f3;
   --input-label-shadow: var(--app-label-shadow);
   --input-subtitle-text: var(--muted);
+  --input-connected-text: var(--input-text);
+  --input-connected-icon-text: var(--input-icon-text);
+  --input-connected-subtitle-text: var(--input-subtitle-text);
   --input-dock-border: transparent;
   --input-dock-surface: transparent;
   --input-dock-shadow: none;

@@ -5,7 +5,9 @@
   transform: translateX(-50%);
   z-index: 100;
   padding: 18px 34px;
-  border-radius: 12px;
+  border-radius: var(--toast-radius, 12px);
   background: var(--toast-surface);
+  color: var(--toast-text, inherit);
+  box-shadow: var(--toast-shadow, none);
   font-size: 26px;
 }
