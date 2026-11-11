@@ -2,6 +2,35 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createBackgrounds } = loadTypeScript("launcher/src/backgrounds/createBackgrounds.ts");
+const { SCENES } = loadTypeScript("launcher/src/backgrounds/scenes.ts");
+
+const NEW_GRADIENTS = ["prism", "pastel", "afterglow", "twilightpeaks", "borealis"];
+const GRADIENT_LAYER = /^(?:repeating-)?(?:linear|radial|conic)-gradient\(/;
+const COLOUR_LAYER = /^(?:#[0-9a-f]{3,8}|rgba?\([^)]*\))$/i;
+
+const backgroundLayers = (value) => {
+  const layers = [];
+  let depth = 0;
+  let start = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (char === "(") depth += 1;
+    if (char === ")") depth -= 1;
+    if (char === "," && depth === 0) {
+      layers.push(value.slice(start, index).trim());
+      start = index + 1;
+    }
+  }
+  layers.push(value.slice(start).trim());
+  return layers;
+};
+
+const assertPureCss = (value, label) => {
+  assert.doesNotMatch(value, /url\(|image-set\(|image\(/i, `${label} uses an image`);
+  for (const layer of backgroundLayers(value)) {
+    assert.ok(GRADIENT_LAYER.test(layer) || COLOUR_LAYER.test(layer), `${label} has a non-gradient layer: ${layer}`);
+  }
+};
 
 const setup = (previous) => {
   const calls = [];
@@ -83,4 +112,25 @@ test("custom gradients render, retain both colours on speed changes, and select 
   assert.equal(root["data-light-background"], "true");
   bridge.apply("black");
   assert.equal(root["data-light-background"], "false");
+});
+
+test("the new gradient backgrounds are static and pure CSS, with no imagery", () => {
+  for (const id of NEW_GRADIENTS) {
+    const scene = SCENES.find((candidate) => candidate.id === id);
+    assert.ok(scene, `${id} is listed`);
+    assert.equal(scene.anim, undefined, `${id} is static`);
+    assert.equal(scene.category, undefined, `${id} is listed with the gradients`);
+    assertPureCss(scene.base, id);
+  }
+});
+
+test("Pastel turns the floating Home text dark, the darker new gradients keep it light", () => {
+  const { bridge, layer } = setup();
+  const root = layer.ownerDocument.documentElement;
+  bridge.apply("pastel");
+  assert.equal(root["data-light-background"], "true");
+  for (const id of NEW_GRADIENTS.filter((id) => id !== "pastel")) {
+    bridge.apply(id);
+    assert.equal(root["data-light-background"], "false", id);
+  }
 });
