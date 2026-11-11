@@ -75,6 +75,22 @@ the same service directly. TV services also use `getSnapshot()`, `subscribe()` a
 View teardown releases view subscriptions. The runtime preference service survives
 development hot reload so existing TV-service subscriptions remain active.
 
+## Boot and remote keys
+
+`launcherConfig.ts` defines the launcher configuration. The shared runtime setup
+captures the Tizen SDK and preserves platform overrides registered before boot.
+The local preview uses its own copy of the configuration for sample defaults.
+
+The shared TypeScript entry mounts the views before it starts boot. `startLauncherBoot`
+restores cached app labels and waits two animation frames and for page load before
+starting discovery. It also owns app inventory reports and coalesces app-control and
+visibility events when the TV returns to the launcher. The boot controller and services
+survive development hot reload. The early `startup.js` script records startup marks.
+
+`bindLauncherKeys` routes remote input to text entry, Fireplace, input playback,
+Settings and Home in that order. Each app mount binds its own controllers and removes
+the key listeners when the views are replaced.
+
 ## App inventory ownership
 
 `src/dev/` owns browser-only sample apps, input devices, fictional programmes and

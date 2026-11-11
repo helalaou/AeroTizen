@@ -12,23 +12,27 @@ for (const [name, url] of [
     });
     await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-    await page.route("**/js/main.js", async (route) => {
-      const response = await route.fetch();
-      await route.fulfill({
-        response,
-        body:
-          `
-          window.preferenceSourceSubscriptions = 0;
-          var source = AeroTizen.settings, subscribe = source.subscribe;
-          source.subscribe = function (listener) {
-            window.preferenceSourceSubscriptions++;
-            var unsubscribe = subscribe.call(source, listener);
-            return function () { window.preferenceSourceSubscriptions--; unsubscribe(); };
-          };
-        ` + (await response.text()),
-      });
-    });
     await page.addInitScript(() => {
+      // Count preference subscriptions from the moment the entry publishes its service.
+      window.AeroTizen ||= {};
+      window.preferenceSourceSubscriptions = 0;
+      let source;
+      Object.defineProperty(window.AeroTizen, "settings", {
+        get: () => source,
+        set(value) {
+          if (value === source) return;
+          source = value;
+          const subscribe = value.subscribe;
+          value.subscribe = (listener) => {
+            window.preferenceSourceSubscriptions++;
+            const unsubscribe = subscribe(listener);
+            return () => {
+              window.preferenceSourceSubscriptions--;
+              unsubscribe();
+            };
+          };
+        },
+      });
       localStorage.setItem(
         "aerotizen.settings.v1",
         JSON.stringify({ home: ["demo0", "demo1"], background: "black", showWeather: false }),
@@ -44,7 +48,16 @@ for (const [name, url] of [
         watcherDispose: typeof AeroTizen.homewatch.dispose,
       })),
     ).toEqual({ tiles: "undefined", artwork: "undefined", catalogue: "undefined", watcherDispose: "function" });
-    for (const script of ["app-catalog.js", "app-lookup.js", "artwork.js", "brands.js", "homewatch.js"]) {
+    for (const script of [
+      "app-catalog.js",
+      "app-lookup.js",
+      "artwork.js",
+      "brands.js",
+      "config.js",
+      "dom.js",
+      "homewatch.js",
+      "main.js",
+    ]) {
       await expect(page.locator('script[src$="/' + script + '"]')).toHaveCount(0);
     }
     await expect(page.locator("#home-root #grid > [data-id]")).toHaveCount(2);

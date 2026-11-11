@@ -5,6 +5,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 const { createWeatherPhoto } = loadTypeScript("launcher/src/backgrounds/createWeatherPhoto.ts");
 
 const root = path.join(__dirname, "..");
@@ -678,8 +679,7 @@ test("old preferences keep the default visibility; location and visibility persi
       setItem: (key, value) => data.set(key, value),
     },
   });
-  context.AeroTizen = context.window.AeroTizen = {};
-  vm.runInContext(fs.readFileSync(path.join(root, "launcher/js/config.js"), "utf8"), context);
+  context.AeroTizen = context.window.AeroTizen = { config: launcherConfig };
   require("./helpers/clock.cjs").installClock(context);
   require("./helpers/settings.cjs").installSettings(context);
   const settings = context.AeroTizen.settings;
@@ -698,7 +698,7 @@ test("old preferences keep the default visibility; location and visibility persi
 
 function preferences({ locale = "en-GB", intl = Intl, saved = {}, legacy = false } = {}) {
   const storage = new Map([[legacy ? "hearth.home.v1" : "aerotizen.settings.v1", JSON.stringify(saved)]]);
-  const A = {};
+  const A = { config: launcherConfig };
   const context = vm.createContext({
     AeroTizen: A,
     window: { AeroTizen: A, navigator: { languages: [locale], language: locale }, Intl: intl },
@@ -707,7 +707,6 @@ function preferences({ locale = "en-GB", intl = Intl, saved = {}, legacy = false
       setItem: (key, value) => storage.set(key, value),
     },
   });
-  vm.runInContext(fs.readFileSync(path.join(root, "launcher/js/config.js"), "utf8"), context);
   require("./helpers/clock.cjs").installClock(context);
   require("./helpers/settings.cjs").installSettings(context);
   A.settings.load();

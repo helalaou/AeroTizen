@@ -36,8 +36,7 @@ const developmentEntry: Plugin = {
     handler(html) {
       return html
         .replace('    <link rel="stylesheet" href="js/launcher-ui.css" />\n', "")
-        .replace('<script src="js/launcher-ui.js"></script>', "")
-        .replace('<script src="js/main.js"></script>', '<script type="module" src="/src/dev.ts"></script>');
+        .replace('<script src="js/launcher-ui.js"></script>', '<script type="module" src="/src/dev.ts"></script>');
     },
   },
 };

@@ -1,3 +1,5 @@
+import { launcherRuntime as runtime } from "../app/initializeLauncherRuntime";
+
 import { createPreviewContinueWatching } from "./createPreviewContinueWatching";
 import { createPreviewPlatforms } from "./createPreviewPlatforms";
 import { previewAppId } from "./previewApps";
@@ -5,7 +7,6 @@ import { previewAppId } from "./previewApps";
 const LEGACY_PREVIEW_STORAGE_SUFFIX = ".demo";
 const PREVIEW_SMALL_CARD_COLUMNS = 5;
 const DEFAULT_HOME_APPS = ["YouTube", "Netflix", "Prime Video", "Disney+", "Apple TV", "Stremio"] as const;
-const runtime = window.AeroTizen;
 
 // Explicit adapters and native SDK fixtures keep their own setup.
 if (!("tizen" in window) && !runtime.platforms) {
@@ -19,13 +20,16 @@ if (!("tizen" in window) && !runtime.platforms) {
   } catch {
     // Browser storage is optional; the settings service can still use defaults.
   }
-  config.LEGACY_STORAGE_KEYS = [];
-  config.DEFAULTS = {
-    continueWatching: true,
-    glassSettings: true,
-    homeCardColumns: PREVIEW_SMALL_CARD_COLUMNS,
-    homeAppLayout: "scroll",
-    home: DEFAULT_HOME_APPS.map(previewAppId),
+  runtime.config = {
+    ...config,
+    LEGACY_STORAGE_KEYS: [],
+    DEFAULTS: {
+      continueWatching: true,
+      glassSettings: true,
+      homeCardColumns: PREVIEW_SMALL_CARD_COLUMNS,
+      homeAppLayout: "scroll",
+      home: DEFAULT_HOME_APPS.map(previewAppId),
+    },
   };
   runtime.platforms = createPreviewPlatforms(() => true);
   runtime.continueWatching = createPreviewContinueWatching(runtime);

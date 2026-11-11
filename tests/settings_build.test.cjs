@@ -37,7 +37,11 @@ test("compiled launcher uses the production page, local scripts and the Preact l
     assert.equal(existsSync(path.join(output, "js", file)), false, file);
   }
   assert.ok(!scripts.includes("js/network.js"), "network status is owned by the TypeScript service");
-  assert.ok(scripts.indexOf("js/launcher-ui.js") < scripts.indexOf("js/main.js"), "views mount before boot");
+  assert.ok(scripts.indexOf("js/startup.js") < scripts.indexOf("js/launcher-ui.js"), "the startup recorder runs first");
+  for (const file of ["js/config.js", "js/dom.js", "js/main.js"]) {
+    assert.ok(!scripts.includes(file), `${file} is replaced by the shared TypeScript entry`);
+    assert.equal(existsSync(path.join(output, file)), false);
+  }
   for (const file of scripts) {
     assert.ok(existsSync(path.join(output, file)), file);
     parse(read(output, file), { ecmaVersion: 2018, sourceType: "script" });

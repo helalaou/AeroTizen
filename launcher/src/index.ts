@@ -1,7 +1,10 @@
 import version from "../version.txt?raw";
 
+import { bindLauncherKeys } from "./app/bindLauncherKeys";
 import { createLauncherApp } from "./app/createLauncherApp";
+import { launcherRuntime as runtime } from "./app/initializeLauncherRuntime";
 import { mountToast } from "./app/mountToast";
+import { startLauncherBoot } from "./app/startLauncherBoot";
 import type { BackgroundState } from "./backgrounds/createBackgrounds";
 import { mountBackgrounds } from "./backgrounds/mountBackgrounds";
 import type { AppsService } from "./contracts/apps";
@@ -61,7 +64,6 @@ if (
 ) {
   throw new Error("Launcher mount points are missing.");
 }
-const runtime = window.AeroTizen;
 const hotData = import.meta.hot
   ? (import.meta.hot.data as {
       backgrounds?: BackgroundState;
@@ -73,6 +75,7 @@ const hotData = import.meta.hot
       nativeNavigation?: NativeNavigation;
       network?: NetworkService;
       preferences?: SettingsService;
+      stopBoot?: () => void;
       weather?: WeatherService;
     })
   : undefined;
@@ -223,6 +226,8 @@ const dispose = () => {
   backgrounds.dispose();
 };
 
+let disposeApp: (() => void) | undefined;
+let unbindKeys: (() => void) | undefined;
 try {
   const app = createLauncherApp(
     runtime,
@@ -232,11 +237,20 @@ try {
     createLauncherUpdates(version.trim()),
     settings,
   );
+  disposeApp = app.dispose;
+  unbindKeys = bindLauncherKeys(document, runtime.config.KEY, {
+    fireplace: fireplace.bridge,
+    home: app.home,
+    inputs,
+    settings: app.settings,
+  });
+  const stopBoot = hotData?.stopBoot ?? startLauncherBoot(window, runtime, window.AeroStartup);
   if (import.meta.hot && hotData) {
     if (hotData.backgrounds) {
       runtime.applyBackground();
     }
     import.meta.hot.accept();
+    import.meta.hot.prune(stopBoot);
     import.meta.hot.dispose(() => {
       hotData.backgrounds = backgrounds.getState();
       hotData.apps = apps;
@@ -248,11 +262,15 @@ try {
       hotData.network = network;
       hotData.weather = weather;
       hotData.continueWatching = continueWatching;
+      hotData.stopBoot = stopBoot;
+      unbindKeys?.();
       app.dispose();
       dispose();
     });
   }
 } catch (error) {
+  unbindKeys?.();
+  disposeApp?.();
   dispose();
   throw error;
 }
