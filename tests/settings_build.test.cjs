@@ -37,7 +37,11 @@ test("compiled launcher uses the production page, local scripts and the Preact l
     assert.equal(existsSync(path.join(output, "js", file)), false, file);
   }
   assert.ok(!scripts.includes("js/network.js"), "network status is owned by the TypeScript service");
-  assert.ok(scripts.indexOf("js/launcher-ui.js") < scripts.indexOf("js/main.js"), "views mount before boot");
+  assert.ok(scripts.indexOf("js/startup.js") < scripts.indexOf("js/launcher-ui.js"), "the startup recorder runs first");
+  for (const file of ["js/config.js", "js/dom.js", "js/main.js"]) {
+    assert.ok(!scripts.includes(file), `${file} is replaced by the shared TypeScript entry`);
+    assert.equal(existsSync(path.join(output, file)), false);
+  }
   for (const file of scripts) {
     assert.ok(existsSync(path.join(output, file)), file);
     parse(read(output, file), { ecmaVersion: 2018, sourceType: "script" });
@@ -55,6 +59,11 @@ test("compiled launcher uses the production page, local scripts and the Preact l
   );
   assert.equal(existsSync(path.join(output, "src")), false, "TypeScript source is not a TV runtime asset");
   assert.doesNotMatch(read(output, "js/launcher-ui.js"), /@vite\/client|@prefresh|preact\/debug/);
+  assert.doesNotMatch(
+    read(output, "js/launcher-ui.js"),
+    /After the Tide|A Quiet Orbit|Preview001|demo0|continue\.demoFeed|continue\.demoPlayback/,
+    "sample inventory, programmes and preview-only copy cannot enter the TV bundle",
+  );
   assert.match(read(output, "licenses/preact.txt"), /MIT License/);
   assert.equal(read(output, "licenses/i18next.txt"), read(path.join(root, "node_modules/i18next"), "LICENSE"));
   assert.equal(

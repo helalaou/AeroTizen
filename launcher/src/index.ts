@@ -1,7 +1,10 @@
 import version from "../version.txt?raw";
 
+import { bindLauncherKeys } from "./app/bindLauncherKeys";
 import { createLauncherApp } from "./app/createLauncherApp";
+import { launcherRuntime as runtime } from "./app/initializeLauncherRuntime";
 import { mountToast } from "./app/mountToast";
+import { startLauncherBoot } from "./app/startLauncherBoot";
 import type { BackgroundState } from "./backgrounds/createBackgrounds";
 import { mountBackgrounds } from "./backgrounds/mountBackgrounds";
 import type { AppsService } from "./contracts/apps";
@@ -38,6 +41,11 @@ import { createWeatherService } from "./services/createWeatherService";
 import { mountSettings } from "./settings/index";
 import { appCatalog } from "./shared/apps/appCatalog";
 
+const createPlatform = <Platform>(create: () => Platform, override?: (platform: Platform) => Platform) => {
+  const platform = create();
+  return override?.(platform) ?? platform;
+};
+
 const backgroundHost = document.getElementById("bg");
 const home = document.getElementById("home-root");
 const settingsHost = document.getElementById("settings-root");
@@ -56,7 +64,6 @@ if (
 ) {
   throw new Error("Launcher mount points are missing.");
 }
-const runtime = window.AeroTizen;
 const hotData = import.meta.hot
   ? (import.meta.hot.data as {
       backgrounds?: BackgroundState;
@@ -68,6 +75,7 @@ const hotData = import.meta.hot
       nativeNavigation?: NativeNavigation;
       network?: NetworkService;
       preferences?: SettingsService;
+      stopBoot?: () => void;
       weather?: WeatherService;
     })
   : undefined;
@@ -119,7 +127,7 @@ const apps =
   createAppsService({
     catalog: appCatalog,
     config: runtime.config,
-    platform: createAppsPlatform(window),
+    platform: createPlatform(() => createAppsPlatform(window), runtime.platforms?.apps),
     storage: {
       getItem: (key) => localStorage.getItem(key),
       setItem: (key, value) => localStorage.setItem(key, value),
@@ -129,7 +137,7 @@ runtime.apps = apps;
 const inputs =
   hotData?.inputs ||
   createInputsService({
-    platform: createInputsPlatform(window),
+    platform: createPlatform(() => createInputsPlatform(window), runtime.platforms?.inputs),
     settings,
     timers: window,
     translate: (key, values) => runtime.translate(key, values),
@@ -218,6 +226,8 @@ const dispose = () => {
   backgrounds.dispose();
 };
 
+let disposeApp: (() => void) | undefined;
+let unbindKeys: (() => void) | undefined;
 try {
   const app = createLauncherApp(
     runtime,
@@ -227,11 +237,20 @@ try {
     createLauncherUpdates(version.trim()),
     settings,
   );
+  disposeApp = app.dispose;
+  unbindKeys = bindLauncherKeys(document, runtime.config.KEY, {
+    fireplace: fireplace.bridge,
+    home: app.home,
+    inputs,
+    settings: app.settings,
+  });
+  const stopBoot = hotData?.stopBoot ?? startLauncherBoot(window, runtime, window.AeroStartup);
   if (import.meta.hot && hotData) {
     if (hotData.backgrounds) {
       runtime.applyBackground();
     }
     import.meta.hot.accept();
+    import.meta.hot.prune(stopBoot);
     import.meta.hot.dispose(() => {
       hotData.backgrounds = backgrounds.getState();
       hotData.apps = apps;
@@ -243,11 +262,15 @@ try {
       hotData.network = network;
       hotData.weather = weather;
       hotData.continueWatching = continueWatching;
+      hotData.stopBoot = stopBoot;
+      unbindKeys?.();
       app.dispose();
       dispose();
     });
   }
 } catch (error) {
+  unbindKeys?.();
+  disposeApp?.();
   dispose();
   throw error;
 }

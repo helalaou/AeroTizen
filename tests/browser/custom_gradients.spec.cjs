@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const { openCategory } = require("./drawer_helpers.cjs");
 
 const image = (page) => page.evaluate(() => getComputedStyle(document.documentElement).backgroundImage);
@@ -61,7 +61,7 @@ for (const glass of [false, true]) {
   }) => {
     const errors = await openGradient(page, glass);
     const tiles = page.locator("#bg-still [data-wallpaper-swatch]:visible");
-    await expect(tiles).toHaveCount(15);
+    await expect(tiles).toHaveCount(20);
     await expect(tiles.first()).toHaveAttribute("data-key", "bg:custom-gradient");
     await expect(tiles.first().locator("[data-wallpaper-edit]")).toBeVisible();
     await page.screenshot({ path: test.info().outputPath(`grid-${theme}.png`) });
@@ -179,5 +179,24 @@ test("Back restores a weather photo after a gradient preview, and light gradient
   });
   await expect(page.locator("html")).toHaveAttribute("data-light-background", "true");
   await expect(page.locator("#gear")).toHaveCSS("color", "rgb(21, 21, 27)");
+  expect(errors).toEqual([]);
+});
+
+test("Pastel keeps dark status text, the darker new gradients keep it light, and the choice persists", async ({
+  page,
+}) => {
+  const errors = await openGradient(page, true);
+  await page.locator('[data-key="bg:pastel"]').click();
+  await expect(page.locator("html")).toHaveAttribute("data-light-background", "true");
+  await expect(page.locator("#gear")).toHaveCSS("color", "rgb(21, 21, 27)");
+  for (const scene of ["prism", "afterglow", "twilightpeaks", "borealis"]) {
+    await page.locator(`[data-key="bg:${scene}"]`).click();
+    await expect(page.locator("html")).toHaveAttribute("data-light-background", "false");
+    expect(await image(page)).not.toContain("url(");
+  }
+  await page.locator('[data-key="bg:pastel"]').click();
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-light-background", "true");
+  expect((await saved(page)).background).toBe("pastel");
   expect(errors).toEqual([]);
 });

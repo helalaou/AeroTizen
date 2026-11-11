@@ -38,11 +38,11 @@ export interface AppHandoff {
 }
 
 export interface AppsPlatform {
+  readonly cacheInventory: boolean;
   dispose(): void;
   launch(app: InstalledApp, refresh: () => void): void;
   openStore(): void;
   playFireplace(apps: readonly InstalledApp[]): void;
-  readonly preview: boolean;
   readInstalled(done: (records: unknown) => void): () => void;
 }
 

@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 for (const [build, url] of [
   ["compiled", "http://127.0.0.1:8171/"],
   ["development", "http://127.0.0.1:8172/"],

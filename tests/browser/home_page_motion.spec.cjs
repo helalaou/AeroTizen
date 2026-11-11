@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 for (const glassSettings of [false, true]) {
   test(`${glassSettings ? "Glass" : "Classic"} page reveals preserve cached artwork and accept immediate remote input`, async ({
     page,

@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 async function setup(page, version = "10.0", legacyWorks = true, url = "http://127.0.0.1:8171/") {
   const requests = [];

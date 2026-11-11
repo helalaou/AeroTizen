@@ -1,11 +1,11 @@
 // Launcher tests run the real browser scripts in a Node sandbox: node --test tests/*.test.cjs
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 const { installClock } = require("./helpers/clock.cjs");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { installSettings } = require("./helpers/settings.cjs");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 
 function loadSettings(storage, defaults = {}) {
   const store = { ...storage };
@@ -15,13 +15,11 @@ function loadSettings(storage, defaults = {}) {
       store[k] = String(v);
     },
   };
-  const A = {};
+  const A = { config: launcherConfig };
   const context = vm.createContext({
     window: { AeroTizen: A, Intl, navigator: { language: "en-GB", languages: ["en-GB"] } },
-    AeroTizen: A,
     localStorage,
   });
-  vm.runInContext(fs.readFileSync(path.join(__dirname, "../launcher/js/config.js"), "utf8"), context);
   installClock(context);
   installSettings(context, defaults);
   A.settings.load();

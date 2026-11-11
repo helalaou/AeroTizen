@@ -1,6 +1,6 @@
 const { readFileSync } = require("node:fs");
 const path = require("node:path");
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 const installed = readFileSync(path.join(__dirname, "../../launcher/version.txt"), "utf8").trim();
 const [major, minor] = installed.split(".").map(Number);

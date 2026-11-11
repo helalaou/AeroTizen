@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 for (const [name, url] of [
   ["compiled", "http://127.0.0.1:8171/"],
@@ -12,23 +12,27 @@ for (const [name, url] of [
     });
     await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-    await page.route("**/js/main.js", async (route) => {
-      const response = await route.fetch();
-      await route.fulfill({
-        response,
-        body:
-          `
-          window.preferenceSourceSubscriptions = 0;
-          var source = AeroTizen.settings, subscribe = source.subscribe;
-          source.subscribe = function (listener) {
-            window.preferenceSourceSubscriptions++;
-            var unsubscribe = subscribe.call(source, listener);
-            return function () { window.preferenceSourceSubscriptions--; unsubscribe(); };
-          };
-        ` + (await response.text()),
-      });
-    });
     await page.addInitScript(() => {
+      // Count preference subscriptions from the moment the entry publishes its service.
+      window.AeroTizen ||= {};
+      window.preferenceSourceSubscriptions = 0;
+      let source;
+      Object.defineProperty(window.AeroTizen, "settings", {
+        get: () => source,
+        set(value) {
+          if (value === source) return;
+          source = value;
+          const subscribe = value.subscribe;
+          value.subscribe = (listener) => {
+            window.preferenceSourceSubscriptions++;
+            const unsubscribe = subscribe(listener);
+            return () => {
+              window.preferenceSourceSubscriptions--;
+              unsubscribe();
+            };
+          };
+        },
+      });
       localStorage.setItem(
         "aerotizen.settings.v1",
         JSON.stringify({ home: ["demo0", "demo1"], background: "black", showWeather: false }),
@@ -44,7 +48,16 @@ for (const [name, url] of [
         watcherDispose: typeof AeroTizen.homewatch.dispose,
       })),
     ).toEqual({ tiles: "undefined", artwork: "undefined", catalogue: "undefined", watcherDispose: "function" });
-    for (const script of ["app-catalog.js", "app-lookup.js", "artwork.js", "brands.js", "homewatch.js"]) {
+    for (const script of [
+      "app-catalog.js",
+      "app-lookup.js",
+      "artwork.js",
+      "brands.js",
+      "config.js",
+      "dom.js",
+      "homewatch.js",
+      "main.js",
+    ]) {
       await expect(page.locator('script[src$="/' + script + '"]')).toHaveCount(0);
     }
     await expect(page.locator("#home-root #grid > [data-id]")).toHaveCount(2);
@@ -129,57 +142,73 @@ for (const [name, url] of [
   });
 }
 
-test("Continue Watching demo is opt-in, local to Vite and uses separate preferences", async ({ page }) => {
-  await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
-  await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-  await page.goto("http://127.0.0.1:8172/");
-  await page.waitForFunction(
-    () => AeroTizen.apps.getSnapshot().ready && Array.isArray(AeroTizen.settings.getSnapshot().home),
-  );
-  await expect(page.locator("#continue-section")).toBeHidden();
-  const original = await page.evaluate(() => localStorage.getItem("aerotizen.settings.v1"));
-  await page.goto("http://127.0.0.1:8172/?demo=1");
-  await expect(page.locator("#continue-section")).toBeVisible();
-  await expect(page.locator("#continue-items > [data-key]")).toHaveCount(5);
-  await expect(
-    page.locator("[data-continue-part=source-badge] :is([data-app-artwork], [data-app-fallback]):visible"),
-  ).toHaveCount(5);
-  for (const glass of [false, true]) {
-    await page.evaluate((glass) => AeroTizen.settings.update({ glassSettings: glass }), glass);
-    await page.waitForFunction((glass) => document.body.classList.contains("glass-ui") === glass, glass);
-    const fill = await page
-      .locator("#grid > [data-id]")
-      .first()
-      .evaluate((node) => getComputedStyle(node).background);
-    for (const badge of await page.locator("[data-continue-part=source-badge]").all()) {
-      await expect(badge).toHaveCSS("background", fill);
+test.describe("automatic development preview", () => {
+  test.use({ previewPlatforms: false });
+  test("local development opens the full preview and preserves settings with or without the old query", async ({
+    page,
+  }) => {
+    await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+    await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+    await page.goto("http://127.0.0.1:8172/");
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
+    const grid = page.locator("#grid");
+    const apps = grid.locator("> [data-id]");
+    const cards = page.locator("#continue-items > [data-key]");
+    await expect(page.locator("body")).toHaveClass(/\bglass-ui\b/);
+    await expect(grid).toHaveAttribute("data-columns", "5");
+    await expect(grid).toHaveAttribute("data-scroll", "true");
+    await expect(apps).toHaveCount(6);
+    await expect(apps.nth(4)).toHaveAccessibleName("Apple TV");
+    await expect(apps.last()).toHaveAccessibleName("Stremio");
+    await expect(page.locator("#continue-section")).toBeVisible();
+    await expect(cards).toHaveCount(7);
+    await expect(
+      page.locator("[data-continue-part=source-badge] :is([data-app-artwork], [data-app-fallback]):visible"),
+    ).toHaveCount(7);
+    await page.locator("#home-tab").click();
+    await page.keyboard.press("ArrowDown");
+    await expect(apps.first()).toBeFocused();
+    for (let index = 0; index < 5; index++) await page.keyboard.press("ArrowRight");
+    await expect(apps.last()).toBeFocused();
+    await expect.poll(async () => Number(await grid.getAttribute("data-offset"))).toBeGreaterThan(0);
+    for (const glass of [false, true]) {
+      await page.evaluate((glass) => AeroTizen.settings.update({ glassSettings: glass }), glass);
+      await page.waitForFunction((glass) => document.body.classList.contains("glass-ui") === glass, glass);
+      const fill = await page
+        .locator("#grid > [data-id]")
+        .first()
+        .evaluate((node) => getComputedStyle(node).background);
+      for (const badge of await page.locator("[data-continue-part=source-badge]").all()) {
+        await expect(badge).toHaveCSS("background", fill);
+      }
     }
-  }
-  await expect(page.locator("[data-continue-part=progress-fill]")).toHaveCount(4);
-  const unplayed = page.getByRole("button", { name: "Paper Moons · Prime Video" });
-  await expect(unplayed.locator("[data-continue-part=progress-fill]")).toHaveCount(0);
-  const labelBackground = await unplayed
-    .locator("[data-continue-part=label]")
-    .evaluate((node) => getComputedStyle(node).backgroundColor);
-  await expect(unplayed.locator("[data-continue-part=progress]")).toHaveCSS("background-color", labelBackground);
-  const longTitle = page
-    .getByRole("button", { name: /Signal North and the Last Broadcast/ })
-    .locator("[data-continue-part=title]");
-  expect(await longTitle.evaluate((node) => node.clientHeight === 60 && node.scrollHeight > node.clientHeight)).toBe(
-    true,
-  );
-  const heights = await page
-    .locator("#continue-items > [data-key]")
-    .evaluateAll((cards) => cards.map((card) => card.offsetHeight));
-  expect(heights).toEqual(Array(5).fill(318));
-  await expect(page.locator("[data-continue-part=image]").first()).toHaveJSProperty("complete", true);
-  expect(
-    await page
-      .locator("[data-continue-part=image]")
-      .first()
-      .evaluate((image) => image.naturalWidth),
-  ).toBeGreaterThan(0);
-  expect(await page.evaluate(() => localStorage.getItem("aerotizen.settings.v1"))).toBe(original);
-  await page.goto("http://127.0.0.1:8171/?demo=1");
-  await expect(page.locator("#continue-section")).toBeHidden();
+    await expect(page.locator("[data-continue-part=progress-fill]")).toHaveCount(6);
+    const unplayed = page.getByRole("button", { name: "Paper Moons · Prime Video" });
+    await expect(unplayed.locator("[data-continue-part=progress-fill]")).toHaveCount(0);
+    const labelBackground = await unplayed
+      .locator("[data-continue-part=label]")
+      .evaluate((node) => getComputedStyle(node).backgroundColor);
+    await expect(unplayed.locator("[data-continue-part=progress]")).toHaveCSS("background-color", labelBackground);
+    const longTitle = page
+      .getByRole("button", { name: /Signal North and the Last Broadcast/ })
+      .locator("[data-continue-part=title]");
+    expect(await longTitle.evaluate((node) => node.clientHeight === 60 && node.scrollHeight > node.clientHeight)).toBe(
+      true,
+    );
+    const heights = await cards.evaluateAll((nodes) => nodes.map((card) => card.offsetHeight));
+    expect(heights).toEqual(Array(7).fill(318));
+    await expect(page.locator("[data-continue-part=image]").first()).toHaveJSProperty("complete", true);
+    expect(
+      await page
+        .locator("[data-continue-part=image]")
+        .first()
+        .evaluate((image) => image.naturalWidth),
+    ).toBeGreaterThan(0);
+    await page.evaluate(() => AeroTizen.settings.update({ timeFormat: "24" }));
+    const saved = await page.evaluate(() => localStorage.getItem(AeroTizen.config.STORAGE_KEY));
+    await page.goto("http://127.0.0.1:8172/?demo=1");
+    await expect(cards).toHaveCount(7);
+    expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().timeFormat)).toBe("24");
+    expect(await page.evaluate(() => localStorage.getItem(AeroTizen.config.STORAGE_KEY))).toBe(saved);
+  });
 });

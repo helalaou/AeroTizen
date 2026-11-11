@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const { compareHeaderPixels } = require("./compare_header_pixels.cjs");
 for (const glassSettings of [false, true]) {
   for (const style of ["vertical", "horizontal", "minimal", "bold"]) {

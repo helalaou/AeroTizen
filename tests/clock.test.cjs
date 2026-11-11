@@ -4,7 +4,9 @@ const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 const { installClock } = require("./helpers/clock.cjs");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { installSettings } = require("./helpers/settings.cjs");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 
 function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = false, measure, view = true, now } = {}) {
   const storage = new Map([[legacy ? "hearth.home.v1" : "aerotizen.settings.v1", JSON.stringify(saved)]]);
@@ -20,7 +22,7 @@ function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = fal
   if (measure) {
     elements.time.style = {};
   }
-  const A = { $: (id) => elements[id] };
+  const A = { $: (id) => elements[id], config: launcherConfig };
   const timers = [];
   const context = vm.createContext({
     window: {
@@ -38,7 +40,6 @@ function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = fal
       setItem: (key, value) => storage.set(key, value),
     },
   });
-  vm.runInContext(fs.readFileSync(path.join(__dirname, "../launcher/js/config.js"), "utf8"), context);
   installClock(context, now);
   installSettings(context);
   if (view)

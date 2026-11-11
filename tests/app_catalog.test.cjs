@@ -7,8 +7,7 @@ const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
-const launcher = path.join(__dirname, "../launcher");
-const script = (name) => fs.readFileSync(path.join(launcher, "js", name), "utf8");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 const { appCatalog, createAppCatalog } = loadTypeScript("launcher/src/shared/apps/appCatalog.ts");
 
 function runtime(entries) {
@@ -200,6 +199,7 @@ test("preloaded Apple TV passes discovery and uses its store ID in the watcher i
     show: true,
   };
   const installed = [appleTV, { id: "unrelated.native", packageId: "unrelated.native", name: "Apple TV", show: true }];
+  A.config = launcherConfig;
   A.tizen = {
     application: {
       getAppsInfo(done) {
@@ -208,7 +208,6 @@ test("preloaded Apple TV passes discovery and uses its store ID in the watcher i
     },
   };
   const context = vm.createContext({ window: { AeroTizen: A }, AeroTizen: A });
-  vm.runInContext(script("config.js"), context);
   installApps(context);
   assert.equal(A.config.STORE_PACKAGE.test(appleTV.packageId), false);
   let loaded = false;
@@ -230,7 +229,7 @@ test("preloaded Apple TV passes discovery and uses its store ID in the watcher i
 
 test("watcher requests keep the preloaded store IDs from the shared catalogue", () => {
   const requests = [],
-    A = { tizen: {}, catalog: appCatalog };
+    A = { tizen: {}, catalog: appCatalog, config: launcherConfig };
   class Request {
     open(method, url) {
       requests.push({ method, url });
@@ -243,9 +242,6 @@ test("watcher requests keep the preloaded store IDs from the shared catalogue", 
     XMLHttpRequest: Request,
     document: { addEventListener() {} },
   });
-  for (const name of ["config.js"]) {
-    vm.runInContext(script(name), context);
-  }
   installHomeWatcher(context);
   A.homewatch.watch("org.tizen.netflix-app");
   A.homewatch.watch("org.tizen.primevideo");

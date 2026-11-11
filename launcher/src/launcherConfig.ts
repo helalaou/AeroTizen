@@ -1,7 +1,6 @@
-// AeroTizen launcher behaviour and settings. App identities live in src/shared/apps/appCatalog.json.
-window.AeroTizen = window.AeroTizen || {};
+import type { LauncherConfig } from "./contracts/launcher";
 
-AeroTizen.config = {
+export const launcherConfig: LauncherConfig = {
   APP_ID: "DclHome001.Home",
   SERVICE_ID: "DclHome001.Watcher",
   SERVICE_URL: "http://127.0.0.1:47790",

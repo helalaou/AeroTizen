@@ -139,16 +139,16 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       }
       assert(JSON.parse(localStorage.getItem(A.config.STORAGE_KEY)).timeFormat === "24", "setting persisted");
       find("time:none").click();
-      assert(A.$("time").hidden, "time hidden");
+      assert(document.getElementById("time").hidden, "time hidden");
       find("time:24").click();
-      assert(!A.$("time").hidden, "time restored");
+      assert(!document.getElementById("time").hidden, "time restored");
       find("weather-display:false").click();
-      assert(A.$("weather").hidden, "weather hidden");
+      assert(document.getElementById("weather").hidden, "weather hidden");
       find("weather-display:true").click();
       find("network-visibility:false").click();
-      assert(A.$("network").hasAttribute("hidden"), "network hidden");
+      assert(document.getElementById("network").hasAttribute("hidden"), "network hidden");
       find("network-visibility:true").click();
-      assert(!A.$("network").hasAttribute("hidden"), "network restored");
+      assert(!document.getElementById("network").hasAttribute("hidden"), "network restored");
       find(variant === "preact" ? "live-tv-visibility:false" : "live-tv:false").click();
       assert(preferences().showLiveTv === false, "Live TV hidden");
       if (variant === "preact") {
@@ -224,11 +224,11 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       key(K.RIGHT);
       assert(!document.body.classList.contains("previewing"), "any key exits preview");
       if (variant === "preact") {
-        assert(A.$("toast").hidden, "preview exit hides its message");
+        assert(document.getElementById("toast").hidden, "preview exit hides its message");
         find("preview").click();
         A.settingsUi.open();
         assert(
-          !document.body.classList.contains("previewing") && A.$("toast").hidden,
+          !document.body.classList.contains("previewing") && document.getElementById("toast").hidden,
           "open resets preview and its message together",
         );
         assert(
@@ -240,7 +240,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
         assert(
           !document.body.classList.contains("editing") &&
             !document.body.classList.contains("previewing") &&
-            A.$("toast").hidden,
+            document.getElementById("toast").hidden,
           "close clears all presentation state",
         );
         A.settingsUi.open();

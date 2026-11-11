@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const prime = "org.tizen.primevideo",
   youtube = "9Ur5IzDKqV.TizenYouTube";
 

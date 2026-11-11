@@ -4,8 +4,6 @@ import { createStore } from "../shared/state/createStore";
 import { equalRecord } from "../shared/state/equalRecord";
 import { snapshotList } from "../shared/state/snapshotList";
 
-import { demoApps } from "./apps/demoApps";
-
 interface AppsDependencies {
   catalog: { preloadedStoreId(id: string): string | null };
   config: AppsConfig;
@@ -161,13 +159,13 @@ export const createAppsService = ({ catalog, config, platform, storage }: AppsDe
           )
           .map((app) => ({ id: app.id, name: app.name || "", icon: app.iconPath || "" }))
           .sort((left, right) => left.name.localeCompare(right.name));
-        publish(platform.preview ? demoApps : all, inventory, realIds, true);
+        publish(all, inventory, realIds, true);
         // Returning from another app can carry new playback data without an inventory change.
         if (!disposed) {
           [...discoveryListeners].forEach((listener) => listener());
         }
         try {
-          if (!platform.preview) {
+          if (platform.cacheInventory) {
             storage.setItem(CACHE_KEY, JSON.stringify(store.getSnapshot().all));
           }
         } catch {
@@ -175,13 +173,9 @@ export const createAppsService = ({ catalog, config, platform, storage }: AppsDe
         }
         done?.(!disposed);
       };
-      if (platform.preview) {
-        finish([]);
-      } else {
-        cancelRead = platform.readInstalled(finish);
-        if (!active) {
-          cancelRead();
-        }
+      cancelRead = platform.readInstalled(finish);
+      if (!active) {
+        cancelRead();
       }
     },
     byId(id) {

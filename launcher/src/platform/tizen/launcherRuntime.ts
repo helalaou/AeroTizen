@@ -5,6 +5,7 @@ import type { HomeWatcherService } from "../../contracts/homeWatcher";
 import type { InputsService } from "../../contracts/inputs";
 import type { ClockService, HomeBridge, LauncherConfig, SettingsBridge } from "../../contracts/launcher";
 import type { NativeNavigation, NativeNavigationCommands } from "../../contracts/nativeNavigation";
+import type { PlatformOverrides } from "../../contracts/platformOverrides";
 import type { SettingsService } from "../../contracts/preferences";
 import type { NetworkService, WeatherService } from "../../contracts/status";
 import type { Translate } from "../../shared/i18n/createTranslations";
@@ -15,7 +16,7 @@ import type { InputsTizen } from "./createInputsPlatform";
 import type { NativeNavigationTizen } from "./createNativeNavigation";
 import type { StremioTizen } from "./createStremioContinueWatchingProvider";
 
-// The unmigrated TV services are accessed through this boundary, not a screen's types.
+// Shared runtime used by app composition and the Tizen adapters.
 export interface LauncherRuntime {
   applyBackground(): void;
   apps: AppsService;
@@ -28,6 +29,7 @@ export interface LauncherRuntime {
   inputs: InputsService;
   nativeNavigation: NativeNavigation;
   network: NetworkService;
+  platforms?: PlatformOverrides;
   settings: SettingsService;
   settingsUi?: SettingsBridge;
   tizen?: (AppsTizen & HomeWatcherTizen & InputsTizen & StremioTizen & NativeNavigationTizen) | null;
@@ -41,16 +43,26 @@ export interface LauncherPlatform {
   previewBackground(preview: BackgroundPreview | null): void;
 }
 
+export interface LauncherStartup {
+  afterLoad(callback: () => void): void;
+  captureLaunch(): void;
+  mark(name: string): void;
+  readonly trace: unknown;
+}
+
+export interface FireplaceControls {
+  close(): void;
+  isOpen(): boolean;
+  open(): void;
+  volumeDown(): void;
+  volumeUp(): void;
+}
+
 declare global {
   interface Window {
+    AeroStartup: LauncherStartup;
     AeroTizen: LauncherRuntime;
     Backgrounds: LauncherPlatform["backgrounds"];
-    Fireplace?: {
-      close(): void;
-      isOpen(): boolean;
-      open(): void;
-      volumeDown(): void;
-      volumeUp(): void;
-    };
+    Fireplace?: FireplaceControls;
   }
 }

@@ -37,12 +37,6 @@ interface InputsHost {
 
 const record = (value: unknown): Record<string, unknown> | null =>
   value !== null && typeof value === "object" ? (value as Record<string, unknown>) : null;
-const preview = Object.freeze([
-  Object.freeze({ type: "HDMI", number: 1, editName: "Xbox", connected: true }),
-  Object.freeze({ type: "HDMI", number: 2, connected: false }),
-  Object.freeze({ type: "HDMI", number: 3, editName: "PC", connected: false }),
-  Object.freeze({ type: "TV", number: 1, connected: true }),
-]);
 
 export const createInputsPlatform = (host: InputsHost): InputsPlatform => {
   const tizen = host.AeroTizen.tizen;
@@ -66,7 +60,7 @@ export const createInputsPlatform = (host: InputsHost): InputsPlatform => {
         }
       };
       if (!system) {
-        finish(preview);
+        finish(null);
       } else {
         try {
           if (!system.getPropertyValue) {

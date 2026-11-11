@@ -1,7 +1,7 @@
 const { openCategory } = require("./drawer_helpers.cjs");
 const { preserveLegacyDom } = require("./legacy_helpers.cjs");
 const { watcherStatus } = require("./watcher_helpers.cjs");
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const { runSettingsUi } = require("../settings_ui.browser");
 const { runSettingsFocus } = require("../settings_focus.browser");
 

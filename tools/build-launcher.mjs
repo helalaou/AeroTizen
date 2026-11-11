@@ -36,6 +36,9 @@ for (const buildResult of Array.isArray(result) ? result : [result]) {
   for (const chunk of buildResult.output) {
     if (chunk.type !== "chunk") continue;
     for (const [id, module] of Object.entries(chunk.modules)) {
+      if (id.replaceAll("\\", "/").includes("/launcher/src/dev/") && module.renderedLength > 0) {
+        throw new Error(`Development preview code cannot enter the TV package: ${path.relative(root, id)}`);
+      }
       const icon = id.replaceAll("\\", "/").match(/\/lucide-preact\/dist\/esm\/icons\/([^/]+)\.mjs$/);
       if (icon && module.renderedLength > 0) rendered.add(icon[1]);
     }
