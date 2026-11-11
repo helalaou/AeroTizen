@@ -93,6 +93,11 @@ the key listeners when the views are replaced.
 
 ## Diagnostics ownership
 
+`buildInfo.ts` supplies the typed local-preview placeholder at `js/build-info.js`.
+The package builder generates that same path with the version, content hash and
+Git stamp for both the browser and CommonJS service. Build identity excludes
+the generated stamp itself. The old placeholder is a frozen comparison fixture.
+
 `diagnostics/early.ts` builds the classic `launcher-diagnostics.js` entry in the page
 head. It starts diagnostics and startup tracing before the main UI bundle loads.
 `createDiagnostics` owns the bounded event buffer and asynchronous persistence.
@@ -102,9 +107,11 @@ schema, which the CLI parity test checks against its export rules.
 `installUiDiagnostics` owns page events, deferred delivery and bounded retries.
 
 The same typed logger and privacy rules build into `service/diagnostics.js` as
-ES5-compatible CommonJS for HomeWatcher. Its filesystem storage and environment
-context keep their service owners. Vite serves the early classic bundle locally
-and reloads the page when diagnostics source changes. UI hot reload retains this
+ES5-compatible CommonJS for HomeWatcher. Typed owners in `diagnostics/service/`
+handle environment context and asynchronous filesystem storage. The `context.ts`
+and `storage.ts` entries retain the existing CommonJS factories and filenames,
+with filesystem access confined to the service bundles. Vite serves the early
+classic bundle locally and reloads the page when diagnostics source changes. UI hot reload retains this
 page-level owner and its listeners.
 
 ## App inventory ownership
@@ -200,7 +207,17 @@ readiness and inventory probes retain 750 ms, a 200 ms retry delay and the 30-se
 startup deadline. Tizen 9 keeps AppControl first with the existing delayed fallback;
 Tizen 10 starts with `wrt:service`. HTTP protocol and app-ID checks establish readiness,
 and inventory is restored before a recovered handoff resumes. No view starts polling.
-The background `launcher/service/` code remains a separate runtime.
+The background runtime builds from `launcher/src/service/` into ES5 CommonJS in
+`dist/launcher/service/`. Its `index.ts` retains the Tizen `onStart`, `onRequest`
+and `onExit` exports. `createArtMode` owns the lazy loopback WebSocket transport,
+correlated status queries, bounded buffers and cancellation. `createHomeMode`
+owns routing receipts and transitions; `openHomeStore` keeps atomic rename and
+file/directory fsync before acknowledging a handoff. Node types are confined to
+the service TypeScript project, and the package keeps its existing entry paths.
+
+The Art Mode, watcher and Home storage cases run against typed source. After a
+build, `npm run test:service` runs them against the frozen `watcher-service/`
+baseline and generated ES5 modules, including with modern service globals absent.
 
 The `tests/fixtures/homewatch/` snapshot is frozen before this migration. The same
 startup and handoff cases run against it and the typed client; lifecycle cases also

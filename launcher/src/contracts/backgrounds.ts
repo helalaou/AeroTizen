@@ -14,10 +14,14 @@ export type BackgroundScene = Background & { readonly base: string; readonly gra
     | { readonly anim: "blobs"; readonly blobs: readonly string[]; readonly slow?: boolean; readonly stars?: boolean }
     | { readonly anim: "stars" | "waves" }
     | { readonly anim: "particles"; readonly kind: ParticleKind }
+    | { readonly anim: "stage" }
   );
 
 export const needsWebGL = (scene: BackgroundScene): boolean =>
-  scene.anim === "stars" || scene.anim === "particles" || (scene.anim === "blobs" && scene.stars === true);
+  scene.anim === "stars" ||
+  scene.anim === "particles" ||
+  scene.anim === "stage" ||
+  (scene.anim === "blobs" && scene.stars === true);
 
 export interface BackgroundGraphics extends Store<boolean | undefined> {
   check(): void;

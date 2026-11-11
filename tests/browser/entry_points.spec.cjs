@@ -40,6 +40,14 @@ for (const [name, url] of [
     });
     await page.goto(url);
     await expect(page).toHaveTitle("AeroTizen");
+    const buildInfo = await page.evaluate(() => window.AeroBuildInfo);
+    expect(Object.keys(buildInfo).sort()).toEqual(["build_id", "commit", "dirty", "version"]);
+    if (name === "compiled") {
+      expect(buildInfo.build_id).toMatch(/^[a-f0-9]{64}$/);
+      expect(buildInfo.version).toMatch(/^\d+\.\d+\.\d+$/);
+    } else {
+      expect(buildInfo).toEqual({ version: null, build_id: null, commit: null, dirty: null });
+    }
     expect(
       await page.evaluate(() => ({
         tiles: typeof AeroTizen.tiles,

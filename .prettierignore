@@ -16,3 +16,6 @@ tests/fixtures/homewatch/homewatch.js
 
 # Frozen startup and diagnostics before their TypeScript migration.
 tests/fixtures/diagnostics/
+
+# Frozen background service before its TypeScript migration.
+tests/fixtures/watcher-service/

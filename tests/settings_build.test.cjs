@@ -92,20 +92,22 @@ test("compiled launcher uses the production page, local scripts and the Preact l
 test("compilation preserves runtime scripts, CSS, service and app identity", () => {
   assert.deepEqual(
     readdirSync(path.join(output, "js")).sort(),
-    [
-      ...readdirSync(path.join(root, "launcher/js")),
-      "launcher-ui.js",
-      "launcher-ui.css",
-      "launcher-diagnostics.js",
-    ].sort(),
+    ["build-info.js", "launcher-ui.js", "launcher-ui.css", "launcher-diagnostics.js"].sort(),
   );
-  for (const directory of ["js", "css", "service"]) {
-    for (const file of readdirSync(path.join(root, "launcher", directory))) {
-      if (directory === "js" && file === "build-info.js") {
-        continue;
-      }
-      assert.equal(read(output, `${directory}/${file}`), read(path.join(root, "launcher"), `${directory}/${file}`));
-    }
+  for (const file of readdirSync(path.join(root, "launcher/css"))) {
+    assert.equal(read(output, `css/${file}`), read(path.join(root, "launcher"), `css/${file}`));
+  }
+  assert.deepEqual(readdirSync(path.join(output, "service")).sort(), [
+    "artmode.js",
+    "diagnostics-context.js",
+    "diagnostics-store.js",
+    "diagnostics.js",
+    "home-mode.js",
+    "home-store.js",
+    "index.js",
+  ]);
+  for (const file of readdirSync(path.join(output, "service"))) {
+    parse(read(output, "service/" + file), { ecmaVersion: 5, sourceType: "script" });
   }
   assert.equal(read(output, "config.xml"), read(path.join(root, "launcher"), "config.xml"));
   parse(read(output, "service/diagnostics.js"), { ecmaVersion: 5, sourceType: "script" });
@@ -137,6 +139,124 @@ test("compilation preserves runtime scripts, CSS, service and app identity", () 
   const metadata = context.enrich({}, {}, { guard: {} });
   assert.equal(metadata.environment.tizen, "9.0.0");
   assert.match(metadata.ui.health.session, /^d-[a-f0-9]{8}-[0-9]+$/);
+});
+
+test("compiled diagnostics helpers retain CommonJS factories without modern service globals", () => {
+  const imports = {
+    fs: {
+      stat: (name, done) => {
+        assert.equal(name, "/etc/os-release");
+        done(null, { size: 16385 });
+      },
+      readFile: () => assert.fail("oversized metadata must not be read"),
+    },
+    "./diagnostics": require(path.join(output, "service/diagnostics.js")),
+  };
+  const load = (file) => {
+    const code = read(output, "service/" + file);
+    parse(code, { ecmaVersion: 5, sourceType: "script" });
+    const module = { exports: {} };
+    vm.runInNewContext("Object.assign = undefined;\n" + code, {
+      module,
+      exports: module.exports,
+      Buffer,
+      process: undefined,
+      Symbol: undefined,
+      Map: undefined,
+      Set: undefined,
+      Promise: undefined,
+      require: (name) => {
+        if (name === "../js/build-info") throw new Error("Build metadata missing");
+        assert.ok(Object.hasOwn(imports, name), name);
+        return imports[name];
+      },
+    });
+    assert.equal(typeof module.exports, "function");
+    return module.exports;
+  };
+  const context = load("diagnostics-context.js")();
+  context.start();
+  context.accept({ health: { session: "private-session" } });
+  const metadata = context.enrich({}, {}, { guard: {} });
+  assert.equal(metadata.environment.state, "unavailable");
+  assert.equal(metadata.environment.arch, null);
+  assert.equal(metadata.environment.reason, "os_release_unavailable");
+  assert.equal(metadata.build.version, null);
+  assert.match(metadata.ui.health.session, /^d-[a-f0-9]{8}-[0-9]+$/);
+  const openStorage = load("diagnostics-store.js");
+  openStorage(null, (store) => assert.equal(store, null));
+  let saved = false;
+  imports.fs.writeFile = (name, value, options, done) => {
+    assert.equal(name, "/private/aerotizen-diagnostics-v1.json.tmp");
+    assert.equal(value, "[]");
+    assert.equal(options.mode, 0o600);
+    done(null);
+  };
+  imports.fs.rename = (from, to, done) => {
+    assert.equal(to, "/private/aerotizen-diagnostics-v1.json");
+    done(null);
+  };
+  openStorage({ filesystem: { resolve: (name, done) => done({ toURI: () => "file:///private" }) } }, (store) => {
+    store.save("[]", (error) => {
+      assert.equal(error, null);
+      saved = true;
+    });
+  });
+  assert.equal(saved, true);
+});
+
+test("the generated service keeps Tizen lifecycle exports and optional diagnostics", () => {
+  const module = { exports: {} };
+  const requests = [];
+  const listeners = [];
+  const intervals = new Set();
+  let closed = 0;
+  const http = {
+    get: (options) => {
+      requests.push(options);
+      return { on() {}, destroy() {} };
+    },
+    createServer: () => ({
+      listen: (port, host) => listeners.push({ port, host }),
+      close: () => closed++,
+    }),
+  };
+  vm.runInNewContext(read(output, "service/index.js"), {
+    module,
+    exports: module.exports,
+    Symbol: undefined,
+    Map: undefined,
+    Set: undefined,
+    Promise: undefined,
+    performance: undefined,
+    setTimeout: () => 1,
+    clearTimeout() {},
+    setInterval: (fn) => {
+      intervals.add(fn);
+      return fn;
+    },
+    clearInterval: (fn) => intervals.delete(fn),
+    require: (name) => {
+      if (name === "http") return http;
+      if (["./artmode", "./home-mode", "./home-store"].includes(name))
+        return require(path.join(output, "service", name));
+      throw new Error("Optional diagnostics are unavailable");
+    },
+  });
+  const api = module.exports;
+  assert.deepEqual(Object.keys(api).sort(), ["onExit", "onRequest", "onStart"]);
+  assert.equal(requests.length, 0);
+  api.onStart();
+  api.onStart();
+  api.onRequest();
+  assert.deepEqual(listeners, [{ port: 47790, host: "127.0.0.1" }]);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].path, "/api/v2/");
+  assert.equal(intervals.size, 1);
+  api.onExit();
+  api.onExit();
+  assert.equal(intervals.size, 0);
+  assert.equal(closed, 1);
 });
 
 test("legacy views remain test fixtures and cannot enter the compiled runtime", () => {
@@ -172,7 +292,12 @@ test("legacy views remain test fixtures and cannot enter the compiled runtime", 
 });
 
 test("shipped UI and service share a content build identity without local paths", () => {
+  const code = read(output, "js/build-info.js");
+  parse(code, { ecmaVersion: 5, sourceType: "script" });
   const info = require(path.join(output, "js/build-info.js"));
+  const browser = {};
+  vm.runInNewContext(code, { window: browser });
+  assert.deepEqual(JSON.parse(JSON.stringify(browser.AeroBuildInfo)), info);
   assert.match(info.build_id, /^[a-f0-9]{64}$/);
   assert.match(info.version, /^\d+\.\d+\.\d+$/);
   assert.match(info.commit, /^[a-f0-9]{40,64}$/);

@@ -10,7 +10,15 @@ const preserveLegacyDom = async (page) => {
   await page.route("http://127.0.0.1:8170/launcher/js/homewatch.js", (route) =>
     route.fulfill({ path: path.join(__dirname, "../fixtures/homewatch/homewatch.js"), contentType: "text/javascript" }),
   );
-  for (const file of ["config.js", "settings.js", "clock.js", "network.js", "inputs.js", "continue-watching.js"]) {
+  for (const file of [
+    "build-info.js",
+    "config.js",
+    "settings.js",
+    "clock.js",
+    "network.js",
+    "inputs.js",
+    "continue-watching.js",
+  ]) {
     await page.route(`http://127.0.0.1:8170/launcher/js/${file}`, (route) =>
       route.fulfill({
         path: path.join(__dirname, "../fixtures/legacy-launcher/js", file),

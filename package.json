@@ -10,9 +10,10 @@
     "build:dev": "npm run build -- --dev",
     "dev": "vite",
     "test": "node --test tests/*.test.cjs",
+    "test:service": "node tests/helpers/run_service_parity.cjs",
     "test:components": "vitest run",
     "test:browser": "npm run build && playwright test",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p launcher/src/service/tsconfig.json",
     "lint:js": "eslint launcher tests eslint.config.js playwright.config.cjs vite.config.mts \"tools/*.{mjs,cjs}\" stylelint.config.cjs --max-warnings=0",
     "lint:css": "stylelint \"launcher/{css,src}/**/*.css\" --max-warnings 0"
   },
