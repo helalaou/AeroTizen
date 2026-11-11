@@ -17,6 +17,7 @@ import type {
   SettingsStore,
   SettingsValues,
   TemperatureUnit,
+  Theme,
   TimeFormat,
   WeatherLocation,
 } from "../contracts/preferences";
@@ -70,7 +71,6 @@ export interface SettingsActions {
   setClockLayout(layout: "classic" | SettingsValues["aeroClockStyle"]): void;
   setContinueWatching(enabled: boolean): void;
   setDateFormat(format: DateFormat): void;
-  setGlassSettings(enabled: boolean): void;
   setGradientStop(stop: 0 | 1): void;
   setHdmiKeepVisible(port: string, keep: boolean): void;
   setHdmiNativeViewer(enabled: boolean): void;
@@ -85,6 +85,7 @@ export interface SettingsActions {
   setPerformanceMode(enabled: boolean): void;
   setSpeed(direction: number): void;
   setTempUnit(unit: TemperatureUnit): void;
+  setTheme(theme: Theme): void;
   setTimeFormat(format: TimeFormat | "none"): void;
   setWeatherPhoto(enabled: boolean): void;
   setWeatherVisible(visible: boolean): void;

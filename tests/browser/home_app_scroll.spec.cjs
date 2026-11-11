@@ -2,7 +2,7 @@ const { test, expect } = require("./launcher_fixture.cjs");
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
 const { watcherStatus } = require("./watcher_helpers.cjs");
 
-async function prepare(page, { glass = false, language = "en", layout = "grid" } = {}) {
+async function prepare(page, { theme = "classic", language = "en", layout = "grid" } = {}) {
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (route) =>
     route.fulfill({ json: watcherStatus(route.request().url()) }),
@@ -25,7 +25,7 @@ async function prepare(page, { glass = false, language = "en", layout = "grid" }
     }),
   );
   await page.addInitScript(
-    ({ glass, language, layout }) => {
+    ({ theme, language, layout }) => {
       const prime = "org.tizen.primevideo";
       const apps = Array.from({ length: 12 }, (_, index) => ({
         id: index ? "testpkg" + String(index).padStart(3, "0") + ".App" : prime,
@@ -37,7 +37,7 @@ async function prepare(page, { glass = false, language = "en", layout = "grid" }
           "aerotizen.settings.v1",
           JSON.stringify({
             home: apps.map((app) => app.id),
-            glassSettings: glass,
+            theme,
             language,
             homeAppLayout: layout,
             showWeather: false,
@@ -62,7 +62,7 @@ async function prepare(page, { glass = false, language = "en", layout = "grid" }
         },
       };
     },
-    { glass, language, layout },
+    { theme, language, layout },
   );
   await page.goto("/");
   await expect(page).toHaveTitle("AeroTizen");
@@ -80,14 +80,14 @@ const fullyVisible = async (page, card) => {
     .toBe(true);
 };
 
-for (const glass of [false, true]) {
+for (const theme of ["classic", "glass"]) {
   for (const language of ["en", "ar"]) {
-    test(`${glass ? "Glass" : "Classic"} ${language} Home scroll shares movement with the feed and retains separate offsets`, async ({
+    test(`${theme} ${language} Home scroll shares movement with the feed and retains separate offsets`, async ({
       page,
     }) => {
       const errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
-      await prepare(page, { glass, language });
+      await prepare(page, { theme, language });
       const track = await page.locator("#grid").elementHandle();
       await page.locator("#gear").click();
       await openCategory(page, "appearance");
@@ -137,10 +137,8 @@ for (const glass of [false, true]) {
     });
   }
 
-  test(`${glass ? "Glass" : "Classic"} all scroll sizes reveal another app and work below every clock style`, async ({
-    page,
-  }, info) => {
-    await prepare(page, { glass, layout: "scroll" });
+  test(`${theme} all scroll sizes reveal another app and work below every clock style`, async ({ page }, info) => {
+    await prepare(page, { theme, layout: "scroll" });
     await page.emulateMedia({ reducedMotion: "reduce" });
     for (const clock of ["classic", "vertical", "horizontal", "minimal", "bold"]) {
       for (const columns of [5, 4, 3]) {

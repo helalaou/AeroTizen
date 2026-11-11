@@ -15,7 +15,7 @@ test.each([
 ])("renders the $glyph icon for $inputName", ({ type, inputName, glyph }) => {
   const source = { type, number: 4, connected: true, editName: type === "TV" ? undefined : inputName };
   const env = createCardEnvironment();
-  renderWithEnglish(<InputCard env={env} source={source} glass compact={false} />);
+  renderWithEnglish(<InputCard env={env} source={source} theme="glass" compact={false} />);
 
   const button = screen.getByRole("button", { name: inputName });
   expect(button.querySelector(`svg.lucide-${glyph}[aria-hidden="true"]`)).not.toBeNull();

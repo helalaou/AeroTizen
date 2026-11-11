@@ -25,7 +25,7 @@ if (!("tizen" in window) && !runtime.platforms) {
     LEGACY_STORAGE_KEYS: [],
     DEFAULTS: {
       continueWatching: true,
-      glassSettings: true,
+      theme: "glass",
       homeCardColumns: PREVIEW_SMALL_CARD_COLUMNS,
       homeAppLayout: "scroll",
       home: DEFAULT_HOME_APPS.map(previewAppId),

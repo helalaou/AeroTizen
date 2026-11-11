@@ -59,7 +59,7 @@ export const normalizeSettings = (
   const validHome = Array.isArray(home) ? ids(home) : defaults.home;
   return {
     home: home === null ? null : validHome,
-    glassSettings: boolean(data.glassSettings, defaults.glassSettings),
+    theme: choice(data.theme, ["classic", "glass"], defaults.theme),
     performanceMode: boolean(data.performanceMode, defaults.performanceMode),
     homeCardColumns: typeof columns === "number" && [3, 4, 5].includes(columns) ? columns : defaults.homeCardColumns,
     homeAppLayout: choice(data.homeAppLayout, ["grid", "scroll"], defaults.homeAppLayout),

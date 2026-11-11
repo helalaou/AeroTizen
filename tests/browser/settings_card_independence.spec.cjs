@@ -38,19 +38,17 @@ test("Home columns never change standard Settings icons or artwork nodes", async
   }
 });
 
-for (const glassSettings of [false, true]) {
-  test(`${glassSettings ? "Glass" : "Classic"} Settings cards retain styles without the editor ID`, async ({
-    page,
-  }) => {
+for (const theme of ["classic", "glass"]) {
+  test(`${theme} Settings cards retain styles without the editor ID`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-    await page.addInitScript((glassSettings) => {
+    await page.addInitScript((theme) => {
       localStorage.setItem(
         "aerotizen.settings.v1",
-        JSON.stringify({ glassSettings, home: ["demo0"], background: "black", showWeather: false }),
+        JSON.stringify({ theme, home: ["demo0"], background: "black", showWeather: false }),
       );
-    }, glassSettings);
+    }, theme);
     await page.goto("/");
     await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     await page.locator("#gear").click();

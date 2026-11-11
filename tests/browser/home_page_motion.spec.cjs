@@ -1,22 +1,20 @@
 const { test, expect } = require("./launcher_fixture.cjs");
-for (const glassSettings of [false, true]) {
-  test(`${glassSettings ? "Glass" : "Classic"} page reveals preserve cached artwork and accept immediate remote input`, async ({
-    page,
-  }) => {
+for (const theme of ["classic", "glass"]) {
+  test(`${theme} page reveals preserve cached artwork and accept immediate remote input`, async ({ page }) => {
     await page.route("https://**/*", (r) => r.fulfill({ body: "{}" }));
     await page.route("http://127.0.0.1:47790/**", (r) => r.fulfill({ body: "{}" }));
     await page.addInitScript(
-      (glassSettings) =>
+      (theme) =>
         localStorage.setItem(
           "aerotizen.settings.v1",
           JSON.stringify({
-            glassSettings,
+            theme,
             home: ["demo0", "demo1", "demo2", "demo3"],
             background: "black",
             showWeather: false,
           }),
         ),
-      glassSettings,
+      theme,
     );
     await page.goto("/");
     await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
