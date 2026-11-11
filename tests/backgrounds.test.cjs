@@ -4,7 +4,7 @@ const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createBackgrounds } = loadTypeScript("launcher/src/backgrounds/createBackgrounds.ts");
 const { SCENES } = loadTypeScript("launcher/src/backgrounds/scenes.ts");
 
-const NEW_GRADIENTS = ["prism"];
+const NEW_GRADIENTS = ["prism", "pastel"];
 const GRADIENT_LAYER = /^(?:repeating-)?(?:linear|radial|conic)-gradient\(/;
 const COLOUR_LAYER = /^(?:#[0-9a-f]{3,8}|rgba?\([^)]*\))$/i;
 
@@ -121,5 +121,16 @@ test("the new gradient backgrounds are static and pure CSS, with no imagery", ()
     assert.equal(scene.anim, undefined, `${id} is static`);
     assert.equal(scene.category, undefined, `${id} is listed with the gradients`);
     assertPureCss(scene.base, id);
+  }
+});
+
+test("Pastel turns the floating Home text dark, the darker new gradients keep it light", () => {
+  const { bridge, layer } = setup();
+  const root = layer.ownerDocument.documentElement;
+  bridge.apply("pastel");
+  assert.equal(root["data-light-background"], "true");
+  for (const id of NEW_GRADIENTS.filter((id) => id !== "pastel")) {
+    bridge.apply(id);
+    assert.equal(root["data-light-background"], "false", id);
   }
 });
