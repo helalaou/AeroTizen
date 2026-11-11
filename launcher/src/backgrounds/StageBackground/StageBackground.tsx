@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef } from "preact/hooks";
 import styles from "./StageBackground.module.css";
 import { STAGE_HEIGHT, STAGE_WIDTH } from "./stageGeometry";
 import { createHalftoneTile, HALFTONE_TILE } from "./stageHalftone";
+import type { StageAnimation } from "./stageRenderer";
 import { startStage } from "./stageRenderer";
 
 const MAX_TILE_SCALE = 2;
@@ -15,6 +16,7 @@ interface Props {
 export const StageBackground = ({ speed, reportWebGL }: Props) => {
   const canvas = useRef<HTMLCanvasElement>(null);
   const halftone = useRef<HTMLDivElement>(null);
+  const animation = useRef<StageAnimation | undefined>(undefined);
   useLayoutEffect(() => {
     const element = halftone.current;
     if (!element) {
@@ -29,18 +31,23 @@ export const StageBackground = ({ speed, reportWebGL }: Props) => {
     if (!element) {
       return;
     }
-    const stop = startStage(element, speed);
-    if (!stop) {
+    const controller = startStage(element);
+    if (!controller) {
       reportWebGL(false);
       return;
     }
+    animation.current = controller;
     const onLoss = () => reportWebGL(false);
     element.addEventListener("webglcontextlost", onLoss);
     reportWebGL(true);
     return () => {
       element.removeEventListener("webglcontextlost", onLoss);
-      stop();
+      animation.current = undefined;
+      controller.stop();
     };
+  }, [reportWebGL]);
+  useLayoutEffect(() => {
+    animation.current?.setSpeed(speed);
   }, [speed, reportWebGL]);
   return (
     <div class={styles.stage} data-stage-background>

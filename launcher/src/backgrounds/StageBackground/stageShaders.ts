@@ -14,7 +14,7 @@ const GUARD_CAP = 0.17;
 export const SCENE_ATTRIBUTES = ["aPosition"];
 export const SPRITE_ATTRIBUTES = ["aCorner", "aSprite", "aLook", "aMotion", "aShine", "aTint"];
 
-// Six significant digits: constants such as 1/960 need more than a fixed number of decimals.
+// Six significant digits: inverse buffer dimensions need more than a fixed number of decimals.
 const glslFloat = (x: number) => {
   const text = String(Number(x.toPrecision(6)));
   return text.includes(".") || text.includes("e") ? text : text + ".0";
@@ -145,15 +145,21 @@ precision mediump float;
 varying vec2 vCorner;
 varying vec3 vColor;
 varying vec4 vLook;
+const float SPARKLE_THRESHOLD = 0.5;
 void main() {
   float r = length(vCorner);
-  float edge = vLook.x;
-  float disc = 1.0 - smoothstep(1.0 - edge, 1.0, r);
-  float body = 0.62 + 0.38 * smoothstep(0.0, 0.92, r);
-  float ring = smoothstep(1.0 - 2.6 * edge, 1.0 - 0.8 * edge, r) * disc;
-  float halo = 0.08 * (1.0 - smoothstep(0.75, 1.4, r));
-  float bubble = disc * body + vLook.y * ring + halo;
-  vec2 a = abs(vCorner);
-  float sparkle = exp(-r * r * 9.0) + vLook.w * (exp(-a.x * 26.0 - a.y * 2.6) + exp(-a.y * 26.0 - a.x * 2.6));
-  gl_FragColor = vec4(vColor * mix(bubble, sparkle, vLook.z), 1.0);
+  float shape;
+  // Sprite kind is constant across each quad, so a bubble skips sparkle calculations and vice versa.
+  if (vLook.z < SPARKLE_THRESHOLD) {
+    float edge = vLook.x;
+    float disc = 1.0 - smoothstep(1.0 - edge, 1.0, r);
+    float body = 0.62 + 0.38 * smoothstep(0.0, 0.92, r);
+    float ring = smoothstep(1.0 - 2.6 * edge, 1.0 - 0.8 * edge, r) * disc;
+    float halo = 0.08 * (1.0 - smoothstep(0.75, 1.4, r));
+    shape = disc * body + vLook.y * ring + halo;
+  } else {
+    vec2 a = abs(vCorner);
+    shape = exp(-r * r * 9.0) + vLook.w * (exp(-a.x * 26.0 - a.y * 2.6) + exp(-a.y * 26.0 - a.x * 2.6));
+  }
+  gl_FragColor = vec4(vColor * shape, 1.0);
 }`;

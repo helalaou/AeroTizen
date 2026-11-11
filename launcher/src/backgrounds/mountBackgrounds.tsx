@@ -39,7 +39,7 @@ export const mountBackgrounds = (
       render(
         scene && (
           <BackgroundSceneView
-            key={generation++}
+            key={scene.anim === "stage" ? scene.id : generation++}
             scene={scene}
             speed={speed}
             webGL={webGL}

@@ -271,7 +271,12 @@ function createRenderer(gl: WebGLRenderingContext, look: StageLook) {
   return { draw, release };
 }
 
-export const startStage = (canvas: HTMLCanvasElement, speed: number) => {
+export interface StageAnimation {
+  setSpeed(value: number): void;
+  stop(): void;
+}
+
+export const startStage = (canvas: HTMLCanvasElement): StageAnimation | undefined => {
   const gl = getWebGL(canvas);
   if (!gl) {
     return undefined;
@@ -292,6 +297,7 @@ export const startStage = (canvas: HTMLCanvasElement, speed: number) => {
   let time = 0;
   let frame = 0;
   let stopped = false;
+  let speed = 1;
 
   const running = () => !stopped && speed > 0 && !document.hidden && !gl.isContextLost() && !motion?.matches;
   const draw = (now: number) => {
@@ -319,14 +325,23 @@ export const startStage = (canvas: HTMLCanvasElement, speed: number) => {
 
   renderer.draw(time);
   document.addEventListener("visibilitychange", update);
+  // Chromium 69 uses the original MediaQueryList listener API.
+  motion?.addListener(update);
   update();
-  return () => {
-    stopped = true;
-    update();
-    document.removeEventListener("visibilitychange", update);
-    if (!gl.isContextLost()) {
-      renderer.release();
-      gl.getExtension("WEBGL_lose_context")?.loseContext();
-    }
+  return {
+    setSpeed(value) {
+      speed = value;
+      update();
+    },
+    stop() {
+      stopped = true;
+      update();
+      document.removeEventListener("visibilitychange", update);
+      motion?.removeListener(update);
+      if (!gl.isContextLost()) {
+        renderer.release();
+        gl.getExtension("WEBGL_lose_context")?.loseContext();
+      }
+    },
   };
 };
