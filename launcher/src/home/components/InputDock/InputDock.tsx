@@ -1,4 +1,5 @@
 import type { InputSource } from "../../../contracts/launcher";
+import type { Theme } from "../../../contracts/preferences";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import type { HomeEnvironment } from "../../types";
 import { HomeSectionHeading } from "../HomeSectionHeading/HomeSectionHeading";
@@ -10,12 +11,12 @@ export const InputDock = ({
   env,
   inputs,
   visible,
-  glass,
+  theme,
 }: {
   env: HomeEnvironment;
   inputs: readonly InputSource[];
   visible: boolean;
-  glass: boolean;
+  theme: Theme;
 }) => {
   const { t } = useTranslation();
   const compact = inputs.length < 5;
@@ -26,7 +27,7 @@ export const InputDock = ({
         id="inputs"
         class={styles.dock}
         data-input-dock
-        data-variant={glass ? "glass" : "classic"}
+        data-variant={theme}
         data-compact={compact ? "true" : "false"}
       >
         {inputs.map((source) => (
@@ -34,7 +35,7 @@ export const InputDock = ({
             key={env.runtime.inputs.portName(source)}
             env={env}
             source={source}
-            glass={glass}
+            theme={theme}
             compact={compact}
           />
         ))}

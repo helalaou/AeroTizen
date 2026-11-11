@@ -29,10 +29,10 @@ for (const [build, url] of [
     await expect(shortcuts).toHaveCSS("transition-duration", "0.18s, 0.15s");
 
     await page.emulateMedia({ reducedMotion: "reduce" });
-    for (const glassSettings of [false, true]) {
-      await page.evaluate((glassSettings) => {
-        AeroTizen.settings.update({ glassSettings: glassSettings });
-      }, glassSettings);
+    for (const theme of ["classic", "glass"]) {
+      await page.evaluate((theme) => {
+        AeroTizen.settings.update({ theme });
+      }, theme);
       for (const plate of [tabs, shortcuts]) {
         const durations = await plate.evaluate((node) =>
           getComputedStyle(node).transitionDuration.split(",").map(parseFloat),

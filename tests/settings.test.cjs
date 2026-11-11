@@ -165,6 +165,46 @@ test("settings migrate from an earlier storage key and field name", () => {
   assert.equal(settings.getSnapshot().speed, 2);
 });
 
+test("a saved Glass choice migrates to a named theme, is saved and survives a restart", () => {
+  for (const key of ["aerotizen.settings.v1", "hearth.home.v1", "declutter.home.v5"]) {
+    for (const [glassSettings, theme, defaultTheme] of [
+      [true, "glass", "classic"],
+      [false, "classic", "glass"],
+    ]) {
+      const legacy = { glassSettings, background: "lava" };
+      const { settings, store } = loadSettings({ [key]: JSON.stringify(legacy) }, { theme: defaultTheme });
+      assert.equal(settings.getSnapshot().theme, theme, key);
+      const saved = JSON.parse(store["aerotizen.settings.v1"]);
+      assert.equal(saved.theme, theme, "migration is saved");
+      assert.equal("glassSettings" in saved, false);
+      assert.equal(saved.background, "lava");
+      assert.equal(
+        loadSettings(store, { theme: defaultTheme }).settings.getSnapshot().theme,
+        theme,
+        "migration survives restart",
+      );
+    }
+  }
+});
+
+test("the theme persists and falls back to the default for unknown values", () => {
+  const key = "aerotizen.settings.v1";
+  const { settings, store } = loadSettings({});
+  assert.equal(settings.getSnapshot().theme, "classic");
+  settings.update({ theme: "glass" });
+  assert.equal(loadSettings(store).settings.getSnapshot().theme, "glass");
+  for (const defaultTheme of ["classic", "glass"]) {
+    for (const theme of [null, true, "frosted"]) {
+      const saved = { [key]: JSON.stringify({ theme }) };
+      assert.equal(loadSettings(saved, { theme: defaultTheme }).settings.getSnapshot().theme, defaultTheme);
+    }
+    for (const glassSettings of [null, "true", 1]) {
+      const saved = { [key]: JSON.stringify({ glassSettings }) };
+      assert.equal(loadSettings(saved, { theme: defaultTheme }).settings.getSnapshot().theme, defaultTheme);
+    }
+  }
+});
+
 test("save writes only known settings under the current key", () => {
   const { settings, store } = loadSettings({});
   settings.update({ background: "snow" });

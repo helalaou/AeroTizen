@@ -171,9 +171,12 @@ test.describe("automatic development preview", () => {
     for (let index = 0; index < 5; index++) await page.keyboard.press("ArrowRight");
     await expect(apps.last()).toBeFocused();
     await expect.poll(async () => Number(await grid.getAttribute("data-offset"))).toBeGreaterThan(0);
-    for (const glass of [false, true]) {
-      await page.evaluate((glass) => AeroTizen.settings.update({ glassSettings: glass }), glass);
-      await page.waitForFunction((glass) => document.body.classList.contains("glass-ui") === glass, glass);
+    for (const theme of ["classic", "glass"]) {
+      await page.evaluate((theme) => AeroTizen.settings.update({ theme }), theme);
+      await page.waitForFunction(
+        (theme) => document.body.classList.contains("glass-ui") === (theme === "glass"),
+        theme,
+      );
       const fill = await page
         .locator("#grid > [data-id]")
         .first()

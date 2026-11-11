@@ -4,7 +4,7 @@ import type { SettingsDefaults } from "../../contracts/preferences";
 
 export const DEFAULT_SETTINGS: SettingsDefaults = {
   home: null, // null selects first-launch defaults; [] retains an empty Home.
-  glassSettings: false,
+  theme: "classic",
   performanceMode: false,
   homeCardColumns: 3,
   homeAppLayout: "grid",

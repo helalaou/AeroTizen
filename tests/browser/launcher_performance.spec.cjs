@@ -55,15 +55,13 @@ test("first-row navigation does not format the clock or measure layout", async (
   expect(result.calls).toEqual({ format: 0, rect: 0 });
 });
 
-for (const glassSettings of [false, true]) {
-  test(`performance mode persists and stops wallpapers and UI transitions in ${glassSettings ? "Glass" : "Classic"}`, async ({
-    page,
-  }, info) => {
+for (const theme of ["classic", "glass"]) {
+  test(`performance mode persists and stops wallpapers and UI transitions in ${theme}`, async ({ page }, info) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto("/");
     await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
-    await page.evaluate((glass) => AeroTizen.settings.update({ glassSettings: glass }), glassSettings);
+    await page.evaluate((theme) => AeroTizen.settings.update({ theme }), theme);
     const blob = page.locator("[data-background-blob]").first();
     await expect(blob).not.toHaveCSS("animation-name", "none");
     await page.locator("#gear").click();

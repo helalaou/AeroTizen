@@ -17,6 +17,9 @@ export const migrateSettings = (value: unknown): Record<string, unknown> => {
   } else if (saved.cardSize === "small" || saved.cardSize === "big") {
     migrated.homeCardColumns = saved.cardSize === "small" ? 5 : 3;
   }
+  if (typeof saved.glassSettings === "boolean") {
+    migrated.theme = saved.glassSettings ? "glass" : "classic";
+  }
   delete migrated.favorites;
   delete migrated.cardSize;
   delete migrated.homeCardMode;

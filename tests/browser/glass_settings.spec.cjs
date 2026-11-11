@@ -11,7 +11,7 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
       localStorage.setItem(
         "aerotizen.settings.v1",
         JSON.stringify({
-          glassSettings: true,
+          theme: "glass",
           background: "black",
           showWeather: false,
           home: ["demo0", "demo1", "demo2"],
@@ -100,26 +100,24 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
   await page.keyboard.press("Escape");
   await expect(page.locator("#editor")).toBeHidden();
   await page.reload();
-  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().glassSettings)).toBe(true);
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().theme)).toBe("glass");
   await checkTabPlate();
   expect(errors).toEqual([]);
 });
 
 for (const language of ["en", "ar"])
-  for (const glass of [false, true]) {
-    test(`${language} ${glass ? "Glass" : "Classic"} native focus and rapid keys open the focused category`, async ({
-      page,
-    }) => {
+  for (const theme of ["classic", "glass"]) {
+    test(`${language} ${theme} native focus and rapid keys open the focused category`, async ({ page }) => {
       await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
       await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
       await page.addInitScript(
-        ({ language, glass }) => {
+        ({ language, theme }) => {
           localStorage.setItem(
             "aerotizen.settings.v1",
-            JSON.stringify({ language, glassSettings: glass, background: "black", showWeather: false }),
+            JSON.stringify({ language, theme, background: "black", showWeather: false }),
           );
         },
-        { language, glass },
+        { language, theme },
       );
       await page.goto("/");
       await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
@@ -151,17 +149,17 @@ for (const language of ["en", "ar"])
       await expect(page.locator('[data-section-pane="apps"]')).toBeVisible();
     });
 
-    test(`${language} ${glass ? "Glass" : "Classic"} Settings bounds and remote focus at 1080p`, async ({ page }) => {
+    test(`${language} ${theme} Settings bounds and remote focus at 1080p`, async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
       await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
       await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
       await page.addInitScript(
-        ({ glass, language }) =>
+        ({ theme, language }) =>
           localStorage.setItem(
             "aerotizen.settings.v1",
-            JSON.stringify({ glassSettings: glass, language, background: "black", showWeather: false }),
+            JSON.stringify({ theme, language, background: "black", showWeather: false }),
           ),
-        { glass, language },
+        { theme, language },
       );
       await page.goto("/");
       await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
