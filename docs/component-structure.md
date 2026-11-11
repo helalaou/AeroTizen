@@ -85,11 +85,27 @@ The shared TypeScript entry mounts the views before it starts boot. `startLaunch
 restores cached app labels and waits two animation frames and for page load before
 starting discovery. It also owns app inventory reports and coalesces app-control and
 visibility events when the TV returns to the launcher. The boot controller and services
-survive development hot reload. The early `startup.js` script records startup marks.
+survive development hot reload. The early diagnostics bundle records startup marks.
 
 `bindLauncherKeys` routes remote input to text entry, Fireplace, input playback,
 Settings and Home in that order. Each app mount binds its own controllers and removes
 the key listeners when the views are replaced.
+
+## Diagnostics ownership
+
+`diagnostics/early.ts` builds the classic `launcher-diagnostics.js` entry in the page
+head. It starts diagnostics and startup tracing before the main UI bundle loads.
+`createDiagnostics` owns the bounded event buffer and asynchronous persistence.
+`createDiagnosticsPrivacy` filters every saved or delivered record using the JSON
+schema, which the CLI parity test checks against its export rules.
+`openDiagnosticsStorage` owns IndexedDB access and idle migration of old logs.
+`installUiDiagnostics` owns page events, deferred delivery and bounded retries.
+
+The same typed logger and privacy rules build into `service/diagnostics.js` as
+ES5-compatible CommonJS for HomeWatcher. Its filesystem storage and environment
+context keep their service owners. Vite serves the early classic bundle locally
+and reloads the page when diagnostics source changes. UI hot reload retains this
+page-level owner and its listeners.
 
 ## App inventory ownership
 

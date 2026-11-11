@@ -560,4 +560,4 @@ SOURCE_FILES = {
     "__main__.py",
 }
 
-SOURCE_FILES.update({"diagnostic_privacy.py", "diagnostics-privacy.js"})
+SOURCE_FILES.update({"diagnostic_privacy.py", "diagnostics-privacy.js", "launcher-diagnostics.js"})

@@ -1,6 +1,7 @@
 import type { AppsService } from "../../contracts/apps";
 import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
 import type { ContinueWatchingService } from "../../contracts/continueWatching";
+import type { LauncherStartup, UiDiagnostics } from "../../contracts/diagnostics";
 import type { HomeWatcherService } from "../../contracts/homeWatcher";
 import type { InputsService } from "../../contracts/inputs";
 import type { ClockService, HomeBridge, LauncherConfig, SettingsBridge } from "../../contracts/launcher";
@@ -43,13 +44,6 @@ export interface LauncherPlatform {
   previewBackground(preview: BackgroundPreview | null): void;
 }
 
-export interface LauncherStartup {
-  afterLoad(callback: () => void): void;
-  captureLaunch(): void;
-  mark(name: string): void;
-  readonly trace: unknown;
-}
-
 export interface FireplaceControls {
   close(): void;
   isOpen(): boolean;
@@ -60,6 +54,8 @@ export interface FireplaceControls {
 
 declare global {
   interface Window {
+    AeroBuildInfo?: Record<string, unknown>;
+    AeroDiagnostics: UiDiagnostics;
     AeroStartup: LauncherStartup;
     AeroTizen: LauncherRuntime;
     Backgrounds: LauncherPlatform["backgrounds"];
