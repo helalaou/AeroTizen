@@ -8,6 +8,7 @@ import {
   runParticleLoop,
   W,
 } from "./particleAnimation";
+import { compileShader, getWebGL } from "./webgl";
 
 const STAR_ALPHA = "0.35 + 0.65 * abs(sin(u_time * a_style.y + a_style.x))";
 const ALPHA_BY_SCENE = {
@@ -100,32 +101,6 @@ function writeRainQuad(data: Float32Array, offset: number, streak: RainStreak, x
     index += RAIN_STRIDE;
   }
   return index;
-}
-
-function compileShader(gl: WebGLRenderingContext, type: number, source: string) {
-  const shader = gl.createShader(type);
-  if (!shader) {
-    return null;
-  }
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    gl.deleteShader(shader);
-    return null;
-  }
-  return shader;
-}
-
-function getWebGL(canvas: HTMLCanvasElement) {
-  try {
-    return canvas.getContext("webgl", {
-      antialias: false,
-      depth: false,
-      failIfMajorPerformanceCaveat: true,
-    });
-  } catch {
-    return null;
-  }
 }
 
 export const probeWebGL = (document: Document) => {
