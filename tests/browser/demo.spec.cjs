@@ -5,6 +5,7 @@ const DEMO_URL = "http://127.0.0.1:8174/demo/";
 const HOME_APP_COUNT = 6;
 const CONTINUE_WATCHING_COUNT = 7;
 const INPUT_CARD_COUNT = 4;
+const GLASS_FOCUS_COLOUR = "rgb(237, 242, 255)";
 
 test.beforeEach(async ({ page }) => {
   await page.route("https://api.github.com/repos/helalaou/AeroTizen/releases?*", (route) =>
@@ -39,6 +40,14 @@ test("static demo loads its own sample data and assets from a project subpath", 
   await expect(launcher.locator("#grid > [data-id]").nth(1)).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("Enter");
   await expect(launcher.locator("#toast-root")).toContainText("Would open Netflix");
+  const programme = launcher.locator("#continue-items > [data-key]").first();
+  await programme.click();
+  await expect(programme).toHaveAttribute("data-focused", "true");
+  await expect.poll(() => programme.evaluate((node) => getComputedStyle(node).boxShadow)).toContain(GLASS_FOCUS_COLOUR);
+  await expect(programme.locator('[data-continue-part="progress-fill"]')).toHaveCSS(
+    "background-color",
+    GLASS_FOCUS_COLOUR,
+  );
   await launcher.locator("#gear").click();
   await expect(launcher.locator("#editor")).toBeVisible();
   await page.keyboard.press("Escape");
