@@ -39,6 +39,7 @@ module.exports = [
       "tests/fixtures/legacy-launcher/js/**/*.js",
       "tests/fixtures/app-presentation/js/**/*.js",
       "tests/fixtures/homewatch/homewatch.js",
+      "tests/fixtures/diagnostics/*.js",
       "tests/fixtures/legacy-dom.js",
     ],
     languageOptions: {

@@ -1,4 +1,5 @@
-import type { LauncherRuntime, LauncherStartup } from "../platform/tizen/launcherRuntime";
+import type { LauncherStartup } from "../contracts/diagnostics";
+import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 
 type BootRuntime = Pick<
   LauncherRuntime,

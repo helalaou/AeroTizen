@@ -5,8 +5,75 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const vm = require("node:vm");
-const create = require("../launcher/js/diagnostics");
-const source = fs.readFileSync(require.resolve("../launcher/js/diagnostics"), "utf8");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { createDiagnostics: create } = loadTypeScript("launcher/src/diagnostics/createDiagnostics.ts");
+const { createDiagnosticsPrivacy } = loadTypeScript("launcher/src/diagnostics/createDiagnosticsPrivacy.ts");
+const { installUiDiagnostics } = loadTypeScript("launcher/src/diagnostics/installUiDiagnostics.ts");
+
+test("typed privacy rules match the frozen implementation across allowed fields and malformed values", () => {
+  const frozen = require("./fixtures/diagnostics/diagnostics-privacy")();
+  const current = createDiagnosticsPrivacy();
+  const schema = require("../launcher/src/diagnostics/privacySchema.json");
+  const values = [
+    null,
+    undefined,
+    true,
+    false,
+    0,
+    -1,
+    1.5,
+    NaN,
+    Infinity,
+    {},
+    [],
+    "",
+    "PRIVATE-PAYLOAD",
+    "app-1",
+    "d-12345678-0",
+    "ui.start",
+    "Cannot read PRIVATE",
+    "launcher-ui.js",
+    "9.0.0",
+    ...schema.app_ids,
+    ...schema.reasons,
+    ...schema.errors,
+    ...Object.values(schema.enums).flat(),
+  ];
+  const fields = [
+    "app_id",
+    "id",
+    "session",
+    "operation_id",
+    "message",
+    "error",
+    "error_type",
+    "reason",
+    "file",
+    "stack",
+    "operation",
+    "version",
+    "tizen",
+    "build_id",
+    "commit",
+    "firmware",
+    ...schema.numbers,
+    ...schema.bools,
+    ...Object.keys(schema.enums),
+  ];
+  const normalise = (value) => JSON.stringify(value).replace(/d-[a-f0-9]{8}-/g, "d-session-");
+  for (const field of fields) {
+    for (const value of values) {
+      assert.equal(normalise(current.value(value, field)), normalise(frozen.value(value, field)), field);
+      assert.equal(
+        normalise(current.details({ [field]: value })),
+        normalise(frozen.details({ [field]: value })),
+        field,
+      );
+    }
+  }
+  for (const event of schema.events.concat(["PRIVATE-PAYLOAD", null]))
+    assert.equal(current.event(event), frozen.event(event));
+});
 
 test("watcher startup logs retain the method, readiness duration and bounded failure reason", () => {
   const logger = create("ui");
@@ -165,7 +232,6 @@ function browser(options = {}) {
     c = clock();
   let writes = 0;
   const window = {
-    AeroDiagnosticsPrivacy: require("../launcher/js/diagnostics-privacy"),
     document: {
       hidden: false,
       addEventListener: (name, fn) => {
@@ -226,7 +292,7 @@ function browser(options = {}) {
         }),
       },
     };
-  vm.runInNewContext(source, { window }, { filename: "diagnostics.js" });
+  window.AeroDiagnostics = installUiDiagnostics(window, (host, ready) => host.AeroDiagnosticsStorage(ready));
   return {
     window,
     listeners,
@@ -434,7 +500,7 @@ test("service log storage uses only async file APIs and preserves Home recovery 
 });
 
 test("blocked or absent IndexedDB keeps UI logs in memory without a synchronous fallback", () => {
-  const open = require("../launcher/js/diagnostics-storage");
+  const { openDiagnosticsStorage: open } = loadTypeScript("launcher/src/diagnostics/openDiagnosticsStorage.ts");
   let calls = 0,
     result;
   open({}, (value) => {
@@ -542,6 +608,7 @@ test("service metadata is cached once and UI health and build fields are allowli
   let calls = 0,
     finish;
   const context = createContext({
+    privacy: createDiagnosticsPrivacy(),
     read: (done) => {
       calls++;
       finish = done;

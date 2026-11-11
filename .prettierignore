@@ -13,3 +13,6 @@ tests/fixtures/app-presentation/js/
 
 # Frozen HomeWatcher client before its TypeScript migration.
 tests/fixtures/homewatch/homewatch.js
+
+# Frozen startup and diagnostics before their TypeScript migration.
+tests/fixtures/diagnostics/

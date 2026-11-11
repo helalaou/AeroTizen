@@ -18,6 +18,11 @@ const preserveLegacyDom = async (page) => {
       }),
     );
   }
+  for (const file of ["startup.js", "diagnostics.js", "diagnostics-privacy.js", "diagnostics-storage.js"]) {
+    await page.route(`http://127.0.0.1:8170/launcher/js/${file}`, (route) =>
+      route.fulfill({ path: path.join(__dirname, "../fixtures/diagnostics", file), contentType: "text/javascript" }),
+    );
+  }
 };
 
 module.exports = { preserveLegacyDom };
