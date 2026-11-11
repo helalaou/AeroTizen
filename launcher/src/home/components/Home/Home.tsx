@@ -102,7 +102,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
                   {t("home.emptyApps")}
                 </p>
                 <ContinueWatchingRow env={env} items={items} visible={showContinueWatching} />
-                <InputDock env={env} inputs={inputs} visible={page === "home"} glass={settings.glassSettings} />
+                <InputDock env={env} inputs={inputs} visible={page === "home"} theme={settings.theme} />
               </div>
               {page === "apps" && apps.length > 0 && (
                 <HomeControl

@@ -4,8 +4,8 @@ import { SettingsSection } from "../components/SettingsSection/SettingsSection";
 import type { SettingsSectionProps } from "../types";
 
 const APPEARANCE_OPTIONS = [
-  { value: false, labelKey: "appearance.classic" },
-  { value: true, labelKey: "appearance.glass" },
+  { value: "classic", labelKey: "appearance.classic" },
+  { value: "glass", labelKey: "appearance.glass" },
 ] as const;
 
 const HOME_CARD_COLUMNS_OPTIONS = [
@@ -32,9 +32,9 @@ export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) 
         <ChoiceGroup
           id="settings-appearance"
           label={t("appearance.title")}
-          value={settings.glassSettings === true}
+          value={settings.theme}
           options={APPEARANCE_OPTIONS}
-          onSelect={actions.setGlassSettings}
+          onSelect={actions.setTheme}
         />
       </SettingsSection>
       <SettingsSection title={t("appearance.size")}>

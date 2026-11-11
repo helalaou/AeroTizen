@@ -22,7 +22,6 @@ const harness = () => {
       defaults: { home: ["one"] },
       storage: { getItem: () => null, setItem() {} },
       storageKey: "settings",
-      legacyStorageKeys: [],
       speedRange: { MIN: 0.25, MAX: 3 },
       locale: { timeFormat: () => "24", tempUnit: () => "C" },
     });

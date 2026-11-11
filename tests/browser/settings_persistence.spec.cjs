@@ -5,9 +5,7 @@ for (const [name, url] of [
   ["compiled", "http://127.0.0.1:8171/"],
   ["development", "http://127.0.0.1:8172/"],
 ]) {
-  test(`${name} preferences migrate, update through Settings, and retain an empty Home after reload`, async ({
-    page,
-  }) => {
+  test(`${name} preferences load, update through Settings, and retain an empty Home after reload`, async ({ page }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (message) => {
@@ -16,11 +14,12 @@ for (const [name, url] of [
     await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
     await page.addInitScript(() => {
+      if (localStorage.getItem("aerotizen.settings.v1") !== null) return;
       localStorage.setItem(
-        "hearth.home.v1",
+        "aerotizen.settings.v1",
         JSON.stringify({
-          favorites: ["demo0"],
-          cardSize: "small",
+          home: ["demo0"],
+          homeCardColumns: 5,
           background: "black",
           showWeather: false,
           tempUnit: "F",

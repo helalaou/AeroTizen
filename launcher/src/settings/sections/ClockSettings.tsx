@@ -33,7 +33,6 @@ interface Props extends SettingsSectionProps {
 export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => {
   const { t, language } = useTranslation();
   const now = new Date(openedAt);
-  const dateStyle = clock.dateStyle(settings.dateFormat);
   return (
     <>
       <SettingsSection title={t("clock.layout")}>
@@ -71,7 +70,7 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
             <ChoiceOption
               key={format.id}
               id={"date:" + format.id}
-              selected={dateStyle === format.id}
+              selected={settings.dateFormat === format.id}
               onSelect={() => actions.setDateFormat(format.id)}
             >
               {format.id === "none" ? t("clock.noDate") : format.format(now)}

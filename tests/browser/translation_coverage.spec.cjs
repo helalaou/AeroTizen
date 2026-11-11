@@ -119,10 +119,8 @@ test("the production HTML shell contains no untranslated launcher copy", async (
   expect(rawCopy).toEqual({ title: "AeroTizen", body: "", attributes: [] });
 });
 
-for (const glassSettings of [false, true]) {
-  test(`pseudo locale covers launcher text and remote focus in ${glassSettings ? "Glass" : "Classic"}`, async ({
-    page,
-  }) => {
+for (const theme of ["classic", "glass"]) {
+  test(`pseudo locale covers launcher text and remote focus in ${theme}`, async ({ page }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.clock.setFixedTime(new Date("2026-06-10T13:05:00Z"));
@@ -146,11 +144,11 @@ for (const glassSettings of [false, true]) {
       });
     });
     await page.addInitScript(
-      ({ glass, inputName }) => {
+      ({ theme, inputName }) => {
         localStorage.setItem(
           "aerotizen.settings.v1",
           JSON.stringify({
-            glassSettings: glass,
+            theme,
             background: "black",
             continueWatching: true,
             inputNames: { "HDMI 1": inputName },
@@ -158,7 +156,7 @@ for (const glassSettings of [false, true]) {
         );
         window.tizen = { application: { getAppsInfo: (done) => done([]) } };
       },
-      { glass: glassSettings, inputName },
+      { theme, inputName },
     );
     await page.goto(devUrl);
     const homeTab = page.locator("#home-tab");
@@ -207,7 +205,7 @@ for (const glassSettings of [false, true]) {
 
     await expectTranslatedScreen(page, "Language");
 
-    if (!glassSettings) {
+    if (theme === "classic") {
       await page.evaluate(() => {
         const probe = document.createElement("button");
         probe.id = "translation-probe";

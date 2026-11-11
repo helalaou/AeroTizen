@@ -183,7 +183,7 @@ both themes. Add coverage here for new UI paths.
 | `dns/`, `docs/`                   | Ad/telemetry blocklists and the settings guide                                                  |
 
 The entry point creates one TypeScript preference service and passes it to Home, Settings
-and the clock. It owns defaults, saved-data validation, migration and persistence.
+and the clock. It owns defaults, saved-data validation and persistence.
 TV services use the same snapshot and update API as the UI. The service survives development
 hot reload so those services retain their subscriptions. Feature mount functions return
 bridges and disposers. Composition owns visibility handling and releases its subscriptions
@@ -225,8 +225,7 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
   prints a network URL for another device. Vite supplies hot updates for Home and Settings
   components and serves the legacy runtime files. The plain URL opens the full browser
   preview with sample apps, inputs and a fictional Continue Watching feed. It uses one
-  settings store; existing local preferences take priority, and older `.demo` preferences
-  are carried over when no local preferences exist. A fresh browser context uses Glass,
+  settings store; existing local preferences take priority. A fresh browser context uses Glass,
   Small app cards, the Scroll app layout, six Home favourites and Continue Watching on.
   For README screenshots, use a clean context at 1920×1080.
 - Run `npm run build` for the compiled runtime in `dist/launcher/`.

@@ -26,10 +26,8 @@ for (const [entry, url] of [
   ["compiled", "http://127.0.0.1:8171/"],
   ["development", "http://127.0.0.1:8172/"],
 ]) {
-  for (const glass of [false, true]) {
-    test(`${entry} ${glass ? "Glass" : "Classic"} app placeholders keep names through loading and failure`, async ({
-      page,
-    }) => {
+  for (const theme of ["classic", "glass"]) {
+    test(`${entry} ${theme} app placeholders keep names through loading and failure`, async ({ page }) => {
       const errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
       page.on("console", (message) => {
@@ -53,7 +51,7 @@ for (const [entry, url] of [
       await page.route("**/installed-icon.png", artwork);
       await page.route("**/missing-icon.png", artwork);
       await page.addInitScript(
-        ({ names, ids, glass }) => {
+        ({ names, ids, theme }) => {
           localStorage.setItem(
             "aerotizen.apps.v1",
             JSON.stringify(
@@ -65,7 +63,7 @@ for (const [entry, url] of [
             JSON.stringify({
               home: ids,
               homeCardColumns: 5,
-              glassSettings: glass,
+              theme,
               background: "black",
               showWeather: false,
               showNetwork: false,
@@ -87,7 +85,7 @@ for (const [entry, url] of [
             },
           };
         },
-        { names, ids, glass },
+        { names, ids, theme },
       );
       await page.goto(url, { waitUntil: "domcontentloaded" });
       await expect(page).toHaveTitle("AeroTizen");
@@ -105,9 +103,9 @@ for (const [entry, url] of [
           image: getComputedStyle(node).backgroundImage,
         })),
       );
-      const theme = await themeSurface(page);
-      expect(fills.every((fill) => fill.colour === theme.colour && fill.image === theme.image)).toBe(true);
-      expect(theme.image === "none").toBe(!glass);
+      const themeFill = await themeSurface(page);
+      expect(fills.every((fill) => fill.colour === themeFill.colour && fill.image === themeFill.image)).toBe(true);
+      expect(themeFill.image === "none").toBe(theme === "classic");
       const longName = page.getByRole("button", { name: names[3], exact: true }).locator("[data-app-fallback]");
       const bounds = await longName.evaluate((node) => {
         const card = node.getBoundingClientRect();
@@ -158,11 +156,12 @@ for (const [entry, url] of [
         page.getByRole("button", { name: names[1], exact: true }).locator("[data-app-fallback]"),
       ).toBeVisible();
       const failedHome = page.getByRole("button", { name: names[1], exact: true });
-      await page.evaluate((next) => AeroTizen.settings.update({ glassSettings: next }), !glass);
-      await expect.poll(() => failedHome.evaluate(surface)).not.toEqual(theme);
+      const otherTheme = theme === "glass" ? "classic" : "glass";
+      await page.evaluate((theme) => AeroTizen.settings.update({ theme }), otherTheme);
+      await expect.poll(() => failedHome.evaluate(surface)).not.toEqual(themeFill);
       expect(await failedHome.evaluate(surface)).toEqual(await themeSurface(page));
-      await page.evaluate((next) => AeroTizen.settings.update({ glassSettings: next }), glass);
-      await expect.poll(() => failedHome.evaluate(surface)).toEqual(theme);
+      await page.evaluate((theme) => AeroTizen.settings.update({ theme }), theme);
+      await expect.poll(() => failedHome.evaluate(surface)).toEqual(themeFill);
       await page.locator("#gear").click();
       await openCategory(page, "apps");
       const localOption = page.locator('[data-key="app:local.app"]');
@@ -172,7 +171,7 @@ for (const [entry, url] of [
       const failed = page.locator('[data-key="app:org.tizen.primevideo"]');
       await expect(failed.locator("[data-app-fallback]")).toBeVisible();
       await expect(failed.locator("[data-app-fallback]")).toHaveText(names[1]);
-      expect(await failed.evaluate(surface)).toEqual(theme);
+      expect(await failed.evaluate(surface)).toEqual(themeFill);
       const loaded = page.locator('[data-key="app:9Ur5IzDKqV.TizenYouTube"] [data-app-artwork]');
       await expect(loaded).toBeVisible();
       const initialImage = await loaded.elementHandle();

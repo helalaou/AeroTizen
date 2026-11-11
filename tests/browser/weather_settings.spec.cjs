@@ -22,7 +22,7 @@ const entries = [
   { name: "development", url: "http://127.0.0.1:8172/" },
 ];
 
-const setup = async (page, { url, glassSettings = false, language = "en" }) => {
+const setup = async (page, { url, theme = "classic", language = "en" }) => {
   const errors = [];
   const searches = [];
   const pending = [];
@@ -56,14 +56,14 @@ const setup = async (page, { url, glassSettings = false, language = "en" }) => {
     return route.fulfill({ json: { results: [paris, boston] } });
   });
   await page.addInitScript(
-    ({ glassSettings, language }) => {
+    ({ theme, language }) => {
       if (!localStorage.getItem("aerotizen.settings.v1")) {
         localStorage.setItem(
           "aerotizen.settings.v1",
           JSON.stringify({
             home: ["demo0"],
             background: "black",
-            glassSettings,
+            theme,
             language,
             showWeather: false,
             weatherShowLocation: false,
@@ -83,7 +83,7 @@ const setup = async (page, { url, glassSettings = false, language = "en" }) => {
         );
       }
     },
-    { glassSettings, language },
+    { theme, language },
   );
   await page.goto(url);
   await page.locator("#gear").click();
@@ -104,11 +104,11 @@ const setup = async (page, { url, glassSettings = false, language = "en" }) => {
 };
 
 for (const entry of entries) {
-  for (const glassSettings of [false, true]) {
-    test(`${entry.name} ${glassSettings ? "Glass" : "Classic"} weather groups Home controls and saves an explicit location without extra searches`, async ({
+  for (const theme of ["classic", "glass"]) {
+    test(`${entry.name} ${theme} weather groups Home controls and saves an explicit location without extra searches`, async ({
       page,
     }) => {
-      const h = await setup(page, { ...entry, glassSettings });
+      const h = await setup(page, { ...entry, theme });
       const summary = page.locator("[data-weather-location-summary]");
       const change = page.locator('[data-key="weather:change"]');
       const input = page.getByRole("textbox", { name: "Weather location", exact: true });
@@ -251,7 +251,7 @@ for (const entry of entries) {
 
 for (const language of ["en", "fr", "it", "pt-BR", "ru", "ar"]) {
   test(`${language} Weather controls and location fit the shared pane`, async ({ page }) => {
-    const h = await setup(page, { ...entries[0], language, glassSettings: language === "ar" });
+    const h = await setup(page, { ...entries[0], language, theme: language === "ar" ? "glass" : "classic" });
     const pane = page.locator('[data-settings-drawer="scroll"]');
     const bounds = await pane.boundingBox();
     for (const control of await page.locator('[data-section-pane="weather"] [data-key]:visible').all()) {
@@ -278,11 +278,9 @@ for (const language of ["en", "fr", "it", "pt-BR", "ru", "ar"]) {
 }
 
 for (const entry of entries) {
-  for (const glassSettings of [false, true]) {
-    test(`${entry.name} ${glassSettings ? "Glass" : "Classic"} weather focus ring follows editor layout changes`, async ({
-      page,
-    }) => {
-      const h = await setup(page, { ...entry, glassSettings });
+  for (const theme of ["classic", "glass"]) {
+    test(`${entry.name} ${theme} weather focus ring follows editor layout changes`, async ({ page }) => {
+      const h = await setup(page, { ...entry, theme });
       await page.emulateMedia({ reducedMotion: "no-preference" });
       const change = page.locator('[data-key="weather:change"]');
       const input = page.getByRole("textbox", { name: "Weather location", exact: true });

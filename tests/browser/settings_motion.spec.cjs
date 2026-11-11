@@ -5,8 +5,8 @@ for (const [build, url] of [
   ["compiled", "http://127.0.0.1:8171/"],
   ["development", "http://127.0.0.1:8172/"],
 ]) {
-  for (const glassSettings of [false, true]) {
-    test(`${build} ${glassSettings ? "Glass" : "Classic"} Settings shares motion policy and keeps reduced-motion focus visible`, async ({
+  for (const theme of ["classic", "glass"]) {
+    test(`${build} ${theme} Settings shares motion policy and keeps reduced-motion focus visible`, async ({
       page,
     }, info) => {
       const errors = [];
@@ -16,14 +16,14 @@ for (const [build, url] of [
       });
       await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
       await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-      await page.addInitScript((glassSettings) => {
+      await page.addInitScript((theme) => {
         if (!localStorage.getItem("aerotizen.settings.v1")) {
           localStorage.setItem(
             "aerotizen.settings.v1",
-            JSON.stringify({ glassSettings, home: ["demo0"], background: "black", showWeather: false }),
+            JSON.stringify({ theme, home: ["demo0"], background: "black", showWeather: false }),
           );
         }
-      }, glassSettings);
+      }, theme);
       await page.emulateMedia({ reducedMotion: "no-preference" });
       await page.goto(url);
       await expect(page).toHaveTitle("AeroTizen");
@@ -74,8 +74,9 @@ for (const [build, url] of [
       };
       await page.emulateMedia({ reducedMotion: "reduce" });
       await expectReduced();
-      await page.locator(`[data-key="settings-appearance:${!glassSettings}"]`).click();
-      expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().glassSettings)).toBe(!glassSettings);
+      const otherTheme = theme === "glass" ? "classic" : "glass";
+      await page.locator(`[data-key="settings-appearance:${otherTheme}"]`).click();
+      expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().theme)).toBe(otherTheme);
       await expectReduced();
       await page.keyboard.press("ArrowDown");
       await expect(content).toHaveAttribute("data-visible", "true");

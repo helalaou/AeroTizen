@@ -1,7 +1,7 @@
 const { test, expect } = require("./launcher_fixture.cjs");
 const { openCategory } = require("./drawer_helpers.cjs");
 
-const openSolid = async (page, glass) => {
+const openSolid = async (page, theme) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -10,20 +10,20 @@ const openSolid = async (page, glass) => {
   });
   await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ json: {} }));
-  await page.addInitScript((glassSettings) => {
+  await page.addInitScript((theme) => {
     if (!localStorage.getItem("aerotizen.settings.v1")) {
       localStorage.setItem(
         "aerotizen.settings.v1",
         JSON.stringify({
           background: "custom",
           customColour: "#7c5cff",
-          glassSettings,
+          theme,
           showWeather: false,
           home: ["demo0", "demo1"],
         }),
       );
     }
-  }, glass);
+  }, theme);
   await page.goto("/");
   await expect(page).toHaveTitle("AeroTizen");
   await expect(page.locator("#grid > [data-id]")).toHaveCount(2);
@@ -48,12 +48,11 @@ const tabPaint = (page) =>
     };
   });
 
-for (const glass of [false, true]) {
-  const theme = glass ? "Glass" : "Classic";
+for (const theme of ["classic", "glass"]) {
   test(`${theme}: twenty colour tiles include bright presets and preserve a solid category after reload`, async ({
     page,
   }) => {
-    const errors = await openSolid(page, glass);
+    const errors = await openSolid(page, theme);
     await expect(page.locator("#bg-still [data-wallpaper-swatch]:visible")).toHaveCount(20);
     await expect(page.locator('[data-key="bg:navy"]')).toBeHidden();
     const tiles = page.locator("#bg-still [data-wallpaper-swatch]:visible");
@@ -101,7 +100,7 @@ for (const glass of [false, true]) {
         JSON.stringify({ temp: 12, code: 71, city: "Test city", source: "auto", unit: "C", at: Date.now() }),
       );
     });
-    const errors = await openSolid(page, glass);
+    const errors = await openSolid(page, theme);
     await page.evaluate(() => AeroTizen.settings.update({ showWeather: true }));
     await page.locator('[data-key="bg:solid-white"]').click();
     await page.keyboard.press("Escape");
@@ -144,7 +143,7 @@ for (const glass of [false, true]) {
   });
 
   test(`${theme}: remote-only picker previews, cancels, applies and restores focus`, async ({ page }) => {
-    const errors = await openSolid(page, glass);
+    const errors = await openSolid(page, theme);
     // Custom is the first tile below the category row.
     await page.keyboard.press("ArrowDown");
     await expect(page.locator('[data-key="bg:custom"]')).toBeFocused();
@@ -235,7 +234,7 @@ test("demo preview reopens the current custom colour before and after a reload",
     if (!localStorage.getItem(key)) {
       localStorage.setItem(
         key,
-        JSON.stringify({ background: "custom", customColour: "#336699", glassSettings: true, showWeather: false }),
+        JSON.stringify({ background: "custom", customColour: "#336699", theme: "glass", showWeather: false }),
       );
     }
   });
