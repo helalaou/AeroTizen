@@ -63,10 +63,10 @@ Private geometry buffers and DOM ref registries remain local to navigation.
 ## Preference ownership
 
 `services/createSettingsService.ts` owns preferences, immutable snapshots and persistence.
-Defaults, saved-data migration and validation live in `services/preferences/`. The service uses
-injected storage and locale defaults, with no Preact or TV API dependency. It keeps the
-existing storage keys. `migrateSettings.ts` converts older favourites and card sizes only
-when loading, before current-schema validation. Updates use only the current schema.
+Defaults and saved-data validation live in `services/preferences/`. The service uses
+injected storage and locale defaults, with no Preact or TV API dependency. It reads and
+writes only `aerotizen.settings.v1` and validates the current fields on load and update.
+Old storage keys and fields are ignored; missing or invalid values use defaults.
 First-launch `home: null` remains distinct from an intentionally empty `home: []`.
 
 The entry point loads preferences before mounting views. Home and Settings receive

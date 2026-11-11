@@ -24,7 +24,7 @@ export interface SettingsValues {
   continueWatchingApps: string[];
   customColour: string;
   customGradient: CustomGradient;
-  dateFormat: DateFormat | "auto" | "weekday" | "dmy" | "mdy";
+  dateFormat: DateFormat;
   hdmiKeepVisible: Record<string, boolean>;
   hdmiNativeViewer: boolean;
   hideDisconnectedHdmi: boolean;

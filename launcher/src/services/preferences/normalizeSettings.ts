@@ -79,7 +79,7 @@ export const normalizeSettings = (
     weatherShowLocation: boolean(data.weatherShowLocation, defaults.weatherShowLocation),
     dateFormat: choice(
       data.dateFormat,
-      ["compact", "short", "long", "numeric-short", "numeric", "iso", "none", "auto", "weekday", "dmy", "mdy"],
+      ["compact", "short", "long", "numeric-short", "numeric", "iso", "none"],
       defaults.dateFormat,
     ),
     language: text(data.language, defaults.language),

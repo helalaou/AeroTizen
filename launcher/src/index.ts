@@ -106,7 +106,6 @@ const settings =
   createSettingsService({
     defaults: runtime.config.DEFAULTS,
     storageKey: runtime.config.STORAGE_KEY,
-    legacyStorageKeys: runtime.config.LEGACY_STORAGE_KEYS,
     storage: {
       getItem: (key) => localStorage.getItem(key),
       setItem: (key, value) => localStorage.setItem(key, value),

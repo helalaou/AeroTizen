@@ -696,8 +696,8 @@ test("old preferences keep the default visibility; location and visibility persi
   assert.equal(restarted.getSnapshot().tempUnit, "C");
 });
 
-function preferences({ locale = "en-GB", intl = Intl, saved = {}, legacy = false } = {}) {
-  const storage = new Map([[legacy ? "hearth.home.v1" : "aerotizen.settings.v1", JSON.stringify(saved)]]);
+function preferences({ locale = "en-GB", intl = Intl, saved = {} } = {}) {
+  const storage = new Map([["aerotizen.settings.v1", JSON.stringify(saved)]]);
   const A = { config: launcherConfig };
   const context = vm.createContext({
     AeroTizen: A,
@@ -760,24 +760,22 @@ test("older browsers can read explicit regions without Intl", () => {
   assert.equal(preferences({ locale: "unknown", intl: null }).A.settings.getSnapshot().tempUnit, "C");
 });
 
-test("Automatic and invalid values migrate once, while saved manual choices remain", () => {
-  for (const legacy of [false, true]) {
-    for (const [previous, expected] of [
-      ["auto", "C"],
-      [null, "C"],
-      ["invalid", "C"],
-      ["F", "F"],
-      ["C", "C"],
-    ]) {
-      const { A, storage, context } = preferences({ legacy, saved: { tempUnit: previous } });
-      assert.equal(A.settings.getSnapshot().tempUnit, expected);
+test("invalid temperature units use the device default, while saved manual choices remain", () => {
+  for (const [previous, expected] of [
+    ["auto", "C"],
+    [null, "C"],
+    ["invalid", "C"],
+    ["F", "F"],
+    ["C", "C"],
+  ]) {
+    const { A, storage, context } = preferences({ saved: { tempUnit: previous } });
+    assert.equal(A.settings.getSnapshot().tempUnit, expected);
 
-      assert.equal(JSON.parse(storage.get(A.config.STORAGE_KEY)).tempUnit, expected);
-      context.window.navigator.languages = ["en-US"];
-      context.window.navigator.language = "en-US";
-      A.settings.load();
-      assert.equal(A.settings.getSnapshot().tempUnit, expected);
-    }
+    assert.equal(JSON.parse(storage.get(A.config.STORAGE_KEY)).tempUnit, expected);
+    context.window.navigator.languages = ["en-US"];
+    context.window.navigator.language = "en-US";
+    A.settings.load();
+    assert.equal(A.settings.getSnapshot().tempUnit, expected);
   }
 });
 
