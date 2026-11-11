@@ -1,7 +1,7 @@
 /// <reference types="vitest/config" />
 
 import preact from "@preact/preset-vite";
-import { cp, mkdir, rm } from "node:fs/promises";
+import { cp, mkdir, rename, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
@@ -9,9 +9,10 @@ import { defineConfig } from "vite";
 
 const root = fileURLToPath(new URL("./", import.meta.url));
 const source = path.join(root, "launcher");
+const outputNames: Readonly<Record<string, string>> = { demo: "demo", "tv-dev": "launcher-dev" };
 
 // Copy the explicit production page and runtime assets; source views are bundled separately.
-const widgetAssets = (output: string): Plugin => ({
+const widgetAssets = ({ output, demo }: { output: string; demo: boolean }): Plugin => ({
   name: "aerotizen-widget-assets",
   apply: "build",
   async buildStart() {
@@ -20,6 +21,10 @@ const widgetAssets = (output: string): Plugin => ({
       recursive: true,
       filter: (file) => file !== path.join(source, "src"),
     });
+    if (demo) {
+      await rename(path.join(output, "index.html"), path.join(output, "launcher.html"));
+      await cp(path.join(source, "src/dev/demo.html"), path.join(output, "index.html"));
+    }
     await mkdir(path.join(output, "licenses"), { recursive: true });
     await cp(path.join(root, "node_modules/preact/LICENSE"), path.join(output, "licenses/preact.txt"));
     await cp(path.join(root, "node_modules/i18next/LICENSE"), path.join(output, "licenses/i18next.txt"));
@@ -42,7 +47,7 @@ const developmentEntry: Plugin = {
 };
 
 export default defineConfig(({ mode }) => {
-  const output = path.join(root, "dist", mode === "tv-dev" ? "launcher-dev" : "launcher");
+  const output = path.join(root, "dist", outputNames[mode] ?? "launcher");
   return {
     root: source,
     base: "./",
@@ -58,7 +63,7 @@ export default defineConfig(({ mode }) => {
         // The legacy runtime loads as classic scripts and cannot accept Prefresh imports.
         exclude: [/node_modules/, /\/launcher\/js\//],
       }),
-      widgetAssets(output),
+      widgetAssets({ output, demo: mode === "demo" }),
       developmentEntry,
     ],
     server: { host: "0.0.0.0", port: 8019, strictPort: true },
@@ -74,7 +79,7 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: false,
       minify: true,
       lib: {
-        entry: path.join(source, "src/index.ts"),
+        entry: path.join(source, mode === "demo" ? "src/dev.ts" : "src/index.ts"),
         name: "AeroTizenLauncher",
         formats: ["iife"],
         fileName: () => "launcher-ui.js",

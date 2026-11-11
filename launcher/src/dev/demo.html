@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AeroTizen</title>
+    <link rel="icon" href="icon.png" />
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #06080c;
+      }
+      iframe {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        border: 0;
+        transform: translate(-50%, -50%) scale(var(--demo-scale, 0));
+      }
+    </style>
+  </head>
+  <body>
+    <iframe title="AeroTizen" src="launcher.html" width="1920" height="1080"></iframe>
+    <script>
+      // Keep TV layout and focus geometry inside their own full-size viewport.
+      const frame = document.querySelector("iframe");
+      const canvasWidthPx = Number(frame.width);
+      const canvasHeightPx = Number(frame.height);
+      const fit = () => {
+        const scale = Math.min(window.innerWidth / canvasWidthPx, window.innerHeight / canvasHeightPx);
+        frame.style.setProperty("--demo-scale", String(scale));
+      };
+      frame.addEventListener("load", () => frame.contentWindow.focus());
+      window.addEventListener("resize", fit);
+      fit();
+    </script>
+  </body>
+</html>

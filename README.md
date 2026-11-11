@@ -6,6 +6,10 @@
 AeroTizen is a home screen for Samsung TVs. It puts your favourite apps and HDMI
 inputs in one place. The `aerotizen` command-line tool installs it from your computer.
 
+[Try the live demo](https://helalaou.github.io/AeroTizen/) in your browser. Use the
+arrow keys, Enter and Escape as the remote. The demo uses sample apps, inputs and
+programmes; it cannot control a TV.
+
 ![AeroTizen Home with favourite apps, Continue Watching and inputs](docs/screenshots/home.png)
 
 *Browser preview with sample apps and programmes.*
