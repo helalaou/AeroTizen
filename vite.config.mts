@@ -1,15 +1,48 @@
 /// <reference types="vitest/config" />
 
 import preact from "@preact/preset-vite";
-import { cp, mkdir, rename, rm } from "node:fs/promises";
+import { cp, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 import type { Plugin } from "vite";
-import { defineConfig } from "vite";
+import { build, defineConfig } from "vite";
 
 const root = fileURLToPath(new URL("./", import.meta.url));
 const source = path.join(root, "launcher");
 const outputNames: Readonly<Record<string, string>> = { demo: "demo", "tv-dev": "launcher-dev" };
+
+const compileDiagnostics = async (entry: "early" | "service") => {
+  const result = await build({
+    configFile: false,
+    root,
+    publicDir: false,
+    logLevel: "silent",
+    build: {
+      write: false,
+      target: ["chrome69", "es2018"],
+      rolldownOptions: { output: { generatedCode: { preset: "es5", symbols: false } } },
+      minify: entry === "early",
+      lib: {
+        entry: path.join(source, "src/diagnostics", entry + ".ts"),
+        formats: [entry === "early" ? "iife" : "cjs"],
+        name: "AeroTizenDiagnostics",
+      },
+    },
+  });
+  const builds = Array.isArray(result) ? result : [result];
+  const chunk = builds.flatMap((item) => ("output" in item ? item.output : [])).find((item) => item.type === "chunk");
+  if (!chunk) {
+    throw new Error("Diagnostics build produced no script.");
+  }
+  if (entry === "early") {
+    return chunk.code;
+  }
+  // HomeWatcher runs in an older CommonJS service runtime. Keep its syntax at ES5.
+  return ts.transpileModule(chunk.code, {
+    compilerOptions: { target: ts.ScriptTarget.ES5, module: ts.ModuleKind.CommonJS, removeComments: true },
+  }).outputText;
+};
 
 // Copy the explicit production page and runtime assets; source views are bundled separately.
 const widgetAssets = ({ output, demo }: { output: string; demo: boolean }): Plugin => ({
@@ -25,6 +58,8 @@ const widgetAssets = ({ output, demo }: { output: string; demo: boolean }): Plug
       await rename(path.join(output, "index.html"), path.join(output, "launcher.html"));
       await cp(path.join(source, "src/dev/demo.html"), path.join(output, "index.html"));
     }
+    await writeFile(path.join(output, "js/launcher-diagnostics.js"), await compileDiagnostics("early"));
+    await writeFile(path.join(output, "service/diagnostics.js"), await compileDiagnostics("service"));
     await mkdir(path.join(output, "licenses"), { recursive: true });
     await cp(path.join(root, "node_modules/preact/LICENSE"), path.join(output, "licenses/preact.txt"));
     await cp(path.join(root, "node_modules/i18next/LICENSE"), path.join(output, "licenses/i18next.txt"));
@@ -36,6 +71,36 @@ const widgetAssets = ({ output, demo }: { output: string; demo: boolean }): Plug
 const developmentEntry: Plugin = {
   name: "aerotizen-development-entry",
   apply: "serve",
+  configureServer(server) {
+    let diagnostics: Promise<string> | undefined;
+    const onChange = (file: string) => {
+      if (
+        file.startsWith(path.join(source, "src/diagnostics")) ||
+        file === path.join(source, "src/contracts/diagnostics.ts")
+      ) {
+        diagnostics = undefined;
+        server.ws.send({ type: "full-reload" });
+      }
+    };
+    server.watcher.on("change", onChange);
+    server.httpServer?.once("close", () => server.watcher.off("change", onChange));
+    server.middlewares.use((request, response, next) => {
+      if (request.url?.split("?")[0] !== "/js/launcher-diagnostics.js") {
+        next();
+        return;
+      }
+      diagnostics ??= compileDiagnostics("early");
+      void diagnostics
+        .then((code) => {
+          response.setHeader("Content-Type", "text/javascript");
+          response.end(code);
+        })
+        .catch((error: unknown) => {
+          diagnostics = undefined;
+          next(error);
+        });
+    });
+  },
   transformIndexHtml: {
     order: "pre",
     handler(html) {

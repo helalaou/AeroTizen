@@ -14,6 +14,7 @@ const get = (file) => fs.readFileSync(path.join(__dirname, "../launcher/", file)
 const nativeSource = fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/native-navigation.js"), "utf8");
 const { installInputs } = require("./helpers/inputs.cjs");
 const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
+const { createDiagnostics } = loadTypeScript("launcher/src/diagnostics/createDiagnostics.ts");
 
 function createHarness(options = {}, legacy = false) {
   const requests = [],
@@ -28,7 +29,7 @@ function createHarness(options = {}, legacy = false) {
     documentHandlers = {},
     watch = [],
     resume = [];
-  const log = require("../launcher/js/diagnostics")("ui", {
+  const log = createDiagnostics("ui", {
     later: (fn, ms) => {
       timers.push({ fn, ms });
     },

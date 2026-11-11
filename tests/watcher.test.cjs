@@ -5,6 +5,9 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const url = require("node:url");
 const { EventEmitter } = require("node:events");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { createDiagnostics } = loadTypeScript("launcher/src/diagnostics/createDiagnostics.ts");
+const { createDiagnosticsPrivacy } = loadTypeScript("launcher/src/diagnostics/createDiagnosticsPrivacy.ts");
 const source = fs.readFileSync(__dirname + "/../launcher/service/index.js", "utf8");
 const SELF = "DclHome001.Home";
 
@@ -130,11 +133,14 @@ function harness(options = {}) {
     module: { exports: {} },
     require(name) {
       if (name === "http") return http;
-      if (name === "../js/diagnostics")
-        return (kind) => require("../launcher/js/diagnostics")(kind, { later: (fn, ms) => timer(fn, ms, 0) });
+      if (name === "./diagnostics")
+        return {
+          createDiagnostics: (kind) => createDiagnostics(kind, { later: (fn, ms) => timer(fn, ms, 0) }),
+        };
       if (name === "./diagnostics-context")
         return () =>
           require("../launcher/service/diagnostics-context")({
+            privacy: createDiagnosticsPrivacy(),
             read: (done) => done(null, "VERSION_ID=9.0.0\nBUILD_ID=test"),
           });
       if (name === "./diagnostics-store") return (tz, ready) => ready(options.diagnosticsStorage || null);

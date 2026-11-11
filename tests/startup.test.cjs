@@ -2,12 +2,11 @@ const { installApps } = require("./helpers/apps.cjs");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createTestSettings } = require("./helpers/settings.cjs");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
 const vm = require("node:vm");
 const test = require("node:test");
 const { startLauncherBoot } = loadTypeScript("launcher/src/app/startLauncherBoot.ts");
+const { createStartupTracing } = loadTypeScript("launcher/src/diagnostics/createStartupTracing.ts");
 const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
-const source = (file) => fs.readFileSync(__dirname + "/../launcher/js/" + file, "utf8");
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
 function harness(mode = "deferred", saved = ["youtube.id"]) {
@@ -88,6 +87,7 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
     AeroTizen: A,
     tizen: A.tizen,
     document,
+    localStorage,
     ...eventTarget,
     setTimeout,
     clearTimeout,
@@ -105,7 +105,7 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
     setTimeout,
     clearTimeout,
   });
-  vm.runInContext(source("startup.js"), context);
+  window.AeroStartup = createStartupTracing(window);
   installApps(context);
   return {
     A,

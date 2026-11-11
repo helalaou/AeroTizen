@@ -23,7 +23,7 @@ var diagnostics = {
   },
 };
 try {
-  diagnostics = require("../js/diagnostics")("service");
+  diagnostics = require("./diagnostics").createDiagnostics("service");
 } catch (e) {
   /* optional diagnostics */
 }

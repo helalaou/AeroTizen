@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const { execFileSync } = require("node:child_process");
 const { readFileSync, readdirSync, existsSync } = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 const { parse } = require("acorn");
 
 const root = path.resolve(__dirname, "..");
@@ -37,8 +38,19 @@ test("compiled launcher uses the production page, local scripts and the Preact l
     assert.equal(existsSync(path.join(output, "js", file)), false, file);
   }
   assert.ok(!scripts.includes("js/network.js"), "network status is owned by the TypeScript service");
-  assert.ok(scripts.indexOf("js/startup.js") < scripts.indexOf("js/launcher-ui.js"), "the startup recorder runs first");
-  for (const file of ["js/config.js", "js/dom.js", "js/main.js"]) {
+  assert.ok(
+    scripts.indexOf("js/launcher-diagnostics.js") < scripts.indexOf("js/launcher-ui.js"),
+    "diagnostics run before the UI",
+  );
+  for (const file of [
+    "js/config.js",
+    "js/dom.js",
+    "js/main.js",
+    "js/startup.js",
+    "js/diagnostics.js",
+    "js/diagnostics-storage.js",
+    "js/diagnostics-privacy.js",
+  ]) {
     assert.ok(!scripts.includes(file), `${file} is replaced by the shared TypeScript entry`);
     assert.equal(existsSync(path.join(output, file)), false);
   }
@@ -80,7 +92,12 @@ test("compiled launcher uses the production page, local scripts and the Preact l
 test("compilation preserves runtime scripts, CSS, service and app identity", () => {
   assert.deepEqual(
     readdirSync(path.join(output, "js")).sort(),
-    [...readdirSync(path.join(root, "launcher/js")), "launcher-ui.js", "launcher-ui.css"].sort(),
+    [
+      ...readdirSync(path.join(root, "launcher/js")),
+      "launcher-ui.js",
+      "launcher-ui.css",
+      "launcher-diagnostics.js",
+    ].sort(),
   );
   for (const directory of ["js", "css", "service"]) {
     for (const file of readdirSync(path.join(root, "launcher", directory))) {
@@ -91,6 +108,35 @@ test("compilation preserves runtime scripts, CSS, service and app identity", () 
     }
   }
   assert.equal(read(output, "config.xml"), read(path.join(root, "launcher"), "config.xml"));
+  parse(read(output, "service/diagnostics.js"), { ecmaVersion: 5, sourceType: "script" });
+  const { createDiagnostics } = require(path.join(output, "service/diagnostics.js"));
+  const logger = createDiagnostics("service");
+  logger.record("service.start");
+  assert.equal(logger.snapshot().records[0].event, "service.start");
+  const serviceModule = { exports: {} };
+  vm.runInNewContext(read(output, "service/diagnostics.js"), {
+    module: serviceModule,
+    exports: serviceModule.exports,
+    Symbol: undefined,
+    Map: undefined,
+    Set: undefined,
+    Promise: undefined,
+    performance: undefined,
+    process: { hrtime: () => [1, 0] },
+    setTimeout: () => 1,
+  });
+  const legacyLogger = serviceModule.exports.createDiagnostics("service");
+  legacyLogger.record("service.start");
+  assert.equal(legacyLogger.snapshot().records[0].event, "service.start");
+  assert.equal(legacyLogger.health().clock, "monotonic");
+  const context = require(path.join(output, "service/diagnostics-context.js"))({
+    read: (done) => done(null, "VERSION_ID=9.0.0\nBUILD_ID=T-TEST-0090"),
+  });
+  context.start();
+  context.accept({ health: { session: "private-session" } });
+  const metadata = context.enrich({}, {}, { guard: {} });
+  assert.equal(metadata.environment.tizen, "9.0.0");
+  assert.match(metadata.ui.health.session, /^d-[a-f0-9]{8}-[0-9]+$/);
 });
 
 test("legacy views remain test fixtures and cannot enter the compiled runtime", () => {
@@ -133,7 +179,8 @@ test("shipped UI and service share a content build identity without local paths"
   assert.equal(typeof info.dirty, "boolean");
   assert.deepEqual(Object.keys(info).sort(), ["build_id", "commit", "dirty", "version"]);
   assert.ok(
-    read(output, "index.html").indexOf("js/build-info.js") < read(output, "index.html").indexOf("js/diagnostics.js"),
+    read(output, "index.html").indexOf("js/build-info.js") <
+      read(output, "index.html").indexOf("js/launcher-diagnostics.js"),
   );
 });
 
