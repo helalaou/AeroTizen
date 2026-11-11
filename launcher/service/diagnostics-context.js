@@ -1,6 +1,5 @@
 "use strict";
 var fs = require("fs");
-var privacy = require("../js/diagnostics-privacy")();
 function build(value) {
   value = value || {};
   return {
@@ -10,7 +9,7 @@ function build(value) {
     dirty: typeof value.dirty === "boolean" ? value.dirty : null,
   };
 }
-function health(value) {
+function health(value, privacy) {
   value = value || {};
   var result = {};
   ["buffered", "discarded", "invalid", "pending_errors", "writes", "write_failures", "read_failures"].forEach(
@@ -30,6 +29,7 @@ function health(value) {
 }
 module.exports = function (options) {
   options = options || {};
+  var privacy = options.privacy || require("./diagnostics").createDiagnosticsPrivacy();
   var info = {},
     ui = null,
     started = false;
@@ -85,7 +85,7 @@ module.exports = function (options) {
       var delivery = packet.delivery || {};
       ui = {
         reported_at: Date.now(),
-        health: health(packet.health),
+        health: health(packet.health, privacy),
         build: build(packet.build),
         delivery: {
           state:

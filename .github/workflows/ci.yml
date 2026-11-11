@@ -110,13 +110,15 @@ jobs:
           # These files define launcher contracts tested by the CLI or Windows Home jobs.
           shared_launcher_files = {
               b"launcher/config.xml",
+              b"launcher/src/contracts/diagnostics.ts",
               b"tests/diagnostics.test.cjs",
+              b"tests/helpers/load_typescript.cjs",
               b"tests/home_store.test.cjs",
               b"tests/watcher.test.cjs",
           }
 
           def test_scope(path):
-              if path in shared_launcher_files or path.startswith((b"launcher/service/", b"launcher/js/diagnostics")):
+              if path in shared_launcher_files or path.startswith((b"launcher/service/", b"launcher/js/diagnostics", b"launcher/src/diagnostics/")):
                   return "shared"
               if path.startswith(b"cli/"):
                   return "cli"
@@ -310,6 +312,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: npm ci --no-audit --no-fund
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 6.0.428

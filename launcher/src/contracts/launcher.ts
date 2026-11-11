@@ -36,6 +36,7 @@ export interface Background {
   readonly anim?: string;
   readonly category?: "solid" | "gradient";
   readonly id: BackgroundId;
+  readonly lightBackground?: boolean;
 }
 export interface BackgroundOption extends Background {
   readonly preview: string;

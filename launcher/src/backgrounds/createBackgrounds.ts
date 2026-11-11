@@ -46,6 +46,7 @@ export const createBackgrounds = (options: BackgroundOptions) => {
       "data-light-background",
       String(
         Boolean(
+          current.lightBackground ||
           (current.category === "solid" && isLightColour(current.base)) ||
           (current.gradient && isLightColour(gradientMidpoint(current.gradient))),
         ),

@@ -94,15 +94,16 @@ reject unused locals and parameters. CI rejects formatting
 differences, lint warnings and errors, and type errors.
 
 Frozen generated logos, app-presentation/HomeWatcher snapshots and build/test output are excluded
-from formatting. The diagnostic privacy schema and older catalogue fixture have a
-dedicated override because their data objects must remain valid JSON. The current
+from formatting. The older catalogue fixture has a dedicated override because its
+data object must remain valid JSON. Diagnostics imports its privacy schema from
+plain JSON, with CLI parity checked by the Python tests. The current
 app catalogue is plain JSON imported into the typed bundle. Legacy JavaScript keeps
 ES5 syntax; compiled output retains the Chromium 69 and ES2018 checks.
 
 Prettier uses double quotes, semicolons, a 120-column print width, two-space indentation,
 LF line endings, parenthesised arrow parameters and trailing commas wherever supported.
-Legacy ES5 scripts limit trailing commas to objects and arrays. The two Python-readable
-data files use quoted property names and no trailing commas.
+Legacy ES5 scripts limit trailing commas to objects and arrays. Python-readable JSON
+uses quoted property names and no trailing commas.
 
 TypeScript uses the recommended type-aware ESLint checks, unused-import detection,
 import/export sorting and natural interface-member sorting. Import groups preserve
