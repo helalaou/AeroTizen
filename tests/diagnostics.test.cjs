@@ -4,11 +4,12 @@ const { test } = require("node:test");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const vm = require("node:vm");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createDiagnostics: create } = loadTypeScript("launcher/src/diagnostics/createDiagnostics.ts");
 const { createDiagnosticsPrivacy } = loadTypeScript("launcher/src/diagnostics/createDiagnosticsPrivacy.ts");
 const { installUiDiagnostics } = loadTypeScript("launcher/src/diagnostics/installUiDiagnostics.ts");
+const { createDiagnosticsContext } = loadTypeScript("launcher/src/diagnostics/service/createDiagnosticsContext.ts");
+const { openDiagnosticsStore } = loadTypeScript("launcher/src/diagnostics/service/openDiagnosticsStore.ts");
 
 test("typed privacy rules match the frozen implementation across allowed fields and malformed values", () => {
   const frozen = require("./fixtures/diagnostics/diagnostics-privacy")();
@@ -447,18 +448,9 @@ test("service log storage uses only async file APIs and preserves Home recovery 
     rename: (from, to, done) => fs.rename(local(from), local(to), done),
     unlink: (name, done) => fs.unlink(local(name), done),
   };
-  const module = { exports: {} };
-  vm.runInNewContext(fs.readFileSync(require.resolve("../launcher/service/diagnostics-store"), "utf8"), {
-    module,
-    Buffer,
-    require: (name) => {
-      assert.equal(name, "fs");
-      return adapter;
-    },
-  });
   try {
     let store;
-    module.exports(
+    openDiagnosticsStore(
       {
         filesystem: {
           resolve: (name, done) => {
@@ -470,6 +462,7 @@ test("service log storage uses only async file APIs and preserves Home recovery 
       (value) => {
         store = value;
       },
+      { fs: adapter, byteLength: (value) => Buffer.byteLength(value, "utf8") },
     );
     const home = path.join(directory, "aerotizen-home-routing-v1.json");
     fs.writeFileSync(home, "RECOVERY");
@@ -604,10 +597,10 @@ test("health reports retention loss and failed storage without blocking new even
 });
 
 test("service metadata is cached once and UI health and build fields are allowlisted", () => {
-  const createContext = require("../launcher/service/diagnostics-context");
   let calls = 0,
     finish;
-  const context = createContext({
+  const context = createDiagnosticsContext({
+    arch: process.arch,
     privacy: createDiagnosticsPrivacy(),
     read: (done) => {
       calls++;

@@ -6,8 +6,9 @@ const path = require("node:path");
 const { test } = require("node:test");
 const vm = require("node:vm");
 const { pathToFileURL } = require("node:url");
-const createStore = require("../launcher/service/home-store");
-const createMode = require("../launcher/service/home-mode");
+const { serviceFactory, serviceSource } = require("./helpers/load_service.cjs");
+const createStore = serviceFactory("home-store", "launcher/src/service/openHomeStore.ts");
+const createMode = serviceFactory("home-mode", "launcher/src/service/createHomeMode.ts");
 test(
   "private storage commits atomically and reloads a pending handoff",
   { skip: process.platform === "win32" && "TV directory fsync requires a POSIX filesystem" },
@@ -119,15 +120,17 @@ function portableStore(directory, events, failDirectorySync) {
     unlinkSync: (name) => fs.unlinkSync(local(name)),
   };
   const module = { exports: {} };
-  vm.runInNewContext(fs.readFileSync(require.resolve("../launcher/service/home-store"), "utf8"), {
+  vm.runInNewContext(serviceSource("home-store", "launcher/src/service/openHomeStore.ts"), {
     module,
+    exports: module.exports,
     require(name) {
       assert.equal(name, "fs");
       return adapter;
     },
   });
   let storage;
-  module.exports(
+  const factory = module.exports.default || module.exports;
+  factory(
     {
       filesystem: {
         resolve(name, done) {
