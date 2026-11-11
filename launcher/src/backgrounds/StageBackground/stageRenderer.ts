@@ -1,3 +1,5 @@
+import { compileShader, getWebGL } from "../webgl";
+
 import { createStageClock } from "./stageClock";
 import { STAGE_HEIGHT, STAGE_WIDTH, TAU } from "./stageGeometry";
 import type { StageLook } from "./stageLook";
@@ -38,35 +40,6 @@ const swell = (t: number, period: number) => {
 
 let cachedTexels: Uint8Array | null = null;
 let cachedSpriteVertices: Float32Array | null = null;
-
-function getWebGL(canvas: HTMLCanvasElement) {
-  try {
-    return canvas.getContext("webgl", {
-      alpha: false,
-      antialias: false,
-      depth: false,
-      stencil: false,
-      preserveDrawingBuffer: false,
-      failIfMajorPerformanceCaveat: true,
-    });
-  } catch {
-    return null;
-  }
-}
-
-function compileShader(gl: WebGLRenderingContext, type: number, source: string) {
-  const shader = gl.createShader(type);
-  if (!shader) {
-    return null;
-  }
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    gl.deleteShader(shader);
-    return null;
-  }
-  return shader;
-}
 
 function linkProgram(
   gl: WebGLRenderingContext,
@@ -277,7 +250,7 @@ export interface StageAnimation {
 }
 
 export const startStage = (canvas: HTMLCanvasElement): StageAnimation | undefined => {
-  const gl = getWebGL(canvas);
+  const gl = getWebGL(canvas, { alpha: false });
   if (!gl) {
     return undefined;
   }
