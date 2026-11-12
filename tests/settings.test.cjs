@@ -147,8 +147,10 @@ test("the theme persists and falls back to the default for unknown values", () =
   assert.equal(settings.getSnapshot().theme, "classic");
   settings.update({ theme: "glass" });
   assert.equal(loadSettings(store).settings.getSnapshot().theme, "glass");
-  settings.update({ theme: "gloss" });
-  assert.equal(loadSettings(store).settings.getSnapshot().theme, "gloss");
+  for (const theme of ["gloss", "amethyst"]) {
+    settings.update({ theme });
+    assert.equal(loadSettings(store).settings.getSnapshot().theme, theme);
+  }
   for (const defaultTheme of ["classic", "glass"]) {
     for (const theme of [null, true, "frosted"]) {
       const saved = { [key]: JSON.stringify({ theme }) };

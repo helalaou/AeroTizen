@@ -29,7 +29,8 @@
   }
 
   [data-theme="glass"] &,
-  [data-theme="gloss"] & {
+  [data-theme="gloss"] &,
+  [data-theme="amethyst"] & {
     z-index: 1;
     max-width: none;
     height: 120px;
