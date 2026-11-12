@@ -9,7 +9,8 @@
 
   [data-theme="glass"] &,
   [data-theme="gloss"] &,
-  [data-theme="amethyst"] & {
+  [data-theme="amethyst"] &,
+  [data-theme="mint"] & {
     --input-dock-spacing: 11px;
 
     position: relative;
