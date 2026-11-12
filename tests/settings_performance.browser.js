@@ -25,7 +25,11 @@ async (page) => {
         );
       });
       await page.reload();
-      await page.waitForFunction(() => window.AeroTizen && AeroTizen.apps.all.length > 0);
+      await page.waitForFunction(
+        () =>
+          window.AeroTizen &&
+          (AeroTizen.apps.getSnapshot ? AeroTizen.apps.getSnapshot() : AeroTizen.apps).all.length > 0,
+      );
       const timing = await page.evaluate(async () => {
         await document.fonts.ready;
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -60,7 +64,11 @@ async (page) => {
           reopenMs,
           changeMs,
           keyMs,
-          inventory: A.apps.all.map((app) => ({ id: app.id, name: app.name, icon: app.icon })),
+          inventory: (A.apps.getSnapshot ? A.apps.getSnapshot() : A.apps).all.map((app) => ({
+            id: app.id,
+            name: app.name,
+            icon: app.icon,
+          })),
         };
       });
       await cdp.send("HeapProfiler.collectGarbage");

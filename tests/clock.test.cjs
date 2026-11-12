@@ -4,10 +4,12 @@ const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 const { installClock } = require("./helpers/clock.cjs");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { installSettings } = require("./helpers/settings.cjs");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 
-function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = false, measure, view = true, now } = {}) {
-  const storage = new Map([[legacy ? "hearth.home.v1" : "aerotizen.settings.v1", JSON.stringify(saved)]]);
+function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, measure, view = true, now } = {}) {
+  const storage = new Map([["aerotizen.settings.v1", JSON.stringify(saved)]]);
   const elements = {
     date: {},
     time: {
@@ -20,7 +22,7 @@ function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = fal
   if (measure) {
     elements.time.style = {};
   }
-  const A = { $: (id) => elements[id] };
+  const A = { $: (id) => elements[id], config: launcherConfig };
   const timers = [];
   const context = vm.createContext({
     window: {
@@ -38,7 +40,6 @@ function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, legacy = fal
       setItem: (key, value) => storage.set(key, value),
     },
   });
-  vm.runInContext(fs.readFileSync(path.join(__dirname, "../launcher/js/config.js"), "utf8"), context);
   installClock(context, now);
   installSettings(context);
   if (view)
@@ -122,33 +123,30 @@ test("unavailable or unsupported TV formats fall back to the browser locale", ()
   }
 });
 
-test("manual choices survive current and legacy storage, including hiding the date", () => {
-  for (const legacy of [false, true]) {
-    const { A, elements, storage } = runtime({
-      legacy,
-      saved: { dateFormat: "none", timeFormat: "12" },
-    });
-    assert.equal(A.settings.getSnapshot().dateFormat, "none");
-    assert.equal(A.settings.getSnapshot().timeFormat, "12");
-    assert.equal(A.clock.formatTime(sample, "12"), "5:04 pm");
-    assert.equal(A.clock.formatDate(sample, "numeric"), "21/10/2026");
-    assert.equal(A.clock.formatDate(sample, "short"), "Wed 21 Oct");
-    A.clock.tick();
-    assert.equal(elements.date.hidden, true);
-    assert.equal(elements.time["data-format"], "12");
-    A.settings.update({ dateFormat: "numeric-short" });
-    A.settings.update({ timeFormat: "24" });
+test("manual choices survive reload, including hiding the date", () => {
+  const { A, elements, storage } = runtime({
+    saved: { dateFormat: "none", timeFormat: "12" },
+  });
+  assert.equal(A.settings.getSnapshot().dateFormat, "none");
+  assert.equal(A.settings.getSnapshot().timeFormat, "12");
+  assert.equal(A.clock.formatTime(sample, "12"), "5:04 pm");
+  assert.equal(A.clock.formatDate(sample, "numeric"), "21/10/2026");
+  assert.equal(A.clock.formatDate(sample, "short"), "Wed 21 Oct");
+  A.clock.tick();
+  assert.equal(elements.date.hidden, true);
+  assert.equal(elements.time["data-format"], "12");
+  A.settings.update({ dateFormat: "numeric-short" });
+  A.settings.update({ timeFormat: "24" });
 
-    const saved = JSON.parse(storage.get(A.config.STORAGE_KEY));
-    assert.equal(saved.dateFormat, "numeric-short");
-    assert.equal(saved.timeFormat, "24");
-    A.settings.load();
-    A.clock.tick();
-    assert.equal(A.settings.getSnapshot().dateFormat, "numeric-short");
-    assert.equal(A.settings.getSnapshot().timeFormat, "24");
-    assert.equal(elements.date.hidden, false);
-    assert.equal(elements.time["data-format"], "24");
-  }
+  const saved = JSON.parse(storage.get(A.config.STORAGE_KEY));
+  assert.equal(saved.dateFormat, "numeric-short");
+  assert.equal(saved.timeFormat, "24");
+  A.settings.load();
+  A.clock.tick();
+  assert.equal(A.settings.getSnapshot().dateFormat, "numeric-short");
+  assert.equal(A.settings.getSnapshot().timeFormat, "24");
+  assert.equal(elements.date.hidden, false);
+  assert.equal(elements.time["data-format"], "24");
 });
 
 test("older runtimes without Intl still show a date and time", () => {
@@ -176,17 +174,11 @@ test("readable date styles use local names, order, and punctuation", () => {
   }
 });
 
-test("saved legacy styles map to a selected localised style", () => {
-  for (const [saved, style, date] of [
-    ["auto", "short", "Wed 21 Oct"],
-    ["weekday", "short", "Wed 21 Oct"],
-    ["dmy", "numeric", "21/10/2026"],
-    ["mdy", "numeric", "21/10/2026"],
-  ]) {
-    const { A } = runtime({ saved: { dateFormat: saved } });
-    assert.equal(A.clock.dateStyle(A.settings.getSnapshot().dateFormat), style);
-    assert.equal(A.clock.formatDate(sample, A.settings.getSnapshot().dateFormat), date);
-    assert.ok(A.clock.DATE_FORMATS.some((format) => format.id === style));
+test("unknown date styles use the current default", () => {
+  for (const dateFormat of ["auto", "weekday", "dmy", "mdy", "invalid", null]) {
+    const { A } = runtime({ saved: { dateFormat } });
+    assert.equal(A.settings.getSnapshot().dateFormat, "short");
+    assert.equal(A.clock.formatDate(sample, A.settings.getSnapshot().dateFormat), "Wed 21 Oct");
   }
 });
 
@@ -269,13 +261,11 @@ test("initial time selection uses the device setting before the browser locale",
   }
 });
 
-test("legacy Automatic and invalid settings resolve once, including legacy storage", () => {
-  for (const legacy of [false, true]) {
-    for (const previous of ["auto", null, "invalid"]) {
-      const { A, storage } = runtime({ locale: "en-GB", legacy, saved: { timeFormat: previous } });
-      assert.equal(A.settings.getSnapshot().timeFormat, "24");
-      assert.equal(JSON.parse(storage.get(A.config.STORAGE_KEY)).timeFormat, "24");
-    }
+test("invalid time formats use the device default and persist", () => {
+  for (const previous of ["auto", null, "invalid"]) {
+    const { A, storage } = runtime({ locale: "en-GB", saved: { timeFormat: previous } });
+    assert.equal(A.settings.getSnapshot().timeFormat, "24");
+    assert.equal(JSON.parse(storage.get(A.config.STORAGE_KEY)).timeFormat, "24");
   }
 });
 
@@ -328,7 +318,35 @@ test("clock output follows a changed system time zone without reloading", () => 
   const instant = new Date("2026-01-01T13:00:00Z");
   assert.equal(A.clock.formatTime(instant, "24"), "13:00");
   timeZone = "Asia/Tokyo";
+  A.clock.tick();
   assert.equal(A.clock.formatTime(instant, "24"), "22:00");
+});
+
+test("clock formatters are reused until the next tick", () => {
+  let constructors = 0;
+  const intl = {
+    DateTimeFormat: function (locales, options) {
+      constructors++;
+      return new Intl.DateTimeFormat(locales, options);
+    },
+  };
+  const { A } = runtime({ intl, view: false });
+  const format = () => {
+    A.clock.defaultTimeFormat();
+    A.clock.formatTime(sample, "24");
+    A.clock.formatTimeParts(sample, "24");
+    A.clock.formatDate(sample, "short");
+  };
+  format();
+  const warmed = constructors;
+  A.clock.start();
+  format();
+  assert.equal(constructors, warmed, "boot retains formatters from the first render");
+  for (let i = 0; i < 30; i++) format();
+  assert.equal(constructors, warmed);
+  A.clock.tick();
+  format();
+  assert.equal(constructors, warmed + 3);
 });
 
 test("older Intl keeps a stable fitting clock without repeated layout measurement", () => {

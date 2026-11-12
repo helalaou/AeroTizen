@@ -14,14 +14,7 @@ vi.mock("../../../hooks/useSettingsEnvironment", () => ({
 const app = { id: "demo", name: "Demo app" };
 const describeApp = (): AppPresentation => ({
   artwork: ["/first.png", "/second.png"],
-  background: "black",
-  label: app.name,
-  largeLogo: false,
-  logoColour: "white",
-  logoPath: null,
-  textColour: "white",
   title: app.name,
-  useAppIcon: false,
 });
 
 const artwork = (button: HTMLElement) => button.querySelector<HTMLImageElement>("[data-app-artwork]");
@@ -105,4 +98,29 @@ test("shows a check only while selected and calls onSelect when clicked", () => 
   rerender(<AppOption {...props} selected={false} />);
   const unselected = screen.getByRole("button", { name: app.name, pressed: false });
   expect(unselected.querySelector("[data-selection-indicator]")).toBeNull();
+});
+
+test("package icons stay labelled in unselected app settings tiles", () => {
+  const describePackage = () => ({ title: app.name, artwork: ["/package.png"], appIcon: "/package.png" });
+  render(<AppOption app={app} describeApp={describePackage} onSelect={vi.fn()} selected={false} active />);
+  const button = screen.getByRole("button", { name: app.name });
+  fireEvent.load(artwork(button)!);
+  expect(button.querySelector("[data-app-artwork-kind]")?.getAttribute("data-app-artwork-kind")).toBe("icon");
+  expect(button.querySelector<HTMLElement>("[data-app-fallback]")?.hidden).toBe(false);
+  expect(button.querySelector("[data-app-fallback]")?.textContent).toBe(app.name);
+});
+
+test("shows a cached primary image without waiting for another load event", () => {
+  const complete = vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+  const width = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(304);
+  try {
+    render(<AppOption app={app} describeApp={describeApp} onSelect={vi.fn()} selected active />);
+    const button = screen.getByRole("button", { name: app.name });
+    expect(artwork(button)?.getAttribute("src")).toBe("/first.png");
+    expect(artwork(button)?.hidden).toBe(false);
+    expect(button.getAttribute("data-artwork-loaded")).toBe("true");
+  } finally {
+    complete.mockRestore();
+    width.mockRestore();
+  }
 });

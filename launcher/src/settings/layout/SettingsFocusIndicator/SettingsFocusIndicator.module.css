@@ -35,4 +35,8 @@
     border-radius var(--motion-duration-shape) ease-out;
   background: var(--settings-content-focus-surface);
   box-shadow: var(--settings-content-focus-shadow);
+
+  &[data-motion="false"] {
+    transition: none;
+  }
 }

@@ -35,6 +35,9 @@ EVENTS = set(
         "handoff.failed",
         "handoff.visibility_unconfirmed",
         "service.start",
+        "service.start_failed",
+        "service.ready",
+        "service.launch_accepted",
         "service.exit",
         "service.mode",
         "service.request",
@@ -135,6 +138,8 @@ ENUMS = {
     ),
     "method": set(
         [
+            "app_control",
+            "wrt_service",
             "capability",
             "duid",
             "applist",
@@ -203,6 +208,9 @@ REASONS = set(
         "Samsung Home escape",
         "launcher returned",
         "service exit",
+        "service_module_failed",
+        "service_start_rejected",
+        "service_start_timeout",
         "HomeWatcher unavailable",
         "HomeWatcher request failed",
         "launch denied",
@@ -210,6 +218,7 @@ REASONS = set(
         "AppControl failed",
         "AppControl is unavailable",
         "TV tuner selection is unavailable",
+        "source selection failed",
         "boot (TV type unknown)",
         "os_release_unavailable",
         "os_release_fields_missing",
@@ -551,4 +560,4 @@ SOURCE_FILES = {
     "__main__.py",
 }
 
-SOURCE_FILES.update({"diagnostic_privacy.py", "diagnostics-privacy.js"})
+SOURCE_FILES.update({"diagnostic_privacy.py", "diagnostics-privacy.js", "launcher-diagnostics.js"})

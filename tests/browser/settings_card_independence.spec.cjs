@@ -1,9 +1,9 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 test("Home columns never change standard Settings icons or artwork nodes", async ({ page }) => {
   await page.route("https://**/*", (r) => r.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (r) => r.fulfill({ body: "{}" }));
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.locator("#gear").click();
   const category = async (id) => {
     const entry = page.locator(`[data-key="section:${id}"]`);
@@ -38,21 +38,19 @@ test("Home columns never change standard Settings icons or artwork nodes", async
   }
 });
 
-for (const glassSettings of [false, true]) {
-  test(`${glassSettings ? "Glass" : "Classic"} Settings cards retain styles without the editor ID`, async ({
-    page,
-  }) => {
+for (const theme of ["classic", "glass"]) {
+  test(`${theme} Settings cards retain styles without the editor ID`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-    await page.addInitScript((glassSettings) => {
+    await page.addInitScript((theme) => {
       localStorage.setItem(
         "aerotizen.settings.v1",
-        JSON.stringify({ glassSettings, home: ["demo0"], background: "black", showWeather: false }),
+        JSON.stringify({ theme, home: ["demo0"], background: "black", showWeather: false }),
       );
-    }, glassSettings);
+    }, theme);
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     await page.locator("#gear").click();
     await page.locator('[data-key="section:apps"]').click();
     const cards = page.locator("#all-apps > [data-settings-card]");

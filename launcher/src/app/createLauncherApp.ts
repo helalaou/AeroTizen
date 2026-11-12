@@ -4,7 +4,6 @@ import type { StatusStores } from "../contracts/status";
 import type { LauncherUpdateNotice } from "../contracts/updates";
 import type { LauncherPlatform, LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import type { LauncherUpdates } from "../services/createLauncherUpdates";
-import { createStatusStores } from "../services/createStatusStores";
 import { catalogues, resolveLanguage } from "../shared/i18n/catalogues";
 import type { Translations } from "../shared/i18n/createTranslations";
 import { createTranslations } from "../shared/i18n/createTranslations";
@@ -33,8 +32,7 @@ export interface LauncherViews {
   ): MountedView<SettingsBridge>;
 }
 
-// One settings owner and one teardown path for both views. The legacy key router
-// receives bridges only after their views are mounted.
+// Both views share preferences and expose their controls after mounting.
 export const createLauncherApp = (
   runtime: LauncherRuntime,
   platform: LauncherPlatform,
@@ -42,9 +40,8 @@ export const createLauncherApp = (
   views: LauncherViews,
   updates: LauncherUpdates,
   settings: SettingsStore,
-  transaction: (action: () => void) => void = (action) => action(),
 ) => {
-  const status = createStatusStores(runtime, platform, transaction, settings);
+  const status = { time: runtime.clock, network: runtime.network, weather: runtime.weather };
   const previousHome = runtime.homeScreen;
   const previousSettings = runtime.settingsUi;
   const previousTranslate = runtime.translate;
@@ -107,7 +104,6 @@ export const createLauncherApp = (
     if (home && runtime.homeScreen === home.bridge) {
       runtime.homeScreen = previousHome;
     }
-    status.dispose();
     if (runtime.translate === translate) {
       runtime.translate = previousTranslate;
     }
@@ -122,7 +118,7 @@ export const createLauncherApp = (
     if (!document.hidden) {
       void updates.check();
     }
-    return { dispose };
+    return { dispose, home: home.bridge, settings: editor.bridge };
   } catch (error) {
     dispose();
     throw error;

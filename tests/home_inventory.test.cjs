@@ -16,24 +16,24 @@ test("Home inventories publish stable immutable data and respond to preference c
     defaults: { home: [], showLiveTv: true },
     storage: { getItem: () => null, setItem() {} },
     storageKey: "settings",
-    legacyStorageKeys: [],
     speedRange: { MIN: 0.25, MAX: 3 },
     locale: { timeFormat: () => "24", tempUnit: () => "C" },
   });
+  let feed = Object.freeze({ items: Object.freeze([]) });
+  let appSnapshot = Object.freeze({ all: Object.freeze([Object.freeze({ id: "one", name: "One" })]), ready: false });
+  let inputSnapshot = Object.freeze({
+    visibleSources: Object.freeze([
+      Object.freeze({ type: "TV", number: 1 }),
+      Object.freeze({ type: "HDMI", number: 2, connected: true }),
+    ]),
+  });
   const runtime = {
-    apps: { all: [{ id: "one", name: "One" }], ready: false, subscribe: subscribe(appListeners) },
+    apps: { getSnapshot: () => appSnapshot, subscribe: subscribe(appListeners) },
     inputs: {
-      sources: [
-        { type: "TV", number: 1 },
-        { type: "HDMI", number: 2, connected: true },
-      ],
-      isVisible(input) {
-        assert.equal(this, runtime.inputs);
-        return input.type !== "TV" || settings.getSnapshot().showLiveTv;
-      },
+      getSnapshot: () => inputSnapshot,
       subscribe: subscribe(inputListeners),
     },
-    continueWatching: { items: [], subscribe: subscribe(feedListeners) },
+    continueWatching: { getSnapshot: () => feed, subscribe: subscribe(feedListeners) },
   };
   const inventory = createHomeInventory(runtime, settings, (fn) => fn());
   const first = inventory.getSnapshot();
@@ -42,23 +42,29 @@ test("Home inventories publish stable immutable data and respond to preference c
   [...appListeners, ...inputListeners, ...feedListeners].forEach((fn) => fn());
   assert.equal(inventory.getSnapshot(), first);
   assert.equal(updates, 0);
-  runtime.apps.all[0].name = "Renamed";
+  appSnapshot = Object.freeze({ ...appSnapshot, all: Object.freeze([Object.freeze({ id: "one", name: "Renamed" })]) });
   [...appListeners].forEach((fn) => fn());
   assert.equal(first.apps[0].name, "One");
   assert.equal(inventory.getSnapshot().apps[0].name, "Renamed");
+  assert.equal(inventory.getSnapshot().apps, appSnapshot.all, "Home shares the app service array");
   assert.equal(inventory.getSnapshot().inputs, first.inputs);
+  assert.equal(inventory.getSnapshot().inputs, inputSnapshot.visibleSources, "Home shares the service input array");
   assert.equal(Object.isFrozen(inventory.getSnapshot().apps[0]), true);
+  inputSnapshot = Object.freeze({
+    visibleSources: Object.freeze(inputSnapshot.visibleSources.filter((source) => source.type !== "TV")),
+  });
   settings.update({ showLiveTv: false });
   assert.deepEqual(
     inventory.getSnapshot().inputs.map((input) => input.type),
     ["HDMI"],
   );
-  runtime.apps.ready = true;
+  appSnapshot = Object.freeze({ ...appSnapshot, ready: true });
   [...appListeners].forEach((fn) => fn());
   assert.equal(inventory.getSnapshot().ready, true);
-  runtime.continueWatching.items.push({ key: "one", title: "Episode" });
+  feed = Object.freeze({ items: Object.freeze([Object.freeze({ key: "one", title: "Episode" })]) });
   [...feedListeners].forEach((fn) => fn());
   assert.equal(inventory.getSnapshot().items[0].title, "Episode");
+  assert.equal(inventory.getSnapshot().items, feed.items, "Home reads the shared feed snapshot without copying");
   assert.equal(first.items.length, 0);
   const latest = inventory.getSnapshot();
   inventory.dispose();

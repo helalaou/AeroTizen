@@ -1,13 +1,11 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
-for (const glass of [false, true]) {
-  test(`weather photos stay behind the unfocused ${glass ? "Glass" : "Classic"} header and viewport`, async ({
-    page,
-  }) => {
+for (const theme of ["classic", "glass"]) {
+  test(`weather photos stay behind the unfocused ${theme} header and viewport`, async ({ page }) => {
     await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
     await page.addInitScript(
-      (glassSettings) =>
+      (theme) =>
         localStorage.setItem(
           "aerotizen.settings.v1",
           JSON.stringify({
@@ -16,17 +14,17 @@ for (const glass of [false, true]) {
             showWeather: false,
             showNetwork: true,
             clockLayout: "classic",
-            glassSettings,
+            theme,
           }),
         ),
-      glass,
+      theme,
     );
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     await expect(page.locator("#gear")).not.toHaveAttribute("data-focused", "true");
     await page.evaluate(() => {
       const now = Date.now();
-      window.Weather.currentReading = () => ({
+      AeroTizen.weather.currentReading = () => ({
         code: 3,
         at: now,
         solar: [{ sunrise: now - 3600000, sunset: now + 3600000 }],

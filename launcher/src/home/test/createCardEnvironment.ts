@@ -19,15 +19,19 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
   });
   const runtime: Pick<HomeEnvironment["runtime"], "inputs"> = {
     inputs: {
-      sources: [],
-      watching: false,
+      canLearnIpControlInput: () => false,
+      learnIpControlInput: () => Promise.resolve({ status: "unavailable" }),
+      getSnapshot: () => ({ sources: [], visibleSources: [], playback: "idle" }),
+      alwaysVisible: () => false,
+      hasRecognizedDevice: () => false,
       isVisible: () => true,
       label: (source, defaultLabel) => source.editName ?? defaultLabel ?? runtime.inputs.portName(source),
       portName: (source) => `${source.type} ${source.number}`,
-      refresh: () => undefined,
-      setIpControlPorts: () => undefined,
+      dispose: () => undefined,
+      leave: () => undefined,
+      load: () => undefined,
+      start: () => undefined,
       show: () => undefined,
-      sourcesReady: true,
       subscribe: () => () => undefined,
     },
   };
@@ -40,14 +44,7 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     runtime: runtime as HomeEnvironment["runtime"],
     describe: (app: InstalledApp): AppPresentation => ({
       artwork: [],
-      background: "black",
-      label: app.name,
-      largeLogo: false,
-      logoColour: "white",
-      logoPath: null,
-      textColour: "white",
       title: app.name,
-      useAppIcon: true,
       ...presentation,
     }),
   };

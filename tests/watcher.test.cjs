@@ -1,11 +1,16 @@
 "use strict";
 // Watcher integration tests. All clocks, Art replies and HTTP requests are local mocks.
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
 const vm = require("node:vm");
 const url = require("node:url");
 const { EventEmitter } = require("node:events");
-const source = fs.readFileSync(__dirname + "/../launcher/service/index.js", "utf8");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { serviceFactory, serviceSource } = require("./helpers/load_service.cjs");
+const { createDiagnostics } = loadTypeScript("launcher/src/diagnostics/createDiagnostics.ts");
+const { createDiagnosticsPrivacy } = loadTypeScript("launcher/src/diagnostics/createDiagnosticsPrivacy.ts");
+const { createDiagnosticsContext } = loadTypeScript("launcher/src/diagnostics/service/createDiagnosticsContext.ts");
+const createHomeMode = serviceFactory("home-mode", "launcher/src/service/createHomeMode.ts");
+const source = serviceSource("index", "launcher/src/service/index.ts");
 const SELF = "DclHome001.Home";
 
 function harness(options = {}) {
@@ -128,13 +133,23 @@ function harness(options = {}) {
   };
   const context = {
     module: { exports: {} },
+    Symbol: undefined,
+    Map: undefined,
+    Set: undefined,
+    Promise: undefined,
+    performance: undefined,
     require(name) {
+      if (name === "./protocol") return loadTypeScript("launcher/src/service/protocol.ts");
       if (name === "http") return http;
-      if (name === "../js/diagnostics")
-        return (kind) => require("../launcher/js/diagnostics")(kind, { later: (fn, ms) => timer(fn, ms, 0) });
+      if (name === "./diagnostics")
+        return {
+          createDiagnostics: (kind) => createDiagnostics(kind, { later: (fn, ms) => timer(fn, ms, 0) }),
+        };
       if (name === "./diagnostics-context")
         return () =>
-          require("../launcher/service/diagnostics-context")({
+          createDiagnosticsContext({
+            privacy: createDiagnosticsPrivacy(),
+            arch: process.arch,
             read: (done) => done(null, "VERSION_ID=9.0.0\nBUILD_ID=test"),
           });
       if (name === "./diagnostics-store") return (tz, ready) => ready(options.diagnosticsStorage || null);
@@ -143,7 +158,7 @@ function harness(options = {}) {
           artOptions = config;
           return art;
         };
-      if (name === "./home-mode") return require("../launcher/service/home-mode");
+      if (name === "./home-mode") return createHomeMode;
       if (name === "./home-store") return (tz, ready) => ready(preference, !!options.storageReadFailed);
       if (name === "url") return url;
       throw new Error("Unexpected require: " + name);
@@ -164,6 +179,7 @@ function harness(options = {}) {
       },
     },
   };
+  context.exports = context.module.exports;
   vm.runInNewContext(source, context, { filename: "watcher.js" });
   function control(path = "/") {
     let body;
@@ -557,7 +573,7 @@ test("non-Frame TVs return from a watched app without the Frame debounce", () =>
   h.advance(600);
   assert.equal(h.state().seen, true);
   h.statuses.set("AppA", { running: true, visible: false });
-  h.advance(600);
+  h.advance(1800);
   assert.equal(h.launches.length, 2);
 });
 
@@ -707,7 +723,7 @@ test("an unseen watched app hands Home over to an app that reports visible", () 
   assert.equal(h.state().seen, true);
   assert.equal(h.launches.length, 1);
   h.statuses.set("AppB", { running: true, visible: false }); // Home pressed in AppB
-  h.advance(900);
+  h.advance(1800);
   assert.equal(h.launches.length, 2);
 });
 
@@ -968,6 +984,25 @@ test("pending diagnostic storage does not delay Home requests or native mode con
   h.advance(500);
   assert.equal(saves.length, 2);
 });
+
+if (!process.env.AEROTIZEN_TEST_SERVICE_BASELINE) {
+  test("repeated app query fields cannot clear inventory or an active watch", () => {
+    const h = harness({ capability: false });
+    h.api.onStart();
+    h.control("/apps?ids=active.app,other.app");
+    h.control("/watch?id=active.app");
+    const before = h.control();
+    for (const path of ["/watch?id=other.app&id=second.app", "/apps?ids=other.app&ids=second.app"]) {
+      assert.equal(h.control(path).error, "Invalid app identifiers");
+      const after = h.control();
+      assert.deepEqual(after.apps, before.apps);
+      assert.equal(after.watched, before.watched);
+      assert.equal(after.epoch, before.epoch);
+      assert.equal(after.watchAt, before.watchAt);
+    }
+    h.api.onExit();
+  });
+}
 
 let failed = 0;
 for (const [name, fn] of tests) {

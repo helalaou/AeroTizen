@@ -1,98 +1,57 @@
+import type { AppsService } from "../../contracts/apps";
 import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
-import type {
-  AppPresentation,
-  ClockService,
-  ContinueItem,
-  ContinueSource,
-  HomeBridge,
-  InputSource,
-  InstalledApp,
-  LauncherConfig,
-  SettingsBridge,
-} from "../../contracts/launcher";
-import type { SettingsService, WeatherLocation } from "../../contracts/preferences";
-import type { NetworkService, WeatherPhotoSource, WeatherSnapshot } from "../../contracts/status";
-import type { MessageKey } from "../../shared/i18n/catalogues";
+import type { ContinueWatchingService } from "../../contracts/continueWatching";
+import type { LauncherStartup, UiDiagnostics } from "../../contracts/diagnostics";
+import type { FireplaceControls } from "../../contracts/fireplace";
+import type { HomeWatcherService } from "../../contracts/homeWatcher";
+import type { InputsService } from "../../contracts/inputs";
+import type { ClockService, HomeBridge, LauncherConfig, SettingsBridge } from "../../contracts/launcher";
+import type { NativeNavigation, NativeNavigationCommands } from "../../contracts/nativeNavigation";
+import type { PlatformOverrides } from "../../contracts/platformOverrides";
+import type { SettingsService } from "../../contracts/preferences";
+import type { NetworkService, WeatherService } from "../../contracts/status";
 import type { Translate } from "../../shared/i18n/createTranslations";
-import type { Store } from "../../shared/state/createStore";
 
-import type { LearnIpControlResult } from "./probeIpControl";
+import type { AppsTizen } from "./createAppsPlatform";
+import type { HomeWatcherTizen } from "./createHomeWatcherPlatform";
+import type { InputsTizen } from "./createInputsPlatform";
+import type { NativeNavigationTizen } from "./createNativeNavigation";
+import type { StremioTizen } from "./createStremioContinueWatchingProvider";
 
-// The unmigrated TV services are accessed through this boundary, not a screen's types.
+// Shared runtime used by app composition and the Tizen adapters.
 export interface LauncherRuntime {
   applyBackground(): void;
-  apps: {
-    all: InstalledApp[];
-    ready: boolean;
-    byId(id: string): InstalledApp | null;
-    launch(app: InstalledApp): void;
-    openStore(): void;
-    playFireplace(): void;
-    subscribe(listener: () => void): () => void;
-  };
+  apps: AppsService;
   clock: ClockService;
   config: LauncherConfig;
-  continueWatching: {
-    items: ContinueItem[];
-    messageKey: MessageKey | "";
-    sources: ContinueSource[];
-    open(item: ContinueItem): void;
-    start(): void;
-    subscribe(listener: () => void): () => void;
-  };
+  continueWatching: ContinueWatchingService;
   hideToast(): void;
   homeScreen?: HomeBridge;
-  homewatch: {
-    openNativeHdmi?(select: () => Promise<boolean>): boolean;
-    openSamsungHome?(): void;
-    useSamsungHome(): void;
-  };
-  inputs: {
-    sources: InputSource[];
-    watching: boolean;
-    alwaysVisible?(source: InputSource): boolean;
-    hasRecognizedDevice?(source: InputSource): boolean;
-    isVisible(source: InputSource): boolean;
-    label(source: InputSource, defaultLabel?: string): string;
-    learnIpControl?(): Promise<LearnIpControlResult>;
-    portName(source: InputSource): string;
-    refresh(): void;
-    setIpControlPorts(ports: number[], open: (port: number) => void): void;
-    show(source: InputSource): void;
-    sourcesReady: boolean;
-    subscribe(listener: () => void): () => void;
-  };
+  homewatch: HomeWatcherService & Partial<NativeNavigationCommands>;
+  inputs: InputsService;
+  nativeNavigation: NativeNavigation;
   network: NetworkService;
+  platforms?: PlatformOverrides;
   settings: SettingsService;
   settingsUi?: SettingsBridge;
-  tiles: { describe(app: InstalledApp): AppPresentation };
+  tizen?: (AppsTizen & HomeWatcherTizen & InputsTizen & StremioTizen & NativeNavigationTizen) | null;
   toast(message: string): void;
   translate: Translate;
+  weather: WeatherService;
 }
 
 export interface LauncherPlatform {
   backgrounds: BackgroundBridge;
   previewBackground(preview: BackgroundPreview | null): void;
-  weather: Store<WeatherSnapshot> &
-    WeatherPhotoSource & {
-      updateVisibility(): void;
-      updateDisplay(): void;
-      refresh(): void;
-      searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): void;
-    };
 }
 
 declare global {
   interface Window {
+    AeroBuildInfo?: Record<string, unknown>;
+    AeroDiagnostics: UiDiagnostics;
+    AeroStartup: LauncherStartup;
     AeroTizen: LauncherRuntime;
     Backgrounds: LauncherPlatform["backgrounds"];
-    Fireplace?: {
-      close(): void;
-      isOpen(): boolean;
-      open(): void;
-      volumeDown(): void;
-      volumeUp(): void;
-    };
-    Weather: LauncherPlatform["weather"];
+    Fireplace?: FireplaceControls;
   }
 }

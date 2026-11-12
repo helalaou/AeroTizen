@@ -4,6 +4,7 @@
     "lib": ["ES2018", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "strict": true,
@@ -15,5 +16,6 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["vite/client"]
   },
-  "include": ["launcher/src/**/*.ts", "launcher/src/**/*.tsx"]
+  "include": ["launcher/src/**/*.ts", "launcher/src/**/*.tsx"],
+  "exclude": ["launcher/src/service"]
 }

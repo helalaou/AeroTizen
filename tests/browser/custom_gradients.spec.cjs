@@ -1,10 +1,10 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const { openCategory } = require("./drawer_helpers.cjs");
 
 const image = (page) => page.evaluate(() => getComputedStyle(document.documentElement).backgroundImage);
 const saved = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("aerotizen.settings.v1")));
 
-const openGradient = async (page, glass) => {
+const openGradient = async (page, theme) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
@@ -13,7 +13,7 @@ const openGradient = async (page, glass) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ json: {} }));
-  await page.addInitScript((glassSettings) => {
+  await page.addInitScript((theme) => {
     const key = "aerotizen.settings.v1";
     if (!localStorage.getItem(key)) {
       localStorage.setItem(
@@ -22,13 +22,13 @@ const openGradient = async (page, glass) => {
           background: "custom-gradient",
           customColour: "#012345",
           customGradient: { start: "#336699", end: "#ff0000", angle: 90 },
-          glassSettings,
+          theme,
           showWeather: false,
           home: ["demo0", "demo1"],
         }),
       );
     }
-  }, glass);
+  }, theme);
   await page.goto("/");
   await expect(page).toHaveTitle("AeroTizen");
   await expect(page.locator("#grid > [data-id]")).toHaveCount(2);
@@ -54,14 +54,13 @@ const editBothColours = async (page) => {
   await page.keyboard.press("ArrowRight");
 };
 
-for (const glass of [false, true]) {
-  const theme = glass ? "Glass" : "Classic";
+for (const theme of ["classic", "glass"]) {
   test(`${theme}: gradient tiles and remote editor preview, cancel, save and reopen both colours and direction`, async ({
     page,
   }) => {
-    const errors = await openGradient(page, glass);
+    const errors = await openGradient(page, theme);
     const tiles = page.locator("#bg-still [data-wallpaper-swatch]:visible");
-    await expect(tiles).toHaveCount(15);
+    await expect(tiles).toHaveCount(20);
     await expect(tiles.first()).toHaveAttribute("data-key", "bg:custom-gradient");
     await expect(tiles.first().locator("[data-wallpaper-edit]")).toBeVisible();
     await page.screenshot({ path: test.info().outputPath(`grid-${theme}.png`) });
@@ -158,8 +157,8 @@ test("Back restores a weather photo after a gradient preview, and light gradient
 }) => {
   const errors = await openGradient(page, true);
   await page.evaluate(() => {
-    window.Weather.currentReading = () => ({ code: 0 });
-    window.Weather.solarPhase = () => "day";
+    AeroTizen.weather.currentReading = () => ({ code: 0 });
+    AeroTizen.weather.solarPhase = () => "day";
     AeroTizen.settings.update({ weatherPhoto: true });
     AeroTizen.applyBackground();
   });
@@ -179,5 +178,24 @@ test("Back restores a weather photo after a gradient preview, and light gradient
   });
   await expect(page.locator("html")).toHaveAttribute("data-light-background", "true");
   await expect(page.locator("#gear")).toHaveCSS("color", "rgb(21, 21, 27)");
+  expect(errors).toEqual([]);
+});
+
+test("Pastel keeps dark status text, the darker new gradients keep it light, and the choice persists", async ({
+  page,
+}) => {
+  const errors = await openGradient(page, true);
+  await page.locator('[data-key="bg:pastel"]').click();
+  await expect(page.locator("html")).toHaveAttribute("data-light-background", "true");
+  await expect(page.locator("#gear")).toHaveCSS("color", "rgb(21, 21, 27)");
+  for (const scene of ["prism", "afterglow", "twilightpeaks", "borealis"]) {
+    await page.locator(`[data-key="bg:${scene}"]`).click();
+    await expect(page.locator("html")).toHaveAttribute("data-light-background", "false");
+    expect(await image(page)).not.toContain("url(");
+  }
+  await page.locator('[data-key="bg:pastel"]').click();
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-light-background", "true");
+  expect((await saved(page)).background).toBe("pastel");
   expect(errors).toEqual([]);
 });

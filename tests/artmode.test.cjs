@@ -1,11 +1,12 @@
 "use strict";
 // Focused protocol and lifecycle tests. No network sockets or TV access.
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
 const vm = require("node:vm");
 const crypto = require("node:crypto");
 const { EventEmitter } = require("node:events");
-const source = fs.readFileSync(__dirname + "/../launcher/service/artmode.js", "utf8");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { serviceSource } = require("./helpers/load_service.cjs");
+const source = serviceSource("artmode", "launcher/src/service/createArtMode.ts");
 
 function harness(options = {}) {
   let clock = 1000000;
@@ -54,9 +55,15 @@ function harness(options = {}) {
   const context = {
     module: { exports: {} },
     Buffer,
+    Symbol: undefined,
+    Map: undefined,
+    Set: undefined,
+    Promise: undefined,
+    performance: undefined,
     Date: { now: () => clock },
     process: { versions: { node: "test-runtime" } },
     require(name) {
+      if (name === "./protocol") return loadTypeScript("launcher/src/service/protocol.ts");
       imports.push(name);
       if (name === "http") return http;
       if (name === "crypto" && !options.noCrypto) return crypto;
@@ -67,8 +74,10 @@ function harness(options = {}) {
     setInterval: (fn, ms) => timer(fn, ms, ms),
     clearInterval: (id) => timers.delete(id),
   };
+  context.exports = context.module.exports;
   vm.runInNewContext(source, context, { filename: "artmode.js" });
-  const api = context.module.exports({
+  const factory = context.module.exports.default || context.module.exports;
+  const api = factory({
     onChange: (value, reason) => changes.push({ value, reason }),
   });
   function upgrade(index = requests.length - 1, valid = true) {

@@ -1,8 +1,13 @@
 const { createTestSettings } = require("./helpers/settings.cjs");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { createContinueWatchingService } = loadTypeScript("launcher/src/services/createContinueWatchingService.ts");
+const { normalizeContinueItems } = loadTypeScript("launcher/src/services/continueWatching/normalizeItems.ts");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
+const { createSamsungContinueWatchingProvider } = loadTypeScript(
+  "launcher/src/platform/tizen/createSamsungContinueWatchingProvider.ts",
+);
 const vm = require("node:vm");
 const plain = (x) => JSON.parse(JSON.stringify(x));
 const prefix = "http://samsung.com/tv/metadata/";
@@ -19,7 +24,7 @@ const card = (id, timestamp = 1000, extra = {}) => ({
   episode: 1,
   ...extra,
 });
-function harness() {
+function harness(providers) {
   const appListeners = [],
     clockListeners = [],
     requests = [],
@@ -39,9 +44,18 @@ function harness() {
       continueWatchingApps: [],
     }),
     apps: {
+      subscribeDiscovery(fn) {
+        return this.subscribe(fn);
+      },
+      getSnapshot() {
+        return this;
+      },
       inventory: [{ id: source.id, packageId: "pkg", name: "Video" }],
       ready: true,
-      subscribe: (fn) => appListeners.push(fn),
+      subscribe: (fn) => {
+        appListeners.push(fn);
+        return () => appListeners.splice(appListeners.indexOf(fn), 1);
+      },
     },
     tiles: { shortName: (name) => name.replace(/ - .*/, "") },
     catalog: { storeId: (id) => (id === source.id ? source.storeId : null) },
@@ -100,15 +114,39 @@ function harness() {
     },
     clearTimeout: (id) => timers.delete(id),
   });
-  for (const script of ["continue-watching.js", "samsung-continue.js"]) {
-    vm.runInContext(fs.readFileSync("launcher/js/" + script, "utf8"), context);
-  }
-  const cw = A.continueWatching;
+  const cw = createContinueWatchingService({
+    apps: A.apps,
+    clock: A.clock,
+    elapsed: () => elapsed,
+    now: () => now,
+    settings: A.settings,
+    providers: providers || [
+      createSamsungContinueWatchingProvider({
+        catalog: A.catalog,
+        runtime: A,
+        createRequest: () => new XMLHttpRequest(),
+        now: () => now,
+      }),
+    ],
+    timers: context,
+    platform: {
+      isAvailable: () => !!A.tizen?.application?.getAppMetaData,
+      isHidden: () => document.hidden,
+      subscribeVisibility: (fn) => {
+        events.visibilitychange = fn;
+        return () => delete events.visibilitychange;
+      },
+    },
+  });
+  A.continueWatching = cw;
   return {
     A,
     cw,
     document,
     events,
+    appListeners,
+    clockListeners,
+    normalize: (records) => normalizeContinueItems(source, records, now),
     requests,
     launches,
     watches,
@@ -157,7 +195,7 @@ test("disabled is inert, and disabling or hiding aborts reads and rejects late c
   h.A.settings.update({ continueWatching: false });
 
   h.respond(0, [card("late")]);
-  assert.equal(h.cw.items.length, 0);
+  assert.equal(h.cw.getSnapshot().items.length, 0);
   assert.equal(h.timers.size, 0);
   h.enable();
   h.document.hidden = true;
@@ -184,10 +222,12 @@ test("source discovery groups hidden services by package and ignores preview-onl
   h.A.apps.inventory = inventory;
   h.A.settings.update({ continueWatching: true });
   h.cw.start();
-  assert.deepEqual(plain(h.cw.sources), [{ ...source, name: "Renamed app", icon: "", status: "Not selected" }]);
+  assert.deepEqual(plain(h.cw.getSnapshot().sources), [
+    { ...source, name: "Renamed app", icon: "", status: "Not selected" },
+  ]);
   h.A.catalog.storeId = () => null;
   h.cw.refresh();
-  assert.equal(h.cw.sources[0].status, "App ID unavailable");
+  assert.equal(h.cw.getSnapshot().sources[0].status, "App ID unavailable");
 });
 test("normalization keeps zero progress and distinct episodes, rejects other apps, deduplicates and orders true activity", () => {
   const h = harness();
@@ -206,14 +246,14 @@ test("normalization keeps zero progress and distinct episodes, rejects other app
   ];
   h.respond(0, data);
   assert.deepEqual(
-    plain(h.cw.items).map((x) => x.key),
+    plain(h.cw.getSnapshot().items).map((x) => x.key),
     ["video.app:second", "video.app:first", "video.app:unknown", "video.app:future"],
   );
-  assert.equal(h.cw.items[0].playback, 0);
-  assert.equal(h.cw.items[1].timestamp, 2000);
-  assert.equal(h.cw.items[2].timestamp, 0);
-  assert.throws(() => h.cw.normalize(source, {}), /Invalid feed/);
-  assert.equal(h.cw.normalize(source, [card("millis", 1700000000000)])[0].timestamp, 1700000000);
+  assert.equal(h.cw.getSnapshot().items[0].playback, 0);
+  assert.equal(h.cw.getSnapshot().items[1].timestamp, 2000);
+  assert.equal(h.cw.getSnapshot().items[2].timestamp, 0);
+  assert.throws(() => h.normalize({}), /Invalid feed/);
+  assert.equal(h.normalize([card("millis", 1700000000000)])[0].timestamp, 1700000000);
 });
 test("empty feed retries are bounded; settled feeds do not poll; returning refreshes them", () => {
   const h = harness();
@@ -225,7 +265,7 @@ test("empty feed retries are bounded; settled feeds do not poll; returning refre
   h.respond(1, []);
   h.advance(2000);
   h.respond(2, []);
-  assert.equal(h.cw.sources[0].status, "No items available");
+  assert.equal(h.cw.getSnapshot().sources[0].status, "No items available");
   assert.equal(h.requests.length, 3);
   h.advance(30000);
   assert.equal(h.requests.length, 3);
@@ -235,15 +275,15 @@ test("empty feed retries are bounded; settled feeds do not poll; returning refre
   h.document.hidden = false;
   h.events.visibilitychange();
   h.respond(3, [card("new")]);
-  assert.equal(h.cw.items.length, 1);
+  assert.equal(h.cw.getSnapshot().items.length, 1);
   h.cw.refresh();
   h.respond(4, []);
-  assert.equal(h.cw.items.length, 1, "a refresh does not clear the visible row");
+  assert.equal(h.cw.getSnapshot().items.length, 1, "a refresh does not clear the visible row");
   h.advance(2000);
   h.respond(5, []);
   h.advance(2000);
   h.respond(6, []);
-  assert.equal(h.cw.items.length, 0);
+  assert.equal(h.cw.getSnapshot().items.length, 0);
   h.A.settings.update({ continueWatchingApps: [] });
 
   const before = h.requests.length;
@@ -256,11 +296,11 @@ test("failed or malformed requests stay isolated and returning recovers; selecte
   h.age(300001);
   h.enable();
   h.respond(0, {}, 500);
-  assert.match(h.cw.sources[0].status, /Unavailable/);
+  assert.match(h.cw.getSnapshot().sources[0].status, /Unavailable/);
   assert.equal(h.timers.size, 0);
   h.events.visibilitychange();
   h.respond(1, [card("chosen")]);
-  const chosen = h.cw.items[0];
+  const chosen = h.cw.getSnapshot().items[0];
   h.cw.open(chosen);
   assert.equal(h.launches[0].id, source.id);
   assert.deepEqual(h.watches, [source.id]);
@@ -275,27 +315,56 @@ test("refresh keeps unchanged items and updates only changed records; deselectio
   h.cw.start();
   h.enable();
   h.respond(0, [card("one"), card("two")]);
-  const items = h.cw.items,
+  const items = h.cw.getSnapshot().items,
     first = items[0],
     second = items[1];
   h.cw.refresh();
-  assert.equal(h.cw.items, items, "keep the row while refreshing");
+  assert.equal(h.cw.getSnapshot().items, items, "keep the row while refreshing");
   h.respond(1, [card("one"), card("two")]);
-  assert.equal(h.cw.items, items, "unchanged results must not replace cards");
+  assert.equal(h.cw.getSnapshot().items, items, "unchanged results must not replace cards");
   h.advance(30000);
   assert.equal(h.requests.length, 2);
   assert.equal(h.timers.size, 0);
   h.cw.refresh();
   h.respond(2, [card("one", 1000, { playback: 100 }), card("two")]);
-  assert.notEqual(h.cw.items[0], first);
-  assert.equal(h.cw.items[1], second);
-  h.cw.open(h.cw.items[1]);
+  assert.notEqual(h.cw.getSnapshot().items[0], first);
+  assert.equal(h.cw.getSnapshot().items[1], second);
+  h.cw.open(h.cw.getSnapshot().items[1]);
   assert.equal(h.launches.length, 1);
   h.A.settings.update({ continueWatchingApps: [] });
 
-  assert.equal(h.cw.items.length, 0);
+  assert.equal(h.cw.getSnapshot().items.length, 0);
   h.enable();
-  assert.equal(h.cw.items.length, 0, "deselected records are not retained");
+  assert.equal(h.cw.getSnapshot().items.length, 0, "deselected records are not retained");
+});
+
+test("opening Continue Watching waits for watcher preparation before the native launch", () => {
+  const h = harness();
+  let ready;
+  h.A.homewatch.prepareAppLaunch = (id, done) => {
+    assert.equal(id, source.id);
+    ready = done;
+  };
+  h.cw.start();
+  h.enable();
+  h.respond(0, [card("chosen")]);
+  h.cw.open(h.cw.getSnapshot().items[0]);
+  assert.equal(h.launches.length, 0);
+  ready();
+  assert.equal(h.launches[0].id, source.id);
+});
+
+test("a superseded Continue Watching handoff does not launch or report an outage", () => {
+  const h = harness();
+  const messages = [];
+  h.A.toast = (message) => messages.push(message);
+  h.A.homewatch.prepareAppLaunch = (id, done, failed) => failed({ name: "AbortError", cancelled: true });
+  h.cw.start();
+  h.enable();
+  h.respond(0, [card("cancelled")]);
+  h.cw.open(h.cw.getSnapshot().items[0]);
+  assert.deepEqual(h.launches, []);
+  assert.deepEqual(messages, []);
 });
 
 // A cold TV can expose an empty or unavailable feed before its publisher is ready.
@@ -311,7 +380,7 @@ test("startup recovers a late feed without reopening the launcher and stops afte
     h.respond(index + 1, index === 7 ? [card("late")] : []);
   }
   assert.deepEqual(
-    plain(h.cw.items).map((i) => i.key),
+    plain(h.cw.getSnapshot().items).map((i) => i.key),
     ["video.app:late"],
   );
   assert.equal(h.timers.size, 0);
@@ -330,7 +399,7 @@ test("startup retries have a fixed limit and are cancelled when disabled or hidd
     empty.advance(delay);
     empty.respond(index + 1, []);
   }
-  assert.equal(empty.cw.sources[0].status, "No items available");
+  assert.equal(empty.cw.getSnapshot().sources[0].status, "No items available");
   assert.equal(empty.timers.size, 0);
   empty.advance(120000);
   assert.equal(empty.requests.length, 9);
@@ -367,7 +436,7 @@ test("startup retries share one deadline across refreshes", () => {
   h.respond(1, []);
   assert.equal(h.timers.size, 0);
   assert.equal(h.requests.length, 2);
-  assert.equal(h.cw.sources[0].status, "No items available");
+  assert.equal(h.cw.getSnapshot().sources[0].status, "No items available");
   h.age(1);
   h.cw.refresh();
   h.respond(2, {}, 503);
@@ -394,7 +463,7 @@ test("startup retries survive wall-clock changes and still end after five elapse
     h.age(5000);
     h.advance(5000);
     h.respond(2, [card("late")]);
-    assert.equal(h.cw.items.length, 1);
+    assert.equal(h.cw.getSnapshot().items.length, 1);
     assert.equal(h.timers.size, 0);
     h.age(300001);
     h.cw.refresh();
@@ -423,10 +492,10 @@ test("a later feed revalidates timestamps read before the TV clock was corrected
   h.setWall(corrected);
   h.respond(request("456"), [card("older", recent - 3600, { app_id: "456" })]);
   assert.deepEqual(
-    plain(h.cw.items).map((item) => item.key),
+    plain(h.cw.getSnapshot().items).map((item) => item.key),
     ["video.app:newer", "other.app:older"],
   );
-  assert.equal(h.cw.items[0].timestamp, recent);
+  assert.equal(h.cw.getSnapshot().items[0].timestamp, recent);
   assert.equal(h.requests.length, 2);
 });
 
@@ -438,26 +507,26 @@ test("clock correction reorders settled feeds without more reads and keeps futur
   const request = twoSources(h);
   h.respond(request("123"), [card("older", recent - 3600), card("future", corrected * 100)]);
   h.respond(request("456"), [card("newer", recent - 60, { app_id: "456" }), card("newer", recent, { app_id: "456" })]);
-  assert.equal(h.cw.items[0].timestamp, 0);
+  assert.equal(h.cw.getSnapshot().items[0].timestamp, 0);
   h.age(1000);
   h.setWall(corrected);
   h.tick();
   assert.deepEqual(
-    plain(h.cw.items).map((item) => item.key),
+    plain(h.cw.getSnapshot().items).map((item) => item.key),
     ["other.app:newer", "video.app:older", "video.app:future"],
   );
   assert.deepEqual(
-    plain(h.cw.items).map((item) => item.timestamp),
+    plain(h.cw.getSnapshot().items).map((item) => item.timestamp),
     [recent, recent - 3600, 0],
   );
   assert.equal(h.requests.length, 2);
   assert.equal(h.timers.size, 0);
-  const items = h.cw.items;
+  const items = h.cw.getSnapshot().items;
   let updates = 0;
   h.cw.subscribe(() => updates++);
   h.age(10000);
   h.tick();
-  assert.equal(h.cw.items, items);
+  assert.equal(h.cw.getSnapshot().items, items);
   assert.equal(updates, 0);
   h.setWall(corrected + 50000);
   h.document.hidden = true;
@@ -471,4 +540,118 @@ test("clock correction reorders settled feeds without more reads and keeps futur
   h.tick();
   assert.equal(updates, 0);
   assert.equal(h.requests.length, 2);
+});
+
+test("feed snapshots are immutable and preserve earlier status, records and unchanged card identity", () => {
+  const h = harness();
+  h.cw.start();
+  h.enable();
+  const checking = h.cw.getSnapshot();
+  h.respond(0, [card("one"), card("two")]);
+  const settled = h.cw.getSnapshot();
+  assert.equal(checking.sources[0].status, "Checking for items");
+  assert.equal(settled.sources[0].status, "2 items");
+  for (const value of [settled, settled.items, settled.items[0], settled.sources, settled.sources[0]]) {
+    assert.equal(Object.isFrozen(value), true);
+  }
+  assert.throws(() => settled.items.push(card("bad")), TypeError);
+  h.cw.refresh();
+  const refreshing = h.cw.getSnapshot();
+  assert.equal(refreshing.items, settled.items, "status changes share the exact card array");
+  h.respond(1, [card("one"), card("two")]);
+  let updates = 0;
+  h.cw.subscribe(() => updates++);
+  const latest = h.cw.getSnapshot();
+  h.age(10000);
+  h.tick();
+  assert.equal(h.cw.getSnapshot(), latest);
+  assert.equal(updates, 0);
+});
+
+test("dispose cancels requests and retries, releases subscriptions and rejects late delivery and launch", () => {
+  const h = harness();
+  h.cw.start();
+  h.cw.start();
+  assert.equal(h.appListeners.length, 1);
+  assert.equal(h.clockListeners.length, 1);
+  h.enable();
+  h.respond(0, [card("one")]);
+  const item = h.cw.getSnapshot().items[0];
+  h.cw.refresh();
+  h.respond(1, []);
+  assert.equal(h.timers.size, 1);
+  h.age(2000);
+  h.advance(2000);
+  const pending = h.requests[2];
+  const snapshot = h.cw.getSnapshot();
+  let updates = 0;
+  h.cw.subscribe(() => updates++);
+  h.cw.dispose();
+  h.cw.dispose();
+  assert.equal(pending.aborted, true);
+  assert.equal(h.timers.size, 0);
+  assert.equal(h.appListeners.length, 0);
+  assert.equal(h.clockListeners.length, 0);
+  assert.equal(h.events.visibilitychange, undefined);
+  h.respond(2, [card("late")]);
+  h.A.settings.update({ continueWatching: false });
+  h.enable();
+  h.cw.start();
+  h.cw.refresh();
+  h.cw.open(item);
+  assert.equal(h.cw.getSnapshot(), snapshot);
+  assert.equal(updates, 0);
+  assert.equal(h.requests.length, 3);
+  assert.equal(h.launches.length, 0);
+});
+
+test("checked providers claim their app, expose only ready sources and ignore cancelled readiness replies", () => {
+  const checks = [];
+  const reads = [];
+  let fallbackReads = 0;
+  const checked = {
+    discover: () => [{ ...source, status: "Not selected" }],
+    check: (_, done) => checks.push(done),
+    read: (_, done) => reads.push(done),
+    cancel() {},
+    open() {},
+  };
+  const fallback = {
+    ...checked,
+    check: undefined,
+    read: () => fallbackReads++,
+  };
+  const h = harness([checked, fallback]);
+  h.cw.start();
+  h.enable();
+  assert.equal(h.cw.getSnapshot().sources.length, 0);
+  checks[0](true);
+  reads[0](false, [card("ready")]);
+  const ready = h.cw.getSnapshot();
+  assert.equal(ready.sources[0].status, "Available");
+  assert.equal(ready.items.length, 1);
+  assert.equal(fallbackReads, 0);
+  h.cw.refresh();
+  h.A.settings.update({ continueWatching: false });
+  checks[1](true);
+  assert.equal(reads.length, 1);
+  assert.equal(h.cw.getSnapshot().items.length, 0);
+  assert.equal(ready.items.length, 1);
+});
+
+test("disposing the feed owner also blocks a pending Samsung native launch", () => {
+  const h = harness();
+  let ready;
+  h.A.homewatch.prepareAppLaunch = (_, done) => {
+    ready = done;
+  };
+  h.cw.start();
+  h.enable();
+  h.respond(0, [card("chosen")]);
+  h.cw.open(h.cw.getSnapshot().items[0]);
+  assert.equal(h.launches.length, 0);
+  h.cw.dispose();
+  h.cw.dispose();
+  ready();
+  assert.equal(h.launches.length, 0);
 });

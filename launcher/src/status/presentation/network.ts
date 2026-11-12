@@ -1,13 +1,14 @@
 import type { NetworkSnapshot } from "../../contracts/status";
+import { FIXED_NAMES } from "../../shared/fixedNames";
 
 const NETWORK_STATES = {
-  ethernet: { symbol: "ethernet", label: "network.ethernet" },
-  offline: { symbol: "offline", label: "network.offline" },
-  unknown: { symbol: "unknown", label: "network.unavailable" },
-  wifiUnknown: { symbol: "wifi", label: "network.signalUnavailable" },
-  wifiHigh: { symbol: "wifi", label: "network.wifi" },
-  wifiMedium: { symbol: "wifiHigh", label: "network.wifi" },
-  wifiLow: { symbol: "wifiLow", label: "network.wifi" },
+  ethernet: { symbol: "ethernet", labelKey: "network.ethernet" },
+  offline: { symbol: "offline", labelKey: "network.offline" },
+  unknown: { symbol: "unknown", labelKey: "network.unavailable" },
+  wifiUnknown: { symbol: "wifi", labelKey: "network.signalUnavailable" },
+  wifiHigh: { symbol: "wifi", label: FIXED_NAMES.wifi },
+  wifiMedium: { symbol: "wifiHigh", label: FIXED_NAMES.wifi },
+  wifiLow: { symbol: "wifiLow", label: FIXED_NAMES.wifi },
 } as const;
 
 export const getNetworkPresentation = ({ kind, strength }: NetworkSnapshot) => {

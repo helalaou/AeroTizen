@@ -1,6 +1,7 @@
 import { House, X } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 
+import { FIXED_NAMES } from "../../../shared/fixedNames";
 import { useStore } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { Icon } from "../../../shared/icons/Icon/Icon";
@@ -38,10 +39,7 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
       <aside class={styles.sidebar} data-settings-drawer="sidebar" data-expanded={expanded}>
         <div class={styles.head}>
           <div class={styles.kicker} data-product-name>
-            {
-              // eslint-disable-next-line launcher-i18n/translated-copy -- Product name.
-              "AEROTIZEN"
-            }
+            {FIXED_NAMES.appName.toUpperCase()}
           </div>
           <h2 class={styles.sidebarTitle}>{t("common.settings")}</h2>
         </div>
@@ -81,7 +79,7 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
       <div class={styles.main} data-settings-drawer="main" ref={categoryContent} hidden={!state.expanded}>
         <SettingsHeading
           class={styles.contentHead}
-          kicker={t(state.category === "about" ? "settings.about.kicker" : "settings.drawer.customisation")}
+          kicker={state.category === "about" ? FIXED_NAMES.appName.toUpperCase() : t("settings.drawer.customisation")}
           title={active ? t(active.title) : ""}
           data-settings-title
         >

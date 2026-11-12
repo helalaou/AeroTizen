@@ -1,25 +1,25 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 const { closeSettings, openCategory } = require("./drawer_helpers.cjs");
 
-for (const glassSettings of [false, true]) {
-  test.describe(glassSettings ? "Italian Glass" : "Italian Classic", () => {
+for (const theme of ["classic", "glass"]) {
+  test.describe(`Italian ${theme}`, () => {
     test.use({ locale: "it-IT" });
     test("automatic and manual language choices preserve focus and survive reload", async ({ page }, info) => {
       const errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
       await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-      await page.addInitScript((glass) => {
+      await page.addInitScript((theme) => {
         if (!localStorage.getItem("aerotizen.settings.v1")) {
           localStorage.setItem(
             "aerotizen.settings.v1",
-            JSON.stringify({ glassSettings: glass, language: "auto", background: "black", showWeather: false }),
+            JSON.stringify({ theme, language: "auto", background: "black", showWeather: false }),
           );
         }
-      }, glassSettings);
+      }, theme);
       await page.goto("/");
-      await page.waitForFunction(() => AeroTizen.apps.ready);
+      await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await expect(page.locator("#apps-tab")).toContainText("Tutte le app");
       await page.locator("#gear").click();
       await openCategory(page, "language");

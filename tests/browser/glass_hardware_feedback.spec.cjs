@@ -1,10 +1,8 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 for (const height of [720, 1080])
-  for (const glass of [false, true]) {
-    test(`${glass ? "Glass" : "Classic"} header slots and complete Continue Watching focus ring at ${height}p`, async ({
-      page,
-    }, info) => {
+  for (const theme of ["classic", "glass"]) {
+    test(`${theme} header slots and complete Continue Watching focus ring at ${height}p`, async ({ page }, info) => {
       await page.setViewportSize({ width: height === 720 ? 1280 : 1920, height });
       const errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
@@ -25,12 +23,12 @@ for (const height of [720, 1080])
           ]),
         }),
       );
-      await page.addInitScript((glass) => {
+      await page.addInitScript((theme) => {
         const prime = "org.tizen.primevideo";
         localStorage.setItem(
           "aerotizen.settings.v1",
           JSON.stringify({
-            glassSettings: glass,
+            theme,
             background: "black",
             showWeather: false,
             home: [prime],
@@ -49,7 +47,7 @@ for (const height of [720, 1080])
             ],
           },
         };
-      }, glass);
+      }, theme);
       await page.goto("/");
       await expect(page.locator("#continue-items > [data-key]")).toHaveCount(1);
       const slots = await page.locator("#gear, #samsung-home-shortcut, #network").evaluateAll((nodes) =>
@@ -98,20 +96,20 @@ for (const height of [720, 1080])
   }
 
 for (const height of [720, 1080])
-  for (const glass of [false, true])
+  for (const theme of ["classic", "glass"])
     for (const count of [0, 1, 2, 3, 4, 5]) {
-      test(`${glass ? "Glass" : "Classic"} dock sizes ${count} source slots at ${height}p without stretching sparse inputs`, async ({
+      test(`${theme} dock sizes ${count} source slots at ${height}p without stretching sparse inputs`, async ({
         page,
       }, info) => {
         await page.setViewportSize({ width: height === 720 ? 1280 : 1920, height });
         await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
         await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
         await page.addInitScript(
-          ({ count, glass }) => {
+          ({ count, theme }) => {
             localStorage.setItem(
               "aerotizen.settings.v1",
               JSON.stringify({
-                glassSettings: glass,
+                theme,
                 background: "black",
                 showWeather: false,
                 home: ["demo0"],
@@ -132,24 +130,24 @@ for (const height of [720, 1080])
               },
             };
           },
-          { count, glass },
+          { count, theme },
         );
         await page.goto("/");
         const cards = page.locator("#inputs > [data-input-card]");
         await expect(cards).toHaveCount(count);
         const widths = await cards.evaluateAll((nodes) => nodes.map((node) => node.offsetWidth));
-        expect(widths.every((width) => width <= (glass ? 354 : 576))).toBe(true);
+        expect(widths.every((width) => width <= (theme === "glass" ? 354 : 576))).toBe(true);
         if (!count) {
           await expect(page.locator("#inputs-section")).toBeHidden();
           await page.keyboard.press("ArrowDown");
           await expect(page.locator("#grid > [data-id]")).toHaveAttribute("data-focused", "true");
           return;
         }
-        if (glass && count < 5) {
+        if (theme === "glass" && count < 5) {
           expect(widths).toEqual(Array(count).fill(354));
           expect(await page.locator("#inputs").evaluate((node) => node.offsetWidth)).toBeLessThan(1792);
         }
-        if (glass) {
+        if (theme === "glass") {
           const spacing = await page.locator("#inputs").evaluate((dock) => {
             const cards = Array.from(dock.children, (card) => card.getBoundingClientRect());
             const bounds = dock.getBoundingClientRect();

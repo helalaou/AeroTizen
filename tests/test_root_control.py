@@ -117,6 +117,10 @@ def rig(tmp_path, monkeypatch):
     def sdk_run(session, files, entrypoint, args=(), **kwargs):
         mode = args[0]
         if mode == "--preflight":
+            if state.get("preflight_error"):
+                failed = result("AEROTIZEN_ROOT_PREFLIGHT=", {"error": "systemd-run unavailable"})
+                failed["exit_code"] = 1
+                return failed
             return result(
                 "AEROTIZEN_ROOT_PREFLIGHT=",
                 {
@@ -419,6 +423,16 @@ def ready_for_upgrade(rig, monkeypatch):
         original,
         lambda: control.upgrade(state["host"], receipt_path=path, state_dir=path.parents[2]),
     )
+
+
+def test_upgrade_checks_runtime_prerequisites_before_installing(rig, monkeypatch):
+    state, path, original, upgrade = ready_for_upgrade(rig, monkeypatch)
+    state["preflight_error"] = True
+    with pytest.raises(DeviceSessionError, match="systemd-run unavailable"):
+        upgrade()
+    assert state["installs"] == 1
+    assert root_state.load(path) == original
+    assert [operation for operation, _ in state["root_calls"]] == ["install"]
 
 
 @pytest.mark.parametrize("reset_startup", [False, True])

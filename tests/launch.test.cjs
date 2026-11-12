@@ -1,12 +1,12 @@
+const { installApps } = require("./helpers/apps.cjs");
+const { compileTypeScript, loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 const assert = require("node:assert/strict");
 const { EventEmitter } = require("node:events");
-const fs = require("node:fs");
-const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
-const launcher = path.join(__dirname, "..", "launcher");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 const metadataKey = "http://samsung.com/tv/metadata/hbbtv.link";
 const host = "org.tizen.hbbtv";
 const plain = (value) => JSON.parse(JSON.stringify(value));
@@ -32,6 +32,7 @@ function appHarness(metadata, options = {}) {
   };
   if (options.noMetadata) delete application.getAppMetaData;
   const A = {
+    config: launcherConfig,
     translate: translateEnglish,
     tizen: options.preview
       ? null
@@ -45,14 +46,10 @@ function appHarness(metadata, options = {}) {
             Object.assign(this, { operation, uri, mime, category, data });
           },
         },
-    tiles: { shortName: (name) => name },
     homewatch: { watch: (id) => calls.watch.push(id) },
     toast: (message) => calls.toast.push(message),
   };
-  const context = vm.createContext({ window: { AeroTizen: A }, AeroTizen: A });
-  for (const file of ["config.js", "app-catalog.js", "app-lookup.js", "apps.js"]) {
-    vm.runInContext(fs.readFileSync(path.join(launcher, "js", file), "utf8"), context);
-  }
+  installApps({ window: { AeroTizen: A } });
   return { A, calls };
 }
 
@@ -137,14 +134,14 @@ test("watcher inventory includes an installed HbbTV host without adding a host t
     loaded = true;
   });
   assert.equal(loaded, true);
-  assert.deepEqual(plain(A.apps.realIds), [host, "normal.app", "3201907018807"]);
+  assert.deepEqual(plain(A.apps.getSnapshot().realIds), [host, "normal.app", "3201907018807"]);
   assert.deepEqual(
-    plain(A.apps.all).map((app) => app.id),
+    plain(A.apps.getSnapshot().all).map((app) => app.id),
     ["org.tizen.netflix-app", "normal.app"],
   );
   const absent = appHarness([], { installed: [installed[1]] });
   absent.A.apps.load(() => {});
-  assert.deepEqual(plain(absent.A.apps.realIds), ["normal.app"]);
+  assert.deepEqual(plain(absent.A.apps.getSnapshot().realIds), ["normal.app"]);
 });
 
 test("desktop preview launches without consulting TV metadata", () => {
@@ -195,10 +192,12 @@ function watcherHarness() {
         : name === "./artmode"
           ? () => ({ start() {}, stop() {}, fresh() {}, getState: () => ({}) })
           : name === "./home-mode"
-            ? require("../launcher/service/home-mode")
+            ? loadTypeScript("launcher/src/service/createHomeMode.ts").default
             : name === "./home-store"
               ? (tz, ready) => ready(null, false)
-              : require(name),
+              : name === "./protocol"
+                ? loadTypeScript("launcher/src/service/protocol.ts")
+                : require(name),
     module: { exports: {} },
     tizen: { application: { launch: (id) => launches.push(id) } },
     Date: { now: () => now },
@@ -209,7 +208,8 @@ function watcherHarness() {
     clearTimeout() {},
     clearInterval() {},
   });
-  vm.runInContext(fs.readFileSync(path.join(launcher, "service", "index.js"), "utf8"), context);
+  context.exports = context.module.exports;
+  vm.runInContext(compileTypeScript("launcher/src/service/index.ts"), context);
   context.module.exports.onStart();
   now += 3000; // past the boot delay
   function request(url) {
@@ -248,6 +248,9 @@ test("watcher follows host visibility rather than the wrapper identity", async (
   await watcher.tick();
   assert.equal(watcher.request("/").seen, true);
   watcher.statuses[host].visible = false;
+  await watcher.tick();
+  assert.deepEqual(watcher.launches, [], "grace period prevents immediate relaunch");
+  watcher.advance(1800);
   await watcher.tick();
   assert.deepEqual(watcher.launches, [watcher.self]);
 });

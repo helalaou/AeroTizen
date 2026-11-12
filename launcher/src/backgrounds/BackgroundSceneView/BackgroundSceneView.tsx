@@ -2,6 +2,7 @@ import type { BackgroundGraphics, BackgroundScene } from "../../contracts/backgr
 import { needsWebGL } from "../../contracts/backgrounds";
 import { useStore } from "../../shared/hooks/useStore";
 import { blob } from "../scenes";
+import { StageBackground } from "../StageBackground/StageBackground";
 import { WaveBackground } from "../WaveBackground/WaveBackground";
 import { WebGLParticleCanvas } from "../WebGLParticleCanvas/WebGLParticleCanvas";
 
@@ -16,15 +17,16 @@ const BLOB_SPOTS = [
 const SLOW_SECONDS = 22;
 
 interface Props {
+  performanceMode?: boolean;
   reportWebGL(available: boolean): void;
   scene: BackgroundScene;
   speed: number;
   webGL: BackgroundGraphics;
 }
 
-export const BackgroundSceneView = ({ scene, speed, webGL, reportWebGL }: Props) => {
+export const BackgroundSceneView = ({ scene, speed, webGL, reportWebGL, performanceMode = false }: Props) => {
   const available = useStore(webGL);
-  if (available === false && needsWebGL(scene)) {
+  if (!performanceMode && available === false && needsWebGL(scene)) {
     return null;
   }
   switch (scene.anim) {
@@ -38,6 +40,7 @@ export const BackgroundSceneView = ({ scene, speed, webGL, reportWebGL }: Props)
                 key={index}
                 class={styles.blob + " " + spot.className}
                 data-background-blob
+                data-static={performanceMode ? "true" : undefined}
                 style={{
                   animationDuration: (scene.slow ? SLOW_SECONDS : spot.seconds) / speed + "s",
                   left: spot.left,
@@ -49,15 +52,19 @@ export const BackgroundSceneView = ({ scene, speed, webGL, reportWebGL }: Props)
               />
             );
           })}
-          {scene.stars && <WebGLParticleCanvas kind="nebula" speed={speed} reportWebGL={reportWebGL} />}
+          {scene.stars && !performanceMode && (
+            <WebGLParticleCanvas kind="nebula" speed={speed} reportWebGL={reportWebGL} />
+          )}
         </>
       );
     case "waves":
-      return <WaveBackground speed={speed} />;
+      return <WaveBackground speed={speed} performanceMode={performanceMode} />;
     case "stars":
-      return <WebGLParticleCanvas kind="stars" speed={speed} reportWebGL={reportWebGL} />;
+      return performanceMode ? null : <WebGLParticleCanvas kind="stars" speed={speed} reportWebGL={reportWebGL} />;
     case "particles":
-      return <WebGLParticleCanvas kind={scene.kind} speed={speed} reportWebGL={reportWebGL} />;
+      return performanceMode ? null : <WebGLParticleCanvas kind={scene.kind} speed={speed} reportWebGL={reportWebGL} />;
+    case "stage":
+      return performanceMode ? null : <StageBackground speed={speed} reportWebGL={reportWebGL} />;
     default:
       return null;
   }

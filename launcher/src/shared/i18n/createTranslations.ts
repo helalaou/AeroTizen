@@ -1,6 +1,7 @@
 import type { Resource } from "i18next";
 import { createInstance } from "i18next";
 
+import { FIXED_NAMES } from "../fixedNames";
 import type { Store } from "../state/createStore";
 import { createStore } from "../state/createStore";
 
@@ -28,7 +29,8 @@ export const createTranslations = (initialLanguage: string) => {
     lng: initialLanguage,
     fallbackLng: fallbackLanguage,
     keySeparator: false,
-    interpolation: { escapeValue: false }, // All consumers write text or Preact attributes.
+    // All consumers write text or Preact attributes.
+    interpolation: { escapeValue: false, defaultVariables: FIXED_NAMES },
     resources,
   });
   const snapshot = (language: string): TranslationSnapshot => {

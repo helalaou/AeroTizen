@@ -1,6 +1,7 @@
 const { openCategory } = require("./drawer_helpers.cjs");
 const { preserveLegacyDom } = require("./legacy_helpers.cjs");
-const { test, expect } = require("@playwright/test");
+const { watcherStatus } = require("./watcher_helpers.cjs");
+const { test, expect } = require("./launcher_fixture.cjs");
 const { runSettingsUi } = require("../settings_ui.browser");
 const { runSettingsFocus } = require("../settings_focus.browser");
 
@@ -25,7 +26,7 @@ const openSettings = async (page, waitForApps = true) => {
   await page.waitForFunction(
     () => window.AeroTizen?.settingsUi && Array.isArray(AeroTizen.settings.getSnapshot().home),
   );
-  if (waitForApps) await page.waitForFunction(() => AeroTizen.apps.all.length > 0);
+  if (waitForApps) await page.waitForFunction(() => AeroTizen.apps.getSnapshot().all.length > 0);
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
     AeroTizen.settings.update({ background: "black", timeFormat: "24", showTime: true });
@@ -68,7 +69,7 @@ test("compiled Settings escape waits for /leave before launching native Samsung 
     (route) =>
       new Promise((resolve) => {
         acknowledge = async () => {
-          await route.fulfill({ status: 200, body: "{}" });
+          await route.fulfill({ json: watcherStatus(route.request().url()) });
           resolve();
         };
       }),
@@ -142,6 +143,7 @@ test("the first pointer click activates its control; Space activates buttons wit
   await page.keyboard.press("Space");
   await expect(page.locator("body")).not.toHaveClass(/previewing/);
   await openCategory(page, "weather");
+  await page.locator('[data-key="weather:change"]').click();
   const input = page.getByRole("textbox", { name: "Weather location", exact: true });
   expect((await input.boundingBox()).width).toBeGreaterThan(300);
   await input.fill("A");
@@ -219,7 +221,9 @@ test("late TV inventory and hot-plug updates reach Settings without a preference
         },
         addPropertyValueChangeListener(name, listener) {
           tv.listeners[name] = listener;
+          return Object.keys(tv.listeners).length;
         },
+        removePropertyValueChangeListener() {},
       },
     };
   });
@@ -296,7 +300,6 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
     });
 
     AeroTizen.applyBackground();
-    window.Weather.updateVisibility();
   });
   await control.getByRole("button", { name: "Automatic (weather)", exact: true }).click();
   await expect(page.locator("#weather-photo")).toBeVisible();
@@ -340,7 +343,7 @@ test("turning weather wallpaper off while its image is pending cannot hide the f
   );
   await openSettings(page);
   await page.evaluate(() => {
-    window.Weather.currentReading = () => ({
+    AeroTizen.weather.currentReading = () => ({
       code: 0,
       day: 1,
       at: Date.now(),

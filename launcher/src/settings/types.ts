@@ -1,6 +1,7 @@
 import type { RefObject } from "preact";
 
 import type { BackgroundGraphics, BackgroundPreview } from "../contracts/backgrounds";
+import type { LearnIpControlResult } from "../contracts/ipControl";
 import type {
   AppPresentation,
   BackgroundOption,
@@ -17,11 +18,12 @@ import type {
   SettingsStore,
   SettingsValues,
   TemperatureUnit,
+  Theme,
   TimeFormat,
   WeatherLocation,
 } from "../contracts/preferences";
+import type { WeatherSnapshot } from "../contracts/status";
 import type { LauncherUpdateNotice } from "../contracts/updates";
-import type { LearnIpControlResult } from "../platform/tizen/probeIpControl";
 import type { MessageKey } from "../shared/i18n/catalogues";
 import type { Navigation } from "../shared/navigation/createNavigation";
 import type { MutableStore, Store } from "../shared/state/createStore";
@@ -41,10 +43,7 @@ export interface SettingsServices {
   applyBackground(): void;
   applyCardSize(): void;
   applyClock(): void;
-  applyInputs(): void;
-  applyLocationVisibility(): void;
   applySpeed(speed: number): void;
-  applyWeatherVisibility(): void;
   backgrounds: readonly BackgroundOption[];
   backgroundWebGL: BackgroundGraphics;
   canLearnIpControlInput(): boolean;
@@ -57,10 +56,10 @@ export interface SettingsServices {
   learnIpControlInput(): Promise<LearnIpControlResult>;
   openStore(): void;
   previewBackground(preview: BackgroundPreview | null): void;
-  refreshWeather(): void;
   searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): () => void;
   showPreviewMessage(): void;
   useSamsungHome(): void;
+  weather: Store<WeatherSnapshot>;
 }
 export interface SettingsActions {
   adjustColour(channel: ColourChannel, direction: number): void;
@@ -75,9 +74,9 @@ export interface SettingsActions {
   setClockLayout(layout: "classic" | SettingsValues["aeroClockStyle"]): void;
   setContinueWatching(enabled: boolean): void;
   setDateFormat(format: DateFormat): void;
-  setGlassSettings(enabled: boolean): void;
   setGradientStop(stop: 0 | 1): void;
   setHdmiKeepVisible(port: string, keep: boolean): void;
+  setHdmiNativeViewer(enabled: boolean): void;
   setHdmiVisibility(hide: boolean): void;
   setHomeAppLayout(layout: SettingsValues["homeAppLayout"]): void;
   setHomeCardColumns(columns: number): void;
@@ -86,8 +85,10 @@ export interface SettingsActions {
   setLocationVisible(visible: boolean): void;
   setNetworkVisible(visible: boolean): void;
   setNumerals(numerals: "latn" | "arab"): void;
+  setPerformanceMode(enabled: boolean): void;
   setSpeed(direction: number): void;
   setTempUnit(unit: TemperatureUnit): void;
+  setTheme(theme: Theme): void;
   setTimeFormat(format: TimeFormat | "none"): void;
   setWeatherPhoto(enabled: boolean): void;
   setWeatherVisible(visible: boolean): void;

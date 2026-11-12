@@ -1,7 +1,7 @@
 import { Move, SquareMinus, SquarePlus } from "lucide-preact";
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 
-import { useStore } from "../../../shared/hooks/useStore";
+import { useStoreSelector } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { Icon } from "../../../shared/icons/Icon/Icon";
 import type { HomeEnvironment } from "../../types";
@@ -11,7 +11,7 @@ const ACTION_ICONS = { add: SquarePlus, move: Move, remove: SquareMinus } as con
 
 export const AppActionsMenu = ({ env }: { env: HomeEnvironment }) => {
   const { t } = useTranslation();
-  const { menu } = useStore(env.state);
+  const menu = useStoreSelector(env.state, (state) => state.menu);
   const panel = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ left: "0px", top: "0px" });
   useLayoutEffect(() => {

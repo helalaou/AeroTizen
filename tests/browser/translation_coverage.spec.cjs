@@ -1,10 +1,12 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const { readFileSync } = require("node:fs");
 const path = require("node:path");
 
 const english = require("../../launcher/src/shared/i18n/en.json");
 const { closeSettings, openCategory } = require("./drawer_helpers.cjs");
 const { loadTypeScript } = require("../helpers/load_typescript.cjs");
+const { FIXED_NAMES } = loadTypeScript("launcher/src/shared/fixedNames.ts");
+const fixedNameValues = [...Object.values(FIXED_NAMES), FIXED_NAMES.appName.toUpperCase()];
 
 const pseudoLanguage = "en-XA";
 const pseudoCatalogueName = "Pseudo";
@@ -30,16 +32,17 @@ const releaseVersion = Number(installedVersion.split(".")[0]) + 1 + ".0.0";
 const releaseNote = "Sample launcher release note";
 const symbolise = (text) =>
   text.replace(/\{\{[^}]+\}\}|[\p{L}\p{N}]/gu, (token) => (token.startsWith("{{") ? token : "■"));
-const pseudoText = (key) => symbolise(english[key]);
+const pseudoText = (key) =>
+  symbolise(english[key]).replace(/\{\{(\w+)\}\}/g, (token, name) => FIXED_NAMES[name] ?? token);
 const devUrl = "http://127.0.0.1:8172/";
 const expectTextFits = async (locator) => {
   await expect(locator).toBeVisible();
   await expect.poll(() => locator.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 };
 
-const findUntranslated = (page) =>
+const findUntranslated = (page, scope = "body") =>
   page.evaluate(
-    ({ attributes, inputName, releaseNote, languageNames }) => {
+    ({ attributes, inputName, releaseNote, languageNames, fixedNameValues, scope }) => {
       const clock = AeroTizen.clock;
       const now = new Date();
       const dates = clock.DATE_FORMATS.map((format) => format.format(now));
@@ -50,7 +53,6 @@ const findUntranslated = (page) =>
         const languageOption = element.closest('[data-key^="language:"]');
         const languageCode = languageOption?.getAttribute("data-key").slice("language:".length);
         if (
-          (text === "AEROTIZEN" && element.matches("[data-product-name]")) ||
           (languageCode && text === languageNames[languageCode]) ||
           (text === releaseNote && element.matches("[data-release-notes] li")) ||
           (text === "aerotizen update launcher" && element.matches("[data-update-command] code")) ||
@@ -68,11 +70,12 @@ const findUntranslated = (page) =>
         if (element.closest("#time, #time-formats")) {
           for (const time of times) text = text.replace(time, "");
         }
+        for (const name of fixedNameValues) text = text.replaceAll(name, "");
         if (/\p{L}/u.test(text)) {
           leftovers.push({ target: element.id || element.getAttribute("data-key") || element.tagName, field, value });
         }
       };
-      for (const element of document.body.querySelectorAll("*")) {
+      for (const element of document.querySelector(scope).querySelectorAll("*")) {
         if (element.closest("[hidden], script, style") || !element.checkVisibility({ visibilityProperty: true })) {
           continue;
         }
@@ -88,11 +91,11 @@ const findUntranslated = (page) =>
       }
       return leftovers;
     },
-    { attributes: textAttributes, inputName, releaseNote, languageNames },
+    { attributes: textAttributes, inputName, releaseNote, languageNames, fixedNameValues, scope },
   );
 
-const expectTranslatedScreen = async (page, state) => {
-  expect(await findUntranslated(page), `Plain text in ${state}`).toEqual([]);
+const expectTranslatedScreen = async (page, state, scope) => {
+  expect(await findUntranslated(page, scope), `Plain text in ${state}`).toEqual([]);
 };
 
 test("the production HTML shell contains no untranslated launcher copy", async ({ page, request }) => {
@@ -116,10 +119,8 @@ test("the production HTML shell contains no untranslated launcher copy", async (
   expect(rawCopy).toEqual({ title: "AeroTizen", body: "", attributes: [] });
 });
 
-for (const glassSettings of [false, true]) {
-  test(`pseudo locale covers launcher text and remote focus in ${glassSettings ? "Glass" : "Classic"}`, async ({
-    page,
-  }) => {
+for (const theme of ["classic", "glass"]) {
+  test(`pseudo locale covers launcher text and remote focus in ${theme}`, async ({ page }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.clock.setFixedTime(new Date("2026-06-10T13:05:00Z"));
@@ -143,11 +144,11 @@ for (const glassSettings of [false, true]) {
       });
     });
     await page.addInitScript(
-      ({ glass, inputName }) => {
+      ({ theme, inputName }) => {
         localStorage.setItem(
           "aerotizen.settings.v1",
           JSON.stringify({
-            glassSettings: glass,
+            theme,
             background: "black",
             continueWatching: true,
             inputNames: { "HDMI 1": inputName },
@@ -155,7 +156,7 @@ for (const glassSettings of [false, true]) {
         );
         window.tizen = { application: { getAppsInfo: (done) => done([]) } };
       },
-      { glass: glassSettings, inputName },
+      { theme, inputName },
     );
     await page.goto(devUrl);
     const homeTab = page.locator("#home-tab");
@@ -204,7 +205,7 @@ for (const glassSettings of [false, true]) {
 
     await expectTranslatedScreen(page, "Language");
 
-    if (!glassSettings) {
+    if (theme === "classic") {
       await page.evaluate(() => {
         const probe = document.createElement("button");
         probe.id = "translation-probe";
@@ -248,7 +249,12 @@ for (const glassSettings of [false, true]) {
       }
     }
     await visit("status", "clock.layout");
-    await visit("weather", "weather.visibility");
+    await visit(
+      "weather",
+      "weather.homeDisplay",
+      `[data-settings-heading-title]:text-is("${pseudoText("weather.homeDisplay")}")`,
+    );
+    await page.locator('[data-key="weather:change"]').click();
     const search = page.getByPlaceholder(pseudoText("weather.searchPlaceholder"));
     await expect(search).toHaveAccessibleName(pseudoText("weather.locationLabel"));
     await page.locator('[data-key="weather:search"]').click();
@@ -291,3 +297,49 @@ for (const glassSettings of [false, true]) {
     expect(errors).toEqual([]);
   });
 }
+
+test.describe("missing-input translations", () => {
+  test.use({ previewPlatforms: false });
+  for (const theme of ["classic", "glass"]) {
+    test(`missing-input controls and results use the pseudo locale in ${theme}`, async ({ page }) => {
+      const messages = Object.fromEntries(Object.entries(english).map(([key, text]) => [key, symbolise(text)]));
+      await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
+      await page.route("**/src/shared/i18n/catalogues.ts*", async (route) => {
+        const response = await route.fetch();
+        await route.fulfill({
+          response,
+          body:
+            (await response.text()) +
+            "\ncatalogues[" +
+            JSON.stringify(pseudoLanguage) +
+            "] = " +
+            JSON.stringify({ name: pseudoCatalogueName, messages }) +
+            ";",
+        });
+      });
+      await page.addInitScript(
+        ({ theme, language }) => {
+          localStorage.setItem(
+            "aerotizen.settings.v1",
+            JSON.stringify({ theme, language, background: "black", showWeather: false }),
+          );
+        },
+        { theme, language: pseudoLanguage },
+      );
+      await page.goto(devUrl + "?mockHdmi=5");
+      await page.locator("#gear").click();
+      await openCategory(page, "sources");
+      const add = page.locator('[data-key="ip-control-probe"]');
+      await expect(add).toHaveText(pseudoText("inputs.ipProbeStart"));
+      await expectTextFits(add);
+      await expectTranslatedScreen(page, "missing input discovery", '[data-section-pane="sources"]');
+      await add.click();
+      await expect(page.locator("#toast")).toHaveText(pseudoText("inputs.ipProbe.added").replace("{{port}}", "5"));
+      await expectTranslatedScreen(page, "missing input added", '[data-section-pane="sources"]');
+      await add.click();
+      await expect(
+        page.getByRole("status").filter({ hasText: pseudoText("inputs.ipProbe.known").replace("{{port}}", "5") }),
+      ).toBeVisible();
+    });
+  }
+});

@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const { compareHeaderPixels } = require("./compare_header_pixels.cjs");
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
 const { preserveLegacyDom } = require("./legacy_helpers.cjs");
@@ -18,7 +18,10 @@ const open = async (page, background = "waves", url = "/") => {
     }
   }, background);
   await page.goto(url);
-  await page.waitForFunction(() => AeroTizen.apps.ready && AeroTizen.homeScreen);
+  await page.waitForFunction(
+    (legacy) => (legacy ? AeroTizen.apps.ready : AeroTizen.apps.getSnapshot().ready) && AeroTizen.homeScreen,
+    url.includes("/tests/fixtures/legacy-launcher/"),
+  );
 };
 
 const durations = (page) =>
@@ -98,7 +101,7 @@ test("weather photos unmount waves and restore them at the selected speed", asyn
   await page.clock.setFixedTime(new Date("2026-11-02T12:00:00Z"));
   await open(page);
   await page.evaluate(() => {
-    window.Weather.currentReading = () => ({
+    AeroTizen.weather.currentReading = () => ({
       code: 0,
       day: 1,
       at: Date.now(),
@@ -118,9 +121,9 @@ test("weather photos unmount waves and restore them at the selected speed", asyn
 
   await page.route("**/assets/weather/rain.jpg", (route) => route.abort());
   await page.evaluate(() => {
-    const sun = window.Weather.currentReading();
-    window.Weather.currentReading = () => ({ ...sun, code: 61 });
-    window.Weather.updateDisplay();
+    const sun = AeroTizen.weather.currentReading();
+    AeroTizen.weather.currentReading = () => ({ ...sun, code: 61 });
+    AeroTizen.applyBackground();
   });
   await expect(page.locator("#weather-photo")).toBeHidden();
   await expect(page.locator("#bg [data-background-wave]")).toHaveCount(2);
@@ -150,7 +153,7 @@ test("wallpaper settings hide only WebGL scenes when the context probe fails", a
   await page.locator("#gear").click();
   await openCategory(page, "wallpaper");
   await page.locator('[data-key="wallpaper-categories:animated"]').click();
-  for (const scene of ["starfield", "nebula", "rain", "snow", "fireflies"]) {
+  for (const scene of ["starfield", "nebula", "rain", "snow", "fireflies", "stage"]) {
     await expect(page.locator('[data-key="bg:' + scene + '"]')).toHaveCount(0);
   }
   await expect(page.locator('[data-key="bg:aurora"]')).toBeVisible();

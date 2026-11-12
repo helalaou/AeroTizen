@@ -1,30 +1,29 @@
-const { test, expect } = require("@playwright/test");
-for (const glassSettings of [false, true]) {
-  test(`${glassSettings ? "Glass" : "Classic"} theme covers Home, inputs, Continue Watching and uniform Settings choices`, async ({
-    page,
-  }, info) => {
+const { test, expect } = require("./launcher_fixture.cjs");
+for (const theme of ["classic", "glass"]) {
+  test(`${theme} theme covers Home, inputs, Continue Watching and uniform Settings choices`, async ({ page }, info) => {
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.route("https://**/*", (r) => r.fulfill({ body: "{}" }));
     await page.route("http://127.0.0.1:47790/**", (r) => r.fulfill({ body: "{}" }));
     await page.addInitScript(
-      (glassSettings) =>
+      (theme) =>
         localStorage.setItem(
           "aerotizen.settings.v1",
           JSON.stringify({
-            glassSettings,
+            theme,
             home: ["demo0", "demo1"],
             background: "black",
             showWeather: false,
             continueWatching: true,
           }),
         ),
-      glassSettings,
+      theme,
     );
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     await page.evaluate(() => {
-      AeroTizen.continueWatching.items = [
+      const snapshot = AeroTizen.continueWatching.getSnapshot();
+      const items = [
         {
           key: "theme-fixture",
           title: "Theme fixture",
@@ -36,7 +35,11 @@ for (const glassSettings of [false, true]) {
           playback: 75,
         },
       ];
-      AeroTizen.inputs.sources = [{ type: "HDMI", number: 1, connected: true }];
+      const inputSnapshot = AeroTizen.inputs.getSnapshot();
+      const sources = [{ type: "HDMI", number: 1, connected: true }];
+      AeroTizen.inputs.getSnapshot = () => ({ ...inputSnapshot, sources, visibleSources: sources });
+      const next = { ...snapshot, items };
+      AeroTizen.continueWatching.getSnapshot = () => next;
       AeroTizen.homeScreen.refreshApps();
     });
     const homeLayout = await page.evaluate(() => {
@@ -53,7 +56,7 @@ for (const glassSettings of [false, true]) {
       await expect(heading).toHaveCSS("font-size", "21px");
       await expect(heading).toHaveCSS("text-transform", "uppercase");
     }
-    const colour = glassSettings ? "rgb(237, 242, 255)" : "rgb(124, 92, 255)";
+    const colour = theme === "glass" ? "rgb(237, 242, 255)" : "rgb(124, 92, 255)";
     expect(
       await page.locator("#grid [data-id][data-focused=true]").evaluate((n) => getComputedStyle(n).boxShadow),
     ).toContain(colour);
@@ -64,7 +67,7 @@ for (const glassSettings of [false, true]) {
       colour,
     );
     expect(await page.getByRole("menu").evaluate((n) => getComputedStyle(n).backgroundImage === "none")).toBe(
-      !glassSettings,
+      theme === "classic",
     );
     await page.keyboard.press("Escape");
     await page.keyboard.press("ArrowDown");
@@ -77,13 +80,13 @@ for (const glassSettings of [false, true]) {
     ).toBe(colour);
     expect(
       await page.locator("#continue-items > [data-key]").evaluate((n) => getComputedStyle(n).backgroundImage),
-    ).toBe(glassSettings ? "linear-gradient(160deg, rgba(86, 97, 116, 0.84), rgba(22, 29, 42, 0.94))" : "none");
+    ).toBe(theme === "glass" ? "linear-gradient(160deg, rgba(86, 97, 116, 0.84), rgba(22, 29, 42, 0.94))" : "none");
     await page.keyboard.press("ArrowDown");
     const source = page.locator("#inputs [data-focused=true]");
     await expect(source).toHaveCount(1);
     expect(
       await source.evaluate((n) => getComputedStyle(n).boxShadow + " " + getComputedStyle(n).borderColor),
-    ).toContain(glassSettings ? "255, 255, 255" : "124, 92, 255");
+    ).toContain(theme === "glass" ? "255, 255, 255" : "124, 92, 255");
     await page.locator("#gear").click();
     await page.locator('[data-key="section:appearance"]').click();
     const choices = await page

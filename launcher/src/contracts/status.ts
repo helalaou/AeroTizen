@@ -1,6 +1,6 @@
 import type { Store } from "../shared/state/createStore";
 
-import type { SettingsValues } from "./preferences";
+import type { SettingsValues, WeatherLocation } from "./preferences";
 
 export type ClockLayout = "compact" | SettingsValues["aeroClockStyle"];
 
@@ -19,11 +19,23 @@ export interface WeatherPhotoSource {
 }
 
 export interface WeatherSnapshot {
+  // Settings can show the resolved city even when the Home widget or city label is hidden.
   readonly city: string;
   readonly code: number | null;
   readonly showLocation: boolean;
   readonly temperature: number | null;
   readonly visible: boolean;
+}
+
+export interface WeatherPlatform {
+  requestJSON(url: string, done: (data: unknown) => void): () => void;
+}
+
+export interface WeatherService extends Store<WeatherSnapshot>, WeatherPhotoSource {
+  dispose(): void;
+  refresh(): void;
+  searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): () => void;
+  start(): void;
 }
 
 export interface NetworkSnapshot {
@@ -46,7 +58,6 @@ export interface NetworkService extends Store<NetworkSnapshot> {
 }
 
 export interface StatusStores {
-  dispose(): void;
   readonly network: Store<NetworkSnapshot>;
   readonly time: Store<number>;
   readonly weather: Store<WeatherSnapshot>;

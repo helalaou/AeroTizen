@@ -8,11 +8,12 @@ import styles from "./WeatherSearch.module.css";
 interface Props {
   inputRef: RefObject<HTMLInputElement>;
   onInput: JSX.GenericEventHandler<HTMLInputElement>;
+  onKeyDown: JSX.KeyboardEventHandler<HTMLInputElement>;
   onSelect(): void;
   value: string;
 }
 
-export const WeatherSearch = ({ inputRef, onInput, onSelect, value }: Props) => {
+export const WeatherSearch = ({ inputRef, onInput, onKeyDown, onSelect, value }: Props) => {
   const { t } = useTranslation();
   return (
     <SettingsControl class={styles.search} focusKey="weather:query" onClick={onSelect}>
@@ -20,11 +21,15 @@ export const WeatherSearch = ({ inputRef, onInput, onSelect, value }: Props) => 
         class={styles.input}
         ref={inputRef}
         type="text"
+        name="weather-location"
+        autoComplete="off"
+        enterKeyHint="search"
         maxLength={80}
         value={value}
         placeholder={t("weather.searchPlaceholder")}
         aria-label={t("weather.locationLabel")}
         onInput={onInput}
+        onKeyDown={onKeyDown}
       />
     </SettingsControl>
   );

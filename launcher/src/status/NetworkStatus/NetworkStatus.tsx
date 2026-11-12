@@ -29,7 +29,7 @@ export const NetworkStatus = ({ status }: { status: StatusStores }) => {
       class={styles.icon}
       hidden={visible ? undefined : true}
       style={{ display: visible ? undefined : "none" }}
-      label={t(presentation.label)}
+      label={"labelKey" in presentation ? t(presentation.labelKey) : presentation.label}
       data-net-kind={kind}
       data-net-level={strength === null ? "unknown" : String(strength)}
     />

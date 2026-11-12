@@ -1,7 +1,8 @@
 import type { MessageKey } from "../shared/i18n/catalogues";
 import type { Store } from "../shared/state/createStore";
 
-import type { DateFormat, SettingsDefaults, SettingsValues, TimeFormat } from "./preferences";
+import type { AppsConfig } from "./apps";
+import type { DateFormat, SettingsDefaults, TimeFormat } from "./preferences";
 
 export interface InputSource {
   readonly active?: boolean;
@@ -36,6 +37,7 @@ export interface Background {
   readonly anim?: string;
   readonly category?: "solid" | "gradient";
   readonly id: BackgroundId;
+  readonly lightBackground?: boolean;
 }
 export interface BackgroundOption extends Background {
   readonly preview: string;
@@ -49,43 +51,45 @@ export interface ClockPlatform {
 }
 export interface ClockService extends Store<number> {
   DATE_FORMATS: ReadonlyArray<{ id: DateFormat; format(date: Date): string }>;
-  dateStyle(format: SettingsValues["dateFormat"]): DateFormat;
   defaultTimeFormat(): TimeFormat;
-  formatDate(date: Date, format: SettingsValues["dateFormat"]): string;
+  formatDate(date: Date, format: DateFormat): string;
   formatTime(date: Date, format: TimeFormat): string;
   formatTimeParts?(date: Date, format: TimeFormat): { hour: string; minute: string; dayPeriod: string } | null;
   measureTime(format: TimeFormat, font: string, measureText: (value: string) => number): number;
+  measureTimeDeferred?(
+    format: TimeFormat,
+    font: string,
+    measureText: (value: string) => number,
+    onWidth: (width: number) => void,
+  ): () => void;
   start(): void;
   tick(): void;
 }
-export type ClockFormatter = Pick<
-  ClockService,
-  "dateStyle" | "formatDate" | "formatTime" | "subscribe" | "DATE_FORMATS"
->;
-export interface LauncherConfig {
-  DEFAULTS?: Partial<SettingsDefaults>;
-  FIREPLACE_ID: string;
-  KEY: Record<"LEFT" | "RIGHT" | "UP" | "DOWN" | "ENTER" | "BACK" | "ESC" | "IME_DONE" | "IME_CANCEL", number>;
-  LEGACY_STORAGE_KEYS: string[];
-  LONG_PRESS_MS: number;
-  SERVICE_ID: string;
-  SPEED: { MIN: number; MAX: number; STEP: number };
-  STORAGE_KEY: string;
+export type ClockFormatter = Pick<ClockService, "formatDate" | "formatTime" | "subscribe" | "DATE_FORMATS">;
+export interface LauncherConfig extends AppsConfig {
+  readonly APP_ID: string;
+  readonly DEFAULTS?: Partial<SettingsDefaults>;
+  readonly KEY: Readonly<
+    Record<"LEFT" | "RIGHT" | "UP" | "DOWN" | "ENTER" | "BACK" | "ESC" | "IME_DONE" | "IME_CANCEL", number>
+  >;
+  readonly LONG_PRESS_MS: number;
+  readonly SERVICE_ID: string;
+  readonly SERVICE_URL: string;
+  readonly SPEED: Readonly<{ MIN: number; MAX: number; STEP: number }>;
+  readonly STORAGE_KEY: string;
 }
 export interface AppPresentation {
+  readonly appIcon?: string;
   readonly artwork: readonly string[];
-  readonly background: string;
-  readonly label: string | null;
-  readonly largeLogo: boolean;
-  readonly logoColour: string;
-  readonly logoPath: string | null;
-  readonly textColour: string;
   readonly title: string;
-  readonly useAppIcon: boolean;
 }
 export interface NavigationHandlers {
   blur(): void;
   focus(): void;
+  keydown(code: number, event: Pick<KeyboardEvent, "preventDefault">): void;
+}
+export interface RemoteKeyHandler {
+  isActive(): boolean;
   keydown(code: number, event: Pick<KeyboardEvent, "preventDefault">): void;
 }
 export interface SettingsBridge {

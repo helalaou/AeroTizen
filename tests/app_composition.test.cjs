@@ -22,7 +22,6 @@ const harness = () => {
       defaults: { home: ["one"] },
       storage: { getItem: () => null, setItem() {} },
       storageKey: "settings",
-      legacyStorageKeys: [],
       speedRange: { MIN: 0.25, MAX: 3 },
       locale: { timeFormat: () => "24", tempUnit: () => "C" },
     });
@@ -45,10 +44,11 @@ const harness = () => {
       return () => listeners.delete(listener);
     },
   });
-  const platform = { weather: statusSource({}, statusListeners[2]) };
+  const platform = {};
   const runtime = {
     clock: statusSource(0, statusListeners[0]),
     network: statusSource({}, statusListeners[1]),
+    weather: statusSource({}, statusListeners[2]),
     settings,
     config: { DEFAULTS: {} },
     homeScreen: previousHome,
@@ -59,6 +59,9 @@ const harness = () => {
   let homeSettings, editorSettings, homeTranslations, editorTranslations;
   const views = {
     home(runtime, settings, mount, status, translations) {
+      assert.equal(status.time, runtime.clock);
+      assert.equal(status.network, runtime.network);
+      assert.equal(status.weather, runtime.weather);
       homeTranslations = translations;
       homeSettings = settings;
       return { bridge: homeBridge, dispose: () => calls.push("dispose home") };

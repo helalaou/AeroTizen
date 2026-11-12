@@ -6,12 +6,15 @@ import json
 import os
 import re
 import secrets
+import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 from itertools import islice
 from pathlib import Path
 
 from aerotizen import diagnostics, home, remote, sdk
+from aerotizen.sdb import SdbError
 
 PAYLOAD_PATH = Path(__file__).parent / "helpers/home-control.json"
 HELPER_FILES = ("AeroTizenHomeControl.dll", "AeroTizenHomeControl.runtimeconfig.json")
@@ -19,6 +22,13 @@ PREFIX = "AEROTIZEN_HOME_CONTROL="
 MAX_RECEIPT_BYTES = 2 * 1024 * 1024
 MAX_RECOVERY_CHAIN = 128
 MAX_RECOVERY_RECEIPTS = 1024
+SERVICE_START_TIMEOUT = 15.0
+SERVICE_POLL_INTERVAL = 1.0
+LAUNCH_TIMEOUT = 8
+START_RECOVERY = (
+    f"Open AeroTizen on the TV or run 'aerotizen launch {home.releases.APP_ID}', then retry. "
+    "No Home settings were changed."
+)
 
 
 def load_helper():
@@ -243,6 +253,73 @@ def _check_compatibility(status):
         raise home.HomeError("Required typed native Home settings are unavailable.") from exc
 
 
+def _check_preflight(status, original):
+    if status["complete"] is not True:
+        raise home.HomeError("Incomplete Home state; no write was attempted.")
+    device = status["device"]
+    for key in ("identity_sha256", "model", "firmware_build", "cpu_arch", "os_version"):
+        if device.get(key) != original["device"].get(key):
+            raise home.HomeError(
+                "Device or firmware differs from the original backup; no write was attempted."
+            )
+    _check_compatibility(status)
+    installed = status.get("launcher", {}).get("installed")
+    if type(installed) is not bool:
+        raise home.HomeError("Cannot confirm whether AeroTizen is installed; no write was attempted.")
+    return installed
+
+
+def _require_control_service(watcher):
+    control = watcher.get("control")
+    if (
+        watcher.get("error") is not None
+        or not isinstance(control, dict)
+        or type(control.get("protocol")) is not int
+        or control["protocol"] != 1
+        or control.get("app_id") != home.releases.APP_ID
+        or control.get("persistent") is not True
+        or control.get("mode") not in ("watcher", "native", "hold")
+    ):
+        raise home.HomeError(
+            "The Home control service is incompatible. Check 'aerotizen home status' "
+            "and use a matching launcher before retrying. "
+            "No Home settings were changed."
+        )
+
+
+def _start_launcher(session):
+    print("Starting AeroTizen and waiting for its control service...", file=sys.stderr)
+    diagnostics.event("app.launch_requested", app_id=home.releases.APP_ID)
+    accepted, _ = remote.rest_launch(session.host, home.releases.APP_ID)
+    if not accepted:
+        # Reuse the owned SDK connection when the TV's HTTP launch API is unavailable.
+        try:
+            session.shell_bounded(
+                f"0 was_execute {home.releases.APP_ID}", timeout=LAUNCH_TIMEOUT, max_output=8192
+            )
+        except (OSError, SdbError) as exc:
+            raise home.HomeError("The TV could not start AeroTizen. " + START_RECOVERY) from exc
+
+
+def _wait_for_control_service(session, info, original):
+    deadline = time.monotonic() + SERVICE_START_TIMEOUT
+    while time.monotonic() < deadline:
+        status = home.read_status(session, None, info)
+        if not _check_preflight(status, original):
+            raise home.HomeError("AeroTizen installation changed during startup; no write was attempted.")
+        if status["watcher"].get("reachable") is True:
+            _require_control_service(status["watcher"])
+            if time.monotonic() <= deadline:
+                return status
+        remaining = deadline - time.monotonic()
+        if remaining > 0:
+            time.sleep(min(SERVICE_POLL_INTERVAL, remaining))
+    raise home.HomeError(
+        "AeroTizen's control service did not become ready within "
+        f"{SERVICE_START_TIMEOUT:g} seconds after launch. " + START_RECOVERY
+    )
+
+
 def change(session, info, action, *, backup=None, state_dir=None):
     if action not in ("apply", "restore"):
         raise home.HomeError("Unknown Home action.")
@@ -256,30 +333,27 @@ def change(session, info, action, *, backup=None, state_dir=None):
         else directory / "backups" / identity / "original-home.json"
     )
     original, digest = home._load_backup(backup, identity)
-    if not status["complete"]:
-        raise home.HomeError("Incomplete Home state; no write was attempted.")
-    device = status["device"]
-    for key in ("model", "firmware_build", "cpu_arch", "os_version"):
-        if device.get(key) != original["device"].get(key):
-            raise home.HomeError(
-                "Device or firmware differs from the original backup; no write was attempted."
-            )
-    _check_compatibility(status)
-    installed = status.get("launcher", {}).get("installed")
-    if type(installed) is not bool:
-        raise home.HomeError("Cannot confirm whether AeroTizen is installed; no write was attempted.")
-    if installed and status["watcher"].get("reachable") is not True:
-        raise home.HomeError(
-            "AeroTizen is installed but its control service is unavailable; start it and retry."
-        )
+    installed = _check_preflight(status, original)
     if not installed and (action == "apply" or status["watcher"]["reachable"]):
         raise home.HomeError(
             "Apply needs an installed launcher; an unexpected running service also blocks restore."
         )
-    token = secrets.token_hex(16)
     raw = backup.read_bytes()
     if hashlib.sha256(raw).hexdigest() != digest:
         raise home.HomeError("The backup changed during preflight; no write was attempted.")
+    if installed and status["watcher"].get("reachable") is not True:
+        if action != "apply":
+            raise home.HomeError(
+                "AeroTizen is installed but its control service is unavailable; start it and retry."
+            )
+        _start_launcher(session)
+        status = _wait_for_control_service(session, info, original)
+        if hashlib.sha256(backup.read_bytes()).hexdigest() != digest:
+            raise home.HomeError("The backup changed during startup; no write was attempted.")
+    if installed and action == "apply":
+        _require_control_service(status["watcher"])
+    device = status["device"]
+    token = secrets.token_hex(16)
     request = {
         "schema_version": 1,
         "action": action,

@@ -78,19 +78,15 @@ export const createSettingsActions = (
               ? { background: "custom", customColour: preview.colour, weatherPhoto: false }
               : { background: "custom-gradient", customGradient: preview.gradient, weatherPhoto: false };
           commit(patch, () => {
-            services.applyWeatherVisibility();
             services.applyBackground();
           });
         }
         view.set({ ...view.getSnapshot(), colourPicker: null });
       });
     },
-    setGlassSettings: (glassSettings) => commit({ glassSettings }),
-    setWeatherPhoto: (weatherPhoto) =>
-      commit({ weatherPhoto }, () => {
-        services.applyWeatherVisibility();
-        services.applyBackground();
-      }),
+    setTheme: (theme) => commit({ theme }),
+    setPerformanceMode: (performanceMode) => commit({ performanceMode }, services.applyBackground),
+    setWeatherPhoto: (weatherPhoto) => commit({ weatherPhoto }, services.applyBackground),
     setContinueWatching: (continueWatching) => commit({ continueWatching }),
     toggleContinueApp(id) {
       const selected = settings.getSnapshot().continueWatchingApps;
@@ -98,18 +94,10 @@ export const createSettingsActions = (
         continueWatchingApps: selected.includes(id) ? selected.filter((app) => app !== id) : [...selected, id],
       });
     },
-    setBackground(background) {
-      const wasPhoto = settings.getSnapshot().weatherPhoto;
-      commit({ background, weatherPhoto: false }, () => {
-        if (wasPhoto) {
-          services.applyWeatherVisibility();
-        }
-        services.applyBackground();
-      });
-    },
-    setWeatherVisible: (showWeather) => commit({ showWeather }, services.applyWeatherVisibility),
-    setLocationVisible: (weatherShowLocation) => commit({ weatherShowLocation }, services.applyLocationVisibility),
-    setTempUnit: (tempUnit) => commit({ tempUnit }, services.refreshWeather),
+    setBackground: (background) => commit({ background, weatherPhoto: false }, services.applyBackground),
+    setWeatherVisible: (showWeather) => commit({ showWeather }),
+    setLocationVisible: (weatherShowLocation) => commit({ weatherShowLocation }),
+    setTempUnit: (tempUnit) => commit({ tempUnit }),
     setClockLayout: (layout) =>
       commit(
         layout === "classic" ? { clockLayout: "classic" } : { clockLayout: "custom", aeroClockStyle: layout },
@@ -118,15 +106,16 @@ export const createSettingsActions = (
     setDateFormat: (dateFormat) => commit({ dateFormat }, services.applyClock),
     setNumerals: (numerals) => commit({ numerals }, services.applyClock),
     setNetworkVisible: (showNetwork) => commit({ showNetwork }),
-    setLiveTvVisible: (showLiveTv) => commit({ showLiveTv }, services.applyInputs),
+    setLiveTvVisible: (showLiveTv) => commit({ showLiveTv }),
     setHomeCardColumns: (homeCardColumns) => commit({ homeCardColumns }, services.applyCardSize),
     setHomeAppLayout: (homeAppLayout) => commit({ homeAppLayout }, services.applyCardSize),
-    setHdmiVisibility: (hideDisconnectedHdmi) => commit({ hideDisconnectedHdmi }, services.applyInputs),
+    setHdmiVisibility: (hideDisconnectedHdmi) => commit({ hideDisconnectedHdmi }),
+    setHdmiNativeViewer: (hdmiNativeViewer) => commit({ hdmiNativeViewer }),
     setHdmiKeepVisible: (port, keep) =>
-      commit({ hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } }, services.applyInputs),
+      commit({ hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } }),
     setTimeFormat: (format) =>
       commit(format === "none" ? { showTime: false } : { showTime: true, timeFormat: format }, services.applyClock),
-    setLocation: (weatherLocation) => commit({ weatherLocation }, services.refreshWeather),
+    setLocation: (weatherLocation) => commit({ weatherLocation }),
     setSpeed(direction) {
       const { MIN, MAX, STEP } = services.config.SPEED;
       const speed =
@@ -139,7 +128,7 @@ export const createSettingsActions = (
       }
       const { [port]: previousName, ...otherNames } = settings.getSnapshot().inputNames;
       const inputNames = value ? { ...otherNames, [port]: value } : otherNames;
-      commit({ inputNames }, services.applyInputs);
+      commit({ inputNames });
     },
     toggleApp(id) {
       const home = settings.getSnapshot().home;

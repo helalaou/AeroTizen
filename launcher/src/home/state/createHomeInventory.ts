@@ -1,7 +1,6 @@
 import type { SettingsStore } from "../../contracts/preferences";
 import type { LauncherRuntime } from "../../platform/tizen/launcherRuntime";
 import { createStore } from "../../shared/state/createStore";
-import { snapshotList } from "../../shared/state/snapshotList";
 import type { Inventory } from "../types";
 
 export const createHomeInventory = (
@@ -10,13 +9,11 @@ export const createHomeInventory = (
   transaction: (action: () => void) => void,
 ) => {
   const read = (previous?: Inventory): Inventory => {
-    const apps = snapshotList(runtime.apps.all, previous?.apps);
-    const inputs = snapshotList(
-      runtime.inputs.sources.filter((source) => runtime.inputs.isVisible(source)),
-      previous?.inputs,
-    );
-    const items = snapshotList(runtime.continueWatching.items, previous?.items);
-    const ready = runtime.apps.ready;
+    const appSnapshot = runtime.apps.getSnapshot();
+    const apps = appSnapshot.all;
+    const inputs = runtime.inputs.getSnapshot().visibleSources;
+    const items = runtime.continueWatching.getSnapshot().items;
+    const ready = appSnapshot.ready;
     return previous &&
       apps === previous.apps &&
       inputs === previous.inputs &&

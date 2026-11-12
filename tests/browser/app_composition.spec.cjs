@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 test("an unset Home list and a saved empty list preserve their distinct views and focus", async ({ page }) => {
   const errors = [];
@@ -6,7 +6,7 @@ test("an unset Home list and a saved empty list preserve their distinct views an
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.evaluate(() => {
     AeroTizen.settings.update({ home: null });
   });

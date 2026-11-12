@@ -759,8 +759,8 @@ def test_tv_export_rechecks_older_service_fields_and_preserves_correlations():
 def test_ui_and_cli_share_the_privacy_field_types_and_allowed_values():
     from pathlib import Path
 
-    source = (Path(__file__).resolve().parents[1] / "launcher/js/diagnostics-privacy.js").read_text()
-    schema = json.loads(source.split("var schema = ", 1)[1].split(";\n  function has", 1)[0])
+    source = Path(__file__).resolve().parents[1] / "launcher/src/diagnostics/privacySchema.json"
+    schema = json.loads(source.read_text())
     for key in ("APP_IDS", "EVENTS", "ERRORS", "REASONS", "NUMBERS", "BOOLS", "SOURCE_FILES"):
         assert set(schema[key.lower()]) == getattr(privacy, key), key
     assert {key: set(value) for key, value in schema["enums"].items()} == privacy.ENUMS

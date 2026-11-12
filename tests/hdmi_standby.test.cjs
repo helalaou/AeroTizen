@@ -1,3 +1,4 @@
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createTestSettings } = require("./helpers/settings.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 // Tizen VIDEOSOURCE standby recognition, port de-duplication and visibility.
@@ -6,11 +7,16 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 
-const source = fs.readFileSync(path.join(__dirname, "../launcher/js/inputs.js"), "utf8");
+// Frozen comparison runtime and renderer. The active owner is covered by
+// inputs.test.cjs, native_handoffs.test.cjs and the HDMI browser flows.
+const source = fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/inputs-runtime.js"), "utf8");
 
 function harness(settings = {}, report = {}, selected = null, legacyView = true) {
   const tiles = [];
+  const intervals = [];
+  const listeners = {};
   const root = {
     children: tiles,
     set textContent(value) {
@@ -67,12 +73,15 @@ function harness(settings = {}, report = {}, selected = null, legacyView = true)
         assert.equal(property, "VIDEOSOURCE");
         cb(report);
       },
-      addPropertyValueChangeListener() {},
+      addPropertyValueChangeListener(name, callback) {
+        listeners[name] = callback;
+      },
     },
   };
+  const document = { hidden: false, addEventListener() {} };
   vm.runInNewContext(source, {
-    window: { AeroTizen: A, addEventListener() {} },
-    document: { addEventListener() {} },
+    window: { AeroTizen: A, addEventListener() {}, setInterval: (callback) => intervals.push(callback) },
+    document,
     AeroTizen: A,
   });
   if (legacyView) {
@@ -83,6 +92,9 @@ function harness(settings = {}, report = {}, selected = null, legacyView = true)
   return {
     A,
     tiles,
+    intervals,
+    listeners,
+    document,
     get builds() {
       return builds;
     },
@@ -110,28 +122,6 @@ test("input discovery and refresh publish data without rendering tiles", () => {
   unsubscribe();
   h.A.inputs.refresh();
   assert.equal(updates, 3);
-});
-
-test("a learned HDMI port is visible and uses IP Control until Tizen reports it", () => {
-  const report = { connected: [{ type: "HDMI", number: 1 }] };
-  const h = harness({}, report, null, false);
-  const { inputs, tizen } = h.A;
-  inputs.load();
-  let opened;
-  inputs.setIpControlPorts([5], (number) => (opened = number));
-  const learned = inputs.sources.find((source) => source.number === 5);
-  assert.equal(inputs.isVisible(learned), true);
-  inputs.show(learned);
-  assert.equal(opened, 5);
-
-  const native = { type: "HDMI", number: 5 };
-  report.connected.push(native);
-  inputs.load();
-  const fifth = inputs.sources.filter((source) => source.number === 5);
-  assert.equal(fifth.length, 1);
-  tizen.tvwindow.setSource = (source) => (opened = source);
-  inputs.show(fifth[0]);
-  assert.equal(opened, native);
 });
 
 test("a recognised Samsung HDMI label survives standby with filtering enabled", () => {
@@ -192,7 +182,7 @@ test("Show all retains empty ports and Hide Live TV still works", () => {
   assert.equal(h.tiles[0].classes.has("off"), true);
 });
 
-test("selected source remains reachable even when firmware reports disconnected", () => {
+test("a disconnected selected source is not active or visible with filtering enabled", () => {
   const h = harness(
     {},
     {
@@ -201,11 +191,63 @@ test("selected source remains reachable even when firmware reports disconnected"
     { type: "HDMI", number: 2 },
   );
   h.A.inputs.load();
-  assert.deepEqual(
-    h.tiles.map((x) => x.name),
-    ["HDMI 2"],
-  );
+  assert.equal(h.tiles.length, 0);
+  assert.equal(h.A.inputs.sources[0].active, false);
+  assert.equal(h.A.inputs.sources[0].connected, false);
+});
+
+test("only a connected selected HDMI source is active", () => {
+  const h = harness({}, { connected: [{ type: "HDMI", number: 2 }] }, { type: "HDMI", number: 2 });
+  h.A.inputs.load();
   assert.equal(h.A.inputs.sources[0].active, true);
+  assert.equal(h.tiles.length, 1);
+});
+
+test("a missed unplug event is corrected by one foreground refresh timer", () => {
+  const report = { connected: [{ type: "HDMI", number: 1 }], disconnected: [] };
+  const h = harness({}, report, { type: "HDMI", number: 1 });
+  h.A.inputs.load();
+  h.A.inputs.load();
+  assert.equal(h.intervals.length, 1);
+  assert.equal(h.A.inputs.sources[0].active, true);
+  report.connected = [];
+  report.disconnected = [{ type: "HDMI", number: 1 }];
+  h.document.hidden = true;
+  h.intervals[0]();
+  assert.equal(h.A.inputs.sources[0].connected, true, "hidden launcher does not poll");
+  h.document.hidden = false;
+  h.intervals[0]();
+  assert.equal(h.A.inputs.sources[0].connected, false);
+  assert.equal(h.A.inputs.sources[0].active, false);
+  assert.equal(h.tiles.length, 0);
+});
+
+test("a late discovery response cannot restore a disconnected port's old active state", () => {
+  const h = harness({}, {}, { type: "HDMI", number: 1 });
+  const pending = [];
+  h.A.tizen.systeminfo.getPropertyValue = (_name, done) => pending.push(done);
+  h.A.inputs.load();
+  h.A.inputs.load();
+  pending[1]({ disconnected: [{ type: "HDMI", number: 1 }] });
+  pending[0]({ connected: [{ type: "HDMI", number: 1 }] });
+  assert.equal(h.A.inputs.sources[0].connected, false);
+  assert.equal(h.A.inputs.sources[0].active, false);
+  assert.equal(h.tiles.length, 0);
+});
+
+test("hot-plug refresh clears ACTIVE but preserves a recognised standby label", () => {
+  const report = { connected: [{ type: "HDMI", number: 1, editName: "PC" }], disconnected: [] };
+  const h = harness({}, report, { type: "HDMI", number: 1 });
+  h.A.inputs.load();
+  report.disconnected = report.connected;
+  report.connected = [];
+  h.listeners.VIDEOSOURCE();
+  assert.equal(h.A.inputs.sources[0].active, false);
+  assert.equal(h.A.inputs.sources[0].connected, false);
+  assert.deepEqual(
+    h.tiles.map((tile) => tile.name),
+    ["PC"],
+  );
 });
 
 test("duplicated ports prefer connected raw sources without dropping recognised names", () => {
@@ -353,12 +395,8 @@ test("Settings override controls use persisted source numbers and accept remote 
 
 test("HDMI per-port exceptions survive the existing official settings storage", () => {
   const store = {};
-  const A = { clock: { defaultTimeFormat: () => "24" } };
+  const A = { clock: { defaultTimeFormat: () => "24" }, config: launcherConfig };
   const window = { AeroTizen: A, navigator: { language: "it-IT" } };
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../launcher/js/config.js"), "utf8"), {
-    window,
-    AeroTizen: A,
-  });
   const localStorage = {
     getItem: (key) => store[key] || null,
     setItem: (key, data) => {

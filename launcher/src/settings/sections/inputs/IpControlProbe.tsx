@@ -1,6 +1,6 @@
 import { useRef, useState } from "preact/hooks";
 
-import type { LearnIpControlResult } from "../../../platform/tizen/probeIpControl";
+import type { LearnIpControlResult } from "../../../contracts/ipControl";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { ChoiceOption } from "../../components/ChoiceOption/ChoiceOption";
 import { ControlGroup } from "../../components/ControlGroup/ControlGroup";

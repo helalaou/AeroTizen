@@ -15,11 +15,14 @@ const getTimeFields = (clock: ClockService, now: Date, format: TimeFormat, text:
 export const useClock = (time: Store<number>, clock: ClockService, settings: SettingsSnapshot) => {
   const timestamp = useStore(time);
   const now = new Date(timestamp);
-  const text = clock.formatTime(now, settings.timeFormat);
+  const text = settings.showTime ? clock.formatTime(now, settings.timeFormat) : "";
+  const fields = settings.showTime
+    ? getTimeFields(clock, now, settings.timeFormat, text)
+    : { hour: "", minute: "", period: "" };
   return {
     timestamp,
     text,
-    date: clock.formatDate(now, settings.dateFormat),
-    ...getTimeFields(clock, now, settings.timeFormat, text),
+    date: settings.dateFormat === "none" ? "" : clock.formatDate(now, settings.dateFormat),
+    ...fields,
   };
 };

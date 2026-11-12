@@ -1,5 +1,5 @@
 const { openCategory } = require("./drawer_helpers.cjs");
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 const errors = new WeakMap();
 test.afterEach(async ({ page }) => expect(errors.get(page)).toEqual([]));
@@ -23,7 +23,7 @@ test.beforeEach(async ({ page }) => {
 
 test("clock layouts are in one group and keep remote navigation stable on selection", async ({ page }) => {
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.locator("#gear").click();
   await openCategory(page, "status");
   await expect(page.locator("#clock-layouts [role=button]:visible")).toHaveCount(5);

@@ -1,5 +1,5 @@
 import type { ContinueItem } from "../../../contracts/launcher";
-import { useStore } from "../../../shared/hooks/useStore";
+import { useStoreSelector } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import type { HomeEnvironment } from "../../types";
 import { ContinueWatchingCard } from "../ContinueWatchingCard/ContinueWatchingCard";
@@ -18,7 +18,7 @@ export const ContinueWatchingRow = ({
   visible: boolean;
 }) => {
   const { t } = useTranslation();
-  const { continueOffset } = useStore(env.state);
+  const continueOffset = useStoreSelector(env.state, (state) => state.continueOffset);
   return (
     <section id="continue-section" hidden={!visible || !items.length}>
       <HomeSectionHeading title={t("home.continueWatching")} />

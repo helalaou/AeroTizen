@@ -9,7 +9,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--home-app-gap, 22px);
-  background: var(--app-background, var(--card));
+  background: var(--app-background, var(--app-placeholder-surface));
   transform: translateZ(0);
   transition: transform var(--motion-duration-focus) ease-out;
 

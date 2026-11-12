@@ -1,8 +1,11 @@
 import type { ClockPlatform, ClockService } from "../contracts/launcher";
-import type { DateFormat, SettingsValues, TimeFormat } from "../contracts/preferences";
+import type { TimeFormat } from "../contracts/preferences";
 import { createStore } from "../shared/state/createStore";
 
 const TICK_INTERVAL_MS = 10_000;
+const MINUTES_PER_DAY = 24 * 60;
+const WIDTH_BATCH_SIZE = 60;
+const WIDTH_BATCH_BUDGET_MS = 4;
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MONTHS = [
   "January",
@@ -20,16 +23,6 @@ const MONTHS = [
 ];
 
 const pad = (value: number) => String(value).padStart(2, "0");
-
-const dateStyle = (format: SettingsValues["dateFormat"]): DateFormat => {
-  if (format === "auto" || format === "weekday") {
-    return "short";
-  }
-  if (format === "dmy" || format === "mdy") {
-    return "numeric";
-  }
-  return format;
-};
 
 const numericToken = (date: Date, token: string) => {
   if (token[0] === "d") {
@@ -62,10 +55,19 @@ export const createClockService = ({
 }: {
   platform: ClockPlatform;
   now: () => number;
-  timers: Pick<Window, "setInterval">;
+  timers: Pick<Window, "setInterval"> & Partial<Pick<Window, "setTimeout" | "clearTimeout">>;
 }): ClockService => {
-  const localFormatter = (options: Intl.DateTimeFormatOptions) =>
-    platform.dateTimeFormat(platform.getLocales(), options);
+  const formatters = new Map<string, Intl.DateTimeFormat>();
+  const localFormatter = (options: Intl.DateTimeFormatOptions, locales = platform.getLocales()) => {
+    const key = JSON.stringify([locales, options]);
+    const cached = formatters.get(key);
+    if (cached) {
+      return cached;
+    }
+    const formatter = platform.dateTimeFormat(locales, options);
+    formatters.set(key, formatter);
+    return formatter;
+  };
   const numericDate = (date: Date, omitYear: boolean) => {
     const pattern = platform.getDatePattern();
     const options: Intl.DateTimeFormatOptions = { month: "2-digit", day: "2-digit" };
@@ -136,7 +138,7 @@ export const createClockService = ({
     try {
       const cycle = format === "24" ? "h23" : "h12";
       const options = { hour: format === "24" ? "2-digit" : "numeric", minute: "2-digit", hourCycle: cycle } as const;
-      const formatter = platform.dateTimeFormat(locales ?? platform.getLocales(), options);
+      const formatter = localFormatter(options, locales);
       const resolved = formatter.resolvedOptions();
       if ("hourCycle" in resolved && resolved.hourCycle === cycle) {
         return formatter;
@@ -147,16 +149,50 @@ export const createClockService = ({
     return null;
   };
   const timeWidths = new Map<string, number>();
+  const widthKey = (format: TimeFormat, font: string, locales: string[]) => JSON.stringify([format, locales, font]);
+  const widthScan = (format: TimeFormat, locales: string[], measureText: (value: string) => number) => {
+    let width = measureText("0") * (format === "24" ? 5 : 8);
+    let minute = 0;
+    const sample = new Date(2000, 0, 1);
+    const formatter = timeFormatter(format, locales);
+    return {
+      getWidth: () => Math.ceil(width),
+      step() {
+        sample.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
+        width = Math.max(width, measureText(timeText(sample, format, formatter)) + 1);
+        minute++;
+        return minute === MINUTES_PER_DAY;
+      },
+    };
+  };
+  const measureTime: ClockService["measureTime"] = (format, font, measureText) => {
+    const locales = platform.getLocales();
+    const key = widthKey(format, font, locales);
+    const cached = timeWidths.get(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const scan = widthScan(format, locales, measureText);
+    while (!scan.step()) {
+      // Synchronous compatibility path; the live view uses the cancellable batches below.
+    }
+    const width = scan.getWidth();
+    timeWidths.set(key, width);
+    return width;
+  };
   // A tick also signals weather expiry and clock correction checks, even at the same millisecond.
   const store = createStore({ time: now() });
-  const tick = () => store.set({ time: now() });
+  const tick = () => {
+    // A tick (including resume) refreshes the system time zone without a constructor on every render.
+    formatters.clear();
+    store.set({ time: now() });
+  };
   let started = false;
 
   return {
     getSnapshot: () => store.getSnapshot().time,
     subscribe: store.subscribe,
     DATE_FORMATS: dateFormats,
-    dateStyle,
     defaultTimeFormat() {
       const pattern = platform.getTimePattern();
       if (/h/.test(pattern) && /m/.test(pattern)) {
@@ -173,11 +209,9 @@ export const createClockService = ({
       return "12";
     },
     formatDate(date, format) {
-      const style = dateStyle(format);
-      return dateFormats.find(({ id }) => id === style)?.format(date) ?? readableDate(date, "short");
+      return dateFormats.find(({ id }) => id === format)?.format(date) ?? readableDate(date, "short");
     },
     formatTime(date, format) {
-      // A fresh formatter follows system time-zone changes without a page reload.
       return timeText(date, format, timeFormatter(format));
     },
     formatTimeParts(date, format) {
@@ -197,24 +231,49 @@ export const createClockService = ({
         return null;
       }
     },
-    measureTime(format, font, measureText) {
+    measureTime,
+    measureTimeDeferred(format, font, measureText, onWidth) {
       const locales = platform.getLocales();
-      const key = format + ":" + String(locales) + ":" + font;
+      const key = widthKey(format, font, locales);
       const cached = timeWidths.get(key);
       if (cached !== undefined) {
-        return cached;
+        onWidth(cached);
+        return () => undefined;
       }
-      // Reserve width for all times of day once per locale, format and font.
-      let width = measureText("0") * (format === "24" ? 5 : 8);
-      const sample = new Date(2000, 0, 1);
-      const formatter = timeFormatter(format, locales);
-      for (let minute = 0; minute < 24 * 60; minute++) {
-        sample.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
-        width = Math.max(width, measureText(timeText(sample, format, formatter)) + 1);
+      const schedule = timers.setTimeout?.bind(timers);
+      const cancel = timers.clearTimeout?.bind(timers);
+      if (!schedule || !cancel) {
+        onWidth(measureTime(format, font, measureText));
+        return () => undefined;
       }
-      width = Math.ceil(width);
-      timeWidths.set(key, width);
-      return width;
+      const scan = widthScan(format, locales, measureText);
+      // Start with the same minimum as the exact scan, then publish its final result once.
+      onWidth(scan.getWidth());
+      let active = true;
+      let timer: number | undefined;
+      const batch = () => {
+        if (!active) {
+          return;
+        }
+        const deadline = now() + WIDTH_BATCH_BUDGET_MS;
+        for (let count = 0; count < WIDTH_BATCH_SIZE; count++) {
+          if (scan.step()) {
+            const width = scan.getWidth();
+            timeWidths.set(key, width);
+            onWidth(width);
+            return;
+          }
+          if (now() >= deadline) {
+            break;
+          }
+        }
+        timer = schedule(batch, 0);
+      };
+      timer = schedule(batch, 0);
+      return () => {
+        active = false;
+        cancel(timer);
+      };
     },
     tick,
     start() {
@@ -222,7 +281,8 @@ export const createClockService = ({
         return;
       }
       started = true;
-      tick();
+      // The initial render just created these formatters. Refresh time without discarding them at boot.
+      store.set({ time: now() });
       timers.setInterval(tick, TICK_INTERVAL_MS);
     },
   };

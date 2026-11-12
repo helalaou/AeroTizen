@@ -1,16 +1,14 @@
-const { test, expect } = require("@playwright/test");
-for (const glassSettings of [false, true]) {
-  test(`${glassSettings ? "Glass" : "Classic"} HDMI names remain inside their control and save correctly`, async ({
-    page,
-  }, info) => {
+const { test, expect } = require("./launcher_fixture.cjs");
+for (const theme of ["classic", "glass"]) {
+  test(`${theme} HDMI names remain inside their control and save correctly`, async ({ page }, info) => {
     await page.route("https://**/*", (r) => r.fulfill({ body: "{}" }));
     await page.route("http://127.0.0.1:47790/**", (r) => r.fulfill({ body: "{}" }));
     await page.addInitScript(
-      (glassSettings) =>
+      (theme) =>
         localStorage.setItem(
           "aerotizen.settings.v1",
           JSON.stringify({
-            glassSettings,
+            theme,
             home: ["demo0"],
             background: "black",
             showWeather: false,
@@ -18,10 +16,12 @@ for (const glassSettings of [false, true]) {
             inputNames: { "HDMI 2": "A long custom HDMI label" },
           }),
         ),
-      glassSettings,
+      theme,
     );
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready && AeroTizen.inputs.sources.length === 4);
+    await page.waitForFunction(
+      () => AeroTizen.apps.getSnapshot().ready && AeroTizen.inputs.getSnapshot().sources.length === 4,
+    );
     await page.locator("#gear").click();
     await page.locator('[data-key="section:sources"]').click();
     const fields = page.locator("#input-names input");

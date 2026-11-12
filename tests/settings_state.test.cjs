@@ -35,7 +35,6 @@ const harness = () => {
     defaults,
     storage: { getItem: () => null, setItem: () => saves++ },
     storageKey: "settings",
-    legacyStorageKeys: [],
     speedRange: { MIN: 0.2, MAX: 2 },
     locale: { timeFormat: () => "24", tempUnit: () => "C" },
   });
@@ -46,11 +45,7 @@ const harness = () => {
   };
   for (const name of [
     "applyBackground",
-    "applyWeatherVisibility",
-    "applyLocationVisibility",
-    "refreshWeather",
     "applyClock",
-    "applyInputs",
     "applyCardSize",
     "applySpeed",
     "openStore",
@@ -141,16 +136,16 @@ test("actions persist preferences and invoke only the relevant service", () => {
   const h = harness();
   const cases = [
     ["setBackground", "aurora", "background", "applyBackground"],
-    ["setWeatherVisible", false, "showWeather", "applyWeatherVisibility"],
-    ["setLocationVisible", false, "weatherShowLocation", "applyLocationVisibility"],
-    ["setTempUnit", "F", "tempUnit", "refreshWeather"],
+    ["setWeatherVisible", false, "showWeather", null],
+    ["setLocationVisible", false, "weatherShowLocation", null],
+    ["setTempUnit", "F", "tempUnit", null],
     ["setDateFormat", "iso", "dateFormat", "applyClock"],
     ["setNetworkVisible", false, "showNetwork", null],
-    ["setLiveTvVisible", false, "showLiveTv", "applyInputs"],
+    ["setLiveTvVisible", false, "showLiveTv"],
     ["setHomeCardColumns", 5, "homeCardColumns", "applyCardSize"],
     ["setHomeAppLayout", "scroll", "homeAppLayout", "applyCardSize"],
-    ["setHdmiVisibility", true, "hideDisconnectedHdmi", "applyInputs"],
-    ["setLocation", { name: "Example", latitude: 1, longitude: 2 }, "weatherLocation", "refreshWeather"],
+    ["setHdmiVisibility", true, "hideDisconnectedHdmi"],
+    ["setLocation", { name: "Example", latitude: 1, longitude: 2 }, "weatherLocation", null],
   ];
   for (const [action, value, key, service] of cases) {
     h.calls.length = 0;
@@ -245,7 +240,7 @@ test("weather wallpaper action preserves background and speed and refreshes the 
   assert.equal(h.settings.getSnapshot().weatherPhoto, true);
   assert.equal(h.settings.getSnapshot().background, "black");
   assert.equal(h.settings.getSnapshot().speed, 1);
-  assert.deepEqual(h.calls, [["applyWeatherVisibility"], ["applyBackground"]]);
+  assert.deepEqual(h.calls, [["applyBackground"]]);
   h.actions.setWeatherPhoto(false);
   assert.equal(h.settings.getSnapshot().weatherPhoto, false);
   assert.equal(h.saves, 2);

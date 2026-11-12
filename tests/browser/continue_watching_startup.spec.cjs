@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const prime = "org.tizen.primevideo",
   youtube = "9Ur5IzDKqV.TizenYouTube";
 
@@ -181,10 +181,9 @@ test("settled cards reorder on the existing clock tick without rereading feeds",
   await page.clock.setSystemTime(corrected);
   await page.clock.fastForward(10000);
   await expect(titles).toHaveText(["Newer YouTube programme", "Older Prime programme"]);
-  expect(await page.evaluate(() => AeroTizen.continueWatching.items.map((item) => item.timestamp))).toEqual([
-    recent,
-    recent - 3600,
-  ]);
+  expect(
+    await page.evaluate(() => AeroTizen.continueWatching.getSnapshot().items.map((item) => item.timestamp)),
+  ).toEqual([recent, recent - 3600]);
   await page.evaluate(() => {
     window.correctedCards = [...document.querySelectorAll("#continue-items > [data-key]")];
   });

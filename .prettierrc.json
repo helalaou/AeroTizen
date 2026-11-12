@@ -15,7 +15,7 @@
       }
     },
     {
-      "files": ["launcher/js/app-catalog.js", "launcher/js/diagnostics-privacy.js"],
+      "files": ["tests/fixtures/legacy-launcher/js/app-catalog.js"],
       "options": {
         "singleQuote": false,
         "quoteProps": "preserve",

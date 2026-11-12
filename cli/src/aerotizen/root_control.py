@@ -109,6 +109,18 @@ def _same_device(session, receipt, info):
     return status
 
 
+def _preflight(session, managed):
+    return _parse(
+        sdk.run(
+            session,
+            _managed(managed, "bin/AeroTizenRootBridge"),
+            "AeroTizenRootBridge.dll",
+            ("--preflight",),
+        ),
+        "AEROTIZEN_ROOT_PREFLIGHT=",
+    )
+
+
 def _bootstrap(session, path, receipt, managed, upstream, operation, *, configuration=None):
     stage = sdk.DIRECTORY + "/arsetup-" + secrets.token_hex(8)
     values, manifest = root_package.setup_bundle(receipt, managed, upstream, stage, operation=operation)
@@ -272,15 +284,7 @@ def setup(host, *, state_dir=None, receipt_path=None, runtime=None, release=None
         before = home.read_status(session, None, info)
         if not before["complete"]:
             raise DeviceSessionError("Save a complete Home snapshot before root setup")
-        preflight = _parse(
-            sdk.run(
-                session,
-                _managed(managed, "bin/AeroTizenRootBridge"),
-                "AeroTizenRootBridge.dll",
-                ("--preflight",),
-            ),
-            "AEROTIZEN_ROOT_PREFLIGHT=",
-        )
+        preflight = _preflight(session, managed)
         if (
             type(preflight.get("schema_version")) is not int
             or preflight["schema_version"] != 1
@@ -430,6 +434,8 @@ def upgrade(host, *, state_dir=None, receipt_path=None, runtime=None, release=No
         live = {} if recovery else BridgeClient(host, receipt).request()
         before = _same_device(session, receipt, info)
         boot = before["boot"]["id"]
+        # Check new runtime prerequisites before replacing the working helper.
+        _preflight(session, managed)
         registry = _registry(session, managed)
         original = root_package.digest(root_package.config_bytes(receipt["public_config"]))
         installed = registry.get("configuration_sha256")

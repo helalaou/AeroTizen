@@ -71,7 +71,12 @@ receipt with `--receipt PATH` when needed. Keep its directory private.
 - **Root backend:** independent background process. It stores pairing files in a
   root-owned private directory and offers three operations: status, SDB relay and
   removal. It has no shell-command endpoint. SDB relay always targets the TV's own
-  `127.0.0.1:26101`.
+  `127.0.0.1:26101`. Both setup and per-boot launches use a dedicated transient
+  systemd scope so an SDB daemon restart cannot also stop the root bridge.
+  The scope needs `/usr/bin/systemd-run` and lasts only for the running process;
+  no permanent system service is installed. The per-boot root-attempt guard stays
+  in place. The SDK preflight checks this executable before installation. The
+  ordinary app cannot see that system path on some TVs, so it must not check it.
 - **Stremio reader:** the same process serves a read-only feed on IPv4 loopback.
   If the launcher detects Stremio and needs a credential, it requests one from
   the reader. The reader checks that Stremio is installed and writes the per-boot
@@ -134,3 +139,8 @@ setup, pairing rejection, two cold boots with cleanup and bridged SDK access,
 authenticated removal, PC recovery and uninstall. Setup was blocked while removal
 was pending. Home values and other app startup entries stayed unchanged.
 A Mac-offline boot passed on a preceding build. Other models/firmware are unverified.
+
+The separate-scope change passed a paired upgrade, automatic cold boot and remote
+long-Power off/wake on the same Frame. The root process, kernel boot ID and root
+attempt nonce stayed the same while the SDB process ID changed. Pairing and Home
+values stayed unchanged.

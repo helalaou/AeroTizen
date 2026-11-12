@@ -1,11 +1,11 @@
 // Launcher tests run the real browser scripts in a Node sandbox: node --test tests/*.test.cjs
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 const { installClock } = require("./helpers/clock.cjs");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { installSettings } = require("./helpers/settings.cjs");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 
 function loadSettings(storage, defaults = {}) {
   const store = { ...storage };
@@ -15,13 +15,11 @@ function loadSettings(storage, defaults = {}) {
       store[k] = String(v);
     },
   };
-  const A = {};
+  const A = { config: launcherConfig };
   const context = vm.createContext({
     window: { AeroTizen: A, Intl, navigator: { language: "en-GB", languages: ["en-GB"] } },
-    AeroTizen: A,
     localStorage,
   });
-  vm.runInContext(fs.readFileSync(path.join(__dirname, "../launcher/js/config.js"), "utf8"), context);
   installClock(context);
   installSettings(context, defaults);
   A.settings.load();
@@ -39,8 +37,6 @@ test("defaults apply when nothing is saved", () => {
   assert.equal(settings.getSnapshot().showNetwork, true);
   assert.equal(settings.getSnapshot().homeCardColumns, 3);
   assert.equal(settings.getSnapshot().homeAppLayout, "grid");
-  assert.equal("cardSize" in settings, false);
-  assert.equal("homeCardMode" in settings, false);
 });
 
 test("Home layout persists independently of app size and rejects unknown layout values", () => {
@@ -60,61 +56,47 @@ test("Home layout persists independently of app size and rejects unknown layout 
   }
 });
 
-test("square cards migrate legacy sizes and keep explicit row counts and other preferences", () => {
-  for (const key of ["aerotizen.settings.v1", "hearth.home.v1", "declutter.home.v5"]) {
-    for (const cardSize of ["big", "small"]) {
-      for (const homeCardColumns of [undefined, null, 3, 4, 5, "4", 0, 6, "invalid"]) {
-        const legacy = {
-          cardSize,
-          homeCardMode: "rectangle",
-          homeCardColumns,
-          home: ["video.app", "__fire"],
-          background: "lava",
-          showWeather: false,
-          tempUnit: "F",
-          timeFormat: "12",
-        };
-        const { settings, store } = loadSettings({ [key]: JSON.stringify(legacy) });
-        const columns = Number(homeCardColumns);
-        const expected = [3, 4, 5].includes(columns) ? columns : cardSize === "small" ? 5 : 3;
-        assert.equal(settings.getSnapshot().homeCardColumns, expected);
-        const saved = JSON.parse(store["aerotizen.settings.v1"]);
-        assert.equal(saved.homeCardColumns, expected, "migration is saved even with explicit locale settings");
-        assert.equal("cardSize" in saved, false);
-        assert.equal("homeCardMode" in saved, false);
-        assert.deepEqual(saved.home, legacy.home);
-        assert.equal(saved.background, legacy.background);
-        assert.equal(saved.showWeather, false);
-        assert.equal(saved.tempUnit, "F");
-        assert.equal(saved.timeFormat, "12");
-        assert.equal(
-          loadSettings(store).settings.getSnapshot().homeCardColumns,
-          expected,
-          "migration survives restart",
-        );
-      }
-    }
+test("card columns validate the current values and preserve other preferences", () => {
+  const key = "aerotizen.settings.v1";
+  for (const homeCardColumns of [undefined, null, 3, 4, 5, "4", 0, 6, "invalid"]) {
+    const values = {
+      homeCardColumns,
+      home: ["video.app", "__fire"],
+      background: "lava",
+      showWeather: false,
+      tempUnit: "F",
+      timeFormat: "12",
+    };
+    const { settings, store } = loadSettings({ [key]: JSON.stringify(values) });
+    const expected = [3, 4, 5].includes(homeCardColumns) ? homeCardColumns : 3;
+    assert.equal(settings.getSnapshot().homeCardColumns, expected);
+    const saved = JSON.parse(store[key]);
+    assert.equal(saved.homeCardColumns, expected);
+    assert.deepEqual(saved.home, values.home);
+    assert.equal(saved.background, values.background);
+    assert.equal(saved.showWeather, false);
+    assert.equal(saved.tempUnit, "F");
+    assert.equal(saved.timeFormat, "12");
+    assert.equal(loadSettings(store).settings.getSnapshot().homeCardColumns, expected);
   }
 });
 
-test("browser demo defaults do not override a saved Big card choice", () => {
+test("browser preview defaults do not override a saved card column count", () => {
   const key = "aerotizen.settings.v1";
-  const { settings } = loadSettings({ [key]: JSON.stringify({ cardSize: "big" }) }, { homeCardColumns: 5 });
+  const { settings } = loadSettings({ [key]: JSON.stringify({ homeCardColumns: 3 }) }, { homeCardColumns: 5 });
   assert.equal(settings.getSnapshot().homeCardColumns, 3);
   assert.equal(loadSettings({}, { homeCardColumns: 5 }).settings.getSnapshot().homeCardColumns, 5);
 });
 
-test("older current and legacy saves keep all header items visible", () => {
-  for (const key of ["aerotizen.settings.v1", "hearth.home.v1", "declutter.home.v5"]) {
-    const { settings } = loadSettings({
-      [key]: JSON.stringify({ tempUnit: "F", dateFormat: "none" }),
-    });
-    assert.equal(settings.getSnapshot().showWeather, true, key);
-    assert.equal(settings.getSnapshot().showTime, true, key);
-    assert.equal(settings.getSnapshot().showNetwork, true, key);
-    assert.equal(settings.getSnapshot().dateFormat, "none", "date remains under its existing setting");
-    assert.equal(settings.getSnapshot().tempUnit, "F");
-  }
+test("missing visibility preferences keep all header items visible", () => {
+  const { settings } = loadSettings({
+    "aerotizen.settings.v1": JSON.stringify({ tempUnit: "F", dateFormat: "none" }),
+  });
+  assert.equal(settings.getSnapshot().showWeather, true);
+  assert.equal(settings.getSnapshot().showTime, true);
+  assert.equal(settings.getSnapshot().showNetwork, true);
+  assert.equal(settings.getSnapshot().dateFormat, "none");
+  assert.equal(settings.getSnapshot().tempUnit, "F");
 });
 
 test("header visibility survives a restart without changing date or weather preferences", () => {
@@ -159,12 +141,18 @@ test("an empty saved Home stays empty", () => {
   assert.deepEqual(JSON.parse(JSON.stringify(settings.getSnapshot().home)), []);
 });
 
-test("settings migrate from an earlier storage key and field name", () => {
-  const legacy = { favorites: ["a.app", "__fire"], background: "lava", speed: 2 };
-  const { settings } = loadSettings({ "hearth.home.v1": JSON.stringify(legacy) });
-  assert.deepEqual(JSON.parse(JSON.stringify(settings.getSnapshot().home)), ["a.app", "__fire"]);
-  assert.equal(settings.getSnapshot().background, "lava");
-  assert.equal(settings.getSnapshot().speed, 2);
+test("the theme persists and falls back to the default for unknown values", () => {
+  const key = "aerotizen.settings.v1";
+  const { settings, store } = loadSettings({});
+  assert.equal(settings.getSnapshot().theme, "classic");
+  settings.update({ theme: "glass" });
+  assert.equal(loadSettings(store).settings.getSnapshot().theme, "glass");
+  for (const defaultTheme of ["classic", "glass"]) {
+    for (const theme of [null, true, "frosted"]) {
+      const saved = { [key]: JSON.stringify({ theme }) };
+      assert.equal(loadSettings(saved, { theme: defaultTheme }).settings.getSnapshot().theme, defaultTheme);
+    }
+  }
 });
 
 test("save writes only known settings under the current key", () => {

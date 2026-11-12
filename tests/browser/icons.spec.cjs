@@ -1,19 +1,22 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
 
-for (const glass of [false, true]) {
-  test(`${glass ? "Glass" : "Classic"} weather, selection badges and preview icons use the theme styles`, async ({
-    page,
-  }) => {
+for (const theme of ["classic", "glass"]) {
+  test(`${theme} weather, selection badges and preview icons use the theme styles`, async ({ page }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+    let weatherCode = 3;
+    await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
+    await page.route("https://ipapi.co/**", (route) => route.fulfill({ json: { latitude: 1, longitude: 2 } }));
+    await page.route("https://api.open-meteo.com/**", (route) =>
+      route.fulfill({ json: { current: { temperature_2m: 12, weather_code: weatherCode } } }),
+    );
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-    await page.addInitScript((glass) => {
+    await page.addInitScript((theme) => {
       localStorage.setItem(
         "aerotizen.settings.v1",
         JSON.stringify({
-          glassSettings: glass,
+          theme,
           home: ["demo0"],
           background: "black",
           showWeather: true,
@@ -31,10 +34,10 @@ for (const glass of [false, true]) {
           at: Date.now(),
         }),
       );
-    }, glass);
+    }, theme);
     await page.goto("/");
     await expect(page).toHaveTitle("AeroTizen");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     const gear = page.getByRole("button", { name: "Settings", exact: true });
     for (const [code, colour] of [
       [0, "rgb(255, 211, 77)"],
@@ -45,11 +48,9 @@ for (const glass of [false, true]) {
       [71, "rgb(255, 255, 255)"],
       [95, "rgb(255, 211, 77)"],
     ]) {
-      await page.evaluate((code) => {
-        const cache = JSON.parse(localStorage.getItem("aerotizen.weather.v2"));
-        localStorage.setItem("aerotizen.weather.v2", JSON.stringify({ ...cache, code, at: Date.now() }));
-        window.Weather.start();
-      }, code);
+      weatherCode = code;
+      await page.evaluate(() => AeroTizen.weather.refresh());
+      await expect.poll(() => page.evaluate(() => AeroTizen.weather.getSnapshot().code)).toBe(code);
       for (const background of ["solid-white", "solid-lavender", "black"]) {
         await page.evaluate((background) => {
           AeroTizen.settings.update({ background });
@@ -66,7 +67,7 @@ for (const glass of [false, true]) {
     const selectedApp = page.locator('[data-key="app:demo0"]');
     await expect(selectedApp.locator("[data-selection-indicator]")).toHaveCSS(
       "background-color",
-      glass ? "rgb(71, 82, 105)" : "rgb(124, 92, 255)",
+      theme === "glass" ? "rgb(71, 82, 105)" : "rgb(124, 92, 255)",
     );
     await openCategory(page, "wallpaper");
     await page.locator('[data-key="wallpaper-categories:animated"]').click();

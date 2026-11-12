@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 for (const clockLayout of ["classic", "custom"]) {
   test(`${clockLayout} header keeps tab and Samsung Home geometry across appearance changes`, async ({
     page,
@@ -14,7 +14,7 @@ for (const clockLayout of ["classic", "custom"]) {
       clockLayout,
     );
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     const geometry = () =>
       page.evaluate(() =>
         ["[data-header-tabs]", "#home-tab", "#apps-tab", "#gear", "#samsung-home-shortcut", "#network"].map((s) => {
@@ -28,11 +28,11 @@ for (const clockLayout of ["classic", "custom"]) {
     const tabs = await page.locator("[data-header-tabs]").boundingBox();
     expect(tabs.x + tabs.width / 2).toBeCloseTo(960, 0);
     await expect(page.locator("#samsung-home-shortcut")).toBeVisible();
-    for (const glass of [true, false, true]) {
+    for (const theme of ["glass", "classic", "glass"]) {
       await page.locator("#gear").click();
       await page.locator('[data-key="section:appearance"]').click();
       await expect(page.getByRole("button", { name: "Settings", exact: true })).toHaveCount(0);
-      await page.locator(`[data-key="settings-appearance:${glass}"]`).click();
+      await page.locator(`[data-key="settings-appearance:${theme}"]`).click();
       await page.keyboard.press("Escape");
       await page.keyboard.press("Escape");
       expect(await geometry()).toEqual(before);
@@ -40,7 +40,7 @@ for (const clockLayout of ["classic", "custom"]) {
       expect(
         await page.locator("[data-header-focus=tabs]").evaluate((n) => getComputedStyle(n).transitionProperty),
       ).toContain("transform");
-      await page.screenshot({ path: info.outputPath(`${glass ? "glass" : "classic"}-header.png`) });
+      await page.screenshot({ path: info.outputPath(`${theme}-header.png`) });
     }
   });
 }

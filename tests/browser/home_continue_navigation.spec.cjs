@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 for (const scenario of [
   { size: "small", count: 5, columns: 5, initial: 3, scrolled: 6 },
@@ -33,7 +33,7 @@ for (const scenario of [
         ),
       }),
     );
-    await page.addInitScript(({ size, count }) => {
+    await page.addInitScript(({ columns, count }) => {
       const prime = "org.tizen.primevideo";
       const apps = Array.from({ length: count }, (_, i) => ({
         id: i ? "testpkg00" + i + ".App" : prime,
@@ -44,7 +44,7 @@ for (const scenario of [
         "aerotizen.settings.v1",
         JSON.stringify({
           home: apps.map((app) => app.id),
-          cardSize: size,
+          homeCardColumns: columns,
           background: "black",
           showWeather: false,
           continueWatching: true,

@@ -9,18 +9,20 @@ export const createSettingsInventory = (
   runtime: Pick<LauncherRuntime, "apps" | "inputs" | "continueWatching">,
 ): SettingsInventory => {
   const read = (previous?: SettingsInventorySnapshot): SettingsInventorySnapshot => {
-    const apps = snapshotList(runtime.apps.all, previous?.apps);
+    const apps = runtime.apps.getSnapshot().all;
     const inputs = snapshotList<InputOption>(
-      runtime.inputs.sources
-        .filter((source) => source.type !== "TV")
+      runtime.inputs
+        .getSnapshot()
+        .sources.filter((source) => source.type !== "TV")
         .map((source) => ({
           port: runtime.inputs.portName(source),
           placeholder: source.editName,
         })),
       previous?.inputs,
     );
-    const continueSources = snapshotList(runtime.continueWatching?.sources || [], previous?.continueSources);
-    const continueMessage = runtime.continueWatching?.messageKey || "";
+    const continueSnapshot = runtime.continueWatching?.getSnapshot();
+    const continueSources = continueSnapshot?.sources || previous?.continueSources || Object.freeze([]);
+    const continueMessage = continueSnapshot?.messageKey || "";
     return previous &&
       continueSources === previous.continueSources &&
       continueMessage === previous.continueMessage &&

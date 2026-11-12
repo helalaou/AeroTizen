@@ -27,7 +27,10 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       localStorage.clear();
     });
     await page.reload();
-    await page.waitForFunction(() => window.AeroTizen && AeroTizen.apps.all.length > 0);
+    await page.waitForFunction(
+      () =>
+        window.AeroTizen && (AeroTizen.apps.getSnapshot ? AeroTizen.apps.getSnapshot() : AeroTizen.apps).all.length > 0,
+    );
     const check = await page.evaluate(async (variant) => {
       const focusSelector = variant === "preact" ? "[data-focused=true]" : ".focused";
       const A = AeroTizen,
@@ -59,6 +62,9 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
           // Category clicks use the same public controls as the physical drawer.
           entry.click();
           entry.focus();
+        }
+        if (element.closest("#weather-location-editor")?.hidden) {
+          document.querySelector('[data-key="weather:change"]').click();
         }
         if (pane?.dataset.sectionPane === "wallpaper") {
           const group = element.closest("#bg-anim")
@@ -121,25 +127,28 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       for (let i = 0; i < 10; i++) key(K.UP);
       assert(document.querySelectorAll("#editor " + focusSelector).length === 1, "top boundary keeps one focus");
       const weatherField = document.querySelector("#weather-location input");
-      const appTile = find("app:" + A.apps.all[0].id);
+      const appTile = find("app:" + (A.apps.getSnapshot ? A.apps.getSnapshot() : A.apps).all[0].id);
       find("time:24").click();
       assert(preferences().timeFormat === "24", "time setting updates");
       if (variant === "preact") {
         assert(weatherField === document.querySelector("#weather-location input"), "unrelated input identity retained");
-        assert(appTile === find("app:" + A.apps.all[0].id), "artwork node retained on clock change");
+        assert(
+          appTile === find("app:" + (A.apps.getSnapshot ? A.apps.getSnapshot() : A.apps).all[0].id),
+          "artwork node retained on clock change",
+        );
       }
       assert(JSON.parse(localStorage.getItem(A.config.STORAGE_KEY)).timeFormat === "24", "setting persisted");
       find("time:none").click();
-      assert(A.$("time").hidden, "time hidden");
+      assert(document.getElementById("time").hidden, "time hidden");
       find("time:24").click();
-      assert(!A.$("time").hidden, "time restored");
+      assert(!document.getElementById("time").hidden, "time restored");
       find("weather-display:false").click();
-      assert(A.$("weather").hidden, "weather hidden");
+      assert(document.getElementById("weather").hidden, "weather hidden");
       find("weather-display:true").click();
       find("network-visibility:false").click();
-      assert(A.$("network").hasAttribute("hidden"), "network hidden");
+      assert(document.getElementById("network").hasAttribute("hidden"), "network hidden");
       find("network-visibility:true").click();
-      assert(!A.$("network").hasAttribute("hidden"), "network restored");
+      assert(!document.getElementById("network").hasAttribute("hidden"), "network restored");
       find(variant === "preact" ? "live-tv-visibility:false" : "live-tv:false").click();
       assert(preferences().showLiveTv === false, "Live TV hidden");
       if (variant === "preact") {
@@ -174,7 +183,11 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       assert(preferences().home.length === homeBeforeToggle.length, "Fireplace can be restored");
       // Search callbacks cannot apply after editing or closing. No real geocoder call.
       const callbacks = [];
-      window.Weather.searchLocations = (query, done) => callbacks.push(done);
+      const weather = variant === "preact" ? A.weather : window.Weather;
+      weather.searchLocations = (query, done) => {
+        callbacks.push(done);
+        return () => {};
+      };
       let field = document.querySelector("#weather-location input");
       input(field, "Example");
       find("weather:search").click();
@@ -211,11 +224,11 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
       key(K.RIGHT);
       assert(!document.body.classList.contains("previewing"), "any key exits preview");
       if (variant === "preact") {
-        assert(A.$("toast").hidden, "preview exit hides its message");
+        assert(document.getElementById("toast").hidden, "preview exit hides its message");
         find("preview").click();
         A.settingsUi.open();
         assert(
-          !document.body.classList.contains("previewing") && A.$("toast").hidden,
+          !document.body.classList.contains("previewing") && document.getElementById("toast").hidden,
           "open resets preview and its message together",
         );
         assert(
@@ -227,7 +240,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
         assert(
           !document.body.classList.contains("editing") &&
             !document.body.classList.contains("previewing") &&
-            A.$("toast").hidden,
+            document.getElementById("toast").hidden,
           "close clears all presentation state",
         );
         A.settingsUi.open();
@@ -272,7 +285,7 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
         );
       }
       if (variant === "preact") {
-        find("app:" + A.apps.all[0].id).click();
+        find("app:" + (A.apps.getSnapshot ? A.apps.getSnapshot() : A.apps).all[0].id).click();
         for (let i = 0; i < 60; i++) key(K.DOWN);
         assert(document.querySelector("[data-settings-drawer=scroll]").scrollTop > 0, "focus scrolls apps into view");
         key(K.ESC);
@@ -325,30 +338,39 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     }
   }
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  await page.route("https://artwork.test/**", (route) =>
+  await page.route("**/opt/share/webappservice/apps_icon/**", (route) =>
     route.fulfill({
       contentType: "image/svg+xml",
-      body: route.request().url().endsWith("/bad")
+      body: route.request().url().endsWith("/304x304.png")
         ? "invalid image"
         : '<svg xmlns="http://www.w3.org/2000/svg" width="304" height="304"><rect width="304" height="304" fill="purple"/></svg>',
     }),
   );
+  await page.addInitScript(() => {
+    window.tizen = {
+      application: {
+        getAppsInfo(done) {
+          done([{ id: "111299001912", name: "YouTube", packageId: "LBUAQX1exg" }]);
+        },
+        launch() {},
+        launchAppControl() {},
+      },
+    };
+  });
+  await page.reload();
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready && AeroTizen.apps.getSnapshot().all.length === 1);
   await page.evaluate(() => {
     const A = AeroTizen;
-    const original = A.tiles.app;
-    window.settingsArtworkConstructions = 0;
-    A.tiles.app = (app) => {
-      window.settingsArtworkConstructions++;
-      return original(app);
-    };
-    A.artwork.sources = () => ["https://artwork.test/bad", "https://artwork.test/good"];
+    if (A.tiles || A.artwork) throw new Error("App presentation still depends on legacy globals");
     A.settingsUi.open();
   });
   await page.locator('[data-key="section:apps"]').click();
   // A real pointer click waits for the pane to render before selecting an app.
   await page.locator("#all-apps [data-app-option]").first().click();
   await page.waitForFunction(
-    () => document.querySelectorAll("#all-apps [data-artwork-loaded=true]").length === AeroTizen.apps.all.length,
+    () =>
+      document.querySelectorAll("#all-apps [data-artwork-loaded=true]").length ===
+      (AeroTizen.apps.getSnapshot ? AeroTizen.apps.getSnapshot() : AeroTizen.apps).all.length,
   );
   const artwork = await page.evaluate(() => {
     const tile = document.querySelector("#all-apps [data-app-option]");
@@ -358,7 +380,8 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     if (tile !== document.querySelector("#all-apps [data-app-option]")) throw new Error("Clock change rebuilt artwork");
     tile.click();
     if (tile !== document.querySelector("#all-apps [data-app-option]")) throw new Error("Selection rebuilt artwork");
-    if (window.settingsArtworkConstructions !== 0) throw new Error("Settings called a legacy DOM constructor");
+    if (!tile.querySelector("[data-app-artwork]").src.endsWith("/250x250.png"))
+      throw new Error("Artwork did not advance past the invalid primary image");
     return { asynchronous: true, fallback: true, stableOnClockAndSelection: true };
   });
   // External legacy writes publish into the same Settings store.
@@ -394,8 +417,12 @@ const runSettingsUi = async (page, { baselineUrl, screenshotPath }) => {
     if (field !== find("name:HDMI 1").querySelector("input")) throw new Error("Reopen rebuilt the cached form");
     // A pending reply delivered after close + reopen must remain cancelled.
     const replies = [];
-    window.Weather.searchLocations = (query, done) => replies.push(done);
+    AeroTizen.weather.searchLocations = (query, done) => {
+      replies.push(done);
+      return () => {};
+    };
     document.querySelector('[data-key="section:weather"]').click();
+    find("weather:change").click();
     const query = find("weather:query").querySelector("input");
     query.value = "Pending";
     query.dispatchEvent(new Event("input", { bubbles: true }));

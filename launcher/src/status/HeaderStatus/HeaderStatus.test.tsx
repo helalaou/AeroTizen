@@ -24,9 +24,8 @@ const renderHeader = (defaults: Partial<SettingsDefaults>, sample = samples[0]) 
   const clock: ClockService = {
     ...status.time,
     DATE_FORMATS: [],
-    dateStyle: () => "iso",
     defaultTimeFormat: () => format,
-    formatDate: (_, style) => (style === "none" ? "" : date),
+    formatDate: vi.fn((_, style) => (style === "none" ? "" : date)),
     formatTime: vi.fn(() => text),
     formatTimeParts: vi.fn(() => ({ hour, minute, dayPeriod })),
     measureTime: () => 0,
@@ -35,7 +34,6 @@ const renderHeader = (defaults: Partial<SettingsDefaults>, sample = samples[0]) 
   };
   const settings = createSettingsService({
     defaults: { timeFormat: format, showWeather: false, ...defaults },
-    legacyStorageKeys: [],
     locale: { timeFormat: () => format, tempUnit: () => "C" },
     speedRange: { MIN: 1, MAX: 10 },
     storage: { getItem: () => null, setItem: () => undefined },
@@ -55,6 +53,18 @@ test.each(samples)("keeps the localized time label and fields for $format-hour t
   expect(timeFields.getByText(hour).textContent).toBe(hour);
   expect(timeFields.getByText(minute).textContent).toBe(dayPeriod ? `${minute} ${dayPeriod}` : minute);
   expect(screen.getByText(date).hidden).toBe(false);
+});
+
+test("hidden time and date do no formatting, and re-enabling them uses the current tick", async () => {
+  const { clock, settings, status } = renderHeader({ showTime: false, dateFormat: "none" });
+  await act(() => status.time.set(timestamp + 60_000));
+  expect(clock.formatTime).not.toHaveBeenCalled();
+  expect(clock.formatTimeParts).not.toHaveBeenCalled();
+  expect(clock.formatDate).not.toHaveBeenCalled();
+
+  await act(() => settings.update({ showTime: true, dateFormat: "iso" }));
+  expect(clock.formatTime).toHaveBeenLastCalledWith(new Date(timestamp + 60_000), "24");
+  expect(clock.formatDate).toHaveBeenLastCalledWith(new Date(timestamp + 60_000), "iso");
 });
 
 test.each(["classic", "custom"] as const)(

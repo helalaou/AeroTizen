@@ -1,14 +1,12 @@
 import { useMemo } from "preact/hooks";
 
 import type { InstalledApp } from "../../../../contracts/launcher";
-import { AppFallback } from "../../../../shared/components/AppFallback/AppFallback";
+import { AppArtworkContent } from "../../../../shared/components/AppArtworkContent/AppArtworkContent";
 import { useImageSequence } from "../../../../shared/hooks/useImageSequence";
 import { SelectionIndicator } from "../../../components/SelectionIndicator/SelectionIndicator";
 import type { SettingsServices } from "../../../types";
 import type { SettingsAppVariant } from "../SettingsAppCard/SettingsAppCard";
 import { SettingsAppCard } from "../SettingsAppCard/SettingsAppCard";
-
-import styles from "./AppOption.module.css";
 
 interface Props {
   active: boolean;
@@ -31,8 +29,8 @@ export const AppOption = ({
   variant = "favourite",
   disabled = false,
 }: Props) => {
-  const brand = useMemo(() => describeApp(app), [app, describeApp]);
-  const artwork = useImageSequence(brand.artwork, active);
+  const presentation = useMemo(() => describeApp(app), [app, describeApp]);
+  const artwork = useImageSequence(presentation.artwork, active);
   return (
     <SettingsAppCard
       selected={selected}
@@ -40,30 +38,16 @@ export const AppOption = ({
       data-app-option
       data-artwork-loaded={artwork.loaded ? "true" : undefined}
       focusKey={focusKey || "app:" + app.id}
-      aria-label={brand.title}
-      title={brand.title}
+      aria-label={presentation.title}
+      title={presentation.title}
       aria-disabled={disabled || undefined}
       onClick={() => {
         if (!disabled) {
           onSelect();
         }
       }}
-      style={{ "--app-background": artwork.loaded ? "transparent" : brand.background }}
     >
-      <AppFallback app={app} brand={brand} active={active} hidden={artwork.loaded} variant={variant} />
-      {artwork.src ? (
-        <img
-          key={artwork.src}
-          class={styles.artwork}
-          data-app-artwork
-          alt=""
-          src={artwork.src}
-          hidden={!artwork.loaded}
-          style={{ display: artwork.loaded ? undefined : "none" }}
-          onLoad={artwork.onLoad}
-          onError={artwork.onError}
-        />
-      ) : null}
+      <AppArtworkContent presentation={presentation} artwork={artwork} variant={variant} />
       {selected ? <SelectionIndicator /> : null}
     </SettingsAppCard>
   );

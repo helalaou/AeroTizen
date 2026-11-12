@@ -38,7 +38,14 @@ export const mountBackgrounds = (
     renderScene: (scene, speed) =>
       render(
         scene && (
-          <BackgroundSceneView key={generation++} scene={scene} speed={speed} webGL={webGL} reportWebGL={status.set} />
+          <BackgroundSceneView
+            key={scene.anim === "stage" ? scene.id : generation++}
+            scene={scene}
+            speed={speed}
+            webGL={webGL}
+            reportWebGL={status.set}
+            performanceMode={runtime.settings.getSnapshot().performanceMode}
+          />
         ),
         layer,
       ),
@@ -46,12 +53,14 @@ export const mountBackgrounds = (
   const photo = createWeatherPhoto(
     weather,
     () =>
-      previewBackground === null && runtime.settings.getSnapshot().weatherPhoto === true && !runtime.inputs.watching,
+      previewBackground === null &&
+      runtime.settings.getSnapshot().weatherPhoto === true &&
+      runtime.inputs.getSnapshot().playback === "idle",
     window,
   );
   const { getSnapshot } = photo;
   const restoreWallpaper = () => {
-    if (!runtime.inputs.watching) {
+    if (runtime.inputs.getSnapshot().playback !== "playing") {
       const settings = runtime.settings.getSnapshot();
       if (previewBackground?.kind === "solid") {
         backgrounds.bridge.apply("custom", settings.speed, previewBackground.colour);

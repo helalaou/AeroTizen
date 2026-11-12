@@ -10,8 +10,12 @@ import { build } from "vite";
 import { markDevBuild } from "./dev-build-badge.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const { values } = parseArgs({ options: { dev: { type: "boolean" } } });
-const name = values.dev ? "launcher-dev" : "launcher";
+const { values } = parseArgs({ options: { dev: { type: "boolean" }, demo: { type: "boolean" } } });
+if (values.dev && values.demo) throw new Error("Choose either --dev or --demo.");
+const tvName = values.dev ? "launcher-dev" : "launcher";
+const tvMode = values.dev ? "tv-dev" : "production";
+const name = values.demo ? "demo" : tvName;
+const mode = values.demo ? "demo" : tvMode;
 const output = path.join(root, "dist", name);
 
 async function verifyScripts(directory) {
@@ -28,7 +32,7 @@ async function verifyScripts(directory) {
 
 const result = await build({
   configFile: path.join(root, "vite.config.mts"),
-  mode: values.dev ? "tv-dev" : "production",
+  mode,
 });
 // Record rendered modules outside the TV runtime, so CI can verify tree shaking.
 const rendered = new Set();
@@ -36,6 +40,9 @@ for (const buildResult of Array.isArray(result) ? result : [result]) {
   for (const chunk of buildResult.output) {
     if (chunk.type !== "chunk") continue;
     for (const [id, module] of Object.entries(chunk.modules)) {
+      if (!values.demo && id.replaceAll("\\", "/").includes("/launcher/src/dev/") && module.renderedLength > 0) {
+        throw new Error(`Development preview code cannot enter the TV package: ${path.relative(root, id)}`);
+      }
       const icon = id.replaceAll("\\", "/").match(/\/lucide-preact\/dist\/esm\/icons\/([^/]+)\.mjs$/);
       if (icon && module.renderedLength > 0) rendered.add(icon[1]);
     }

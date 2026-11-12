@@ -9,10 +9,13 @@ import shutil
 import subprocess
 from contextlib import nullcontext
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
-from aerotizen import cli, home, home_control, sdk
+from aerotizen import cli, home, home_control, remote, sdk
+from aerotizen.sdb import SdbError
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -839,3 +842,271 @@ def test_reinstallation_during_restore_cannot_claim_verified_success(monkeypatch
         home_control.change(object(), {}, "restore", state_dir=tmp_path)
     receipt = json.loads(next(tmp_path.rglob("transactions/*.json")).read_text())
     assert receipt["state"] == "restored" and "error" in receipt
+
+
+@pytest.fixture
+def launcher_startup(monkeypatch, status, tmp_path):
+    backup = Path(home.save_backup(status, state_dir=tmp_path)["path"])
+    raw = backup.read_bytes()
+    offline = copy.deepcopy(status)
+    offline["watcher"] = {"reachable": False, "state": "unknown"}
+    final = copy.deepcopy(status)
+    final["home"]["main_operation"]["value"] = home.releases.APP_ID
+    final["home"]["settings"][home.HOME_KEY]["value"] = home.releases.APP_ID
+    for key in home.STARTUP_KEYS:
+        final["home"]["settings"][key]["value"] = home.releases.APP_ID
+    final["home"]["settings"][home.AUTOSTART_KEY]["value"] = 1
+    final["watcher"]["control"]["mode"] = "native"
+    session = SimpleNamespace(host="192.0.2.10", shell_bounded=Mock(return_value=""))
+    query = Mock(side_effect=[offline, status, final])
+    launch = Mock(return_value=(True, "HTTP 200 true"))
+
+    def write(connection, files, entrypoint, args):
+        assert connection is session
+        request = json.loads(files["request.json"])
+        assert base64.b64decode(request["baseline_base64"]) == raw
+        assert json.loads(next(tmp_path.rglob("transactions/*.json")).read_text())["state"] == "pending"
+        return native_result("apply")
+
+    writer = Mock(side_effect=write)
+    now = [0.0]
+    clock = SimpleNamespace(
+        monotonic=lambda: now[0],
+        sleep=lambda seconds: now.__setitem__(0, now[0] + seconds),
+    )
+    monkeypatch.setattr(home, "read_status", query)
+    monkeypatch.setattr(remote, "rest_launch", launch)
+    monkeypatch.setattr(sdk, "run", writer)
+    monkeypatch.setattr(home_control, "time", clock)
+    return SimpleNamespace(
+        backup=backup,
+        raw=raw,
+        offline=offline,
+        ready=status,
+        final=final,
+        session=session,
+        query=query,
+        launch=launch,
+        writer=writer,
+        now=now,
+    )
+
+
+def test_apply_starts_launcher_once_and_waits_before_journaling(launcher_startup, tmp_path, capsys):
+    h = launcher_startup
+
+    def delayed_ready(*args):
+        if h.query.call_count <= 3:
+            assert not list(tmp_path.rglob("transactions/*.json"))
+            h.writer.assert_not_called()
+            return h.offline
+        return h.ready if h.query.call_count == 4 else h.final
+
+    h.query.side_effect = delayed_ready
+    result = home_control.change(h.session, {}, "apply", state_dir=tmp_path)
+    assert result["success"] and result["status"] == h.final
+    h.launch.assert_called_once_with(h.session.host, home.releases.APP_ID)
+    h.session.shell_bounded.assert_not_called()
+    h.writer.assert_called_once()
+    assert h.backup.read_bytes() == h.raw
+    captured = capsys.readouterr()
+    assert not captured.out and "Starting AeroTizen" in captured.err
+
+
+def test_apply_uses_owned_sdk_connection_if_http_launch_is_unavailable(launcher_startup, tmp_path):
+    h = launcher_startup
+    h.launch.return_value = (False, "HTTP API unavailable")
+    assert home_control.change(h.session, {}, "apply", state_dir=tmp_path)["success"]
+    h.launch.assert_called_once()
+    h.session.shell_bounded.assert_called_once_with(
+        f"0 was_execute {home.releases.APP_ID}", timeout=home_control.LAUNCH_TIMEOUT, max_output=8192
+    )
+
+
+def test_apply_service_timeout_never_writes_even_when_launch_was_accepted(launcher_startup, tmp_path):
+    h = launcher_startup
+    h.query.side_effect = lambda *args: h.offline
+    with pytest.raises(home.HomeError, match="did not become ready") as raised:
+        home_control.change(h.session, {}, "apply", state_dir=tmp_path)
+    assert "aerotizen launch DclHome001.Home" in str(raised.value)
+    assert "No Home settings were changed" in str(raised.value)
+    assert h.now[0] == home_control.SERVICE_START_TIMEOUT
+    h.launch.assert_called_once()
+    h.writer.assert_not_called()
+    assert not list(tmp_path.rglob("transactions/*.json"))
+
+
+def test_apply_launch_transport_failure_never_writes(launcher_startup, tmp_path):
+    h = launcher_startup
+    h.launch.return_value = (False, "connection refused")
+    h.session.shell_bounded.side_effect = SdbError("SDK launch failed")
+    with pytest.raises(home.HomeError, match="TV could not start AeroTizen"):
+        home_control.change(h.session, {}, "apply", state_dir=tmp_path)
+    assert h.query.call_count == 1
+    h.writer.assert_not_called()
+    assert not list(tmp_path.rglob("transactions/*.json"))
+
+
+def test_apply_refuses_a_ready_response_that_arrives_after_startup_timeout(launcher_startup, tmp_path):
+    h = launcher_startup
+
+    def late_response(*args):
+        if h.query.call_count == 1:
+            return h.offline
+        h.now[0] = home_control.SERVICE_START_TIMEOUT + 1
+        return h.ready
+
+    h.query.side_effect = late_response
+    with pytest.raises(home.HomeError, match="did not become ready"):
+        home_control.change(h.session, {}, "apply", state_dir=tmp_path)
+    h.writer.assert_not_called()
+    assert not list(tmp_path.rglob("transactions/*.json"))
+
+
+@pytest.mark.parametrize("missing", [False, True])
+def test_apply_refuses_invalid_backup_before_launcher_start(launcher_startup, tmp_path, missing):
+    h = launcher_startup
+    if missing:
+        h.backup.unlink()
+    else:
+        h.backup.write_text("{}")
+    with pytest.raises(home.HomeError):
+        home_control.change(h.session, {}, "apply", state_dir=tmp_path)
+    h.launch.assert_not_called()
+    h.writer.assert_not_called()
+    assert not list(tmp_path.rglob("transactions/*.json"))
+
+
+@pytest.mark.parametrize("after_start", [False, True])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("protocol", 2),
+        ("protocol", True),
+        ("app_id", "other.app"),
+        ("persistent", False),
+        ("mode", "blocked"),
+    ],
+)
+def test_apply_rejects_incompatible_service_before_writer(
+    launcher_startup, tmp_path, after_start, field, value
+):
+    h = launcher_startup
+    incompatible = copy.deepcopy(h.ready)
+    incompatible["watcher"]["control"][field] = value
+    h.query.side_effect = [h.offline, incompatible] if after_start else [incompatible]
+    with pytest.raises(home.HomeError, match="service is incompatible"):
+        home_control.change(h.session, {}, "apply", state_dir=tmp_path)
+    assert h.launch.call_count == int(after_start)
+    h.writer.assert_not_called()
+    assert not list(tmp_path.rglob("transactions/*.json"))
+
+
+@pytest.mark.parametrize("missing_control", [False, True])
+def test_apply_rejects_malformed_service_response(launcher_startup, tmp_path, missing_control):
+    h = launcher_startup
+    malformed = copy.deepcopy(h.ready)
+    if missing_control:
+        malformed["watcher"].pop("control")
+    else:
+        malformed["watcher"]["error"] = {"code": "http_error"}
+    h.query.side_effect = [h.offline, malformed]
+    with pytest.raises(home.HomeError, match="service is incompatible"):
+        home_control.change(h.session, {}, "apply", state_dir=tmp_path)
+    h.writer.assert_not_called()
+    assert not list(tmp_path.rglob("transactions/*.json"))
+
+
+@pytest.mark.parametrize("after_start", [False, True])
+@pytest.mark.parametrize(
+    "case", ["identity", "firmware", "incomplete", "uninstalled", "installation_unknown", "unverified_sdk"]
+)
+def test_apply_rechecks_preflight_before_and_after_launcher_start(
+    launcher_startup, tmp_path, after_start, case
+):
+    h = launcher_startup
+    invalid = copy.deepcopy(h.ready)
+    if case == "identity":
+        invalid["device"]["identity_sha256"] = "b" * 64
+    elif case == "firmware":
+        invalid["device"]["firmware_build"] = "different"
+    elif case == "incomplete":
+        invalid["complete"] = False
+    elif case == "unverified_sdk":
+        invalid["evidence"]["authenticated"] = False
+    else:
+        invalid["launcher"]["installed"] = False if case == "uninstalled" else None
+    h.query.side_effect = [h.offline, invalid] if after_start else [invalid]
+    with pytest.raises(home.HomeError):
+        home_control.change(h.session, {}, "apply", state_dir=tmp_path)
+    assert h.launch.call_count == int(after_start)
+    h.writer.assert_not_called()
+    assert not list(tmp_path.rglob("transactions/*.json"))
+
+
+@pytest.mark.parametrize("failure", [home.HomeError("SDK query failed"), KeyboardInterrupt()])
+def test_apply_query_failure_or_interrupt_never_writes(launcher_startup, tmp_path, failure):
+    h = launcher_startup
+    h.query.side_effect = [h.offline, failure]
+    with pytest.raises(type(failure)):
+        home_control.change(h.session, {}, "apply", state_dir=tmp_path)
+    h.writer.assert_not_called()
+    assert h.backup.read_bytes() == h.raw
+    assert not list(tmp_path.rglob("transactions/*.json"))
+
+
+def test_apply_refuses_a_backup_changed_during_launcher_start(launcher_startup, tmp_path):
+    h = launcher_startup
+
+    def launch(*args):
+        h.backup.write_bytes(h.raw + b"\n")
+        return True, "accepted"
+
+    h.launch.side_effect = launch
+    with pytest.raises(home.HomeError, match="backup changed during startup"):
+        home_control.change(h.session, {}, "apply", state_dir=tmp_path)
+    h.writer.assert_not_called()
+    assert not list(tmp_path.rglob("transactions/*.json"))
+
+
+@pytest.mark.parametrize("action", ["apply", "restore"])
+def test_ready_service_needs_no_launcher_start(launcher_startup, tmp_path, action):
+    h = launcher_startup
+    h.query.side_effect = [h.ready, h.final if action == "apply" else h.ready]
+    if action == "restore":
+        h.writer.side_effect = lambda *args: native_result("restore")
+    assert home_control.change(h.session, {}, action, state_dir=tmp_path)["success"]
+    h.launch.assert_not_called()
+    h.session.shell_bounded.assert_not_called()
+
+
+def test_restore_does_not_automatically_launch(launcher_startup, tmp_path):
+    h = launcher_startup
+    with pytest.raises(home.HomeError, match="service is unavailable"):
+        home_control.change(h.session, {}, "restore", state_dir=tmp_path)
+    h.launch.assert_not_called()
+    h.writer.assert_not_called()
+    assert not list(tmp_path.rglob("transactions/*.json"))
+
+
+@pytest.mark.parametrize("command", ["apply", "status", "backup"])
+def test_cli_startup_keeps_json_output_valid_and_read_only_commands_passive(
+    launcher_startup, monkeypatch, tmp_path, capsys, command
+):
+    h = launcher_startup
+    monkeypatch.setattr(cli, "require_sdb", lambda host: nullcontext(h.session))
+    monkeypatch.setattr(home, "device_info", lambda *args, **kwargs: {})
+    monkeypatch.setattr(cli, "STATE_DIR", tmp_path)
+    args = ["aerotizen", "--tv", h.session.host, "home", command, "--json"]
+    if command == "apply":
+        args.append("--yes")
+    monkeypatch.setattr("sys.argv", args)
+    cli.main()
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    if command == "apply":
+        assert result["success"] and "Starting AeroTizen" in captured.err
+    else:
+        assert result["watcher"]["reachable"] is False and not captured.err
+        h.launch.assert_not_called()
+        h.writer.assert_not_called()

@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 for (const [build, url] of [
   ["compiled", "http://127.0.0.1:8171/"],
@@ -17,7 +17,7 @@ for (const [build, url] of [
     );
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto(url);
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     const tabs = page.locator("[data-header-focus=tabs]");
     const shortcuts = page.locator("[data-header-focus=shortcuts]");
     await page.locator("#apps-tab").click();
@@ -29,10 +29,10 @@ for (const [build, url] of [
     await expect(shortcuts).toHaveCSS("transition-duration", "0.18s, 0.15s");
 
     await page.emulateMedia({ reducedMotion: "reduce" });
-    for (const glassSettings of [false, true]) {
-      await page.evaluate((glassSettings) => {
-        AeroTizen.settings.update({ glassSettings: glassSettings });
-      }, glassSettings);
+    for (const theme of ["classic", "glass"]) {
+      await page.evaluate((theme) => {
+        AeroTizen.settings.update({ theme });
+      }, theme);
       for (const plate of [tabs, shortcuts]) {
         const durations = await plate.evaluate((node) =>
           getComputedStyle(node).transitionDuration.split(",").map(parseFloat),

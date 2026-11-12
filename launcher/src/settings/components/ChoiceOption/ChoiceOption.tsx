@@ -6,7 +6,12 @@ import { SettingsControl } from "../SettingsControl/SettingsControl";
 import styles from "./ChoiceOption.module.css";
 
 interface Props {
+  align?: "center" | "start";
+  busy?: boolean;
   children: ComponentChildren;
+  controls?: string;
+  disabled?: boolean;
+  expanded?: boolean;
   id: string;
   inline?: boolean;
   onSelect(): void;
@@ -14,9 +19,36 @@ interface Props {
   truncate?: boolean;
 }
 
-export const ChoiceOption = ({ id, selected = false, onSelect, children, inline = false, truncate = false }: Props) => {
+export const ChoiceOption = ({
+  id,
+  selected = false,
+  onSelect,
+  children,
+  inline = false,
+  truncate = false,
+  busy,
+  controls,
+  disabled,
+  expanded,
+  align = "center",
+}: Props) => {
   return (
-    <SettingsControl class={styles.option} focusKey={id} role="button" aria-pressed={selected} onClick={onSelect}>
+    <SettingsControl
+      class={styles.option}
+      focusKey={id}
+      role="button"
+      data-align={align}
+      aria-pressed={selected}
+      aria-busy={busy}
+      aria-controls={controls}
+      aria-disabled={disabled}
+      aria-expanded={expanded}
+      onClick={() => {
+        if (!disabled) {
+          onSelect();
+        }
+      }}
+    >
       <span
         class={
           styles.label +

@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 for (const [build, url] of [
   ["compiled", "http://127.0.0.1:8171/"],
@@ -25,7 +25,7 @@ for (const [build, url] of [
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto(url);
     await expect(page).toHaveTitle("AeroTizen");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     const card = page.locator('#grid > [data-id="demo0"]');
     const rows = page.locator("[data-home-content]");
     const surface = page.locator("[data-home-page]");
@@ -46,10 +46,10 @@ for (const [build, url] of [
     await expect(arrows.first()).toHaveCSS("animation-duration", "1s");
 
     await page.emulateMedia({ reducedMotion: "reduce" });
-    for (const glassSettings of [false, true]) {
-      await page.evaluate((glassSettings) => {
-        AeroTizen.settings.update({ glassSettings: glassSettings });
-      }, glassSettings);
+    for (const theme of ["classic", "glass"]) {
+      await page.evaluate((theme) => {
+        AeroTizen.settings.update({ theme });
+      }, theme);
       await expect(card).toBeFocused();
       await expect(card).toHaveCSS("transition-duration", "0s");
       await expect(page.locator("#grid")).toHaveCSS("transition-duration", "0s");

@@ -5,10 +5,12 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 const { createWeatherPhoto } = loadTypeScript("launcher/src/backgrounds/createWeatherPhoto.ts");
 
 const root = path.join(__dirname, "..");
-const source = fs.readFileSync(path.join(root, "launcher/js/weather.js"), "utf8");
+const { createWeatherService } = loadTypeScript("launcher/src/services/createWeatherService.ts");
+const { createWeatherPlatform } = loadTypeScript("launcher/src/platform/tizen/createWeatherPlatform.ts");
 const CACHE = "aerotizen.weather.v2";
 const NOW = 1800000000000;
 const london = {
@@ -102,13 +104,35 @@ function harness({ saved, settings = {}, blockedStorage = false, now = NOW, view
       intervals.delete(id);
     },
   });
-  vm.runInContext(source, context);
+  const settingListeners = new Set();
+  const clockListeners = new Set();
+  const weather = createWeatherService({
+    platform: createWeatherPlatform({ XMLHttpRequest: FakeXHR }),
+    settings: {
+      getSnapshot: () => preferences,
+      subscribe(listener) {
+        settingListeners.add(listener);
+        return () => settingListeners.delete(listener);
+      },
+    },
+    clock: {
+      getSnapshot: () => clock,
+      subscribe(listener) {
+        clockListeners.add(listener);
+        return () => clockListeners.delete(listener);
+      },
+    },
+    storage: context.localStorage,
+    now: () => clock,
+    timers: context,
+  });
+  // The frozen markup fixture is a presentation consumer of the current service.
+  context.window.Weather = weather;
   if (view)
     vm.runInContext(
       fs.readFileSync(path.join(root, "tests/fixtures/legacy-launcher/js/status-view.js"), "utf8"),
       context,
     );
-  const weather = context.window.Weather;
   return {
     weather,
     preferences,
@@ -117,7 +141,11 @@ function harness({ saved, settings = {}, blockedStorage = false, now = NOW, view
     storage,
     intervals,
     context,
-    start: () => weather.start(() => preferences),
+    start: weather.start,
+    settingListeners,
+    clockListeners,
+    syncSettings: () => [...settingListeners].forEach((listener) => listener()),
+    tick: () => [...clockListeners].forEach((listener) => listener()),
     advance(ms) {
       clock += ms;
     },
@@ -160,12 +188,12 @@ test("changing location visibility preserves the cached reading without fetching
   h.start();
   assert.equal(h.weather.getSnapshot().city, "London");
   h.preferences.weatherShowLocation = false;
-  h.weather.updateDisplay();
+  h.tick();
   const { city, code, showLocation, temperature, visible } = h.weather.getSnapshot();
   assert.deepEqual(
     { city, code, showLocation, temperature, visible },
     {
-      city: "",
+      city: "London",
       code: 3,
       showLocation: false,
       temperature: 12,
@@ -174,7 +202,7 @@ test("changing location visibility preserves the cached reading without fetching
   );
   assert.equal(h.requests.length, 0);
   h.preferences.weatherShowLocation = true;
-  h.weather.updateDisplay();
+  h.tick();
   assert.equal(h.weather.getSnapshot().showLocation, true);
   assert.equal(h.weather.getSnapshot().city, "London");
 });
@@ -448,7 +476,7 @@ test("hiding weather removes it at once and restores matching cache with saved p
   h.start();
   const queuedRefresh = [...h.intervals.values()][0].fn;
   h.preferences.showWeather = false;
-  h.weather.updateVisibility();
+  h.syncSettings();
   assert.equal(h.el.hidden, true);
   assert.equal(h.el.html, "");
   assert.equal(h.intervals.size, 0);
@@ -458,7 +486,7 @@ test("hiding weather removes it at once and restores matching cache with saved p
   assert.equal(h.preferences.weatherLocation, london);
   assert.equal(h.preferences.tempUnit, "F");
   h.preferences.showWeather = true;
-  h.weather.updateVisibility();
+  h.syncSettings();
   assert.equal(h.el.hidden, false);
   assert.equal(h.el.nodes.b.textContent, "12°");
   assert.equal(h.el.querySelector("span"), null);
@@ -471,7 +499,7 @@ test("hiding weather aborts pending IP lookup and a late response cannot start a
   h.start();
   const ip = h.requests[0];
   h.preferences.showWeather = false;
-  h.weather.updateVisibility();
+  h.syncSettings();
   assert.equal(ip.aborted, true);
   ip.respond({ city: "London", latitude: 51.5, longitude: -0.12, country_code: "GB" });
   assert.equal(h.requests.length, 1);
@@ -487,7 +515,7 @@ test("hiding weather aborts pending forecast and a late response cannot replace 
   h.requests[0].respond({ city: "London", latitude: 51.5, longitude: -0.12, country_code: "GB" });
   const forecast = h.requests[1];
   h.preferences.showWeather = false;
-  h.weather.updateVisibility();
+  h.syncSettings();
   assert.equal(forecast.aborted, true);
   forecast.respond(conditions(99));
   assert.equal(h.el.hidden, true);
@@ -500,9 +528,9 @@ test("an IP response from before off/on cannot start another forecast after weat
   h.start();
   const oldIP = h.requests[0];
   h.preferences.showWeather = false;
-  h.weather.updateVisibility();
+  h.syncSettings();
   h.preferences.showWeather = true;
-  h.weather.updateVisibility();
+  h.syncSettings();
   assert.equal(h.requests.length, 2);
   oldIP.respond({ city: "Wrong city", latitude: 1, longitude: 1 });
   assert.equal(h.requests.length, 2);
@@ -518,9 +546,9 @@ test("a forecast from before off/on cannot replace the resumed forecast or cache
   h.start();
   const oldForecast = h.requests[0];
   h.preferences.showWeather = false;
-  h.weather.updateVisibility();
+  h.syncSettings();
   h.preferences.showWeather = true;
-  h.weather.updateVisibility();
+  h.syncSettings();
   h.requests[1].respond(conditions(15));
   oldForecast.respond(conditions(99));
   assert.equal(h.el.hidden, false);
@@ -539,13 +567,13 @@ test("refresh and location or unit changes while off do not request data; resume
   h.preferences.weatherLocation = boston;
   h.weather.refresh();
   h.preferences.weatherShowLocation = false;
-  h.weather.updateDisplay();
+  h.tick();
   assert.equal(h.requests.length, 0);
   assert.equal(h.intervals.size, 0);
   assert.equal(h.el.hidden, true);
   assert.deepEqual(h.cached(), saved);
   h.preferences.showWeather = true;
-  h.weather.updateVisibility();
+  h.syncSettings();
   assert.equal(h.requests.length, 1);
   const url = new URL(h.requests[0].url);
   assert.equal(url.hostname, "api.open-meteo.com");
@@ -561,19 +589,19 @@ test("resume refreshes stale cache and repeated visibility updates keep one time
   h.start();
   h.advance(21 * 60000);
   h.preferences.showWeather = true;
-  h.weather.updateVisibility();
-  h.weather.updateVisibility();
-  h.weather.updateVisibility();
+  h.syncSettings();
+  h.syncSettings();
+  h.syncSettings();
   assert.equal(h.el.hidden, false);
   assert.equal(h.requests.length, 1);
   assert.equal(h.intervals.size, 1);
   assert.equal([...h.intervals.values()][0].ms, 20 * 60000);
   for (let i = 0; i < 3; i++) {
     h.preferences.showWeather = false;
-    h.weather.updateVisibility();
+    h.syncSettings();
     assert.equal(h.intervals.size, 0);
     h.preferences.showWeather = true;
-    h.weather.updateVisibility();
+    h.syncSettings();
     assert.equal(h.intervals.size, 1);
   }
   assert.equal(
@@ -591,7 +619,7 @@ test("resume converts fresh cache after a unit change while off and fetches the 
     const h = harness({ saved, settings: { tempUnit: oldUnit } });
     h.start();
     h.preferences.showWeather = false;
-    h.weather.updateVisibility();
+    h.syncSettings();
     h.preferences.tempUnit = newUnit;
     h.weather.refresh();
     assert.equal(h.requests.length, 0);
@@ -599,8 +627,8 @@ test("resume converts fresh cache after a unit change while off and fetches the 
     assert.equal(h.el.hidden, true);
     assert.deepEqual(h.cached(), saved);
     h.preferences.showWeather = true;
-    h.weather.updateVisibility();
-    h.weather.updateVisibility();
+    h.syncSettings();
+    h.syncSettings();
     assert.equal(h.el.nodes.b.textContent, newTemp + "°");
     assert.equal(h.requests.length, 1);
     assert.equal(h.intervals.size, 1);
@@ -619,7 +647,7 @@ test("visibility guards reject automatic responses even before the visibility ha
     h.start();
     h.preferences.showWeather = false;
     h.requests[0].respond(settings.weatherLocation ? conditions(99) : london);
-    h.weather.updateDisplay();
+    h.tick();
     assert.equal(h.requests.length, 1);
     assert.equal(h.el.hidden, true);
     assert.equal(h.storage.has(CACHE), false);
@@ -633,7 +661,7 @@ test("explicit location search remains available while off and is not canceled b
   h.weather.searchLocations("London", (value) => {
     found = value;
   });
-  h.weather.updateVisibility();
+  h.syncSettings();
   assert.equal(h.requests.length, 1);
   assert.equal(h.requests[0].aborted, undefined);
   h.requests[0].respond({ results: [london] });
@@ -651,8 +679,7 @@ test("old preferences keep the default visibility; location and visibility persi
       setItem: (key, value) => data.set(key, value),
     },
   });
-  context.AeroTizen = context.window.AeroTizen = {};
-  vm.runInContext(fs.readFileSync(path.join(root, "launcher/js/config.js"), "utf8"), context);
+  context.AeroTizen = context.window.AeroTizen = { config: launcherConfig };
   require("./helpers/clock.cjs").installClock(context);
   require("./helpers/settings.cjs").installSettings(context);
   const settings = context.AeroTizen.settings;
@@ -669,9 +696,9 @@ test("old preferences keep the default visibility; location and visibility persi
   assert.equal(restarted.getSnapshot().tempUnit, "C");
 });
 
-function preferences({ locale = "en-GB", intl = Intl, saved = {}, legacy = false } = {}) {
-  const storage = new Map([[legacy ? "hearth.home.v1" : "aerotizen.settings.v1", JSON.stringify(saved)]]);
-  const A = {};
+function preferences({ locale = "en-GB", intl = Intl, saved = {} } = {}) {
+  const storage = new Map([["aerotizen.settings.v1", JSON.stringify(saved)]]);
+  const A = { config: launcherConfig };
   const context = vm.createContext({
     AeroTizen: A,
     window: { AeroTizen: A, navigator: { languages: [locale], language: locale }, Intl: intl },
@@ -680,7 +707,6 @@ function preferences({ locale = "en-GB", intl = Intl, saved = {}, legacy = false
       setItem: (key, value) => storage.set(key, value),
     },
   });
-  vm.runInContext(fs.readFileSync(path.join(root, "launcher/js/config.js"), "utf8"), context);
   require("./helpers/clock.cjs").installClock(context);
   require("./helpers/settings.cjs").installSettings(context);
   A.settings.load();
@@ -734,24 +760,22 @@ test("older browsers can read explicit regions without Intl", () => {
   assert.equal(preferences({ locale: "unknown", intl: null }).A.settings.getSnapshot().tempUnit, "C");
 });
 
-test("Automatic and invalid values migrate once, while saved manual choices remain", () => {
-  for (const legacy of [false, true]) {
-    for (const [previous, expected] of [
-      ["auto", "C"],
-      [null, "C"],
-      ["invalid", "C"],
-      ["F", "F"],
-      ["C", "C"],
-    ]) {
-      const { A, storage, context } = preferences({ legacy, saved: { tempUnit: previous } });
-      assert.equal(A.settings.getSnapshot().tempUnit, expected);
+test("invalid temperature units use the device default, while saved manual choices remain", () => {
+  for (const [previous, expected] of [
+    ["auto", "C"],
+    [null, "C"],
+    ["invalid", "C"],
+    ["F", "F"],
+    ["C", "C"],
+  ]) {
+    const { A, storage, context } = preferences({ saved: { tempUnit: previous } });
+    assert.equal(A.settings.getSnapshot().tempUnit, expected);
 
-      assert.equal(JSON.parse(storage.get(A.config.STORAGE_KEY)).tempUnit, expected);
-      context.window.navigator.languages = ["en-US"];
-      context.window.navigator.language = "en-US";
-      A.settings.load();
-      assert.equal(A.settings.getSnapshot().tempUnit, expected);
-    }
+    assert.equal(JSON.parse(storage.get(A.config.STORAGE_KEY)).tempUnit, expected);
+    context.window.navigator.languages = ["en-US"];
+    context.window.navigator.language = "en-US";
+    A.settings.load();
+    assert.equal(A.settings.getSnapshot().tempUnit, expected);
   }
 });
 
@@ -824,7 +848,7 @@ test("wallpaper is a weather consumer even when the widget is hidden; turning bo
   assert.equal(url.searchParams.get("daily"), "sunrise,sunset");
   assert.equal(url.searchParams.get("timezone"), "UTC");
   h.preferences.weatherPhoto = false;
-  h.weather.updateVisibility();
+  h.syncSettings();
   assert.equal(h.requests[0].aborted, true);
   assert.equal(h.intervals.size, 0);
 });
@@ -894,7 +918,7 @@ test("enabling wallpapers at 23:00 refreshes a fresh legacy cache immediately an
     assert.equal(h.requests.length, 0);
     assert.equal(h.el.nodes.b.textContent, "12°");
     h.preferences.weatherPhoto = true;
-    h.weather.updateVisibility();
+    h.syncSettings();
     assert.equal(h.requests.length, 1);
     assert.equal(h.intervals.size, 1);
     assert.equal(photo.images.length, 0);
@@ -916,7 +940,7 @@ test("current solar cache does not refresh just because wallpapers are enabled, 
   });
   h.start();
   h.preferences.weatherPhoto = true;
-  for (let i = 0; i < 4; i++) h.weather.updateVisibility();
+  for (let i = 0; i < 4; i++) h.syncSettings();
   assert.equal(h.requests.length, 0);
   assert.equal(h.intervals.size, 1);
   assert.equal(h.weather.solarPhase(h.weather.currentReading(), ELEVEN_PM), "night");
@@ -942,8 +966,8 @@ test("missing, empty, malformed, wrong-day and expired solar caches request one 
       settings: { weatherPhoto: true },
     });
     h.start();
-    h.weather.updateVisibility();
-    h.weather.updateVisibility();
+    h.syncSettings();
+    h.syncSettings();
     assert.equal(h.requests.length, 1);
     assert.equal(h.intervals.size, 1);
   }
@@ -957,9 +981,9 @@ test("failed solar repair keeps widget cache and fallback, and toggles cannot ca
   h.requests[0].ontimeout();
   for (let i = 0; i < 5; i++) {
     h.preferences.weatherPhoto = false;
-    h.weather.updateVisibility();
+    h.syncSettings();
     h.preferences.weatherPhoto = true;
-    h.weather.updateVisibility();
+    h.syncSettings();
   }
   assert.equal(h.requests.length, 1);
   assert.equal(h.intervals.size, 1);
@@ -976,7 +1000,7 @@ test("malformed fresh forecast solar data updates temperature but neither picks 
   const photo = wallpaperRuntime(h);
   h.start();
   h.requests[0].respond(conditions(21));
-  for (let i = 0; i < 5; i++) h.weather.updateVisibility();
+  for (let i = 0; i < 5; i++) h.syncSettings();
   assert.equal(h.requests.length, 1);
   assert.equal(h.el.nodes.b.textContent, "21°");
   assert.equal(h.weather.solarPhase(h.weather.currentReading(), ELEVEN_PM), "");
@@ -987,12 +1011,12 @@ test("a solar repair reuses the matching in-flight widget forecast", () => {
   const h = harness({ now: ELEVEN_PM, settings: { weatherLocation: london } });
   h.start();
   h.preferences.weatherPhoto = true;
-  h.weather.updateVisibility();
-  h.weather.updateVisibility();
+  h.syncSettings();
+  h.syncSettings();
   assert.equal(h.requests.length, 1);
   assert.equal(h.requests[0].aborted, undefined);
   h.requests[0].respond(solarForecast());
-  h.weather.updateVisibility();
+  h.syncSettings();
   assert.equal(h.requests.length, 1);
 });
 
@@ -1023,12 +1047,12 @@ test("turning both consumers off cancels repair; re-enable starts one usable req
   h.start();
   const old = h.requests[0];
   h.preferences.weatherPhoto = false;
-  h.weather.updateVisibility();
+  h.syncSettings();
   assert.equal(old.aborted, true);
   assert.equal(h.intervals.size, 0);
   h.preferences.weatherPhoto = true;
-  h.weather.updateVisibility();
-  h.weather.updateVisibility();
+  h.syncSettings();
+  h.syncSettings();
   assert.equal(h.requests.length, 2);
   assert.equal(h.intervals.size, 1);
   assert.equal(h.requests.filter((r) => !r.aborted).length, 1);
@@ -1047,7 +1071,7 @@ test("offline solar cache stays usable until its weather expiry, then falls back
   assert.equal(photo.scene, "night");
   assert.equal(h.el.hidden, false);
   h.advance(2 * 3600000);
-  h.weather.updateDisplay();
+  h.tick();
   assert.equal(photo.scene, null);
   assert.equal(h.el.hidden, true);
 });
@@ -1071,7 +1095,7 @@ test("fresh solar forecasts select sunset, daytime weather and night rather than
 test("wallpapers disabled leave a fresh legacy widget cache usable without solar requests", () => {
   const h = harness({ now: ELEVEN_PM, saved: cached({ at: ELEVEN_PM - 60000, day: 1 }) });
   h.start();
-  for (let i = 0; i < 4; i++) h.weather.updateVisibility();
+  for (let i = 0; i < 4; i++) h.syncSettings();
   assert.equal(h.requests.length, 0);
   assert.equal(h.el.nodes.b.textContent, "12°");
   assert.equal(h.intervals.size, 1);
@@ -1087,9 +1111,9 @@ test("failed stale-cache repair is also throttled across wallpaper-only off/on t
   h.requests[0].onerror();
   for (let i = 0; i < 4; i++) {
     h.preferences.weatherPhoto = false;
-    h.weather.updateVisibility();
+    h.syncSettings();
     h.preferences.weatherPhoto = true;
-    h.weather.updateVisibility();
+    h.syncSettings();
   }
   assert.equal(h.requests.length, 1);
   assert.equal(h.intervals.size, 1);
@@ -1126,7 +1150,7 @@ test("weather snapshots convert matching cache data and expire without reading o
   assert.equal(Object.isFrozen(initial), true);
   assert.equal(h.weather.getSnapshot(), initial);
   h.preferences.tempUnit = "F";
-  h.weather.updateDisplay();
+  h.tick();
   assert.equal(h.weather.getSnapshot().temperature, 53.6);
   assert.equal(initial.temperature, 12);
   assert.equal(h.requests.length, 0);
@@ -1137,8 +1161,163 @@ test("weather snapshots convert matching cache data and expire without reading o
   assert.equal(h.weather.getSnapshot(), expired);
   unsubscribe();
   const before = updates;
-  h.weather.updateDisplay();
+  h.tick();
   assert.equal(updates, before);
   assert.equal(h.requests.length, 0);
   assert.deepEqual(h.el.nodes, {});
+});
+
+test("weather owns one settings and clock subscription, and reads do no network work", () => {
+  const h = harness({ saved: cached(), view: false });
+  const unsubscribe = h.weather.subscribe(() => {});
+  h.weather.getSnapshot();
+  h.weather.currentReading();
+  assert.equal(h.requests.length, 0);
+  assert.equal(h.intervals.size, 0);
+  assert.equal(h.settingListeners.size, 0);
+  assert.equal(h.clockListeners.size, 0);
+  h.start();
+  h.start();
+  assert.equal(h.settingListeners.size, 1);
+  assert.equal(h.clockListeners.size, 1);
+  assert.equal(h.intervals.size, 1);
+  assert.equal(h.requests.length, 0);
+  unsubscribe();
+  h.weather.dispose();
+  assert.equal(h.settingListeners.size, 0);
+  assert.equal(h.clockListeners.size, 0);
+  assert.equal(h.intervals.size, 0);
+});
+
+test("settings alone update weather, replace location requests and preserve fresh cache on unit changes", () => {
+  const h = harness({ saved: cached(), view: false });
+  h.start();
+  h.preferences.weatherShowLocation = false;
+  h.syncSettings();
+  assert.equal(h.weather.getSnapshot().city, "London");
+  assert.equal(h.requests.length, 0);
+  h.preferences.tempUnit = "F";
+  h.syncSettings();
+  assert.equal(Math.round(h.weather.getSnapshot().temperature), 54);
+  assert.equal(h.requests.length, 1);
+  const oldLookup = h.requests[0];
+  h.preferences.weatherLocation = london;
+  h.syncSettings();
+  assert.equal(oldLookup.aborted, true);
+  assert.equal(h.weather.getSnapshot().visible, false);
+  h.requests[1].respond(conditions(55));
+  assert.equal(h.weather.getSnapshot().temperature, 55);
+  h.syncSettings();
+  assert.equal(h.requests.length, 2);
+  h.preferences.showWeather = false;
+  h.syncSettings();
+  assert.equal(h.weather.getSnapshot().visible, false);
+  assert.equal(h.intervals.size, 0);
+  h.preferences.showWeather = true;
+  h.syncSettings();
+  assert.equal(h.weather.getSnapshot().visible, true);
+  assert.equal(h.intervals.size, 1);
+  assert.equal(h.requests.length, 2);
+});
+
+test("clock expiry notifies consumers even after a direct read; unrelated changes keep snapshot identity", () => {
+  const h = harness({ saved: cached(), view: false });
+  h.start();
+  let notifications = 0;
+  h.weather.subscribe(() => notifications++);
+  const snapshot = h.weather.getSnapshot();
+  h.preferences.background = "black";
+  h.syncSettings();
+  h.tick();
+  assert.equal(h.weather.getSnapshot(), snapshot);
+  assert.equal(notifications, 0);
+  h.advance(2 * 3600000 + 1);
+  assert.equal(h.weather.getSnapshot().visible, false);
+  h.tick();
+  assert.equal(notifications, 1);
+  h.tick();
+  assert.equal(notifications, 1);
+  assert.equal(h.requests.length, 0);
+});
+
+test("search cancellation aborts transport; disposal cancels all work and ignores late callbacks", () => {
+  const h = harness({ settings: { weatherLocation: london }, view: false });
+  h.start();
+  let deliveries = 0;
+  const cancel = h.weather.searchLocations("London", () => deliveries++);
+  cancel();
+  cancel();
+  assert.equal(h.requests[1].aborted, true);
+  h.requests[1].respond({ results: [london] });
+  assert.equal(deliveries, 0);
+  h.weather.searchLocations("Boston", () => deliveries++);
+  let notifications = 0;
+  h.weather.subscribe(() => notifications++);
+  h.weather.dispose();
+  h.weather.dispose();
+  assert.equal(h.requests[0].aborted, true);
+  assert.equal(h.requests[2].aborted, true);
+  h.requests[0].respond(conditions());
+  h.requests[2].respond({ results: [boston] });
+  h.weather.subscribe(() => notifications++);
+  h.weather.start();
+  h.weather.refresh();
+  h.weather.searchLocations("London", () => deliveries++);
+  h.syncSettings();
+  h.tick();
+  assert.equal(h.requests.length, 3);
+  assert.equal(h.intervals.size, 0);
+  assert.equal(h.settingListeners.size, 0);
+  assert.equal(h.clockListeners.size, 0);
+  assert.equal(deliveries, 0);
+  assert.equal(notifications, 0);
+});
+
+test("new solar readings notify photo consumers even when widget fields do not change", () => {
+  const h = harness({ settings: { weatherLocation: london }, view: false });
+  h.start();
+  h.requests[0].respond(conditions());
+  const snapshot = h.weather.getSnapshot();
+  let notifications = 0;
+  h.weather.subscribe(() => notifications++);
+  h.weather.refresh();
+  h.requests[1].respond({ ...conditions(), daily: { sunrise: ["2026-10-28T06:00"], sunset: ["2026-10-28T18:00"] } });
+  assert.equal(h.weather.getSnapshot(), snapshot);
+  assert.equal(notifications, 1);
+  const reading = h.weather.currentReading();
+  assert.equal(Object.isFrozen(reading), true);
+  assert.equal(Object.isFrozen(reading.solar), true);
+  assert.equal(Object.isFrozen(reading.solar[0]), true);
+});
+
+test("synchronous transport callbacks and disposal cannot leave a refresh timer or subscriptions", () => {
+  const listeners = new Set();
+  const timers = new Set();
+  let aborts = 0;
+  const weather = createWeatherService({
+    platform: {
+      requestJSON(url, done) {
+        done(conditions());
+        return () => aborts++;
+      },
+    },
+    settings: {
+      getSnapshot: () => ({ weatherLocation: london }),
+      subscribe(listener) {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    },
+    clock: { getSnapshot: () => NOW, subscribe: () => () => {} },
+    storage: { getItem: () => null, setItem() {} },
+    now: () => NOW,
+    timers: { setInterval: () => timers.add(1), clearInterval: () => timers.clear() },
+  });
+  weather.subscribe(() => {
+    if (weather.getSnapshot().visible) weather.dispose();
+  });
+  weather.start();
+  assert.equal(aborts, 1);
+  assert.equal(timers.size, 0);
+  assert.equal(listeners.size, 0);
 });

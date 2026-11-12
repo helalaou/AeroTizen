@@ -2,10 +2,10 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
-const vm = require("node:vm");
 const crypto = require("node:crypto");
 const root = path.join(__dirname, "..");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { solarPhase } = loadTypeScript("launcher/src/services/weather/readings.ts");
 const { createWeatherPhoto, weatherPhotoScene } = loadTypeScript("launcher/src/backgrounds/createWeatherPhoto.ts");
 const day = (code, at = Date.now(), extra = {}) => {
   const midnight = Math.floor(at / 86400000) * 86400000;
@@ -33,10 +33,15 @@ function setup(initiallyEnabled = true, reading = day(0, Date.parse("2026-10-28T
       delete events[name];
     },
   };
-  const context = { window: {} };
-  vm.runInNewContext(fs.readFileSync(path.join(root, "launcher/js/weather.js"), "utf8"), context);
-  const weather = context.window.Weather;
-  weather.currentReading = () => reading;
+  const listeners = new Set();
+  const weather = {
+    solarPhase,
+    currentReading: () => reading,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
   const photo = createWeatherPhoto(weather, () => enabled && !watching, {
     document: doc,
     Date: { now: () => Date.parse("2026-10-28T12:00Z") },
@@ -70,7 +75,7 @@ function setup(initiallyEnabled = true, reading = day(0, Date.parse("2026-10-28T
     setWatching(value) {
       watching = value;
     },
-    publish: weather.updateDisplay,
+    publish: () => [...listeners].forEach((listener) => listener()),
     get scene() {
       return photo.getSnapshot();
     },

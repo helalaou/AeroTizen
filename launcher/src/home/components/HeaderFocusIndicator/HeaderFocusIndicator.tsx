@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 
-import { useStore } from "../../../shared/hooks/useStore";
+import { useStoreSelector } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import type { HomeEnvironment } from "../../types";
 
@@ -20,11 +20,14 @@ export const HeaderFocusIndicator = ({
 }) => {
   const { language } = useTranslation();
   const tabs = group === "tabs";
-  const state = useStore(env.state);
   const keys = GROUP_KEYS[group];
-  const focused = state.active && keys.includes(state.selected);
-  const fallbackKey = tabs ? state.page + "-tab" : "";
-  const key = focused ? state.selected : fallbackKey;
+  const focused = useStoreSelector(env.state, (state) => state.active && keys.includes(state.selected));
+  const key = useStoreSelector(env.state, (state) => {
+    if (state.active && keys.includes(state.selected)) {
+      return state.selected;
+    }
+    return tabs ? state.page + "-tab" : "";
+  });
   const positioned = useRef(false);
   const [plate, setPlate] = useState({
     motion: false,

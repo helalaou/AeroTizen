@@ -234,6 +234,11 @@ export const createHomeController = (
       );
       update({ [scroller.offset]: offset });
     }
+    // Home's header and first row always use the top position. Avoid style/layout reads for each horizontal move.
+    if (pending.page === "home" && (list[0].includes(selected) || list[1]?.includes(selected))) {
+      update({ appsEndOffset: 0, scroll: 0 });
+      return;
+    }
     const mainTop = main.getBoundingClientRect().top;
     const lastAppRow = pending.page === "apps" ? list[list.length - 2] : undefined;
     const lastApp = lastAppRow && nodes.get(lastAppRow[0]);
@@ -310,8 +315,8 @@ export const createHomeController = (
         runtime.apps.launch(app);
       }
     } else if (key.startsWith("continue:")) {
-      // Commands need the service's live record, not an immutable view snapshot.
-      const item = runtime.continueWatching.items.find((item) => item.key === key.slice(9));
+      // Use the current service record; stale cards must not launch.
+      const item = runtime.continueWatching.getSnapshot().items.find((item) => item.key === key.slice(9));
       if (item) {
         runtime.continueWatching.open(item);
       }

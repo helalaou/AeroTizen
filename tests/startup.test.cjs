@@ -1,19 +1,47 @@
+const { installApps } = require("./helpers/apps.cjs");
+const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createTestSettings } = require("./helpers/settings.cjs");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
 const vm = require("node:vm");
 const test = require("node:test");
-const source = (file) => fs.readFileSync(__dirname + "/../launcher/js/" + file, "utf8");
+const { startLauncherBoot } = loadTypeScript("launcher/src/app/startLauncherBoot.ts");
+const { createStartupTracing } = loadTypeScript("launcher/src/diagnostics/createStartupTracing.ts");
+const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
 function harness(mode = "deferred", saved = ["youtube.id"]) {
-  const timers = [],
+  const timers = new Map(),
     frames = [],
     calls = [],
     data = {},
-    events = {};
+    events = {},
+    listeners = new Map();
+  let timerId = 0;
   let reply, reject;
+  const eventTarget = {
+    addEventListener(name, fn) {
+      if (!listeners.has(name)) {
+        listeners.set(name, new Set());
+        events[name] = () => listeners.get(name).forEach((listener) => listener());
+      }
+      listeners.get(name).add(fn);
+    },
+    removeEventListener: (name, fn) => listeners.get(name).delete(fn),
+  };
+  const document = { hidden: false, ...eventTarget };
+  const setTimeout = (callback, delay = 0) => {
+    const id = timerId++;
+    timers.set(id, { callback, delay });
+    return id;
+  };
+  const clearTimeout = (id) => timers.delete(id);
+  const runTimers = (delay) => {
+    for (const [id, timer] of [...timers]) {
+      if (timer.delay === delay && timers.delete(id)) timer.callback();
+    }
+  };
   const A = {
+    config: launcherConfig,
     applyBackground() {},
     tizen: {
       application: {
@@ -34,9 +62,10 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
       },
     ),
     continueWatching: { start() {} },
-    clock: { start() {}, tick() {} },
+    clock: { start() {}, tick: () => calls.push("clock-tick") },
     network: { start() {} },
-    inputs: { load() {} },
+    weather: { start() {} },
+    inputs: { start() {} },
     settingsUi: { isOpen: () => false },
     homewatch: { start() {}, reportApps() {}, reportStartup() {} },
     homeScreen: {
@@ -57,50 +86,44 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
   const window = {
     AeroTizen: A,
     tizen: A.tizen,
-    Backgrounds: { setSpeed() {}, apply() {} },
-    Weather: { start() {} },
-    addEventListener: (name, fn) => {
-      const previous = events[name];
-      events[name] = () => {
-        previous?.();
-        fn();
-      };
-    },
+    document,
+    localStorage,
+    ...eventTarget,
+    setTimeout,
+    clearTimeout,
     performance: { timing: { navigationStart: Date.now() - 10 } },
-    requestAnimationFrame: (cb) => frames.push(cb),
+    requestAnimationFrame: (cb) => frames.push(cb) - 1,
+    cancelAnimationFrame: (id) => {
+      frames[id] = undefined;
+    },
   };
-  const document = { hidden: false, addEventListener() {} };
   const context = vm.createContext({
     window,
     AeroTizen: A,
     document,
     localStorage,
-    setTimeout: (cb) => timers.push(cb) - 1,
-    clearTimeout: (id) => {
-      if (id !== undefined) timers[id] = () => {};
-    },
+    setTimeout,
+    clearTimeout,
   });
-  for (const file of ["config.js", "startup.js", "apps.js"]) vm.runInContext(source(file), context);
+  window.AeroStartup = createStartupTracing(window);
+  installApps(context);
   return {
     A,
     calls,
-    timers,
-    frames,
     data,
     events,
     document,
-    window,
-    context,
+    runTimers,
     reply: (list) => reply(list),
     fail: () => reject(),
     discover() {
       events.load();
       frames.shift()();
       frames.shift()();
-      timers.shift()();
+      runTimers(0);
     },
     boot() {
-      vm.runInContext(source("main.js"), context);
+      return startLauncherBoot(window, A, window.AeroStartup);
     },
   };
 }
@@ -115,7 +138,7 @@ for (const mode of ["deferred", "throw", "fail"])
     assert.equal(h.calls[1], "discover");
     assert.deepEqual(h.A.settings.getSnapshot().home, ["youtube.id"]);
     assert.equal(h.A.apps.byId("youtube.id").id, "youtube.id");
-    assert.equal(h.A.apps.ready, false);
+    assert.equal(h.A.apps.getSnapshot().ready, false);
   });
 
 test("late discovery refreshes once and caches labels without resetting saved Home", () => {
@@ -136,7 +159,7 @@ test("late discovery refreshes once and caches labels without resetting saved Ho
   h.fail();
   assert.equal(h.calls.filter((x) => x === "refresh").length, 1);
   assert.deepEqual(h.A.settings.getSnapshot().home, ["youtube.id"]);
-  assert.equal(h.A.apps.ready, true);
+  assert.equal(h.A.apps.getSnapshot().ready, true);
   const cached = JSON.parse(h.data["aerotizen.apps.v1"]);
   assert.equal(cached[0].name, "YouTube");
 });
@@ -147,6 +170,30 @@ test("missing cache and never-returning discovery do not save first-run defaults
   h.discover();
   assert.equal(h.A.settings.getSnapshot().homeInitialized, false);
   assert.equal(h.calls.includes("save"), false);
+});
+
+test("app-control and visibility coalesce discovery on return and boot disposal cancels a pending refresh", () => {
+  const h = harness("fail");
+  const dispose = h.boot();
+  h.events.appcontrol();
+  assert.deepEqual(h.calls, ["render"]);
+  h.discover();
+  h.document.hidden = true;
+  h.events.visibilitychange();
+  h.events.appcontrol();
+  h.runTimers(0);
+  assert.deepEqual(h.calls, ["render", "discover"]);
+  h.document.hidden = false;
+  h.events.appcontrol();
+  h.events.visibilitychange();
+  h.runTimers(0);
+  assert.deepEqual(h.calls, ["render", "discover", "clock-tick", "discover"]);
+
+  h.events.appcontrol();
+  dispose();
+  h.events.visibilitychange();
+  h.runTimers(0);
+  assert.deepEqual(h.calls, ["render", "discover", "clock-tick", "discover"]);
 });
 
 test("valid cached labels remain available if discovery fails; malformed cache is ignored", () => {

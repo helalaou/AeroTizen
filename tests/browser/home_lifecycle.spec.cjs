@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 const errors = new WeakMap();
 test.afterEach(async ({ page }) => expect(errors.get(page)).toEqual([]));
@@ -22,7 +22,7 @@ test.beforeEach(async ({ page }) => {
 
 test("held OK is cancelled if the app loses visibility before its release", async ({ page }) => {
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.keyboard.down("Enter");
   await page.evaluate(() => {
     Object.defineProperty(document, "hidden", { configurable: true, value: true });
@@ -114,7 +114,7 @@ test("moving visible favourites ignores stale uninstalled IDs in saved settings"
     ),
   );
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await expect(page.locator("#grid > [data-id]")).toHaveCount(3);
   await page.keyboard.down("Enter");
   await expect(page.getByRole("menu")).toBeVisible();
@@ -132,14 +132,16 @@ test("moving visible favourites ignores stale uninstalled IDs in saved settings"
 
 test("an inventory refresh removing the moving app cannot delete another favourite", async ({ page }) => {
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.keyboard.down("Enter");
   await expect(page.getByRole("menu")).toBeVisible();
   await page.keyboard.up("Enter");
   await page.keyboard.press("Enter");
   await expect(page.locator("#grid [data-id][data-moving=true]")).toHaveCount(1);
   await page.evaluate(() => {
-    AeroTizen.apps.all = AeroTizen.apps.all.filter((app) => app.id !== "demo0");
+    const snapshot = AeroTizen.apps.getSnapshot();
+    const next = { ...snapshot, all: snapshot.all.filter((app) => app.id !== "demo0") };
+    AeroTizen.apps.getSnapshot = () => next;
     AeroTizen.homeScreen.refreshApps();
   });
   await expect(page.locator("#grid [data-id][data-moving=true]")).toHaveCount(0);
@@ -155,9 +157,10 @@ test("source reachability keeps active, recognised and manually pinned inputs di
   page,
 }) => {
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.ready);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.evaluate(() => {
-    AeroTizen.inputs.sources = [1, 2, 3, 4].map((number) => ({
+    const inputSnapshot = AeroTizen.inputs.getSnapshot();
+    const sources = [1, 2, 3, 4].map((number) => ({
       type: "HDMI",
       number,
       connected: false,
@@ -166,7 +169,8 @@ test("source reachability keeps active, recognised and manually pinned inputs di
     AeroTizen.inputs.isVisible = () => true;
     AeroTizen.inputs.hasRecognizedDevice = (source) => source.number === 2;
     AeroTizen.inputs.alwaysVisible = (source) => source.number === 3;
-    AeroTizen.inputs.refresh();
+    AeroTizen.inputs.getSnapshot = () => ({ ...inputSnapshot, sources, visibleSources: sources });
+    AeroTizen.homeScreen.render();
   });
   const sources = page.locator("#inputs > [data-input-card]");
   await expect(sources).toHaveCount(4);

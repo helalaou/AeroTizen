@@ -1,23 +1,21 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 for (const [build, url] of [
   ["compiled", "http://127.0.0.1:8171/"],
   ["development", "http://127.0.0.1:8172/"],
 ]) {
-  for (const glassSettings of [false, true]) {
-    test(`${build} ${glassSettings ? "Glass" : "Classic"} runtime overlays keep stacking, motion and icon direction`, async ({
-      page,
-    }) => {
+  for (const theme of ["classic", "glass"]) {
+    test(`${build} ${theme} runtime overlays keep stacking, motion and icon direction`, async ({ page }) => {
       const errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
       await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-      await page.addInitScript((glassSettings) => {
+      await page.addInitScript((theme) => {
         localStorage.setItem(
           "aerotizen.settings.v1",
-          JSON.stringify({ glassSettings, home: ["__fire"], background: "black", showWeather: false, language: "en" }),
+          JSON.stringify({ theme, home: ["__fire"], background: "black", showWeather: false, language: "en" }),
         );
-      }, glassSettings);
+      }, theme);
       await page.clock.install();
       await page.emulateMedia({ reducedMotion: "no-preference" });
       await page.goto(url);

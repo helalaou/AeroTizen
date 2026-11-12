@@ -1,18 +1,18 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 const { compareHeaderPixels } = require("./compare_header_pixels.cjs");
-for (const glassSettings of [false, true]) {
+for (const theme of ["classic", "glass"]) {
   for (const style of ["vertical", "horizontal", "minimal", "bold"]) {
-    test(`${glassSettings ? "Glass" : "Classic"} ${style} clock clears focused apps, centres tabs and fades only scrolled content`, async ({
+    test(`${theme} ${style} clock clears focused apps, centres tabs and fades only scrolled content`, async ({
       page,
     }, info) => {
       await page.route("https://**/*", (r) => r.fulfill({ body: "{}" }));
       await page.route("http://127.0.0.1:47790/**", (r) => r.fulfill({ body: "{}" }));
       await page.addInitScript(
-        ({ glassSettings, style }) => {
+        ({ theme, style }) => {
           localStorage.setItem(
             "aerotizen.settings.v1",
             JSON.stringify({
-              glassSettings,
+              theme,
               clockLayout: "custom",
               aeroClockStyle: style,
               home: Array.from({ length: 12 }, (_, i) => "demo" + i),
@@ -33,11 +33,11 @@ for (const glassSettings of [false, true]) {
             }),
           );
         },
-        { glassSettings, style },
+        { theme, style },
       );
       await page.clock.setFixedTime(new Date("2026-10-29T10:20:00Z"));
       await page.goto("/");
-      await page.waitForFunction(() => AeroTizen.apps.ready);
+      await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await expect(page.locator("[data-weather-part=location]")).toBeVisible();
       await expect(page.locator("#rows")).toHaveCSS("padding-top", "24px");
       const measure = () =>
@@ -87,7 +87,7 @@ for (const [change, css] of [
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
     await page.clock.setFixedTime(new Date("2026-10-29T10:20:00Z"));
     await page.goto("/");
-    await page.waitForFunction(() => AeroTizen.apps.ready);
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     const height = await page
       .locator("[data-home-header]")
       .evaluate((node) => Math.floor(node.getBoundingClientRect().height));

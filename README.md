@@ -6,6 +6,10 @@
 AeroTizen is a home screen for Samsung TVs. It puts your favourite apps and HDMI
 inputs in one place. The `aerotizen` command-line tool installs it from your computer.
 
+[Try the live demo](https://helalaou.github.io/AeroTizen/) in your browser. Use the
+arrow keys, Enter and Escape as the remote. The demo uses sample apps, inputs and
+programmes; it cannot control a TV.
+
 ![AeroTizen Home with favourite apps, Continue Watching and inputs](docs/screenshots/home.png)
 
 *Browser preview with sample apps and programmes.*
@@ -73,6 +77,8 @@ To test before publication, [install a local build from `main`](docs/manage-inst
 
 Both options run on the TV after setup and work without root.
 
+> **Tizen 10:** Native Home is reported not to work. Use the watcher instead.
+
 ### Set up Native Home
 
 Check the [TV reports](docs/tv-compatibility.md). Replace `TV_IP` with your TV's
@@ -118,6 +124,9 @@ or see [CONTRIBUTING.md](CONTRIBUTING.md) for development and testing.
   </tr>
   <tr>
     <td align="center"><a href="https://github.com/cheack"><img src="https://github.com/cheack.png?size=100" width="64" height="64" alt="cheack"><br><sub>cheack</sub></a></td>
+    <td align="center"><a href="https://github.com/gabriel1larocca"><img src="https://github.com/gabriel1larocca.png?size=100" width="64" height="64" alt="gabriel1larocca"><br><sub>gabriel1larocca</sub></a></td>
+    <td align="center"><a href="https://github.com/DdotCDotP2015"><img src="https://github.com/DdotCDotP2015.png?size=100" width="64" height="64" alt="DdotCDotP2015"><br><sub>DdotCDotP2015</sub></a></td>
+    <td align="center"><a href="https://github.com/DmzTheo"><img src="https://github.com/DmzTheo.png?size=100" width="64" height="64" alt="DmzTheo"><br><sub>DmzTheo</sub></a></td>
   </tr>
 </table>
 <!-- contributors:end -->

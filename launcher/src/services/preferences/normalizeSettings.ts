@@ -59,7 +59,8 @@ export const normalizeSettings = (
   const validHome = Array.isArray(home) ? ids(home) : defaults.home;
   return {
     home: home === null ? null : validHome,
-    glassSettings: boolean(data.glassSettings, defaults.glassSettings),
+    theme: choice(data.theme, ["classic", "glass"], defaults.theme),
+    performanceMode: boolean(data.performanceMode, defaults.performanceMode),
     homeCardColumns: typeof columns === "number" && [3, 4, 5].includes(columns) ? columns : defaults.homeCardColumns,
     homeAppLayout: choice(data.homeAppLayout, ["grid", "scroll"], defaults.homeAppLayout),
     background: text(data.background, defaults.background),
@@ -78,7 +79,7 @@ export const normalizeSettings = (
     weatherShowLocation: boolean(data.weatherShowLocation, defaults.weatherShowLocation),
     dateFormat: choice(
       data.dateFormat,
-      ["compact", "short", "long", "numeric-short", "numeric", "iso", "none", "auto", "weekday", "dmy", "mdy"],
+      ["compact", "short", "long", "numeric-short", "numeric", "iso", "none"],
       defaults.dateFormat,
     ),
     language: text(data.language, defaults.language),
@@ -93,6 +94,7 @@ export const normalizeSettings = (
     continueWatchingApps: ids(data.continueWatchingApps, 100),
     showLiveTv: boolean(data.showLiveTv, defaults.showLiveTv),
     hideDisconnectedHdmi: boolean(data.hideDisconnectedHdmi, defaults.hideDisconnectedHdmi),
+    hdmiNativeViewer: boolean(data.hdmiNativeViewer, defaults.hdmiNativeViewer),
     hdmiKeepVisible: dictionary<boolean>(data.hdmiKeepVisible, "boolean"),
     inputNames: dictionary<string>(data.inputNames, "string"),
   };

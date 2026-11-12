@@ -1,20 +1,20 @@
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 for (const [build, url] of [
   ["compiled", "http://127.0.0.1:8171/"],
   ["development", "http://127.0.0.1:8172/"],
 ]) {
-  for (const glassSettings of [false, true]) {
-    test(`${build} ${glassSettings ? "Glass" : "Classic"} Continue Watching uses short focus motion and respects live reduced motion`, async ({
+  for (const theme of ["classic", "glass"]) {
+    test(`${build} ${theme} Continue Watching uses short focus motion and respects live reduced motion`, async ({
       page,
     }, info) => {
       await page.route("https://**/*", (r) => r.fulfill({ body: "{}" }));
       await page.route("http://127.0.0.1:47790/**", (r) => r.fulfill({ body: "{}" }));
       await page.addInitScript(
-        (glassSettings) =>
+        (theme) =>
           localStorage.setItem(
             "aerotizen.settings.v1",
             JSON.stringify({
-              glassSettings,
+              theme,
               home: ["demo0"],
               background: "black",
               showWeather: false,
@@ -22,16 +22,19 @@ for (const [build, url] of [
               inputNames: { "HDMI 2": "A long custom HDMI label" },
             }),
           ),
-        glassSettings,
+        theme,
       );
       await page.emulateMedia({ reducedMotion: "no-preference" });
       await page.goto(url);
       await expect(page).toHaveTitle("AeroTizen");
-      await page.waitForFunction(() => AeroTizen.apps.ready && AeroTizen.inputs.sources.length === 4);
+      await page.waitForFunction(
+        () => AeroTizen.apps.getSnapshot().ready && AeroTizen.inputs.getSnapshot().sources.length === 4,
+      );
       await page.evaluate(() => {
-        AeroTizen.continueWatching.items = [
-          { key: "motion", title: "Motion fixture", sourceName: "YouTube", sourceId: "demo0" },
-        ];
+        const snapshot = AeroTizen.continueWatching.getSnapshot();
+        const items = [{ key: "motion", title: "Motion fixture", sourceName: "YouTube", sourceId: "demo0" }];
+        const next = { ...snapshot, items };
+        AeroTizen.continueWatching.getSnapshot = () => next;
         AeroTizen.homeScreen.refreshApps();
       });
       const card = page.locator("#continue-items > [data-key]");

@@ -110,13 +110,19 @@ jobs:
           # These files define launcher contracts tested by the CLI or Windows Home jobs.
           shared_launcher_files = {
               b"launcher/config.xml",
+              b"launcher/src/contracts/diagnostics.ts",
               b"tests/diagnostics.test.cjs",
+              b"tests/artmode.test.cjs",
+              b"tests/helpers/load_typescript.cjs",
+              b"tests/helpers/load_service.cjs",
+              b"tests/helpers/run_service_parity.cjs",
               b"tests/home_store.test.cjs",
+              b"tests/service_diagnostics.test.cjs",
               b"tests/watcher.test.cjs",
           }
 
           def test_scope(path):
-              if path in shared_launcher_files or path.startswith((b"launcher/service/", b"launcher/js/diagnostics")):
+              if path in shared_launcher_files or path.startswith((b"launcher/service/", b"launcher/js/diagnostics", b"launcher/src/diagnostics/", b"launcher/src/service/")):
                   return "shared"
               if path.startswith(b"cli/"):
                   return "cli"
@@ -258,6 +264,8 @@ jobs:
         if: needs.changes.outputs.launcher != 'false'
       - run: npm run build
         if: needs.changes.outputs.launcher != 'false'
+      - run: npm run test:service
+        if: needs.changes.outputs.launcher != 'false'
       - run: npm test
         if: needs.changes.outputs.launcher != 'false'
       - run: npm run test:components
@@ -310,6 +318,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: npm ci --no-audit --no-fund
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 6.0.428
@@ -317,7 +326,7 @@ jobs:
       - run: python cli/tools/build_home_control.py
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest tests/test_releases.py tests/test_cli_updates.py tests/test_self_update.py tests/test_home.py tests/test_home_control.py tests/test_diagnostics.py
-      - run: node --test tests/home_store.test.cjs tests/diagnostics.test.cjs tests/watcher.test.cjs
+      - run: node --test tests/home_store.test.cjs tests/artmode.test.cjs tests/diagnostics.test.cjs tests/service_diagnostics.test.cjs tests/watcher.test.cjs
 
   cli-update:
     name: CLI update (${{ matrix.runner }})

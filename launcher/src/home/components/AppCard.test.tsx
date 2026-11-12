@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
+import * as imageSequence from "../../shared/hooks/useImageSequence";
 import { createCardEnvironment } from "../test/createCardEnvironment";
 
 import { AppCard } from "./AppCard";
@@ -13,8 +14,27 @@ const fallback = (card: HTMLElement) => card.querySelector<HTMLElement>("[data-a
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
+test("parent updates retain static artwork while focus and app data still update", async () => {
+  const reads = vi.spyOn(imageSequence, "useImageSequence");
+  try {
+    const env = createCardEnvironment(`app:${app.id}`, { artwork: sources });
+    const { rerender } = render(<AppCard env={env} app={app} active />);
+    const initial = reads.mock.calls.length;
+    rerender(<AppCard env={env} app={app} active />);
+    expect(reads).toHaveBeenCalledTimes(initial);
+    await act(() => env.state.set({ ...env.state.getSnapshot(), selected: "other" }));
+    expect(screen.getByRole("button", { name: app.name }).getAttribute("data-focused")).toBeNull();
+    expect(reads).toHaveBeenCalledTimes(initial);
+    rerender(<AppCard env={env} app={{ ...app, name: "Updated app" }} active />);
+    expect(screen.getByRole("button", { name: "Updated app" })).toBeTruthy();
+    expect(reads.mock.calls.length).toBeGreaterThan(initial);
+  } finally {
+    reads.mockRestore();
+  }
+});
+
 test("successful fallback artwork preserves the card's name, focus and click handler", () => {
-  const env = createCardEnvironment(`app:${app.id}`, { artwork: sources, useAppIcon: false });
+  const env = createCardEnvironment(`app:${app.id}`, { artwork: sources });
   render(<AppCard env={env} app={app} active />);
   const card = screen.getByRole("button", { name: app.name });
 
@@ -30,8 +50,62 @@ test("successful fallback artwork preserves the card's name, focus and click han
   expect(vi.getTimerCount()).toBe(0);
 });
 
-test("keeps a branded fallback visible when artwork stalls and the next candidate fails", async () => {
-  const env = createCardEnvironment(`app:${app.id}`, { artwork: sources, useAppIcon: false, logoPath: "M0 0" });
+test("keeps the primary artwork when it is already cached before its load handler runs", () => {
+  const complete = vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+  const width = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(304);
+  try {
+    const env = createCardEnvironment(`app:${app.id}`, { artwork: sources });
+    render(<AppCard env={env} app={app} active />);
+    const card = screen.getByRole("button", { name: app.name });
+    expect(artwork(card)?.getAttribute("src")).toBe(sources[0]);
+    expect(artwork(card)?.hidden).toBe(false);
+    expect(fallback(card)?.hidden).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    complete.mockRestore();
+    width.mockRestore();
+  }
+});
+
+test("package icons keep the app name beneath them without requiring focus", () => {
+  const env = createCardEnvironment("", { artwork: [...sources, app.icon], appIcon: app.icon });
+  render(<AppCard env={env} app={app} active />);
+  const card = screen.getByRole("button", { name: app.name });
+  fireEvent.error(artwork(card)!);
+  fireEvent.error(artwork(card)!);
+  fireEvent.load(artwork(card)!);
+  expect(card.getAttribute("data-focused")).toBeNull();
+  expect(card.querySelector("[data-app-artwork-kind]")?.getAttribute("data-app-artwork-kind")).toBe("icon");
+  expect(artwork(card)?.hidden).toBe(false);
+  expect(fallback(card)?.hidden).toBe(false);
+  expect(fallback(card)?.textContent).toBe(app.name);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+test("the deadline recognises a completed primary image when its load event was missed", async () => {
+  const complete = vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(false);
+  const width = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(304);
+  try {
+    const env = createCardEnvironment(`app:${app.id}`, { artwork: sources });
+    render(<AppCard env={env} app={app} active />);
+    const card = screen.getByRole("button", { name: app.name });
+    expect(artwork(card)?.hidden).toBe(true);
+    complete.mockReturnValue(true);
+    await act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(artwork(card)?.getAttribute("src")).toBe(sources[0]);
+    expect(artwork(card)?.hidden).toBe(false);
+    expect(fallback(card)?.hidden).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    complete.mockRestore();
+    width.mockRestore();
+  }
+});
+
+test("keeps the app name visible when artwork stalls and the next candidate fails", async () => {
+  const env = createCardEnvironment(`app:${app.id}`, { artwork: sources });
   render(<AppCard env={env} app={app} active />);
   const card = screen.getByRole("button", { name: app.name });
   const stalled = artwork(card)!;
@@ -44,14 +118,14 @@ test("keeps a branded fallback visible when artwork stalls and the next candidat
   fireEvent.error(artwork(card)!);
 
   expect(artwork(card)).toBeNull();
-  expect(fallback(card)?.querySelector("svg")).not.toBeNull();
+  expect(fallback(card)?.querySelector("svg, img")).toBeNull();
   expect(screen.getByText(app.name).closest("[data-app-fallback]")?.hasAttribute("hidden")).toBe(false);
   expect(card.getAttribute("data-focused")).toBe("true");
   expect(vi.getTimerCount()).toBe(0);
 });
 
 test("defers inactive artwork and keeps an unknown app's label if its own icon fails too", () => {
-  const env = createCardEnvironment("", { artwork: sources });
+  const env = createCardEnvironment("", { artwork: [...sources, app.icon] });
   const { rerender } = render(<AppCard env={env} app={app} active={false} />);
   const card = screen.getByRole("button", { name: app.name });
   expect(card.querySelector("img")).toBeNull();
@@ -64,7 +138,7 @@ test("defers inactive artwork and keeps an unknown app's label if its own icon f
   expect(artwork(card)?.getAttribute("src")).toBe(sources[0]);
   fireEvent.error(artwork(card)!);
   fireEvent.error(artwork(card)!);
-  const icon = fallback(card)?.querySelector("img");
+  const icon = artwork(card);
   expect(icon?.getAttribute("src")).toBe(app.icon);
   fireEvent.error(icon!);
   expect(card.querySelector("img")).toBeNull();

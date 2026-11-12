@@ -1,5 +1,5 @@
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
-const { test, expect } = require("@playwright/test");
+const { test, expect } = require("./launcher_fixture.cjs");
 
 test("custom clock styles preserve upstream date/time preferences, visibility and reload persistence", async ({
   page,
@@ -10,7 +10,7 @@ test("custom clock styles preserve upstream date/time preferences, visibility an
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
   await page.clock.install({ time: new Date("2026-10-28T14:05:00Z") });
   await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.all.length > 0);
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().all.length > 0);
   await expect(page.locator("[data-clock=expanded]")).toBeHidden();
   await page.locator("#gear").click();
   await openCategory(page, "status");
