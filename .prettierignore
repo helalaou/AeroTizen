@@ -4,15 +4,3 @@ build/
 dist/
 test-results/
 playwright-report/
-
-# Frozen app identity and presentation migration baseline.
-tests/fixtures/app-presentation/js/
-
-# Frozen HomeWatcher client before its TypeScript migration.
-tests/fixtures/homewatch/homewatch.js
-
-# Frozen startup and diagnostics before their TypeScript migration.
-tests/fixtures/diagnostics/
-
-# Frozen background service before its TypeScript migration.
-tests/fixtures/watcher-service/

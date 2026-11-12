@@ -33,12 +33,7 @@ module.exports = [
     },
   },
   {
-    files: [
-      "launcher/js/**/*.js",
-      "tests/fixtures/app-presentation/js/**/*.js",
-      "tests/fixtures/homewatch/homewatch.js",
-      "tests/fixtures/diagnostics/*.js",
-    ],
+    files: ["launcher/js/**/*.js"],
     languageOptions: {
       ecmaVersion: 5,
       sourceType: "script",
@@ -78,7 +73,7 @@ module.exports = [
     },
   },
   {
-    files: ["launcher/src/**/*.{ts,tsx}", "launcher/js/**/*.js", "tests/fixtures/homewatch/homewatch.js"],
+    files: ["launcher/src/**/*.{ts,tsx}", "launcher/js/**/*.js"],
     plugins: { "launcher-i18n": { rules: { "translated-copy": translationLint } } },
     rules: { "launcher-i18n/translated-copy": "error" },
   },
@@ -256,11 +251,7 @@ module.exports = [
     },
   },
   {
-    files: [
-      "launcher/service/**/*.js",
-      "tests/fixtures/diagnostics/service/*.js",
-      "tests/fixtures/watcher-service/*.js",
-    ],
+    files: ["launcher/service/**/*.js"],
     languageOptions: {
       ecmaVersion: 2018,
       sourceType: "commonjs",

@@ -207,21 +207,17 @@ The root `data-performance-mode` attribute is owned by the Home shell.
 Preact owns component classes and focus state. Settings asks `homeScreen.blur()`
 to clear Home focus; the old document-wide `.focused` sweep has been removed.
 `HomeControl` and `SettingsControl` render `data-focused` from their state. Their
-old global `.focused` aliases have been removed. Active tests use data/ARIA state;
-comparison tests use the frozen renderer's legacy hooks only on that renderer.
-ESLint rejects legacy `classList` access on component nodes, `className` assignments
-and `setAttribute("class", ...)` calls.
+old global `.focused` aliases have been removed. Tests assert data/ARIA state on
+the current components.
 
 The remaining shell classes are public integration hooks, not module classes:
 
-| Hook                              | Owner                        | Purpose                                                         |
-| --------------------------------- | ---------------------------- | --------------------------------------------------------------- |
-| `body.tv`                         | `launcher/js/inputs.js`      | Hide Home while the native TVWindow is visible                  |
-| `body.glass-ui`                   | `home/index.tsx`             | Apply the existing appearance before measuring                  |
-| `body.editing`, `body.previewing` | `useSettingsPresentation.ts` | Settings and wallpaper preview visibility, with unmount cleanup |
+| Hook                              | Owner                          | Purpose                                                         |
+| --------------------------------- | ------------------------------ | --------------------------------------------------------------- |
+| `body.tv`                         | `inputs/InputPlaybackView.tsx` | Hide Home while the native TVWindow is visible                  |
+| `body.glass-ui`                   | `home/index.tsx`               | Apply the existing appearance before measuring                  |
+| `body.editing`, `body.previewing` | `useSettingsPresentation.ts`   | Settings and wallpaper preview visibility, with unmount cleanup |
 
-The obsolete DOM constructors, list-chunking helper and focus sweep live only in
-the comparison helper. Keep frozen fixture scripts and CSS out of the migration.
 Native/background adapters also own page transparency; dynamic
 geometry, progress and feature artwork custom properties remain explicit inline data.
 

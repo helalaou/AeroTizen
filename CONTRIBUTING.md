@@ -40,7 +40,7 @@ npm run lint        # ESLint and Stylelint; each rejects warnings
 npm run typecheck  # strict TypeScript checks for the UI, background service and Vite config
 npm run build      # type checks, then compiled Home and Settings in dist/launcher
 npm test           # launcher tests: tests/*.test.cjs, run in a Node sandbox
-npm run test:service # after build: frozen and packaged background service parity
+npm run test:service # after build: tests against the current packaged ES5 service
 npm run test:components # Preact component tests in launcher/src
 npx playwright install chromium # once per Playwright version; CI also installs OS dependencies
 npm run test:browser # current Home and Settings, with managed local servers
@@ -94,12 +94,10 @@ check alone with `npm run lint:js` or `npm run lint:css`. The TypeScript checks 
 reject unused locals and parameters. CI rejects formatting
 differences, lint warnings and errors, and type errors.
 
-Frozen generated logos, app-presentation/HomeWatcher snapshots and build/test output are excluded
-from formatting. The older catalogue fixture has a dedicated override because its
-data object must remain valid JSON. Diagnostics imports its privacy schema from
-plain JSON, with CLI parity checked by the Python tests. The current
-app catalogue is plain JSON imported into the typed bundle. Legacy JavaScript keeps
-ES5 syntax; compiled output retains the Chromium 69 and ES2018 checks.
+Build and test output are excluded from formatting. Diagnostics imports its privacy
+schema from plain JSON, with CLI parity checked by the Python tests. The app catalogue
+is plain JSON imported into the typed bundle. Compiled UI output retains the Chromium 69
+and ES2018 checks; generated background service modules retain ES5 compatibility.
 
 Prettier uses double quotes, semicolons, a 120-column print width, two-space indentation,
 LF line endings, parenthesised arrow parameters and trailing commas wherever supported.
@@ -320,7 +318,7 @@ candidate, including for apps outside the catalogue. No app artwork is bundled.
 Home, Settings and Continue Watching badges show the app name on a neutral,
 theme-based tile until artwork loads. Failed or missing images keep that same
 placeholder. Per-app colours, generated gradients and bundled fallback logos are
-not part of the production catalogue. The old branding data is a frozen test fixture.
+not part of the production catalogue.
 If Samsung artwork is unavailable, the installed package icon appears smaller
 with the app name beneath it. This layout follows the loaded image source and
 does not depend on an app-specific list or focus.
@@ -328,9 +326,10 @@ Keep the catalogue as plain JSON. Image files and cache paths do not belong in i
 
 Run `npm test` and `npm run lint`. Catalogue tests check complete identity pairs,
 unique IDs, sorted records, artwork aliases and preloaded watcher mappings.
-Parity tests compare the typed helpers with the frozen JavaScript snapshot from
-before their migration. Browser tests exercise the current launcher only; they do not
-run the retired JavaScript launcher.
+Presentation tests assert image priority, names and immutable input handling against
+the current helpers. Browser tests exercise the current launcher only. Diagnostic tests
+assert explicit privacy, metadata and storage contracts. Migration snapshots are no longer
+executed or retained.
 
 ## Pull requests
 
