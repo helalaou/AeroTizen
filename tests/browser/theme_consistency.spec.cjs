@@ -47,9 +47,11 @@ for (const theme of ["classic", "glass"]) {
       return {
         gridGap: rect("#continue-section h2").top - rect("#grid").bottom,
         continueGap: rect("#inputs-section h2").top - rect("#continue-items").bottom,
+        continueTitleGap: rect("#continue-items").top - rect("#continue-section h2").bottom,
+        inputsTitleGap: rect("#inputs").top - rect("#inputs-section h2").bottom,
       };
     });
-    expect(homeLayout).toEqual({ gridGap: 40, continueGap: 40 });
+    expect(homeLayout).toEqual({ gridGap: 40, continueGap: 40, continueTitleGap: 25, inputsTitleGap: 25 });
     const headings = page.locator("[data-home-section-heading]");
     await expect(headings).toHaveCount(2);
     for (const heading of await headings.all()) {
