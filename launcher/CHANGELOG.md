@@ -1,5 +1,40 @@
 # Changelog
 
+## [3.0.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.7.0...launcher-v3.0.0) (2026-11-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* **launcher:** remove settings migrations ([#231](https://github.com/helalaou/AeroTizen/issues/231))
+
+### Features
+
+* **demo:** publish a live launcher preview on GitHub Pages ([#221](https://github.com/helalaou/AeroTizen/issues/221)) ([0df7df7](https://github.com/helalaou/AeroTizen/commit/0df7df78a779bdb7f57e1b65b898e050bf3a5db5))
+* **launcher:** add a fallback for missing HDMI inputs ([#186](https://github.com/helalaou/AeroTizen/issues/186)) ([7df18bc](https://github.com/helalaou/AeroTizen/commit/7df18bc8e822c0b135afdd6bc03f40912534423f))
+* **launcher:** add Brazilian Portuguese translation ([#195](https://github.com/helalaou/AeroTizen/issues/195)) ([2564ffa](https://github.com/helalaou/AeroTizen/commit/2564ffae3aae0b59115b90a3cb5bcb58a3150871))
+* **launcher:** add five gradient backgrounds ([#224](https://github.com/helalaou/AeroTizen/issues/224)) ([110b8be](https://github.com/helalaou/AeroTizen/commit/110b8bea58fb801a65552e1b795096e83aeba7c2))
+* **launcher:** add the Stage animated background ([#227](https://github.com/helalaou/AeroTizen/issues/227)) ([c85e771](https://github.com/helalaou/AeroTizen/commit/c85e771c02a6ecb7192a88f45e5ce7161e108cf2))
+
+
+### Bug Fixes
+
+* **launcher:** add Crunchyroll, HBO Max and Twitch app IDs ([#198](https://github.com/helalaou/AeroTizen/issues/198)) ([db6c24c](https://github.com/helalaou/AeroTizen/commit/db6c24c78396c37324e13a83b29ba020d1bf478d))
+* **launcher:** group update details in About ([#207](https://github.com/helalaou/AeroTizen/issues/207)) ([14cb4e3](https://github.com/helalaou/AeroTizen/commit/14cb4e31a2e13c7aee47b221478220a6e94c008f))
+* **launcher:** offer Samsung viewer for HDMI playback ([#127](https://github.com/helalaou/AeroTizen/issues/127)) ([9863286](https://github.com/helalaou/AeroTizen/commit/9863286bdd7ae26e2e2676e66a52c8d62b9fea60))
+* **launcher:** recover from disconnected HDMI inputs ([#200](https://github.com/helalaou/AeroTizen/issues/200)) ([69046c1](https://github.com/helalaou/AeroTizen/commit/69046c17afaa8d622d20d5f84958df5220f47827))
+* **launcher:** recover watcher startup and Home return on Tizen 10 ([#193](https://github.com/helalaou/AeroTizen/issues/193)) ([fc773a8](https://github.com/helalaou/AeroTizen/commit/fc773a8ee361d16ff0b3cf2aecc610ca09350056))
+* **launcher:** skip /leave in Native Home ([#184](https://github.com/helalaou/AeroTizen/issues/184)) ([ddfc9c5](https://github.com/helalaou/AeroTizen/commit/ddfc9c5634646389f9787e5ba3dcae00d915d71b))
+
+
+### Performance Improvements
+
+* **launcher:** reduce navigation and rendering work ([#201](https://github.com/helalaou/AeroTizen/issues/201)) ([2c59815](https://github.com/helalaou/AeroTizen/commit/2c59815593eec5b5a427551ac75ba23c587cef93))
+
+
+### Code Refactoring
+
+* **launcher:** remove settings migrations ([#231](https://github.com/helalaou/AeroTizen/issues/231)) ([3be327f](https://github.com/helalaou/AeroTizen/commit/3be327fd262e661747b46dbea7a72f4027a53f8c))
+
 ## [2.7.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.6.0...launcher-v2.7.0) (2026-11-07)
 
 
