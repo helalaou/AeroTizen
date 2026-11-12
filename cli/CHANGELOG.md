@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.0.1](https://github.com/helalaou/AeroTizen/compare/cli-v3.0.0...cli-v3.0.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* **cli:** start launcher before applying Native Home ([#203](https://github.com/helalaou/AeroTizen/issues/203)) ([c789c96](https://github.com/helalaou/AeroTizen/commit/c789c96998f4c76a1dfba261ac38064e5f30ec75))
+* **launcher:** offer Samsung viewer for HDMI playback ([#127](https://github.com/helalaou/AeroTizen/issues/127)) ([9863286](https://github.com/helalaou/AeroTizen/commit/9863286bdd7ae26e2e2676e66a52c8d62b9fea60))
+* **launcher:** recover watcher startup and Home return on Tizen 10 ([#193](https://github.com/helalaou/AeroTizen/issues/193)) ([fc773a8](https://github.com/helalaou/AeroTizen/commit/fc773a8ee361d16ff0b3cf2aecc610ca09350056))
+* **root:** preserve root access after remote power wake ([#199](https://github.com/helalaou/AeroTizen/issues/199)) ([c6a6b65](https://github.com/helalaou/AeroTizen/commit/c6a6b65a8af4f0cca92668bd3d0ca25e7324dea4))
+
 ## [3.0.0](https://github.com/helalaou/AeroTizen/compare/cli-v2.6.0...cli-v3.0.0) (2026-11-07)
 
 
