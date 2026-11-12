@@ -1,10 +1,8 @@
 const { test, expect } = require("./launcher_fixture.cjs");
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
 
-for (const glass of [false, true]) {
-  test(`${glass ? "Glass" : "Classic"} weather, selection badges and preview icons use the theme styles`, async ({
-    page,
-  }) => {
+for (const theme of ["classic", "glass"]) {
+  test(`${theme} weather, selection badges and preview icons use the theme styles`, async ({ page }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     let weatherCode = 3;
@@ -14,11 +12,11 @@ for (const glass of [false, true]) {
       route.fulfill({ json: { current: { temperature_2m: 12, weather_code: weatherCode } } }),
     );
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-    await page.addInitScript((glass) => {
+    await page.addInitScript((theme) => {
       localStorage.setItem(
         "aerotizen.settings.v1",
         JSON.stringify({
-          glassSettings: glass,
+          theme,
           home: ["demo0"],
           background: "black",
           showWeather: true,
@@ -36,7 +34,7 @@ for (const glass of [false, true]) {
           at: Date.now(),
         }),
       );
-    }, glass);
+    }, theme);
     await page.goto("/");
     await expect(page).toHaveTitle("AeroTizen");
     await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
@@ -69,7 +67,7 @@ for (const glass of [false, true]) {
     const selectedApp = page.locator('[data-key="app:demo0"]');
     await expect(selectedApp.locator("[data-selection-indicator]")).toHaveCSS(
       "background-color",
-      glass ? "rgb(71, 82, 105)" : "rgb(124, 92, 255)",
+      theme === "glass" ? "rgb(71, 82, 105)" : "rgb(124, 92, 255)",
     );
     await openCategory(page, "wallpaper");
     await page.locator('[data-key="wallpaper-categories:animated"]').click();

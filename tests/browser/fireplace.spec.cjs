@@ -101,6 +101,21 @@ test("Fireplace remote controls update volume and stop drawing and audio on clos
   expect(errors).toEqual([]);
 });
 
+test("OK closes Fireplace without reopening it when the key is released", async ({ page }) => {
+  await page.goto("/");
+  const tile = page.getByRole("button", { name: "Fireplace" });
+  const overlay = page.locator("#fireplace");
+  await expect(tile).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(overlay).toBeVisible();
+
+  await page.keyboard.down("Enter");
+  await expect(overlay).toBeHidden();
+  await page.keyboard.up("Enter");
+  await expect(overlay).toBeHidden();
+  await expect(tile).toBeFocused();
+});
+
 test("Fireplace stays usable if the TV cannot start Web Audio", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));

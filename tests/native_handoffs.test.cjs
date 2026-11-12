@@ -775,7 +775,7 @@ for (const legacy of [true, false]) {
     assert.ok(!html.includes('src="js/homewatch.js"'));
     assert.ok(!html.includes('src="js/native-navigation.js"'));
     assert.match(get("src/index.ts"), /createHomeWatcherService/);
-    const service = get("service/index.js");
+    const service = get("src/service/index.ts");
     assert.match(service, /FRAME_HIDDEN_GRACE/);
     assert.match(service, /createArtMode/);
     const source = legacy ? nativeSource : get("src/platform/tizen/createNativeNavigation.ts");

@@ -2,7 +2,8 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createBackgrounds } = loadTypeScript("launcher/src/backgrounds/createBackgrounds.ts");
-const { SCENES } = loadTypeScript("launcher/src/backgrounds/scenes.ts");
+const { preview, SCENES } = loadTypeScript("launcher/src/backgrounds/scenes.ts");
+const { needsWebGL } = loadTypeScript("launcher/src/contracts/backgrounds.ts");
 
 const NEW_GRADIENTS = ["prism", "pastel", "afterglow", "twilightpeaks", "borealis"];
 const GRADIENT_LAYER = /^(?:repeating-)?(?:linear|radial|conic)-gradient\(/;
@@ -122,6 +123,17 @@ test("the new gradient backgrounds are static and pure CSS, with no imagery", ()
     assert.equal(scene.category, undefined, `${id} is listed with the gradients`);
     assertPureCss(scene.base, id);
   }
+});
+
+test("Stage is an animated WebGL background with a pure CSS fallback and a still swatch", () => {
+  const stage = SCENES.find((scene) => scene.id === "stage");
+  assert.ok(stage, "Stage is listed");
+  assert.equal(stage.anim, "stage");
+  assert.equal(needsWebGL(stage), true);
+  assertPureCss(stage.base, "Stage fallback");
+  const swatch = preview(stage);
+  assert.notEqual(swatch, stage.base, "the swatch shows a still frame, not only the fallback");
+  assertPureCss(swatch, "Stage swatch");
 });
 
 test("Pastel turns the floating Home text dark, the darker new gradients keep it light", () => {

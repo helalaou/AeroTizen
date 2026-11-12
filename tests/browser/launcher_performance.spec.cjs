@@ -55,15 +55,13 @@ test("first-row navigation does not format the clock or measure layout", async (
   expect(result.calls).toEqual({ format: 0, rect: 0 });
 });
 
-for (const glassSettings of [false, true]) {
-  test(`performance mode persists and stops wallpapers and UI transitions in ${glassSettings ? "Glass" : "Classic"}`, async ({
-    page,
-  }, info) => {
+for (const theme of ["classic", "glass"]) {
+  test(`performance mode persists and stops wallpapers and UI transitions in ${theme}`, async ({ page }, info) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto("/");
     await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
-    await page.evaluate((glass) => AeroTizen.settings.update({ glassSettings: glass }), glassSettings);
+    await page.evaluate((theme) => AeroTizen.settings.update({ theme }), theme);
     const blob = page.locator("[data-background-blob]").first();
     await expect(blob).not.toHaveCSS("animation-name", "none");
     await page.locator("#gear").click();
@@ -87,7 +85,7 @@ for (const glassSettings of [false, true]) {
     await expect(page.locator('[data-key="performance-mode:true"]')).toHaveAttribute("aria-pressed", "true");
     await page.screenshot({ path: info.outputPath("performance-mode-settings.png") });
     // All animated wallpaper families must stop work, including WebGL loops.
-    for (const background of ["waves", "stars", "nebula", "rain"]) {
+    for (const background of ["waves", "stars", "nebula", "rain", "stage"]) {
       await page.evaluate((background) => {
         AeroTizen.settings.update({ background });
         AeroTizen.applyBackground();

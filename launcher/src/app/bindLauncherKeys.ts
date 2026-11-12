@@ -1,9 +1,8 @@
 import type { InputsService } from "../contracts/inputs";
-import type { HomeBridge, LauncherConfig, SettingsBridge } from "../contracts/launcher";
-import type { FireplaceControls } from "../platform/tizen/launcherRuntime";
+import type { HomeBridge, LauncherConfig, RemoteKeyHandler, SettingsBridge } from "../contracts/launcher";
 
 interface KeyTargets {
-  fireplace: Omit<FireplaceControls, "open">;
+  fireplace: RemoteKeyHandler;
   home: Pick<HomeBridge, "keydown" | "keyup">;
   inputs: Pick<InputsService, "getSnapshot" | "leave">;
   settings: Pick<SettingsBridge, "focus" | "isOpen" | "keydown">;
@@ -28,15 +27,8 @@ export const bindLauncherKeys = (
       }
       return;
     }
-    if (fireplace.isOpen()) {
-      if (code === keys.UP) {
-        fireplace.volumeUp();
-      } else if (code === keys.DOWN) {
-        fireplace.volumeDown();
-      } else if (closesOverlay(code)) {
-        event.preventDefault();
-        fireplace.close();
-      }
+    if (fireplace.isActive()) {
+      fireplace.keydown(code, event);
       return;
     }
     if (isPlayingInput()) {
@@ -53,7 +45,7 @@ export const bindLauncherKeys = (
     home.keydown(code, event);
   };
   const keyup = (event: KeyboardEvent) => {
-    if (!settings.isOpen() && !isPlayingInput() && !fireplace.isOpen()) {
+    if (!settings.isOpen() && !isPlayingInput() && !fireplace.isActive()) {
       home.keyup(event.keyCode);
     }
   };

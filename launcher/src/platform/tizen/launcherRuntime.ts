@@ -2,6 +2,7 @@ import type { AppsService } from "../../contracts/apps";
 import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
 import type { ContinueWatchingService } from "../../contracts/continueWatching";
 import type { LauncherStartup, UiDiagnostics } from "../../contracts/diagnostics";
+import type { FireplaceControls } from "../../contracts/fireplace";
 import type { HomeWatcherService } from "../../contracts/homeWatcher";
 import type { InputsService } from "../../contracts/inputs";
 import type { ClockService, HomeBridge, LauncherConfig, SettingsBridge } from "../../contracts/launcher";
@@ -42,14 +43,6 @@ export interface LauncherRuntime {
 export interface LauncherPlatform {
   backgrounds: BackgroundBridge;
   previewBackground(preview: BackgroundPreview | null): void;
-}
-
-export interface FireplaceControls {
-  close(): void;
-  isOpen(): boolean;
-  open(): void;
-  volumeDown(): void;
-  volumeUp(): void;
 }
 
 declare global {

@@ -8,12 +8,10 @@ import { createStore } from "../shared/state/createStore";
 import { equalRecord } from "../shared/state/equalRecord";
 
 import { DEFAULT_SETTINGS } from "./preferences/defaults";
-import { migrateSettings } from "./preferences/migrateSettings";
 import { normalizeSettings } from "./preferences/normalizeSettings";
 
 export interface SettingsServiceOptions {
   defaults?: Partial<SettingsDefaults>;
-  legacyStorageKeys: readonly string[];
   locale: { timeFormat(): "12" | "24"; tempUnit(): "C" | "F" };
   speedRange: { MIN: number; MAX: number };
   storage: Pick<Storage, "getItem" | "setItem">;
@@ -96,18 +94,12 @@ export const createSettingsService = (options: SettingsServiceOptions): Settings
       }
       let saved: unknown = {};
       try {
-        let raw: string | null = null;
-        for (const key of [options.storageKey, ...options.legacyStorageKeys]) {
-          raw = options.storage.getItem(key);
-          if (raw) {
-            break;
-          }
-        }
+        const raw = options.storage.getItem(options.storageKey);
         saved = raw ? JSON.parse(raw) : {};
       } catch {
         // Missing, malformed or unavailable storage uses defaults.
       }
-      commit(migrateSettings(saved));
+      commit(saved);
     },
     update(patch) {
       commit({ ...values(store.getSnapshot()), ...patch });

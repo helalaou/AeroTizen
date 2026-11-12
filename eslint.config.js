@@ -224,7 +224,46 @@ module.exports = [
     },
   },
   {
-    files: ["launcher/service/**/*.js"],
+    // Service entries use typed CommonJS boundaries for the older TV runtime.
+    files: ["launcher/src/diagnostics/context.ts"],
+    rules: {
+      "@typescript-eslint/no-require-imports": [
+        "error",
+        { allow: ["^fs$", "^\\./diagnostics$", "^\\.\\./js/build-info$"] },
+      ],
+    },
+  },
+  {
+    files: ["launcher/src/diagnostics/storage.ts"],
+    rules: { "@typescript-eslint/no-require-imports": ["error", { allow: ["^fs$"] }] },
+  },
+  {
+    // Art Mode reports missing TV runtime capabilities without failing to load.
+    files: ["launcher/src/service/createArtMode.ts"],
+    rules: { "@typescript-eslint/no-require-imports": ["error", { allow: ["^http$", "^crypto$"] }] },
+  },
+  {
+    // Preserve optional service diagnostics loads at the CommonJS entry boundary.
+    files: ["launcher/src/service/index.ts"],
+    rules: {
+      "@typescript-eslint/no-require-imports": [
+        "error",
+        {
+          allow: [
+            "^http$",
+            "^url$",
+            "^\\./(artmode|home-mode|home-store|diagnostics|diagnostics-context|diagnostics-store)$",
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: [
+      "launcher/service/**/*.js",
+      "tests/fixtures/diagnostics/service/*.js",
+      "tests/fixtures/watcher-service/*.js",
+    ],
     languageOptions: {
       ecmaVersion: 2018,
       sourceType: "commonjs",

@@ -2,6 +2,7 @@ import type { BackgroundGraphics, BackgroundScene } from "../../contracts/backgr
 import { needsWebGL } from "../../contracts/backgrounds";
 import { useStore } from "../../shared/hooks/useStore";
 import { blob } from "../scenes";
+import { StageBackground } from "../StageBackground/StageBackground";
 import { WaveBackground } from "../WaveBackground/WaveBackground";
 import { WebGLParticleCanvas } from "../WebGLParticleCanvas/WebGLParticleCanvas";
 
@@ -62,6 +63,8 @@ export const BackgroundSceneView = ({ scene, speed, webGL, reportWebGL, performa
       return performanceMode ? null : <WebGLParticleCanvas kind="stars" speed={speed} reportWebGL={reportWebGL} />;
     case "particles":
       return performanceMode ? null : <WebGLParticleCanvas kind={scene.kind} speed={speed} reportWebGL={reportWebGL} />;
+    case "stage":
+      return performanceMode ? null : <StageBackground speed={speed} reportWebGL={reportWebGL} />;
     default:
       return null;
   }

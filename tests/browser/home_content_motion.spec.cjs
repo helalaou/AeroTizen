@@ -46,10 +46,10 @@ for (const [build, url] of [
     await expect(arrows.first()).toHaveCSS("animation-duration", "1s");
 
     await page.emulateMedia({ reducedMotion: "reduce" });
-    for (const glassSettings of [false, true]) {
-      await page.evaluate((glassSettings) => {
-        AeroTizen.settings.update({ glassSettings: glassSettings });
-      }, glassSettings);
+    for (const theme of ["classic", "glass"]) {
+      await page.evaluate((theme) => {
+        AeroTizen.settings.update({ theme });
+      }, theme);
       await expect(card).toBeFocused();
       await expect(card).toHaveCSS("transition-duration", "0s");
       await expect(page.locator("#grid")).toHaveCSS("transition-duration", "0s");

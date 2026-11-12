@@ -37,9 +37,10 @@ ruff check . && ruff format --check .
 pytest
 npm run format:check # checks frontend source, tests and tooling without writing
 npm run lint        # ESLint and Stylelint; each rejects warnings
-npm run typecheck  # strict TypeScript checks for the launcher and Vite config
+npm run typecheck  # strict TypeScript checks for the UI, background service and Vite config
 npm run build      # type checks, then compiled Home and Settings in dist/launcher
 npm test           # launcher tests: tests/*.test.cjs, run in a Node sandbox
+npm run test:service # after build: frozen and packaged background service parity
 npm run test:components # Preact component tests in launcher/src
 npx playwright install chromium # once per Playwright version; CI also installs OS dependencies
 npm run test:browser # compiled Settings and legacy comparison, with managed local servers
@@ -175,14 +176,14 @@ both themes. Add coverage here for new UI paths.
 | `tests/fixtures/legacy-launcher/` | Old views used only by regression and comparison tests                                          |
 | `vite.config.mts`                 | Official Preact preset, dev server and TV bundle settings                                       |
 | `dist/launcher/`                  | Generated TV runtime with shared launcher-ui.js; no Node needed on TV                           |
-| `launcher/js/config.js`           | Launcher behaviour and storage identities                                                       |
+| `launcher/src/launcherConfig.ts`  | Launcher behaviour and storage identities                                                       |
 | `launcher/src/shared/apps/`       | Readonly app identities, indexed lookups, artwork sources and presentation helpers              |
-| `launcher/service/`               | Background service that reclaims the screen from Samsung Home                                   |
+| `launcher/src/service/`           | Typed background service that reclaims the screen from Samsung Home                             |
 | `tests/`                          | pytest suite (`test_*.py`, a fake TV covers the sdb protocol) and launcher tests (`*.test.cjs`) |
 | `dns/`, `docs/`                   | Ad/telemetry blocklists and the settings guide                                                  |
 
 The entry point creates one TypeScript preference service and passes it to Home, Settings
-and the clock. It owns defaults, saved-data validation, migration and persistence.
+and the clock. It owns defaults, saved-data validation and persistence.
 TV services use the same snapshot and update API as the UI. The service survives development
 hot reload so those services retain their subscriptions. Feature mount functions return
 bridges and disposers. Composition owns visibility handling and releases its subscriptions
@@ -224,8 +225,7 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
   prints a network URL for another device. Vite supplies hot updates for Home and Settings
   components and serves the legacy runtime files. The plain URL opens the full browser
   preview with sample apps, inputs and a fictional Continue Watching feed. It uses one
-  settings store; existing local preferences take priority, and older `.demo` preferences
-  are carried over when no local preferences exist. A fresh browser context uses Glass,
+  settings store; existing local preferences take priority. A fresh browser context uses Glass,
   Small app cards, the Scroll app layout, six Home favourites and Continue Watching on.
   For README screenshots, use a clean context at 1920×1080.
 - Run `npm run build` for the compiled runtime in `dist/launcher/`.

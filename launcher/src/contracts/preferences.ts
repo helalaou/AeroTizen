@@ -3,6 +3,7 @@ import type { Store } from "../shared/state/createStore";
 export type TimeFormat = "12" | "24";
 export type TemperatureUnit = "C" | "F";
 export type DateFormat = "compact" | "short" | "long" | "numeric-short" | "numeric" | "iso" | "none";
+export type Theme = "classic" | "glass";
 export interface CustomGradient {
   readonly angle: number;
   readonly end: string;
@@ -23,8 +24,7 @@ export interface SettingsValues {
   continueWatchingApps: string[];
   customColour: string;
   customGradient: CustomGradient;
-  dateFormat: DateFormat | "auto" | "weekday" | "dmy" | "mdy";
-  glassSettings: boolean;
+  dateFormat: DateFormat;
   hdmiKeepVisible: Record<string, boolean>;
   hdmiNativeViewer: boolean;
   hideDisconnectedHdmi: boolean;
@@ -41,6 +41,7 @@ export interface SettingsValues {
   showWeather: boolean;
   speed: number;
   tempUnit: TemperatureUnit;
+  theme: Theme;
   timeFormat: TimeFormat;
   weatherLocation: WeatherLocation | null;
   weatherPhoto: boolean;

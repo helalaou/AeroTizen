@@ -1,20 +1,18 @@
 const { test, expect } = require("./launcher_fixture.cjs");
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
 
-for (const glass of [false, true])
+for (const theme of ["classic", "glass"])
   for (const columns of [3, 4, 5]) {
-    test(`${glass ? "Glass" : "Classic"} square ${columns} columns retain artwork, remote navigation and persistence`, async ({
-      page,
-    }) => {
+    test(`${theme} square ${columns} columns retain artwork, remote navigation and persistence`, async ({ page }) => {
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
       await page.route("https://**/*", (r) => r.fulfill({ body: "{}" }));
       await page.route("http://127.0.0.1:47790/**", (r) => r.fulfill({ body: "{}" }));
-      await page.addInitScript((glassSettings) => {
+      await page.addInitScript((theme) => {
         if (!localStorage.getItem("aerotizen.settings.v1")) {
-          localStorage.setItem("aerotizen.settings.v1", JSON.stringify({ glassSettings }));
+          localStorage.setItem("aerotizen.settings.v1", JSON.stringify({ theme }));
         }
-      }, glass);
+      }, theme);
       await page.goto("/");
       await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await page.locator("#gear").click();
@@ -70,43 +68,16 @@ for (const glass of [false, true])
     });
   }
 
-test("a saved rectangle layout opens as squares and retains its row count", async ({ page }) => {
-  await page.route("https://**/*", (r) => r.fulfill({ body: "{}" }));
-  await page.route("http://127.0.0.1:47790/**", (r) => r.fulfill({ body: "{}" }));
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      "aerotizen.settings.v1",
-      JSON.stringify({ homeCardMode: "rectangle", homeCardColumns: null, cardSize: "small" }),
-    );
-  });
-  await page.goto("/");
-  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
-  await expect(page.locator("#grid")).toHaveAttribute("data-columns", "5");
-  const size = await page
-    .locator("#grid > [data-id]")
-    .first()
-    .evaluate((n) => [n.offsetWidth, n.offsetHeight]);
-  expect(size).toEqual([332, 332]);
-  await page.locator("#gear").click();
-  await openCategory(page, "appearance");
-  await expect(page.locator('[data-key="home-card-columns:5"]')).toHaveAttribute("aria-pressed", "true");
-});
-
-for (const glass of [false, true]) {
-  test(`${glass ? "Glass" : "Classic"} app sizes fit two complete rows and keep focused rows inside the viewport`, async ({
-    page,
-  }, info) => {
+for (const theme of ["classic", "glass"]) {
+  test(`${theme} app sizes fit two complete rows and keep focused rows inside the viewport`, async ({ page }, info) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
     await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
     await page.clock.setFixedTime(new Date("2026-11-06T10:20:00Z"));
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.addInitScript((glassSettings) => {
-      localStorage.setItem(
-        "aerotizen.settings.v1",
-        JSON.stringify({ glassSettings, showWeather: true, background: "black" }),
-      );
+    await page.addInitScript((theme) => {
+      localStorage.setItem("aerotizen.settings.v1", JSON.stringify({ theme, showWeather: true, background: "black" }));
       localStorage.setItem(
         "aerotizen.weather.v2",
         JSON.stringify({
@@ -119,7 +90,7 @@ for (const glass of [false, true]) {
           city: "A very long fixture city name",
         }),
       );
-    }, glass);
+    }, theme);
     await page.goto("/");
     await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     for (const clock of ["classic", "vertical", "horizontal", "minimal", "bold"]) {

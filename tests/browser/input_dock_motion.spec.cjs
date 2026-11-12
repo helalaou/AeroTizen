@@ -4,20 +4,18 @@ for (const [build, url] of [
   ["compiled", "http://127.0.0.1:8171/"],
   ["development", "http://127.0.0.1:8172/"],
 ]) {
-  for (const glassSettings of [false, true]) {
-    test(`${build} ${glassSettings ? "Glass" : "Classic"} inputs keep status, remote focus and live reduced-motion preferences`, async ({
-      page,
-    }) => {
+  for (const theme of ["classic", "glass"]) {
+    test(`${build} ${theme} inputs keep status, remote focus and live reduced-motion preferences`, async ({ page }) => {
       const errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
       await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
       await page.addInitScript(
-        (glassSettings) =>
+        (theme) =>
           localStorage.setItem(
             "aerotizen.settings.v1",
             JSON.stringify({
-              glassSettings,
+              theme,
               home: ["demo0"],
               background: "black",
               showWeather: false,
@@ -29,7 +27,7 @@ for (const [build, url] of [
               },
             }),
           ),
-        glassSettings,
+        theme,
       );
       await page.emulateMedia({ reducedMotion: "no-preference" });
       await page.goto(url);
@@ -61,7 +59,7 @@ for (const [build, url] of [
         "connected",
         "live",
       ]);
-      await expect(cards.first()).toHaveCSS("transition-duration", glassSettings ? "0.15s, 0.15s" : "0.15s");
+      await expect(cards.first()).toHaveCSS("transition-duration", theme === "glass" ? "0.15s, 0.15s" : "0.15s");
       await page.locator("#home-tab").click();
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("ArrowDown");
@@ -77,8 +75,8 @@ for (const [build, url] of [
         );
         expect(durations.every((duration) => duration === 0)).toBe(true);
         expect(await card.evaluate((node) => getComputedStyle(node).boxShadow)).not.toBe("none");
-        await expect(card).toHaveCSS("opacity", !glassSettings && i === 3 ? "0.8" : "1");
-        if (glassSettings && i < 4) {
+        await expect(card).toHaveCSS("opacity", theme === "classic" && i === 3 ? "0.8" : "1");
+        if (theme === "glass" && i < 4) {
           await expect(card.locator("[data-input-part=subtitle]")).toHaveCSS(
             "color",
             i === 3 ? "rgba(255, 255, 255, 0.88)" : "rgba(255, 255, 255, 0.83)",
@@ -86,15 +84,16 @@ for (const [build, url] of [
         }
         await expect
           .poll(() => card.evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).a))
-          .toBeCloseTo(glassSettings ? 1.015 : 1.035, 3);
+          .toBeCloseTo(theme === "glass" ? 1.015 : 1.035, 3);
       }
-      await page.evaluate((glassSettings) => {
-        AeroTizen.settings.update({ glassSettings: !glassSettings });
-      }, glassSettings);
+      const otherTheme = theme === "glass" ? "classic" : "glass";
+      await page.evaluate((theme) => {
+        AeroTizen.settings.update({ theme });
+      }, otherTheme);
       await expect(cards.last()).toBeFocused();
-      await expect(cards.last()).toHaveCSS("transition-duration", glassSettings ? "0s" : "0s, 0s");
+      await expect(cards.last()).toHaveCSS("transition-duration", theme === "glass" ? "0s" : "0s, 0s");
       await page.emulateMedia({ reducedMotion: "no-preference" });
-      await expect(cards.last()).toHaveCSS("transition-duration", glassSettings ? "0.15s" : "0.15s, 0.15s");
+      await expect(cards.last()).toHaveCSS("transition-duration", theme === "glass" ? "0.15s" : "0.15s, 0.15s");
       await expect(page.locator("vite-error-overlay")).toHaveCount(0);
       expect(errors).toEqual([]);
     });

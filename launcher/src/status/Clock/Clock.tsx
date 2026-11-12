@@ -20,7 +20,7 @@ export const Clock = ({
   layout: ClockLayout;
   settings: Pick<
     SettingsSnapshot,
-    "showTime" | "dateFormat" | "showWeather" | "timeFormat" | "glassSettings" | "language" | "numerals"
+    "showTime" | "dateFormat" | "showWeather" | "timeFormat" | "theme" | "language" | "numerals"
   >;
   clock: ClockService;
   value: ReturnType<typeof useClock>;
@@ -32,7 +32,7 @@ export const Clock = ({
     clock,
     settings.timeFormat,
     value.timestamp,
-    [layout, settings.glassSettings, settings.language, settings.numerals].join(":"),
+    [layout, settings.theme, settings.language, settings.numerals].join(":"),
     settings.showTime,
   );
   return layout === "compact" ? (

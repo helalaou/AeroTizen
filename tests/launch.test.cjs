@@ -1,14 +1,11 @@
 const { installApps } = require("./helpers/apps.cjs");
-const { loadTypeScript } = require("./helpers/load_typescript.cjs");
+const { compileTypeScript, loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 const assert = require("node:assert/strict");
 const { EventEmitter } = require("node:events");
-const fs = require("node:fs");
-const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
-const launcher = path.join(__dirname, "..", "launcher");
 const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 const metadataKey = "http://samsung.com/tv/metadata/hbbtv.link";
 const host = "org.tizen.hbbtv";
@@ -195,10 +192,12 @@ function watcherHarness() {
         : name === "./artmode"
           ? () => ({ start() {}, stop() {}, fresh() {}, getState: () => ({}) })
           : name === "./home-mode"
-            ? require("../launcher/service/home-mode")
+            ? loadTypeScript("launcher/src/service/createHomeMode.ts").default
             : name === "./home-store"
               ? (tz, ready) => ready(null, false)
-              : require(name),
+              : name === "./protocol"
+                ? loadTypeScript("launcher/src/service/protocol.ts")
+                : require(name),
     module: { exports: {} },
     tizen: { application: { launch: (id) => launches.push(id) } },
     Date: { now: () => now },
@@ -209,7 +208,8 @@ function watcherHarness() {
     clearTimeout() {},
     clearInterval() {},
   });
-  vm.runInContext(fs.readFileSync(path.join(launcher, "service", "index.js"), "utf8"), context);
+  context.exports = context.module.exports;
+  vm.runInContext(compileTypeScript("launcher/src/service/index.ts"), context);
   context.module.exports.onStart();
   now += 3000; // past the boot delay
   function request(url) {

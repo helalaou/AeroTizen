@@ -58,12 +58,13 @@ test("static demo loads its own sample data and assets from a project subpath", 
 
 test("static demo keeps appearance, wallpaper and language choices after reload", async ({ page }) => {
   const launcher = page.frameLocator("iframe");
+  const classicTheme = launcher.locator('[data-key="settings-appearance:classic"]');
   await page.goto(DEMO_URL);
   await launcher.locator("#gear").click();
   await page.keyboard.press("ArrowRight");
-  await expect(launcher.locator('[data-key="settings-appearance:false"]')).toBeFocused();
+  await expect(classicTheme).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(launcher.locator('[data-key="settings-appearance:false"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(classicTheme).toHaveAttribute("aria-pressed", "true");
   await openCategory(launcher, "wallpaper");
   await launcher.locator('[data-key="wallpaper-categories:animated"]').click();
   await launcher.locator('[data-key="bg:lava"]').click();
@@ -78,7 +79,7 @@ test("static demo keeps appearance, wallpaper and language choices after reload"
   await expect(launcher.locator("html")).toHaveAttribute("lang", "fr");
   await expect(launcher.locator("#grid > [data-id]")).toHaveCount(HOME_APP_COUNT);
   await launcher.locator("#gear").click();
-  await expect(launcher.locator('[data-key="settings-appearance:false"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(classicTheme).toHaveAttribute("aria-pressed", "true");
   await openCategory(launcher, "wallpaper");
   await launcher.locator('[data-key="wallpaper-categories:animated"]').click();
   await expect(launcher.locator('[data-key="bg:lava"]')).toHaveAttribute("aria-pressed", "true");

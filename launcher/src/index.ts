@@ -15,6 +15,7 @@ import type { ClockService } from "./contracts/launcher";
 import type { NativeNavigation } from "./contracts/nativeNavigation";
 import type { SettingsService } from "./contracts/preferences";
 import type { NetworkService, WeatherService } from "./contracts/status";
+import { createFireplaceKeyHandler } from "./fireplace/createFireplaceKeyHandler";
 import { mountFireplace } from "./fireplace/mountFireplace";
 import { mountHome } from "./home/index";
 import { mountInputPlayback } from "./inputs/mountInputPlayback";
@@ -106,7 +107,6 @@ const settings =
   createSettingsService({
     defaults: runtime.config.DEFAULTS,
     storageKey: runtime.config.STORAGE_KEY,
-    legacyStorageKeys: runtime.config.LEGACY_STORAGE_KEYS,
     storage: {
       getItem: (key) => localStorage.getItem(key),
       setItem: (key, value) => localStorage.setItem(key, value),
@@ -239,7 +239,7 @@ try {
   );
   disposeApp = app.dispose;
   unbindKeys = bindLauncherKeys(document, runtime.config.KEY, {
-    fireplace: fireplace.bridge,
+    fireplace: createFireplaceKeyHandler(runtime.config.KEY, fireplace.bridge),
     home: app.home,
     inputs,
     settings: app.settings,
