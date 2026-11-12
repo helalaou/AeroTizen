@@ -281,5 +281,17 @@
   "weather.changeLocation": "Alterar local",
   "weather.useAutomatic": "Localização automática",
   "weather.automaticHint": "Usa uma localização aproximada obtida pelo seu endereço de internet.",
-  "weather.searchHelp": "Busque uma cidade ou um código postal e selecione um resultado."
+  "weather.searchHelp": "Busque uma cidade ou um código postal e selecione um resultado.",
+  "inputs.ipProbeTitle": "Adicionar uma entrada {{hdmi}} ausente",
+  "inputs.ipProbeHint": "Ative o IP Remote nas configurações da {{samsung}}. Selecione a entrada {{hdmi}} ausente na tela inicial da {{samsung}} e volte aqui.",
+  "inputs.ipProbeStart": "Localizar e adicionar entrada",
+  "inputs.ipProbe.waiting": "Verificando a entrada ativa. Selecione Permitir se a {{samsung}} solicitar o pareamento.",
+  "inputs.ipProbe.added": "{{hdmi}} {{port}} adicionada à tela inicial.",
+  "inputs.ipProbe.known": "{{hdmi}} {{port}} já está na lista.",
+  "inputs.ipProbe.noHdmi": "Selecione uma entrada {{hdmi}} na tela inicial da {{samsung}} e tente novamente.",
+  "inputs.ipProbe.pairFailed": "Falha no pareamento. Verifique se o IP Remote está ativado e tente novamente.",
+  "inputs.ipProbe.readFailed": "A TV foi pareada, mas não foi possível ler a entrada ativa.",
+  "inputs.ipProbe.scanFailed": "Aguarde as entradas da TV carregarem e tente novamente.",
+  "inputs.ipProbe.storageFailed": "O {{appName}} não conseguiu salvar a entrada.",
+  "inputs.ipProbe.unavailable": "O serviço em segundo plano da TV não respondeu."
 }

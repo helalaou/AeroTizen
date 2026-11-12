@@ -281,5 +281,17 @@
   "weather.changeLocation": "Изменить место",
   "weather.useAutomatic": "Определять автоматически",
   "weather.automaticHint": "Использовать приблизительное место по вашему интернет-адресу.",
-  "weather.searchHelp": "Найдите город или почтовый индекс и выберите результат."
+  "weather.searchHelp": "Найдите город или почтовый индекс и выберите результат.",
+  "inputs.ipProbeTitle": "Добавить отсутствующий вход {{hdmi}}",
+  "inputs.ipProbeHint": "Включите IP Remote в настройках {{samsung}}. Выберите отсутствующий вход {{hdmi}} на главном экране {{samsung}}, затем вернитесь сюда.",
+  "inputs.ipProbeStart": "Найти и добавить вход",
+  "inputs.ipProbe.waiting": "Проверяем активный вход. Если {{samsung}} запросит сопряжение, выберите «Разрешить».",
+  "inputs.ipProbe.added": "{{hdmi}} {{port}} добавлен на главный экран.",
+  "inputs.ipProbe.known": "{{hdmi}} {{port}} уже есть в списке.",
+  "inputs.ipProbe.noHdmi": "Выберите вход {{hdmi}} на главном экране {{samsung}} и повторите попытку.",
+  "inputs.ipProbe.pairFailed": "Не удалось выполнить сопряжение. Проверьте, включён ли IP Remote, и повторите попытку.",
+  "inputs.ipProbe.readFailed": "Сопряжение выполнено, но не удалось определить активный вход.",
+  "inputs.ipProbe.scanFailed": "Дождитесь загрузки входов телевизора и повторите попытку.",
+  "inputs.ipProbe.storageFailed": "{{appName}} не удалось сохранить вход.",
+  "inputs.ipProbe.unavailable": "Фоновая служба телевизора не ответила."
 }

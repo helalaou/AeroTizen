@@ -1,6 +1,7 @@
 import type { RefObject } from "preact";
 
 import type { BackgroundGraphics, BackgroundPreview } from "../contracts/backgrounds";
+import type { LearnIpControlResult } from "../contracts/ipControl";
 import type {
   AppPresentation,
   BackgroundOption,
@@ -45,12 +46,14 @@ export interface SettingsServices {
   applySpeed(speed: number): void;
   backgrounds: readonly BackgroundOption[];
   backgroundWebGL: BackgroundGraphics;
+  canLearnIpControlInput(): boolean;
   clearHomeFocus(): void;
   clock: ClockFormatter;
   config: LauncherConfig;
   describeApp(app: InstalledApp): AppPresentation;
   finishEditing(): void;
   hidePreviewMessage(): void;
+  learnIpControlInput(): Promise<LearnIpControlResult>;
   openStore(): void;
   previewBackground(preview: BackgroundPreview | null): void;
   searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): () => void;

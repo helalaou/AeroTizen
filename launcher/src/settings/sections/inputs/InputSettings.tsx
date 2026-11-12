@@ -3,9 +3,11 @@ import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../../components/ChoiceGroup";
 import { ControlGroup } from "../../components/ControlGroup/ControlGroup";
 import { SettingsSection } from "../../components/SettingsSection/SettingsSection";
+import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
 import type { SettingsSectionProps } from "../../types";
 
 import { InputName } from "./InputName/InputName";
+import { IpControlProbe } from "./IpControlProbe";
 
 const LIVE_TV_VISIBILITY_OPTIONS = [
   { value: true, labelKey: "common.show" },
@@ -28,6 +30,7 @@ interface Props extends SettingsSectionProps {
 
 export const InputSettings = ({ settings, actions, inputs }: Props) => {
   const { t } = useTranslation();
+  const { services } = useSettingsEnvironment();
   return (
     <>
       <SettingsSection title={t("inputs.liveTv")} description={t("inputs.liveTvHint")}>
@@ -86,6 +89,7 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => {
           ))}
         </ControlGroup>
       </SettingsSection>
+      {services.canLearnIpControlInput() && <IpControlProbe />}
     </>
   );
 };

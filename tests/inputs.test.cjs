@@ -6,7 +6,7 @@ const { translateEnglish } = require("./helpers/translate_english.cjs");
 const { createInputsService } = loadTypeScript("launcher/src/services/createInputsService.ts");
 const { createInputsPlatform } = loadTypeScript("launcher/src/platform/tizen/createInputsPlatform.ts");
 
-function harness(preferences = {}) {
+function harness(preferences = {}, ipControl) {
   const events = new Map();
   const visibility = new Set();
   const watches = new Map();
@@ -74,7 +74,7 @@ function harness(preferences = {}) {
     },
   };
   const service = createInputsService({
-    platform: createInputsPlatform(host),
+    platform: { ...createInputsPlatform(host), ipControl },
     settings,
     timers: {
       setInterval: (fn) => {
@@ -260,4 +260,115 @@ test("Home return closes only active playback and ordinary appcontrol requests l
   h.state.hidden = false;
   [...h.visibility][0]();
   assert.equal(h.service.getSnapshot().playback, "idle");
+});
+
+test("learned input ports survive refreshes, stay visible, and defer to native records", async () => {
+  const h = harness({}, { request: async () => ({ status: "listed", ports: [5, 5, -1] }), dispose() {} });
+  h.service.start();
+  await new Promise(setImmediate);
+  const learned = h.service.getSnapshot().sources.find((source) => source.number === 5);
+  assert.equal(learned.ipControl, true);
+  assert.equal(h.service.isVisible(learned), true);
+  assert.ok(Object.isFrozen(learned));
+  h.service.load();
+  assert.equal(
+    h.service.getSnapshot().sources.find((source) => source.number === 5),
+    learned,
+  );
+  h.state.report.connected.push({ type: "HDMI", number: 5 });
+  h.service.load();
+  assert.equal(h.service.getSnapshot().sources.filter((source) => source.number === 5).length, 1);
+  assert.equal(h.service.getSnapshot().sources.find((source) => source.number === 5).ipControl, undefined);
+  h.state.report.connected.pop();
+  h.service.load();
+  assert.equal(h.service.getSnapshot().sources.find((source) => source.number === 5).ipControl, true);
+  h.service.dispose();
+});
+
+test("learning uses the current native snapshot and cannot be overwritten by an older restore", async () => {
+  let restore;
+  let learns = 0;
+  const h = harness(
+    {},
+    {
+      request(command) {
+        if (command.action === "list")
+          return new Promise((resolve) => {
+            restore = resolve;
+          });
+        assert.deepEqual(command, { action: "learn", nativePorts: [1] });
+        learns++;
+        return Promise.resolve({ status: "added", port: 5, ports: [5] });
+      },
+      dispose() {},
+    },
+  );
+  assert.deepEqual(await h.service.learnIpControlInput(), { status: "scanFailed" });
+  h.service.start();
+  const first = h.service.learnIpControlInput();
+  assert.equal(h.service.learnIpControlInput(), first);
+  assert.deepEqual(await first, { status: "added", port: 5 });
+  restore({ status: "listed", ports: [] });
+  await new Promise(setImmediate);
+  assert.equal(learns, 1);
+  assert.equal(
+    h.service.getSnapshot().sources.some((source) => source.ipControl),
+    true,
+  );
+  h.service.dispose();
+});
+
+test("learned input selection uses IP Control without the native connected-port gate or embedded fallback", async () => {
+  const commands = [];
+  let disposed = 0;
+  const h = harness(
+    {},
+    {
+      request: async (command) => {
+        commands.push(command);
+        return command.action === "list" ? { status: "listed", ports: [5] } : { status: "switched" };
+      },
+      dispose() {
+        disposed++;
+      },
+    },
+  );
+  let handoff;
+  h.host.AeroTizen.homewatch.openNativeViewer = (_, value) => {
+    handoff = value;
+    return true;
+  };
+  h.service.start();
+  await new Promise(setImmediate);
+  const reads = h.state.reads;
+  h.service.show(h.service.getSnapshot().sources.find((source) => source.number === 5));
+  assert.equal(h.state.reads, reads);
+  assert.equal(await handoff.selectSource(), true);
+  assert.deepEqual(commands.at(-1), { action: "switch", port: 5 });
+  handoff.fallback();
+  assert.equal(h.native.length, 0);
+  assert.deepEqual(h.toasts, ["Could not switch input"]);
+  h.service.dispose();
+  assert.equal(disposed, 1);
+});
+
+test("disposal rejects late learned-port replies and stops restore retries", async () => {
+  let reply;
+  const h = harness(
+    {},
+    {
+      request: () =>
+        new Promise((resolve) => {
+          reply = resolve;
+        }),
+      dispose() {},
+    },
+  );
+  h.service.start();
+  const snapshot = h.service.getSnapshot();
+  h.service.dispose();
+  reply({ status: "listed", ports: [5] });
+  await new Promise(setImmediate);
+  assert.equal(h.service.getSnapshot(), snapshot);
+  assert.equal(h.timeouts.size, 0);
 });

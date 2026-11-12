@@ -382,7 +382,7 @@ export const createNativeNavigation = (host: NativeHost): NativeNavigation => {
           return false;
         }
         const canSelectSource = !!source && typeof tizen.tvwindow?.setSource === "function";
-        if (hdmi && !canSelectSource) {
+        if (hdmi && !hdmi.selectSource && !canSelectSource) {
           return false;
         }
         const action = hdmi ? ACTIONS.hdmi : ACTIONS.tv;
@@ -459,6 +459,23 @@ export const createNativeNavigation = (host: NativeHost): NativeNavigation => {
         };
         leaveBeforeLaunch(() => {
           if (!active()) {
+            return;
+          }
+          if (hdmi?.selectSource) {
+            try {
+              void hdmi.selectSource().then(
+                (success) => {
+                  if (success) {
+                    launch();
+                  } else {
+                    failed(SOURCE_SELECTION_FAILURE);
+                  }
+                },
+                () => failed(SOURCE_SELECTION_FAILURE),
+              );
+            } catch {
+              failed(SOURCE_SELECTION_FAILURE);
+            }
             return;
           }
           if (!canSelectSource) {

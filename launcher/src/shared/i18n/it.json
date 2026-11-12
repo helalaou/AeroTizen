@@ -281,5 +281,17 @@
   "weather.changeLocation": "Cambia località",
   "weather.useAutomatic": "Località automatica",
   "weather.automaticHint": "Usa una località approssimativa ricavata dal tuo indirizzo Internet.",
-  "weather.searchHelp": "Cerca una città o un codice postale, poi seleziona un risultato."
+  "weather.searchHelp": "Cerca una città o un codice postale, poi seleziona un risultato.",
+  "inputs.ipProbeTitle": "Aggiungi un ingresso {{hdmi}} mancante",
+  "inputs.ipProbeHint": "Attiva IP Remote nelle impostazioni {{samsung}}. Seleziona l’ingresso {{hdmi}} mancante nella schermata Home di {{samsung}}, poi torna qui.",
+  "inputs.ipProbeStart": "Trova e aggiungi l’ingresso",
+  "inputs.ipProbe.waiting": "Controllo dell’ingresso attivo. Se {{samsung}} chiede di associare il dispositivo, seleziona Consenti.",
+  "inputs.ipProbe.added": "{{hdmi}} {{port}} è stato aggiunto alla Home.",
+  "inputs.ipProbe.known": "{{hdmi}} {{port}} è già nell’elenco.",
+  "inputs.ipProbe.noHdmi": "Seleziona un ingresso {{hdmi}} nella schermata Home di {{samsung}}, poi riprova.",
+  "inputs.ipProbe.pairFailed": "Associazione non riuscita. Verifica che IP Remote sia attivo e riprova.",
+  "inputs.ipProbe.readFailed": "La TV è associata, ma non è stato possibile leggere l’ingresso attivo.",
+  "inputs.ipProbe.scanFailed": "Attendi il caricamento degli ingressi TV, poi riprova.",
+  "inputs.ipProbe.storageFailed": "{{appName}} non ha potuto salvare l’ingresso.",
+  "inputs.ipProbe.unavailable": "Il servizio in background della TV non ha risposto."
 }

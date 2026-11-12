@@ -1,4 +1,6 @@
 import type { InputPlayback, InputsPlatform, InputsService, InputsSnapshot } from "../contracts/inputs";
+import type { IpControlCommand, LearnIpControlResult } from "../contracts/ipControl";
+import { isHdmiPort } from "../contracts/ipControl";
 import type { InputSource } from "../contracts/launcher";
 import type { SettingsStore } from "../contracts/preferences";
 import type { Translate } from "../shared/i18n/createTranslations";
@@ -8,6 +10,25 @@ import { equalRecord } from "../shared/state/equalRecord";
 
 const INPUT_TIMEOUT_MS = 8_000;
 const INPUT_REFRESH_MS = 5_000;
+const RESTORE_ATTEMPTS = 4;
+const RESTORE_DELAY_MS = 1_000;
+
+const replyRecord = (value: unknown): Readonly<Record<string, unknown>> | null =>
+  value !== null && typeof value === "object" ? (value as Readonly<Record<string, unknown>>) : null;
+const mergeSources = (reported: readonly InputSource[], ports: readonly number[]): readonly InputSource[] => {
+  const additional = ports.filter(
+    (port) => !reported.some((source) => source.type === "HDMI" && source.number === port),
+  );
+  if (!additional.length) {
+    return reported;
+  }
+  return [...reported, ...additional.map<InputSource>((number) => ({ type: "HDMI", number, ipControl: true }))].sort(
+    (a, b) =>
+      Number(a.type === "TV") - Number(b.type === "TV") ||
+      Number(!!b.connected) - Number(!!a.connected) ||
+      (a.number || 0) - (b.number || 0),
+  );
+};
 
 export const createInputsService = ({
   platform,
@@ -35,8 +56,15 @@ export const createInputsService = ({
   let pending: (() => void) | undefined;
   let wasHidden = false;
   let unsubscribers: (() => void)[] = [];
+  let reported: readonly InputSource[] = empty;
+  let learnedPorts: readonly number[] = [];
+  let sourcesReady = false;
+  let revision = 0;
+  let learning: Promise<LearnIpControlResult> | undefined;
+  let restoreTimer: number | undefined;
   const alwaysVisible = (source: InputSource) =>
-    source.type === "HDMI" && settings.getSnapshot().hdmiKeepVisible[String(source.number)] === true;
+    source.type === "HDMI" &&
+    (source.ipControl === true || settings.getSnapshot().hdmiKeepVisible[String(source.number)] === true);
   const isVisible = (source: InputSource) => {
     const preferences = settings.getSnapshot();
     if (source.type === "TV") {
@@ -64,6 +92,77 @@ export const createInputsService = ({
     if (sources !== previous.sources || visibleSources !== previous.visibleSources || state !== previous.playback) {
       store.set(Object.freeze({ sources, visibleSources, playback: state }));
     }
+  };
+  const publishSources = () => {
+    const before = store.getSnapshot();
+    const byKey = new Map(before.sources.map((source) => [sourceKey(source), source]));
+    const next = mergeSources(reported, learnedPorts).map((source) => {
+      const old = byKey.get(sourceKey(source));
+      return old && equalRecord(old, source) ? old : Object.freeze(source);
+    });
+    const sources =
+      next.length === before.sources.length && next.every((source, index) => source === before.sources[index])
+        ? before.sources
+        : Object.freeze(next);
+    publish(sources);
+  };
+  const applyPorts = (value: unknown) => {
+    if (!disposed && Array.isArray(value)) {
+      learnedPorts = [...new Set(value.filter(isHdmiPort))].sort((a, b) => a - b);
+      publishSources();
+    }
+  };
+  const requestIpControl = async (command: IpControlCommand) => {
+    if (disposed) {
+      return null;
+    }
+    try {
+      const reply = await platform.ipControl?.request(command);
+      return disposed ? null : replyRecord(reply);
+    } catch {
+      return null;
+    }
+  };
+  const restorePorts = async (attempts: number): Promise<void> => {
+    const current = revision;
+    const reply = await requestIpControl({ action: "list" });
+    if (disposed || current !== revision) {
+      return;
+    }
+    if (reply?.status === "listed" && Array.isArray(reply.ports)) {
+      applyPorts(reply.ports);
+    } else if (attempts > 1) {
+      restoreTimer = timers.setTimeout(() => void restorePorts(attempts - 1), RESTORE_DELAY_MS);
+    }
+  };
+  const learnPort = async (): Promise<LearnIpControlResult> => {
+    if (disposed || !platform.ipControl) {
+      return { status: "unavailable" };
+    }
+    if (!sourcesReady) {
+      return { status: "scanFailed" };
+    }
+    const nativePorts = reported
+      .filter((source) => source.type === "HDMI")
+      .map((source) => source.number)
+      .filter(isHdmiPort);
+    const reply = await requestIpControl({ action: "learn", nativePorts });
+    if (disposed) {
+      return { status: "unavailable" };
+    }
+    const status = reply?.status;
+    if (status === "added" || status === "known" || status === "noHdmi") {
+      if (Array.isArray(reply?.ports) && (status === "noHdmi" || isHdmiPort(reply?.port))) {
+        // An older list reply must not overwrite a successful discovery.
+        revision++;
+        applyPorts(reply.ports);
+        return status === "noHdmi" ? { status } : { status, port: reply.port as number };
+      }
+    }
+    if (status === "pairFailed" || status === "readFailed" || status === "storageFailed") {
+      return { status };
+    }
+    return { status: "unavailable" };
   };
   const portName = (source: InputSource) => (source.type === "TV" ? "Live TV" : source.type + " " + source.number);
   const label = (source: InputSource, defaultLabel?: string) =>
@@ -131,6 +230,24 @@ export const createInputsService = ({
     }
   };
   const openSource = (source: InputSource, request: number) => {
+    if (source.ipControl && isHdmiPort(source.number)) {
+      const port = source.number;
+      const failed = () => {
+        if (!disposed && request === selection) {
+          notify("inputs.switchFailed");
+        }
+      };
+      if (
+        !platform.openNative(source, {
+          label: displayLabel(source),
+          fallback: failed,
+          selectSource: async () => (await requestIpControl({ action: "switch", port }))?.status === "switched",
+        })
+      ) {
+        failed();
+      }
+      return;
+    }
     const hdmi = source.type === "HDMI" && settings.getSnapshot().hdmiNativeViewer;
     const fallback = () => {
       if (!disposed && request === selection) {
@@ -147,6 +264,13 @@ export const createInputsService = ({
   };
   const unsubscribeSettings = settings.subscribe(() => publish());
   const service: InputsService = {
+    canLearnIpControlInput: () => !disposed && !!platform.ipControl,
+    learnIpControlInput() {
+      learning ??= learnPort().finally(() => {
+        learning = undefined;
+      });
+      return learning;
+    },
     getSnapshot: store.getSnapshot,
     subscribe(listener) {
       if (disposed) {
@@ -192,18 +316,10 @@ export const createInputsService = ({
           done?.(false);
           return;
         }
-        const before = store.getSnapshot();
-        const byKey = new Map(before.sources.map((source) => [sourceKey(source), source]));
-        const next = records.map((source) => {
-          const record = inputRecord(source);
-          const old = byKey.get(sourceKey(record));
-          return old && equalRecord(old, record) ? old : Object.freeze(record);
-        });
-        const sources =
-          next.length === before.sources.length && next.every((source, index) => source === before.sources[index])
-            ? before.sources
-            : Object.freeze(next);
-        publish(sources);
+        reported = records.map(inputRecord);
+        sourcesReady = true;
+        publishSources();
+        const sources = store.getSnapshot().sources;
         if (store.getSnapshot().playback === "playing" && playingSource?.type === "HDMI") {
           const key = sourceKey(playingSource);
           const current = sources.find((source) => sourceKey(source) === key);
@@ -224,7 +340,7 @@ export const createInputsService = ({
         return;
       }
       const request = ++selection;
-      if (source.type !== "HDMI" || !platform.refreshBeforeHdmi) {
+      if (source.ipControl || source.type !== "HDMI" || !platform.refreshBeforeHdmi) {
         openSource(source, request);
         return;
       }
@@ -256,6 +372,9 @@ export const createInputsService = ({
         return;
       }
       started = true;
+      if (platform.ipControl) {
+        void restorePorts(RESTORE_ATTEMPTS);
+      }
       unsubscribers = [
         platform.subscribeSources(() => service.load()),
         platform.subscribeHome(() => {
@@ -292,6 +411,10 @@ export const createInputsService = ({
         service.leave();
       }
       disposed = true;
+      platform.ipControl?.dispose();
+      if (restoreTimer !== undefined) {
+        timers.clearTimeout(restoreTimer);
+      }
       selection++;
       playback++;
       pending?.();
