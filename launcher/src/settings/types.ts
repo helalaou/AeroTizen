@@ -20,6 +20,7 @@ import type {
   TemperatureUnit,
   Theme,
   TimeFormat,
+  TimeZoneSource,
   WeatherLocation,
 } from "../contracts/preferences";
 import type { WeatherSnapshot } from "../contracts/status";
@@ -90,6 +91,7 @@ export interface SettingsActions {
   setTempUnit(unit: TemperatureUnit): void;
   setTheme(theme: Theme): void;
   setTimeFormat(format: TimeFormat | "none"): void;
+  setTimeZone(source: TimeZoneSource): void;
   setWeatherPhoto(enabled: boolean): void;
   setWeatherVisible(visible: boolean): void;
   toggleApp(id: string): void;

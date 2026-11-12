@@ -25,6 +25,7 @@ export const DEFAULT_SETTINGS: SettingsDefaults = {
   clockLayout: "classic",
   aeroClockStyle: "vertical",
   timeFormat: null,
+  timeZone: "tv",
   continueWatching: false,
   continueWatchingApps: [],
   showLiveTv: true,

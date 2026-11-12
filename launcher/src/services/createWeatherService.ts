@@ -86,6 +86,7 @@ export const createWeatherService = ({
     const next = {
       temperature,
       city: current?.city ?? "",
+      timeZone: current?.zone ?? "",
       code: current?.code ?? null,
       visible: Boolean(current && opt.visible),
       showLocation: opt.showLocation,
@@ -193,6 +194,8 @@ export const createWeatherService = ({
             temp: conditions.temperature_2m,
             code: conditions.weather_code,
             city: text(geo.name) || text(geo.city),
+            // ipapi and Open-Meteo geocoding both report an IANA zone as `timezone`.
+            zone: text(geo.timezone),
             day: conditions.is_day,
             solar: parseSolar(forecastData.daily),
             unit: opt.unit,
@@ -302,6 +305,7 @@ export const createWeatherService = ({
               label: parts.join(", "),
               ...coordinates,
               country_code: typeof geo.country_code === "string" ? geo.country_code : "",
+              ...(typeof geo.timezone === "string" && geo.timezone ? { timezone: geo.timezone } : {}),
             });
           }
           done(locations);

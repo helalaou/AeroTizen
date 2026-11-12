@@ -21,6 +21,11 @@ const NETWORK_VISIBILITY_OPTIONS = [
 
 const TIME_FORMATS = ["12", "24"] as const;
 
+const TIME_ZONE_OPTIONS = [
+  { value: "tv", labelKey: "clock.timeZoneTv" },
+  { value: "weather", labelKey: "clock.timeZoneWeather" },
+] as const;
+
 const NUMERAL_OPTIONS = [
   { value: "latn", labelKey: "clock.digitsWestern" },
   { value: "arab", labelKey: "clock.digitsArabic" },
@@ -77,6 +82,15 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
             </ChoiceOption>
           ))}
         </ControlGroup>
+      </SettingsSection>
+      <SettingsSection title={t("clock.timeZone")} description={t("clock.timeZoneHint")}>
+        <ChoiceGroup
+          id="time-zone"
+          label={t("clock.timeZone")}
+          value={settings.timeZone}
+          options={TIME_ZONE_OPTIONS}
+          onSelect={actions.setTimeZone}
+        />
       </SettingsSection>
       {language === "ar" && (
         <SettingsSection title={t("clock.digits")}>

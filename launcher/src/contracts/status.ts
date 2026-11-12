@@ -24,6 +24,8 @@ export interface WeatherSnapshot {
   readonly code: number | null;
   readonly showLocation: boolean;
   readonly temperature: number | null;
+  // IANA time zone of the weather location, or "" when unknown.
+  readonly timeZone: string;
   readonly visible: boolean;
 }
 

@@ -19,8 +19,8 @@ export const HeaderStatus = ({
   clock: ClockService;
 }) => {
   const settings = useStore(store);
-  const value = useClock(status.time, clock, settings);
   const weather = useWeather(status.weather);
+  const value = useClock(status.time, clock, settings, settings.timeZone === "weather" ? weather.timeZone : "");
   const layout = settings.clockLayout === "custom" ? settings.aeroClockStyle : "compact";
   return (
     <div class={styles.status} data-header-status data-expanded={layout !== "compact" ? "true" : "false"}>
