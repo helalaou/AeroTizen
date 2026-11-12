@@ -90,6 +90,11 @@ survive development hot reload. The early diagnostics bundle records startup mar
 `bindLauncherKeys` routes remote input to text entry, Fireplace, input playback,
 Settings and Home in that order. Each app mount binds its own controllers and removes
 the key listeners when the views are replaced.
+The Fireplace feature supplies `createFireplaceKeyHandler` through the shared
+`RemoteKeyHandler` contract. It owns volume and close-key rules. The app router
+checks whether it is active and forwards keydown events; it suppresses Home keyup
+events while an overlay is active. Fireplace controls live in `contracts/fireplace.ts`,
+with no dependency on the Tizen runtime types.
 
 ## Diagnostics ownership
 

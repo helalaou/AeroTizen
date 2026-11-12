@@ -87,6 +87,10 @@ export interface NavigationHandlers {
   focus(): void;
   keydown(code: number, event: Pick<KeyboardEvent, "preventDefault">): void;
 }
+export interface RemoteKeyHandler {
+  isActive(): boolean;
+  keydown(code: number, event: Pick<KeyboardEvent, "preventDefault">): void;
+}
 export interface SettingsBridge {
   close(): void;
   focus(): void;
