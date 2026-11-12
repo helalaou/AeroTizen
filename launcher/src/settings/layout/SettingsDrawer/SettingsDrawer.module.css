@@ -41,6 +41,7 @@
   min-width: 0;
   height: 100%;
   padding: 29px 13px 25px;
+  line-height: var(--settings-sidebar-line-height, normal);
   background: transparent;
   border-right: 1px solid var(--border-control);
 
@@ -72,6 +73,8 @@
 .sidebarTitle {
   font-size: 31px;
   font-weight: 500;
+  text-transform: var(--settings-title-transform, none);
+  letter-spacing: var(--settings-title-tracking, normal);
   margin: 7px 0 22px;
 }
 
@@ -141,7 +144,8 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 24px 9px 25px 4px;
+  margin-left: calc(-1 * var(--settings-scroll-ring-room, 0px));
+  padding: 24px 9px 25px calc(4px + var(--settings-scroll-ring-room, 0px));
 }
 
 .pane {

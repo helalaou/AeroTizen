@@ -1,8 +1,8 @@
 .viewport {
   &[data-enabled="true"] {
     overflow: hidden;
-    margin: -32px calc(-1 * var(--home-side-padding));
-    padding: 32px var(--home-side-padding);
+    margin: calc(-1 * var(--home-row-clearance, 32px)) calc(-1 * var(--home-side-padding));
+    padding: var(--home-row-clearance, 32px) var(--home-side-padding);
   }
 }
 

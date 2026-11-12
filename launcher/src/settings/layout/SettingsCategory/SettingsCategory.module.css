@@ -26,6 +26,10 @@
 
   &.return {
     margin-bottom: 0;
+
+    .title {
+      white-space: var(--settings-return-label-wrap, normal);
+    }
   }
 }
 
@@ -34,7 +38,7 @@
   width: 35px;
   text-align: center;
   font-size: 27px;
-  color: inherit;
+  color: var(--settings-category-icon, inherit);
   display: flex;
   align-items: center;
   justify-content: center;

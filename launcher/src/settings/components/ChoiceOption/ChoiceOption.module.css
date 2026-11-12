@@ -30,9 +30,14 @@
 
   &[aria-pressed="true"] {
     background: var(--choice-selected-surface);
+    color: var(--choice-selected-text, var(--control-text));
 
     &:not([data-focused="true"]) {
       border-color: var(--choice-selected-border);
+    }
+
+    &[data-focused="true"] {
+      color: var(--choice-selected-text, var(--control-focused-text));
     }
   }
 }

@@ -10,6 +10,8 @@
   margin: 0;
   font-size: 37px;
   font-weight: 500;
+  text-transform: var(--settings-title-transform, none);
+  letter-spacing: var(--settings-title-tracking, normal);
 
   &[data-variant="section"] {
     font-size: 24px;

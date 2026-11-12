@@ -3,20 +3,40 @@
   flex: 0 0 auto;
   width: var(--app-card-size);
   height: var(--app-card-size);
-  border-radius: 10px;
+  border-radius: var(--home-card-radius, 10px);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--home-app-gap, 22px);
   background: var(--app-background, var(--app-placeholder-surface));
+  box-shadow: var(--home-card-shadow, none);
   transform: translateZ(0);
   transition: transform var(--motion-duration-focus) ease-out;
 
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: inherit;
+    background: var(--home-card-sheen, none);
+    pointer-events: none;
+  }
+
   &[data-focused="true"] {
-    transform: translateZ(0) scale(1.035);
+    transform: translateZ(0) var(--home-card-focus-transform, scale(1.035));
     box-shadow: var(--home-card-focus-shadow);
     z-index: 2;
+
+    [data-app-grid][data-scroll="false"][data-columns="5"] > &:nth-child(-n + 5):not([data-moving="true"]),
+    [data-app-grid][data-scroll="false"][data-columns="4"] > &:nth-child(-n + 4):not([data-moving="true"]),
+    [data-app-grid][data-scroll="false"][data-columns="3"] > &:nth-child(-n + 3):not([data-moving="true"]),
+    [data-app-grid][data-scroll="true"] > &:not([data-moving="true"]) {
+      box-shadow: var(--home-card-focus-shadow-top, var(--home-card-focus-shadow));
+    }
   }
 
   &[data-moving="true"] {

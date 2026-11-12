@@ -39,7 +39,7 @@
     text-align: center;
     gap: 5px;
     border: 2px solid var(--input-card-border);
-    border-radius: 27px;
+    border-radius: var(--input-card-radius, 27px);
     background: var(--input-card-surface);
     box-shadow: var(--input-card-shadow);
     transition:
@@ -70,7 +70,7 @@
       flex: 0 1 auto;
       width: 100%;
       max-width: none;
-      font-family: "SamsungOne", "Roboto", Arial, sans-serif;
+      font-family: var(--font-ui, "SamsungOne", "Roboto", Arial, sans-serif);
       font-size: 22px;
       line-height: 1.13;
     }
@@ -88,7 +88,7 @@
       --input-icon-text: var(--input-empty-text);
       --input-subtitle-text: var(--input-empty-subtitle-text);
 
-      opacity: 0.37;
+      opacity: var(--input-empty-opacity, 0.37);
       border-color: transparent;
       background: transparent;
       box-shadow: none;
@@ -99,6 +99,9 @@
       --input-status-text: var(--input-connected-status-text, #a3f4d9);
       --input-status-border: var(--input-connected-status-border, rgba(132, 233, 197, 0.3));
       --input-status-surface: var(--input-connected-status-surface, rgba(12, 66, 53, 0.36));
+      --input-text: var(--input-connected-text);
+      --input-icon-text: var(--input-connected-icon-text);
+      --input-subtitle-text: var(--input-connected-subtitle-text);
 
       border-color: var(--input-connected-border, rgba(106, 239, 201, 0.45));
       background: var(
@@ -112,6 +115,9 @@
       --input-status-text: var(--input-recognized-status-text, #f3d69b);
       --input-status-border: var(--input-recognized-status-border, rgba(239, 204, 133, 0.28));
       --input-status-surface: var(--input-recognized-status-surface, rgba(90, 60, 19, 0.33));
+      --input-text: var(--input-connected-text);
+      --input-icon-text: var(--input-connected-icon-text);
+      --input-subtitle-text: var(--input-connected-subtitle-text);
 
       border-color: var(--input-recognized-border, rgba(245, 210, 145, 0.4));
       background: var(
@@ -131,7 +137,7 @@
 
     &[data-focused="true"] {
       --input-text: var(--input-focus-text);
-      --input-icon-text: var(--input-focus-text);
+      --input-icon-text: var(--input-focus-icon-text, var(--input-focus-text));
       --input-subtitle-text: var(--input-focus-subtitle-text);
       --input-status-text: var(--input-focus-text);
       --input-status-border: var(--input-focus-status-border);
@@ -173,7 +179,7 @@
 
 .label {
   font-size: 30px;
-  font-weight: 500;
+  font-weight: var(--app-label-weight, 500);
   color: var(--input-text);
   text-shadow: var(--input-label-shadow);
   max-width: 60%;
@@ -201,11 +207,7 @@
   border-radius: 12px;
   background: var(--input-status-surface);
   color: var(--input-status-text);
-  font:
-    600 12px/1.1 "SamsungOne",
-    "Roboto",
-    Arial,
-    sans-serif;
+  font: 600 12px/1.1 var(--font-ui, "SamsungOne", "Roboto", Arial, sans-serif);
   letter-spacing: 0.45px;
   white-space: nowrap;
   pointer-events: none;
