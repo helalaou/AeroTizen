@@ -9,6 +9,7 @@ export const createTestStatus = (timestamp = 0) => ({
     code: null,
     showLocation: false,
     temperature: null,
+    timeZone: "",
     visible: false,
   }),
   dispose: () => undefined,

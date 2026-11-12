@@ -9,6 +9,7 @@ export interface CachedWeather extends WeatherReading {
   readonly source: string;
   readonly temp: number;
   readonly unit: TemperatureUnit;
+  readonly zone?: string;
 }
 
 export const record = (value: unknown): Record<string, unknown> | null =>
@@ -64,6 +65,7 @@ export const cachedWeather = (value: unknown): CachedWeather | null => {
     code: data.code,
     at: data.at,
     city: text(data.city),
+    zone: text(data.zone),
     unit: data.unit,
     source: data.source,
     day: data.day,

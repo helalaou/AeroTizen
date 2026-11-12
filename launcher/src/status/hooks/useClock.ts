@@ -2,6 +2,7 @@ import type { ClockService } from "../../contracts/launcher";
 import type { SettingsSnapshot, TimeFormat } from "../../contracts/preferences";
 import { useStore } from "../../shared/hooks/useStore";
 import type { Store } from "../../shared/state/createStore";
+import { zonedDate } from "../../shared/time/zonedDate";
 
 const getTimeFields = (clock: ClockService, now: Date, format: TimeFormat, text: string) => {
   const fields = clock.formatTimeParts?.(now, format);
@@ -12,9 +13,9 @@ const getTimeFields = (clock: ClockService, now: Date, format: TimeFormat, text:
   return { hour: parts?.[1] ?? text, minute: parts?.[2] ?? "", period: parts?.[3] };
 };
 
-export const useClock = (time: Store<number>, clock: ClockService, settings: SettingsSnapshot) => {
+export const useClock = (time: Store<number>, clock: ClockService, settings: SettingsSnapshot, timeZone = "") => {
   const timestamp = useStore(time);
-  const now = new Date(timestamp);
+  const now = zonedDate(timestamp, timeZone);
   const text = settings.showTime ? clock.formatTime(now, settings.timeFormat) : "";
   const fields = settings.showTime
     ? getTimeFields(clock, now, settings.timeFormat, text)

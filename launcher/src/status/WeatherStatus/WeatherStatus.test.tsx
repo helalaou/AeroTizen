@@ -5,7 +5,15 @@ import { renderWithEnglish } from "../../test/renderWithEnglish";
 
 import { WeatherStatus } from "./WeatherStatus";
 
-const cloudy = { city: "London", code: 3, condition: "Cloudy", text: "12°", temperature: 12, visible: true };
+const cloudy = {
+  city: "London",
+  code: 3,
+  condition: "Cloudy",
+  text: "12°",
+  temperature: 12,
+  timeZone: "",
+  visible: true,
+};
 
 test.each([
   { code: 0, glyph: "sun" },

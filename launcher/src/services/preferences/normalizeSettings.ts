@@ -42,6 +42,7 @@ const location = (value: unknown): WeatherLocation | null => {
     longitude: item.longitude,
     ...(typeof item.label === "string" ? { label: item.label } : {}),
     ...(typeof item.country_code === "string" ? { country_code: item.country_code } : {}),
+    ...(typeof item.timezone === "string" && item.timezone ? { timezone: item.timezone } : {}),
   };
 };
 
@@ -75,6 +76,7 @@ export const normalizeSettings = (
     showTime: boolean(data.showTime, defaults.showTime),
     showNetwork: boolean(data.showNetwork, defaults.showNetwork),
     tempUnit: data.tempUnit === "C" || data.tempUnit === "F" ? data.tempUnit : defaults.tempUnit || locale.tempUnit(),
+    timeZone: choice(data.timeZone, ["tv", "weather"] as const, defaults.timeZone),
     weatherLocation: location(data.weatherLocation),
     weatherShowLocation: boolean(data.weatherShowLocation, defaults.weatherShowLocation),
     dateFormat: choice(

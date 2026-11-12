@@ -115,6 +115,7 @@ export const createSettingsActions = (
       commit({ hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } }),
     setTimeFormat: (format) =>
       commit(format === "none" ? { showTime: false } : { showTime: true, timeFormat: format }, services.applyClock),
+    setTimeZone: (timeZone) => commit({ timeZone }, services.applyClock),
     setLocation: (weatherLocation) => commit({ weatherLocation }),
     setSpeed(direction) {
       const { MIN, MAX, STEP } = services.config.SPEED;
