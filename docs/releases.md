@@ -253,7 +253,8 @@ version. CLI builds target the host OS and CPU. Each built executable is copied 
 the checkout and run with `--help` and `--version`, with Python paths removed.
 
 Launcher release jobs install the locked Node dependencies and compile Settings on the
-exact release commit. The unsigned WGT uses `dist/launcher/`, including the Preact license;
+exact release commit. The unsigned WGT uses `dist/launcher/`, including the Preact license
+and each font a stylesheet names, with its family's license;
 TypeScript sources, development tools and the legacy Settings renderer are excluded.
 The packager rejects missing builds, stale manifests and missing Settings runtime files.
 Node is needed to build the launcher, but is not needed to download or install a release.

@@ -13,6 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
 TIZEN = "{http://tizen.org/ns/widgets}"
+FONT_URL = re.compile(r"""url\(\s*["']?\.\./(fonts/[^"')]+)["']?\s*\)""")
+FONT_LICENSE = "OFL.txt"
 
 
 def check_version(value):
@@ -83,6 +85,12 @@ def build_launcher(root, output, tag=None):
     ]
     for directory, suffix in (("css", ".css"), ("js", ".js"), ("service", ".js")):
         files.extend((launcher / directory).rglob(f"*{suffix}"))
+    fonts = set()
+    for stylesheet in (launcher / "css").rglob("*.css"):
+        for name in FONT_URL.findall(stylesheet.read_text(encoding="utf-8")):
+            font = launcher / name
+            fonts.update((font, font.parent / FONT_LICENSE))
+    files.extend(fonts)
     html = (launcher / "index.html").read_text(encoding="utf-8")
     if 'id="weather-photo-root"' in html:
         # The bundled wallpaper view loads these local scenes. Keep their provenance

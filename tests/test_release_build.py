@@ -160,6 +160,33 @@ def test_launcher_requires_background_service(launcher, tmp_path):
         build.build_launcher(launcher, tmp_path / "dist")
 
 
+def add_font(launcher):
+    runtime = launcher / "dist/launcher"
+    (runtime / "fonts/sample").mkdir(parents=True)
+    (runtime / "fonts/sample/sample.woff2").write_bytes(b"font")
+    (runtime / "fonts/sample/OFL.txt").write_text("SIL Open Font License")
+    (runtime / "css/fonts.css").write_text(
+        '@font-face { src: url("../fonts/sample/sample.woff2") format("woff2"); }'
+    )
+
+
+def test_launcher_ships_the_fonts_its_stylesheets_name_with_their_license(launcher, tmp_path):
+    add_font(launcher)
+    (launcher / "dist/launcher/fonts/sample/unused.woff2").write_bytes(b"not named by a stylesheet")
+    package = build.build_launcher(launcher, tmp_path / "dist")
+    with zipfile.ZipFile(package) as archive:
+        fonts = [name for name in archive.namelist() if name.startswith("fonts/")]
+    assert fonts == ["fonts/sample/OFL.txt", "fonts/sample/sample.woff2"]
+
+
+@pytest.mark.parametrize("missing", ["sample.woff2", "OFL.txt"])
+def test_launcher_rejects_a_named_font_without_its_file_or_license(launcher, tmp_path, missing):
+    add_font(launcher)
+    (launcher / "dist/launcher/fonts/sample" / missing).unlink()
+    with pytest.raises(ValueError, match="must be a regular file"):
+        build.build_launcher(launcher, tmp_path / "dist")
+
+
 @pytest.mark.skipif(sys.platform == "win32", reason="Creating symlinks requires elevated Windows privileges")
 def test_launcher_rejects_symlink_runtime_file(launcher, tmp_path):
     source = launcher / "dist/launcher/js/main.js"
