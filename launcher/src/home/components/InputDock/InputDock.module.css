@@ -12,7 +12,8 @@
   [data-theme="amethyst"] &,
   [data-theme="mint"] &,
   [data-theme="halo"] &,
-  [data-theme="pop"] & {
+  [data-theme="pop"] &,
+  [data-theme="frost"] & {
     --input-dock-spacing: 11px;
 
     position: relative;
