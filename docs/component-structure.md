@@ -252,7 +252,8 @@ The typed background IP Control module pairs and reads the active source only wh
 requests discovery. It stores the token and learned ports in a separate private file.
 Native navigation acknowledges the watcher handoff before selecting the source, then opens
 the viewer through its existing cancellation and focus checks. Normal HDMI playback remains
-controlled by the saved playback preference. `/?mockHdmi=5` uses the development adapters.
+controlled by the saved playback preference. The default development demo simulates a missing
+HDMI 5 input through the development adapters.
 
 ## Clock ownership
 

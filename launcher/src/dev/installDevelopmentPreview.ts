@@ -5,6 +5,7 @@ import { createPreviewPlatforms } from "./createPreviewPlatforms";
 import { previewAppId } from "./previewApps";
 
 const PREVIEW_SMALL_CARD_COLUMNS = 5;
+const PREVIEW_MISSING_HDMI_PORT = 5;
 const DEFAULT_HOME_APPS = ["YouTube", "Netflix", "Prime Video", "Disney+", "Apple TV", "Stremio"] as const;
 
 // Explicit adapters and native SDK fixtures keep their own setup.
@@ -21,7 +22,7 @@ if (!("tizen" in window) && !runtime.platforms) {
     },
   };
   runtime.platforms = createPreviewPlatforms(() => true, {
-    missingHdmiPort: new URLSearchParams(location.search).get("mockHdmi") === "5" ? 5 : undefined,
+    missingHdmiPort: PREVIEW_MISSING_HDMI_PORT,
     notifyInput: (source) =>
       runtime.toast(runtime.translate("inputs.wouldSwitch", { input: runtime.inputs.label(source) })),
   });

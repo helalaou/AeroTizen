@@ -326,7 +326,7 @@ test.describe("missing-input translations", () => {
         },
         { theme, language: pseudoLanguage },
       );
-      await page.goto(devUrl + "?mockHdmi=5");
+      await page.goto(devUrl);
       await page.locator("#gear").click();
       await openCategory(page, "sources");
       const add = page.locator('[data-key="ip-control-probe"]');

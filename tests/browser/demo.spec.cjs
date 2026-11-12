@@ -50,8 +50,16 @@ test("static demo loads its own sample data and assets from a project subpath", 
   );
   await launcher.locator("#gear").click();
   await expect(launcher.locator("#editor")).toBeVisible();
+  await openCategory(launcher, "sources");
+  await launcher.getByRole("button", { name: "Find and add input" }).click();
+  await expect(launcher.locator("#toast")).toHaveText("HDMI 5 added to Home.");
+  await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await expect(launcher.locator("#editor")).toBeHidden();
+  const learnedInput = launcher.getByRole("button", { name: "HDMI 5", exact: true });
+  await expect(learnedInput).toBeVisible();
+  await learnedInput.click();
+  await expect(launcher.locator("#toast")).toHaveText("Would switch to HDMI 5");
   expect(bridgeRequests).toEqual([]);
   expect(errors).toEqual([]);
 });

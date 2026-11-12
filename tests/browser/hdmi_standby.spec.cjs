@@ -399,10 +399,12 @@ test("the standard launcher adds the active missing port and restores a working 
 
 test.describe("missing-input development preview", () => {
   test.use({ previewPlatforms: false });
-  test("the development preview discovers a missing input through the shared input service", async ({ page }) => {
+  test("the default development preview discovers a missing input through the shared input service", async ({
+    page,
+  }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.goto("http://127.0.0.1:8172/?mockHdmi=5");
+    await page.goto("http://127.0.0.1:8172/");
     await page.locator("#gear").click();
     await openCategory(page, "sources");
     await page.getByRole("button", { name: "Find and add input" }).click();

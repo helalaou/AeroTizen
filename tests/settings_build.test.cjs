@@ -325,6 +325,6 @@ test("production includes the IP Control service and excludes the missing-input 
   assert.ok(existsSync(path.join(output, "service/ip-control.js")));
   const bundle = read(output, "js/launcher-ui.js");
   assert.match(bundle, /AeroTizen\.IpControlProbeReply/);
-  assert.doesNotMatch(bundle, /mockHdmi/);
+  assert.doesNotMatch(bundle, /missingHdmiPort|notifyInput/);
   assert.match(read(output, "service/index.js"), /ip-control/);
 });
