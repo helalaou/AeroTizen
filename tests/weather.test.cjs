@@ -1,6 +1,4 @@
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
@@ -8,7 +6,6 @@ const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 const { createWeatherPhoto } = loadTypeScript("launcher/src/backgrounds/createWeatherPhoto.ts");
 
-const root = path.join(__dirname, "..");
 const { createWeatherService } = loadTypeScript("launcher/src/services/createWeatherService.ts");
 const { createWeatherPlatform } = loadTypeScript("launcher/src/platform/tizen/createWeatherPlatform.ts");
 const CACHE = "aerotizen.weather.v2";
@@ -23,7 +20,7 @@ const london = {
 const boston = { name: "Boston", latitude: 42.3584, longitude: -71.0598, country_code: "US" };
 const conditions = (temp = 12) => ({ current: { temperature_2m: temp, weather_code: 3 } });
 
-function harness({ saved, settings = {}, blockedStorage = false, now = NOW, view = true } = {}) {
+function harness({ saved, settings = {}, blockedStorage = false, now = NOW } = {}) {
   const requests = [],
     intervals = new Map(),
     storage = new Map();
@@ -37,24 +34,6 @@ function harness({ saved, settings = {}, blockedStorage = false, now = NOW, view
     weatherLocation: null,
     weatherShowLocation: true,
     ...settings,
-  };
-  const el = {
-    hidden: true,
-    nodes: {},
-    set innerHTML(html) {
-      this.html = html;
-      this.nodes = { b: { textContent: "" } };
-      if (html.includes("<span>")) {
-        this.nodes.span = { textContent: "" };
-      }
-    },
-    set textContent(value) {
-      this.html = value;
-      this.nodes = {};
-    },
-    querySelector(selector) {
-      return this.nodes[selector] || null;
-    },
   };
   class FakeXHR {
     open(method, url) {
@@ -75,7 +54,11 @@ function harness({ saved, settings = {}, blockedStorage = false, now = NOW, view
   }
   const context = vm.createContext({
     window: {},
-    document: { getElementById: () => el },
+    document: {
+      getElementById() {
+        throw new Error("Weather service must not query DOM hosts");
+      },
+    },
     XMLHttpRequest: FakeXHR,
     Date: class extends Date {
       static now() {
@@ -126,18 +109,10 @@ function harness({ saved, settings = {}, blockedStorage = false, now = NOW, view
     now: () => clock,
     timers: context,
   });
-  // The frozen markup fixture is a presentation consumer of the current service.
-  context.window.Weather = weather;
-  if (view)
-    vm.runInContext(
-      fs.readFileSync(path.join(root, "tests/fixtures/legacy-launcher/js/status-view.js"), "utf8"),
-      context,
-    );
   return {
     weather,
     preferences,
     requests,
-    el,
     storage,
     intervals,
     context,
@@ -166,9 +141,9 @@ test("automatic location uses IP coordinates for the forecast", () => {
   assert.equal(url.searchParams.get("latitude"), "51.5");
   assert.equal(url.searchParams.get("longitude"), "-0.12");
   h.requests[1].respond(conditions());
-  assert.equal(h.el.hidden, false);
-  assert.equal(h.el.nodes.b.textContent, "12°");
-  assert.equal(h.el.nodes.span.textContent, "London");
+  assert.equal(h.weather.getSnapshot().visible, true);
+  assert.equal(h.weather.getSnapshot().temperature, 12);
+  assert.equal(h.weather.getSnapshot().city, "London");
 });
 
 test("saved location bypasses IP lookup and retains its chosen coordinates", () => {
@@ -180,11 +155,11 @@ test("saved location bypasses IP lookup and retains its chosen coordinates", () 
   assert.equal(url.searchParams.get("latitude"), String(london.latitude));
   assert.equal(url.searchParams.get("longitude"), String(london.longitude));
   h.requests[0].respond(conditions());
-  assert.equal(h.el.nodes.span.textContent, "London");
+  assert.equal(h.weather.getSnapshot().city, "London");
 });
 
 test("changing location visibility preserves the cached reading without fetching", () => {
-  const h = harness({ saved: cached(), view: false });
+  const h = harness({ saved: cached() });
   h.start();
   assert.equal(h.weather.getSnapshot().city, "London");
   h.preferences.weatherShowLocation = false;
@@ -211,12 +186,11 @@ test("location visibility survives a forecast and restart from cache", () => {
   const h = harness({
     saved: cached(),
     settings: { weatherShowLocation: false, weatherLocation: london },
-    view: false,
   });
   h.start();
   h.requests[0].respond(conditions());
   assert.equal(h.weather.getSnapshot().showLocation, false);
-  const reboot = harness({ saved: h.cached(), settings: h.preferences, view: false });
+  const reboot = harness({ saved: h.cached(), settings: h.preferences });
   reboot.start();
   assert.equal(reboot.requests.length, 0);
   assert.equal(reboot.weather.getSnapshot().showLocation, false);
@@ -232,11 +206,11 @@ test("changing location clears the old reading and ignores an old forecast respo
   const delayed = h.requests[1];
   h.preferences.weatherLocation = boston;
   h.weather.refresh();
-  assert.equal(h.el.hidden, true);
+  assert.equal(h.weather.getSnapshot().visible, false);
   h.requests[2].respond(conditions(55));
   delayed.respond(conditions(1));
-  assert.equal(h.el.nodes.b.textContent, "55°");
-  assert.equal(h.el.nodes.span.textContent, "Boston");
+  assert.equal(h.weather.getSnapshot().temperature, 55);
+  assert.equal(h.weather.getSnapshot().city, "Boston");
   assert.equal(h.cached().city, "Boston");
 });
 
@@ -249,7 +223,7 @@ test("an old IP response cannot replace a newly selected location", () => {
   ip.respond({ city: "Wrong city", latitude: 1, longitude: 1, country_code: "US" });
   assert.equal(h.requests.length, 2);
   h.requests[1].respond(conditions());
-  assert.equal(h.el.nodes.span.textContent, "London");
+  assert.equal(h.weather.getSnapshot().city, "London");
 });
 
 test("switching back to automatic location makes a fresh IP lookup", () => {
@@ -258,7 +232,7 @@ test("switching back to automatic location makes a fresh IP lookup", () => {
   h.requests[0].respond(conditions());
   h.preferences.weatherLocation = null;
   h.weather.refresh();
-  assert.equal(h.el.hidden, true);
+  assert.equal(h.weather.getSnapshot().visible, false);
   assert.equal(h.requests[1].url, "https://ipapi.co/json/");
 });
 
@@ -287,24 +261,24 @@ test("unit changes convert the old value and discard its pending request", () =>
   const delayed = h.requests[1];
   h.preferences.tempUnit = "F";
   h.weather.refresh();
-  assert.equal(h.el.hidden, false);
-  assert.equal(h.el.nodes.b.textContent, "54°");
+  assert.equal(h.weather.getSnapshot().visible, true);
+  assert.equal(h.weather.getSnapshot().temperature, 53.6);
   h.requests[2].respond(conditions(54));
   delayed.respond(conditions(12));
-  assert.equal(h.el.nodes.b.textContent, "54°");
+  assert.equal(h.weather.getSnapshot().temperature, 54);
 });
 
 test("matching cache avoids requests, other units convert and wrong locations hide", () => {
   const h = harness({ saved: cached() });
   h.start();
   assert.equal(h.requests.length, 0);
-  assert.equal(h.el.hidden, false);
+  assert.equal(h.weather.getSnapshot().visible, true);
   for (const settings of [{ tempUnit: "F" }, { weatherLocation: london }]) {
     const changed = harness({ saved: cached(), settings });
     changed.start();
-    assert.equal(changed.el.hidden, !!settings.weatherLocation);
+    assert.equal(changed.weather.getSnapshot().visible, !settings.weatherLocation);
     if (settings.tempUnit === "F") {
-      assert.equal(changed.el.nodes.b.textContent, "54°");
+      assert.equal(changed.weather.getSnapshot().temperature, 53.6);
     }
     assert.equal(changed.requests.length, 1);
   }
@@ -323,7 +297,7 @@ test("old, future, corrupt and malformed cached weather cannot appear", () => {
   ]) {
     const h = harness({ saved });
     h.start();
-    assert.equal(h.el.hidden, true);
+    assert.equal(h.weather.getSnapshot().visible, false);
     assert.equal(h.requests.length, 1);
   }
 });
@@ -331,12 +305,12 @@ test("old, future, corrupt and malformed cached weather cannot appear", () => {
 test("recent cached weather remains through an outage and expires after two hours", () => {
   const h = harness({ saved: cached({ at: NOW - 30 * 60000 }) });
   h.start();
-  assert.equal(h.el.hidden, false);
+  assert.equal(h.weather.getSnapshot().visible, true);
   h.requests[0].ontimeout();
-  assert.equal(h.el.hidden, false);
+  assert.equal(h.weather.getSnapshot().visible, true);
   h.advance(2 * 3600000);
   h.weather.refresh();
-  assert.equal(h.el.hidden, true);
+  assert.equal(h.weather.getSnapshot().visible, false);
 });
 
 test("bad IP coordinates do not make a forecast request; zero is a valid coordinate", () => {
@@ -352,7 +326,7 @@ test("bad IP coordinates do not make a forecast request; zero is a valid coordin
     h.start();
     h.requests[0].respond(geo);
     assert.equal(h.requests.length, 1);
-    assert.equal(h.el.hidden, true);
+    assert.equal(h.weather.getSnapshot().visible, false);
   }
   const h = harness();
   h.start();
@@ -372,7 +346,7 @@ test("invalid forecasts and failed requests do not replace a valid reading", () 
     h.requests[0].respond(conditions());
     h.weather.refresh();
     h.requests[1].respond(data);
-    assert.equal(h.el.nodes.b.textContent, "12°");
+    assert.equal(h.weather.getSnapshot().temperature, 12);
   }
 });
 
@@ -438,7 +412,7 @@ test("blocked storage does not prevent weather; repeated start keeps one refresh
   const h = harness({ settings: { weatherLocation: london }, blockedStorage: true });
   h.start();
   h.requests[0].respond(conditions());
-  assert.equal(h.el.hidden, false);
+  assert.equal(h.weather.getSnapshot().visible, true);
   h.start();
   assert.equal(h.intervals.size, 1);
   assert.equal([...h.intervals.values()][0].ms, 20 * 60000);
@@ -454,8 +428,7 @@ test("weather off at startup hides fresh or stale cache and makes no automatic r
   ]) {
     const h = harness({ saved, settings: { showWeather: false } });
     h.start();
-    assert.equal(h.el.hidden, true);
-    assert.equal(h.el.html, "");
+    assert.equal(h.weather.getSnapshot().visible, false);
     assert.equal(h.requests.length, 0);
     assert.equal(h.intervals.size, 0);
     if (saved) {
@@ -477,8 +450,7 @@ test("hiding weather removes it at once and restores matching cache with saved p
   const queuedRefresh = [...h.intervals.values()][0].fn;
   h.preferences.showWeather = false;
   h.syncSettings();
-  assert.equal(h.el.hidden, true);
-  assert.equal(h.el.html, "");
+  assert.equal(h.weather.getSnapshot().visible, false);
   assert.equal(h.intervals.size, 0);
   queuedRefresh();
   assert.equal(h.requests.length, 0);
@@ -487,9 +459,9 @@ test("hiding weather removes it at once and restores matching cache with saved p
   assert.equal(h.preferences.tempUnit, "F");
   h.preferences.showWeather = true;
   h.syncSettings();
-  assert.equal(h.el.hidden, false);
-  assert.equal(h.el.nodes.b.textContent, "12°");
-  assert.equal(h.el.querySelector("span"), null);
+  assert.equal(h.weather.getSnapshot().visible, true);
+  assert.equal(h.weather.getSnapshot().temperature, 12);
+  assert.equal(h.weather.getSnapshot().showLocation, false);
   assert.equal(h.requests.length, 0);
   assert.equal(h.intervals.size, 1);
 });
@@ -503,7 +475,7 @@ test("hiding weather aborts pending IP lookup and a late response cannot start a
   assert.equal(ip.aborted, true);
   ip.respond({ city: "London", latitude: 51.5, longitude: -0.12, country_code: "GB" });
   assert.equal(h.requests.length, 1);
-  assert.equal(h.el.hidden, true);
+  assert.equal(h.weather.getSnapshot().visible, false);
   assert.equal(h.intervals.size, 0);
   assert.equal(h.storage.has(CACHE), false);
 });
@@ -518,7 +490,7 @@ test("hiding weather aborts pending forecast and a late response cannot replace 
   h.syncSettings();
   assert.equal(forecast.aborted, true);
   forecast.respond(conditions(99));
-  assert.equal(h.el.hidden, true);
+  assert.equal(h.weather.getSnapshot().visible, false);
   assert.equal(h.intervals.size, 0);
   assert.deepEqual(h.cached(), saved);
 });
@@ -536,7 +508,7 @@ test("an IP response from before off/on cannot start another forecast after weat
   assert.equal(h.requests.length, 2);
   h.requests[1].respond({ city: "London", latitude: 51.5, longitude: -0.12, country_code: "GB" });
   h.requests[2].respond(conditions());
-  assert.equal(h.el.nodes.span.textContent, "London");
+  assert.equal(h.weather.getSnapshot().city, "London");
   assert.equal(h.cached().city, "London");
   assert.equal(h.intervals.size, 1);
 });
@@ -551,8 +523,8 @@ test("a forecast from before off/on cannot replace the resumed forecast or cache
   h.syncSettings();
   h.requests[1].respond(conditions(15));
   oldForecast.respond(conditions(99));
-  assert.equal(h.el.hidden, false);
-  assert.equal(h.el.nodes.b.textContent, "15°");
+  assert.equal(h.weather.getSnapshot().visible, true);
+  assert.equal(h.weather.getSnapshot().temperature, 15);
   assert.equal(h.cached().temp, 15);
   assert.equal(h.intervals.size, 1);
 });
@@ -570,7 +542,7 @@ test("refresh and location or unit changes while off do not request data; resume
   h.tick();
   assert.equal(h.requests.length, 0);
   assert.equal(h.intervals.size, 0);
-  assert.equal(h.el.hidden, true);
+  assert.equal(h.weather.getSnapshot().visible, false);
   assert.deepEqual(h.cached(), saved);
   h.preferences.showWeather = true;
   h.syncSettings();
@@ -580,8 +552,8 @@ test("refresh and location or unit changes while off do not request data; resume
   assert.equal(url.searchParams.get("latitude"), String(boston.latitude));
   assert.equal(url.searchParams.get("temperature_unit"), "fahrenheit");
   h.requests[0].respond(conditions(55));
-  assert.equal(h.el.nodes.b.textContent, "55°");
-  assert.equal(h.el.querySelector("span"), null);
+  assert.equal(h.weather.getSnapshot().temperature, 55);
+  assert.equal(h.weather.getSnapshot().showLocation, false);
 });
 
 test("resume refreshes stale cache and repeated visibility updates keep one timer and request", () => {
@@ -592,7 +564,7 @@ test("resume refreshes stale cache and repeated visibility updates keep one time
   h.syncSettings();
   h.syncSettings();
   h.syncSettings();
-  assert.equal(h.el.hidden, false);
+  assert.equal(h.weather.getSnapshot().visible, true);
   assert.equal(h.requests.length, 1);
   assert.equal(h.intervals.size, 1);
   assert.equal([...h.intervals.values()][0].ms, 20 * 60000);
@@ -624,12 +596,12 @@ test("resume converts fresh cache after a unit change while off and fetches the 
     h.weather.refresh();
     assert.equal(h.requests.length, 0);
     assert.equal(h.intervals.size, 0);
-    assert.equal(h.el.hidden, true);
+    assert.equal(h.weather.getSnapshot().visible, false);
     assert.deepEqual(h.cached(), saved);
     h.preferences.showWeather = true;
     h.syncSettings();
     h.syncSettings();
-    assert.equal(h.el.nodes.b.textContent, newTemp + "°");
+    assert.equal(h.weather.getSnapshot().temperature, newTemp);
     assert.equal(h.requests.length, 1);
     assert.equal(h.intervals.size, 1);
     assert.deepEqual(h.cached(), saved);
@@ -637,7 +609,7 @@ test("resume converts fresh cache after a unit change while off and fetches the 
     assert.equal(new URL(h.requests[1].url).searchParams.get("temperature_unit") === "fahrenheit", newUnit === "F");
     h.requests[1].respond(conditions(newTemp));
     assert.equal(h.cached().unit, newUnit);
-    assert.equal(h.el.nodes.b.textContent, newTemp + "°");
+    assert.equal(h.weather.getSnapshot().temperature, newTemp);
   }
 });
 
@@ -649,7 +621,7 @@ test("visibility guards reject automatic responses even before the visibility ha
     h.requests[0].respond(settings.weatherLocation ? conditions(99) : london);
     h.tick();
     assert.equal(h.requests.length, 1);
-    assert.equal(h.el.hidden, true);
+    assert.equal(h.weather.getSnapshot().visible, false);
     assert.equal(h.storage.has(CACHE), false);
   }
 });
@@ -666,7 +638,7 @@ test("explicit location search remains available while off and is not canceled b
   assert.equal(h.requests[0].aborted, undefined);
   h.requests[0].respond({ results: [london] });
   assert.equal(found[0].name, "London");
-  assert.equal(h.el.hidden, true);
+  assert.equal(h.weather.getSnapshot().visible, false);
   assert.equal(h.intervals.size, 0);
 });
 
@@ -789,7 +761,7 @@ test("IP country cannot change either explicit temperature scale", () => {
     h.requests[0].respond({ latitude: 0, longitude: 0, country_code: unit === "C" ? "US" : "GB" });
     assert.equal(new URL(h.requests[1].url).searchParams.get("temperature_unit") === "fahrenheit", unit === "F");
     h.requests[1].respond(conditions(temp));
-    assert.equal(h.el.nodes.b.textContent, temp + "°");
+    assert.equal(h.weather.getSnapshot().temperature, temp);
     assert.equal(h.cached().unit, unit);
   }
 });
@@ -799,18 +771,18 @@ test("unit switches convert cached weather both ways through an outage", () => {
   h.start();
   h.preferences.tempUnit = "F";
   h.weather.refresh();
-  assert.equal(h.el.nodes.b.textContent, "50°");
+  assert.equal(h.weather.getSnapshot().temperature, 50);
   h.requests[0].onerror();
-  assert.equal(h.el.nodes.b.textContent, "50°");
+  assert.equal(h.weather.getSnapshot().temperature, 50);
   h.preferences.tempUnit = "C";
   h.weather.refresh();
-  assert.equal(h.el.nodes.b.textContent, "10°");
+  assert.equal(h.weather.getSnapshot().temperature, 10);
 });
 
 test("Celsius converts a stored Fahrenheit reading before a fresh response", () => {
   const h = harness({ saved: cached({ unit: "F", temp: 50 }) });
   h.start();
-  assert.equal(h.el.nodes.b.textContent, "10°");
+  assert.equal(h.weather.getSnapshot().temperature, 10);
   assert.equal(h.requests.length, 1);
   assert.equal(h.cached().unit, "F");
 });
@@ -819,10 +791,10 @@ test("legacy Automatic and invalid cache units cannot appear", () => {
   for (const unit of ["auto", null, "invalid"]) {
     const h = harness({ saved: cached({ unit, temp: 50 }) });
     h.start();
-    assert.equal(h.el.hidden, true);
+    assert.equal(h.weather.getSnapshot().visible, false);
     h.requests[0].respond({ latitude: 0, longitude: 0, country_code: "US" });
     h.requests[1].respond(conditions(10));
-    assert.equal(h.el.nodes.b.textContent, "10°");
+    assert.equal(h.weather.getSnapshot().temperature, 10);
     assert.equal(h.cached().unit, "C");
   }
 });
@@ -831,10 +803,10 @@ test("zero is a valid temperature and null cannot appear as zero", () => {
   const h = harness({ settings: { weatherLocation: london } });
   h.start();
   h.requests[0].respond(conditions(null));
-  assert.equal(h.el.hidden, true);
+  assert.equal(h.weather.getSnapshot().visible, false);
   h.weather.refresh();
   h.requests[1].respond(conditions(0));
-  assert.equal(h.el.nodes.b.textContent, "0°");
+  assert.equal(h.weather.getSnapshot().temperature, 0);
 });
 
 test("wallpaper is a weather consumer even when the widget is hidden; turning both off aborts polling", () => {
@@ -843,7 +815,7 @@ test("wallpaper is a weather consumer even when the widget is hidden; turning bo
   });
   h.start();
   assert.equal(h.requests.length, 1);
-  assert.equal(h.el.hidden, true);
+  assert.equal(h.weather.getSnapshot().visible, false);
   const url = new URL(h.requests[0].url);
   assert.equal(url.searchParams.get("daily"), "sunrise,sunset");
   assert.equal(url.searchParams.get("timezone"), "UTC");
@@ -916,7 +888,7 @@ test("enabling wallpapers at 23:00 refreshes a fresh legacy cache immediately an
     const photo = wallpaperRuntime(h);
     h.start();
     assert.equal(h.requests.length, 0);
-    assert.equal(h.el.nodes.b.textContent, "12°");
+    assert.equal(h.weather.getSnapshot().temperature, 12);
     h.preferences.weatherPhoto = true;
     h.syncSettings();
     assert.equal(h.requests.length, 1);
@@ -929,7 +901,7 @@ test("enabling wallpapers at 23:00 refreshes a fresh legacy cache immediately an
     assert.match(photo.images[0].src, /night.jpg$/);
     photo.images[0].onload();
     assert.equal(photo.scene, "night");
-    assert.equal(h.el.nodes.b.textContent, "15°");
+    assert.equal(h.weather.getSnapshot().temperature, 15);
   }
 });
 
@@ -988,7 +960,7 @@ test("failed solar repair keeps widget cache and fallback, and toggles cannot ca
   assert.equal(h.requests.length, 1);
   assert.equal(h.intervals.size, 1);
   assert.deepEqual(h.cached(), saved);
-  assert.equal(h.el.nodes.b.textContent, "12°");
+  assert.equal(h.weather.getSnapshot().temperature, 12);
   assert.equal(photo.images.length, 0);
   h.advance(20 * 60000);
   [...h.intervals.values()][0].fn();
@@ -1002,7 +974,7 @@ test("malformed fresh forecast solar data updates temperature but neither picks 
   h.requests[0].respond(conditions(21));
   for (let i = 0; i < 5; i++) h.syncSettings();
   assert.equal(h.requests.length, 1);
-  assert.equal(h.el.nodes.b.textContent, "21°");
+  assert.equal(h.weather.getSnapshot().temperature, 21);
   assert.equal(h.weather.solarPhase(h.weather.currentReading(), ELEVEN_PM), "");
   assert.equal(photo.images.length, 0);
 });
@@ -1069,11 +1041,11 @@ test("offline solar cache stays usable until its weather expiry, then falls back
   photo.images[0].onload();
   h.requests[0].onerror();
   assert.equal(photo.scene, "night");
-  assert.equal(h.el.hidden, false);
+  assert.equal(h.weather.getSnapshot().visible, true);
   h.advance(2 * 3600000);
   h.tick();
   assert.equal(photo.scene, null);
-  assert.equal(h.el.hidden, true);
+  assert.equal(h.weather.getSnapshot().visible, false);
 });
 
 test("fresh solar forecasts select sunset, daytime weather and night rather than stale is_day", () => {
@@ -1097,7 +1069,7 @@ test("wallpapers disabled leave a fresh legacy widget cache usable without solar
   h.start();
   for (let i = 0; i < 4; i++) h.syncSettings();
   assert.equal(h.requests.length, 0);
-  assert.equal(h.el.nodes.b.textContent, "12°");
+  assert.equal(h.weather.getSnapshot().temperature, 12);
   assert.equal(h.intervals.size, 1);
 });
 
@@ -1136,7 +1108,7 @@ test("solar-day validation uses epochs across UTC midnight and does not depend o
 });
 
 test("weather snapshots convert matching cache data and expire without reading or writing markup", () => {
-  const h = harness({ saved: cached(), view: false });
+  const h = harness({ saved: cached() });
   h.context.document.getElementById = () => {
     throw new Error("Weather data must not query view hosts");
   };
@@ -1164,11 +1136,10 @@ test("weather snapshots convert matching cache data and expire without reading o
   h.tick();
   assert.equal(updates, before);
   assert.equal(h.requests.length, 0);
-  assert.deepEqual(h.el.nodes, {});
 });
 
 test("weather owns one settings and clock subscription, and reads do no network work", () => {
-  const h = harness({ saved: cached(), view: false });
+  const h = harness({ saved: cached() });
   const unsubscribe = h.weather.subscribe(() => {});
   h.weather.getSnapshot();
   h.weather.currentReading();
@@ -1190,7 +1161,7 @@ test("weather owns one settings and clock subscription, and reads do no network 
 });
 
 test("settings alone update weather, replace location requests and preserve fresh cache on unit changes", () => {
-  const h = harness({ saved: cached(), view: false });
+  const h = harness({ saved: cached() });
   h.start();
   h.preferences.weatherShowLocation = false;
   h.syncSettings();
@@ -1198,7 +1169,7 @@ test("settings alone update weather, replace location requests and preserve fres
   assert.equal(h.requests.length, 0);
   h.preferences.tempUnit = "F";
   h.syncSettings();
-  assert.equal(Math.round(h.weather.getSnapshot().temperature), 54);
+  assert.equal(h.weather.getSnapshot().temperature, 53.6);
   assert.equal(h.requests.length, 1);
   const oldLookup = h.requests[0];
   h.preferences.weatherLocation = london;
@@ -1221,7 +1192,7 @@ test("settings alone update weather, replace location requests and preserve fres
 });
 
 test("clock expiry notifies consumers even after a direct read; unrelated changes keep snapshot identity", () => {
-  const h = harness({ saved: cached(), view: false });
+  const h = harness({ saved: cached() });
   h.start();
   let notifications = 0;
   h.weather.subscribe(() => notifications++);
@@ -1241,7 +1212,7 @@ test("clock expiry notifies consumers even after a direct read; unrelated change
 });
 
 test("search cancellation aborts transport; disposal cancels all work and ignores late callbacks", () => {
-  const h = harness({ settings: { weatherLocation: london }, view: false });
+  const h = harness({ settings: { weatherLocation: london } });
   h.start();
   let deliveries = 0;
   const cancel = h.weather.searchLocations("London", () => deliveries++);
@@ -1274,7 +1245,7 @@ test("search cancellation aborts transport; disposal cancels all work and ignore
 });
 
 test("new solar readings notify photo consumers even when widget fields do not change", () => {
-  const h = harness({ settings: { weatherLocation: london }, view: false });
+  const h = harness({ settings: { weatherLocation: london } });
   h.start();
   h.requests[0].respond(conditions());
   const snapshot = h.weather.getSnapshot();

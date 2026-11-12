@@ -1,5 +1,4 @@
 const { openCategory } = require("./drawer_helpers.cjs");
-const { preserveLegacyDom } = require("./legacy_helpers.cjs");
 const { watcherStatus } = require("./watcher_helpers.cjs");
 const { test, expect } = require("./launcher_fixture.cjs");
 const { runSettingsUi } = require("../settings_ui.browser");
@@ -103,12 +102,10 @@ test("compiled Settings retains the original Samsung Home escape without the opt
   expect(await page.evaluate(() => window.legacyEscapes)).toBe(1);
 });
 
-test("Settings matches legacy remote, persistence, search and artwork behaviour", async ({ page }, info) => {
-  await preserveLegacyDom(page);
+test("Settings retains remote, persistence, search, artwork and lifecycle behaviour", async ({ page }, info) => {
   await page.goto("/");
   const result = await runSettingsUi(page, {
-    baselineUrl: "http://127.0.0.1:8170/tests/fixtures/legacy-launcher/",
-    screenshotPath: (variant) => info.outputPath(variant + ".png"),
+    screenshotPath: info.outputPath("settings.png"),
   });
   expect(result.runtimeErrors).toEqual([]);
 });

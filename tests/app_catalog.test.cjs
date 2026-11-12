@@ -2,8 +2,6 @@ const { installApps } = require("./helpers/apps.cjs");
 const { installHomeWatcher } = require("./helpers/homewatch.cjs");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
@@ -54,15 +52,8 @@ test("catalogue records have unique keys and unambiguous string IDs", () => {
   }
 });
 
-test("catalogue keeps every original app and formerly branded entry", () => {
-  const { A } = runtime();
-  const context = vm.createContext({ window: { AeroTizen: {} } });
-  vm.runInContext(fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/app-catalog.js"), "utf8"), context);
-  const current = new Set(A.catalog.apps.map((entry) => entry.key));
-  for (const entry of context.window.AeroTizen.catalog.apps) {
-    assert.ok(current.has(entry.key), `Original app was dropped: ${entry.key}`);
-  }
-  const keys = Array.from(A.catalog.apps, (entry) => entry.key);
+test("catalogue records are sorted by key", () => {
+  const keys = Array.from(appCatalog.apps, (entry) => entry.key);
   assert.deepEqual(keys, [...keys].sort());
 });
 

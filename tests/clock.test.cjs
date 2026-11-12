@@ -1,6 +1,4 @@
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 const { installClock } = require("./helpers/clock.cjs");
@@ -8,21 +6,9 @@ const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { installSettings } = require("./helpers/settings.cjs");
 const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 
-function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, measure, view = true, now } = {}) {
+function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, now } = {}) {
   const storage = new Map([["aerotizen.settings.v1", JSON.stringify(saved)]]);
-  const elements = {
-    date: {},
-    time: {
-      parentNode: { classList: { toggle() {} } },
-      setAttribute(name, value) {
-        this[name] = value;
-      },
-    },
-  };
-  if (measure) {
-    elements.time.style = {};
-  }
-  const A = { $: (id) => elements[id], config: launcherConfig };
+  const A = { config: launcherConfig };
   const timers = [];
   const context = vm.createContext({
     window: {
@@ -30,9 +16,7 @@ function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, measure, vie
       navigator: { languages: [locale], language: locale },
       Intl: intl,
       tizen: time ? { time } : undefined,
-      getComputedStyle: measure ? () => ({ fontWeight: "700", fontSize: "36px", fontFamily: "Arial" }) : undefined,
     },
-    document: measure ? { createElement: () => ({ getContext: () => ({ measureText: measure }) }) } : undefined,
     setInterval: (tick, delay) => timers.push({ tick, delay }),
     AeroTizen: A,
     localStorage: {
@@ -42,21 +26,8 @@ function runtime({ locale = "en-GB", time, intl = Intl, saved = {}, measure, vie
   });
   installClock(context, now);
   installSettings(context);
-  if (view)
-    vm.runInNewContext(fs.readFileSync(path.join(__dirname, "fixtures/legacy-launcher/js/status-view.js"), "utf8"), {
-      ...context,
-      window: {
-        ...context.window,
-        AeroTizen: {
-          ...A,
-          get settings() {
-            return A.settings.getSnapshot();
-          },
-        },
-      },
-    });
   A.settings.load();
-  return { A, elements, storage, timers };
+  return { A, storage, timers };
 }
 
 const sample = new Date(2026, 9, 21, 17, 4);
@@ -124,7 +95,7 @@ test("unavailable or unsupported TV formats fall back to the browser locale", ()
 });
 
 test("manual choices survive reload, including hiding the date", () => {
-  const { A, elements, storage } = runtime({
+  const { A, storage } = runtime({
     saved: { dateFormat: "none", timeFormat: "12" },
   });
   assert.equal(A.settings.getSnapshot().dateFormat, "none");
@@ -133,8 +104,6 @@ test("manual choices survive reload, including hiding the date", () => {
   assert.equal(A.clock.formatDate(sample, "numeric"), "21/10/2026");
   assert.equal(A.clock.formatDate(sample, "short"), "Wed 21 Oct");
   A.clock.tick();
-  assert.equal(elements.date.hidden, true);
-  assert.equal(elements.time["data-format"], "12");
   A.settings.update({ dateFormat: "numeric-short" });
   A.settings.update({ timeFormat: "24" });
 
@@ -145,8 +114,6 @@ test("manual choices survive reload, including hiding the date", () => {
   A.clock.tick();
   assert.equal(A.settings.getSnapshot().dateFormat, "numeric-short");
   assert.equal(A.settings.getSnapshot().timeFormat, "24");
-  assert.equal(elements.date.hidden, false);
-  assert.equal(elements.time["data-format"], "24");
 });
 
 test("older runtimes without Intl still show a date and time", () => {
@@ -330,7 +297,7 @@ test("clock formatters are reused until the next tick", () => {
       return new Intl.DateTimeFormat(locales, options);
     },
   };
-  const { A } = runtime({ intl, view: false });
+  const { A } = runtime({ intl });
   const format = () => {
     A.clock.defaultTimeFormat();
     A.clock.formatTime(sample, "24");
@@ -349,33 +316,31 @@ test("clock formatters are reused until the next tick", () => {
   assert.equal(constructors, warmed + 3);
 });
 
-test("older Intl keeps a stable fitting clock without repeated layout measurement", () => {
-  let constructors = 0,
-    measurements = 0;
+test("older Intl keeps a cached clock width without repeated measurement", () => {
+  let constructors = 0;
+  let measurements = 0;
   const intl = {
     DateTimeFormat: function () {
       constructors++;
       return { resolvedOptions: () => ({ hour12: false }), format: () => "date" };
     },
   };
-  const { A, elements } = runtime({
-    intl,
-    measure: (text) => {
-      measurements++;
-      return { width: text.length * 10 };
-    },
-  });
+  const { A } = runtime({ intl });
+  const font = "700 36px Arial";
+  const measure = (text) => {
+    measurements++;
+    return text.length * 10;
+  };
   const initialConstructors = constructors;
-  A.clock.tick();
+  const width = A.clock.measureTime("24", font, measure);
+  assert.ok(width >= A.clock.formatTime(sample, "24").length * 10);
   assert.ok(
     constructors - initialConstructors < 8,
     "unsupported hourCycle must not create a formatter for each minute",
   );
-  assert.ok(parseFloat(elements.time.style.width) >= elements.time.textContent.length * 10);
-  const width = elements.time.style.width,
-    measured = measurements;
+  const measured = measurements;
   A.clock.tick();
-  assert.equal(elements.time.style.width, width);
+  assert.equal(A.clock.measureTime("24", font, measure), width);
   assert.equal(measurements, measured, "normal clock updates reuse the reserved width");
 });
 
@@ -416,7 +381,7 @@ test("custom clock fields preserve locale digits, separators and leading day per
 });
 
 test("clock publication does not query view hosts and starts one shared timer", () => {
-  const { A, elements, timers } = runtime({ view: false, now: () => sample.getTime() });
+  const { A, timers } = runtime({ now: () => sample.getTime() });
   A.$ = () => {
     throw new Error("Clock publication must not query DOM hosts");
   };
@@ -436,5 +401,4 @@ test("clock publication does not query view hosts and starts one shared timer", 
   unsubscribe();
   A.clock.tick();
   assert.equal(updates, 3);
-  assert.equal(elements.time.textContent, undefined);
 });

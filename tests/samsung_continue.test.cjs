@@ -1,19 +1,16 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const vm = require("node:vm");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { translateEnglish } = require("./helpers/translate_english.cjs");
 const { createSamsungContinueWatchingProvider } = loadTypeScript(
   "launcher/src/platform/tizen/createSamsungContinueWatchingProvider.ts",
 );
-const oldSource = fs.readFileSync("tests/fixtures/legacy-launcher/js/samsung-continue.js", "utf8");
 const prefix = "http://samsung.com/tv/metadata/";
 const source = { id: "video", name: "Video", storeId: "123" };
 const item = { sourceId: "video", title: "Episode", payload: '{"route":"episode://1","unicode":"é"}' };
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
-function harness(legacy = false, options = {}) {
+function harness(options = {}) {
   const requests = [],
     launches = [],
     watches = [],
@@ -66,22 +63,12 @@ function harness(legacy = false, options = {}) {
       if (options.abortThrows) throw new Error("abort failed");
     }
   }
-  let provider;
-  if (legacy) {
-    vm.runInNewContext(oldSource, {
-      window: { AeroTizen: runtime },
-      XMLHttpRequest: Request,
-      Date: { now: () => 1000 },
-    });
-    provider = runtime.continueWatchingProviders[0];
-  } else {
-    provider = createSamsungContinueWatchingProvider({
-      catalog: runtime.catalog,
-      runtime,
-      createRequest: () => new Request(),
-      now: () => 1000,
-    });
-  }
+  const provider = createSamsungContinueWatchingProvider({
+    catalog: runtime.catalog,
+    runtime,
+    createRequest: () => new Request(),
+    now: () => 1000,
+  });
   return {
     provider,
     runtime,
@@ -99,102 +86,99 @@ function harness(legacy = false, options = {}) {
   };
 }
 
-for (const legacy of [true, false]) {
-  const variant = legacy ? "frozen" : "typed";
-  test(`${variant}: hidden companion metadata, exact identities, preferred foreground app and status match`, () => {
-    const h = harness(legacy);
-    h.metadata.set("hidden.service", [{ key: prefix + "use.continue_watching", value: "bg_service" }]);
-    h.metadata.set("unmapped", [{ key: prefix + "app_support_continue_watching", value: "true" }]);
-    h.metadata.set("preview", [{ key: prefix + "use.preview", value: "true" }]);
-    h.metadata.set("denied", new Error("metadata denied"));
-    const inventory = Object.freeze(
-      [
-        { id: "alias", packageId: "shared", name: "Alias" },
-        { id: "hidden.service", packageId: "shared", show: false },
-        { id: "video", packageId: "shared", name: "Video - offers", iconPath: "icon.png" },
-        { id: "unmapped", packageId: "unknown", name: "Video" },
-        { id: "preview", name: "Preview" },
-        { id: "denied", name: "Denied" },
-      ].map(Object.freeze),
-    );
-    assert.deepEqual(plain(h.provider.discover(inventory)), [
-      { ...source, icon: "icon.png", status: "Not selected" },
-      { id: "unmapped", name: "Video", icon: "", storeId: "", status: "App ID unavailable" },
-    ]);
-    assert.equal(h.metadataReads.length, inventory.length, "native metadata queries are not added or skipped");
-  });
+test(`hidden companion metadata, exact identities, preferred foreground app and status match`, () => {
+  const h = harness();
+  h.metadata.set("hidden.service", [{ key: prefix + "use.continue_watching", value: "bg_service" }]);
+  h.metadata.set("unmapped", [{ key: prefix + "app_support_continue_watching", value: "true" }]);
+  h.metadata.set("preview", [{ key: prefix + "use.preview", value: "true" }]);
+  h.metadata.set("denied", new Error("metadata denied"));
+  const inventory = Object.freeze(
+    [
+      { id: "alias", packageId: "shared", name: "Alias" },
+      { id: "hidden.service", packageId: "shared", show: false },
+      { id: "video", packageId: "shared", name: "Video - offers", iconPath: "icon.png" },
+      { id: "unmapped", packageId: "unknown", name: "Video" },
+      { id: "preview", name: "Preview" },
+      { id: "denied", name: "Denied" },
+    ].map(Object.freeze),
+  );
+  assert.deepEqual(plain(h.provider.discover(inventory)), [
+    { ...source, icon: "icon.png", status: "Not selected" },
+    { id: "unmapped", name: "Video", icon: "", storeId: "", status: "App ID unavailable" },
+  ]);
+  assert.equal(h.metadataReads.length, inventory.length, "native metadata queries are not added or skipped");
+});
 
-  test(`${variant}: every request keeps the URL, app_id header, timeout and unique cache buster`, () => {
-    const h = harness(legacy),
-      replies = [];
-    h.provider.read(source, (...reply) => replies.push(reply));
-    h.provider.read({ ...source, storeId: "456" }, () => {});
-    h.provider.read(source, () => {});
-    const urls = h.requests.map((request) => {
-      assert.equal(request.method, "GET");
-      assert.equal(request.async, true);
-      assert.equal(request.timeout, 5000);
-      assert.equal(request.sent, true);
-      const url = new URL(request.url);
-      assert.equal(url.origin, "http://localhost:9013");
-      assert.equal(url.searchParams.get("module"), "EBHelper");
-      assert.equal(url.searchParams.get("func"), "GetItems");
-      return url.searchParams.get("_aerotizen");
-    });
-    assert.deepEqual(urls, ["123-1000-1", "456-1000-2", "123-1000-3"]);
-    assert.deepEqual(
-      h.requests.map((request) => request.header),
-      [
-        ["app_id", "123"],
-        ["app_id", "456"],
-        ["app_id", "123"],
-      ],
-    );
-    const data = [{ content_id: "episode", payload: item.payload }];
-    h.respond(0, JSON.stringify(data));
-    h.requests[0].onerror();
-    assert.deepEqual(plain(replies), [[false, data]], "a request settles only once");
+test(`every request keeps the URL, app_id header, timeout and unique cache buster`, () => {
+  const h = harness(),
+    replies = [];
+  h.provider.read(source, (...reply) => replies.push(reply));
+  h.provider.read({ ...source, storeId: "456" }, () => {});
+  h.provider.read(source, () => {});
+  const urls = h.requests.map((request) => {
+    assert.equal(request.method, "GET");
+    assert.equal(request.async, true);
+    assert.equal(request.timeout, 5000);
+    assert.equal(request.sent, true);
+    const url = new URL(request.url);
+    assert.equal(url.origin, "http://localhost:9013");
+    assert.equal(url.searchParams.get("module"), "EBHelper");
+    assert.equal(url.searchParams.get("func"), "GetItems");
+    return url.searchParams.get("_aerotizen");
   });
+  assert.deepEqual(urls, ["123-1000-1", "456-1000-2", "123-1000-3"]);
+  assert.deepEqual(
+    h.requests.map((request) => request.header),
+    [
+      ["app_id", "123"],
+      ["app_id", "456"],
+      ["app_id", "123"],
+    ],
+  );
+  const data = [{ content_id: "episode", payload: item.payload }];
+  h.respond(0, JSON.stringify(data));
+  h.requests[0].onerror();
+  assert.deepEqual(plain(replies), [[false, data]], "a request settles only once");
+});
 
-  test(`${variant}: HTTP, malformed, oversized and timeout failures remain isolated`, () => {
-    const h = harness(legacy),
-      results = [];
-    for (const [text, status] of [
-      ["[]", 500],
-      ["not json", 200],
-      ["{}", 200],
-      ["x".repeat(2000001), 200],
-    ]) {
-      h.provider.read(source, (error) => results.push(error));
-      h.respond(h.requests.length - 1, text, status);
-    }
+test(`HTTP, malformed, oversized and timeout failures remain isolated`, () => {
+  const h = harness(),
+    results = [];
+  for (const [text, status] of [
+    ["[]", 500],
+    ["not json", 200],
+    ["{}", 200],
+    ["x".repeat(2000001), 200],
+  ]) {
     h.provider.read(source, (error) => results.push(error));
-    h.requests.at(-1).ontimeout();
-    h.requests.at(-1).onerror();
-    assert.deepEqual(results, [true, true, true, true, true]);
-    h.provider.read(source, (error, data) => results.push([error, data]));
-    h.respond(h.requests.length - 1, "[]");
-    assert.deepEqual(plain(results.at(-1)), [false, []]);
-  });
+    h.respond(h.requests.length - 1, text, status);
+  }
+  h.provider.read(source, (error) => results.push(error));
+  h.requests.at(-1).ontimeout();
+  h.requests.at(-1).onerror();
+  assert.deepEqual(results, [true, true, true, true, true]);
+  h.provider.read(source, (error, data) => results.push([error, data]));
+  h.respond(h.requests.length - 1, "[]");
+  assert.deepEqual(plain(results.at(-1)), [false, []]);
+});
 
-  test(`${variant}: native launch preserves payload and watcher fallback`, () => {
-    const h = harness(legacy);
-    h.provider.open(item);
-    assert.deepEqual(h.watches, [item.sourceId]);
-    assert.deepEqual(h.launches[0].control, {
-      operation: "http://tizen.org/appcontrol/operation/view",
-      data: [{ key: "PAYLOAD", value: [JSON.stringify({ values: item.payload })] }],
-    });
-    assert.equal(h.launches[0].id, item.sourceId);
-    h.launches[0].failed({ cancelled: true });
-    assert.deepEqual(h.toasts, []);
-    h.launches[0].failed({ name: "Denied" });
-    assert.deepEqual(h.toasts, ["Could not open Episode"]);
+test(`native launch preserves payload and watcher fallback`, () => {
+  const h = harness();
+  h.provider.open(item);
+  assert.deepEqual(h.watches, [item.sourceId]);
+  assert.deepEqual(h.launches[0].control, {
+    operation: "http://tizen.org/appcontrol/operation/view",
+    data: [{ key: "PAYLOAD", value: [JSON.stringify({ values: item.payload })] }],
   });
-}
+  assert.equal(h.launches[0].id, item.sourceId);
+  h.launches[0].failed({ cancelled: true });
+  assert.deepEqual(h.toasts, []);
+  h.launches[0].failed({ name: "Denied" });
+  assert.deepEqual(h.toasts, ["Could not open Episode"]);
+});
 
 test("cancellation settles silent or throwing aborts and rejects late delivery without disabling future reads", () => {
-  const h = harness(false, { silentAbort: true, abortThrows: true }),
+  const h = harness({ silentAbort: true, abortThrows: true }),
     replies = [];
   h.provider.read(source, (error) => replies.push(error));
   h.provider.read(source, (error) => replies.push(error));

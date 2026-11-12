@@ -6,4 +6,4 @@ formatting immediately before their TypeScript migration.
 
 Node tests compare the typed helpers against this baseline. These files are not
 served by the launcher or included in its TV package. Do not update them to match
-new behavior. The older full-launcher comparison fixture remains unchanged.
+new behavior.

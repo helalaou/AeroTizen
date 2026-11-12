@@ -43,7 +43,7 @@ npm test           # launcher tests: tests/*.test.cjs, run in a Node sandbox
 npm run test:service # after build: frozen and packaged background service parity
 npm run test:components # Preact component tests in launcher/src
 npx playwright install chromium # once per Playwright version; CI also installs OS dependencies
-npm run test:browser # compiled Settings and legacy comparison, with managed local servers
+npm run test:browser # current Home and Settings, with managed local servers
 ```
 
 ### Mirror a physical TV for local testing
@@ -87,7 +87,7 @@ relaunch cancellation and app visibility, without contacting a TV.
 
 Run `npm run format` to apply the shared Prettier rules before committing frontend
 changes. Formatting covers launcher JavaScript, TypeScript, TSX, CSS, HTML and JSON;
-JavaScript tests and legacy HTML fixtures; root frontend configuration; the launcher build script; this guide;
+JavaScript tests and HTML fixtures; root frontend configuration; the launcher build script; this guide;
 and the CI workflow. ESLint covers launcher code, tests and frontend tooling.
 Stylelint checks global and component-module launcher CSS for errors and duplicate rules. Run either
 check alone with `npm run lint:js` or `npm run lint:css`. The TypeScript checks also
@@ -173,7 +173,6 @@ both themes. Add coverage here for new UI paths.
 | `launcher/src/shared/`            | Store subscriptions, ref-based navigation and reusable lifecycle hooks                          |
 | `launcher/src/shared/icons/`      | SVG icon components, one per TSX file                                                           |
 | `tests/browser/`                  | Playwright regression checks at the TV's 1920×1080 viewport                                     |
-| `tests/fixtures/legacy-launcher/` | Old views used only by regression and comparison tests                                          |
 | `vite.config.mts`                 | Official Preact preset, dev server and TV bundle settings                                       |
 | `dist/launcher/`                  | Generated TV runtime with shared launcher-ui.js; no Node needed on TV                           |
 | `launcher/src/launcherConfig.ts`  | Launcher behaviour and storage identities                                                       |
@@ -223,7 +222,7 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
 
 - Run `npm run dev`, then open http://localhost:8019 at 1920×1080. The server also
   prints a network URL for another device. Vite supplies hot updates for Home and Settings
-  components and serves the legacy runtime files. The plain URL opens the full browser
+  components and the shared TypeScript runtime. The plain URL opens the full browser
   preview with sample apps, inputs and a fictional Continue Watching feed. It uses one
   settings store; existing local preferences take priority. A fresh browser context uses Glass,
   Small app cards, the Scroll app layout, six Home favourites and Continue Watching on.
@@ -243,8 +242,7 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
   its 1920×1080 frame to fit the browser window without changing the TV layout.
 - Preview the compiled launcher: `python3 -m http.server -d dist/launcher`, then
   open http://localhost:8000 at 1920×1080. This is the TV runtime: without native APIs,
-  it does not generate sample apps or input devices. The old comparison page is isolated in
-  `tests/fixtures/legacy-launcher/` and is served by the browser test runner.
+  it does not generate sample apps or input devices.
 - Browser fixtures and their artwork live under `launcher/src/dev/`, imported only
   by the Vite entry, static demo or explicit browser-test setup. Production and TV-dev builds use
   `src/index.ts`; the build rejects rendered modules from `src/dev/`. Browser tests
@@ -329,9 +327,10 @@ does not depend on an app-specific list or focus.
 Keep the catalogue as plain JSON. Image files and cache paths do not belong in it.
 
 Run `npm test` and `npm run lint`. Catalogue tests check complete identity pairs,
-unique IDs, the original app set, artwork aliases and preloaded watcher mappings.
+unique IDs, sorted records, artwork aliases and preloaded watcher mappings.
 Parity tests compare the typed helpers with the frozen JavaScript snapshot from
-before their migration. The full-launcher comparison fixture remains unchanged.
+before their migration. Browser tests exercise the current launcher only; they do not
+run the retired JavaScript launcher.
 
 ## Pull requests
 

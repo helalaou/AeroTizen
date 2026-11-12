@@ -5,9 +5,6 @@ dist/
 test-results/
 playwright-report/
 
-# Frozen generated logo snapshot.
-tests/fixtures/legacy-launcher/js/logos.js
-
 # Frozen app identity and presentation migration baseline.
 tests/fixtures/app-presentation/js/
 
