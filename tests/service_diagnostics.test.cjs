@@ -1,8 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const { readFileSync } = require("node:fs");
 const { test } = require("node:test");
-const vm = require("node:vm");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 
 const { createDiagnosticsPrivacy } = loadTypeScript("launcher/src/diagnostics/createDiagnosticsPrivacy.ts");
@@ -12,106 +10,177 @@ const fixedNow = 12345;
 const control = { mode: "watcher", persistent: true, protocol: 1 };
 const state = { heartbeats: 7, guard: { launchCalls: 2 } };
 const normalise = (value) => JSON.parse(JSON.stringify(value).replace(/d-[a-f0-9]{8}-/g, "d-session-"));
-
-function frozen(name, imports) {
-  const module = { exports: {} };
-  vm.runInNewContext(readFileSync(require.resolve("./fixtures/diagnostics/service/" + name), "utf8"), {
-    module,
-    Buffer,
-    process: { arch: "arm" },
-    Date: class extends Date {
-      static now() {
-        return fixedNow;
-      }
-    },
-    require: (name) => {
-      assert.ok(Object.hasOwn(imports, name), name);
-      return imports[name];
-    },
-  });
-  return module.exports;
-}
+const emptyBuild = { version: null, build_id: null, commit: null, dirty: null };
+const emptyDelivery = { state: null, retries: null, last_status: null };
+const emptyUi = {
+  reported_at: fixedNow,
+  health: {},
+  build: emptyBuild,
+  delivery: emptyDelivery,
+  version: null,
+  queued: null,
+};
+const validBuild = { version: "2.4.0", build_id: "a".repeat(64), commit: "b".repeat(40), dirty: false };
+const initialUi = { ...emptyUi, health: { buffered: 2 }, queued: 2 };
+const initialEnvironment = { state: "loading", tizen: null, firmware: null, arch: "arm" };
+const expectedContext = {
+  mode: "watcher",
+  persistent: true,
+  protocol: 1,
+  watcher_heartbeats: 7,
+  watcher_launch_calls: 2,
+  native_settings: "not_queried",
+};
 
 const packets = [
-  null,
-  [],
-  "invalid",
-  {},
+  { name: "null preserves the previous UI report", packet: null, expected: initialUi },
+  { name: "arrays preserve the previous UI report", packet: [], expected: initialUi },
+  { name: "strings cannot supply metadata", packet: "invalid", expected: emptyUi },
+  { name: "missing metadata fields are empty", packet: {}, expected: emptyUi },
   {
-    version: "2.4.0",
-    build: { version: "2.4.0", build_id: "a".repeat(64), commit: "b".repeat(40), dirty: false, secret: "PRIVATE" },
-    health: {
-      buffered: 200,
-      discarded: 0,
-      invalid: 1,
-      pending_errors: 0,
-      writes: 3,
-      write_failures: 0,
-      read_failures: 0,
-      saving: false,
-      unsaved: true,
-      storage: "saving",
-      clock: "monotonic",
-      session: "private-session",
+    name: "valid fields survive and private fields are omitted",
+    packet: {
+      version: "2.4.0",
+      build: { ...validBuild, secret: "PRIVATE" },
+      health: {
+        buffered: 200,
+        discarded: 0,
+        invalid: 1,
+        pending_errors: 0,
+        writes: 3,
+        write_failures: 0,
+        read_failures: 0,
+        saving: false,
+        unsaved: true,
+        storage: "saving",
+        clock: "monotonic",
+        session: "private-session",
+        secret: "PRIVATE",
+      },
+      delivery: { state: "acknowledged", retries: 3, last_status: 599 },
+      queued: 0,
       secret: "PRIVATE",
     },
-    delivery: { state: "acknowledged", retries: 3, last_status: 599 },
-    queued: 0,
-    secret: "PRIVATE",
+    expected: {
+      reported_at: fixedNow,
+      build: validBuild,
+      version: "2.4.0",
+      health: {
+        buffered: 200,
+        discarded: 0,
+        invalid: 1,
+        pending_errors: 0,
+        writes: 3,
+        write_failures: 0,
+        read_failures: 0,
+        saving: false,
+        unsaved: true,
+        storage: "saving",
+        clock: "monotonic",
+        session: "d-session-1",
+      },
+      delivery: { state: "acknowledged", retries: 3, last_status: 599 },
+      queued: 0,
+    },
   },
   {
-    version: "PRIVATE",
-    build: { version: "bad", build_id: "a".repeat(65), commit: "b".repeat(39), dirty: "true" },
-    health: { buffered: Infinity, discarded: -1, writes: "2", saving: 1, session: "not a session", storage: "bad" },
-    delivery: { state: "bad", retries: 4, last_status: 99 },
-    queued: NaN,
+    name: "malformed formats, counters and enums are rejected",
+    packet: {
+      version: "PRIVATE",
+      build: { version: "bad", build_id: "a".repeat(65), commit: "b".repeat(39), dirty: "true" },
+      health: { buffered: Infinity, discarded: -1, writes: "2", saving: 1, session: "not a session", storage: "bad" },
+      delivery: { state: "bad", retries: 4, last_status: 99 },
+      queued: NaN,
+    },
+    expected: emptyUi,
   },
-  { build: [], health: [], delivery: { retries: -1, last_status: 600 }, queued: Infinity },
-  { build: true, health: true, delivery: "invalid", queued: -1 },
   {
-    health: { session: "a".repeat(65), clock: "wall_fallback", saving: true },
-    delivery: { retries: 0, last_status: 100 },
+    name: "array fields and out-of-range delivery values are rejected",
+    packet: { build: [], health: [], delivery: { retries: -1, last_status: 600 }, queued: Infinity },
+    expected: emptyUi,
+  },
+  {
+    name: "scalar fields and negative queue counts are rejected",
+    packet: { build: true, health: true, delivery: "invalid", queued: -1 },
+    expected: emptyUi,
+  },
+  {
+    name: "minimum delivery values and fallback clock survive an oversized session",
+    packet: {
+      health: { session: "a".repeat(65), clock: "wall_fallback", saving: true },
+      delivery: { retries: 0, last_status: 100 },
+    },
+    expected: {
+      ...emptyUi,
+      health: { clock: "wall_fallback", saving: true },
+      delivery: { state: null, retries: 0, last_status: 100 },
+    },
+  },
+];
+const environments = [
+  {
+    name: "complete",
+    text: 'VERSION_ID="9.0.0"\nBUILD_ID="T-TEST-0090"\nSECRET=PRIVATE',
+    expected: { arch: "arm", state: "collected", tizen: "9.0.0", firmware: "T-TEST-0090" },
+  },
+  {
+    name: "missing firmware",
+    text: "VERSION_ID='5.5.0'",
+    expected: { arch: "arm", state: "partial", tizen: "5.5.0", firmware: null, reason: "os_release_fields_missing" },
+  },
+  {
+    name: "last duplicate field wins",
+    text: "VERSION_ID=9.0.0\nVERSION_ID=8.0.0\nBUILD_ID=T-TEST-0080",
+    expected: { arch: "arm", state: "collected", tizen: "8.0.0", firmware: "T-TEST-0080" },
+  },
+  {
+    name: "bounded read excludes trailing fields",
+    text: "x".repeat(16384) + "\nVERSION_ID=9.0.0\nBUILD_ID=T-TEST-0090",
+    expected: { arch: "arm", state: "partial", tizen: null, firmware: null, reason: "os_release_fields_missing" },
+  },
+  {
+    name: "unavailable",
+    error: new Error("unavailable"),
+    expected: { ...initialEnvironment, state: "unavailable", reason: "os_release_unavailable" },
   },
 ];
 
-test("typed context matches frozen metadata filtering and cached collection", () => {
-  const environments = [
-    [null, 'VERSION_ID="9.0.0"\nBUILD_ID="T-TEST-0090"\nSECRET=PRIVATE'],
-    [null, "VERSION_ID='5.5.0'"],
-    [null, "VERSION_ID=9.0.0\nVERSION_ID=8.0.0\nBUILD_ID=T-TEST-0080"],
-    [null, "x".repeat(16384) + "\nVERSION_ID=9.0.0\nBUILD_ID=T-TEST-0090"],
-    [new Error("unavailable"), undefined],
-  ];
-  for (const packet of packets) {
-    for (const [error, text] of environments) {
-      const build = packet?.build;
-      const run = (legacy) => {
-        let finish;
-        let reads = 0;
-        const options = {
-          privacy: createDiagnosticsPrivacy(),
-          read: (done) => {
-            reads++;
-            finish = done;
-          },
-        };
-        const context = legacy
-          ? frozen("diagnostics-context", { fs: {}, "../js/build-info": build })(options)
-          : createDiagnosticsContext({ ...options, build, arch: "arm", now: () => fixedNow });
-        context.accept({ health: { buffered: 2 }, queued: 2 });
-        context.accept(packet);
-        const before = normalise(context.enrich({ records: [] }, control, state));
-        context.start();
-        context.start();
-        assert.equal(reads, 1);
-        finish(error, text);
-        const after = normalise(context.enrich({ records: [] }, control, state));
-        return { before, after };
+for (const { name, packet, expected } of packets) {
+  for (const environment of environments) {
+    test(`service metadata: ${name}; environment ${environment.name}`, () => {
+      let finish;
+      let reads = 0;
+      const context = createDiagnosticsContext({
+        privacy: createDiagnosticsPrivacy(),
+        build: packet?.build,
+        arch: "arm",
+        now: () => fixedNow,
+        read: (done) => {
+          reads++;
+          finish = done;
+        },
+      });
+      const snapshot = () => normalise(context.enrich({ records: [] }, control, state));
+      assert.equal(snapshot().ui, null);
+      context.accept({ health: { buffered: 2 }, queued: 2 });
+      context.accept(packet);
+      const before = {
+        records: [],
+        build: expected.build,
+        environment: initialEnvironment,
+        ui: expected,
+        context: expectedContext,
       };
-      assert.deepEqual(run(false), run(true));
-    }
+      assert.deepEqual(snapshot(), before);
+      context.start();
+      context.start();
+      assert.equal(reads, 1);
+      finish(environment.error ?? null, environment.text);
+      assert.deepEqual(snapshot(), { ...before, environment: environment.expected });
+      assert.doesNotMatch(JSON.stringify(snapshot()), /PRIVATE|private-session/);
+    });
   }
-});
+}
 
 test("context enrichment leaves caller snapshots and watcher inputs unchanged", () => {
   const snapshot = Object.freeze({ records: Object.freeze([]) });
@@ -126,7 +195,7 @@ test("context enrichment leaves caller snapshots and watcher inputs unchanged", 
   assert.deepEqual(Object.keys(snapshot), ["records"]);
 });
 
-function storageTrace(legacy, scenario) {
+function storageTrace(scenario) {
   const trace = [];
   const payload = scenario.payload ?? "[]";
   const failure = (name) => (scenario.failure === name ? new Error(name + " failed") : null);
@@ -168,8 +237,7 @@ function storageTrace(legacy, scenario) {
           },
         },
       };
-  const open = legacy ? frozen("diagnostics-store", { fs }) : openDiagnosticsStore;
-  open(
+  openDiagnosticsStore(
     host,
     (store) => {
       trace.push(["ready", !!store]);
@@ -183,23 +251,72 @@ function storageTrace(legacy, scenario) {
   return trace;
 }
 
-for (const [name, scenario] of Object.entries({
-  success: {},
-  absent: { absent: true },
-  denied: { failure: "resolve" },
-  thrown: { failure: "throw" },
-  relative: { uri: "file://relative/private" },
-  malformed: { uri: "file:///invalid%URI" },
-  missing: { failure: "stat" },
-  unreadable: { failure: "read" },
-  unwritable: { failure: "write" },
-  rename: { failure: "rename" },
-  cleanup: { failure: "rename", cleanupFailure: true },
-  boundary: { payload: "x".repeat(256 * 1024) },
-  oversized: { payload: "x".repeat(256 * 1024 + 1) },
-  multibyte: { size: 0, payload: "😀".repeat(65537) },
-})) {
-  test(`typed service storage matches frozen I/O and limits: ${name}`, () => {
-    assert.deepEqual(storageTrace(false, scenario), storageTrace(true, scenario));
-  });
+const MAX_LOG_BYTES = 256 * 1024;
+const LOG_FILE = "/virtual/private space/aerotizen-diagnostics-v1.json";
+const TEMPORARY_FILE = LOG_FILE + ".tmp";
+const RESOLVE = ["resolve", "wgt-private", "rw"];
+const OPEN = [RESOLVE, ["ready", true]];
+const STAT = ["stat", LOG_FILE];
+const READ = ["read", LOG_FILE, "utf8"];
+const WRITE = ["write", TEMPORARY_FILE, 2, "utf8", 0o600];
+const RENAME = ["rename", TEMPORARY_FILE, LOG_FILE];
+const UNLINK = ["unlink", TEMPORARY_FILE];
+const LOADED = ["loaded", null, 2];
+const SAVED = ["saved", null];
+const LOAD = [STAT, READ, LOADED];
+const SAVE = [WRITE, RENAME, SAVED];
+
+for (const { name, scenario, expected } of [
+  { name: "atomic private write", scenario: {}, expected: [...OPEN, ...LOAD, ...SAVE] },
+  { name: "absent filesystem", scenario: { absent: true }, expected: [["ready", false]] },
+  { name: "denied private directory", scenario: { failure: "resolve" }, expected: [RESOLVE, ["ready", false]] },
+  { name: "throwing resolver", scenario: { failure: "throw" }, expected: [RESOLVE, ["ready", false]] },
+  { name: "relative file URI", scenario: { uri: "file://relative/private" }, expected: [RESOLVE, ["ready", false]] },
+  { name: "malformed URI escape", scenario: { uri: "file:///invalid%URI" }, expected: [RESOLVE, ["ready", false]] },
+  { name: "missing file", scenario: { failure: "stat" }, expected: [...OPEN, STAT, ["loaded", null, null], ...SAVE] },
+  {
+    name: "read failure",
+    scenario: { failure: "read" },
+    expected: [...OPEN, STAT, READ, ["loaded", "read failed", null], ...SAVE],
+  },
+  {
+    name: "write failure removes the temporary file",
+    scenario: { failure: "write" },
+    expected: [...OPEN, ...LOAD, WRITE, UNLINK, ["saved", "write failed"]],
+  },
+  {
+    name: "rename failure removes the temporary file",
+    scenario: { failure: "rename" },
+    expected: [...OPEN, ...LOAD, WRITE, RENAME, UNLINK, ["saved", "rename failed"]],
+  },
+  {
+    name: "cleanup failure preserves the original error",
+    scenario: { failure: "rename", cleanupFailure: true },
+    expected: [...OPEN, ...LOAD, WRITE, RENAME, UNLINK, ["saved", "rename failed"]],
+  },
+  {
+    name: "exact byte limit",
+    scenario: { payload: "x".repeat(MAX_LOG_BYTES) },
+    expected: [
+      ...OPEN,
+      STAT,
+      READ,
+      ["loaded", null, MAX_LOG_BYTES],
+      ["write", TEMPORARY_FILE, MAX_LOG_BYTES, "utf8", 0o600],
+      RENAME,
+      SAVED,
+    ],
+  },
+  {
+    name: "oversized file is not read or written",
+    scenario: { payload: "x".repeat(MAX_LOG_BYTES + 1) },
+    expected: [...OPEN, STAT, ["loaded", null, null], ["saved", "Log size limit"]],
+  },
+  {
+    name: "UTF-8 bytes are checked after a misleading stat",
+    scenario: { size: 0, payload: "😀".repeat(65537) },
+    expected: [...OPEN, STAT, READ, ["loaded", null, null], ["saved", "Log size limit"]],
+  },
+]) {
+  test(`service log storage: ${name}`, () => assert.deepEqual(storageTrace(scenario), expected));
 }

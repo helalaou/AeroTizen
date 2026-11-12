@@ -985,24 +985,22 @@ test("pending diagnostic storage does not delay Home requests or native mode con
   assert.equal(saves.length, 2);
 });
 
-if (!process.env.AEROTIZEN_TEST_SERVICE_BASELINE) {
-  test("repeated app query fields cannot clear inventory or an active watch", () => {
-    const h = harness({ capability: false });
-    h.api.onStart();
-    h.control("/apps?ids=active.app,other.app");
-    h.control("/watch?id=active.app");
-    const before = h.control();
-    for (const path of ["/watch?id=other.app&id=second.app", "/apps?ids=other.app&ids=second.app"]) {
-      assert.equal(h.control(path).error, "Invalid app identifiers");
-      const after = h.control();
-      assert.deepEqual(after.apps, before.apps);
-      assert.equal(after.watched, before.watched);
-      assert.equal(after.epoch, before.epoch);
-      assert.equal(after.watchAt, before.watchAt);
-    }
-    h.api.onExit();
-  });
-}
+test("repeated app query fields cannot clear inventory or an active watch", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.control("/apps?ids=active.app,other.app");
+  h.control("/watch?id=active.app");
+  const before = h.control();
+  for (const path of ["/watch?id=other.app&id=second.app", "/apps?ids=other.app&ids=second.app"]) {
+    assert.equal(h.control(path).error, "Invalid app identifiers");
+    const after = h.control();
+    assert.deepEqual(after.apps, before.apps);
+    assert.equal(after.watched, before.watched);
+    assert.equal(after.epoch, before.epoch);
+    assert.equal(after.watchAt, before.watchAt);
+  }
+  h.api.onExit();
+});
 
 let failed = 0;
 for (const [name, fn] of tests) {

@@ -114,7 +114,7 @@ jobs:
               b"tests/artmode.test.cjs",
               b"tests/helpers/load_typescript.cjs",
               b"tests/helpers/load_service.cjs",
-              b"tests/helpers/run_service_parity.cjs",
+              b"tests/helpers/run_packaged_service_tests.cjs",
               b"tests/home_store.test.cjs",
               b"tests/service_diagnostics.test.cjs",
               b"tests/watcher.test.cjs",

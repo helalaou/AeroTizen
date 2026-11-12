@@ -222,13 +222,12 @@ owns routing receipts and transitions; `openHomeStore` keeps atomic rename and
 file/directory fsync before acknowledging a handoff. Node types are confined to
 the service TypeScript project, and the package keeps its existing entry paths.
 
-The Art Mode, watcher and Home storage cases run against typed source. After a
-build, `npm run test:service` runs them against the frozen `watcher-service/`
-baseline and generated ES5 modules, including with modern service globals absent.
-
-The `tests/fixtures/homewatch/` snapshot is frozen before this migration. The same
-startup and handoff cases run against it and the typed client; lifecycle cases also
-verify disposal and idle request counts.
+The Art Mode, watcher and Home storage cases run against current typed source. After
+a build, `npm run test:service` runs those cases and IP Control checks against the
+current generated ES5 modules, including with modern service globals absent.
+HomeWatcher client tests exercise the typed service directly, including startup,
+handoffs, disposal and idle request counts. Diagnostics and presentation tests use
+explicit expected results instead of executing old JavaScript implementations.
 
 Each handoff reads the routing file again, with the existing 4096-byte limit and
 500 ms deadline. Confirmed Native Home bypasses the watcher handshake; other modes

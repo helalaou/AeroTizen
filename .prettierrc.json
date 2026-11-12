@@ -6,21 +6,5 @@
   "endOfLine": "lf",
   "arrowParens": "always",
   "bracketSpacing": true,
-  "tabWidth": 2,
-  "overrides": [
-    {
-      "files": ["launcher/js/**/*.js", "tests/fixtures/legacy-launcher/js/**/*.js"],
-      "options": {
-        "trailingComma": "es5"
-      }
-    },
-    {
-      "files": ["tests/fixtures/legacy-launcher/js/app-catalog.js"],
-      "options": {
-        "singleQuote": false,
-        "quoteProps": "preserve",
-        "trailingComma": "none"
-      }
-    }
-  ]
+  "tabWidth": 2
 }

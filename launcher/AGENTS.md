@@ -40,8 +40,7 @@ also read the [style rules](../docs/styles.md) or [icon rules](../docs/icons.md)
 Author launcher runtime code in TypeScript/TSX under `src/`. Target Chromium 69 for
 compiled frontend code and browser APIs, with an ES2018 syntax ceiling. Keep generated
 background service modules and build metadata ES5-compatible. Preserve current saved settings and service interfaces. Keep
-broader global-service migrations separate from unrelated changes. Comparison
-fixtures are frozen evidence; do not change them only to make a regression test pass.
+broader global-service migrations separate from unrelated changes.
 
 Do not add settings migrations for old storage keys, fields or values. Use defaults
 for missing or invalid saved values; users can reapply their settings.
