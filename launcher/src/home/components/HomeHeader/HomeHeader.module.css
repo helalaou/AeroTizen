@@ -45,9 +45,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--fg);
-  background: transparent;
+  color: var(--header-icon-text, var(--fg));
+  background: var(--header-icon-surface, transparent);
+  box-shadow: var(--header-icon-shadow, none);
   outline: none;
+
+  &[data-focused="true"] {
+    background: transparent;
+    box-shadow: none;
+  }
 
   > svg {
     width: 40px;
@@ -84,7 +90,7 @@
   height: 76px;
   min-height: 76px;
   border: 1px solid var(--header-tab-border);
-  border-radius: 28px;
+  border-radius: var(--header-tab-radius, 28px);
   background: var(--header-tab-surface);
   box-shadow: var(--header-tab-shadow);
   isolation: var(--header-tab-isolation);
@@ -99,11 +105,11 @@
   min-width: 155px;
   height: 60px;
   padding: 0 25px;
-  font-family: "SamsungOne", "Roboto", Arial, sans-serif;
+  font-family: var(--font-ui, "SamsungOne", "Roboto", Arial, sans-serif);
   font-size: 25px;
-  font-weight: 500;
+  font-weight: var(--header-tab-weight, 500);
   border: 1px solid transparent;
-  border-radius: 20px;
+  border-radius: var(--header-tab-plate-radius, 20px);
   transform: none;
   box-shadow: none;
   background: transparent;
@@ -118,5 +124,14 @@
   &[aria-pressed="true"],
   &[data-focused="true"] {
     color: var(--fg);
+  }
+
+  &[data-focused="true"] {
+    text-shadow: var(--header-tab-focus-shadow, none);
+  }
+
+  [data-header-focus="tabs"][data-focused="true"] ~ &[data-focused="true"],
+  [data-header-focus="tabs"]:not([data-focused="true"]) ~ &[aria-pressed="true"] {
+    color: var(--header-tab-plate-text, var(--fg));
   }
 }

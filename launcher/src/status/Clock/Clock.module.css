@@ -1,11 +1,42 @@
 .compactDate {
+  position: relative;
   font-size: 36px;
-  font-weight: 400;
+  font-weight: var(--clock-date-weight, 400);
+
+  [data-weather-part="compact"]:not([hidden]) + &:not([hidden])::before,
+  [data-weather-part="compact"]:not([hidden]) + &[hidden] + .compactTime::before,
+  &:not([hidden]) + .compactTime::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -24px;
+    width: 2px;
+    height: 36px;
+    margin-top: -18px;
+    background: var(--header-status-divider, none);
+    pointer-events: none;
+  }
+
+  &:not([hidden]) + .compactTime::before {
+    left: -15px;
+  }
+
+  [dir="rtl"] [data-weather-part="compact"]:not([hidden]) + &:not([hidden])::before,
+  [dir="rtl"] [data-weather-part="compact"]:not([hidden]) + &[hidden] + .compactTime::before {
+    left: auto;
+    right: -24px;
+  }
+
+  [dir="rtl"] &:not([hidden]) + .compactTime::before {
+    left: auto;
+    right: -15px;
+  }
 }
 
 .compactTime {
+  position: relative;
   font-size: 36px;
-  font-weight: 700;
+  font-weight: var(--clock-time-weight, 700);
   font-variant-numeric: tabular-nums;
   width: 8ch;
   flex-shrink: 0;

@@ -11,6 +11,7 @@
 
 .home {
   --fallback-label-size: calc(var(--app-card-size) * 0.102);
+  --fallback-label-weight: var(--app-label-weight, 500);
 
   padding: calc(var(--app-card-size) * 0.072);
 }
@@ -47,7 +48,7 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
-  font-weight: 500;
+  font-weight: var(--fallback-label-weight, 500);
   color: var(--control-text);
   text-shadow: var(--app-label-shadow);
   max-width: 100%;

@@ -27,9 +27,29 @@
 
 .tabs {
   border-color: transparent;
-  border-radius: 19px;
+  border-radius: calc(var(--header-tab-plate-radius, 20px) - 1px);
+  background: var(--header-tab-plate-surface, var(--header-focus-surface));
+  box-shadow: var(--header-tab-plate-shadow, var(--header-focus-shadow));
 
   &[data-focused="true"] {
-    border-color: var(--focus);
+    border-color: var(--header-tab-plate-border, var(--focus));
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 30%;
+    right: 30%;
+    bottom: 4px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--header-tab-underline, none);
+    box-shadow: var(--header-tab-underline-shadow, none);
+    transform-origin: 50% 100%;
+    transition: transform var(--motion-duration-header-focus) ease-out;
+  }
+
+  &[data-focused="true"]::after {
+    transform: scale(1.9, 1.25);
   }
 }

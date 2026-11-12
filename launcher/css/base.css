@@ -32,7 +32,7 @@ html {
   height: 1080px;
   overflow: hidden;
   color: var(--fg);
-  font-family: "Roboto", "SamsungOne", "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-ui, "Roboto", "SamsungOne", "Helvetica Neue", Arial, sans-serif);
   -webkit-font-smoothing: antialiased;
 }
 h2 {
@@ -69,6 +69,6 @@ body {
   height: 1080px;
   overflow: hidden;
   color: var(--fg);
-  font-family: "Roboto", "SamsungOne", "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-ui, "Roboto", "SamsungOne", "Helvetica Neue", Arial, sans-serif);
   -webkit-font-smoothing: antialiased;
 }

@@ -4,7 +4,12 @@
   width: 64px;
   height: 64px;
   padding: 12px;
-  color: var(--fg);
+  /* Unclipped: a round clip would soften the edges of the icon. */
+  overflow: visible;
+  border-radius: 50%;
+  color: var(--header-icon-text, var(--fg));
+  background: var(--header-icon-surface, transparent);
+  box-shadow: var(--header-icon-shadow, none);
   &[data-net-kind="offline"] {
     color: var(--network-offline);
   }

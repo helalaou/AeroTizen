@@ -2,6 +2,7 @@
   --header-status-margin: 0px;
 
   color: var(--fg);
+  text-shadow: var(--header-status-shadow, none);
   display: flex;
   align-items: center;
   gap: 28px;
