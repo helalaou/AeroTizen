@@ -6,6 +6,7 @@ import type { SettingsSectionProps } from "../types";
 const APPEARANCE_OPTIONS = [
   { value: "classic", labelKey: "appearance.classic" },
   { value: "glass", labelKey: "appearance.glass" },
+  { value: "pop", labelKey: "appearance.pop" },
   { value: "gloss", labelKey: "appearance.gloss" },
   { value: "amethyst", labelKey: "appearance.amethyst" },
   { value: "mint", labelKey: "appearance.mint" },

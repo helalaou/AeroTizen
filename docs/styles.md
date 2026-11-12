@@ -149,10 +149,10 @@ hooks. Keep card focus paint and motion with the card, rather than in `base.css`
 `InputDock` owns collection spacing and the compact dock. `InputCard` owns its
 frame, icon, labels, status badge and focused/disconnected states. Their styles
 use `data-theme` to stack the icon above the label and show the status badge in
-Glass, Gloss, Amethyst, Mint and Halo. Classic uses a horizontal card. Pass the
-compact layout explicitly so child geometry can use it directly. The card exposes
-`data-input-card`, `data-status`, `data-disconnected` and `data-input-part` hooks.
-Theme tokens own neutral input paint. Connection status palettes keep local
+Glass, Gloss, Amethyst, Mint, Halo and Pop. Classic uses a horizontal card. Pass
+the compact layout explicitly so child geometry can use it directly. The card
+exposes `data-input-card`, `data-status`, `data-disconnected` and `data-input-part`
+hooks. Theme tokens own neutral input paint. Connection status palettes keep local
 defaults through optional named variable fallbacks.
 
 `Home` owns the viewport, fades, page reveals and section spacing. The inputs
