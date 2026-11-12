@@ -260,7 +260,7 @@ test("the generated service keeps Tizen lifecycle exports and optional diagnosti
   assert.equal(closed, 1);
 });
 
-test("legacy views remain test fixtures and cannot enter the compiled runtime", () => {
+test("retired standalone scripts cannot enter the compiled runtime", () => {
   for (const file of [
     "settings-ui.js",
     "settings.js",
@@ -285,7 +285,6 @@ test("legacy views remain test fixtures and cannot enter the compiled runtime", 
     "photo-weather.js",
     "fireplace.js",
   ]) {
-    assert.ok(existsSync(path.join(root, "tests/fixtures/legacy-launcher/js", file)), file);
     assert.equal(existsSync(path.join(root, "launcher/js", file)), false, file);
     assert.equal(existsSync(path.join(output, "js", file)), false, file);
   }

@@ -221,9 +221,5 @@ SVG rasterization even when geometry stays the same.
 Browser tests cover both themes, all clock variants, card/input layouts, Settings
 navigation, wallpaper visibility and focus geometry. For cascade changes, compare
 compiled before/after screens with fixed time, cached weather and disabled motion.
-The CSS under `tests/fixtures/legacy-launcher/css/` is a frozen comparison snapshot;
-it is neither active source nor part of the release package. Do not update that
-snapshot just to make a changed production screen pass a comparison test.
-The browser comparison helper serves the unchanged `tests/fixtures/legacy-dom.js`
-at the legacy page's shared DOM-script URL. This retains the old focus behaviour
-without shipping it in the production widget or changing the frozen renderer.
+Browser tests assert current layout and interaction contracts directly. The retired
+JavaScript launcher and its CSS snapshot are no longer browser-test baselines.

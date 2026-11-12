@@ -105,7 +105,7 @@ forwards keydown events; device commands and playback cancellation stay in the i
 `buildInfo.ts` supplies the typed local-preview placeholder at `js/build-info.js`.
 The package builder generates that same path with the version, content hash and
 Git stamp for both the browser and CommonJS service. Build identity excludes
-the generated stamp itself. The old placeholder is a frozen comparison fixture.
+the generated stamp itself.
 
 `diagnostics/early.ts` builds the classic `launcher-diagnostics.js` entry in the page
 head. It starts diagnostics and startup tracing before the main UI bundle loads.
@@ -161,8 +161,7 @@ and names remain stable. The service receives this adapter, the catalogue, confi
 storage; it has no DOM or TV API dependency.
 
 Hot reload retains the app service used by Continue Watching. Disposal cancels discovery
-delivery and rejects late handoff and launch callbacks. The old `apps.js` remains only in
-the frozen comparison fixture, outside the TV package.
+delivery and rejects late handoff and launch callbacks.
 
 ## Input ownership
 
@@ -193,9 +192,8 @@ with shell transparency and the background bridge; the service never changes DOM
 Components own markup and focus. Playback commands run through service event handlers,
 and source polling does not rerender the playback view.
 
-The old runtime is preserved byte-for-byte in the `inputs-runtime.js` test fixture.
-The comparison page continues to use its earlier frozen `inputs.js` and input renderer.
-Neither fixture is part of the TV package.
+Input service tests assert source and playback snapshots. Browser tests exercise the
+current input cards, Settings controls and playback lifecycle.
 
 ## Native navigation ownership
 
@@ -230,7 +228,7 @@ baseline and generated ES5 modules, including with modern service globals absent
 
 The `tests/fixtures/homewatch/` snapshot is frozen before this migration. The same
 startup and handoff cases run against it and the typed client; lifecycle cases also
-verify disposal and idle request counts. The full-launcher fixture stays unchanged.
+verify disposal and idle request counts.
 
 Each handoff reads the routing file again, with the existing 4096-byte limit and
 500 ms deadline. Confirmed Native Home bypasses the watcher handshake; other modes
@@ -241,8 +239,8 @@ validation use pure helpers. Read-only Tizen filesystem types are shared with St
 
 Hot reload retains the same adapter and pending handoffs. Permanent disposal aborts
 its fallback requests, clears timers, removes listeners and suppresses late callbacks.
-The unchanged `native-navigation.js` remains a comparison fixture outside TV packages;
-handoff tests run against both the frozen script and typed adapter.
+Handoff tests exercise the current typed adapter, including routing, watcher
+acknowledgements, native viewer commands and disposal.
 
 ## Missing HDMI inputs
 
@@ -294,8 +292,8 @@ both are disabled. Explicit location searches remain available while they are di
 
 The entry point retains the service through development hot reload. Starting it twice keeps one
 refresh timer and one settings/clock subscription. Disposal cancels forecasts and searches,
-stops the timer and releases its subscriptions. The legacy weather runtime is kept only in the
-frozen comparison fixture, outside the shipped package.
+stops the timer and releases its subscriptions. Service tests assert weather snapshots
+directly; component and browser tests cover the rendered status.
 
 Weather Settings groups Home visibility, location-name visibility and temperature units.
 Its shared location summary reads the resolved city even when the Home widget is hidden.
@@ -343,8 +341,7 @@ Settled feeds do not poll. Returning to the launcher refreshes feeds; hiding it 
 selection cancels pending reads and retries. Shared clock ticks revalidate saved timestamps
 after a system-time correction without another request. Hot reload retains the service and
 its subscriptions. `dispose()` cancels requests and timers, releases app/preference/clock and
-visibility subscriptions, and rejects late replies. The legacy comparison page retains its
-existing frozen JavaScript service outside the TV package.
+visibility subscriptions, and rejects late replies.
 
 `platform/tizen/createSamsungContinueWatchingProvider.ts` owns Samsung metadata discovery,
 the existing five-second XHR transport and app-control launch payloads. Package identities,
@@ -353,7 +350,7 @@ unchanged. The shared service still owns retries; the provider adds no polling o
 Hot reload retains the feed service and its provider. Cancelling feed requests during a
 valid native handoff does not cancel that launch. Permanent service disposal also disposes
 the Samsung provider, aborts transport and suppresses late handoff and failure callbacks.
-The standalone Samsung script remains an unchanged comparison fixture outside TV packages.
+Provider tests exercise the current typed factory and its protocol boundaries.
 
 `platform/tizen/createStremioContinueWatchingProvider.ts` owns the optional authenticated
 root-reader connection. Named constants retain the protocol identities, credential path,
@@ -362,8 +359,8 @@ without changing input records. Credentials stay private to the provider; stream
 even after cancellation or timeout. Capability checks still gate selection, and item reads
 require that check to succeed. Missing or stale credentials can be prepared once per check.
 The existing app service opens Stremio normally. Feed cancellation clears credentials and
-aborts reads; permanent disposal also blocks future work. The standalone script is a frozen
-comparison fixture, excluded from TV packages.
+aborts reads; permanent disposal also blocks future work. Provider tests exercise the
+current typed factory, including authorization, cancellation and malformed replies.
 
 ## DOM and style ownership
 
@@ -442,10 +439,9 @@ See the runtime boundary in the
 [style rules](styles.md) for the remaining public body classes.
 
 Each component has one style owner. Theme differences use tokens from `themes.css`;
-layout and state rules stay with the component. The legacy comparison page has a
-frozen CSS snapshot, so it does not follow active selector changes. These fixtures
-are excluded from production packages. See [style rules](styles.md) for the cascade,
-CSS checks and Chromium 69 constraints.
+layout and state rules stay with the component. Browser tests assert current view
+contracts rather than compare against the retired JavaScript renderer. See
+[style rules](styles.md) for the cascade, CSS checks and Chromium 69 constraints.
 
 See [interface icons](icons.md) for named imports, accessibility, custom artwork and
 third-party notices.

@@ -1,14 +1,12 @@
 const { test, expect } = require("./launcher_fixture.cjs");
-const { compareHeaderPixels } = require("./compare_header_pixels.cjs");
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
-const { preserveLegacyDom } = require("./legacy_helpers.cjs");
 
 test.beforeEach(async ({ context }) => {
   await context.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await context.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
 });
 
-const open = async (page, background = "waves", url = "/") => {
+const open = async (page, background = "waves") => {
   await page.addInitScript((background) => {
     if (!localStorage.getItem("aerotizen.settings.v1")) {
       localStorage.setItem(
@@ -17,51 +15,14 @@ const open = async (page, background = "waves", url = "/") => {
       );
     }
   }, background);
-  await page.goto(url);
-  await page.waitForFunction(
-    (legacy) => (legacy ? AeroTizen.apps.ready : AeroTizen.apps.getSnapshot().ready) && AeroTizen.homeScreen,
-    url.includes("/tests/fixtures/legacy-launcher/"),
-  );
+  await page.goto("/");
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready && AeroTizen.homeScreen);
 };
 
 const durations = (page) =>
   page
     .locator("#bg [data-background-wave]")
     .evaluateAll((nodes) => nodes.map((node) => parseFloat(node.style.animationDuration)));
-
-test("wave artwork and geometry match the frozen renderer at two animation phases", async ({ page, context }) => {
-  const baseline = await context.newPage();
-  await preserveLegacyDom(baseline);
-  const errors = [];
-  for (const target of [baseline, page]) {
-    target.on("pageerror", (error) => errors.push(error.message));
-    await open(target, "waves", target === baseline ? "http://127.0.0.1:8170/tests/fixtures/legacy-launcher/" : "/");
-    await expect(target.locator(target === baseline ? "#bg .bg-wave" : "#bg [data-background-wave]")).toHaveCount(2);
-    // Compare only the background; the fixture intentionally has older Home markup.
-    await target.addStyleTag({ content: "body > :not(#bg) { visibility: hidden !important; }" });
-  }
-  for (const phase of [0, 7000]) {
-    const screenshots = [];
-    for (const target of [baseline, page]) {
-      await target.evaluate((phase) => {
-        for (const animation of document.getAnimations()) {
-          if (animation.effect.target.closest("#bg")) {
-            animation.pause();
-            animation.currentTime = phase;
-          }
-        }
-      }, phase);
-      screenshots.push(await target.screenshot());
-    }
-    expect(await compareHeaderPixels(page, screenshots[0], screenshots[1], 1080)).toEqual({
-      changedPixels: 0,
-      maxChannelDelta: 0,
-    });
-  }
-  await expect(page.locator('#bg svg[aria-hidden="true"][focusable="false"]')).toHaveCount(2);
-  expect(errors).toEqual([]);
-  await baseline.close();
-});
 
 test("wave selection, speed and scene switching persist without retaining old animation nodes", async ({ page }) => {
   await open(page, "black");
@@ -70,6 +31,7 @@ test("wave selection, speed and scene switching persist without retaining old an
   await page.locator('[data-key="wallpaper-categories:animated"]').click();
   await page.locator('[data-key="bg:waves"]').click();
   await expect(page.locator("#bg [data-background-wave]")).toHaveCount(2);
+  await expect(page.locator('#bg svg[aria-hidden="true"][focusable="false"]')).toHaveCount(2);
   expect(await durations(page)).toEqual([28, 18]);
   const oldWave = await page.locator("#bg [data-background-wave]").first().elementHandle();
   const speed = page.getByRole("slider", { name: "Background speed" });

@@ -99,7 +99,6 @@ jobs:
               b"package.json",
               b"playwright.config.cjs",
               b"stylelint.config.cjs",
-              b"tests/fixtures/legacy-dom.js",
               b"tools/build-launcher.mjs",
               b"tools/dev-build-badge.mjs",
               b"tools/translation-lint.cjs",
@@ -126,7 +125,7 @@ jobs:
                   return "shared"
               if path.startswith(b"cli/"):
                   return "cli"
-              if path in launcher_files or path.startswith((b"launcher/", b"tests/browser/", b"tests/fixtures/legacy-launcher/")):
+              if path in launcher_files or path.startswith((b"launcher/", b"tests/browser/")):
                   return "launcher"
               if path.startswith(b"tests/helpers/") and path.endswith(b".cjs"):
                   return "launcher"

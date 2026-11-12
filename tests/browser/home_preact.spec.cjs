@@ -1,5 +1,4 @@
 const { test, expect } = require("./launcher_fixture.cjs");
-const { preserveLegacyDom } = require("./legacy_helpers.cjs");
 test.beforeEach(async ({ page }) => {
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
@@ -44,6 +43,111 @@ test("Home short/held OK, action menu, move/drop and Settings focus restoration"
   await expect(page.locator("#grid > [data-id]").first()).toHaveAttribute("data-id", "demo1");
   expect(errors).toEqual([]);
 });
+
+const openHome = async (page, home = ["demo0", "demo1"]) => {
+  await page.goto("/");
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
+  await page.evaluate((home) => AeroTizen.settings.update({ home }), home);
+  await expect(page.locator("#grid > [data-id]").first()).toBeFocused();
+};
+
+const openActions = async (page) => {
+  await page.keyboard.down("Enter");
+  await expect(page.getByRole("menu")).toBeVisible();
+  await page.keyboard.up("Enter");
+};
+
+test("a short OK launches once despite repeats; Back from actions permits the next launch", async ({ page }) => {
+  await openHome(page);
+  await page.evaluate(() => {
+    window.appLaunches = [];
+    AeroTizen.apps.launch = (app) => window.appLaunches.push(app.id);
+  });
+  await page.keyboard.down("Enter");
+  await page.keyboard.down("Enter");
+  expect(await page.evaluate(() => window.appLaunches)).toEqual([]);
+  await page.keyboard.up("Enter");
+  expect(await page.evaluate(() => window.appLaunches)).toEqual(["demo0"]);
+  await openActions(page);
+  expect(await page.evaluate(() => window.appLaunches)).toEqual(["demo0"]);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toBeHidden();
+  await page.keyboard.press("Enter");
+  expect(await page.evaluate(() => window.appLaunches)).toEqual(["demo0", "demo0"]);
+});
+
+test("removing a Home favourite preserves focus and persists the remaining order", async ({ page }) => {
+  await openHome(page);
+  await openActions(page);
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("menuitem", { name: "Remove from Home" })).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#grid > [data-id]")).toHaveCount(1);
+  await expect(page.locator('#grid > [data-id="demo1"]')).toBeFocused();
+  await page.reload();
+  await expect(page.locator('#grid > [data-id="demo1"]')).toBeFocused();
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home)).toEqual(["demo1"]);
+});
+
+test("All apps actions add and remove a favourite without removing the app card", async ({ page }) => {
+  await openHome(page, ["demo0"]);
+  await page.locator("#apps-tab").click();
+  await page.keyboard.press("ArrowDown");
+  const cards = page.locator("#grid > [data-id]");
+  const count = await cards.count();
+  const favourite = await cards.first().getAttribute("data-id");
+  await page.evaluate((id) => AeroTizen.settings.update({ home: [id] }), favourite);
+  await expect(cards.first()).toBeFocused();
+  await openActions(page);
+  await expect(page.getByRole("menuitem")).toHaveText(["Remove from Home"]);
+  await page.keyboard.press("Enter");
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home)).toEqual([]);
+  await expect(cards).toHaveCount(count);
+  await expect(cards.first()).toBeFocused();
+  await openActions(page);
+  await expect(page.getByRole("menuitem")).toHaveText(["Add to Home"]);
+  await page.keyboard.press("Enter");
+  expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home)).toEqual([favourite]);
+  await expect(cards).toHaveCount(count);
+});
+
+for (const withInputs of [true, false]) {
+  test(`removing the last favourite restores focus to ${withInputs ? "Inputs" : "Home"}`, async ({ page }) => {
+    if (!withInputs) {
+      await page.addInitScript(() => {
+        window.tizen = {
+          systeminfo: {
+            getPropertyValue(name, done, failed) {
+              if (name === "VIDEOSOURCE") done({ connected: [], disconnected: [] });
+              else failed?.();
+            },
+          },
+        };
+      });
+    }
+    await openHome(page, ["demo0"]);
+    await openActions(page);
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    await expect(page.locator("#grid > [data-id]")).toHaveCount(0);
+    const target = withInputs ? page.locator("#inputs [data-input-card]").first() : page.locator("#home-tab");
+    await expect(target).toBeFocused();
+    expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home)).toEqual([]);
+  });
+}
+
+test("holding OK on a navigation tab does not open app actions", async ({ page }) => {
+  await openHome(page);
+  await page.keyboard.press("ArrowUp");
+  await expect(page.locator("#home-tab")).toBeFocused();
+  await page.keyboard.down("Enter");
+  const holdMs = await page.evaluate(() => AeroTizen.config.LONG_PRESS_MS);
+  await page.waitForTimeout(holdMs + 100);
+  await page.keyboard.up("Enter");
+  await expect(page.getByRole("menu")).toBeHidden();
+  await expect(page.locator("#toast")).toBeHidden();
+});
+
 test("Home and All apps retain keyed artwork nodes and Back returns to Home", async ({ page }) => {
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
@@ -140,54 +244,4 @@ test("Home docks Inputs with one app row and leaves them in flow with two rows",
   await expect(page.locator("#grid > [data-id]").last()).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(firstInput).toBeFocused();
-});
-test("compiled Home preserves header and input geometry around the resized app grid at 1080p", async ({
-  page,
-  browser,
-}, info) => {
-  const baseline = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
-  await baseline.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
-  await baseline.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
-  const seed = () =>
-    localStorage.setItem(
-      "aerotizen.settings.v1",
-      JSON.stringify({
-        home: ["demo0", "demo1", "demo2", "demo3"],
-        background: "black",
-        showWeather: false,
-      }),
-    );
-  await baseline.addInitScript(seed);
-  await preserveLegacyDom(baseline);
-  await baseline.goto("http://127.0.0.1:8170/tests/fixtures/legacy-launcher/");
-  await page.goto("/");
-  for (const tab of [baseline, page])
-    await tab.waitForFunction(
-      (legacy) =>
-        (legacy ? AeroTizen.apps.ready : AeroTizen.apps.getSnapshot().ready) &&
-        document.querySelector(legacy ? "#grid > [data-id].focused" : "#grid > [data-id][data-focused=true]"),
-      tab === baseline,
-    );
-  const geometry = (tab) =>
-    tab.evaluate(() =>
-      ["header", "#gear", "#inputs"].map((selector) => {
-        const element = document.querySelector(selector),
-          rect = element.getBoundingClientRect();
-        // The shared Home heading and section spacing set a new vertical position for Inputs.
-        const coordinates =
-          selector === "#inputs" ? [rect.x, rect.width, rect.height] : [rect.x, rect.y, rect.width, rect.height];
-        return [selector, ...coordinates.map((n) => Math.round(n))];
-      }),
-    );
-  // App sizes now fit two complete rows; header and input dimensions stay upstream-compatible.
-  await page.waitForFunction(() =>
-    document
-      .querySelector("[data-home-page]")
-      .getAnimations()
-      .every((a) => a.playState === "finished"),
-  );
-  expect(await geometry(page)).toEqual(await geometry(baseline));
-  await baseline.screenshot({ path: info.outputPath("legacy-home.png") });
-  await page.screenshot({ path: info.outputPath("preact-home.png") });
-  await baseline.close();
 });
