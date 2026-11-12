@@ -95,6 +95,10 @@ The Fireplace feature supplies `createFireplaceKeyHandler` through the shared
 checks whether it is active and forwards keydown events; it suppresses Home keyup
 events while an overlay is active. Fireplace controls live in `contracts/fireplace.ts`,
 with no dependency on the Tizen runtime types.
+The input playback feature supplies `createInputPlaybackKeyHandler` through the
+same contract. It captures keys during both opening and playback and owns the
+Enter, Back and Escape exit rules. The router reads only its active state and
+forwards keydown events; device commands and playback cancellation stay in the input service.
 
 ## Diagnostics ownership
 

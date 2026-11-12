@@ -1,10 +1,9 @@
-import type { InputsService } from "../contracts/inputs";
 import type { HomeBridge, LauncherConfig, RemoteKeyHandler, SettingsBridge } from "../contracts/launcher";
 
 interface KeyTargets {
   fireplace: RemoteKeyHandler;
   home: Pick<HomeBridge, "keydown" | "keyup">;
-  inputs: Pick<InputsService, "getSnapshot" | "leave">;
+  inputs: RemoteKeyHandler;
   settings: Pick<SettingsBridge, "focus" | "isOpen" | "keydown">;
 }
 
@@ -13,14 +12,18 @@ export const bindLauncherKeys = (
   keys: LauncherConfig["KEY"],
   { fireplace, home, inputs, settings }: KeyTargets,
 ) => {
-  const closesOverlay = (code: number) => code === keys.ENTER || code === keys.BACK || code === keys.ESC;
-  const isPlayingInput = () => inputs.getSnapshot().playback !== "idle";
+  const finishesTextEntry = (code: number) =>
+    code === keys.ENTER ||
+    code === keys.BACK ||
+    code === keys.ESC ||
+    code === keys.IME_DONE ||
+    code === keys.IME_CANCEL;
   const keydown = (event: KeyboardEvent) => {
     const code = event.keyCode;
     const active = document.activeElement;
     // The on-screen keyboard owns text entry. OK, Done and Back return focus to Settings.
     if (active?.tagName === "INPUT") {
-      if (closesOverlay(code) || code === keys.IME_DONE || code === keys.IME_CANCEL) {
+      if (finishesTextEntry(code)) {
         event.preventDefault();
         (active as HTMLInputElement).blur();
         settings.focus();
@@ -31,11 +34,8 @@ export const bindLauncherKeys = (
       fireplace.keydown(code, event);
       return;
     }
-    if (isPlayingInput()) {
-      if (closesOverlay(code)) {
-        event.preventDefault();
-        inputs.leave();
-      }
+    if (inputs.isActive()) {
+      inputs.keydown(code, event);
       return;
     }
     if (settings.isOpen()) {
@@ -45,7 +45,7 @@ export const bindLauncherKeys = (
     home.keydown(code, event);
   };
   const keyup = (event: KeyboardEvent) => {
-    if (!settings.isOpen() && !isPlayingInput() && !fireplace.isActive()) {
+    if (!settings.isOpen() && !inputs.isActive() && !fireplace.isActive()) {
       home.keyup(event.keyCode);
     }
   };

@@ -207,6 +207,36 @@ async function mockHdmi(page, { stage = "ready", hideDisconnected = false } = {}
   await expect(page.locator("[data-input-card]")).toHaveAttribute("data-status", "active");
 }
 
+for (const exitKey of ["ENTER", "BACK", "ESC"]) {
+  test(`remote ${exitKey} exits embedded playback and restores Home control`, async ({ page }) => {
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await mockHdmi(page);
+    const tile = page.getByRole("button", { name: "HDMI 1", exact: true });
+    await expect(tile).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.locator("body")).toHaveClass(/\btv\b/);
+
+    await page.evaluate((name) => {
+      const code = AeroTizen.config.KEY[name];
+      document.dispatchEvent(new KeyboardEvent("keydown", { keyCode: code, bubbles: true, cancelable: true }));
+    }, exitKey);
+    await expect.poll(() => page.evaluate(() => AeroTizen.inputs.getSnapshot().playback)).toBe("idle");
+    await page.evaluate((name) => {
+      const code = AeroTizen.config.KEY[name];
+      document.dispatchEvent(new KeyboardEvent("keyup", { keyCode: code, bubbles: true }));
+    }, exitKey);
+
+    await expect(page.locator("body")).not.toHaveClass(/\btv\b/);
+    await expect(tile).toBeVisible();
+    await expect(tile).toHaveAttribute("data-focused", "true");
+    expect(await page.evaluate(() => window.inputTest.calls)).toEqual(["setSource", "show", "hide"]);
+    await page.keyboard.press("ArrowUp");
+    await expect(page.locator("#home-tab")).toBeFocused();
+    expect(errors).toEqual([]);
+  });
+}
+
 test("unplug clears ACTIVE and a stale visible tile cannot open a black input", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
