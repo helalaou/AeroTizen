@@ -18,6 +18,7 @@ import type { NetworkService, WeatherService } from "./contracts/status";
 import { createFireplaceKeyHandler } from "./fireplace/createFireplaceKeyHandler";
 import { mountFireplace } from "./fireplace/mountFireplace";
 import { mountHome } from "./home/index";
+import { createInputPlaybackKeyHandler } from "./inputs/createInputPlaybackKeyHandler";
 import { mountInputPlayback } from "./inputs/mountInputPlayback";
 import { createAppsPlatform } from "./platform/tizen/createAppsPlatform";
 import { createClockPlatform } from "./platform/tizen/createClockPlatform";
@@ -241,7 +242,7 @@ try {
   unbindKeys = bindLauncherKeys(document, runtime.config.KEY, {
     fireplace: createFireplaceKeyHandler(runtime.config.KEY, fireplace.bridge),
     home: app.home,
-    inputs,
+    inputs: createInputPlaybackKeyHandler(runtime.config.KEY, inputs),
     settings: app.settings,
   });
   const stopBoot = hotData?.stopBoot ?? startLauncherBoot(window, runtime, window.AeroStartup);
