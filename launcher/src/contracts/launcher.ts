@@ -8,6 +8,7 @@ export interface InputSource {
   readonly active?: boolean;
   readonly connected?: boolean;
   readonly editName?: string;
+  readonly ipControl?: boolean;
   readonly number?: number;
   readonly raw?: unknown;
   readonly type: string;

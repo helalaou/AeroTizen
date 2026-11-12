@@ -281,5 +281,17 @@
   "weather.changeLocation": "Changer de lieu",
   "weather.useAutomatic": "Localisation automatique",
   "weather.automaticHint": "Utiliser un lieu approximatif à partir de votre adresse Internet.",
-  "weather.searchHelp": "Recherchez une ville ou un code postal, puis sélectionnez un résultat."
+  "weather.searchHelp": "Recherchez une ville ou un code postal, puis sélectionnez un résultat.",
+  "inputs.ipProbeTitle": "Ajouter une entrée {{hdmi}} manquante",
+  "inputs.ipProbeHint": "Activez IP Remote dans les paramètres {{samsung}}. Sélectionnez l’entrée {{hdmi}} manquante dans l’accueil {{samsung}}, puis revenez ici.",
+  "inputs.ipProbeStart": "Rechercher et ajouter l’entrée",
+  "inputs.ipProbe.waiting": "Vérification de l’entrée active. Sélectionnez Autoriser si {{samsung}} demande une association.",
+  "inputs.ipProbe.added": "{{hdmi}} {{port}} a été ajouté à l’accueil.",
+  "inputs.ipProbe.known": "{{hdmi}} {{port}} figure déjà dans la liste.",
+  "inputs.ipProbe.noHdmi": "Sélectionnez une entrée {{hdmi}} dans l’accueil {{samsung}}, puis réessayez.",
+  "inputs.ipProbe.pairFailed": "Échec de l’association. Vérifiez que IP Remote est activé, puis réessayez.",
+  "inputs.ipProbe.readFailed": "Le téléviseur est associé, mais la lecture de l’entrée active a échoué.",
+  "inputs.ipProbe.scanFailed": "Attendez le chargement des entrées du téléviseur, puis réessayez.",
+  "inputs.ipProbe.storageFailed": "{{appName}} n’a pas pu enregistrer l’entrée.",
+  "inputs.ipProbe.unavailable": "Le service en arrière-plan du téléviseur n’a pas répondu."
 }

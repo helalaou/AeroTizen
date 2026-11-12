@@ -8,6 +8,7 @@ export interface NativeWatcher {
 export interface NativeHdmiHandoff {
   fallback(): void;
   readonly label: string;
+  selectSource?(): Promise<boolean>;
 }
 
 export interface NativeNavigationCommands extends Required<

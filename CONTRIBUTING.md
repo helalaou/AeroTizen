@@ -227,6 +227,7 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
   preview with sample apps, inputs and a fictional Continue Watching feed. It uses one
   settings store; existing local preferences take priority. A fresh browser context uses Glass,
   Small app cards, the Scroll app layout, six Home favourites and Continue Watching on.
+  In Settings → Inputs, Find and add input simulates discovery of a missing HDMI 5 input.
   For README screenshots, use a clean context at 1920×1080.
 - Run `npm run build` for the compiled runtime in `dist/launcher/`.
   Releases package this directory. The explicit production HTML mounts Home and

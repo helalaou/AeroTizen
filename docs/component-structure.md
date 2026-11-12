@@ -240,6 +240,21 @@ its fallback requests, clears timers, removes listeners and suppresses late call
 The unchanged `native-navigation.js` remains a comparison fixture outside TV packages;
 handoff tests run against both the frozen script and typed adapter.
 
+## Missing HDMI inputs
+
+The input service merges learned IP Control ports with native input snapshots. Native records
+have priority; learned ports stay visible across refreshes and use the Samsung viewer.
+The Tizen message-port adapter waits for HomeWatcher readiness before it sends a request.
+It owns reply listeners and deadlines; input-service disposal releases pending work and retries.
+The service survives view hot reload with the other input state.
+
+The typed background IP Control module pairs and reads the active source only when Settings
+requests discovery. It stores the token and learned ports in a separate private file.
+Native navigation acknowledges the watcher handoff before selecting the source, then opens
+the viewer through its existing cancellation and focus checks. Normal HDMI playback remains
+controlled by the saved playback preference. The default development demo simulates a missing
+HDMI 5 input through the development adapters.
+
 ## Clock ownership
 
 `services/createClockService.ts` owns time snapshots, formatting and the width cache.

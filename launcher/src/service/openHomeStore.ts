@@ -19,6 +19,7 @@ const missing = (error: unknown) =>
 const openHomeStore = (
   host: DiagnosticsStorageHost | null,
   ready: (store: HomePreference | null, failed: boolean) => void,
+  filename = ROUTING_FILENAME,
 ) => {
   if (!host?.filesystem?.resolve) {
     ready(null, false);
@@ -34,7 +35,7 @@ const openHomeStore = (
             throw new Error("Private storage URI unavailable");
           }
           const folder = decodeURIComponent(uri.slice(FILE_URI_PREFIX.length)).replace(/\/$/, "");
-          const path = folder + "/" + ROUTING_FILENAME;
+          const path = folder + "/" + filename;
           const store: HomePreference = {
             exists: () => {
               try {

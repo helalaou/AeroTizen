@@ -1,8 +1,12 @@
 import type { InputsPlatform } from "../../contracts/inputs";
 import type { InputSource } from "../../contracts/launcher";
+import type { NativeHdmiHandoff } from "../../contracts/nativeNavigation";
 import { hasRecognizedDevice, sourceKey } from "../../shared/inputs/inputSources";
 
-export interface InputsTizen {
+import type { IpControlTizen } from "./createIpControlPlatform";
+import { createIpControlPlatform } from "./createIpControlPlatform";
+
+export interface InputsTizen extends IpControlTizen {
   application?: {
     getCurrentApplication(): { getRequestedAppControl(): { appControl?: { operation?: string } } | null };
   };
@@ -22,17 +26,21 @@ export interface InputsTizen {
 interface InputsHost {
   addEventListener(type: string, listener: () => void): void;
   AeroTizen: {
+    config?: { SERVICE_ID: string };
     homewatch: {
-      openNativeViewer?(source: unknown, hdmi: { label: string; fallback(): void } | null): boolean;
+      openNativeViewer?(source: unknown, hdmi: NativeHdmiHandoff | null): boolean;
+      start?(ready: () => void, failed: () => void): void;
     };
     tizen?: InputsTizen | null;
   };
+  clearTimeout?(id: number): void;
   document: {
     addEventListener(type: string, listener: () => void): void;
     readonly hidden: boolean;
     removeEventListener(type: string, listener: () => void): void;
   };
   removeEventListener(type: string, listener: () => void): void;
+  setTimeout?(callback: () => void, timeoutMs: number): number;
 }
 
 const record = (value: unknown): Record<string, unknown> | null =>
@@ -45,6 +53,14 @@ export const createInputsPlatform = (host: InputsHost): InputsPlatform => {
   let nativeSources = new Map<string, unknown>();
   const nativeSource = (source: InputSource) => source.raw || nativeSources.get(sourceKey(source)) || source;
   return {
+    ipControl:
+      host.AeroTizen.config && host.setTimeout && host.clearTimeout
+        ? createIpControlPlatform({
+            AeroTizen: { ...host.AeroTizen, config: host.AeroTizen.config },
+            setTimeout: host.setTimeout.bind(host),
+            clearTimeout: host.clearTimeout.bind(host),
+          })
+        : undefined,
     native: !!system,
     canEmbed: !!window,
     get refreshBeforeHdmi() {

@@ -8,6 +8,8 @@ import type storageFactory from "../diagnostics/storage";
 import type artFactory from "./createArtMode";
 import type { ArtModeStatus } from "./createArtMode";
 import type modeFactory from "./createHomeMode";
+import type ipControlFactory from "./createIpControl";
+import type { IpControlServiceHost } from "./createIpControl";
 import type storeFactory from "./openHomeStore";
 import {
   LAUNCHER_APP_ID,
@@ -83,17 +85,19 @@ interface ServiceDiagnosticContext {
   start(): void;
 }
 
-declare const tizen: DiagnosticsStorageHost & {
-  readonly application: {
-    launch(id: string, ready: () => void, failed: (error?: { message?: string } | null) => void): void;
+declare const tizen: DiagnosticsStorageHost &
+  IpControlServiceHost & {
+    readonly application: {
+      launch(id: string, ready: () => void, failed: (error?: { message?: string } | null) => void): void;
+    };
   };
-};
 declare const require: {
   (name: "http"): typeof import("http");
   (name: "url"): typeof import("url");
   (name: "./artmode"): typeof artFactory;
   (name: "./home-mode"): typeof modeFactory;
   (name: "./home-store"): typeof storeFactory;
+  (name: "./ip-control"): typeof ipControlFactory;
   (name: "./diagnostics"): { createDiagnostics(source: "service"): ServiceDiagnostics };
   (name: "./diagnostics-context"): typeof contextFactory;
   (name: "./diagnostics-store"): typeof storageFactory;
@@ -947,12 +951,18 @@ function diagnosticRequest(req: IncomingMessage, res: ServerResponse, pathname: 
     }
   });
 }
+let disposeIpControl: (() => void) | undefined;
 export const onStart = () => {
   if (started) {
     return;
   }
   started = true;
   diagnostics.record("service.start");
+  try {
+    disposeIpControl = require("./ip-control")(typeof tizen !== "undefined" ? tizen : null);
+  } catch {
+    // IP Control is optional; HomeWatcher remains available without messaging APIs.
+  }
   setTimeout(function () {
     diagnosticContext.start();
   }, 0);
@@ -1050,6 +1060,7 @@ export const onStart = () => {
 };
 export const onRequest = () => {};
 export const onExit = () => {
+  disposeIpControl?.();
   diagnostics.record("service.exit");
   diagnostics.flushStorage();
   stopped = true;

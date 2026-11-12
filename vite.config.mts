@@ -18,6 +18,7 @@ const SERVICE_ENTRIES = {
   "diagnostics-store": "diagnostics/storage.ts",
   "home-mode": "service/createHomeMode.ts",
   "home-store": "service/openHomeStore.ts",
+  "ip-control": "service/createIpControl.ts",
   artmode: "service/createArtMode.ts",
   index: "service/index.ts",
 } as const;
@@ -49,6 +50,7 @@ const compileRuntimeScript = async ({
         external: [
           "fs",
           "http",
+          "https",
           "crypto",
           "url",
           ...Object.keys(SERVICE_ENTRIES).map((name) => "./" + name),
