@@ -207,6 +207,36 @@ async function mockHdmi(page, { stage = "ready", hideDisconnected = false } = {}
   await expect(page.locator("[data-input-card]")).toHaveAttribute("data-status", "active");
 }
 
+for (const exitKey of ["ENTER", "BACK", "ESC"]) {
+  test(`remote ${exitKey} exits embedded playback and restores Home control`, async ({ page }) => {
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await mockHdmi(page);
+    const tile = page.getByRole("button", { name: "HDMI 1", exact: true });
+    await expect(tile).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.locator("body")).toHaveClass(/\btv\b/);
+
+    await page.evaluate((name) => {
+      const code = AeroTizen.config.KEY[name];
+      document.dispatchEvent(new KeyboardEvent("keydown", { keyCode: code, bubbles: true, cancelable: true }));
+    }, exitKey);
+    await expect.poll(() => page.evaluate(() => AeroTizen.inputs.getSnapshot().playback)).toBe("idle");
+    await page.evaluate((name) => {
+      const code = AeroTizen.config.KEY[name];
+      document.dispatchEvent(new KeyboardEvent("keyup", { keyCode: code, bubbles: true }));
+    }, exitKey);
+
+    await expect(page.locator("body")).not.toHaveClass(/\btv\b/);
+    await expect(tile).toBeVisible();
+    await expect(tile).toHaveAttribute("data-focused", "true");
+    expect(await page.evaluate(() => window.inputTest.calls)).toEqual(["setSource", "show", "hide"]);
+    await page.keyboard.press("ArrowUp");
+    await expect(page.locator("#home-tab")).toBeFocused();
+    expect(errors).toEqual([]);
+  });
+}
+
 test("unplug clears ACTIVE and a stale visible tile cannot open a black input", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -284,3 +314,136 @@ for (const stage of ["setSource", "show"]) {
     await expect(page.locator("#editor")).toBeVisible();
   });
 }
+
+test("the standard launcher adds the active missing port and restores a working tile", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
+  await page.route("http://127.0.0.1:47790/**", (route) =>
+    route.fulfill({ json: watcherStatus(route.request().url()) }),
+  );
+  await page.addInitScript(() => {
+    localStorage.setItem("aerotizen.settings.v1", JSON.stringify({ theme: "glass" }));
+    const listeners = new Map();
+    let nextListener = 0;
+    const reported = [1, 2, 3, 4].map((number) => ({ type: "HDMI", number }));
+    window.ipControlActions = [];
+    window.tizen = {
+      ApplicationControl: function (operation) {
+        this.operation = operation;
+      },
+      application: {
+        getAppsInfo: (done) => done([]),
+        launchAppControl() {},
+        launch(id, done) {
+          window.ipControlActions.push({ action: "launch", id });
+          done?.();
+        },
+      },
+      systeminfo: {
+        getPropertyValue(name, done, fail) {
+          if (name === "VIDEOSOURCE") {
+            done({ connected: reported });
+          } else {
+            fail?.();
+          }
+        },
+        addPropertyValueChangeListener() {},
+      },
+      messageport: {
+        requestTrustedLocalMessagePort() {
+          return {
+            addMessagePortListener(listener) {
+              nextListener += 1;
+              listeners.set(nextListener, listener);
+              return nextListener;
+            },
+            removeMessagePortListener: (id) => listeners.delete(id),
+          };
+        },
+        requestTrustedRemoteMessagePort() {
+          return {
+            sendMessage([{ key, value }]) {
+              const command = JSON.parse(value);
+              window.ipControlActions.push(command);
+              const ports = JSON.parse(sessionStorage.getItem("learned-hdmi") || "[]");
+              let reply = { status: "listed", ports };
+              if (command.action === "learn") {
+                sessionStorage.setItem("learned-hdmi", "[5]");
+                reply = { status: "added", port: 5, ports: [5] };
+              } else if (command.action === "switch") {
+                reply = { status: "switched" };
+              }
+              queueMicrotask(() => {
+                for (const listener of listeners.values()) {
+                  listener([{ key, value: JSON.stringify(reply) }]);
+                }
+              });
+            },
+          };
+        },
+      },
+    };
+  });
+  await page.goto("/");
+  await page.waitForFunction(() => AeroTizen.inputs.getSnapshot().sources.length === 4);
+  const tile = page.getByRole("button", { name: "HDMI 5", exact: true });
+  await expect(tile).toHaveCount(0);
+  await page.locator("#gear").click();
+  await openCategory(page, "sources");
+  const add = page.getByRole("button", { name: "Find and add input" });
+  await add.click();
+  const toast = page.locator("#toast");
+  await expect(toast).toHaveText("HDMI 5 added to Home.");
+  await expect(toast).toBeInViewport({ ratio: 1 });
+  await expect(page.locator('[data-section-pane="sources"]')).not.toContainText("HDMI 5 added to Home.");
+  await expect(add).toBeFocused();
+  const focus = page.locator("[data-settings-focus=content]");
+  await expect(focus).toHaveAttribute("data-visible", "true");
+  await expect
+    .poll(() =>
+      focus.evaluate((indicator) => {
+        const ring = indicator.getBoundingClientRect();
+        const button = document.activeElement.getBoundingClientRect();
+        return Math.max(Math.abs(ring.x - button.x), Math.abs(ring.y - button.y));
+      }),
+    )
+    .toBeLessThan(2);
+  expect(await page.evaluate(() => window.ipControlActions.find((command) => command.action === "learn"))).toEqual({
+    action: "learn",
+    nativePorts: [1, 2, 3, 4],
+  });
+  await closeSettings(page);
+  await expect(tile).toBeVisible();
+  await page.reload();
+  await expect(tile).toBeVisible();
+  await tile.click();
+  await expect
+    .poll(() => page.evaluate(() => window.ipControlActions.slice(-2)))
+    .toEqual([
+      { action: "switch", port: 5 },
+      { action: "launch", id: "org.tizen.tv-viewer" },
+    ]);
+  expect(errors).toEqual([]);
+});
+
+test.describe("missing-input development preview", () => {
+  test.use({ previewPlatforms: false });
+  test("the default development preview discovers a missing input through the shared input service", async ({
+    page,
+  }) => {
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto("http://127.0.0.1:8172/");
+    await page.locator("#gear").click();
+    await openCategory(page, "sources");
+    await page.getByRole("button", { name: "Find and add input" }).click();
+    await expect(page.locator("#toast")).toHaveText("HDMI 5 added to Home.");
+    await closeSettings(page);
+    const tile = page.getByRole("button", { name: "HDMI 5", exact: true });
+    await expect(tile).toBeVisible();
+    await tile.click();
+    await expect(page.locator("#toast")).toHaveText("Would switch to HDMI 5");
+    expect(errors).toEqual([]);
+  });
+});

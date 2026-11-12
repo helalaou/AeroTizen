@@ -105,6 +105,7 @@ test("compilation preserves runtime scripts, CSS, service and app identity", () 
     "home-mode.js",
     "home-store.js",
     "index.js",
+    "ip-control.js",
   ]);
   for (const file of readdirSync(path.join(output, "service"))) {
     parse(read(output, "service/" + file), { ecmaVersion: 5, sourceType: "script" });
@@ -318,4 +319,12 @@ test("TV bundle includes only the selected Lucide icons", () => {
   assert.ok(audit.rendered.includes("settings"));
   assert.ok(audit.rendered.includes("hdmi-port"));
   assert.ok(!audit.rendered.includes("a-arrow-down"), "unused icons are removed");
+});
+
+test("production includes the IP Control service and excludes the missing-input browser mock", () => {
+  assert.ok(existsSync(path.join(output, "service/ip-control.js")));
+  const bundle = read(output, "js/launcher-ui.js");
+  assert.match(bundle, /AeroTizen\.IpControlProbeReply/);
+  assert.doesNotMatch(bundle, /missingHdmiPort|notifyInput/);
+  assert.match(read(output, "service/index.js"), /ip-control/);
 });

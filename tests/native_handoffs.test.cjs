@@ -986,3 +986,63 @@ for (const legacy of [true, false]) {
     assert.equal(h.A.inputs.getSnapshot().playback !== "idle", false);
   });
 }
+
+nodeTest(
+  "IP Control source selection waits for watcher acknowledgement and precedes native viewer launch",
+  async () => {
+    const h = createHarness({ visible: true });
+    let selects = 0;
+    let complete;
+    h.A.homewatch.openNativeViewer(null, {
+      label: "HDMI 5",
+      fallback() {
+        assert.fail("unexpected fallback");
+      },
+      selectSource() {
+        selects++;
+        return new Promise((resolve) => {
+          complete = resolve;
+        });
+      },
+    });
+    assert.equal(selects, 0);
+    assert.equal(h.launches.length, 0);
+    h.requests[0].resolve(200);
+    assert.equal(selects, 1);
+    assert.equal(h.launches.length, 0);
+    complete(true);
+    await new Promise(setImmediate);
+    assert.deepEqual(
+      h.launches.map((item) => item.id),
+      ["org.tizen.tv-viewer"],
+    );
+    assert.equal(h.inputs.length, 0);
+    h.A.nativeNavigation.dispose();
+  },
+);
+
+nodeTest("IP Control handoff failure rearms the watcher and disposal suppresses late viewer launch", async () => {
+  for (const dispose of [false, true]) {
+    const h = createHarness({ visible: true });
+    let complete;
+    let fallback = 0;
+    h.A.homewatch.openNativeViewer(null, {
+      label: "HDMI 5",
+      fallback() {
+        fallback++;
+      },
+      selectSource: () =>
+        new Promise((resolve) => {
+          complete = resolve;
+        }),
+    });
+    h.requests[0].resolve(200);
+    if (dispose) h.A.nativeNavigation.dispose();
+    complete(dispose);
+    await new Promise(setImmediate);
+    assert.equal(h.launches.length, 0);
+    assert.equal(fallback, Number(!dispose));
+    if (!dispose) assert.equal(h.requests[1].url, "http://127.0.0.1:47790/home");
+    h.A.nativeNavigation.dispose();
+  }
+});

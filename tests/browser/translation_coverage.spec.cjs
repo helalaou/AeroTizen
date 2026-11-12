@@ -40,9 +40,9 @@ const expectTextFits = async (locator) => {
   await expect.poll(() => locator.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 };
 
-const findUntranslated = (page) =>
+const findUntranslated = (page, scope = "body") =>
   page.evaluate(
-    ({ attributes, inputName, releaseNote, languageNames, fixedNameValues }) => {
+    ({ attributes, inputName, releaseNote, languageNames, fixedNameValues, scope }) => {
       const clock = AeroTizen.clock;
       const now = new Date();
       const dates = clock.DATE_FORMATS.map((format) => format.format(now));
@@ -75,7 +75,7 @@ const findUntranslated = (page) =>
           leftovers.push({ target: element.id || element.getAttribute("data-key") || element.tagName, field, value });
         }
       };
-      for (const element of document.body.querySelectorAll("*")) {
+      for (const element of document.querySelector(scope).querySelectorAll("*")) {
         if (element.closest("[hidden], script, style") || !element.checkVisibility({ visibilityProperty: true })) {
           continue;
         }
@@ -91,11 +91,11 @@ const findUntranslated = (page) =>
       }
       return leftovers;
     },
-    { attributes: textAttributes, inputName, releaseNote, languageNames, fixedNameValues },
+    { attributes: textAttributes, inputName, releaseNote, languageNames, fixedNameValues, scope },
   );
 
-const expectTranslatedScreen = async (page, state) => {
-  expect(await findUntranslated(page), `Plain text in ${state}`).toEqual([]);
+const expectTranslatedScreen = async (page, state, scope) => {
+  expect(await findUntranslated(page, scope), `Plain text in ${state}`).toEqual([]);
 };
 
 test("the production HTML shell contains no untranslated launcher copy", async ({ page, request }) => {
@@ -297,3 +297,49 @@ for (const theme of ["classic", "glass"]) {
     expect(errors).toEqual([]);
   });
 }
+
+test.describe("missing-input translations", () => {
+  test.use({ previewPlatforms: false });
+  for (const theme of ["classic", "glass"]) {
+    test(`missing-input controls and results use the pseudo locale in ${theme}`, async ({ page }) => {
+      const messages = Object.fromEntries(Object.entries(english).map(([key, text]) => [key, symbolise(text)]));
+      await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
+      await page.route("**/src/shared/i18n/catalogues.ts*", async (route) => {
+        const response = await route.fetch();
+        await route.fulfill({
+          response,
+          body:
+            (await response.text()) +
+            "\ncatalogues[" +
+            JSON.stringify(pseudoLanguage) +
+            "] = " +
+            JSON.stringify({ name: pseudoCatalogueName, messages }) +
+            ";",
+        });
+      });
+      await page.addInitScript(
+        ({ theme, language }) => {
+          localStorage.setItem(
+            "aerotizen.settings.v1",
+            JSON.stringify({ theme, language, background: "black", showWeather: false }),
+          );
+        },
+        { theme, language: pseudoLanguage },
+      );
+      await page.goto(devUrl);
+      await page.locator("#gear").click();
+      await openCategory(page, "sources");
+      const add = page.locator('[data-key="ip-control-probe"]');
+      await expect(add).toHaveText(pseudoText("inputs.ipProbeStart"));
+      await expectTextFits(add);
+      await expectTranslatedScreen(page, "missing input discovery", '[data-section-pane="sources"]');
+      await add.click();
+      await expect(page.locator("#toast")).toHaveText(pseudoText("inputs.ipProbe.added").replace("{{port}}", "5"));
+      await expectTranslatedScreen(page, "missing input added", '[data-section-pane="sources"]');
+      await add.click();
+      await expect(
+        page.getByRole("status").filter({ hasText: pseudoText("inputs.ipProbe.known").replace("{{port}}", "5") }),
+      ).toBeVisible();
+    });
+  }
+});

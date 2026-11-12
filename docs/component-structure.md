@@ -90,6 +90,15 @@ survive development hot reload. The early diagnostics bundle records startup mar
 `bindLauncherKeys` routes remote input to text entry, Fireplace, input playback,
 Settings and Home in that order. Each app mount binds its own controllers and removes
 the key listeners when the views are replaced.
+The Fireplace feature supplies `createFireplaceKeyHandler` through the shared
+`RemoteKeyHandler` contract. It owns volume and close-key rules. The app router
+checks whether it is active and forwards keydown events; it suppresses Home keyup
+events while an overlay is active. Fireplace controls live in `contracts/fireplace.ts`,
+with no dependency on the Tizen runtime types.
+The input playback feature supplies `createInputPlaybackKeyHandler` through the
+same contract. It captures keys during both opening and playback and owns the
+Enter, Back and Escape exit rules. The router reads only its active state and
+forwards keydown events; device commands and playback cancellation stay in the input service.
 
 ## Diagnostics ownership
 
@@ -234,6 +243,21 @@ Hot reload retains the same adapter and pending handoffs. Permanent disposal abo
 its fallback requests, clears timers, removes listeners and suppresses late callbacks.
 The unchanged `native-navigation.js` remains a comparison fixture outside TV packages;
 handoff tests run against both the frozen script and typed adapter.
+
+## Missing HDMI inputs
+
+The input service merges learned IP Control ports with native input snapshots. Native records
+have priority; learned ports stay visible across refreshes and use the Samsung viewer.
+The Tizen message-port adapter waits for HomeWatcher readiness before it sends a request.
+It owns reply listeners and deadlines; input-service disposal releases pending work and retries.
+The service survives view hot reload with the other input state.
+
+The typed background IP Control module pairs and reads the active source only when Settings
+requests discovery. It stores the token and learned ports in a separate private file.
+Native navigation acknowledges the watcher handoff before selecting the source, then opens
+the viewer through its existing cancellation and focus checks. Normal HDMI playback remains
+controlled by the saved playback preference. The default development demo simulates a missing
+HDMI 5 input through the development adapters.
 
 ## Clock ownership
 

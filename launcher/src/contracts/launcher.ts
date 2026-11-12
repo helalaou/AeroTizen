@@ -8,6 +8,7 @@ export interface InputSource {
   readonly active?: boolean;
   readonly connected?: boolean;
   readonly editName?: string;
+  readonly ipControl?: boolean;
   readonly number?: number;
   readonly raw?: unknown;
   readonly type: string;
@@ -85,6 +86,10 @@ export interface AppPresentation {
 export interface NavigationHandlers {
   blur(): void;
   focus(): void;
+  keydown(code: number, event: Pick<KeyboardEvent, "preventDefault">): void;
+}
+export interface RemoteKeyHandler {
+  isActive(): boolean;
   keydown(code: number, event: Pick<KeyboardEvent, "preventDefault">): void;
 }
 export interface SettingsBridge {

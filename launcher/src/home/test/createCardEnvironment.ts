@@ -19,6 +19,8 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
   });
   const runtime: Pick<HomeEnvironment["runtime"], "inputs"> = {
     inputs: {
+      canLearnIpControlInput: () => false,
+      learnIpControlInput: () => Promise.resolve({ status: "unavailable" }),
       getSnapshot: () => ({ sources: [], visibleSources: [], playback: "idle" }),
       alwaysVisible: () => false,
       hasRecognizedDevice: () => false,

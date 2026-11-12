@@ -15,8 +15,10 @@ import type { ClockService } from "./contracts/launcher";
 import type { NativeNavigation } from "./contracts/nativeNavigation";
 import type { SettingsService } from "./contracts/preferences";
 import type { NetworkService, WeatherService } from "./contracts/status";
+import { createFireplaceKeyHandler } from "./fireplace/createFireplaceKeyHandler";
 import { mountFireplace } from "./fireplace/mountFireplace";
 import { mountHome } from "./home/index";
+import { createInputPlaybackKeyHandler } from "./inputs/createInputPlaybackKeyHandler";
 import { mountInputPlayback } from "./inputs/mountInputPlayback";
 import { createAppsPlatform } from "./platform/tizen/createAppsPlatform";
 import { createClockPlatform } from "./platform/tizen/createClockPlatform";
@@ -238,9 +240,9 @@ try {
   );
   disposeApp = app.dispose;
   unbindKeys = bindLauncherKeys(document, runtime.config.KEY, {
-    fireplace: fireplace.bridge,
+    fireplace: createFireplaceKeyHandler(runtime.config.KEY, fireplace.bridge),
     home: app.home,
-    inputs,
+    inputs: createInputPlaybackKeyHandler(runtime.config.KEY, inputs),
     settings: app.settings,
   });
   const stopBoot = hotData?.stopBoot ?? startLauncherBoot(window, runtime, window.AeroStartup);

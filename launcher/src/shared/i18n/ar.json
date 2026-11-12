@@ -281,5 +281,17 @@
   "weather.changeLocation": "تغيير الموقع",
   "weather.useAutomatic": "تحديد الموقع تلقائيًا",
   "weather.automaticHint": "استخدام موقع تقريبي بناءً على عنوان الإنترنت الخاص بك.",
-  "weather.searchHelp": "ابحث عن بلدة أو مدينة أو رمز بريدي، ثم اختر نتيجة."
+  "weather.searchHelp": "ابحث عن بلدة أو مدينة أو رمز بريدي، ثم اختر نتيجة.",
+  "inputs.ipProbeTitle": "إضافة إدخال {{hdmi}} مفقود",
+  "inputs.ipProbeHint": "فعّل IP Remote في إعدادات {{samsung}}. اختر إدخال {{hdmi}} المفقود من شاشة {{samsung}} الرئيسية، ثم عد إلى هنا.",
+  "inputs.ipProbeStart": "ابحث عن الإدخال وأضفه",
+  "inputs.ipProbe.waiting": "جارٍ التحقق من الإدخال النشط. اختر السماح إذا طلبت {{samsung}} الاقتران.",
+  "inputs.ipProbe.added": "تمت إضافة {{hdmi}} {{port}} إلى الشاشة الرئيسية.",
+  "inputs.ipProbe.known": "{{hdmi}} {{port}} موجود بالفعل في القائمة.",
+  "inputs.ipProbe.noHdmi": "اختر إدخال {{hdmi}} من شاشة {{samsung}} الرئيسية، ثم أعد المحاولة.",
+  "inputs.ipProbe.pairFailed": "فشل الاقتران. تأكد من تفعيل IP Remote ثم أعد المحاولة.",
+  "inputs.ipProbe.readFailed": "تم اقتران التلفاز، لكن تعذرت قراءة الإدخال النشط.",
+  "inputs.ipProbe.scanFailed": "انتظر حتى يتم تحميل إدخالات التلفاز، ثم أعد المحاولة.",
+  "inputs.ipProbe.storageFailed": "تعذّر على {{appName}} حفظ الإدخال.",
+  "inputs.ipProbe.unavailable": "لم تستجب خدمة التلفاز التي تعمل في الخلفية."
 }

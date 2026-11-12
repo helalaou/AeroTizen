@@ -281,5 +281,17 @@
   "weather.changeLocation": "Change location",
   "weather.useAutomatic": "Use automatic location",
   "weather.automaticHint": "Use an approximate location from your internet address.",
-  "weather.searchHelp": "Search for a town, city or postcode, then select a result."
+  "weather.searchHelp": "Search for a town, city or postcode, then select a result.",
+  "inputs.ipProbeTitle": "Add a missing {{hdmi}} input",
+  "inputs.ipProbeHint": "Enable IP Remote in {{samsung}} Settings. Select the missing {{hdmi}} input in {{samsung}} Home, then return here.",
+  "inputs.ipProbeStart": "Find and add input",
+  "inputs.ipProbe.waiting": "Checking the active input. Select Allow if {{samsung}} asks to pair.",
+  "inputs.ipProbe.added": "{{hdmi}} {{port}} added to Home.",
+  "inputs.ipProbe.known": "{{hdmi}} {{port}} is already listed.",
+  "inputs.ipProbe.noHdmi": "Select an {{hdmi}} input in {{samsung}} Home, then try again.",
+  "inputs.ipProbe.pairFailed": "Pairing failed. Check that IP Remote is enabled and try again.",
+  "inputs.ipProbe.readFailed": "The TV paired, but the active input could not be read.",
+  "inputs.ipProbe.scanFailed": "Wait for the TV inputs to load, then try again.",
+  "inputs.ipProbe.storageFailed": "{{appName}} could not save the input.",
+  "inputs.ipProbe.unavailable": "The TV background service did not respond."
 }
