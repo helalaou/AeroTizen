@@ -1,5 +1,5 @@
 const { test, expect } = require("./launcher_fixture.cjs");
-test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper browsing and Samsung escape", async ({
+test("Glass categories support D-pad, Back/Left, one focus layer, wallpaper browsing and Samsung escape", async ({
   page,
 }, info) => {
   const errors = [];
@@ -64,24 +64,33 @@ test("Glass categories support D-pad, Back/Left, single focus plate, wallpaper b
     await page.locator(`[data-key="section:${category}"]`).click();
     await expect(page.locator(`[data-section-pane="${category}"]`)).toBeVisible();
     await expect(page.locator("#editor [data-focused=true]")).toHaveCount(1);
-    await expect(page.locator("[data-settings-focus=content]")).toHaveAttribute("data-visible", "true");
     const current = page.locator("#editor [data-focused=true]");
+    const contentPlate = page.locator("[data-settings-focus=content]");
     expect(await current.evaluate((node) => getComputedStyle(node).boxShadow)).toBe("none");
-    await expect
-      .poll(() =>
-        page.locator("[data-settings-focus=content]").evaluate((plate) => {
-          const target = document.querySelector("#editor [data-focused=true]"),
-            a = plate.getBoundingClientRect(),
-            b = target.getBoundingClientRect();
-          return Math.max(
-            Math.abs(a.x - b.x),
-            Math.abs(a.y - b.y),
-            Math.abs(a.width - b.width),
-            Math.abs(a.height - b.height),
-          );
-        }),
-      )
-      .toBeLessThan(2);
+    if (category === "apps") {
+      await expect(current).toHaveAttribute("data-key", "add");
+      await expect(current).toHaveAttribute("data-settings-focus-owner", "control");
+      await expect(contentPlate).not.toHaveAttribute("data-visible", "true");
+      await expect.poll(() => current.evaluate((node) => getComputedStyle(node, "::after").opacity)).toBe("1");
+      expect(await current.evaluate((node) => getComputedStyle(node, "::after").boxShadow)).not.toBe("none");
+    } else {
+      await expect(contentPlate).toHaveAttribute("data-visible", "true");
+      await expect
+        .poll(() =>
+          contentPlate.evaluate((plate) => {
+            const target = document.querySelector("#editor [data-focused=true]"),
+              a = plate.getBoundingClientRect(),
+              b = target.getBoundingClientRect();
+            return Math.max(
+              Math.abs(a.x - b.x),
+              Math.abs(a.y - b.y),
+              Math.abs(a.width - b.width),
+              Math.abs(a.height - b.height),
+            );
+          }),
+        )
+        .toBeLessThan(2);
+    }
     await page.screenshot({ path: info.outputPath("glass-" + category + ".png") });
   }
   await page.locator('[data-key="section:wallpaper"]').click();

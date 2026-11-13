@@ -29,10 +29,8 @@ export const mountSettings = (
 ) => {
   const view = createStore<ViewState>({
     open: false,
-    previewing: false,
     mounted: false,
     openedAt: 0,
-    adjusting: false,
     colourPicker: null,
   });
   const inventory = createSettingsInventory(runtime);

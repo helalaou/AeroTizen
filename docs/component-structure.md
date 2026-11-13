@@ -32,7 +32,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `SelectionIndicator`                                                 | Decorative selected-choice check with a consistent contrast badge               | Parent control owns selection and `aria-pressed`                             |
 | `SettingsControl`                                                    | Register a Settings control and render focus/activation                         | Settings navigation context                                                  |
 | `SettingsAppCard`                                                    | Common app-choice frame, focus, selection and disabled states                   | Explicit favourite/source variant and control props                          |
-| `WallpaperSwatch`, `SpeedSlider`, `WeatherSearch`                    | Wallpaper preview choices, speed adjustment and location input                  | Explicit values, state and callbacks; no platform requests                   |
+| `WallpaperSwatch`, `SettingsSlider`, `WeatherSearch`                 | Wallpaper choices, numeric sliders and location input                           | Explicit values, state and callbacks; no platform requests                   |
 | `SettingsHint`                                                       | Shared Settings help and status copy                                            | Text, semantic attributes and optional spacing override                      |
 
 Styled components use a component-named directory, such as
@@ -117,6 +117,14 @@ register focused child scopes and own Left/Right adjustment and held-key acceler
 Other directions and Back bubble to the picker. The Settings drawer retains its own
 selection and resumes focus when the modal leaves; it has no picker key rules or
 picker focus-key table. Pointer controls use the same actions as remote controls.
+
+`SettingsSlider` owns the shared slider markup, styles, pointer arrows and scoped input.
+All sliders adjust with Left/Right as soon as they receive focus; other keys bubble
+to their parent navigation. Colour controls enable held-key acceleration. Background
+speed uses fixed steps and applies each change immediately through the settings action.
+The consumers supply their labels, ranges, units, track colours and adjustment actions.
+Focus loss, hiding or input cancellation resets acceleration. The Settings drawer
+owns navigation between controls.
 
 ## Diagnostics ownership
 

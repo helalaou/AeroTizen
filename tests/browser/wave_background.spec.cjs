@@ -35,14 +35,13 @@ test("wave selection, speed and scene switching persist without retaining old an
   expect(await durations(page)).toEqual([28, 18]);
   const oldWave = await page.locator("#bg [data-background-wave]").first().elementHandle();
   const speed = page.getByRole("slider", { name: "Background speed" });
-  await speed.click();
+  await speed.focus();
   await page.keyboard.press("ArrowRight");
   await expect(speed).toHaveAttribute("aria-valuenow", "1.25");
   const changed = await durations(page);
   expect(changed[0]).toBeCloseTo(28 / 1.25, 4);
   expect(changed[1]).toBeCloseTo(18 / 1.25, 4);
   expect(await oldWave.evaluate((node) => node.isConnected)).toBe(false);
-  await page.keyboard.press("Enter");
   await page.locator('[data-key="bg:aurora"]').click();
   await expect(page.locator("#bg [data-background-wave]")).toHaveCount(0);
   await expect(page.locator("#bg [data-background-blob]")).toHaveCount(4);
