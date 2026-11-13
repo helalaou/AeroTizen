@@ -59,7 +59,7 @@ for (const [build, url] of [
         "connected",
         "live",
       ]);
-      await expect(cards.first()).toHaveCSS("transition-duration", theme === "glass" ? "0.15s, 0.15s" : "0.15s");
+      await expect(cards.first()).toHaveCSS("transition-duration", "0.15s");
       await page.locator("#home-tab").click();
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("ArrowDown");
@@ -91,11 +91,47 @@ for (const [build, url] of [
         AeroTizen.settings.update({ theme });
       }, otherTheme);
       await expect(cards.last()).toBeFocused();
-      await expect(cards.last()).toHaveCSS("transition-duration", theme === "glass" ? "0s" : "0s, 0s");
+      await expect(cards.last()).toHaveCSS("transition-duration", "0s");
       await page.emulateMedia({ reducedMotion: "no-preference" });
-      await expect(cards.last()).toHaveCSS("transition-duration", theme === "glass" ? "0.15s" : "0.15s, 0.15s");
+      await expect(cards.last()).toHaveCSS("transition-duration", "0.15s");
       await expect(page.locator("vite-error-overlay")).toHaveCount(0);
       expect(errors).toEqual([]);
     });
   }
 }
+
+test("a flat input card surface changes with the focus without an animated repaint", async ({ page }) => {
+  await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+  await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "aerotizen.settings.v1",
+      JSON.stringify({ theme: "glass", home: ["demo0"], background: "black", showWeather: false }),
+    ),
+  );
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
+  await page.evaluate(() => {
+    const inputSnapshot = AeroTizen.inputs.getSnapshot();
+    const sources = [
+      { type: "HDMI", number: 1, connected: true },
+      { type: "HDMI", number: 2, connected: false },
+    ];
+    AeroTizen.inputs.getSnapshot = () => ({ ...inputSnapshot, sources, visibleSources: sources });
+    AeroTizen.homeScreen.render();
+    document.body.style.setProperty("--input-connected-surface", "rgb(20, 30, 40)");
+    document.body.style.setProperty("--input-focus-surface", "rgb(60, 70, 80)");
+  });
+  const card = page.locator("#inputs > [data-input-card]").first();
+  await expect(card).toHaveCSS("background-color", "rgb(20, 30, 40)");
+  await page.evaluate(() => document.body.style.setProperty("--motion-duration-focus", "5s"));
+  await page.locator("#home-tab").click();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await expect(card).toHaveAttribute("data-focused", "true");
+  expect(await card.evaluate((node) => node.getAnimations().map((animation) => animation.transitionProperty))).toEqual([
+    "transform",
+  ]);
+  await expect(card).toHaveCSS("background-color", "rgb(60, 70, 80)");
+});
