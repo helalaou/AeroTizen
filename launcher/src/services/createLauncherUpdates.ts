@@ -1,10 +1,13 @@
-import type { LauncherUpdateNotice, LauncherUpdateSnapshot } from "../contracts/updates";
+import type { LauncherUpdateCheck, LauncherUpdateNotice, LauncherUpdateSnapshot } from "../contracts/updates";
 import { createStore } from "../shared/state/createStore";
 
 const RELEASES = "https://api.github.com/repos/helalaou/AeroTizen/releases?per_page=100";
 const CACHE_KEY = "aerotizen.launcherUpdate.check";
 const ACKNOWLEDGEMENT_KEY = "aerotizen.launcherUpdate.acknowledgement";
-const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+// A few requests a day stay far below GitHub's anonymous limit of 60 an hour per address.
+const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+// Keeps repeated presses of "Check for updates" from spending that limit.
+const MANUAL_INTERVAL_MS = 60 * 1000;
 const TIMEOUT_MS = 8000;
 const VERSION = /^(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})$/;
 const MAX_NOTES = 4;
@@ -125,6 +128,7 @@ export const createLauncherUpdates = (installedVersion: string): LauncherUpdates
       : null;
   let request: AbortController | undefined;
   let disposed = false;
+  let manual: LauncherUpdateCheck = "idle";
 
   const snapshot = (): LauncherUpdateSnapshot => {
     const latestVersion = latest && isVersion(installedVersion) && isNewer(latest, installedVersion) ? latest : null;
@@ -134,9 +138,53 @@ export const createLauncherUpdates = (installedVersion: string): LauncherUpdates
         (isNewer(installedVersion, acknowledged.installedVersion) &&
           isNewer(latestVersion, acknowledged.latestVersion))),
     );
-    return { installedVersion, latestVersion, releaseNotes: latestVersion ? notes : [], unread };
+    return { check: manual, installedVersion, latestVersion, releaseNotes: latestVersion ? notes : [], unread };
   };
   const store = createStore(snapshot());
+  const publish = (check: LauncherUpdateCheck) => {
+    manual = check;
+    store.set(snapshot());
+  };
+  // After a check from Settings, an update shows its own notice; otherwise confirm the version is current.
+  const settledCheck = (): LauncherUpdateCheck => (snapshot().latestVersion ? "idle" : "current");
+  const run = async (intervalMs: number, fromSettings: boolean) => {
+    const now = Date.now();
+    if (disposed || request || !isVersion(installedVersion)) {
+      return;
+    }
+    if (now >= attemptedAt && now - attemptedAt < intervalMs) {
+      if (fromSettings) {
+        // Checked moments ago. Report that result instead of asking GitHub again.
+        publish(settledCheck());
+      }
+      return;
+    }
+    if (fromSettings) {
+      publish("checking");
+    }
+    attemptedAt = now;
+    saveStored(CACHE_KEY, { latest, notes, attemptedAt });
+    const controller = new AbortController();
+    request = controller;
+    const timeout = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const found = await findLatestLauncher(controller.signal);
+      if (!controller.signal.aborted) {
+        latest = found?.version ?? null;
+        notes = releaseNotes(found?.body);
+        saveStored(CACHE_KEY, { latest, notes, attemptedAt });
+        publish(manual === "checking" ? settledCheck() : manual);
+      }
+    } catch {
+      // Keep the last known result. A failed request also waits for the next interval.
+      if (manual === "checking" && !disposed) {
+        publish("failed");
+      }
+    } finally {
+      window.clearTimeout(timeout);
+      request = undefined;
+    }
+  };
   return {
     getSnapshot: store.getSnapshot,
     subscribe: store.subscribe,
@@ -148,35 +196,14 @@ export const createLauncherUpdates = (installedVersion: string): LauncherUpdates
         store.set(snapshot());
       }
     },
-    async check() {
-      const now = Date.now();
-      if (
-        disposed ||
-        request ||
-        !isVersion(installedVersion) ||
-        (now >= attemptedAt && now - attemptedAt < CHECK_INTERVAL_MS)
-      ) {
+    check: () => run(CHECK_INTERVAL_MS, false),
+    checkNow() {
+      if (request) {
+        // A background check is already running. Show its result when it finishes.
+        publish("checking");
         return;
       }
-      attemptedAt = now;
-      saveStored(CACHE_KEY, { latest, notes, attemptedAt });
-      const controller = new AbortController();
-      request = controller;
-      const timeout = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
-      try {
-        const found = await findLatestLauncher(controller.signal);
-        if (!controller.signal.aborted) {
-          latest = found?.version ?? null;
-          notes = releaseNotes(found?.body);
-          saveStored(CACHE_KEY, { latest, notes, attemptedAt });
-          store.set(snapshot());
-        }
-      } catch {
-        // Keep the last known result. A failed request also uses the daily allowance.
-      } finally {
-        window.clearTimeout(timeout);
-        request = undefined;
-      }
+      void run(MANUAL_INTERVAL_MS, true);
     },
     dispose() {
       disposed = true;

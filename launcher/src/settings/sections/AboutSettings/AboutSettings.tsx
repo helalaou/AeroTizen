@@ -1,7 +1,10 @@
 import { useEffect } from "preact/hooks";
 
+import type { LauncherUpdateCheck } from "../../../contracts/updates";
 import { useStore } from "../../../shared/hooks/useStore";
+import type { MessageKey } from "../../../shared/i18n/catalogues";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
+import { ChoiceOption } from "../../components/ChoiceOption/ChoiceOption";
 import { SettingsHint } from "../../components/SettingsHint/SettingsHint";
 import { SettingsSection } from "../../components/SettingsSection/SettingsSection";
 import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
@@ -10,11 +13,18 @@ import styles from "./AboutSettings.module.css";
 
 const updateCommand = "aerotizen update launcher";
 const projectUrl = "github.com/helalaou/AeroTizen";
+const CHECK_MESSAGES: Readonly<Record<LauncherUpdateCheck, MessageKey | null>> = {
+  idle: null,
+  checking: "settings.about.checking",
+  current: "settings.about.upToDate",
+  failed: "settings.about.checkFailed",
+};
 
 export const AboutSettings = ({ active }: { active: boolean }) => {
   const { updates, drawer } = useSettingsEnvironment();
   const { t } = useTranslation();
-  const { installedVersion, latestVersion, releaseNotes, unread } = useStore(updates);
+  const { check, installedVersion, latestVersion, releaseNotes, unread } = useStore(updates);
+  const checkMessage = CHECK_MESSAGES[check];
   const state = useStore(drawer);
   useEffect(() => {
     // Reopening Settings can collapse the drawer before this effect runs.
@@ -24,6 +34,20 @@ export const AboutSettings = ({ active }: { active: boolean }) => {
   }, [active, drawer, state, unread, updates]);
   return (
     <SettingsSection title={t("settings.about.installedVersion", { version: installedVersion })}>
+      <div class={styles.check}>
+        <ChoiceOption
+          id="about:check-updates"
+          inline
+          busy={check === "checking"}
+          disabled={check === "checking"}
+          onSelect={updates.checkNow}
+        >
+          {t("settings.about.checkForUpdates")}
+        </ChoiceOption>
+        <SettingsHint class={styles.checkStatus} role="status" data-update-check={check} hidden={!checkMessage}>
+          {checkMessage && t(checkMessage)}
+        </SettingsHint>
+      </div>
       {latestVersion && (
         <div class={styles.update} data-launcher-update>
           <h4 class={styles.updateTitle}>{t("settings.about.updateVersion", { version: latestVersion })}</h4>

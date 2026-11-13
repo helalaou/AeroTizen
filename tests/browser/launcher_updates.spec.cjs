@@ -79,7 +79,7 @@ test("opening About marks a stable launcher update as seen across restarts", asy
   await expect(homeDot).toHaveCount(0);
   await expect(categoryDot).toHaveCount(0);
   await expect(about.getByText("Update available: " + update)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Close settings" })).toBeFocused();
+  await expect(about.getByRole("button", { name: "Check for updates" })).toBeFocused();
   await expect(notes).toBeVisible();
   await expect(about.getByText("aerotizen update launcher")).toBeVisible();
   await page.keyboard.press("ArrowLeft");
@@ -88,13 +88,13 @@ test("opening About marks a stable launcher update as seen across restarts", asy
 
   await page.reload();
   await expect(gear).toHaveAccessibleName("Settings");
-  await page.clock.setFixedTime(start + 23 * 60 * 60 * 1000);
+  await page.clock.setFixedTime(start + 5 * 60 * 60 * 1000);
   await setHidden(page, true);
   await setHidden(page, false);
   expect(checks).toBe(1);
 
   latest = next;
-  await page.clock.setFixedTime(start + 25 * 60 * 60 * 1000);
+  await page.clock.setFixedTime(start + 7 * 60 * 60 * 1000);
   await setHidden(page, true);
   expect(checks).toBe(1);
   await setHidden(page, false);
@@ -105,7 +105,7 @@ test("opening About marks a stable launcher update as seen across restarts", asy
   await expect(homeDot).toHaveCount(0);
 
   latest = null;
-  await page.clock.setFixedTime(start + 50 * 60 * 60 * 1000);
+  await page.clock.setFixedTime(start + 14 * 60 * 60 * 1000);
   await setHidden(page, true);
   const response = page.waitForResponse((result) => result.url().includes("api.github.com") && result.status() === 503);
   await setHidden(page, false);
@@ -143,4 +143,46 @@ test("a newer installed launcher re-arms the notice for a further release", asyn
   await expect(page.locator("#gear [data-home-update-notice]")).toHaveCount(0);
   await expect(page.getByText("Update available: " + update)).toBeVisible();
   await expect(page.getByRole("heading", { name: "What’s new" })).toHaveCount(0);
+});
+
+test("Check for updates asks GitHub again and reports the result", async ({ page }) => {
+  await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+  let checks = 0;
+  let latest = installed;
+  await page.route("https://api.github.com/repos/helalaou/AeroTizen/releases?*", async (route) => {
+    checks++;
+    if (latest === null) {
+      await route.fulfill({ status: 503 });
+      return;
+    }
+    await route.fulfill({ json: [release("launcher-v" + latest, { body: "* Improve the Home screen" })] });
+  });
+  const start = Date.now();
+  await page.clock.setFixedTime(start);
+  await page.goto("/");
+  await expect(page).toHaveTitle("AeroTizen");
+  await expect.poll(() => checks).toBe(1);
+  await page.locator("#gear").click();
+  await page.locator('[data-key="section:about"]').click();
+  const about = page.locator('[data-section-pane="about"]');
+  const button = about.getByRole("button", { name: "Check for updates" });
+
+  // A press within a minute of the last check reuses its result.
+  await button.click();
+  await expect(about.getByText("You have the latest version.")).toBeVisible();
+  expect(checks).toBe(1);
+
+  latest = update;
+  await page.clock.setFixedTime(start + 2 * 60 * 1000);
+  await button.click();
+  await expect(about.getByText("Update available: " + update)).toBeVisible();
+  await expect(about.getByText("You have the latest version.")).toBeHidden();
+  expect(checks).toBe(2);
+
+  latest = null;
+  await page.clock.setFixedTime(start + 4 * 60 * 1000);
+  await button.click();
+  await expect(about.getByText("Couldn’t check for updates. Try again later.")).toBeVisible();
+  await expect(about.getByText("Update available: " + update)).toBeVisible();
+  expect(checks).toBe(3);
 });
