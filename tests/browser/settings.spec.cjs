@@ -146,6 +146,10 @@ test("the first pointer click activates its control; Space activates buttons wit
   await input.fill("A");
   await page.keyboard.press("Space");
   await expect(input).toHaveValue("A ");
+  await page.keyboard.down("Space");
+  await page.keyboard.down("Space");
+  await page.keyboard.up("Space");
+  await expect(input).toHaveValue("A   ");
 });
 
 test("an unrelated preference does not remeasure navigation; removed controls restore focus", async ({ page }) => {

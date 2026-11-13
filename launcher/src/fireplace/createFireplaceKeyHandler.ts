@@ -6,6 +6,7 @@ export const createFireplaceKeyHandler = (
   fireplace: Omit<FireplaceControls, "open">,
 ): RemoteKeyHandler => ({
   isActive: () => fireplace.isOpen(),
+  subscribe: (listener) => fireplace.subscribe?.(listener) ?? (() => {}),
   keydown(code, event) {
     if (code === keys.UP) {
       fireplace.volumeUp();

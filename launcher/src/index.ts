@@ -2,6 +2,7 @@ import version from "../version.txt?raw";
 
 import { bindLauncherKeys } from "./app/bindLauncherKeys";
 import { createLauncherApp } from "./app/createLauncherApp";
+import { createLauncherInputScopes } from "./app/createLauncherInputScopes";
 import { launcherRuntime as runtime } from "./app/initializeLauncherRuntime";
 import { mountToast } from "./app/mountToast";
 import { startLauncherBoot } from "./app/startLauncherBoot";
@@ -239,12 +240,13 @@ try {
     settings,
   );
   disposeApp = app.dispose;
-  unbindKeys = bindLauncherKeys(document, runtime.config.KEY, {
+  const inputScopes = createLauncherInputScopes(document, runtime.config.KEY, {
     fireplace: createFireplaceKeyHandler(runtime.config.KEY, fireplace.bridge),
     home: app.home,
     inputs: createInputPlaybackKeyHandler(runtime.config.KEY, inputs),
     settings: app.settings,
   });
+  unbindKeys = bindLauncherKeys(document, runtime.config.KEY, inputScopes);
   const stopBoot = hotData?.stopBoot ?? startLauncherBoot(window, runtime, window.AeroStartup);
   if (import.meta.hot && hotData) {
     if (hotData.backgrounds) {

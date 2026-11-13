@@ -1,8 +1,13 @@
 import { ChevronLeft, ChevronRight } from "lucide-preact";
+import { useLayoutEffect, useMemo } from "preact/hooks";
 
+import { useStoreSelector } from "../../../../shared/hooks/useStore";
 import { useTranslation } from "../../../../shared/i18n/useTranslation";
 import { Icon } from "../../../../shared/icons/Icon/Icon";
+import { useInputScope } from "../../../../shared/input/useInputScope";
 import { SettingsControl } from "../../../components/SettingsControl/SettingsControl";
+import { useSettingsNavigationOwner } from "../../../hooks/useSettingsNavigationOwner";
+import { createKeyAcceleration } from "../../../state/createKeyAcceleration";
 
 import styles from "./ColourSlider.module.css";
 
@@ -19,6 +24,27 @@ interface Props {
 
 export const ColourSlider = ({ background, compact = false, focusKey, label, max, onAdjust, unit, value }: Props) => {
   const { t } = useTranslation();
+  const navigation = useSettingsNavigationOwner();
+  const focused = useStoreSelector(navigation, (key) => key === focusKey);
+  const acceleration = useMemo(() => createKeyAcceleration(), []);
+  useInputScope({
+    isActive: () => navigation.getSnapshot() === focusKey,
+    onCancel: acceleration.reset,
+    handle(event) {
+      if (event.phase === "up" || (event.action !== "left" && event.action !== "right")) {
+        acceleration.reset();
+        return "unhandled";
+      }
+      const direction = event.action === "left" ? -1 : 1;
+      onAdjust(direction * acceleration.step(event.action, focusKey));
+      return "handled";
+    },
+  });
+  useLayoutEffect(() => {
+    if (!focused) {
+      acceleration.reset();
+    }
+  }, [focused, acceleration]);
   return (
     <SettingsControl
       class={styles.control}
