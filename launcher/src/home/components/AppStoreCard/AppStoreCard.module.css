@@ -1,0 +1,28 @@
+.card {
+  flex-direction: column;
+  gap: 0;
+  padding: calc(var(--app-card-size) * 0.07);
+  color: var(--control-text);
+}
+
+.icon {
+  width: calc(var(--app-card-size) * 0.24);
+  height: calc(var(--app-card-size) * 0.24);
+  flex: 0 0 auto;
+  margin-bottom: calc(var(--app-card-size) * 0.06);
+}
+
+.label {
+  max-width: 100%;
+  font-size: calc(var(--app-card-size) * 0.08);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.subtitle {
+  margin-top: calc(var(--app-card-size) * 0.025);
+  color: var(--muted);
+  font-size: calc(var(--app-card-size) * 0.055);
+  font-weight: 400;
+}

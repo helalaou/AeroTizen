@@ -28,12 +28,15 @@ for (const theme of ["classic", "glass"])
       await page.locator("#apps-tab").click();
       await expect(page.locator("#grid")).toHaveAttribute("data-columns", String(columns));
       const tiles = page.locator("#grid > [data-id]");
-      const positions = await tiles.evaluateAll((nodes) =>
-        nodes.slice(0, 6).map((n) => ({ top: n.offsetTop, width: n.offsetWidth, height: n.offsetHeight })),
-      );
+      const positions = await page
+        .locator("#grid > [role=button]")
+        .evaluateAll((nodes) =>
+          nodes.slice(0, 6).map((n) => ({ top: n.offsetTop, width: n.offsetWidth, height: n.offsetHeight })),
+        );
       expect(positions.filter((p) => p.top === positions[0].top)).toHaveLength(columns);
       for (const position of positions) expect(position.width).toBe(position.height);
       await page.keyboard.press("ArrowDown");
+      await page.keyboard.press("ArrowRight");
       await expect(tiles.first()).toHaveAttribute("data-focused", "true");
       await page.keyboard.press("ArrowDown");
       await expect(tiles.nth(columns)).toHaveAttribute("data-focused", "true");

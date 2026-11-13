@@ -93,6 +93,7 @@ test("All apps actions add and remove a favourite without removing the app card"
   await openHome(page, ["demo0"]);
   await page.locator("#apps-tab").click();
   await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowRight");
   const cards = page.locator("#grid > [data-id]");
   const count = await cards.count();
   const favourite = await cards.first().getAttribute("data-id");
@@ -109,6 +110,88 @@ test("All apps actions add and remove a favourite without removing the app card"
   await page.keyboard.press("Enter");
   expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home)).toEqual([favourite]);
   await expect(cards).toHaveCount(count);
+});
+
+for (const theme of ["classic", "glass"]) {
+  test(`All apps opens the store with remote or pointer in ${theme}`, async ({ page }) => {
+    await openHome(page);
+    await page.evaluate((theme) => {
+      AeroTizen.settings.update({ theme, homeCardColumns: 5 });
+      window.storeOpens = 0;
+      AeroTizen.apps.openStore = () => window.storeOpens++;
+    }, theme);
+    await page.locator("#apps-tab").click();
+    const store = page.locator("#grid").getByRole("button", { name: "Add apps", exact: true });
+    await expect(store).toContainText("Samsung app store");
+    await expect(page.locator("#grid > [role=button]").first()).toHaveAccessibleName("Add apps");
+    await page.keyboard.press("ArrowDown");
+    await expect(store).toBeFocused();
+    await expect(store).toBeInViewport();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator("#grid > [data-id]").first()).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(store).toBeFocused();
+    await page.keyboard.press("Enter");
+    expect(await page.evaluate(() => window.storeOpens)).toBe(1);
+    await page.clock.install();
+    await page.keyboard.down("Enter");
+    await page.clock.runFor(await page.evaluate(() => AeroTizen.config.LONG_PRESS_MS));
+    await page.keyboard.up("Enter");
+    await expect(page.getByRole("menu")).toBeHidden();
+    expect(await page.evaluate(() => window.storeOpens)).toBe(1);
+    await store.click();
+    expect(await page.evaluate(() => window.storeOpens)).toBe(2);
+    expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home)).toEqual(["demo0", "demo1"]);
+    // Move through the six app rows to the footer.
+    for (let row = 0; row < 6; row++) {
+      await page.keyboard.press("ArrowDown");
+    }
+    await expect(page.getByRole("button", { name: "Back to top" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(store).toBeFocused();
+    await expect(page.locator("[data-home-viewport]")).toHaveAttribute("data-scrolled", "false");
+    await page.evaluate(() => AeroTizen.settings.update({ clockLayout: "custom", language: "fr" }));
+    const compactStore = page.locator("#grid").getByRole("button", { name: "Ajouter des applis", exact: true });
+    await expect(compactStore).toContainText("Boutique d’applications Samsung");
+    const dimensions = await compactStore.evaluate((card) => {
+      const bounds = card.getBoundingClientRect();
+      const icon = card.querySelector("svg").getBoundingClientRect();
+      return {
+        iconHeight: icon.height,
+        overflow: card.scrollHeight - card.clientHeight,
+        childrenFit: [...card.children].every((child) => {
+          const childBounds = child.getBoundingClientRect();
+          return childBounds.top >= bounds.top && childBounds.bottom <= bounds.bottom;
+        }),
+      };
+    });
+    expect(dimensions.iconHeight).toBeGreaterThan(40);
+    expect(dimensions.overflow).toBe(0);
+    expect(dimensions.childrenFit).toBe(true);
+    await page.evaluate(() => AeroTizen.settings.update({ language: "en" }));
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#grid").getByRole("button", { name: "Add apps", exact: true })).toHaveCount(0);
+  });
+}
+
+test("All apps keeps the store reachable when no apps are installed", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.tizen = { application: { getAppsInfo: (done) => done([]) } };
+  });
+  await page.goto("/");
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
+  await page.evaluate(() => {
+    window.storeOpens = 0;
+    AeroTizen.apps.openStore = () => window.storeOpens++;
+  });
+  await page.locator("#apps-tab").click();
+  await expect(page.locator("#apps-empty")).toBeVisible();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.locator("#grid").getByRole("button", { name: "Add apps", exact: true })).toBeFocused();
+  await page.keyboard.press("Enter");
+  expect(await page.evaluate(() => window.storeOpens)).toBe(1);
+  await page.keyboard.press("ArrowUp");
+  await expect(page.locator("#apps-tab")).toBeFocused();
 });
 
 for (const withInputs of [true, false]) {
@@ -157,6 +240,7 @@ test("Home and All apps retain keyed artwork nodes and Back returns to Home", as
   await page.locator("#apps-tab").click();
   await expect(page.locator("#grid > [data-id]")).toHaveCount(25);
   await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowRight");
   await expect(page.locator("#grid > [data-id]").first()).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("Escape");
   await expect(page.locator("#grid > [data-id]")).toHaveCount(4);
@@ -179,14 +263,18 @@ test("Back to top restores scroll and focus from below a partial app row", async
     await page.keyboard.press("ArrowDown");
   }
   const tiles = page.locator("#grid > [data-id]");
-  await expect(tiles.last()).toBeFocused();
+  const cards = page.locator("#grid > [role=button]");
+  const columns = await page.evaluate(() => AeroTizen.settings.getSnapshot().homeCardColumns);
+  const lastRowStart = Math.floor(((await cards.count()) - 1) / columns) * columns;
+  const lastRowFirst = cards.nth(lastRowStart);
+  await expect(lastRowFirst).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(button).toBeFocused();
   await expect(button).toBeInViewport();
   await expect(page.locator("[data-home-viewport]")).toHaveAttribute("data-scrolled", "true");
   await expect
     .poll(() =>
-      tiles.last().evaluate((tile) => {
+      lastRowFirst.evaluate((tile) => {
         const viewport = tile.closest("[data-home-viewport]");
         return tile.getBoundingClientRect().top - viewport.getBoundingClientRect().top;
       }),
@@ -197,7 +285,7 @@ test("Back to top restores scroll and focus from below a partial app row", async
   expect(viewportBounds.y + viewportBounds.height - buttonBounds.y - buttonBounds.height).toBeCloseTo(80, 0);
   const fill = await button.evaluate((node) => getComputedStyle(node).background);
   await page.keyboard.press("ArrowUp");
-  await expect(tiles.last()).toBeFocused();
+  await expect(lastRowFirst).toBeFocused();
   await expect.poll(async () => (await button.boundingBox()).y).toBeCloseTo(buttonBounds.y, 0);
   await expect(button).toHaveCSS("background", fill);
   await page.keyboard.press("ArrowUp");
@@ -205,7 +293,7 @@ test("Back to top restores scroll and focus from below a partial app row", async
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
-  await expect(tiles.first()).toBeFocused();
+  await expect(page.locator("#grid").getByRole("button", { name: "Add apps", exact: true })).toBeFocused();
   await expect(page.locator("[data-home-viewport]")).toHaveAttribute("data-scrolled", "false");
   await expect(tiles.first()).toBeInViewport();
 });

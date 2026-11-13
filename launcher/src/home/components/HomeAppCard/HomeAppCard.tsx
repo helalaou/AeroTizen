@@ -10,23 +10,25 @@ import styles from "./HomeAppCard.module.css";
 export const HomeAppCard = ({
   env,
   id,
+  controlKey,
   title,
   registered,
   children,
   className = "",
 }: {
   env: HomeEnvironment;
-  id: string;
+  id?: string;
+  controlKey: string;
   title: string;
   registered: boolean;
   children: ComponentChildren;
   className?: string;
 }) => {
-  const isMoving = useStoreSelector(env.state, (state) => state.moving === id);
+  const isMoving = useStoreSelector(env.state, (state) => !!id && state.moving === id);
   return (
     <HomeControl
       env={env}
-      controlKey={"app:" + id}
+      controlKey={controlKey}
       dataId={id}
       moving={isMoving}
       registered={registered}
@@ -34,7 +36,7 @@ export const HomeAppCard = ({
       title={title}
     >
       {children}
-      {isMoving ? <ReorderControls env={env} id={id} /> : null}
+      {isMoving && id ? <ReorderControls env={env} id={id} /> : null}
     </HomeControl>
   );
 };

@@ -34,6 +34,7 @@ for (const theme of ["classic", "glass"]) {
       await page.locator("[data-header-focus=tabs]").evaluate((n) => getComputedStyle(n).transitionProperty),
     ).toContain("transform");
     await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowRight");
     await expect(page.locator("#grid > [data-id]").first()).toHaveAttribute("data-focused", "true");
     await page.keyboard.press("Escape");
     await expect(surface).toHaveCSS("animation-name", homeAnimation);

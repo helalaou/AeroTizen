@@ -3,6 +3,7 @@ import type { SettingsSnapshot } from "../../../contracts/preferences";
 import { useStoreSelector } from "../../../shared/hooks/useStore";
 import type { HomeEnvironment, Page } from "../../types";
 import { AppCard } from "../AppCard";
+import { AppStoreCard } from "../AppStoreCard/AppStoreCard";
 import { FireplaceCard } from "../FireplaceCard/FireplaceCard";
 import { HorizontalScroller } from "../HorizontalScroller/HorizontalScroller";
 
@@ -48,6 +49,7 @@ export const AppGrid = ({
       offset={appOffset}
       onOffsetChange={(offset) => env.state.set({ ...env.state.getSnapshot(), appOffset: offset })}
     >
+      {page === "apps" && <AppStoreCard env={env} registered={shown} />}
       {ids.map((id) => {
         if (id === env.runtime.config.FIREPLACE_ID) {
           return <FireplaceCard key={id} env={env} registered={shown} />;

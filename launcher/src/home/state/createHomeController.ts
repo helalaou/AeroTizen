@@ -1,5 +1,6 @@
 import { focusControl } from "../../shared/navigation/focusControl";
 import { createStore } from "../../shared/state/createStore";
+import { ADD_APPS_KEY } from "../homeControls";
 import type { HomeEnvironment, HomeMenuChoice, HomeState, Page } from "../types";
 
 import { revealHorizontalItem } from "./horizontalScroll";
@@ -178,14 +179,15 @@ export const createHomeController = (
   const sourceKey = (source: { type: string; number?: number }) => "input:" + source.type + ":" + source.number;
   const rows = (): readonly (readonly string[])[] => {
     const columns = env.columns(settings.getSnapshot());
-    const all = ids();
+    const appKeys = ids().map((id) => "app:" + id);
+    const all = state.getSnapshot().page === "apps" ? [ADD_APPS_KEY, ...appKeys] : appKeys;
     const rowLength = scrollApps() ? Math.max(1, all.length) : columns;
     const appRows = Array.from({ length: Math.ceil(all.length / rowLength) }, (_, index) =>
-      all.slice(index * rowLength, (index + 1) * rowLength).map((id) => "app:" + id),
+      all.slice(index * rowLength, (index + 1) * rowLength),
     );
     const appLayout = [HEADER_KEYS, ...appRows];
     if (state.getSnapshot().page !== "home") {
-      return all.length ? [...appLayout, ["back-to-top"]] : appLayout;
+      return appKeys.length ? [...appLayout, ["back-to-top"]] : appLayout;
     }
     const { items, inputs } = inventory.getSnapshot();
     const continueRows =
@@ -240,7 +242,9 @@ export const createHomeController = (
       return;
     }
     const mainTop = main.getBoundingClientRect().top;
-    const lastAppRow = pending.page === "apps" ? list[list.length - 2] : undefined;
+    const apps = inventory.getSnapshot().apps;
+    const lastCardKey = apps.length ? "app:" + apps[apps.length - 1].id : ADD_APPS_KEY;
+    const lastAppRow = pending.page === "apps" ? list.find((row) => row.includes(lastCardKey)) : undefined;
     const lastApp = lastAppRow && nodes.get(lastAppRow[0]);
     const grid = lastApp?.parentElement;
     // The grid edge stays fixed while the last app's focus scale animates.
@@ -302,10 +306,9 @@ export const createHomeController = (
     } else if (key === "home-tab" || key === "apps-tab") {
       showPage(key === "home-tab" ? "home" : "apps");
     } else if (key === "back-to-top") {
-      const first = inventory.getSnapshot().apps[0];
-      if (first) {
-        select("app:" + first.id);
-      }
+      select(ADD_APPS_KEY);
+    } else if (key === ADD_APPS_KEY) {
+      runtime.apps.openStore();
     } else if (key.startsWith("app:")) {
       const id = key.slice(4);
       const app = runtime.apps.byId(id);

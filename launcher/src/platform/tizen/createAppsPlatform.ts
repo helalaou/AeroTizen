@@ -3,6 +3,9 @@ import type { InstalledApp } from "../../contracts/launcher";
 import { shortAppName } from "../../shared/apps/appNames";
 import type { Translate } from "../../shared/i18n/createTranslations";
 
+const VIEW_OPERATION = "http://tizen.org/appcontrol/operation/view";
+const STORE_MAIN_CONTROL_DATA = [{ key: "Sub_Menu", values: ["main"] }] as const;
+
 export interface AppsTizen {
   application?: {
     getAppMetaData?(id: string): unknown;
@@ -261,7 +264,7 @@ export const createAppsPlatform = (host: AppsHost): AppsPlatform => {
           id,
           () => {
             try {
-              application.launch(id, null, next);
+              application.launchAppControl(control(VIEW_OPERATION, STORE_MAIN_CONTROL_DATA), id, null, next);
             } catch {
               next();
             }
@@ -289,7 +292,7 @@ export const createAppsPlatform = (host: AppsHost): AppsPlatform => {
         youtube.id,
         () => {
           try {
-            const request = control("http://tizen.org/appcontrol/operation/view", [
+            const request = control(VIEW_OPERATION, [
               { key: "PAYLOAD", values: [JSON.stringify({ values: "v=" + config.FIREPLACE_VIDEO })] },
             ]);
             application.launchAppControl(request, youtube.id, null, fallback);

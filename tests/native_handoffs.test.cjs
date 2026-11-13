@@ -15,6 +15,7 @@ const { launcherConfig } = loadTypeScript("launcher/src/launcherConfig.ts");
 const { createDiagnostics } = loadTypeScript("launcher/src/diagnostics/createDiagnostics.ts");
 
 function harness(options = {}) {
+  const appControls = [];
   const requests = [],
     launches = [],
     inputs = [],
@@ -55,8 +56,16 @@ function harness(options = {}) {
   }
   const tz = {
     filesystem: options.filesystem,
-    ApplicationControl: function (op) {
+    ApplicationControl: function (op, uri, mime, category, data) {
       this.operation = op;
+      this.uri = uri;
+      this.mime = mime;
+      this.category = category;
+      this.data = data;
+    },
+    ApplicationControlData: function (key, values) {
+      this.key = key;
+      this.value = values;
     },
     application: {
       getAppMetaData() {
@@ -81,7 +90,11 @@ function harness(options = {}) {
       },
       launchAppControl(control, id, success, failure) {
         launches.push({ id, method: "appcontrol" });
-        if (options.appControlFails) {
+        appControls.push({ id, control });
+        if (options.appControlThrows === id) {
+          throw new Error("AppControl denied");
+        }
+        if (options.appControlFails === true || options.appControlFails === id) {
           if (failure) failure({ name: "Denied" });
         } else if (success) success();
       },
@@ -195,6 +208,7 @@ function harness(options = {}) {
   installApps(context);
   return {
     A,
+    appControls,
     backgrounds,
     tz,
     requests,
@@ -808,12 +822,19 @@ test("Live TV acceptance remains separate from unconfirmed visibility", () => {
   );
 });
 
-test("app store opens com.samsung.tv.store before the org.volt.apps alias", () => {
+test("app store requests the main screen before considering the org.volt.apps alias", () => {
   const storeIds = launcherConfig.STORE_APP_IDS;
   assert.deepEqual(storeIds, ["com.samsung.tv.store", "org.volt.apps"]);
 
   const h = harness({ storeIds });
   h.A.apps.openStore();
+  assert.equal(h.launches[0].method, "appcontrol");
+  assert.equal(h.appControls[0].control.operation, "http://tizen.org/appcontrol/operation/view");
+  assert.deepEqual(
+    h.appControls[0].control.data.map(({ key, value }) => ({ key, value })),
+    [{ key: "Sub_Menu", value: ["main"] }],
+    "a plain launch can be accepted by the store without displaying its main screen",
+  );
   assert.deepEqual(
     h.launches.map((r) => r.id),
     ["com.samsung.tv.store"],
@@ -821,17 +842,32 @@ test("app store opens com.samsung.tv.store before the org.volt.apps alias", () =
   );
 });
 
-test("app store falls back to org.volt.apps where com.samsung.tv.store is missing", () => {
-  const h = harness({
-    storeIds: ["com.samsung.tv.store", "org.volt.apps"],
-    launchFails: "com.samsung.tv.store",
+for (const failure of ["appControlFails", "appControlThrows"]) {
+  test(`app store keeps the main-screen request when the first ID fails with ${failure}`, () => {
+    const h = harness({
+      storeIds: ["com.samsung.tv.store", "org.volt.apps"],
+      [failure]: "com.samsung.tv.store",
+    });
+    h.A.apps.openStore();
+    assert.deepEqual(h.launches, [
+      { id: "com.samsung.tv.store", method: "appcontrol" },
+      { id: "org.volt.apps", method: "appcontrol" },
+    ]);
+    for (const { control } of h.appControls) {
+      assert.deepEqual(
+        control.data.map(({ key, value }) => ({ key, value })),
+        [{ key: "Sub_Menu", value: ["main"] }],
+      );
+    }
+    assert.deepEqual(h.toasts, []);
   });
+}
+
+test("app store reports failure after both main-screen requests fail", () => {
+  const h = harness({ storeIds: ["com.samsung.tv.store", "org.volt.apps"], appControlFails: true });
   h.A.apps.openStore();
-  assert.deepEqual(
-    h.launches.map((r) => r.id),
-    ["com.samsung.tv.store", "org.volt.apps"],
-  );
-  assert.deepEqual(h.toasts, []);
+  assert.equal(h.appControls.length, 2);
+  assert.deepEqual(h.toasts, [translateEnglish("apps.storeFailed")]);
 });
 
 test("Native Home closes an embedded HDMI window in the existing launcher", () => {
