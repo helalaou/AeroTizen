@@ -347,7 +347,11 @@ export const createNativeNavigation = (host: NativeHost): NativeNavigation => {
         if (disposed || homePending) {
           return;
         }
-        if (!tizen?.application || !tizen.ApplicationControl) {
+        if (!tizen) {
+          runtime.toast(runtime.translate("handoff.wouldOpenHome"));
+          return;
+        }
+        if (!tizen.application || !tizen.ApplicationControl) {
           runtime.toast(runtime.translate("handoff.homeUnavailable"));
           return;
         }
