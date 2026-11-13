@@ -1,9 +1,9 @@
-import type { JSX } from "preact";
 import { flushSync } from "preact/compat";
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 
 import type { WeatherLocation } from "../../../contracts/preferences";
 import { useStoreSelector } from "../../../shared/hooks/useStore";
+import { useInputScope } from "../../../shared/input/useInputScope";
 import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
 import type { SettingsActions } from "../../types";
 
@@ -17,7 +17,6 @@ export const useWeatherLocation = (active: boolean, actions: SettingsActions) =>
   const [editing, setEditing] = useState(false);
   const search = useWeatherSearch(services.searchLocations, enabled && editing);
   const { clear } = search;
-  const input = useRef<HTMLInputElement>(null);
   const previousResults = useRef(search.results);
   const close = () => {
     flushSync(() => {
@@ -41,31 +40,23 @@ export const useWeatherLocation = (active: boolean, actions: SettingsActions) =>
     }
     previousResults.current = search.results;
   }, [search.results, search.message, editing, city, enabled, navigation]);
-  useLayoutEffect(() => {
-    if (!enabled || !editing) {
-      return;
-    }
-    const back = (event: KeyboardEvent) => {
-      const { KEY } = services.config;
-      if ((event.keyCode !== KEY.BACK && event.keyCode !== KEY.ESC) || document.activeElement === input.current) {
-        return;
+  const inputScope = useInputScope({
+    isActive: () => enabled && editing,
+    handle({ action, phase }) {
+      if (phase === "down" && action === "back") {
+        close();
+        navigation.focus();
+        return "handled";
       }
-      event.preventDefault();
-      event.stopPropagation();
-      flushSync(() => {
-        clear();
-        setEditing(false);
-        navigation.select("weather:change");
-      });
-    };
-    document.addEventListener("keydown", back, true);
-    return () => document.removeEventListener("keydown", back, true);
-  }, [enabled, editing, services.config, clear, navigation]);
+      return "unhandled";
+    },
+  });
   return {
     ...search,
     city,
     editing,
-    inputRef: input,
+    enabled,
+    inputScope,
     toggleEditing() {
       if (editing) {
         close();
@@ -75,26 +66,10 @@ export const useWeatherLocation = (active: boolean, actions: SettingsActions) =>
         setEditing(true);
         navigation.select("weather:query");
       });
-      input.current?.focus();
     },
-    focusQuery: () => input.current?.focus(),
-    onQueryInput: (event: JSX.TargetedEvent<HTMLInputElement, Event>) => search.setQuery(event.currentTarget.value),
-    onQueryKeyDown(event: JSX.TargetedKeyboardEvent<HTMLInputElement>) {
-      const { KEY } = services.config;
-      const done = event.keyCode === KEY.IME_DONE;
-      if (!done && event.keyCode !== KEY.ENTER && event.key !== "Enter") {
-        return;
-      }
-      if (event.isComposing && !done) {
-        event.stopPropagation();
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      event.currentTarget.blur();
+    submitQuery() {
       navigation.select("weather:search");
       search.search();
-      navigation.focus();
     },
     selectLocation(location: WeatherLocation | null) {
       actions.setLocation(location);

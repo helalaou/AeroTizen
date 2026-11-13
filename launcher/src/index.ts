@@ -242,7 +242,7 @@ try {
     settings,
   );
   disposeApp = app.dispose;
-  const inputScopes = createLauncherInputScopes(document, runtime.config.KEY, {
+  const inputScopes = createLauncherInputScopes({
     fireplace: createFireplaceKeyHandler(runtime.config.KEY, fireplace.bridge),
     home: app.home,
     inputs: createInputPlaybackKeyHandler(runtime.config.KEY, inputs),

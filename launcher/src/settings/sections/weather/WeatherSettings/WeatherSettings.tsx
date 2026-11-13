@@ -1,13 +1,16 @@
 import { useTranslation } from "../../../../shared/i18n/useTranslation";
+import { InputScopeContext } from "../../../../shared/input/context";
 import { ChoiceGroup } from "../../../components/ChoiceGroup";
 import { ChoiceOption } from "../../../components/ChoiceOption/ChoiceOption";
 import { SettingsHint } from "../../../components/SettingsHint/SettingsHint";
 import { SettingsSection } from "../../../components/SettingsSection/SettingsSection";
+import { SettingsTextInput } from "../../../components/SettingsTextInput/SettingsTextInput";
 import type { SettingsSectionProps } from "../../../types";
 import { useWeatherLocation } from "../useWeatherLocation";
-import { WeatherSearch } from "../WeatherSearch/WeatherSearch";
 
 import styles from "./WeatherSettings.module.css";
+
+const LOCATION_QUERY_MAX_LENGTH = 80;
 
 const VISIBILITY_OPTIONS = [
   { value: true, labelKey: "common.on" },
@@ -35,7 +38,7 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
     location = t("weather.automaticLocation", { location: search.city });
   }
   return (
-    <>
+    <InputScopeContext.Provider value={search.inputScope}>
       <SettingsSection title={t("weather.homeDisplay")} hidden={search.editing}>
         <div class={styles.displayRow}>
           <span class={styles.label}>{t("weather.show")}</span>
@@ -85,12 +88,18 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
         <div id="weather-location-editor" class={styles.editor} hidden={!search.editing}>
           <SettingsHint>{t("weather.searchHelp")}</SettingsHint>
           <div id="weather-location" class={styles.searchControls}>
-            <WeatherSearch
-              inputRef={search.inputRef}
+            <SettingsTextInput
+              focusKey="weather:query"
+              active={search.enabled && search.editing}
+              autoFocus={search.editing}
+              name="weather-location"
+              label={t("weather.locationLabel")}
+              placeholder={t("weather.searchPlaceholder")}
+              enterKeyHint="search"
+              maxLength={LOCATION_QUERY_MAX_LENGTH}
               value={search.query}
-              onSelect={search.focusQuery}
-              onInput={search.onQueryInput}
-              onKeyDown={search.onQueryKeyDown}
+              onValueChange={search.setQuery}
+              onSubmit={search.submitQuery}
             />
             <ChoiceOption id="weather:search" onSelect={search.search} busy={search.busy} disabled={search.busy}>
               {t(search.busy ? "weather.searching" : "weather.search")}
@@ -124,6 +133,6 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
           </div>
         </div>
       </SettingsSection>
-    </>
+    </InputScopeContext.Provider>
   );
 };

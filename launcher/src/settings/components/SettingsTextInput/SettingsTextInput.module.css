@@ -1,5 +1,5 @@
 .control {
-  --input-name-underline: var(--input-underline);
+  --settings-text-input-underline: var(--input-underline);
 
   display: flex;
   align-items: center;
@@ -14,23 +14,24 @@
   flex: 0 1 360px;
   min-width: 0;
   max-width: 100%;
+  width: 100%;
   height: 72px;
   min-height: 64px;
   margin-left: 0;
   font-size: 20px;
   line-height: 24px;
   white-space: normal;
-  text-align: left;
+  text-align: start;
 
   &[data-focused="true"] {
-    --input-name-underline: var(--focus);
+    --settings-text-input-underline: var(--focus);
 
     color: var(--control-focused-text);
     background: var(--choice-focused-surface);
   }
 }
 
-.port {
+.prefix {
   flex: 0 0 auto;
   color: var(--muted);
   font-size: 20px;
@@ -46,7 +47,7 @@
   color: var(--control-text);
   background: transparent;
   border: 0;
-  border-bottom: 2px solid var(--input-name-underline);
+  border-bottom: 2px solid var(--settings-text-input-underline);
   outline: none;
   padding: 4px 2px;
 

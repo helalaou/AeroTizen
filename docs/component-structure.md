@@ -32,7 +32,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `SelectionIndicator`                                                 | Decorative selected-choice check with a consistent contrast badge               | Parent control owns selection and `aria-pressed`                             |
 | `SettingsControl`                                                    | Register a Settings control and render focus/activation                         | Settings navigation context                                                  |
 | `SettingsAppCard`                                                    | Common app-choice frame, focus, selection and disabled states                   | Explicit favourite/source variant and control props                          |
-| `WallpaperSwatch`, `SettingsSlider`, `WeatherSearch`                 | Wallpaper choices, numeric sliders and location input                           | Explicit values, state and callbacks; no platform requests                   |
+| `WallpaperSwatch`, `SettingsSlider`, `SettingsTextInput`             | Wallpaper choices, numeric sliders and location input                           | Explicit values, state and callbacks; no platform requests                   |
 | `SettingsHint`                                                       | Shared Settings help and status copy                                            | Text, semantic attributes and optional spacing override                      |
 
 Styled components use a component-named directory, such as
@@ -101,8 +101,8 @@ Closing, hiding or replacing a scope cancels its pending input; releases never m
 to the newly exposed screen. Activation subscriptions cancel pending input before
 another key event, including Home's long-press timer.
 
-`createLauncherInputScopes` adapts the existing text entry, Fireplace, input playback,
-Settings and Home controllers in that priority order. These adapters keep the old
+`createLauncherInputScopes` adapts Fireplace, input playback, Settings and Home
+controllers in that priority order. These adapters keep the old
 screen commands while controls adopt scoped actions. Services retain device calls
 and cancellation. The shared dispatcher and scope registry do not import features.
 
@@ -125,6 +125,15 @@ speed uses fixed steps and applies each change immediately through the settings 
 The consumers supply their labels, ranges, units, track colours and adjustment actions.
 Focus loss, hiding or input cancellation resets acceleration. The Settings drawer
 owns navigation between controls.
+
+`SettingsTextInput` owns the shared field markup, draft, focus and native input scope.
+Each field subscribes to its own focus/blur events. Typing, caret keys, Space repeats
+and IME composition retain browser defaults. Enter or IME Done finishes editing and
+runs the supplied submit action; Back or IME Cancel finishes without submitting.
+Blur commits through an optional feature action, including existing input-name saves.
+Weather supplies query changes and search submission. Its editor scope consumes Back
+once native editing has ended, cancels pending searches and returns focus to Change.
+The app router receives Settings' scope without inspecting DOM input tags.
 
 ## Diagnostics ownership
 
@@ -421,7 +430,7 @@ keys and values also remain compatible.
 | `settings/layout/SettingsCategory/SettingsCategory.module.css`                                   | Category and Samsung Home rows, current state and update notice               |
 | `settings/layout/SettingsHelp/SettingsHelp.module.css`                                           | Sidebar remote help                                                           |
 | `settings/layout/SettingsFocusIndicator/SettingsFocusIndicator.module.css`                       | Measured Settings focus plate and motion preference                           |
-| `settings/sections/inputs/InputName/InputName.module.css`                                        | Input-name field layout and focus states                                      |
+| `settings/components/SettingsTextInput/SettingsTextInput.module.css`                             | Shared text-field layout and focus states                                     |
 | `settings/sections/**/*.module.css`                                                              | Section layouts, app options, wallpaper controls, weather search and About    |
 | `shared/components/AppFallback/AppFallback.module.css`                                           | Shared name geometry with explicit Home, favourite, source and badge variants |
 | `base.css`                                                                                       | Page sizing, fonts, hidden state and native/preview visibility                |
@@ -435,7 +444,7 @@ keys and values also remain compatible.
 | `home/components/AppGrid/AppGrid.module.css`                                                     | App sizes, columns and clock clearance                                        |
 | `home/components/HomeAppCard/HomeAppCard.module.css`                                             | Shared app/Fireplace frame and focus/moving states                            |
 | `shared/components/AppArtworkContent/AppArtworkContent.module.css`                               | Shared image geometry and compact package-icon layout                         |
-| `shared/components/StoreCard/StoreCard.module.css`                                               | Shared store surface, corners, focus ring, icon, labels and size variants      |
+| `shared/components/StoreCard/StoreCard.module.css`                                               | Shared store surface, corners, focus ring, icon, labels and size variants     |
 | `home/components/FireplaceCard/FireplaceCard.module.css`                                         | Fireplace card artwork                                                        |
 | `home/components/HomeControl/HomeControl.module.css`                                             | Home control focus reset                                                      |
 | `home/components/HomeSectionHeading/HomeSectionHeading.module.css`                               | Shared Home section headings                                                  |

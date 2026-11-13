@@ -197,6 +197,9 @@ for (const entry of entries) {
           cancelable: true,
         }),
       );
+      element.dispatchEvent(
+        new KeyboardEvent("keyup", { keyCode: AeroTizen.config.KEY.ENTER, bubbles: true, cancelable: true }),
+      );
     });
     await expect(input).toBeFocused();
     expect(h.searches).toEqual([]);
@@ -204,6 +207,9 @@ for (const entry of entries) {
       element.focus();
       element.dispatchEvent(
         new KeyboardEvent("keydown", { keyCode: AeroTizen.config.KEY.IME_DONE, bubbles: true, cancelable: true }),
+      );
+      element.dispatchEvent(
+        new KeyboardEvent("keyup", { keyCode: AeroTizen.config.KEY.IME_DONE, bubbles: true, cancelable: true }),
       );
     });
     await expect.poll(() => h.searches.length).toBe(1);

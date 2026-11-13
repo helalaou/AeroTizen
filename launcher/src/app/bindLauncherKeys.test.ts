@@ -8,11 +8,10 @@ import { bindLauncherKeys } from "./bindLauncherKeys";
 import { createLauncherInputScopes } from "./createLauncherInputScopes";
 
 const { KEY } = launcherConfig;
-const SPACE_KEY_CODE = 32;
 const createHarness = (onTestFinished: TestContext["onTestFinished"]) => {
   const home = { keydown: vi.fn(), keyup: vi.fn(), cancelInput: vi.fn() };
   const fireplace = { isActive: vi.fn(() => false), keydown: vi.fn() };
-  const settings = { isOpen: vi.fn(() => false), keydown: vi.fn(), focus: vi.fn() };
+  const settings = { isOpen: vi.fn(() => false), keydown: vi.fn() };
   const inputs = { isActive: vi.fn(() => false), keydown: vi.fn() };
   const inputScope = createInputScope({
     isActive: settings.isOpen,
@@ -24,7 +23,7 @@ const createHarness = (onTestFinished: TestContext["onTestFinished"]) => {
     },
   });
   const targets = { home, fireplace, settings: { ...settings, inputScope }, inputs };
-  const dispose = bindLauncherKeys(document, KEY, createLauncherInputScopes(document, KEY, targets));
+  const dispose = bindLauncherKeys(document, KEY, createLauncherInputScopes(targets));
   onTestFinished(dispose);
   const dispatch = (type: "keydown" | "keyup", code: number) => {
     const event = new KeyboardEvent(type, { keyCode: code, cancelable: true });
@@ -62,61 +61,17 @@ test("an active Fireplace receives keys before input playback and Settings", ({ 
   expect(h.home.keyup).not.toHaveBeenCalled();
 });
 
-test.for([KEY.ENTER, KEY.BACK, KEY.ESC, KEY.IME_DONE, KEY.IME_CANCEL])(
-  "text entry handles exit key %i before active overlays",
-  (code, { onTestFinished }) => {
-    const h = createHarness(onTestFinished);
-    h.fireplace.isActive.mockReturnValue(true);
-    h.inputs.isActive.mockReturnValue(true);
-    const input = document.createElement("input");
-    document.body.append(input);
-    onTestFinished(() => input.remove());
-    input.focus();
-    const event = h.dispatch("keydown", code);
-
-    expect(event.defaultPrevented).toBe(true);
-    expect(document.activeElement).not.toBe(input);
-    expect(h.settings.focus).toHaveBeenCalledOnce();
-    expect(h.fireplace.keydown).not.toHaveBeenCalled();
-    expect(h.inputs.keydown).not.toHaveBeenCalled();
-    expect(h.home.keydown).not.toHaveBeenCalled();
-  },
-);
-
-test("text entry retains ordinary keys and their releases", ({ onTestFinished }) => {
+test("unregistered text fields do not override the active feature's scope", ({ onTestFinished }) => {
   const h = createHarness(onTestFinished);
+  h.fireplace.isActive.mockReturnValue(true);
   const input = document.createElement("input");
   document.body.append(input);
   onTestFinished(() => input.remove());
   input.focus();
-  const event = h.dispatch("keydown", KEY.LEFT);
-  h.dispatch("keyup", KEY.LEFT);
-
-  expect(event.defaultPrevented).toBe(false);
-  expect(document.activeElement).toBe(input);
-  expect(h.settings.focus).not.toHaveBeenCalled();
-  expect(h.fireplace.keydown).not.toHaveBeenCalled();
-  expect(h.inputs.keydown).not.toHaveBeenCalled();
+  const event = h.dispatch("keydown", KEY.BACK);
+  expect(h.fireplace.keydown).toHaveBeenCalledExactlyOnceWith(KEY.BACK, event);
+  expect(h.settings.keydown).not.toHaveBeenCalled();
   expect(h.home.keydown).not.toHaveBeenCalled();
-  expect(h.home.keyup).not.toHaveBeenCalled();
-});
-
-test("text focus cancels a pending Home press before the next key event", ({ onTestFinished }) => {
-  const h = createHarness(onTestFinished);
-  const input = document.createElement("input");
-  document.body.append(input);
-  onTestFinished(() => input.remove());
-  h.dispatch("keydown", KEY.ENTER);
-  input.focus();
-  expect(h.home.cancelInput).toHaveBeenCalledOnce();
-  input.blur();
-  h.dispatch("keyup", KEY.ENTER);
-  expect(h.home.keyup).not.toHaveBeenCalled();
-  h.dispatch("keydown", KEY.ENTER);
-  h.dispose();
-  const cancellations = h.home.cancelInput.mock.calls.length;
-  input.focus();
-  expect(h.home.cancelInput).toHaveBeenCalledTimes(cancellations);
 });
 
 test("active input playback receives all keys before Settings and blocks Home keyup", ({ onTestFinished }) => {
@@ -177,7 +132,7 @@ test("disposal removes both listeners and rebinding delivers each event once", (
   expect(h.home.keydown).not.toHaveBeenCalled();
   expect(h.home.keyup).not.toHaveBeenCalled();
 
-  const dispose = bindLauncherKeys(document, KEY, createLauncherInputScopes(document, KEY, h.targets));
+  const dispose = bindLauncherKeys(document, KEY, createLauncherInputScopes(h.targets));
   onTestFinished(dispose);
   h.dispatch("keydown", KEY.LEFT);
   h.dispatch("keyup", KEY.LEFT);
@@ -213,46 +168,4 @@ test("hidden visibility cancels input without a later Home activation", ({ onTes
   h.dispatch("keyup", KEY.ENTER);
   expect(h.home.cancelInput).toHaveBeenCalledOnce();
   expect(h.home.keyup).not.toHaveBeenCalled();
-});
-
-test("native text entry keeps repeated Space presses and browser defaults", ({ onTestFinished }) => {
-  const h = createHarness(onTestFinished);
-  const input = document.createElement("input");
-  document.body.append(input);
-  onTestFinished(() => input.remove());
-  input.focus();
-  const first = h.dispatch("keydown", SPACE_KEY_CODE);
-  const repeated = new KeyboardEvent("keydown", { keyCode: SPACE_KEY_CODE, repeat: true, cancelable: true });
-  document.dispatchEvent(repeated);
-  h.dispatch("keyup", SPACE_KEY_CODE);
-  expect(first.defaultPrevented).toBe(false);
-  expect(repeated.defaultPrevented).toBe(false);
-  expect(document.activeElement).toBe(input);
-  expect(h.settings.keydown).not.toHaveBeenCalled();
-  expect(h.home.keydown).not.toHaveBeenCalled();
-});
-
-test("native text composition owns Enter until IME Done completes it", ({ onTestFinished }) => {
-  const h = createHarness(onTestFinished);
-  const input = document.createElement("input");
-  document.body.append(input);
-  onTestFinished(() => input.remove());
-  input.focus();
-  const composing = new KeyboardEvent("keydown", { keyCode: KEY.ENTER, isComposing: true, cancelable: true });
-  document.dispatchEvent(composing);
-  const repeated = new KeyboardEvent("keydown", {
-    keyCode: KEY.ENTER,
-    isComposing: true,
-    repeat: true,
-    cancelable: true,
-  });
-  document.dispatchEvent(repeated);
-  h.dispatch("keyup", KEY.ENTER);
-  expect(composing.defaultPrevented).toBe(false);
-  expect(repeated.defaultPrevented).toBe(false);
-  expect(document.activeElement).toBe(input);
-  expect(h.settings.focus).not.toHaveBeenCalled();
-  h.dispatch("keydown", KEY.IME_DONE);
-  expect(document.activeElement).not.toBe(input);
-  expect(h.settings.focus).toHaveBeenCalledOnce();
 });

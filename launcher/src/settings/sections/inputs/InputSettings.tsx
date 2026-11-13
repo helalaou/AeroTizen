@@ -6,7 +6,7 @@ import { SettingsSection } from "../../components/SettingsSection/SettingsSectio
 import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
 import type { SettingsSectionProps } from "../../types";
 
-import { InputName } from "./InputName/InputName";
+import { InputName } from "./InputName";
 import { IpControlProbe } from "./IpControlProbe";
 
 const LIVE_TV_VISIBILITY_OPTIONS = [
