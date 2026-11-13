@@ -18,6 +18,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `InputDock`, `InputCard`                                             | Input collection and one input's label, artwork and connection state            | Existing input service capabilities and commands                             |
 | `shared/components/AppFallback`                                      | Shared app-name placeholder for Home and Settings                               | App presentation, image lifetime and visibility                              |
 | `shared/components/AppArtworkContent`                                | Shared full-size artwork and compact package-icon/name layout                   | Image request lifetime and app identity lookup                               |
+| `shared/components/AppCard`                                          | Shared app frame, artwork lifetime, selection badge and layout variants         | Each screen supplies its navigation control and activation                   |
 | `shared/components/StoreCard`                                        | Shared store frame, focus ring, icon, labels and size variants                  | Translation state; each screen supplies its navigation control and command   |
 | `AppActionsMenu`, `ReorderControls`                                  | App actions and move/drop controls                                              | Home action commands; menu selection, focus and input are local              |
 | `status/Clock`                                                       | One time/date view with compact, vertical, horizontal, minimal and bold layouts | Shared time snapshot and formatter; no timer                                 |
@@ -32,7 +33,6 @@ screens need the same behavior, rather than because they have a similar shape.
 | `ChoiceGroup`, `ChoiceOption`                                        | A labelled choice group and one selectable option                               | Value, options and selection callback                                        |
 | `SelectionIndicator`                                                 | Decorative selected-choice check with a consistent contrast badge               | Parent control owns selection and `aria-pressed`                             |
 | `SettingsControl`                                                    | Register a Settings control and render focus/activation                         | Settings navigation context                                                  |
-| `SettingsAppCard`                                                    | Common app-choice frame, focus, selection and disabled states                   | Explicit favourite/source variant and control props                          |
 | `WallpaperSwatch`, `SettingsSlider`, `SettingsTextInput`             | Wallpaper choices, numeric sliders and location input                           | Explicit values, state and callbacks; no platform requests                   |
 | `SettingsHint`                                                       | Shared Settings help and status copy                                            | Text, semantic attributes and optional spacing override                      |
 
@@ -48,8 +48,14 @@ Panel titles share one size; section titles use the smaller variant. The colour 
 gradient dialogs use the same description style and link their instructions with
 `aria-describedby`. `SettingsSection` supplies section spacing and content.
 
-`HomeAppCard` owns the shared app/Fireplace frame, focus and moving state.
-`AppCard` and `FireplaceCard` supply their content.
+`shared/components/AppCard` owns the app/Fireplace frame, artwork lifetime and optional
+selection badge. Its Home variant keeps launchable apps at full brightness; Settings
+favourite/source variants retain selection dimming and disabled states. `HomeAppCard`
+supplies Home focus, movement and reorder controls. The Home `AppCard`, `FireplaceCard`,
+`AppOption` and `FireplaceOption` wrappers provide screen data and activation. All apps
+shows Home membership with a check and accessible description; Home hides that check.
+Settings toggles selection on OK and has no hold menu. `SelectionIndicator` lives in
+`shared/components` so app cards and Settings choices use the same badge.
 `StoreCard` owns the complete store appearance: surface, corners, focus ring,
 icon, translated labels and spacing. Its large and small variants set dimensions
 for All apps and Settings. `AppStoreCard` and `AppStoreOption` supply their screen's
@@ -442,7 +448,8 @@ keys and values also remain compatible.
 | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
 | `themes.css`                                                                                     | Shared semantic paint tokens and Classic/Glass values                         |
 | `motion.css`                                                                                     | Shared UI durations and reduced-motion policy                                 |
-| `settings/components/*/*.module.css`                                                             | Shared Settings focus, choices, group layout, headings and selection badges   |
+| `settings/components/*/*.module.css`                                                             | Shared Settings focus, choices, group layout and headings                     |
+| `shared/components/SelectionIndicator/SelectionIndicator.module.css`                             | Shared selected-choice check and contrast badge                              |
 | `settings/SettingsRoot/SettingsRoot.module.css`                                                  | Settings overlay and preview visibility                                       |
 | `settings/layout/SettingsDrawer/SettingsDrawer.module.css`                                       | Drawer frame, headings, sidebar and active pane layout                        |
 | `settings/layout/SettingsCategory/SettingsCategory.module.css`                                   | Category and Samsung Home rows, current state and update notice               |
@@ -461,7 +468,7 @@ keys and values also remain compatible.
 | `status/HeaderStatus/HeaderStatus.module.css`                                                    | Compact/expanded status placement                                             |
 | `status/WeatherStatus/WeatherStatus.module.css`, `status/NetworkStatus/NetworkStatus.module.css` | Weather and network presentation, with explicit layout/state props            |
 | `home/components/AppGrid/AppGrid.module.css`                                                     | App sizes, columns and clock clearance                                        |
-| `home/components/HomeAppCard/HomeAppCard.module.css`                                             | Shared app/Fireplace frame and focus/moving states                            |
+| `shared/components/AppCard/AppCard.module.css`                                                  | Shared app/Fireplace frame, layout variants and focus/selection/moving states |
 | `shared/components/AppArtworkContent/AppArtworkContent.module.css`                               | Shared image geometry and compact package-icon layout                         |
 | `shared/components/StoreCard/StoreCard.module.css`                                               | Shared store surface, corners, focus ring, icon, labels and size variants     |
 | `home/components/FireplaceCard/FireplaceCard.module.css`                                         | Fireplace card artwork                                                        |

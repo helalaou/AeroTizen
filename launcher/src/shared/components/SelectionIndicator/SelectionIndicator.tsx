@@ -1,6 +1,6 @@
 import { Check } from "lucide-preact";
 
-import { Icon } from "../../../shared/icons/Icon/Icon";
+import { Icon } from "../../icons/Icon/Icon";
 
 import styles from "./SelectionIndicator.module.css";
 

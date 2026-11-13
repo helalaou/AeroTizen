@@ -1,11 +1,11 @@
 import { Pencil } from "lucide-preact";
 
 import type { BackgroundOption } from "../../../../contracts/launcher";
+import { SelectionIndicator } from "../../../../shared/components/SelectionIndicator/SelectionIndicator";
 import type { MessageKey } from "../../../../shared/i18n/catalogues";
 import { useTranslation } from "../../../../shared/i18n/useTranslation";
 import { Icon } from "../../../../shared/icons/Icon/Icon";
 import text from "../../../../shared/styles/text.module.css";
-import { SelectionIndicator } from "../../../components/SelectionIndicator/SelectionIndicator";
 import { SettingsControl } from "../../../components/SettingsControl/SettingsControl";
 
 import styles from "./WallpaperSwatch.module.css";

@@ -2,9 +2,9 @@ import { useLayoutEffect, useMemo } from "preact/hooks";
 
 import { channelsToColour } from "../../../../backgrounds/colours";
 import { gradientBackground } from "../../../../backgrounds/gradients";
+import { SelectionIndicator } from "../../../../shared/components/SelectionIndicator/SelectionIndicator";
 import { useTranslation } from "../../../../shared/i18n/useTranslation";
 import { InputScopeContext } from "../../../../shared/input/context";
-import { SelectionIndicator } from "../../../components/SelectionIndicator/SelectionIndicator";
 import { SettingsControl } from "../../../components/SettingsControl/SettingsControl";
 import { SettingsHeading } from "../../../components/SettingsHeading/SettingsHeading";
 import { SettingsPanel } from "../../../components/SettingsPanel/SettingsPanel";
