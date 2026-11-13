@@ -21,10 +21,19 @@ if (!("tizen" in window) && !runtime.platforms) {
       home: DEFAULT_HOME_APPS.map(previewAppId),
     },
   };
-  runtime.platforms = createPreviewPlatforms(() => true, {
-    missingHdmiPort: PREVIEW_MISSING_HDMI_PORT,
-    notifyInput: (source) =>
-      runtime.toast(runtime.translate("inputs.wouldSwitch", { input: runtime.inputs.label(source) })),
-  });
+  runtime.platforms = {
+    ...createPreviewPlatforms(() => true, {
+      missingHdmiPort: PREVIEW_MISSING_HDMI_PORT,
+      notifyInput: (source) =>
+        runtime.toast(runtime.translate("inputs.wouldSwitch", { input: runtime.inputs.label(source) })),
+    }),
+    nativeNavigation: (platform) => ({
+      ...platform,
+      commands: {
+        ...platform.commands,
+        openSamsungHome: () => runtime.toast(runtime.translate("handoff.wouldOpenHome")),
+      },
+    }),
+  };
   runtime.continueWatching = createPreviewContinueWatching(runtime);
 }

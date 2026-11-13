@@ -92,7 +92,9 @@ const homewatch =
     timers: window,
   });
 runtime.homewatch = homewatch;
-const nativeNavigation = hotData?.nativeNavigation || createNativeNavigation(window);
+const nativeNavigation =
+  hotData?.nativeNavigation ||
+  createPlatform(() => createNativeNavigation(window), runtime.platforms?.nativeNavigation);
 runtime.nativeNavigation = nativeNavigation;
 runtime.homewatch = { ...runtime.homewatch, ...nativeNavigation.commands };
 nativeNavigation.start();
