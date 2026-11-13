@@ -118,9 +118,10 @@ props. Their modules do not depend on a parent's private class or body clock mod
 Tests use `data-home-header`, `data-header-focus`, `data-clock-part` and
 `data-weather-part`; semantic IDs remain available for integrations.
 
-`HomeAppCard` owns the common app/Fireplace frame, focus, moving state and reorder
-controls. `AppGrid` owns sizes, columns and compact/expanded clock clearance through
-explicit data attributes. `AppArtworkContent` owns shared image geometry; its inherited radius
+`shared/components/AppCard` owns the common app/Fireplace frame, artwork lifetime and
+selection badge. Its Home variant owns focus and moving paint. `HomeAppCard` supplies
+Home navigation and reorder controls. `AppGrid` owns sizes, columns and compact/expanded
+clock clearance through explicit data attributes. `AppArtworkContent` owns shared image geometry; its inherited radius
 keeps images rounded when moving cards expose their overflow.
 `HorizontalScroller` owns clipping and track movement for both
 app and Continue Watching rows.
@@ -165,8 +166,9 @@ source badges. `AppFallback` uses its explicit compact layout for that name.
 The presentation data identifies the package icon; views do not inspect file paths
 or maintain app lists. Icon spacing uses margins for Chromium 69 compatibility.
 
-`SettingsAppCard` owns the common app-choice frame, focus, selection and disabled
-states. App and Fireplace options supply their own content. `AppFallback`
+The shared `AppCard` favourite/source variants own Settings focus, selection dimming and
+disabled paint. All apps shows the shared check for Home members without dimming other
+apps; Home hides the check. App and Fireplace options supply their screen controls. `AppFallback`
 owns name sizing and clamping through explicit `home`, `favourite`, `source` and
 `badge` variants. Home artwork passes the `badge` variant for Continue Watching
 source names. Keep the placeholder free of image requests and timers.

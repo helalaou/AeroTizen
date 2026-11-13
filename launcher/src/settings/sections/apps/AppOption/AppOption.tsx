@@ -1,12 +1,10 @@
 import { useMemo } from "preact/hooks";
 
 import type { InstalledApp } from "../../../../contracts/launcher";
-import { AppArtworkContent } from "../../../../shared/components/AppArtworkContent/AppArtworkContent";
-import { useImageSequence } from "../../../../shared/hooks/useImageSequence";
-import { SelectionIndicator } from "../../../components/SelectionIndicator/SelectionIndicator";
+import type { AppCardVariant } from "../../../../shared/components/AppCard/AppCard";
+import { AppCard } from "../../../../shared/components/AppCard/AppCard";
+import { SettingsControl } from "../../../components/SettingsControl/SettingsControl";
 import type { SettingsServices } from "../../../types";
-import type { SettingsAppVariant } from "../SettingsAppCard/SettingsAppCard";
-import { SettingsAppCard } from "../SettingsAppCard/SettingsAppCard";
 
 interface Props {
   active: boolean;
@@ -16,7 +14,7 @@ interface Props {
   focusKey?: string;
   onSelect(): void;
   selected: boolean;
-  variant?: SettingsAppVariant;
+  variant?: Exclude<AppCardVariant, "home">;
 }
 
 export const AppOption = ({
@@ -30,25 +28,33 @@ export const AppOption = ({
   disabled = false,
 }: Props) => {
   const presentation = useMemo(() => describeApp(app), [app, describeApp]);
-  const artwork = useImageSequence(presentation.artwork, active);
   return (
-    <SettingsAppCard
+    <AppCard
+      presentation={presentation}
+      active={active}
       selected={selected}
       variant={variant}
-      data-app-option
-      data-artwork-loaded={artwork.loaded ? "true" : undefined}
-      focusKey={focusKey || "app:" + app.id}
-      aria-label={presentation.title}
-      title={presentation.title}
-      aria-disabled={disabled || undefined}
-      onClick={() => {
-        if (!disabled) {
-          onSelect();
-        }
-      }}
-    >
-      <AppArtworkContent presentation={presentation} artwork={artwork} variant={variant} />
-      {selected ? <SelectionIndicator /> : null}
-    </SettingsAppCard>
+      renderControl={({ className, children, artworkLoaded }) => (
+        <SettingsControl
+          class={className}
+          role="button"
+          aria-pressed={selected}
+          data-settings-card={variant}
+          data-app-option
+          data-artwork-loaded={artworkLoaded ? "true" : undefined}
+          focusKey={focusKey || "app:" + app.id}
+          aria-label={presentation.title}
+          title={presentation.title}
+          aria-disabled={disabled || undefined}
+          onClick={() => {
+            if (!disabled) {
+              onSelect();
+            }
+          }}
+        >
+          {children}
+        </SettingsControl>
+      )}
+    />
   );
 };

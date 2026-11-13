@@ -1,18 +1,21 @@
 .card {
   position: relative;
   flex: 0 0 auto;
-  width: var(--app-card-size);
-  height: var(--app-card-size);
-  border-radius: var(--home-card-radius, 10px);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  transform: translateZ(0);
+  transition: transform var(--motion-duration-focus) ease-out;
+}
+
+.home {
+  width: var(--app-card-size);
+  height: var(--app-card-size);
+  border-radius: var(--home-card-radius, 10px);
   gap: var(--home-app-gap, 22px);
   background: var(--app-background, var(--app-placeholder-surface));
   box-shadow: var(--home-card-shadow, none);
-  transform: translateZ(0);
-  transition: transform var(--motion-duration-focus) ease-out;
 
   &::after {
     content: "";
@@ -47,5 +50,34 @@
       transform: translateZ(0) scale(1.06) translateY(-8px);
       z-index: 3;
     }
+  }
+}
+
+.choice {
+  flex-basis: 160px;
+  width: 160px;
+  height: 160px;
+  border-radius: var(--control-radius);
+  flex-direction: var(--settings-card-direction, row);
+  gap: var(--settings-card-gap, 22px);
+  padding: var(--settings-card-padding, 0px);
+  background: var(--settings-card-surface, var(--app-placeholder-surface));
+  box-shadow: var(--settings-card-shadow, none);
+
+  &[aria-pressed="false"] {
+    opacity: 0.5;
+
+    &[data-focused="true"] {
+      opacity: 0.85;
+    }
+  }
+
+  &[data-focused="true"] {
+    background: var(--settings-focused-surface);
+  }
+
+  &[aria-disabled="true"],
+  &[aria-disabled="true"][data-focused="true"] {
+    opacity: 0.35;
   }
 }

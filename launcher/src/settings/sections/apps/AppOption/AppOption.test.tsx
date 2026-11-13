@@ -100,6 +100,26 @@ test("shows a check only while selected and calls onSelect when clicked", () => 
   expect(unselected.querySelector("[data-selection-indicator]")).toBeNull();
 });
 
+test("disabled source cards retain selection and cannot activate", () => {
+  const onSelect = vi.fn();
+  render(
+    <AppOption
+      app={app}
+      describeApp={describeApp}
+      onSelect={onSelect}
+      selected
+      active={false}
+      disabled
+      variant="source"
+    />,
+  );
+  const button = screen.getByRole("button", { name: app.name, pressed: true });
+  expect(button.getAttribute("aria-disabled")).toBe("true");
+  expect(button.querySelector("[data-selection-indicator]")).not.toBeNull();
+  fireEvent.click(button);
+  expect(onSelect).not.toHaveBeenCalled();
+});
+
 test("package icons stay labelled in unselected app settings tiles", () => {
   const describePackage = () => ({ title: app.name, artwork: ["/package.png"], appIcon: "/package.png" });
   render(<AppOption app={app} describeApp={describePackage} onSelect={vi.fn()} selected={false} active />);

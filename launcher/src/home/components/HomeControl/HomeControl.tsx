@@ -22,6 +22,7 @@ export const HomeControl = ({
   pressed,
   registered = true,
   preserveSelection = false,
+  descriptionId,
 }: {
   env: HomeEnvironment;
   controlKey: string;
@@ -38,6 +39,7 @@ export const HomeControl = ({
   pressed?: boolean;
   registered?: boolean;
   preserveSelection?: boolean;
+  descriptionId?: string;
 }) => {
   const focused = useStoreSelector(env.state, (state) => registered && state.active && state.selected === controlKey);
   const own = useRef<HTMLDivElement | null>(null);
@@ -61,6 +63,7 @@ export const HomeControl = ({
       class={styles.control + " " + className}
       role="button"
       aria-label={title}
+      aria-describedby={descriptionId}
       title={title}
       tabIndex={focused ? 0 : -1}
       data-id={dataId}

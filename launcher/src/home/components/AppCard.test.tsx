@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen } from "@testing-library/preact";
+import { act, fireEvent, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 import * as imageSequence from "../../shared/hooks/useImageSequence";
+import { renderWithEnglish as render } from "../../test/renderWithEnglish";
 import { createCardEnvironment } from "../test/createCardEnvironment";
 
 import { AppCard } from "./AppCard";
@@ -13,6 +14,26 @@ const fallback = (card: HTMLElement) => card.querySelector<HTMLElement>("[data-a
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
+
+test("All Apps shows live Home membership without changing the launch action or toggle semantics", () => {
+  const env = createCardEnvironment(`app:${app.id}`);
+  const { rerender } = render(<AppCard env={env} app={app} active onHome={false} />);
+  const card = screen.getByRole("button", { name: app.name });
+  expect(card.querySelector("[data-selection-indicator]")).toBeNull();
+  expect(card.hasAttribute("aria-pressed")).toBe(false);
+  expect(card.hasAttribute("aria-describedby")).toBe(false);
+
+  rerender(<AppCard env={env} app={app} active onHome />);
+  expect(card.querySelector("[data-selection-indicator]")).not.toBeNull();
+  expect(document.getElementById(card.getAttribute("aria-describedby")!)?.textContent).toBe("On Home");
+  fireEvent.click(card);
+  expect(env.activate).toHaveBeenCalledExactlyOnceWith(`app:${app.id}`);
+
+  // The same app on Home has no membership badge or description.
+  rerender(<AppCard env={env} app={app} active />);
+  expect(card.querySelector("[data-selection-indicator]")).toBeNull();
+  expect(card.hasAttribute("aria-describedby")).toBe(false);
+});
 
 test("parent updates retain static artwork while focus and app data still update", async () => {
   const reads = vi.spyOn(imageSequence, "useImageSequence");

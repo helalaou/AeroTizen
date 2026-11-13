@@ -37,7 +37,7 @@
   position: absolute;
   z-index: 0;
   pointer-events: none;
-  top: 16px;
+  top: 12px;
   left: 12px;
   right: 12px;
   height: 60px;
@@ -59,7 +59,6 @@
   min-height: 60px;
   width: 100%;
   box-sizing: border-box;
-  margin-top: 4px;
   gap: 12px;
   padding: 9px 16px;
   border: 0;
@@ -71,6 +70,10 @@
   font-size: 22px;
   font-weight: 600;
   transition: color var(--motion-duration-feedback) linear;
+
+  & + & {
+    margin-top: 4px;
+  }
 
   &[aria-selected="true"] {
     color: var(--menu-text);
