@@ -1,4 +1,5 @@
 import type { NavigationHandlers, SettingsBridge } from "../../contracts/launcher";
+import { createInputScope } from "../../shared/input/createInputScope";
 import type { MutableStore } from "../../shared/state/createStore";
 import type { SettingsServices, ViewState } from "../types";
 
@@ -11,7 +12,19 @@ export const createSettingsBridge = (
   now: () => number = Date.now,
 ): SettingsBridge => {
   let handlers: NavigationHandlers | undefined;
+  const inputScope = createInputScope({
+    modal: true,
+    subscribe: view.subscribe,
+    isActive: () => view.getSnapshot().open,
+    handle(event) {
+      if (event.phase === "down") {
+        handlers?.keydown(event.code, event.nativeEvent);
+      }
+      return "native";
+    },
+  });
   return {
+    inputScope,
     open() {
       transaction(() => {
         const current = view.getSnapshot();
@@ -29,6 +42,7 @@ export const createSettingsBridge = (
       });
     },
     close() {
+      inputScope.cancel();
       transaction(() => {
         handlers?.blur();
         view.set({ ...view.getSnapshot(), open: false, previewing: false, adjusting: false, colourPicker: null });
@@ -46,6 +60,7 @@ export const createSettingsBridge = (
       handlers = next;
       return () => {
         if (handlers === next) {
+          inputScope.cancel();
           handlers = undefined;
         }
       };
