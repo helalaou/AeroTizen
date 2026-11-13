@@ -1,14 +1,17 @@
-import { AppStoreContent } from "../../../shared/components/AppStoreContent/AppStoreContent";
-import { useTranslation } from "../../../shared/i18n/useTranslation";
+import { StoreCard } from "../../../shared/components/StoreCard/StoreCard";
 import { ADD_APPS_KEY } from "../../homeControls";
 import type { HomeEnvironment } from "../../types";
-import { HomeAppCard } from "../HomeAppCard/HomeAppCard";
+import { HomeControl } from "../HomeControl/HomeControl";
 
 export const AppStoreCard = ({ env, registered }: { env: HomeEnvironment; registered: boolean }) => {
-  const { t } = useTranslation();
   return (
-    <HomeAppCard env={env} controlKey={ADD_APPS_KEY} registered={registered} title={t("apps.add")}>
-      <AppStoreContent variant="home" />
-    </HomeAppCard>
+    <StoreCard
+      size="large"
+      renderControl={({ className, label, children }) => (
+        <HomeControl env={env} controlKey={ADD_APPS_KEY} registered={registered} className={className} title={label}>
+          {children}
+        </HomeControl>
+      )}
+    />
   );
 };

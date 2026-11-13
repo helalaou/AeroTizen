@@ -198,9 +198,9 @@ const SETTINGS_VARIABLES = [
 ];
 
 const APPS_PANE_VARIABLES = [
-  ["--settings-store-label-shadow", "none", STORE_LABEL, "text-shadow", "rgba(0, 0, 0, 0.35) 0px 2px 8px", "none"],
+  ["--home-card-radius", "32px", '[data-key="add"]', RADIUS, "10px", "32px"],
   [
-    "--settings-store-subtitle-text",
+    "--muted",
     THEME_COLOUR,
     '[data-key="add"] [data-app-store-part="subtitle"]',
     "color",

@@ -22,8 +22,6 @@ body {
   --settings-kicker: rgba(235, 241, 249, 0.69);
   --settings-close-surface: rgba(255, 255, 255, 0.07);
   --app-label-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-  --settings-store-surface: linear-gradient(135deg, #2c2c30, #161618);
-  --settings-store-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18);
   --settings-slider-surface: var(--card);
   --settings-slider-track: #3a3a40;
   --settings-slider-thumb: #fff;

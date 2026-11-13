@@ -45,7 +45,6 @@ unset:
   `--header-tab-underline-shadow`, `--header-status-shadow`,
   `--header-status-divider`;
 - Settings: `--choice-selected-text`, `--settings-category-icon`,
-  `--settings-store-label-shadow`, `--settings-store-subtitle-text`,
   `--settings-scroll-ring-room`;
 - spacing and toast: `--home-row-clearance`, `--toast-text`, `--toast-shadow`.
 
@@ -71,6 +70,8 @@ or tests. Module selectors must not depend on `#editor`, IDs or global class ali
 Do not override focused controls through an ID selector.
 Controls can supply `--settings-control-focus-outline` for a visible focus outline,
 as the drawer close button does.
+Controls that draw their own focus ring set `data-settings-focus-owner="control"`
+so `SettingsFocusIndicator` does not paint a second focus layer over them.
 
 `SettingsRoot` owns the overlay and preview visibility. `SettingsDrawer` owns the
 drawer geometry, sidebar and pane layout. `SettingsPanel` owns the shared drawer
@@ -165,14 +166,15 @@ The presentation data identifies the package icon; views do not inspect file pat
 or maintain app lists. Icon spacing uses margins for Chromium 69 compatibility.
 
 `SettingsAppCard` owns the common app-choice frame, focus, selection and disabled
-states. App, Fireplace and Store options supply their own content. `AppFallback`
+states. App and Fireplace options supply their own content. `AppFallback`
 owns name sizing and clamping through explicit `home`, `favourite`, `source` and
 `badge` variants. Home artwork passes the `badge` variant for Continue Watching
 source names. Keep the placeholder free of image requests and timers.
 
-`AppStoreContent` owns the store icon, labels and spacing with explicit Home and
-Settings size variants. The screen card frames retain their focus and surface paint;
-the Settings store option also owns its frame padding.
+`StoreCard` owns the complete store appearance on All apps and Settings: surface,
+corners, focus ring, icon, labels and spacing. Large and small variants change
+dimensions; paint and typography rules are shared. The screen wrappers supply
+`HomeControl` or `SettingsControl` through `renderControl` for navigation and activation.
 
 `WallpaperSwatch`, `SpeedSlider` and `WeatherSearch` own their control styles.
 `SettingsHint` supplies section status/help text. Each section owns its collection

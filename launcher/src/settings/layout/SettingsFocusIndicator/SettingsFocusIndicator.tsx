@@ -82,7 +82,7 @@ export const SettingsFocusIndicator = ({
         height: rect.height + "px",
         borderRadius: getComputedStyle(target).borderRadius,
       };
-      const visible = Boolean(rect.width && rect.height);
+      const visible = Boolean(rect.width && rect.height && target.dataset.settingsFocusOwner !== "control");
       setPlate((previous) => {
         if (
           previous.key === key &&

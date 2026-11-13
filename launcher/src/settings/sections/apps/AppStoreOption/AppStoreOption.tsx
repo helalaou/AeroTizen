@@ -1,12 +1,24 @@
-import { AppStoreContent } from "../../../../shared/components/AppStoreContent/AppStoreContent";
-import { SettingsAppCard } from "../SettingsAppCard/SettingsAppCard";
-
-import styles from "./AppStoreOption.module.css";
+import { StoreCard } from "../../../../shared/components/StoreCard/StoreCard";
+import { SettingsControl } from "../../../components/SettingsControl/SettingsControl";
 
 export const AppStoreOption = ({ onSelect }: { onSelect(): void }) => {
   return (
-    <SettingsAppCard class={styles.store} focusKey="add" onClick={onSelect}>
-      <AppStoreContent variant="settings" />
-    </SettingsAppCard>
+    <StoreCard
+      size="small"
+      renderControl={({ className, label, children }) => (
+        <SettingsControl
+          class={className}
+          focusKey="add"
+          onClick={onSelect}
+          role="button"
+          aria-label={label}
+          title={label}
+          data-settings-card="store"
+          data-settings-focus-owner="control"
+        >
+          {children}
+        </SettingsControl>
+      )}
+    />
   );
 };
