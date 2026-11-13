@@ -142,6 +142,16 @@ for (const theme of ["classic", "glass"]) {
     await store.click();
     expect(await page.evaluate(() => window.storeOpens)).toBe(2);
     expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().home)).toEqual(["demo0", "demo1"]);
+    await page.locator("#gear").click();
+    await page.locator('[data-key="section:apps"]').click();
+    const settingsStore = page.locator('#all-apps [data-key="add"]');
+    await expect(settingsStore).toBeFocused();
+    await page.keyboard.press("Enter");
+    expect(await page.evaluate(() => window.storeOpens)).toBe(3);
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#editor")).toBeHidden();
+    await expect(store).toBeFocused();
     // Move through the six app rows to the footer.
     for (let row = 0; row < 6; row++) {
       await page.keyboard.press("ArrowDown");
@@ -159,7 +169,7 @@ for (const theme of ["classic", "glass"]) {
       return {
         iconHeight: icon.height,
         overflow: card.scrollHeight - card.clientHeight,
-        childrenFit: [...card.children].every((child) => {
+        childrenFit: [...card.querySelectorAll("[data-app-store-part]")].every((child) => {
           const childBounds = child.getBoundingClientRect();
           return childBounds.top >= bounds.top && childBounds.bottom <= bounds.bottom;
         }),

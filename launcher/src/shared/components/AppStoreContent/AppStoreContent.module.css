@@ -1,0 +1,67 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  color: var(--control-text);
+}
+
+.icon {
+  flex: 0 0 auto;
+}
+
+.label {
+  max-width: 100%;
+  font-weight: 600;
+  text-align: center;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.home {
+  padding: calc(var(--app-card-size) * 0.07);
+
+  .icon {
+    width: calc(var(--app-card-size) * 0.24);
+    height: calc(var(--app-card-size) * 0.24);
+    margin-bottom: calc(var(--app-card-size) * 0.06);
+  }
+
+  .label {
+    font-size: calc(var(--app-card-size) * 0.08);
+    line-height: 1.2;
+  }
+
+  .subtitle {
+    margin-top: calc(var(--app-card-size) * 0.025);
+    font-size: calc(var(--app-card-size) * 0.055);
+  }
+}
+
+.settings {
+  .icon {
+    width: 92px;
+    height: 76px;
+    flex: 0 1 76px;
+    margin-bottom: 8px;
+  }
+
+  .label {
+    font-size: 19px;
+    line-height: 21px;
+    text-shadow: var(--settings-store-label-shadow, var(--app-label-shadow));
+  }
+
+  .subtitle {
+    margin-top: 4px;
+    font-size: 13px;
+    line-height: 16px;
+    color: var(--settings-store-subtitle-text, var(--muted));
+  }
+}

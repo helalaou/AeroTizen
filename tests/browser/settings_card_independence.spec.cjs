@@ -112,7 +112,7 @@ for (const language of Object.keys(catalogues)) {
     const card = await openAddAppsCard(page, language);
     const overflow = await card.evaluate((node) => {
       const frame = node.getBoundingClientRect();
-      const parts = Array.from(node.children, (part) => part.getBoundingClientRect());
+      const parts = Array.from(node.querySelectorAll("[data-app-store-part]"), (part) => part.getBoundingClientRect());
       return {
         above: frame.top - Math.min(...parts.map((part) => part.top)),
         below: Math.max(...parts.map((part) => part.bottom)) - frame.bottom,
