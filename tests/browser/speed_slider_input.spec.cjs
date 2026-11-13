@@ -5,10 +5,11 @@ const openSlider = async (page, theme) => {
   await page.route("https://**/*", (route) => route.fulfill({ json: {} }));
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ json: {} }));
   await page.addInitScript((theme) => {
-    localStorage.setItem(
-      "aerotizen.settings.v1",
-      JSON.stringify({ background: "waves", speed: 1, theme, showWeather: false, weatherPhoto: false }),
-    );
+    if (!localStorage.getItem("aerotizen.settings.v1"))
+      localStorage.setItem(
+        "aerotizen.settings.v1",
+        JSON.stringify({ background: "waves", speed: 1, theme, showWeather: false, weatherPhoto: false }),
+      );
   }, theme);
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready && AeroTizen.homeScreen);
@@ -20,6 +21,28 @@ const openSlider = async (page, theme) => {
 };
 
 for (const theme of ["classic", "glass"]) {
+  test(`${theme} shared slider arrows adjust speed once and preserve the saved value`, async ({ page }, info) => {
+    const slider = await openSlider(page, theme);
+    const increase = slider.getByRole("button", { name: "Increase Background speed" });
+    await increase.click();
+    await increase.click();
+    await slider.getByRole("button", { name: "Decrease Background speed" }).click();
+    await expect(slider).toHaveAttribute("aria-valuenow", "1.25");
+    await expect(slider).toHaveAttribute("aria-valuetext", "1.25×");
+    await expect(slider).toHaveAttribute("data-adjusting", "true");
+    await expect(slider).toBeFocused();
+    await page.screenshot({ path: info.outputPath("shared-speed-slider.png") });
+    await page.reload();
+    await page.locator("#gear").click();
+    await openCategory(page, "wallpaper");
+    await expect(slider).toHaveAttribute("aria-valuenow", "1.25");
+    await expect(slider).not.toHaveAttribute("data-adjusting", "true");
+    await page.locator('[data-key="wallpaper-categories:solid"]').click();
+    await page.locator('[data-key="bg:custom"]').click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.screenshot({ path: info.outputPath("shared-colour-slider.png") });
+  });
+
   test(`${theme} speed editing owns held arrows and exit keys without closing the drawer`, async ({ page }) => {
     const slider = await openSlider(page, theme);
     const drawer = page.locator("[data-settings-drawer=frame]");

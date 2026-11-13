@@ -12,9 +12,9 @@ import { ChoiceGroup } from "../../components/ChoiceGroup";
 import { ChoiceOption } from "../../components/ChoiceOption/ChoiceOption";
 import { SettingsHint } from "../../components/SettingsHint/SettingsHint";
 import { SettingsSection } from "../../components/SettingsSection/SettingsSection";
+import { SettingsSlider } from "../../components/SettingsSlider/SettingsSlider";
 import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
 import type { SettingsSectionProps } from "../../types";
-import { SpeedSlider } from "../backgrounds/SpeedSlider/SpeedSlider";
 import { WallpaperSwatch } from "../backgrounds/WallpaperSwatch/WallpaperSwatch";
 
 import styles from "./BackgroundSettings.module.css";
@@ -135,7 +135,13 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
         <div id="speed-row" class={styles.speedRow} hidden={!animated}>
           {animated ? (
             <>
-              <SpeedSlider
+              <SettingsSlider
+                class={styles.speedSlider}
+                activation="confirm"
+                focusKey="speed"
+                label={t("wallpaper.speed")}
+                ariaLabel={t("wallpaper.speedLabel")}
+                unit="×"
                 active={
                   open && !previewing && !colourPicker && category === "wallpaper" && expanded && show("animated")
                 }

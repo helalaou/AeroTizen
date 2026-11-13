@@ -1,18 +1,19 @@
 import { act, fireEvent, screen } from "@testing-library/preact";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { launcherConfig } from "../../../../launcherConfig";
-import { InputScopeContext } from "../../../../shared/input/context";
-import { createInputDispatcher } from "../../../../shared/input/createInputDispatcher";
-import { createInputScope } from "../../../../shared/input/createInputScope";
-import type { Navigation } from "../../../../shared/navigation/createNavigation";
-import { createNavigation } from "../../../../shared/navigation/createNavigation";
-import { renderWithEnglish } from "../../../../test/renderWithEnglish";
+import { launcherConfig } from "../../../launcherConfig";
+import english from "../../../shared/i18n/en.json";
+import { InputScopeContext } from "../../../shared/input/context";
+import { createInputDispatcher } from "../../../shared/input/createInputDispatcher";
+import { createInputScope } from "../../../shared/input/createInputScope";
+import type { Navigation } from "../../../shared/navigation/createNavigation";
+import { createNavigation } from "../../../shared/navigation/createNavigation";
+import { renderWithEnglish } from "../../../test/renderWithEnglish";
 
-import { SpeedSlider } from "./SpeedSlider";
+import { SettingsSlider } from "./SettingsSlider";
 
 let navigation: Navigation;
-vi.mock("../../../hooks/useSettingsEnvironment", () => ({
+vi.mock("../../hooks/useSettingsEnvironment", () => ({
   useSettingsEnvironment: () => ({ navigation }),
 }));
 
@@ -20,7 +21,10 @@ const { KEY } = launcherConfig;
 const disposers: (() => void)[] = [];
 afterEach(() => disposers.splice(0).forEach((dispose) => dispose()));
 
-const harness = () => {
+const harness = ({
+  activation = "confirm",
+  accelerate = false,
+}: { activation?: "confirm" | "focus"; accelerate?: boolean } = {}) => {
   navigation = createNavigation(() => undefined);
   const onAdjust = vi.fn();
   const drawer = vi.fn();
@@ -37,11 +41,27 @@ const harness = () => {
   });
   const ui = (active: boolean) => (
     <InputScopeContext.Provider value={root}>
-      <SpeedSlider active={active} min={0.25} max={2} value={1} onAdjust={onAdjust} />
+      <SettingsSlider
+        active={active}
+        activation={activation}
+        accelerate={accelerate}
+        focusKey="speed"
+        label={english["wallpaper.speedLabel"]}
+        unit="×"
+        min={0.25}
+        max={2}
+        value={1}
+        onAdjust={onAdjust}
+      />
     </InputScopeContext.Provider>
   );
   const result = renderWithEnglish(ui(true));
   const slider = screen.getByRole("slider", { name: "Background speed", value: { now: 1 } });
+  // jsdom has no layout; expose the registered control to real navigation measurement.
+  Object.defineProperties(slider, {
+    offsetParent: { get: () => document.body },
+    offsetHeight: { get: () => 100 },
+  });
   const input = createInputDispatcher(KEY, [root]);
   disposers.push(input.dispose);
   void act(() => navigation.select("speed"));
@@ -68,14 +88,14 @@ const harness = () => {
   };
 };
 
-test("pointer and remote activation show hints; arrows otherwise stay with the drawer", () => {
+test("pointer and remote activation enter editing; arrows otherwise stay with the drawer", () => {
   const h = harness();
-  expect(h.slider.querySelector("[data-slider-hint] svg")).toBeNull();
+  expect(h.slider.textContent).toContain("OK to adjust");
   h.press(KEY.RIGHT);
   expect(h.drawer).toHaveBeenLastCalledWith("right");
   expect(h.onAdjust).not.toHaveBeenCalled();
   fireEvent.click(h.slider);
-  expect(h.slider.querySelectorAll('[data-slider-hint] svg[aria-hidden="true"]')).toHaveLength(2);
+  expect(h.slider.dataset.adjusting).toBe("true");
   fireEvent.click(h.slider);
   expect(h.slider.dataset.adjusting).toBeUndefined();
   h.press(KEY.ENTER);
@@ -149,4 +169,54 @@ test("hiding, reopening, idle cancellation and unmount leave no edit state", () 
   h.down(KEY.RIGHT);
   h.up(KEY.RIGHT);
   expect(h.onAdjust).toHaveBeenCalledExactlyOnceWith(1);
+});
+
+test("pointer arrows make one adjustment without toggling edit mode off", () => {
+  const h = harness();
+  fireEvent.click(screen.getByRole("button", { name: "Increase Background speed" }));
+  fireEvent.click(screen.getByRole("button", { name: "Increase Background speed" }));
+  fireEvent.click(screen.getByRole("button", { name: "Decrease Background speed" }));
+  expect(h.onAdjust.mock.calls).toEqual([[1], [1], [-1]]);
+  expect(h.slider.dataset.adjusting).toBe("true");
+  expect(h.slider.getAttribute("aria-valuemin")).toBe("0.25");
+  expect(h.slider.getAttribute("aria-valuetext")).toBe("1×");
+  const track = h.slider.querySelector('[aria-hidden="true"] > span') as HTMLElement;
+  expect(parseFloat(track.style.left)).toBeCloseTo(((1 - 0.25) / (2 - 0.25)) * 100);
+});
+
+test("focus activation adjusts immediately and leaves confirm and Back with the parent", () => {
+  const h = harness({ activation: "focus" });
+  h.press(KEY.RIGHT);
+  expect(h.onAdjust).toHaveBeenCalledExactlyOnceWith(1);
+  expect(h.drawer).not.toHaveBeenCalled();
+  expect(h.slider.querySelector("[data-slider-hint]")).toBeNull();
+  h.press(KEY.ENTER);
+  h.press(KEY.BACK);
+  expect(h.drawer.mock.calls).toEqual([["confirm"], ["back"]]);
+});
+
+test("accelerated adjustment resets after release, another action, focus loss and cancellation", ({
+  onTestFinished,
+}) => {
+  const now = vi.spyOn(Date, "now").mockReturnValue(1000);
+  onTestFinished(() => now.mockRestore());
+  const h = harness({ activation: "focus", accelerate: true });
+  h.down(KEY.RIGHT);
+  now.mockReturnValue(1600);
+  h.down(KEY.RIGHT);
+  now.mockReturnValue(2100);
+  h.down(KEY.RIGHT);
+  now.mockReturnValue(2500);
+  h.down(KEY.RIGHT);
+  h.up(KEY.RIGHT);
+  h.down(KEY.RIGHT);
+  h.press(KEY.BACK);
+  h.down(KEY.RIGHT);
+  void act(() => h.input.cancel());
+  h.down(KEY.RIGHT);
+  h.up(KEY.RIGHT);
+  void act(() => navigation.select("preview"));
+  void act(() => navigation.select("speed"));
+  h.press(KEY.RIGHT);
+  expect(h.onAdjust.mock.calls).toEqual([[1], [5], [5], [10], [1], [1], [1], [1]]);
 });

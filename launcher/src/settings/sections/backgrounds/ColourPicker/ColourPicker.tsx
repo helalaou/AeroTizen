@@ -8,11 +8,11 @@ import { SelectionIndicator } from "../../../components/SelectionIndicator/Selec
 import { SettingsControl } from "../../../components/SettingsControl/SettingsControl";
 import { SettingsHeading } from "../../../components/SettingsHeading/SettingsHeading";
 import { SettingsPanel } from "../../../components/SettingsPanel/SettingsPanel";
+import { SettingsSlider } from "../../../components/SettingsSlider/SettingsSlider";
 import { SettingsNavigationContext } from "../../../context";
 import { useSettingsEnvironment } from "../../../hooks/useSettingsEnvironment";
 import type { ColourPickerDraft } from "../../../state/colourPicker";
 import { activeColour, COLOUR_CONTROLS, colourChannelValue, draftBackground } from "../../../state/colourPicker";
-import { ColourSlider } from "../ColourSlider/ColourSlider";
 
 import styles from "./ColourPicker.module.css";
 import { useColourPickerInput } from "./useColourPickerInput";
@@ -84,7 +84,8 @@ export const ColourPicker = ({ draft }: { draft: ColourPickerDraft }) => {
                 background = `linear-gradient(to right, #000, ${middle}, #fff)`;
               }
               return (
-                <ColourSlider
+                <SettingsSlider
+                  accelerate
                   key={control.value}
                   background={background}
                   compact={gradient}
@@ -98,7 +99,8 @@ export const ColourPicker = ({ draft }: { draft: ColourPickerDraft }) => {
               );
             })}
             {draft.kind === "gradient" && preview.kind === "gradient" ? (
-              <ColourSlider
+              <SettingsSlider
+                accelerate
                 background={gradientBackground(preview.gradient)}
                 compact
                 focusKey="gradient:angle"

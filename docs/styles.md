@@ -170,7 +170,7 @@ owns name sizing and clamping through explicit `home`, `favourite`, `source` and
 `badge` variants. Home artwork passes the `badge` variant for Continue Watching
 source names. Keep the placeholder free of image requests and timers.
 
-`WallpaperSwatch`, `SpeedSlider` and `WeatherSearch` own their control styles.
+`WallpaperSwatch`, `SettingsSlider` and `WeatherSearch` own their control styles.
 `SettingsHint` supplies section status/help text. Each section owns its collection
 layout, while About applies local classes directly to paragraphs, facts and notes.
 

@@ -43,6 +43,7 @@
   margin: 0 20px;
   height: 22px;
   border-radius: 11px;
+  background: var(--settings-slider-track);
 }
 
 .thumb {
@@ -62,4 +63,21 @@
   --slider-label-size: 25px;
 
   padding: 12px 18px;
+}
+
+.hint {
+  margin-top: 6px;
+  color: var(--settings-muted);
+  font-size: 20px;
+  text-align: end;
+}
+
+.control[data-adjusting="true"] {
+  .thumb {
+    transform: scale(1.15);
+  }
+
+  .hint {
+    visibility: hidden;
+  }
 }

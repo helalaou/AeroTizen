@@ -31,7 +31,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `SelectionIndicator`                                                 | Decorative selected-choice check with a consistent contrast badge               | Parent control owns selection and `aria-pressed`                             |
 | `SettingsControl`                                                    | Register a Settings control and render focus/activation                         | Settings navigation context                                                  |
 | `SettingsAppCard`                                                    | Common app-choice frame, focus, selection and disabled states                   | Explicit favourite/source variant and control props                          |
-| `WallpaperSwatch`, `SpeedSlider`, `WeatherSearch`                    | Wallpaper preview choices, speed adjustment and location input                  | Explicit values, state and callbacks; no platform requests                   |
+| `WallpaperSwatch`, `SettingsSlider`, `WeatherSearch`                 | Wallpaper choices, numeric sliders and location input                           | Explicit values, state and callbacks; no platform requests                   |
 | `SettingsHint`                                                       | Shared Settings help and status copy                                            | Text, semantic attributes and optional spacing override                      |
 
 Styled components use a component-named directory, such as
@@ -113,10 +113,13 @@ Other directions and Back bubble to the picker. The Settings drawer retains its 
 selection and resumes focus when the modal leaves; it has no picker key rules or
 picker focus-key table. Pointer controls use the same actions as remote controls.
 
-The background speed slider owns its edit state and a child input scope while editing.
-Left/Right apply fixed speed steps. Confirm and Back end editing; other keys return
-to drawer navigation. Losing focus, hiding the slider or cancelling input ends editing.
-The Settings view store and drawer navigation have no speed-specific input rules.
+`SettingsSlider` owns the shared slider markup, styles, pointer arrows and scoped input.
+The colour picker supplies its labels, ranges, track colours and adjustment actions;
+it enables adjustment on focus and held-key acceleration. Background speed supplies
+its range and speed action; it uses Confirm to enter editing and fixed steps so
+Left/Right can otherwise reach Preview. Confirm and Back end editing; other keys
+return to drawer navigation. Focus loss, hiding or input cancellation clears edit
+state and acceleration. The Settings view store and drawer have no slider key rules.
 
 ## Diagnostics ownership
 
