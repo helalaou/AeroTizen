@@ -1,20 +1,24 @@
-import { CirclePlus } from "lucide-preact";
-
-import { useTranslation } from "../../../../shared/i18n/useTranslation";
-import { Icon } from "../../../../shared/icons/Icon/Icon";
-import { SettingsAppCard } from "../SettingsAppCard/SettingsAppCard";
-
-import styles from "./AppStoreOption.module.css";
+import { StoreCard } from "../../../../shared/components/StoreCard/StoreCard";
+import { SettingsControl } from "../../../components/SettingsControl/SettingsControl";
 
 export const AppStoreOption = ({ onSelect }: { onSelect(): void }) => {
-  const { t } = useTranslation();
   return (
-    <SettingsAppCard class={styles.store} focusKey="add" onClick={onSelect}>
-      <Icon icon={CirclePlus} class={styles.icon} />
-      <div class={styles.label}>
-        {t("apps.add")}
-        <div class={styles.subtitle}>{t("apps.store")}</div>
-      </div>
-    </SettingsAppCard>
+    <StoreCard
+      size="small"
+      renderControl={({ className, label, children }) => (
+        <SettingsControl
+          class={className}
+          focusKey="add"
+          onClick={onSelect}
+          role="button"
+          aria-label={label}
+          title={label}
+          data-settings-card="store"
+          data-settings-focus-owner="control"
+        >
+          {children}
+        </SettingsControl>
+      )}
+    />
   );
 };

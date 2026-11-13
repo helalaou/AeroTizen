@@ -41,7 +41,7 @@ const PANE_TITLE = "[data-settings-title]";
 const SECTION_TITLE = '[data-settings-heading="section"] [data-settings-heading-title]';
 const SELECTED_CHOICE = '[data-key^="settings-appearance:"][aria-pressed="true"]';
 const CATEGORY_ICON = '[data-key="section:about"] > span';
-const STORE_LABEL = '[data-key="add"] > div';
+const STORE_LABEL = '[data-key="add"] [data-app-store-part="label"]';
 
 const HOME_VARIABLES = [
   ["--home-card-radius", "56px", TILE, RADIUS, "10px", "56px"],
@@ -198,8 +198,15 @@ const SETTINGS_VARIABLES = [
 ];
 
 const APPS_PANE_VARIABLES = [
-  ["--settings-store-label-shadow", "none", STORE_LABEL, "text-shadow", "rgba(0, 0, 0, 0.35) 0px 2px 8px", "none"],
-  ["--settings-store-subtitle-text", THEME_COLOUR, `${STORE_LABEL} > div`, "color", "rgb(184, 184, 192)", THEME_COLOUR],
+  ["--home-card-radius", "32px", '[data-key="add"]', RADIUS, "10px", "32px"],
+  [
+    "--muted",
+    THEME_COLOUR,
+    '[data-key="add"] [data-app-store-part="subtitle"]',
+    "color",
+    "rgb(184, 184, 192)",
+    THEME_COLOUR,
+  ],
 ];
 
 const computed = (page, target, property, pseudo = null) =>

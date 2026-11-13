@@ -17,6 +17,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `InputDock`, `InputCard`                                             | Input collection and one input's label, artwork and connection state            | Existing input service capabilities and commands                             |
 | `shared/components/AppFallback`                                      | Shared app-name placeholder for Home and Settings                               | App presentation, image lifetime and visibility                              |
 | `shared/components/AppArtworkContent`                                | Shared full-size artwork and compact package-icon/name layout                   | Image request lifetime and app identity lookup                               |
+| `shared/components/StoreCard`                                        | Shared store frame, focus ring, icon, labels and size variants                  | Translation state; each screen supplies its navigation control and command   |
 | `AppActionsMenu`, `ReorderControls`                                  | App actions and move/drop controls                                              | Home controller actions; menu positioning is rendered from state             |
 | `status/Clock`                                                       | One time/date view with compact, vertical, horizontal, minimal and bold layouts | Shared time snapshot and formatter; no timer                                 |
 | `WeatherStatus`, `NetworkStatus`                                     | Render status data                                                              | Shared snapshots; no requests or DOM scraping                                |
@@ -47,7 +48,11 @@ gradient dialogs use the same description style and link their instructions with
 `aria-describedby`. `SettingsSection` supplies section spacing and content.
 
 `HomeAppCard` owns the shared app/Fireplace frame, focus and moving state.
-`AppCard` and `FireplaceCard` supply app-specific content and paint.
+`AppCard` and `FireplaceCard` supply their content.
+`StoreCard` owns the complete store appearance: surface, corners, focus ring,
+icon, translated labels and spacing. Its large and small variants set dimensions
+for All apps and Settings. `AppStoreCard` and `AppStoreOption` supply their screen's
+navigation control through `renderControl`; they do not add card styles.
 
 `HomeControl` and `SettingsControl` remain separate because they use different
 navigation contracts. Neither starts platform services. Shared navigation, hooks and
@@ -430,6 +435,7 @@ keys and values also remain compatible.
 | `home/components/AppGrid/AppGrid.module.css`                                                     | App sizes, columns and clock clearance                                        |
 | `home/components/HomeAppCard/HomeAppCard.module.css`                                             | Shared app/Fireplace frame and focus/moving states                            |
 | `shared/components/AppArtworkContent/AppArtworkContent.module.css`                               | Shared image geometry and compact package-icon layout                         |
+| `shared/components/StoreCard/StoreCard.module.css`                                               | Shared store surface, corners, focus ring, icon, labels and size variants      |
 | `home/components/FireplaceCard/FireplaceCard.module.css`                                         | Fireplace card artwork                                                        |
 | `home/components/HomeControl/HomeControl.module.css`                                             | Home control focus reset                                                      |
 | `home/components/HomeSectionHeading/HomeSectionHeading.module.css`                               | Shared Home section headings                                                  |

@@ -60,6 +60,59 @@ test("Home columns never change standard Settings icons or artwork nodes", async
 });
 
 for (const theme of ["classic", "glass"]) {
+  test(`${theme} Add apps shares its appearance between All apps and Settings`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+    await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+    await page.addInitScript((theme) => {
+      localStorage.setItem(
+        "aerotizen.settings.v1",
+        JSON.stringify({ theme, language: "en", home: ["demo0"], background: "black", showWeather: false }),
+      );
+    }, theme);
+    await page.goto("/");
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
+    const appearance = (card) =>
+      card.evaluate((node) => {
+        const read = (element, properties, pseudo = null) => {
+          const style = getComputedStyle(element, pseudo);
+          return Object.fromEntries(properties.map((property) => [property, style.getPropertyValue(property)]));
+        };
+        return {
+          frame: read(node, ["background", "border-radius", "border-width", "border-style", "box-shadow", "transform"]),
+          ring: read(node, ["border-radius", "box-shadow", "opacity"], "::after"),
+          parts: Array.from(node.querySelectorAll("[data-app-store-part]"), (part) =>
+            read(part, ["color", "font-family", "font-weight", "text-align", "text-shadow", "letter-spacing"]),
+          ),
+        };
+      });
+    await page.locator("#apps-tab").click();
+    const large = page.locator("#grid").getByRole("button", { name: "Add apps", exact: true });
+    const largeUnfocused = await appearance(large);
+    expect(largeUnfocused.ring.opacity).toBe("0");
+    await page.keyboard.press("ArrowDown");
+    await expect(large).toBeFocused();
+    await expect.poll(async () => (await appearance(large)).ring.opacity).toBe("1");
+    const largeFocused = await appearance(large);
+    const largeBounds = await large.boundingBox();
+
+    await page.locator("#gear").click();
+    await page.locator('[data-key="section:apps"]').click();
+    const small = page.locator('#all-apps [data-key="add"]');
+    await expect(small).toBeFocused();
+    await expect.poll(() => appearance(small)).toEqual(largeFocused);
+    const focusPlate = page.locator('[data-settings-focus="content"]');
+    await expect(focusPlate).not.toHaveAttribute("data-visible", "true");
+    const smallBounds = await small.boundingBox();
+    expect(smallBounds.width).toBe(smallBounds.height);
+    expect(largeBounds.width).toBe(largeBounds.height);
+    expect(largeBounds.width).toBeGreaterThan(smallBounds.width);
+    await page.keyboard.press("ArrowRight");
+    await expect(small).not.toBeFocused();
+    await expect.poll(() => appearance(small)).toEqual(largeUnfocused);
+    await expect(focusPlate).toHaveAttribute("data-visible", "true");
+  });
+
   test(`${theme} Settings cards retain styles without the editor ID`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
@@ -112,7 +165,7 @@ for (const language of Object.keys(catalogues)) {
     const card = await openAddAppsCard(page, language);
     const overflow = await card.evaluate((node) => {
       const frame = node.getBoundingClientRect();
-      const parts = Array.from(node.children, (part) => part.getBoundingClientRect());
+      const parts = Array.from(node.querySelectorAll("[data-app-store-part]"), (part) => part.getBoundingClientRect());
       return {
         above: frame.top - Math.min(...parts.map((part) => part.top)),
         below: Math.max(...parts.map((part) => part.bottom)) - frame.bottom,

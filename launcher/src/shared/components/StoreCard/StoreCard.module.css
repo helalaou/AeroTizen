@@ -1,0 +1,78 @@
+.card {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: var(--store-card-size);
+  height: var(--store-card-size);
+  padding: var(--store-card-padding);
+  border: 0;
+  border-radius: var(--home-card-radius, 10px);
+  overflow: hidden;
+  background: var(--app-placeholder-surface);
+  color: var(--control-text);
+  font-family: var(--font-ui, SamsungOne, Roboto, Arial, sans-serif);
+  line-height: 1.2;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 3px var(--focus);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--motion-duration-feedback) linear;
+  }
+
+  &[data-focused="true"]::after {
+    opacity: 1;
+  }
+}
+
+.large {
+  --store-card-size: var(--app-card-size);
+  --store-card-padding: calc(var(--store-card-size) * 0.07);
+  --store-icon-size: calc(var(--store-card-size) * 0.24);
+  --store-icon-gap: calc(var(--store-card-size) * 0.06);
+  --store-label-size: calc(var(--store-card-size) * 0.08);
+  --store-subtitle-size: calc(var(--store-card-size) * 0.055);
+  --store-subtitle-gap: calc(var(--store-card-size) * 0.025);
+}
+
+.small {
+  --store-card-size: 160px;
+  --store-card-padding: 12px;
+  --store-icon-size: 76px;
+  --store-icon-gap: 8px;
+  --store-label-size: 19px;
+  --store-subtitle-size: 13px;
+  --store-subtitle-gap: 4px;
+}
+
+.icon {
+  width: var(--store-icon-size);
+  height: var(--store-icon-size);
+  flex: 0 1 var(--store-icon-size);
+  margin-bottom: var(--store-icon-gap);
+}
+
+.label {
+  max-width: 100%;
+  color: var(--control-text);
+  font-size: var(--store-label-size);
+  font-weight: 600;
+  text-align: center;
+}
+
+.subtitle {
+  margin-top: var(--store-subtitle-gap);
+  color: var(--muted);
+  font-size: var(--store-subtitle-size);
+  font-weight: 400;
+}
