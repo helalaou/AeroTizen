@@ -79,3 +79,15 @@
     color: var(--settings-text);
   }
 }
+
+.check {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.checkStatus {
+  --settings-hint-margin: 0;
+}
