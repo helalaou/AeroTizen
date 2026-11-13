@@ -139,8 +139,7 @@ The card exposes `data-input-card`, `data-status`, `data-disconnected`, `data-va
 and `data-input-part` hooks. Classic and Glass keep their existing layouts.
 Theme tokens own neutral input paint; connection-status palettes keep local
 defaults through optional named variable fallbacks. Both labels reuse the shared
-truncate utility where their layout needs it. Preserve margin-based dock spacing
-for Chromium 69, which does not support flex gaps.
+truncate utility where their layout needs it.
 
 `Home` owns the viewport, fades, page reveals and section spacing. The inputs
 section exposes `data-home-section="inputs"` as a layout slot. Tests use
@@ -256,7 +255,13 @@ runs both ESLint and Stylelint; CI uses that command with zero warnings allowed.
 Module rules also reject ID selectors and nesting deeper than two levels.
 
 Keep CSS compatible with Chromium 69. Use `top`, `right`, `bottom` and `left`
-instead of the `inset` property; Stylelint rejects the latter. A build's JavaScript
+instead of the `inset` property; Stylelint rejects the latter. Chromium 69 ignores
+`gap` on flex containers; grid gaps work. Space flex children with margins: in a
+row, `margin-inline-start` on each child after the first, so right-to-left layouts
+follow, and in a column, `margin-top`. Use `:not([hidden])` when a child can be
+hidden. In a wrapping row, give every child both margins, give the container the
+same negative margins on its top and inline start, and add the gap to a `100%`
+width. A collection of fixed-size cards can use a grid instead. A build's JavaScript
 syntax check does not establish CSS or TV compatibility. Animate transforms and
 opacity, preserve the reduced-motion rules, and test remote focus after changes.
 

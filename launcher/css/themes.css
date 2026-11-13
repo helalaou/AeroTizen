@@ -35,7 +35,6 @@ body {
   --header-tab-shadow: none;
   --header-tab-text: var(--muted);
   --header-tab-isolation: auto;
-  --header-tab-gap: normal;
   --clock-text: #f3f7ff;
   --clock-shadow: 0 3px 16px rgba(0, 0, 0, 0.6);
   --clock-minimal-text: rgba(248, 251, 255, 0.93);
@@ -173,7 +172,6 @@ body.glass-ui {
   --header-tab-shadow: inset 0 1px rgba(255, 255, 255, 0.24), 0 13px 32px rgba(0, 0, 0, 0.27);
   --header-tab-text: rgba(234, 239, 247, 0.78);
   --header-tab-isolation: isolate;
-  --header-tab-gap: 12px;
   --header-focus-surface: rgba(236, 242, 255, 0.16);
   --header-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.2);
   --header-gear-border: 2px;

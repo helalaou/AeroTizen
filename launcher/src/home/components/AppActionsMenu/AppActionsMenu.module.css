@@ -59,7 +59,6 @@
   min-height: 60px;
   width: 100%;
   box-sizing: border-box;
-  gap: 12px;
   padding: 9px 16px;
   border: 0;
   border-radius: 17px;
@@ -73,6 +72,10 @@
 
   & + & {
     margin-top: 4px;
+  }
+
+  > * + * {
+    margin-inline-start: 12px;
   }
 
   &[aria-selected="true"] {

@@ -5,13 +5,14 @@
   text-shadow: var(--header-status-shadow, none);
   display: flex;
   align-items: center;
-  gap: 28px;
   margin-left: var(--header-status-margin);
+
+  > :not([hidden]) ~ :not([hidden]) {
+    margin-inline-start: 28px;
+  }
 
   &[data-expanded="true"] {
     --header-status-margin: auto;
-
-    gap: 0;
   }
 
   [dir="rtl"] & {

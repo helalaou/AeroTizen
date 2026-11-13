@@ -116,7 +116,6 @@
   color: var(--header-tab-text);
   cursor: pointer;
   transition: color var(--motion-duration-focus) ease-out;
-  gap: var(--header-tab-gap);
   outline: none;
   &:last-child {
     min-width: 205px;

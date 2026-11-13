@@ -13,7 +13,6 @@
   width: var(--app-card-size);
   height: var(--app-card-size);
   border-radius: var(--home-card-radius, 10px);
-  gap: var(--home-app-gap, 22px);
   background: var(--app-background, var(--app-placeholder-surface));
   box-shadow: var(--home-card-shadow, none);
 
@@ -59,7 +58,6 @@
   height: 160px;
   border-radius: var(--control-radius);
   flex-direction: var(--settings-card-direction, row);
-  gap: var(--settings-card-gap, 22px);
   padding: var(--settings-card-padding, 0px);
   background: var(--settings-card-surface, var(--app-placeholder-surface));
   box-shadow: var(--settings-card-shadow, none);
