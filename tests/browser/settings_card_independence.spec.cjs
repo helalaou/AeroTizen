@@ -1,4 +1,25 @@
 const { test, expect } = require("./launcher_fixture.cjs");
+const path = require("node:path");
+
+const { loadTypeScript } = require("../helpers/load_typescript.cjs");
+const { catalogues } = loadTypeScript(path.join(__dirname, "../../launcher/src/shared/i18n/catalogues.ts"));
+
+const openAddAppsCard = async (page, language) => {
+  await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+  await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
+  await page.addInitScript((language) => {
+    localStorage.setItem(
+      "aerotizen.settings.v1",
+      JSON.stringify({ language, home: ["demo0"], background: "black", showWeather: false }),
+    );
+  }, language);
+  await page.goto("/");
+  await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
+  await page.locator("#gear").click();
+  await page.locator('[data-key="section:apps"]').click();
+  return page.locator('#all-apps [data-key="add"]');
+};
+
 test("Home columns never change standard Settings icons or artwork nodes", async ({ page }) => {
   await page.route("https://**/*", (r) => r.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (r) => r.fulfill({ body: "{}" }));
@@ -85,3 +106,24 @@ for (const theme of ["classic", "glass"]) {
     await expect(app).toHaveAttribute("aria-pressed", "false");
   });
 }
+
+for (const language of Object.keys(catalogues)) {
+  test(`the add-apps card holds its icon, name and store line in ${language}`, async ({ page }) => {
+    const card = await openAddAppsCard(page, language);
+    const overflow = await card.evaluate((node) => {
+      const frame = node.getBoundingClientRect();
+      const parts = Array.from(node.children, (part) => part.getBoundingClientRect());
+      return {
+        above: frame.top - Math.min(...parts.map((part) => part.top)),
+        below: Math.max(...parts.map((part) => part.bottom)) - frame.bottom,
+      };
+    });
+    expect(overflow.above).toBeLessThan(1);
+    expect(overflow.below).toBeLessThan(1);
+  });
+}
+
+test("the add-apps icon keeps its size when the text fits", async ({ page }) => {
+  const card = await openAddAppsCard(page, "en");
+  await expect(card.locator("svg")).toHaveCSS("height", "76px");
+});
