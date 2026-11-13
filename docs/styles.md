@@ -176,7 +176,7 @@ corners, focus ring, icon, labels and spacing. Large and small variants change
 dimensions; paint and typography rules are shared. The screen wrappers supply
 `HomeControl` or `SettingsControl` through `renderControl` for navigation and activation.
 
-`WallpaperSwatch`, `SettingsSlider` and `WeatherSearch` own their control styles.
+`WallpaperSwatch`, `SettingsSlider` and `SettingsTextInput` own their control styles.
 `SettingsHint` supplies section status/help text. Each section owns its collection
 layout, while About applies local classes directly to paragraphs, facts and notes.
 

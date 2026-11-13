@@ -5,6 +5,7 @@ export type InputResult = "handled" | "native" | "unhandled";
 
 export interface NativeKeyEvent {
   readonly isComposing?: boolean;
+  readonly key?: string;
   preventDefault(): void;
   readonly repeat?: boolean;
 }
