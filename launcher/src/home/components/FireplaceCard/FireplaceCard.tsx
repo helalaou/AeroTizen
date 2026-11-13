@@ -11,14 +11,7 @@ export const FireplaceCard = memo(({ env, registered }: { env: HomeEnvironment; 
   const { t } = useTranslation();
   const id = env.runtime.config.FIREPLACE_ID;
   return (
-    <HomeAppCard
-      env={env}
-      id={id}
-      controlKey={"app:" + id}
-      registered={registered}
-      className={styles.card}
-      title={t("common.fireplace")}
-    >
+    <HomeAppCard env={env} id={id} registered={registered} className={styles.card} title={t("common.fireplace")}>
       <FlameIcon class={styles.flame} />
     </HomeAppCard>
   );
