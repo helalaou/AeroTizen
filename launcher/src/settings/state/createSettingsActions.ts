@@ -23,7 +23,6 @@ export const createSettingsActions = (
       transaction(() =>
         view.set({
           ...view.getSnapshot(),
-          adjusting: false,
           colourPicker: { kind: "solid", colour: colourToChannels(hex) },
         }),
       );
@@ -33,7 +32,6 @@ export const createSettingsActions = (
       transaction(() =>
         view.set({
           ...view.getSnapshot(),
-          adjusting: false,
           colourPicker: {
             kind: "gradient",
             colours: [colourToChannels(gradient.start), colourToChannels(gradient.end)],

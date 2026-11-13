@@ -113,6 +113,11 @@ Other directions and Back bubble to the picker. The Settings drawer retains its 
 selection and resumes focus when the modal leaves; it has no picker key rules or
 picker focus-key table. Pointer controls use the same actions as remote controls.
 
+The background speed slider owns its edit state and a child input scope while editing.
+Left/Right apply fixed speed steps. Confirm and Back end editing; other keys return
+to drawer navigation. Losing focus, hiding the slider or cancelling input ends editing.
+The Settings view store and drawer navigation have no speed-specific input rules.
+
 ## Diagnostics ownership
 
 `buildInfo.ts` supplies the typed local-preview placeholder at `js/build-info.js`.

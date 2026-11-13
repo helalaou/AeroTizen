@@ -26,7 +26,6 @@ export const useSettingsNavigation = (
     navigation,
     bridge,
     services,
-    actions,
     settings,
     view,
     root,
@@ -159,28 +158,9 @@ export const useSettingsNavigation = (
           current &&
           (atSidebarEdge(current.getBoundingClientRect()) ||
             (current.dataset.key === "settings-close" && !navigation.firstKey(panes.get(currentDrawer.category))));
-        if ((code === K.BACK || code === K.ESC || leavesPane) && !view.getSnapshot().adjusting) {
+        if (code === K.BACK || code === K.ESC || leavesPane) {
           event.preventDefault();
           flushSync(() => drawer.set({ ...currentDrawer, expanded: false }));
-          return;
-        }
-        if (view.getSnapshot().adjusting) {
-          const setAdjusting = (adjusting: boolean) => flushSync(() => view.set({ ...view.getSnapshot(), adjusting }));
-          if (current?.dataset.key === "speed" && (code === K.LEFT || code === K.RIGHT)) {
-            event.preventDefault();
-            actions.setSpeed(code === K.LEFT ? -1 : 1);
-            return;
-          }
-          setAdjusting(false);
-          // OK and Back only leave the slider; Up and Down leave it and move on.
-          if (code === K.ENTER || code === K.BACK || code === K.ESC) {
-            event.preventDefault();
-            return;
-          }
-        }
-        if (code === K.BACK || code === K.ESC) {
-          event.preventDefault();
-          bridge.close();
           return;
         }
         if (code === K.ENTER || (code === SPACE_KEY && current?.getAttribute("role") === "button")) {
@@ -200,5 +180,5 @@ export const useSettingsNavigation = (
       window.removeEventListener("resize", resize);
       navigation.clear();
     };
-  }, [active, actions, bridge, navigation, root, services, view, drawer, categoryContent, directions, panes]);
+  }, [active, bridge, navigation, root, services, view, drawer, categoryContent, directions, panes]);
 };

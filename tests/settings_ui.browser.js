@@ -391,8 +391,11 @@ const runSettingsUi = async (page, { screenshotPath }) => {
     await new Promise((resolve) => requestAnimationFrame(resolve));
     find("bg:aurora").click();
     find("speed").focus();
-    A.settingsUi.keydown(A.config.KEY.ENTER, { preventDefault() {} });
-    A.settingsUi.keydown(A.config.KEY.RIGHT, { preventDefault() {} });
+    for (const code of [A.config.KEY.ENTER, A.config.KEY.RIGHT]) {
+      for (const type of ["keydown", "keyup"]) {
+        document.dispatchEvent(new KeyboardEvent(type, { keyCode: code, bubbles: true, cancelable: true }));
+      }
+    }
     if (A.settings.getSnapshot().speed !== original + A.config.SPEED.STEP)
       throw new Error(
         "Repeated-open slider: " +

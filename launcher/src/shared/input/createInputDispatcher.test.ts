@@ -207,3 +207,17 @@ test("nested activation cancels the parent immediately and removal releases the 
   expect(unsubscribe).toHaveBeenCalledOnce();
   input.dispose();
 });
+
+test("idle cancellation releases the active owner, once even with several held keys", () => {
+  const cancel = vi.fn();
+  const root = createInputScope();
+  root.registerChild(createInputScope({ onCancel: cancel }));
+  const input = createInputDispatcher(KEY, [root]);
+  input.cancel();
+  expect(cancel).toHaveBeenCalledOnce();
+  cancel.mockClear();
+  input.keydown(KEY.LEFT, nativeEvent());
+  input.keydown(KEY.RIGHT, nativeEvent());
+  input.cancel();
+  expect(cancel).toHaveBeenCalledOnce();
+});

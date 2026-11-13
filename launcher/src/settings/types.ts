@@ -98,9 +98,7 @@ export interface SettingsActions {
   toggleContinueApp(id: string): void;
   useSamsungHome(): void;
 }
-// adjusting: OK was pressed on the speed slider, so Left/Right change the speed instead of moving focus.
 export interface ViewState {
-  readonly adjusting: boolean;
   readonly colourPicker: ColourPickerDraft | null;
   readonly mounted: boolean;
   readonly open: boolean;

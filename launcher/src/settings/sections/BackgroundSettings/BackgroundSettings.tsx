@@ -62,12 +62,9 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
   useLayoutEffect(() => {
     navigation.invalidate();
   }, [navigation, webGL]);
-  const { adjusting } = useStore(view);
+  const { open, previewing, colourPicker } = useStore(view);
   const [filter, setFilter] = useState(() => getInitialCategory(settings, selected));
   const show = (category: string) => filter === category;
-  // OK toggles adjusting, so Left/Right can still reach Preview from the slider.
-  const toggleAdjusting = () =>
-    flushSync(() => view.set({ ...view.getSnapshot(), adjusting: !view.getSnapshot().adjusting }));
 
   const swatches = (isAnimated: boolean) => {
     return list
@@ -139,11 +136,13 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
           {animated ? (
             <>
               <SpeedSlider
+                active={
+                  open && !previewing && !colourPicker && category === "wallpaper" && expanded && show("animated")
+                }
                 value={settings.speed}
                 min={config.SPEED.MIN}
                 max={config.SPEED.MAX}
-                adjusting={adjusting}
-                onSelect={toggleAdjusting}
+                onAdjust={actions.setSpeed}
               />
               <ChoiceOption id="preview" onSelect={actions.preview} inline>
                 <Icon icon={Play} />

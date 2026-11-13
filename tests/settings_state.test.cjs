@@ -62,7 +62,6 @@ const harness = () => {
     previewing: false,
     mounted: false,
     openedAt: 0,
-    adjusting: false,
     colourPicker: null,
   });
   const transaction = (action) => action();
@@ -185,7 +184,6 @@ test("key-router bridge delegates to current handlers and releases them on clean
     open: true,
     previewing: false,
     mounted: true,
-    adjusting: false,
     colourPicker: null,
     openedAt: 1000,
   });
@@ -221,7 +219,6 @@ test("key-router bridge delegates to current handlers and releases them on clean
     open: false,
     previewing: false,
     mounted: true,
-    adjusting: false,
     colourPicker: null,
     openedAt: 1000,
   });
