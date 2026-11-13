@@ -18,24 +18,11 @@ const SPACE_KEY = 32;
 
 export const useSettingsNavigation = (
   active: boolean,
-  previewing: boolean,
   { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel }: Layout,
 ) => {
   const { language } = useTranslation();
-  const {
-    navigation,
-    bridge,
-    services,
-    actions,
-    settings,
-    view,
-    root,
-    drawer,
-    categoryMenu,
-    categoryContent,
-    categoryScroll,
-    panes,
-  } = useSettingsEnvironment();
+  const { navigation, bridge, services, settings, root, drawer, categoryMenu, categoryContent, categoryScroll, panes } =
+    useSettingsEnvironment();
   const directions = useMemo<Partial<Record<number, Direction>>>(() => {
     const { KEY } = services.config;
     return { [KEY.LEFT]: "left", [KEY.RIGHT]: "right", [KEY.UP]: "up", [KEY.DOWN]: "down" };
@@ -60,7 +47,7 @@ export const useSettingsNavigation = (
       navigation.reset(key);
     }
     previousDrawer.current = active ? category : undefined;
-    if (active && !previewing) {
+    if (active) {
       if (bridge.inputScope.getPath().length === 1) {
         navigation.focus();
       }
@@ -69,7 +56,6 @@ export const useSettingsNavigation = (
     }
   }, [
     active,
-    previewing,
     apps,
     inputs,
     continueSources,
@@ -96,7 +82,7 @@ export const useSettingsNavigation = (
     }
     const resize = () => {
       navigation.invalidate();
-      if (!view.getSnapshot().previewing && bridge.inputScope.getPath().length === 1) {
+      if (bridge.inputScope.getPath().length === 1) {
         flushSync(() => navigation.focus());
       }
     };
@@ -118,11 +104,6 @@ export const useSettingsNavigation = (
         const K = services.config.KEY;
         // Remote input and native focus can arrive before the next render.
         const currentDrawer = drawer.getSnapshot();
-        if (view.getSnapshot().previewing) {
-          event.preventDefault();
-          flushSync(() => view.set({ ...view.getSnapshot(), previewing: false }));
-          return;
-        }
         const current = navigation.current();
         // The sidebar sits on the right in right-to-left languages, so the keys that
         // open a section and return to the sidebar swap sides with it.
@@ -159,28 +140,9 @@ export const useSettingsNavigation = (
           current &&
           (atSidebarEdge(current.getBoundingClientRect()) ||
             (current.dataset.key === "settings-close" && !navigation.firstKey(panes.get(currentDrawer.category))));
-        if ((code === K.BACK || code === K.ESC || leavesPane) && !view.getSnapshot().adjusting) {
+        if (code === K.BACK || code === K.ESC || leavesPane) {
           event.preventDefault();
           flushSync(() => drawer.set({ ...currentDrawer, expanded: false }));
-          return;
-        }
-        if (view.getSnapshot().adjusting) {
-          const setAdjusting = (adjusting: boolean) => flushSync(() => view.set({ ...view.getSnapshot(), adjusting }));
-          if (current?.dataset.key === "speed" && (code === K.LEFT || code === K.RIGHT)) {
-            event.preventDefault();
-            actions.setSpeed(code === K.LEFT ? -1 : 1);
-            return;
-          }
-          setAdjusting(false);
-          // OK and Back only leave the slider; Up and Down leave it and move on.
-          if (code === K.ENTER || code === K.BACK || code === K.ESC) {
-            event.preventDefault();
-            return;
-          }
-        }
-        if (code === K.BACK || code === K.ESC) {
-          event.preventDefault();
-          bridge.close();
           return;
         }
         if (code === K.ENTER || (code === SPACE_KEY && current?.getAttribute("role") === "button")) {
@@ -200,5 +162,5 @@ export const useSettingsNavigation = (
       window.removeEventListener("resize", resize);
       navigation.clear();
     };
-  }, [active, actions, bridge, navigation, root, services, view, drawer, categoryContent, directions, panes]);
+  }, [active, bridge, navigation, root, services, drawer, categoryContent, directions, panes]);
 };

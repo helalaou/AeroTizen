@@ -7,9 +7,5 @@
 }
 
 .speedRow {
-  display: flex;
-  align-items: center;
   margin: -14px 0 40px;
-  gap: 12px;
-  flex-wrap: wrap;
 }

@@ -71,12 +71,18 @@ export const createInputDispatcher = (keys: LauncherConfig["KEY"], roots: readon
   const subscriptions = roots.map((scope) => scope.subscribe(synchronize));
   const cancel = () => {
     const pending = [...presses.values()];
+    const path = currentPath();
+    const scopes = new Set(path.slice(-1));
     presses.clear();
     for (const press of pending) {
       if (!press.cancelled) {
-        press.path[press.path.length - 1]?.cancel();
+        const owner = press.path[press.path.length - 1];
+        if (owner) {
+          scopes.add(owner);
+        }
       }
     }
+    scopes.forEach((scope) => scope.cancel());
   };
   return {
     keydown(code: number, nativeEvent: NativeKeyEvent) {

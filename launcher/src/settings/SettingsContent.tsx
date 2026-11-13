@@ -16,15 +16,7 @@ import { InputSettings } from "./sections/inputs/InputSettings";
 import { LanguageSettings } from "./sections/LanguageSettings";
 import { WeatherSettings } from "./sections/weather/WeatherSettings/WeatherSettings";
 
-export const SettingsContent = ({
-  active,
-  previewing,
-  openedAt,
-}: {
-  active: boolean;
-  previewing: boolean;
-  openedAt: number;
-}) => {
+export const SettingsContent = ({ active, openedAt }: { active: boolean; openedAt: number }) => {
   const { settings: store, inventory, services, actions, view } = useSettingsEnvironment();
   const { colourPicker } = useStore(view);
   const settings = useStore(store);
@@ -37,7 +29,7 @@ export const SettingsContent = ({
       (!background.requiresWebGL || webGL !== false),
   );
   const locationLabel = settings.weatherLocation?.label || settings.weatherLocation?.name;
-  useSettingsNavigation(active, previewing, {
+  useSettingsNavigation(active, {
     apps,
     inputs,
     continueSources,
@@ -91,7 +83,7 @@ export const SettingsContent = ({
             weather: <WeatherSettings settings={settings} actions={actions} active={active} />,
             sources: <InputSettings settings={settings} actions={actions} inputs={inputs} />,
             language: <LanguageSettings language={settings.language} />,
-            about: <AboutSettings active={active && !previewing} />,
+            about: <AboutSettings active={active} />,
           }}
         />
       </div>

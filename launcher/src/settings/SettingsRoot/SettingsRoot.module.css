@@ -13,8 +13,4 @@
   &[data-colour-picker-open="true"] {
     background: transparent;
   }
-
-  &[data-previewing="true"] {
-    visibility: hidden;
-  }
 }

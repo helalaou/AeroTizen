@@ -199,8 +199,9 @@ test("window blur cancels a pending press and disposal removes the blur listener
   expect(h.home.cancelInput).toHaveBeenCalledOnce();
   expect(h.home.keyup).not.toHaveBeenCalled();
   h.dispose();
+  h.home.cancelInput.mockClear();
   window.dispatchEvent(new Event("blur"));
-  expect(h.home.cancelInput).toHaveBeenCalledOnce();
+  expect(h.home.cancelInput).not.toHaveBeenCalled();
 });
 
 test("hidden visibility cancels input without a later Home activation", ({ onTestFinished }) => {

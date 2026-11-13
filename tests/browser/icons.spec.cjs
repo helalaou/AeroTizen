@@ -2,7 +2,7 @@ const { test, expect } = require("./launcher_fixture.cjs");
 const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
 
 for (const theme of ["classic", "glass"]) {
-  test(`${theme} weather, selection badges and preview icons use the theme styles`, async ({ page }) => {
+  test(`${theme} weather, selection badges and slider arrows use the theme styles`, async ({ page }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     let weatherCode = 3;
@@ -72,21 +72,27 @@ for (const theme of ["classic", "glass"]) {
     await openCategory(page, "wallpaper");
     await page.locator('[data-key="wallpaper-categories:animated"]').click();
     await page.locator('[data-key="bg:aurora"]').click();
-    const preview = page.getByRole("button", { name: "Preview", exact: true });
-    const play = preview.locator(".lucide-play");
-    await expect(play).toHaveAttribute("aria-hidden", "true");
-    const layout = await play.evaluate((icon) => {
-      const label = document.createRange();
-      label.selectNode(icon.nextSibling);
-      const iconBox = icon.getBoundingClientRect();
-      const labelBox = label.getBoundingClientRect();
-      return {
-        gap: labelBox.left - iconBox.right,
-        centerOffset: Math.abs(labelBox.top + labelBox.height / 2 - (iconBox.top + iconBox.height / 2)),
-      };
-    });
-    expect(layout.gap).toBeGreaterThan(0);
-    expect(layout.centerOffset).toBeLessThanOrEqual(1);
+    const speed = page.getByRole("slider", { name: "Background speed" });
+    for (const [name, glyph] of [
+      ["Decrease Background speed", ".lucide-chevron-left"],
+      ["Increase Background speed", ".lucide-chevron-right"],
+    ]) {
+      const button = speed.getByRole("button", { name, exact: true });
+      const icon = button.locator(glyph);
+      await expect(icon).toHaveAttribute("aria-hidden", "true");
+      await expect(icon).toHaveAttribute("focusable", "false");
+      await expect(icon).toHaveCSS("stroke", await button.evaluate((node) => getComputedStyle(node).color));
+      const layout = await icon.evaluate((node) => {
+        const iconBox = node.getBoundingClientRect();
+        const buttonBox = node.parentElement.getBoundingClientRect();
+        return {
+          horizontalOffset: Math.abs(iconBox.left + iconBox.width / 2 - (buttonBox.left + buttonBox.width / 2)),
+          verticalOffset: Math.abs(iconBox.top + iconBox.height / 2 - (buttonBox.top + buttonBox.height / 2)),
+        };
+      });
+      expect(layout.horizontalOffset).toBeLessThanOrEqual(1);
+      expect(layout.verticalOffset).toBeLessThanOrEqual(1);
+    }
     await closeSettings(page);
     await expect(page.locator("#grid > [data-id]")).toHaveCount(1);
     await expect(page.locator("vite-error-overlay")).toHaveCount(0);
