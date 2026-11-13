@@ -38,6 +38,7 @@ const SETTINGS_SIDEBAR = '[data-settings-drawer="sidebar"]';
 const SETTINGS_SCROLL = '[data-settings-drawer="scroll"]';
 const SIDEBAR_TITLE = `${SETTINGS_SIDEBAR} h2`;
 const PANE_TITLE = "[data-settings-title]";
+const SECTION_TITLE = '[data-settings-heading="section"] [data-settings-heading-title]';
 const SELECTED_CHOICE = '[data-key^="settings-appearance:"][aria-pressed="true"]';
 const CATEGORY_ICON = '[data-key="section:about"] > span';
 const STORE_LABEL = '[data-key="add"] > div';
@@ -189,6 +190,8 @@ const SETTINGS_VARIABLES = [
   ["--settings-title-tracking", "3px", PANE_TITLE, "letter-spacing", "normal", "3px"],
   ["--settings-title-transform", "uppercase", SIDEBAR_TITLE, "text-transform", "none", "uppercase"],
   ["--settings-title-tracking", "3px", SIDEBAR_TITLE, "letter-spacing", "normal", "3px"],
+  ["--settings-title-transform", "uppercase", SECTION_TITLE, "text-transform", "none", "none"],
+  ["--settings-title-tracking", "3px", SECTION_TITLE, "letter-spacing", "normal", "normal"],
   ["--settings-category-icon", THEME_COLOUR, CATEGORY_ICON, "color", "rgba(243, 246, 255, 0.79)", THEME_COLOUR],
   ["--settings-return-label-wrap", "nowrap", "#escape strong", "white-space", "normal", "nowrap"],
   ["--choice-selected-text", THEME_COLOUR, SELECTED_CHOICE, "color", WHITE, THEME_COLOUR],
