@@ -39,10 +39,24 @@ for (const [build, origin] of [
       });
       await expect(page.locator("#gear")).toBeVisible();
       await expect(page.locator("vite-error-overlay")).toHaveCount(0);
+      await page.locator("#samsung-home-shortcut").click();
+      await expect(page.locator("#toast")).toHaveText("Samsung Home is unavailable on this device");
     }
     expect(errors).toEqual([]);
   });
 }
+
+test("local preview simulates Samsung Home from Home and Settings", async ({ page }) => {
+  await page.goto("http://127.0.0.1:8172/");
+  await expect(page.locator("#grid > [data-id]")).toHaveCount(6);
+  await page.locator("#samsung-home-shortcut").click();
+  await expect(page.locator("#toast")).toHaveText("Would open Samsung Home");
+  await page.locator("#gear").click();
+  await expect(page.locator("#editor")).toBeVisible();
+  await expect(page.locator("#toast")).toBeHidden();
+  await page.locator("#escape").click();
+  await expect(page.locator("#toast")).toHaveText("Would open Samsung Home");
+});
 
 test("local preview keeps existing ordinary settings ahead of old demo settings", async ({ page }) => {
   await page.addInitScript(() => {
@@ -129,4 +143,6 @@ test("the Vite entry respects a supplied native SDK even with the old demo query
   expect(await page.evaluate(() => AeroTizen.apps.getSnapshot().all.map((app) => app.id))).toEqual(["installed.app"]);
   expect(await page.evaluate(() => AeroTizen.inputs.getSnapshot().sources)).toEqual([]);
   expect(await page.evaluate(() => AeroTizen.continueWatching.getSnapshot().items)).toEqual([]);
+  await page.locator("#samsung-home-shortcut").click();
+  await expect(page.locator("#toast")).toHaveText("Samsung Home is unavailable on this device");
 });

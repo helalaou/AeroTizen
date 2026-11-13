@@ -48,8 +48,13 @@ test("static demo loads its own sample data and assets from a project subpath", 
     "background-color",
     GLASS_FOCUS_COLOUR,
   );
+  await launcher.locator("#samsung-home-shortcut").click();
+  await expect(launcher.locator("#toast")).toHaveText("Would open Samsung Home");
   await launcher.locator("#gear").click();
   await expect(launcher.locator("#editor")).toBeVisible();
+  await expect(launcher.locator("#toast")).toBeHidden();
+  await launcher.locator("#escape").click();
+  await expect(launcher.locator("#toast")).toHaveText("Would open Samsung Home");
   await openCategory(launcher, "sources");
   await launcher.getByRole("button", { name: "Find and add input" }).click();
   await expect(launcher.locator("#toast")).toHaveText("HDMI 5 added to Home.");
