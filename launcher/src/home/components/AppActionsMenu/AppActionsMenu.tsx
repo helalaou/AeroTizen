@@ -7,12 +7,17 @@ import { Icon } from "../../../shared/icons/Icon/Icon";
 import type { HomeEnvironment } from "../../types";
 
 import styles from "./AppActionsMenu.module.css";
+import { useAppActionsMenuInput } from "./useAppActionsMenuInput";
+const MENU_ITEM_STEP_PX = 64;
+const MENU_ITEM_ID_PREFIX = "home-menu:";
 const ACTION_ICONS = { add: SquarePlus, move: Move, remove: SquareMinus } as const;
 
 export const AppActionsMenu = ({ env }: { env: HomeEnvironment }) => {
   const { t } = useTranslation();
   const menu = useStoreSelector(env.state, (state) => state.menu);
   const panel = useRef<HTMLDivElement>(null);
+  const choices = env.menuChoices();
+  const selected = useAppActionsMenuInput(env, menu, panel, choices.length);
   const [position, setPosition] = useState({ left: "0px", top: "0px" });
   useLayoutEffect(() => {
     const origin = menu && env.nodes.get("app:" + menu.id);
@@ -34,19 +39,28 @@ export const AppActionsMenu = ({ env }: { env: HomeEnvironment }) => {
   return (
     <>
       <div class={styles.backdrop} data-app-actions-backdrop aria-hidden="true" onClick={env.dismiss} />
-      <div ref={panel} style={position} class={styles.menu} role="menu" aria-label={t("home.appActions")}>
+      <div
+        ref={panel}
+        style={position}
+        class={styles.menu}
+        role="menu"
+        aria-label={t("home.appActions")}
+        tabIndex={-1}
+        aria-activedescendant={choices[selected] ? MENU_ITEM_ID_PREFIX + choices[selected].action : undefined}
+      >
         <div
           class={styles.focus}
           data-app-actions-focus
           aria-hidden="true"
-          style={{ transform: "translate3d(0," + menu.selected * 64 + "px,0)" }}
+          style={{ transform: "translate3d(0," + selected * MENU_ITEM_STEP_PX + "px,0)" }}
         />
-        {env.menuChoices().map((choice, i) => (
+        {choices.map((choice, i) => (
           <div
             key={choice.action}
             class={styles.option}
             role="menuitem"
-            aria-selected={menu.selected === i}
+            id={MENU_ITEM_ID_PREFIX + choice.action}
+            aria-selected={selected === i}
             onClick={() => env.choose(i)}
           >
             <span class={styles.icon} aria-hidden="true">

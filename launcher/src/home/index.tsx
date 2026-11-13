@@ -8,6 +8,7 @@ import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import { describeApp } from "../shared/apps/appPresentation";
 import type { Translations } from "../shared/i18n/createTranslations";
 import { TranslationContext } from "../shared/i18n/useTranslation";
+import { InputScopeContext } from "../shared/input/context";
 
 import { Home } from "./components/Home/Home";
 import { createHomeController } from "./state/createHomeController";
@@ -68,7 +69,9 @@ export const mountHome = (
   try {
     render(
       <TranslationContext.Provider value={translations}>
-        <Home env={environment} />
+        <InputScopeContext.Provider value={environment.bridge.inputScope}>
+          <Home env={environment} />
+        </InputScopeContext.Provider>
       </TranslationContext.Provider>,
       mount,
     );

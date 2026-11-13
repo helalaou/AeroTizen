@@ -18,7 +18,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `shared/components/AppFallback`                                      | Shared app-name placeholder for Home and Settings                               | App presentation, image lifetime and visibility                              |
 | `shared/components/AppArtworkContent`                                | Shared full-size artwork and compact package-icon/name layout                   | Image request lifetime and app identity lookup                               |
 | `shared/components/StoreCard`                                        | Shared store frame, focus ring, icon, labels and size variants                  | Translation state; each screen supplies its navigation control and command   |
-| `AppActionsMenu`, `ReorderControls`                                  | App actions and move/drop controls                                              | Home controller actions; menu positioning is rendered from state             |
+| `AppActionsMenu`, `ReorderControls`                                  | App actions and move/drop controls                                              | Home action commands; menu selection, focus and input are local              |
 | `status/Clock`                                                       | One time/date view with compact, vertical, horizontal, minimal and bold layouts | Shared time snapshot and formatter; no timer                                 |
 | `WeatherStatus`, `NetworkStatus`                                     | Render status data                                                              | Shared snapshots; no requests or DOM scraping                                |
 | `settings/SettingsRoot`                                              | Open/closed shell and lazy content lifetime                                     | Settings view state                                                          |
@@ -101,9 +101,9 @@ Closing, hiding or replacing a scope cancels its pending input; releases never m
 to the newly exposed screen. Activation subscriptions cancel pending input before
 another key event, including Home's long-press timer.
 
-`createLauncherInputScopes` adapts Fireplace, input playback, Settings and Home
-controllers in that priority order. These adapters keep the old
-screen commands while controls adopt scoped actions. Services retain device calls
+`createLauncherInputScopes` adapts Fireplace and input playback, then receives the
+Settings and Home input scopes in that priority order. Screen-owned scopes keep
+existing commands while controls adopt scoped actions. Services retain device calls
 and cancellation. The shared dispatcher and scope registry do not import features.
 
 `InputScopeContext` and `useInputScope` give a view a child scope with cleanup on
@@ -134,6 +134,14 @@ Blur commits through an optional feature action, including existing input-name s
 Weather supplies query changes and search submission. Its editor scope consumes Back
 once native editing has ended, cancels pending searches and returns focus to Change.
 The app router receives Settings' scope without inspecting DOM input tags.
+
+Home owns its root input scope and the hold timer that opens app actions.
+`AppActionsMenu` owns a modal child scope, local selection and native menu focus.
+Arrow keys move within the menu; Confirm calls the selected Home action and Back
+closes the menu. Tab closes it and restores app focus. The menu keeps Home grid
+input suspended while open. Opening, closing or replacing its scope cancels held
+input, so the opening hold cannot choose an action and a menu confirmation cannot
+also drop a move. Home retains Add/Remove/Move commands and reorder handling.
 
 ## Diagnostics ownership
 

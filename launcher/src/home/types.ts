@@ -24,7 +24,7 @@ export interface HomeState {
   readonly appsEndOffset: number;
   readonly continueOffset: number;
   readonly draft: readonly string[] | null;
-  readonly menu: Readonly<{ id: string; selected: number }> | null;
+  readonly menu: Readonly<{ id: string }> | null;
   readonly moving: string | null;
   readonly page: Page;
   readonly scroll: number;
