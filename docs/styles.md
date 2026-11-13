@@ -232,7 +232,10 @@ status hosts. `base.css` owns native/Settings visibility for `[data-home-header]
 and `[data-home-content]`;
 the Settings rule has enough specificity to keep the header visible and dimmed
 when native TV is active. Weather-photo visibility uses `data-weather-photo`.
-The background mount uses `data-background-host` for fixed canvas sizing.
+`BackgroundLayer` renders `data-background-host` and owns fixed canvas sizing and
+the `hidden` attribute in its component module. Its empty HTML mount is `background-root`;
+the rendered container retains `id="bg"`. Stage renders its generated halftone image
+and tile size through JSX styles, while canvas drawing remains imperative.
 These shell rules do not need `!important`; only the universal hidden-attribute
 rule uses it. Normal focus, selection, theme and layout rules must
 use the cascade without `!important`.

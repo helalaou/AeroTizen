@@ -1,8 +1,8 @@
 import type { BackgroundBridge, BackgroundGraphics, BackgroundScene } from "../contracts/backgrounds";
 import type { CustomGradient } from "../contracts/preferences";
 
-import { isLightColour, normalizeColour } from "./colours";
-import { gradientBackground, gradientMidpoint, normalizeGradient } from "./gradients";
+import { normalizeColour } from "./colours";
+import { gradientBackground, normalizeGradient } from "./gradients";
 import { preview, SCENES } from "./scenes";
 
 export interface BackgroundState {
@@ -12,23 +12,17 @@ export interface BackgroundState {
 }
 
 interface BackgroundOptions {
-  layer: HTMLElement;
   previous?: BackgroundState;
-  renderScene(scene: BackgroundScene | null, speed: number): void;
+  renderState(state: BackgroundState | null): void;
   webGL: BackgroundGraphics;
 }
 
 export const createBackgrounds = (options: BackgroundOptions) => {
-  const { layer, previous, renderScene, webGL } = options;
-  const document = layer.ownerDocument;
+  const { previous, renderState, webGL } = options;
   let { current = null, speed = 1, suspended = false } = previous || {};
-
-  if (previous) {
-    layer.hidden = suspended;
-    if (!suspended) {
-      renderScene(current, speed);
-    }
-  }
+  const getState = (): BackgroundState => ({ current, speed, suspended });
+  const render = () => renderState(getState());
+  render();
 
   const apply = (id: string | undefined, value = speed, customColour?: string, customGradient?: CustomGradient) => {
     speed = value || 1;
@@ -39,21 +33,7 @@ export const createBackgrounds = (options: BackgroundOptions) => {
       const gradient = normalizeGradient(customGradient);
       current = { ...scene, base: gradientBackground(gradient), gradient };
     }
-    // Only the root gets a background: a body background would paint over the animated layer.
-    document.documentElement.style.background = current.base;
-    document.body.style.background = "transparent";
-    document.documentElement.setAttribute(
-      "data-light-background",
-      String(
-        Boolean(
-          current.lightBackground ||
-          (current.category === "solid" && isLightColour(current.base)) ||
-          (current.gradient && isLightColour(gradientMidpoint(current.gradient))),
-        ),
-      ),
-    );
-    renderScene(current, speed);
-    layer.hidden = false;
+    render();
   };
 
   const bridge: BackgroundBridge = {
@@ -63,9 +43,7 @@ export const createBackgrounds = (options: BackgroundOptions) => {
     preview,
     suspend() {
       suspended = true;
-      renderScene(null, speed);
-      layer.hidden = true;
-      document.documentElement.setAttribute("data-light-background", "false");
+      render();
     },
     setSpeed(value) {
       const next = value || 1;
@@ -80,7 +58,7 @@ export const createBackgrounds = (options: BackgroundOptions) => {
   };
   return {
     bridge,
-    getState: (): BackgroundState => ({ current, speed, suspended }),
-    dispose: () => renderScene(null, speed),
+    getState,
+    dispose: () => renderState(null),
   };
 };

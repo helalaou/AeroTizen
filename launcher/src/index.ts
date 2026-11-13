@@ -49,7 +49,7 @@ const createPlatform = <Platform>(create: () => Platform, override?: (platform: 
   return override?.(platform) ?? platform;
 };
 
-const backgroundHost = document.getElementById("bg");
+const backgroundHost = document.getElementById("background-root");
 const home = document.getElementById("home-root");
 const settingsHost = document.getElementById("settings-root");
 const toastHost = document.getElementById("toast-root");

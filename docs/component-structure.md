@@ -7,6 +7,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | Component                                                            | Responsibility                                                                  | Data and commands                                                            |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `backgrounds/BackgroundSceneView`                                    | Render decorative gradients, waves and particle canvas                          | Background bridge provides scenes and speed. The app mounts and disposes it. |
+| `backgrounds/BackgroundLayer`                                        | Render the fixed wallpaper container and its visibility                         | Background snapshots; document background and shared text contrast hooks    |
 | `home/components/Home`                                               | Compose the screen and refresh focus when its inventory or layout changes       | Shared settings/inventory and Home controller                                |
 | `HomeHeader`                                                         | Shortcuts, page tabs and status placement                                       | Home navigation and shared status stores                                     |
 | `HeaderFocusIndicator`                                               | Measure a registered shortcut/tab and render its focus position                 | Explicit `shortcuts` or `tabs` group                                         |
@@ -421,8 +422,17 @@ Settings scroll-container movement remain explicit layout operations.
 
 Modules use local classes such as `digits`, `horizontal` and `temperature`.
 Background artwork, weather photos, Fireplace, toast and interface icons also use
-local module classes. The background mount keeps its fixed canvas geometry in
-`base.css`, alongside page sizing and native visibility.
+local module classes. `BackgroundLayer` renders the public `bg` container, its fixed
+canvas geometry and its `hidden` state inside the empty `background-root` mount.
+Suspension unmounts animated scenes so their renderers release native resources.
+The background controller publishes snapshots without accessing the DOM. Stage renders
+its generated halftone image and tile size through JSX styles.
+
+Document properties remain outside the Preact mount roots: language/direction, theme,
+performance mode, Settings/native visibility and root background transparency.
+Their existing owners synchronize these page hooks explicitly. Focus, scroll-container
+movement, geometry reads, canvas drawing and native service script loading remain
+browser or platform operations.
 Version/model names are absent from active view styles.
 Existing semantic IDs such as `editor`, `grid`, `rows`, `weather` and `time`, and remote
 `data-key` values, remain stable for integration and test tools. Persisted preference
@@ -443,6 +453,7 @@ keys and values also remain compatible.
 | `shared/components/AppFallback/AppFallback.module.css`                                           | Shared name geometry with explicit Home, favourite, source and badge variants |
 | `base.css`                                                                                       | Page sizing, fonts, hidden state and native/preview visibility                |
 | `backgrounds/*/*.module.css`                                                                     | Blob, wave, WebGL canvas and weather-photo presentation                       |
+| `backgrounds/BackgroundLayer/BackgroundLayer.module.css`                                         | Fixed wallpaper container geometry                                          |
 | `home/components/Home/Home.module.css`                                                           | Home viewport, fades, page reveals, section spacing and content clearance     |
 | `home/components/HomeHeader/HomeHeader.module.css`                                               | Header layout, shortcuts, tabs and expanded clock clearance                   |
 | `home/components/HeaderFocusIndicator/HeaderFocusIndicator.module.css`                           | Measured shortcut/tab focus plates and shared motion durations                |
@@ -492,7 +503,8 @@ third-party notices.
 ## Background boundary
 
 App composition mounts and disposes the background views. The background bridge
-handles scene selection, the root colour, speed, and visibility. Boot, Settings
+publishes scene selection, speed and suspension. `BackgroundLayer` renders visibility
+and synchronizes document colour and contrast. Boot, Settings
 and embedded inputs keep their existing commands and preferences.
 
 The weather photo controller shares the weather code table with the status view.
