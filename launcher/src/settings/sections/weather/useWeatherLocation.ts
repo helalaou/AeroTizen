@@ -10,7 +10,7 @@ import type { SettingsActions } from "../../types";
 import { useWeatherSearch } from "./useWeatherSearch";
 
 export const useWeatherLocation = (active: boolean, actions: SettingsActions) => {
-  const { services, navigation, view, drawer } = useSettingsEnvironment();
+  const { services, navigation, drawer } = useSettingsEnvironment();
   const selected = useStoreSelector(drawer, (state) => state.expanded && state.category === "weather");
   const city = useStoreSelector(services.weather, (weather) => weather.city);
   const enabled = active && selected;
@@ -33,14 +33,14 @@ export const useWeatherLocation = (active: boolean, actions: SettingsActions) =>
   }, [enabled]);
   useLayoutEffect(() => {
     navigation.invalidate();
-    if (enabled && !view.getSnapshot().previewing) {
+    if (enabled) {
       if (editing && search.results.length && search.results !== previousResults.current) {
         navigation.select("weather:result:0");
       }
       navigation.focus();
     }
     previousResults.current = search.results;
-  }, [search.results, search.message, editing, city, enabled, navigation, view]);
+  }, [search.results, search.message, editing, city, enabled, navigation]);
   useLayoutEffect(() => {
     if (!enabled || !editing) {
       return;

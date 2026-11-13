@@ -29,7 +29,6 @@ export const mountSettings = (
 ) => {
   const view = createStore<ViewState>({
     open: false,
-    previewing: false,
     mounted: false,
     openedAt: 0,
     colourPicker: null,

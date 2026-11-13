@@ -134,11 +134,6 @@ test("the first pointer click activates its control; Space activates buttons wit
   await page.locator('[data-key="bg:lava"]').focus();
   await page.keyboard.press("Space");
   await expect(page.locator('[data-key="bg:lava"]')).toHaveAttribute("aria-pressed", "true");
-  await page.locator('[data-key="preview"]').focus();
-  await page.keyboard.press("Enter");
-  await expect(page.locator("body")).toHaveClass(/previewing/);
-  await page.keyboard.press("Space");
-  await expect(page.locator("body")).not.toHaveClass(/previewing/);
   await openCategory(page, "weather");
   await page.locator('[data-key="weather:change"]').click();
   const input = page.getByRole("textbox", { name: "Weather location", exact: true });

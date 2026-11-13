@@ -53,12 +53,10 @@ export interface SettingsServices {
   config: LauncherConfig;
   describeApp(app: InstalledApp): AppPresentation;
   finishEditing(): void;
-  hidePreviewMessage(): void;
   learnIpControlInput(): Promise<LearnIpControlResult>;
   openStore(): void;
   previewBackground(preview: BackgroundPreview | null): void;
   searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): () => void;
-  showPreviewMessage(): void;
   useSamsungHome(): void;
   weather: Store<WeatherSnapshot>;
 }
@@ -69,7 +67,6 @@ export interface SettingsActions {
   openColourPicker(): void;
   openGradientPicker(): void;
   openStore(): void;
-  preview(): void;
   saveInputName(port: string, value: string): void;
   setBackground(background: string): void;
   setClockLayout(layout: "classic" | SettingsValues["aeroClockStyle"]): void;
@@ -103,7 +100,6 @@ export interface ViewState {
   readonly mounted: boolean;
   readonly open: boolean;
   readonly openedAt: number;
-  readonly previewing: boolean;
 }
 export interface SettingsEnvironment {
   actions: SettingsActions;

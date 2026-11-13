@@ -33,7 +33,6 @@ export const createSettingsBridge = (
         }
         view.set({
           open: true,
-          previewing: false,
           mounted: true,
           colourPicker: null,
           openedAt: current.open ? current.openedAt : now(),
@@ -44,7 +43,7 @@ export const createSettingsBridge = (
       inputScope.cancel();
       transaction(() => {
         handlers?.blur();
-        view.set({ ...view.getSnapshot(), open: false, previewing: false, colourPicker: null });
+        view.set({ ...view.getSnapshot(), open: false, colourPicker: null });
         services.finishEditing();
       });
     },

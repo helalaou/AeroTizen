@@ -50,8 +50,6 @@ const harness = () => {
     "applySpeed",
     "openStore",
     "useSamsungHome",
-    "showPreviewMessage",
-    "hidePreviewMessage",
     "clearHomeFocus",
     "finishEditing",
   ]) {
@@ -59,7 +57,6 @@ const harness = () => {
   }
   const view = createStore({
     open: false,
-    previewing: false,
     mounted: false,
     openedAt: 0,
     colourPicker: null,
@@ -182,7 +179,6 @@ test("key-router bridge delegates to current handlers and releases them on clean
   assert.equal(h.bridge.isOpen(), true);
   assert.deepEqual(h.view.getSnapshot(), {
     open: true,
-    previewing: false,
     mounted: true,
     colourPicker: null,
     openedAt: 1000,
@@ -211,13 +207,10 @@ test("key-router bridge delegates to current handlers and releases them on clean
   old();
   h.bridge.focus();
   h.bridge.keydown(40, { preventDefault() {} });
-  h.actions.preview();
-  assert.equal(h.view.getSnapshot().previewing, true);
   h.bridge.close();
   assert.deepEqual(events, ["focus", 40, "blur"]);
   assert.deepEqual(h.view.getSnapshot(), {
     open: false,
-    previewing: false,
     mounted: true,
     colourPicker: null,
     openedAt: 1000,

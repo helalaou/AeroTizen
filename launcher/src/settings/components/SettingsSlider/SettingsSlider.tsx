@@ -11,7 +11,6 @@ import { useSliderInput } from "./useSliderInput";
 interface Props extends SliderInputOptions {
   ariaLabel?: string;
   background?: string;
-  class?: string;
   compact?: boolean;
   label: string;
   max: number;
@@ -22,11 +21,9 @@ interface Props extends SliderInputOptions {
 
 export const SettingsSlider = ({
   accelerate,
-  activation = "focus",
   active,
   ariaLabel,
   background,
-  class: className = "",
   compact = false,
   focusKey,
   label,
@@ -37,9 +34,8 @@ export const SettingsSlider = ({
   value,
 }: Props) => {
   const { t } = useTranslation();
-  const { adjusting, toggleAdjusting, adjustWithPointer } = useSliderInput({
+  const adjustWithPointer = useSliderInput({
     accelerate,
-    activation,
     active,
     focusKey,
     onAdjust,
@@ -48,9 +44,8 @@ export const SettingsSlider = ({
   const accessibleLabel = ariaLabel ?? label;
   return (
     <SettingsControl
-      class={styles.control + " " + className}
+      class={styles.control}
       data-compact={compact ? "true" : undefined}
-      data-adjusting={adjusting ? "true" : undefined}
       focusKey={focusKey}
       role="slider"
       aria-label={accessibleLabel}
@@ -58,7 +53,6 @@ export const SettingsSlider = ({
       aria-valuemax={max}
       aria-valuenow={value}
       aria-valuetext={value + unit}
-      onClick={toggleAdjusting}
     >
       <div class={styles.label}>
         <span>{label}</span>
@@ -84,11 +78,6 @@ export const SettingsSlider = ({
           onAdjust={adjustWithPointer}
         />
       </div>
-      {activation === "confirm" ? (
-        <div class={styles.hint} data-slider-hint>
-          {t("common.adjust")}
-        </div>
-      ) : null}
     </SettingsControl>
   );
 };

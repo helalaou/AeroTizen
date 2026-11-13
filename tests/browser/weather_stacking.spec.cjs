@@ -61,10 +61,6 @@ for (const theme of ["classic", "glass"]) {
     await expect(page.locator("[data-home-header]")).toHaveCSS("opacity", "0.48");
     await expect(page.locator("[data-home-content]")).toHaveCSS("visibility", "visible");
     await expect(page.locator("[data-home-content]")).toHaveCSS("opacity", "0.48");
-    await page.evaluate(() => document.body.classList.add("previewing"));
-    await expect(page.locator("[data-home-header]")).toHaveCSS("visibility", "hidden");
-    await expect(page.locator("[data-home-content]")).toHaveCSS("visibility", "hidden");
-    await page.evaluate(() => document.body.classList.remove("previewing"));
     await page.keyboard.press("Escape");
     await expect(page.locator("[data-home-header]")).toHaveCSS("visibility", "hidden");
   });

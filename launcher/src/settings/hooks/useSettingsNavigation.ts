@@ -18,23 +18,11 @@ const SPACE_KEY = 32;
 
 export const useSettingsNavigation = (
   active: boolean,
-  previewing: boolean,
   { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel }: Layout,
 ) => {
   const { language } = useTranslation();
-  const {
-    navigation,
-    bridge,
-    services,
-    settings,
-    view,
-    root,
-    drawer,
-    categoryMenu,
-    categoryContent,
-    categoryScroll,
-    panes,
-  } = useSettingsEnvironment();
+  const { navigation, bridge, services, settings, root, drawer, categoryMenu, categoryContent, categoryScroll, panes } =
+    useSettingsEnvironment();
   const directions = useMemo<Partial<Record<number, Direction>>>(() => {
     const { KEY } = services.config;
     return { [KEY.LEFT]: "left", [KEY.RIGHT]: "right", [KEY.UP]: "up", [KEY.DOWN]: "down" };
@@ -59,7 +47,7 @@ export const useSettingsNavigation = (
       navigation.reset(key);
     }
     previousDrawer.current = active ? category : undefined;
-    if (active && !previewing) {
+    if (active) {
       if (bridge.inputScope.getPath().length === 1) {
         navigation.focus();
       }
@@ -68,7 +56,6 @@ export const useSettingsNavigation = (
     }
   }, [
     active,
-    previewing,
     apps,
     inputs,
     continueSources,
@@ -95,7 +82,7 @@ export const useSettingsNavigation = (
     }
     const resize = () => {
       navigation.invalidate();
-      if (!view.getSnapshot().previewing && bridge.inputScope.getPath().length === 1) {
+      if (bridge.inputScope.getPath().length === 1) {
         flushSync(() => navigation.focus());
       }
     };
@@ -117,11 +104,6 @@ export const useSettingsNavigation = (
         const K = services.config.KEY;
         // Remote input and native focus can arrive before the next render.
         const currentDrawer = drawer.getSnapshot();
-        if (view.getSnapshot().previewing) {
-          event.preventDefault();
-          flushSync(() => view.set({ ...view.getSnapshot(), previewing: false }));
-          return;
-        }
         const current = navigation.current();
         // The sidebar sits on the right in right-to-left languages, so the keys that
         // open a section and return to the sidebar swap sides with it.
@@ -180,5 +162,5 @@ export const useSettingsNavigation = (
       window.removeEventListener("resize", resize);
       navigation.clear();
     };
-  }, [active, bridge, navigation, root, services, view, drawer, categoryContent, directions, panes]);
+  }, [active, bridge, navigation, root, services, drawer, categoryContent, directions, panes]);
 };

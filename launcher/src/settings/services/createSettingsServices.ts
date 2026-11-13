@@ -38,8 +38,6 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
       runtime.homeScreen?.render();
     },
     clearHomeFocus: () => runtime.homeScreen?.blur(),
-    showPreviewMessage: () => runtime.toast(runtime.translate("wallpaper.previewing")),
-    hidePreviewMessage: () => runtime.hideToast(),
     canLearnIpControlInput: () => runtime.inputs.canLearnIpControlInput(),
     async learnIpControlInput() {
       const result = await runtime.inputs.learnIpControlInput();

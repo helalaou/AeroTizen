@@ -64,20 +64,3 @@
 
   padding: 12px 18px;
 }
-
-.hint {
-  margin-top: 6px;
-  color: var(--settings-muted);
-  font-size: 20px;
-  text-align: end;
-}
-
-.control[data-adjusting="true"] {
-  .thumb {
-    transform: scale(1.15);
-  }
-
-  .hint {
-    visibility: hidden;
-  }
-}

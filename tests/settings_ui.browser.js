@@ -191,29 +191,8 @@ const runSettingsUi = async (page, { screenshotPath }) => {
     assert(!document.querySelector("#weather-results").textContent.includes("Closed search"), "closed search ignored");
     find("weather-visibility:false").click();
     assert(preferences().weatherShowLocation === false, "location visibility saved");
-    find("preview").click();
-    assert(document.body.classList.contains("previewing"), "preview opens");
-    key(K.RIGHT);
-    assert(!document.body.classList.contains("previewing"), "any key exits preview");
-    assert(document.getElementById("toast").hidden, "preview exit hides its message");
-    find("preview").click();
-    A.settingsUi.open();
-    assert(
-      !document.body.classList.contains("previewing") && document.getElementById("toast").hidden,
-      "open resets preview and its message together",
-    );
-    assert(
-      document.activeElement === document.querySelector("#editor " + focusSelector),
-      "preview return restores browser focus",
-    );
-    find("preview").click();
     A.settingsUi.close();
-    assert(
-      !document.body.classList.contains("editing") &&
-        !document.body.classList.contains("previewing") &&
-        document.getElementById("toast").hidden,
-      "close clears all presentation state",
-    );
+    assert(!document.body.classList.contains("editing"), "close clears Settings presentation state");
     A.settingsUi.open();
     find("bg:black").click();
     assert(document.querySelector("#speed-row").hidden, "static background hides speed");
@@ -224,24 +203,19 @@ const runSettingsUi = async (page, { screenshotPath }) => {
     for (let i = 0; i < 20 && document.querySelector("#editor " + focusSelector)?.dataset.key !== "speed"; i++)
       key(K.DOWN);
     assert(document.querySelector("#editor " + focusSelector).dataset.key === "speed", "remote reaches speed");
-    // Without OK, Right moves on to Preview; Left comes back to the slider.
-    const unchanged = preferences().speed;
+    const beforeSpeed = preferences().speed;
     key(K.RIGHT);
-    assert(document.querySelector("#editor " + focusSelector).dataset.key === "preview", "Right reaches Preview");
-    assert(preferences().speed === unchanged, "moving past the slider keeps the speed");
-    key(K.LEFT);
-    assert(document.querySelector("#editor " + focusSelector).dataset.key === "speed", "Left returns to speed");
-    // OK starts adjusting; Left/Right then change the speed.
-    key(K.ENTER);
-    assert(document.querySelector("#editor " + focusSelector).dataset.adjusting === "true", "OK starts adjusting");
+    assert(preferences().speed === beforeSpeed + A.config.SPEED.STEP, "Right adjusts speed immediately");
+    assert(document.querySelector("#editor " + focusSelector).dataset.key === "speed", "adjustment keeps slider focus");
+    assert(!document.querySelector('[data-key="preview"]'), "Preview is removed");
     for (let i = 0; i < 30; i++) key(K.LEFT);
     assert(preferences().speed === A.config.SPEED.MIN, "speed lower bound");
     for (let i = 0; i < 30; i++) key(K.RIGHT);
     assert(preferences().speed === A.config.SPEED.MAX, "speed upper bound");
     key(K.ESC);
     assert(
-      A.settingsUi.isOpen() && !document.querySelector("#editor [data-adjusting=true]"),
-      "Back leaves the slider, not Settings",
+      A.settingsUi.isOpen() && document.querySelector("[data-settings-drawer=frame]").dataset.expanded === "false",
+      "Back returns from the slider to the sidebar",
     );
     find("app:" + A.apps.getSnapshot().all[0].id).click();
     for (let i = 0; i < 60; i++) key(K.DOWN);
@@ -391,10 +365,8 @@ const runSettingsUi = async (page, { screenshotPath }) => {
     await new Promise((resolve) => requestAnimationFrame(resolve));
     find("bg:aurora").click();
     find("speed").focus();
-    for (const code of [A.config.KEY.ENTER, A.config.KEY.RIGHT]) {
-      for (const type of ["keydown", "keyup"]) {
-        document.dispatchEvent(new KeyboardEvent(type, { keyCode: code, bubbles: true, cancelable: true }));
-      }
+    for (const type of ["keydown", "keyup"]) {
+      document.dispatchEvent(new KeyboardEvent(type, { keyCode: A.config.KEY.RIGHT, bubbles: true, cancelable: true }));
     }
     if (A.settings.getSnapshot().speed !== original + A.config.SPEED.STEP)
       throw new Error(
@@ -403,7 +375,6 @@ const runSettingsUi = async (page, { screenshotPath }) => {
             before: original,
             after: A.settings.getSnapshot().speed,
             key: document.querySelector("#editor [data-focused=true]")?.dataset.key,
-            adjusting: document.querySelector("#editor [data-adjusting=true]")?.dataset.key,
           }),
       );
     return {

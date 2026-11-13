@@ -135,8 +135,5 @@ export const createSettingsActions = (
     },
     openStore: services.openStore,
     useSamsungHome: services.useSamsungHome,
-    preview() {
-      transaction(() => view.set({ ...view.getSnapshot(), previewing: true }));
-    },
   };
 };

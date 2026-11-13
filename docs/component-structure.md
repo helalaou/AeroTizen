@@ -114,12 +114,12 @@ selection and resumes focus when the modal leaves; it has no picker key rules or
 picker focus-key table. Pointer controls use the same actions as remote controls.
 
 `SettingsSlider` owns the shared slider markup, styles, pointer arrows and scoped input.
-The colour picker supplies its labels, ranges, track colours and adjustment actions;
-it enables adjustment on focus and held-key acceleration. Background speed supplies
-its range and speed action; it uses Confirm to enter editing and fixed steps so
-Left/Right can otherwise reach Preview. Confirm and Back end editing; other keys
-return to drawer navigation. Focus loss, hiding or input cancellation clears edit
-state and acceleration. The Settings view store and drawer have no slider key rules.
+All sliders adjust with Left/Right as soon as they receive focus; other keys bubble
+to their parent navigation. Colour controls enable held-key acceleration. Background
+speed uses fixed steps and applies each change immediately through the settings action.
+The consumers supply their labels, ranges, units, track colours and adjustment actions.
+Focus loss, hiding or input cancellation resets acceleration. The Settings drawer
+owns navigation between controls.
 
 ## Diagnostics ownership
 

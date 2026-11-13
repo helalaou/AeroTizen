@@ -47,19 +47,12 @@ body.tv {
 body.tv [data-home-content] {
   visibility: hidden;
 }
-body.previewing [data-home-content] {
-  visibility: hidden;
-}
-body.editing [data-home-content] {
-  visibility: hidden;
-}
 /* Public shell hook: Settings keeps the header dimmed over native TV mode. */
-body.tv [data-home-header],
-body.previewing [data-home-header] {
+body.tv [data-home-header] {
   visibility: hidden;
 }
-body.editing:not(.previewing) [data-home-header],
-body.editing:not(.previewing) [data-home-content] {
+body.editing [data-home-header],
+body.editing [data-home-content] {
   visibility: visible;
   opacity: 0.48;
   pointer-events: none;

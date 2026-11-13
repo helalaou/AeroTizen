@@ -1,4 +1,3 @@
-import { Play } from "lucide-preact";
 import { flushSync } from "preact/compat";
 import { useLayoutEffect, useState } from "preact/hooks";
 
@@ -7,9 +6,7 @@ import { gradientBackground } from "../../../backgrounds/gradients";
 import type { BackgroundOption, LauncherConfig } from "../../../contracts/launcher";
 import { useStore } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
-import { Icon } from "../../../shared/icons/Icon/Icon";
 import { ChoiceGroup } from "../../components/ChoiceGroup";
-import { ChoiceOption } from "../../components/ChoiceOption/ChoiceOption";
 import { SettingsHint } from "../../components/SettingsHint/SettingsHint";
 import { SettingsSection } from "../../components/SettingsSection/SettingsSection";
 import { SettingsSlider } from "../../components/SettingsSlider/SettingsSlider";
@@ -62,7 +59,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
   useLayoutEffect(() => {
     navigation.invalidate();
   }, [navigation, webGL]);
-  const { open, previewing, colourPicker } = useStore(view);
+  const { open, colourPicker } = useStore(view);
   const [filter, setFilter] = useState(() => getInitialCategory(settings, selected));
   const show = (category: string) => filter === category;
 
@@ -134,27 +131,17 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
         </div>
         <div id="speed-row" class={styles.speedRow} hidden={!animated}>
           {animated ? (
-            <>
-              <SettingsSlider
-                class={styles.speedSlider}
-                activation="confirm"
-                focusKey="speed"
-                label={t("wallpaper.speed")}
-                ariaLabel={t("wallpaper.speedLabel")}
-                unit="×"
-                active={
-                  open && !previewing && !colourPicker && category === "wallpaper" && expanded && show("animated")
-                }
-                value={settings.speed}
-                min={config.SPEED.MIN}
-                max={config.SPEED.MAX}
-                onAdjust={actions.setSpeed}
-              />
-              <ChoiceOption id="preview" onSelect={actions.preview} inline>
-                <Icon icon={Play} />
-                {t("wallpaper.preview")}
-              </ChoiceOption>
-            </>
+            <SettingsSlider
+              focusKey="speed"
+              label={t("wallpaper.speed")}
+              ariaLabel={t("wallpaper.speedLabel")}
+              unit="×"
+              active={open && !colourPicker && category === "wallpaper" && expanded && show("animated")}
+              value={settings.speed}
+              min={config.SPEED.MIN}
+              max={config.SPEED.MAX}
+              onAdjust={actions.setSpeed}
+            />
           ) : null}
         </div>
       </SettingsSection>

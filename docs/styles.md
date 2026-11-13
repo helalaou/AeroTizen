@@ -212,17 +212,17 @@ the current components.
 
 The remaining shell classes are public integration hooks, not module classes:
 
-| Hook                              | Owner                          | Purpose                                                         |
-| --------------------------------- | ------------------------------ | --------------------------------------------------------------- |
-| `body.tv`                         | `inputs/InputPlaybackView.tsx` | Hide Home while the native TVWindow is visible                  |
-| `body.glass-ui`                   | `home/index.tsx`               | Apply the existing appearance before measuring                  |
-| `body.editing`, `body.previewing` | `useSettingsPresentation.ts`   | Settings and wallpaper preview visibility, with unmount cleanup |
+| Hook            | Owner                          | Purpose                                        |
+| --------------- | ------------------------------ | ---------------------------------------------- |
+| `body.tv`       | `inputs/InputPlaybackView.tsx` | Hide Home while the native TVWindow is visible |
+| `body.glass-ui` | `home/index.tsx`               | Apply the existing appearance before measuring |
+| `body.editing`  | `useSettingsPresentation.ts`   | Settings visibility, with unmount cleanup      |
 
 Native/background adapters also own page transparency; dynamic
 geometry, progress and feature artwork custom properties remain explicit inline data.
 
 The global `[hidden]` rule must override component display rules, including SVG
-status hosts. `base.css` owns native/preview visibility for `[data-home-header]`
+status hosts. `base.css` owns native/Settings visibility for `[data-home-header]`
 and `[data-home-content]`;
 the Settings rule has enough specificity to keep the header visible and dimmed
 when native TV is active. Weather-photo visibility uses `data-weather-photo`.
