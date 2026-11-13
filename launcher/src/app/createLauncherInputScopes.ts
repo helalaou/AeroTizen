@@ -3,7 +3,7 @@ import { createInputScope } from "../shared/input/createInputScope";
 
 interface KeyTargets {
   fireplace: RemoteKeyHandler;
-  home: Pick<HomeBridge, "cancelInput" | "keydown" | "keyup">;
+  home: Pick<HomeBridge, "inputScope">;
   inputs: RemoteKeyHandler;
   settings: Pick<SettingsBridge, "inputScope">;
 }
@@ -21,16 +21,5 @@ export const createLauncherInputScopes = ({ fireplace, home, inputs, settings }:
         return "native";
       },
     });
-  const homeScope = createInputScope({
-    onCancel: home.cancelInput,
-    handle(event) {
-      if (event.phase === "down") {
-        home.keydown(event.code, event.nativeEvent);
-      } else {
-        home.keyup(event.code);
-      }
-      return "native";
-    },
-  });
-  return [overlay(fireplace), overlay(inputs), settings.inputScope, homeScope];
+  return [overlay(fireplace), overlay(inputs), settings.inputScope, home.inputScope];
 };

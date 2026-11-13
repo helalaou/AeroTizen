@@ -1,3 +1,4 @@
+import { createInputScope } from "../../shared/input/createInputScope";
 import { focusControl } from "../../shared/navigation/focusControl";
 import { createStore } from "../../shared/state/createStore";
 import { ADD_APPS_KEY } from "../homeControls";
@@ -225,7 +226,9 @@ export const createHomeController = (
     if (!node || !main || runtime.settingsUi?.isOpen()) {
       return;
     }
-    focusControl(node);
+    if (inputScope.getPath().length === 1) {
+      focusControl(node);
+    }
     const scroller = getScroller(selected);
     if (scroller?.track && scroller.viewport) {
       const offset = revealHorizontalItem(
@@ -347,6 +350,7 @@ export const createHomeController = (
     if (choice.action === "move") {
       update({ moving: menu.id, draft: [...homeIds()] });
       env.showMoveInstructions();
+      focus();
       return;
     }
     const before = ids();
@@ -375,24 +379,6 @@ export const createHomeController = (
         return;
       }
       event.preventDefault();
-      if (current.menu) {
-        if (code === K.BACK || code === K.ESC) {
-          dismiss();
-        } else if (code === K.ENTER) {
-          if (!enterDown) {
-            enterDown = true;
-            choose(current.menu.selected);
-          }
-        } else {
-          update({
-            menu: {
-              ...current.menu,
-              selected: Math.max(0, Math.min(menuChoices().length - 1, current.menu.selected + delta)),
-            },
-          });
-        }
-        return;
-      }
       if (current.moving) {
         if (code === K.ENTER || code === K.BACK || code === K.ESC) {
           if (code !== K.ENTER || !enterDown) {
@@ -421,7 +407,7 @@ export const createHomeController = (
         timer = window.setTimeout(() => {
           timer = undefined;
           if (enterDown && selected.startsWith("app:")) {
-            update({ menu: { id: selected.slice(4), selected: 0 } });
+            update({ menu: { id: selected.slice(4) } });
           }
         }, runtime.config.LONG_PRESS_MS);
         return;
@@ -470,7 +456,19 @@ export const createHomeController = (
       activate(state.getSnapshot().selected);
     }
   };
+  const inputScope = createInputScope({
+    onCancel: cancelPress,
+    handle({ code, nativeEvent, phase }) {
+      if (phase === "down") {
+        keydown(code, nativeEvent);
+      } else {
+        keyup(code);
+      }
+      return "native";
+    },
+  });
   const bridge = {
+    inputScope,
     cancelInput: cancelPress,
     render: focus,
     buildRows: focus,

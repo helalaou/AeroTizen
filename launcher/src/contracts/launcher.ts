@@ -122,6 +122,7 @@ export interface HomeBridge {
   buildRows(): void;
   cancelInput(): void;
   focus(): void;
+  inputScope: InputScope;
   keydown(code: number, event: Pick<KeyboardEvent, "preventDefault">): void;
   keyup(code: number): void;
   refreshApps(): void;

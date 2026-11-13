@@ -9,7 +9,21 @@ import { createLauncherInputScopes } from "./createLauncherInputScopes";
 
 const { KEY } = launcherConfig;
 const createHarness = (onTestFinished: TestContext["onTestFinished"]) => {
-  const home = { keydown: vi.fn(), keyup: vi.fn(), cancelInput: vi.fn() };
+  const homeHandlers = { keydown: vi.fn(), keyup: vi.fn(), cancelInput: vi.fn() };
+  const home = {
+    ...homeHandlers,
+    inputScope: createInputScope({
+      onCancel: homeHandlers.cancelInput,
+      handle({ code, nativeEvent, phase }) {
+        if (phase === "down") {
+          homeHandlers.keydown(code, nativeEvent);
+        } else {
+          homeHandlers.keyup(code);
+        }
+        return "native";
+      },
+    }),
+  };
   const fireplace = { isActive: vi.fn(() => false), keydown: vi.fn() };
   const settings = { isOpen: vi.fn(() => false), keydown: vi.fn() };
   const inputs = { isActive: vi.fn(() => false), keydown: vi.fn() };
