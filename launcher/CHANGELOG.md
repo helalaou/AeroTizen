@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/helalaou/AeroTizen/compare/launcher-v3.0.0...launcher-v3.1.0) (2026-11-12)
+
+
+### Features
+
+* **launcher:** let the clock follow the weather location's time zone ([#237](https://github.com/helalaou/AeroTizen/issues/237)) ([07b8376](https://github.com/helalaou/AeroTizen/commit/07b8376f6671c64fd7798754e798a557944fb71a))
+
 ## [3.0.0](https://github.com/helalaou/AeroTizen/compare/launcher-v2.7.0...launcher-v3.0.0) (2026-11-12)
 
 
