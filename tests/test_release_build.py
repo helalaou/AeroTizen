@@ -160,6 +160,17 @@ def test_launcher_requires_background_service(launcher, tmp_path):
         build.build_launcher(launcher, tmp_path / "dist")
 
 
+def test_launcher_ships_its_fonts_folder_with_each_family_license(launcher, tmp_path):
+    fonts = launcher / "dist/launcher/fonts"
+    (fonts / "sample/latin").mkdir(parents=True)
+    (fonts / "sample/OFL.txt").write_text("SIL Open Font License")
+    (fonts / "sample/latin/sample.woff2").write_bytes(b"font")
+    package = build.build_launcher(launcher, tmp_path / "dist")
+    with zipfile.ZipFile(package) as archive:
+        shipped = {name for name in archive.namelist() if name.startswith("fonts/")}
+    assert shipped == {"fonts/sample/OFL.txt", "fonts/sample/latin/sample.woff2"}
+
+
 @pytest.mark.skipif(sys.platform == "win32", reason="Creating symlinks requires elevated Windows privileges")
 def test_launcher_rejects_symlink_runtime_file(launcher, tmp_path):
     source = launcher / "dist/launcher/js/main.js"
