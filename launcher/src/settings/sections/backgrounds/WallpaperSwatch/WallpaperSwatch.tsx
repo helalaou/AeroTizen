@@ -4,6 +4,7 @@ import type { BackgroundOption } from "../../../../contracts/launcher";
 import type { MessageKey } from "../../../../shared/i18n/catalogues";
 import { useTranslation } from "../../../../shared/i18n/useTranslation";
 import { Icon } from "../../../../shared/icons/Icon/Icon";
+import text from "../../../../shared/styles/text.module.css";
 import { SelectionIndicator } from "../../../components/SelectionIndicator/SelectionIndicator";
 import { SettingsControl } from "../../../components/SettingsControl/SettingsControl";
 
@@ -37,7 +38,7 @@ export const WallpaperSwatch = ({ background, editable = false, hidden, labelKey
             <Icon icon={Pencil} />
           </span>
         ) : null}
-        <span class={styles.label} data-wallpaper-label>
+        <span class={styles.label + " " + text.truncate} data-wallpaper-label>
           {t(labelKey ?? `scene.${background.id}`)}
         </span>
       </span>
