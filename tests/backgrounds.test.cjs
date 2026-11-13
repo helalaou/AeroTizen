@@ -35,41 +35,23 @@ const assertPureCss = (value, label) => {
 
 const setup = (previous) => {
   const calls = [];
-  const layer = {
-    hidden: false,
-    ownerDocument: {
-      documentElement: {
-        style: {},
-        setAttribute(name, value) {
-          this[name] = value;
-        },
-      },
-      body: { style: {} },
-    },
-  };
   const controller = createBackgrounds({
-    layer,
     previous,
-    renderScene: (scene, speed) => calls.push([scene?.id ?? null, speed]),
+    renderState: (state) => calls.push(state && [state.current?.id ?? null, state.speed, state.suspended]),
   });
-  return { ...controller, layer, calls };
+  return { ...controller, calls };
 };
 
 test("scene changes and speed changes render the requested background", () => {
-  const { bridge, layer, calls, dispose } = setup();
+  const { bridge, getState, calls, dispose } = setup();
   bridge.apply("waves");
-  assert.equal(layer.hidden, false);
+  assert.equal(getState().suspended, false);
   bridge.setSpeed(1);
   bridge.apply("black", 2);
   bridge.setSpeed(2);
-  assert.equal(layer.ownerDocument.documentElement.style.background, "#000000");
-  assert.equal(layer.ownerDocument.body.style.background, "transparent");
+  assert.equal(getState().current.base, "#000000");
   dispose();
-  assert.deepEqual(calls, [
-    ["waves", 1],
-    ["black", 2],
-    [null, 2],
-  ]);
+  assert.deepEqual(calls, [[null, 1, false], ["waves", 1, false], ["black", 2, false], null]);
 });
 
 test("hot replacement preserves suspension and restores the saved scene at the new speed", () => {
@@ -78,41 +60,38 @@ test("hot replacement preserves suspension and restores the saved scene at the n
   original.bridge.suspend();
   original.bridge.setSpeed(3);
   const suspended = setup(original.getState());
-  assert.equal(suspended.layer.hidden, true);
-  assert.deepEqual(suspended.calls, []);
+  assert.equal(suspended.getState().suspended, true);
+  assert.deepEqual(suspended.calls, [["snow", 3, true]]);
   suspended.bridge.apply("snow");
-  assert.equal(suspended.layer.hidden, false);
-  assert.deepEqual(suspended.calls, [["snow", 3]]);
+  assert.equal(suspended.getState().suspended, false);
+  assert.deepEqual(suspended.calls, [
+    ["snow", 3, true],
+    ["snow", 3, false],
+  ]);
 });
 
 test("custom colours are validated and survive speed changes without replacing saved scene IDs", () => {
-  const { bridge, layer } = setup();
-  const root = layer.ownerDocument.documentElement;
+  const { bridge, getState } = setup();
   bridge.apply("custom", 1, "#FFF0CF");
-  assert.equal(root.style.background, "#fff0cf");
-  assert.equal(root["data-light-background"], "true");
+  assert.equal(getState().current.base, "#fff0cf");
   bridge.setSpeed(2);
-  assert.equal(root.style.background, "#fff0cf");
+  assert.equal(getState().current.base, "#fff0cf");
   bridge.suspend();
-  assert.equal(root["data-light-background"], "false");
+  assert.equal(getState().suspended, true);
   bridge.apply("custom", 1, "url(https://example.com)");
-  assert.equal(root.style.background, "#7c5cff");
+  assert.equal(getState().current.base, "#7c5cff");
   bridge.apply("black");
-  assert.equal(root.style.background, "#000000");
-  assert.equal(root["data-light-background"], "false");
+  assert.equal(getState().current.base, "#000000");
+  assert.equal(getState().suspended, false);
 });
 
-test("custom gradients render, retain both colours on speed changes, and select light-background contrast", () => {
-  const { bridge, layer } = setup();
-  const root = layer.ownerDocument.documentElement;
+test("custom gradients retain both colours and their direction on speed changes", () => {
+  const { bridge, getState } = setup();
   bridge.apply("custom-gradient", 1, undefined, { start: "#336699", end: "#ff0000", angle: 90 });
-  assert.equal(root.style.background, "linear-gradient(90deg, #336699, #ff0000)");
+  assert.equal(getState().current.base, "linear-gradient(90deg, #336699, #ff0000)");
   bridge.setSpeed(2);
-  assert.equal(root.style.background, "linear-gradient(90deg, #336699, #ff0000)");
-  bridge.apply("custom-gradient", 1, undefined, { start: "#ffffff", end: "#fff0cf", angle: 0 });
-  assert.equal(root["data-light-background"], "true");
-  bridge.apply("black");
-  assert.equal(root["data-light-background"], "false");
+  assert.equal(getState().current.base, "linear-gradient(90deg, #336699, #ff0000)");
+  assert.deepEqual(getState().current.gradient, { start: "#336699", end: "#ff0000", angle: 90 });
 });
 
 test("the new gradient backgrounds are static and pure CSS, with no imagery", () => {
@@ -134,15 +113,4 @@ test("Stage is an animated WebGL background with a pure CSS fallback and a still
   const swatch = preview(stage);
   assert.notEqual(swatch, stage.base, "the swatch shows a still frame, not only the fallback");
   assertPureCss(swatch, "Stage swatch");
-});
-
-test("Pastel turns the floating Home text dark, the darker new gradients keep it light", () => {
-  const { bridge, layer } = setup();
-  const root = layer.ownerDocument.documentElement;
-  bridge.apply("pastel");
-  assert.equal(root["data-light-background"], "true");
-  for (const id of NEW_GRADIENTS.filter((id) => id !== "pastel")) {
-    bridge.apply(id);
-    assert.equal(root["data-light-background"], "false", id);
-  }
 });

@@ -5,6 +5,7 @@ import type { WeatherPhotoSource } from "../contracts/status";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import { createStore } from "../shared/state/createStore";
 
+import { BackgroundLayer } from "./BackgroundLayer/BackgroundLayer";
 import { BackgroundSceneView } from "./BackgroundSceneView/BackgroundSceneView";
 import type { BackgroundState } from "./createBackgrounds";
 import { createBackgrounds } from "./createBackgrounds";
@@ -32,23 +33,28 @@ export const mountBackgrounds = (
     },
   };
   const backgrounds = createBackgrounds({
-    layer,
     previous,
     webGL,
-    renderScene: (scene, speed) =>
+    renderState: (state) => {
+      const scene = state?.current;
       render(
-        scene && (
-          <BackgroundSceneView
-            key={scene.anim === "stage" ? scene.id : generation++}
-            scene={scene}
-            speed={speed}
-            webGL={webGL}
-            reportWebGL={status.set}
-            performanceMode={runtime.settings.getSnapshot().performanceMode}
-          />
+        state && (
+          <BackgroundLayer state={state} document={layer.ownerDocument}>
+            {scene && (
+              <BackgroundSceneView
+                key={scene.anim === "stage" ? scene.id : generation++}
+                scene={scene}
+                speed={state.speed}
+                webGL={webGL}
+                reportWebGL={status.set}
+                performanceMode={runtime.settings.getSnapshot().performanceMode}
+              />
+            )}
+          </BackgroundLayer>
         ),
         layer,
-      ),
+      );
+    },
   });
   const photo = createWeatherPhoto(
     weather,

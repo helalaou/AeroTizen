@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "preact/hooks";
+import { useLayoutEffect, useRef, useState } from "preact/hooks";
 
 import styles from "./StageBackground.module.css";
 import { STAGE_HEIGHT, STAGE_WIDTH } from "./stageGeometry";
@@ -15,16 +15,15 @@ interface Props {
 
 export const StageBackground = ({ speed, reportWebGL }: Props) => {
   const canvas = useRef<HTMLCanvasElement>(null);
-  const halftone = useRef<HTMLDivElement>(null);
+  const [tile, setTile] = useState<string | null>(null);
   const animation = useRef<StageAnimation | undefined>(undefined);
   useLayoutEffect(() => {
-    const element = halftone.current;
+    const element = canvas.current;
     if (!element) {
       return;
     }
-    const tile = createHalftoneTile(element.ownerDocument, Math.min(window.devicePixelRatio || 1, MAX_TILE_SCALE));
-    element.style.backgroundImage = tile ? "url(" + tile + ")" : "";
-    element.style.backgroundSize = HALFTONE_TILE + "px " + HALFTONE_TILE + "px";
+    const document = element.ownerDocument;
+    setTile(createHalftoneTile(document, Math.min(document.defaultView?.devicePixelRatio || 1, MAX_TILE_SCALE)));
   }, []);
   useLayoutEffect(() => {
     const element = canvas.current;
@@ -52,7 +51,14 @@ export const StageBackground = ({ speed, reportWebGL }: Props) => {
   return (
     <div class={styles.stage} data-stage-background>
       <canvas class={styles.canvas} data-renderer="webgl" ref={canvas} width={STAGE_WIDTH} height={STAGE_HEIGHT} />
-      <div class={styles.halftone} ref={halftone} />
+      <div
+        class={styles.halftone}
+        data-stage-halftone
+        style={{
+          backgroundImage: tile ? "url(" + tile + ")" : undefined,
+          backgroundSize: HALFTONE_TILE + "px " + HALFTONE_TILE + "px",
+        }}
+      />
     </div>
   );
 };

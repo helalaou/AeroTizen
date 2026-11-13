@@ -59,6 +59,10 @@ test("Stage resumes when reduced motion is disabled and stops again when enabled
 test("Stage speed changes retain the canvas and compiled shaders", async ({ page }) => {
   await openStage(page);
   const canvas = await page.locator("[data-stage-background] canvas").elementHandle();
+  const halftone = page.locator("[data-stage-halftone]");
+  const halftoneImage = await halftone.evaluate((node) => getComputedStyle(node).backgroundImage);
+  expect(halftoneImage).toContain("data:image/png;base64,");
+  await expect(halftone).toHaveCSS("background-size", "54px 54px");
   const compiles = await page.evaluate(() => window.stageAudit.compiles);
   expect(compiles).toBeGreaterThan(0);
   await page.locator("#gear").click();
@@ -71,6 +75,7 @@ test("Stage speed changes retain the canvas and compiled shaders", async ({ page
   }
   await page.evaluate(() => AeroTizen.applyBackground());
   expect(await canvas.evaluate((node) => node.isConnected)).toBe(true);
+  await expect(halftone).toHaveCSS("background-image", halftoneImage);
   expect(await page.evaluate(() => window.stageAudit.compiles)).toBe(compiles);
   const before = await draws(page);
   await expect.poll(() => draws(page)).toBeGreaterThan(before);
