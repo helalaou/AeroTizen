@@ -87,18 +87,31 @@ starting discovery. It also owns app inventory reports and coalesces app-control
 visibility events when the TV returns to the launcher. The boot controller and services
 survive development hot reload. The early diagnostics bundle records startup marks.
 
-`bindLauncherKeys` routes remote input to text entry, Fireplace, input playback,
-Settings and Home in that order. Each app mount binds its own controllers and removes
-the key listeners when the views are replaced.
-The Fireplace feature supplies `createFireplaceKeyHandler` through the shared
-`RemoteKeyHandler` contract. It owns volume and close-key rules. The app router
-checks whether it is active and forwards keydown events; it suppresses Home keyup
-events while an overlay is active. Fireplace controls live in `contracts/fireplace.ts`,
-with no dependency on the Tizen runtime types.
-The input playback feature supplies `createInputPlaybackKeyHandler` through the
-same contract. It captures keys during both opening and playback and owns the
-Enter, Back and Escape exit rules. The router reads only its active state and
-forwards keydown events; device commands and playback cancellation stay in the input service.
+`bindLauncherKeys` owns one keydown/keyup listener pair, plus cancellation on
+window blur and hidden visibility. It has no feature branches. The shared input
+dispatcher normalizes device codes into actions and holds each press, repeat and
+release in the scope that received its keydown. Confirm and Back act once per press
+in UI scopes; native editors retain browser repeat behaviour.
+Closing, hiding or replacing a scope cancels its pending input; releases never move
+to the newly exposed screen. Activation subscriptions cancel pending input before
+another key event, including Home's long-press timer.
+
+`createLauncherInputScopes` adapts the existing text entry, Fireplace, input playback,
+Settings and Home controllers in that priority order. These adapters keep the old
+screen commands while controls adopt scoped actions. Services retain device calls
+and cancellation. The shared dispatcher and scope registry do not import features.
+
+`InputScopeContext` and `useInputScope` give a view a child scope with cleanup on
+unmount. Unhandled actions bubble to the parent; a modal stops them before the
+screen behind it. Native text entry keeps browser defaults and IME composition.
+The dispatcher releases activation subscriptions when the app unbinds input.
+
+The Settings colour picker is the first nested modal scope. It owns a separate
+navigation registry and entry focus for solid colours and gradients. Its sliders
+register focused child scopes and own Left/Right adjustment and held-key acceleration.
+Other directions and Back bubble to the picker. The Settings drawer retains its own
+selection and resumes focus when the modal leaves; it has no picker key rules or
+picker focus-key table. Pointer controls use the same actions as remote controls.
 
 ## Diagnostics ownership
 

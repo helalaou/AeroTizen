@@ -224,6 +224,66 @@ for (const theme of ["classic", "glass"]) {
   });
 }
 
+test("held Back closes only the picker until the next distinct press", async ({ page }) => {
+  const errors = await openSolid(page, "glass");
+  await page.locator('[data-key="bg:custom"]').click();
+  const picker = page.getByRole("dialog");
+  const drawer = page.locator('[data-settings-drawer="frame"]');
+  const tabTarget = page.locator('#editor [data-key][tabindex="0"]:visible');
+  await expect(tabTarget).toHaveCount(1);
+  await expect(tabTarget).toHaveAttribute("data-key", "colour:hue");
+  await page.keyboard.down("Escape");
+  await expect(picker).toBeHidden();
+  await page.keyboard.down("Escape");
+  await page.keyboard.down("Escape");
+  await page.keyboard.up("Escape");
+  await expect(page.locator("#editor")).toBeVisible();
+  await expect(drawer).toHaveAttribute("data-expanded", "true");
+  await expect(page.locator('[data-key="bg:custom"]')).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(drawer).toHaveAttribute("data-expanded", "false");
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#editor")).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test("holding Apply cannot reopen the picker when its scope closes", async ({ page }) => {
+  const errors = await openSolid(page, "glass");
+  const custom = page.locator('[data-key="bg:custom"]');
+  await custom.click();
+  await page.keyboard.press("ArrowRight");
+  for (let step = 0; step < 3; step++) await page.keyboard.press("ArrowDown");
+  await expect(page.locator('[data-key="colour:apply"]')).toBeFocused();
+  await page.keyboard.down("Enter");
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await page.keyboard.down("Enter");
+  await page.keyboard.up("Enter");
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(custom).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("a held direction cannot transfer to another slider after focus moves", async ({ page }) => {
+  const errors = await openSolid(page, "glass");
+  await page.locator('[data-key="bg:custom"]').click();
+  const hue = page.locator('[data-key="colour:hue"]');
+  const strength = page.locator('[data-key="colour:strength"]');
+  const before = Number(await strength.getAttribute("aria-valuenow"));
+  const hueBefore = Number(await hue.getAttribute("aria-valuenow"));
+  await page.keyboard.down("ArrowRight");
+  await expect(hue).toHaveAttribute("aria-valuenow", String((hueBefore + 1) % 360));
+  await page.keyboard.press("ArrowDown");
+  await expect(strength).toBeFocused();
+  await page.keyboard.down("ArrowRight");
+  await expect(strength).toHaveAttribute("aria-valuenow", String(before));
+  await page.keyboard.up("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await expect(strength).toHaveAttribute("aria-valuenow", String(Math.min(100, before + 1)));
+  expect(errors).toEqual([]);
+});
+
 test("demo preview reopens the current custom colour before and after a reload", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));

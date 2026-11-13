@@ -6,6 +6,7 @@ import type { LauncherUpdateNotice } from "../contracts/updates";
 import type { LauncherPlatform, LauncherRuntime } from "../platform/tizen/launcherRuntime";
 import type { Translations } from "../shared/i18n/createTranslations";
 import { TranslationContext } from "../shared/i18n/useTranslation";
+import { InputScopeContext } from "../shared/input/context";
 import { createNavigation } from "../shared/navigation/createNavigation";
 import { focusControl } from "../shared/navigation/focusControl";
 import { createStore } from "../shared/state/createStore";
@@ -88,9 +89,11 @@ export const mountSettings = (
   try {
     render(
       <TranslationContext.Provider value={translations}>
-        <SettingsProvider environment={environment}>
-          <SettingsRoot />
-        </SettingsProvider>
+        <InputScopeContext.Provider value={bridge.inputScope}>
+          <SettingsProvider environment={environment}>
+            <SettingsRoot />
+          </SettingsProvider>
+        </InputScopeContext.Provider>
       </TranslationContext.Provider>,
       mount,
     );

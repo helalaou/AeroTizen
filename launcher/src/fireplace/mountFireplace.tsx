@@ -44,6 +44,7 @@ export const mountFireplace = (host: HTMLElement, translate: Translate) => {
   render(<FireplaceView state={state} translate={translate} />, host);
   return {
     bridge: {
+      subscribe: state.subscribe,
       open() {
         const current = state.getSnapshot();
         if (disposed || current.open) {

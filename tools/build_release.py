@@ -83,6 +83,7 @@ def build_launcher(root, output, tag=None):
     ]
     for directory, suffix in (("css", ".css"), ("js", ".js"), ("service", ".js")):
         files.extend((launcher / directory).rglob(f"*{suffix}"))
+    files.extend(path for path in (launcher / "fonts").rglob("*") if path.is_file())
     html = (launcher / "index.html").read_text(encoding="utf-8")
     if 'id="weather-photo-root"' in html:
         # The bundled wallpaper view loads these local scenes. Keep their provenance

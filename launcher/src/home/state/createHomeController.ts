@@ -468,6 +468,7 @@ export const createHomeController = (
     }
   };
   const bridge = {
+    cancelInput: cancelPress,
     render: focus,
     buildRows: focus,
     refreshApps: focus,

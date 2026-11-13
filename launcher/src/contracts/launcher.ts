@@ -3,6 +3,7 @@ import type { Store } from "../shared/state/createStore";
 
 import type { AppsConfig } from "./apps";
 import type { DateFormat, SettingsDefaults, TimeFormat } from "./preferences";
+import type { InputScope } from "./remoteInput";
 
 export interface InputSource {
   readonly active?: boolean;
@@ -91,10 +92,12 @@ export interface NavigationHandlers {
 export interface RemoteKeyHandler {
   isActive(): boolean;
   keydown(code: number, event: Pick<KeyboardEvent, "preventDefault">): void;
+  subscribe?(listener: () => void): () => void;
 }
 export interface SettingsBridge {
   close(): void;
   focus(): void;
+  inputScope: InputScope;
   isOpen(): boolean;
   keydown(code: number, event: Pick<KeyboardEvent, "preventDefault">): void;
   open(): void;
@@ -117,6 +120,7 @@ export interface ContinueItem {
 export interface HomeBridge {
   blur(): void;
   buildRows(): void;
+  cancelInput(): void;
   focus(): void;
   keydown(code: number, event: Pick<KeyboardEvent, "preventDefault">): void;
   keyup(code: number): void;
