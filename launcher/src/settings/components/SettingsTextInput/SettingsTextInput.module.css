@@ -4,7 +4,6 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 14px;
   padding: 10px 16px;
   border: 2px solid var(--border-control);
   border-radius: var(--control-radius);
@@ -22,6 +21,10 @@
   line-height: 24px;
   white-space: normal;
   text-align: start;
+
+  > * + * {
+    margin-inline-start: 14px;
+  }
 
   &[data-focused="true"] {
     --settings-text-input-underline: var(--focus);

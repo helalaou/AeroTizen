@@ -1,6 +1,6 @@
 .apps {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 160px);
   width: 1792px;
   gap: 22px;
   margin-bottom: 32px;

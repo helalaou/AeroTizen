@@ -1,12 +1,15 @@
 .compact {
   display: flex;
   align-items: center;
-  gap: 12px;
   font-size: 36px;
   margin-right: 18px;
 
   &[data-weather-only="true"] {
     margin-right: 0;
+  }
+
+  > * + * {
+    margin-inline-start: 12px;
   }
 
   > svg {
@@ -38,12 +41,15 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 12px;
   min-height: 32px;
   font-size: 24px;
   line-height: 1.1;
   font-weight: 400;
   color: var(--weather-expanded-text);
+
+  > * + * {
+    margin-inline-start: 12px;
+  }
 
   &[data-clock-layout="minimal"] {
     font-size: 21px;

@@ -1,9 +1,15 @@
 .swatches {
   display: flex;
   flex-wrap: wrap;
+  margin-top: -15px;
   margin-bottom: 40px;
-  width: 100%;
-  gap: 15px;
+  margin-inline-start: -15px;
+  width: calc(100% + 15px);
+
+  > * {
+    margin-top: 15px;
+    margin-inline-start: 15px;
+  }
 }
 
 .speedRow {
