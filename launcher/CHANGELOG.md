@@ -1,5 +1,29 @@
 # Changelog
 
+## [3.2.0](https://github.com/helalaou/AeroTizen/compare/launcher-v3.1.0...launcher-v3.2.0) (2026-11-14)
+
+
+### Features
+
+* **launcher:** check for updates more often and add a Check for updates button ([#240](https://github.com/helalaou/AeroTizen/issues/240)) ([d3d734a](https://github.com/helalaou/AeroTizen/commit/d3d734ae597da65c7e32a05c8172bb2b29b36271))
+* **launcher:** share app cards and fix action menu spacing ([#256](https://github.com/helalaou/AeroTizen/issues/256)) ([a606860](https://github.com/helalaou/AeroTizen/commit/a6068601fe2de09324df6271edc3a14f0323cb97))
+
+
+### Bug Fixes
+
+* **demo:** keep Samsung Home simulation in preview adapter ([#247](https://github.com/helalaou/AeroTizen/issues/247)) ([4bb493f](https://github.com/helalaou/AeroTizen/commit/4bb493f7c8c1df31a994204badabc5b3e3203a13))
+* **launcher:** give Home section titles room above the focus ring ([#244](https://github.com/helalaou/AeroTizen/issues/244)) ([273591a](https://github.com/helalaou/AeroTizen/commit/273591a804a6679ea443acbba5921367dd1a9f85))
+* **launcher:** keep long Settings labels inside their boxes ([#245](https://github.com/helalaou/AeroTizen/issues/245)) ([9b5ac35](https://github.com/helalaou/AeroTizen/commit/9b5ac3556f03c894bd58560dc2b5c11dab094a7e))
+* **launcher:** keep the add-apps card's text inside the card ([#249](https://github.com/helalaou/AeroTizen/issues/249)) ([28c5ae5](https://github.com/helalaou/AeroTizen/commit/28c5ae5daf6b671ef7209ebc1462494bcce3f9cd))
+* **launcher:** keep the Settings title variables off section titles ([#246](https://github.com/helalaou/AeroTizen/issues/246)) ([d16ed4b](https://github.com/helalaou/AeroTizen/commit/d16ed4bd6c81bf11b84b1283e85fd3cc917c68ab))
+* **launcher:** open Samsung store and put Add apps first on All apps ([#251](https://github.com/helalaou/AeroTizen/issues/251)) ([6c707cc](https://github.com/helalaou/AeroTizen/commit/6c707cc58ef6546baf0fb605a7ff3e19a98f1a97))
+* **launcher:** space flex children without gap for Chromium 69 ([#257](https://github.com/helalaou/AeroTizen/issues/257)) ([c10b774](https://github.com/helalaou/AeroTizen/commit/c10b7748bc619ba3ec1158a9ee764ba8437b14c1))
+
+
+### Performance Improvements
+
+* **launcher:** stop animating the input card background ([#243](https://github.com/helalaou/AeroTizen/issues/243)) ([3cb3bb0](https://github.com/helalaou/AeroTizen/commit/3cb3bb0e2ea62eb52431efbd42aa4994b9790ca2))
+
 ## [3.1.0](https://github.com/helalaou/AeroTizen/compare/launcher-v3.0.0...launcher-v3.1.0) (2026-11-12)
 
 
