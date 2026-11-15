@@ -42,6 +42,8 @@ const SECTION_TITLE = '[data-settings-heading="section"] [data-settings-heading-
 const SELECTED_CHOICE = '[data-key^="settings-appearance:"][aria-pressed="true"]';
 const CATEGORY_ICON = '[data-key="section:about"] > span';
 const STORE_LABEL = '[data-key="add"] [data-app-store-part="label"]';
+const FAVOURITE_BADGE = "#grid [data-selection-indicator]";
+const SETTINGS_BADGE = "#all-apps [data-selection-indicator]";
 
 const HOME_VARIABLES = [
   ["--home-card-radius", "56px", TILE, RADIUS, "10px", "56px"],
@@ -72,6 +74,16 @@ const HOME_VARIABLES = [
   ["--input-card-radius", "24px", CONNECTED_INPUT, RADIUS, "27px", "24px", { only: "glass" }],
   ["--input-dock-radius", "22px", "[data-input-dock]", RADIUS, "37px", "22px", { only: "glass" }],
   ["--input-empty-opacity", "0.5", EMPTY_INPUT, "opacity", "0.37", "0.5", { only: "glass" }],
+  [
+    "--input-empty-surface",
+    THEME_COLOUR,
+    EMPTY_INPUT,
+    "background-color",
+    TRANSPARENT,
+    THEME_COLOUR,
+    { only: "glass" },
+  ],
+  ["--input-empty-border", THEME_COLOUR, EMPTY_INPUT, "border-top-color", TRANSPARENT, THEME_COLOUR, { only: "glass" }],
   ["--input-connected-text", THEME_COLOUR, INPUT_LABEL, "color", WHITE, THEME_COLOUR, { only: "glass" }],
   ["--input-connected-icon-text", THEME_COLOUR, INPUT_ICON, "color", WHITE, THEME_COLOUR, { only: "glass" }],
   [
@@ -197,8 +209,14 @@ const SETTINGS_VARIABLES = [
   ["--choice-selected-text", THEME_COLOUR, SELECTED_CHOICE, "color", WHITE, THEME_COLOUR],
 ];
 
+const ALL_APPS_VARIABLES = [
+  ["--home-card-selection-offset", "24px", FAVOURITE_BADGE, "top", "12px", "24px"],
+  ["--home-card-selection-offset", "24px", FAVOURITE_BADGE, "right", "12px", "24px"],
+];
+
 const APPS_PANE_VARIABLES = [
-  ["--home-card-radius", "32px", '[data-key="add"]', RADIUS, "10px", "32px"],
+  ["--home-card-radius", "32px", '[data-key="add"]', RADIUS, "17px", "17px"],
+  ["--home-card-selection-offset", "24px", SETTINGS_BADGE, "top", "12px", "12px"],
   [
     "--muted",
     THEME_COLOUR,
@@ -309,6 +327,8 @@ for (const theme of ["classic", "glass"]) {
     await expectVariables(page, theme, FOCUSED_TAB_VARIABLES);
     await showAppsInScrollingRow(page, true);
     await expectVariables(page, theme, SCROLLING_ROW_VARIABLES);
+    await page.locator("#apps-tab").click();
+    await expectVariables(page, theme, ALL_APPS_VARIABLES);
   });
 
   test(`${theme} Settings keeps its look until a theme sets a variable`, async ({ page }) => {

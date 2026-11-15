@@ -98,6 +98,10 @@ test("compilation preserves runtime scripts, CSS, service and app identity", () 
   for (const file of readdirSync(path.join(root, "launcher/css"))) {
     assert.equal(read(output, `css/${file}`), read(path.join(root, "launcher"), `css/${file}`));
   }
+  for (const [, font] of read(output, "css/fonts.css").matchAll(/url\("\.\.\/(fonts\/[^"]+)"\)/g)) {
+    assert.ok(existsSync(path.join(output, font)), font);
+    assert.match(read(output, path.posix.join(path.posix.dirname(font), "OFL.txt")), /SIL OPEN FONT LICENSE/);
+  }
   assert.deepEqual(readdirSync(path.join(output, "service")).sort(), [
     "artmode.js",
     "diagnostics-context.js",

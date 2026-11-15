@@ -2,19 +2,28 @@
 
 Use the [component ownership map](component-structure.md) to find a stylesheet.
 All component styles live in co-located `Component.module.css` files. Only
-`base.css`, `themes.css` and `motion.css` remain global, for page rules, shared
-paint and motion policy. Keep layout and state selectors with their component.
+`base.css`, `motion.css`, `fonts.css` and the `theme-<id>.css` files remain
+global, for page rules, motion policy, font faces and theme values. Keep layout and state selectors with their component.
 
 Use a component-named directory for a styled component and its private helpers,
 for example `AppGrid/AppGrid.tsx` with `AppGrid/AppGrid.module.css`. Small components
 without companion files can stay flat. Apply this structure as components are
 migrated; imports name the component file directly, without a barrel per folder.
 
-Keep theme paint in
-`launcher/css/themes.css`, which defines the default Classic values and the
-`body.glass-ui` overrides. Prefer role names such as `--settings-surface`,
-`--header-focus-surface` and `--menu-border` over new colour literals for shared
-surfaces, text, borders, focus and shadows. Component-specific artwork and input
+Each theme keeps its paint in its own file, `launcher/css/theme-<id>.css`, on
+`body[data-theme="<id>"]`. A theme sets every theme variable itself: there are no
+shared defaults and no theme builds on another one's values, so changing one theme
+never changes another.
+A theme's fonts ship with the launcher: `launcher/css/fonts.css` declares them, and
+each family sits in `launcher/fonts/<family>/` next to its licence, `OFL.txt`.
+On Home, give a surface that moves or changes with the focus a flat colour, or an
+image when it needs a gradient, as Gloss does for its tile sheen: a TV that rasters
+with its CPU draws a CSS gradient again on every frame while its layer animates.
+A blurred shadow belongs to the focused card only: at rest it would be drawn for
+every card.
+Prefer role names such as `--settings-surface`, `--header-focus-surface` and
+`--menu-border` over new colour literals for shared surfaces, text, borders,
+focus and shadows. Component-specific artwork and input
 state palettes stay with their component.
 
 A theme can also change a few values that components own. A component reads such
@@ -31,13 +40,14 @@ unset:
   `--continue-badge-radius`, `--input-card-radius`, `--input-dock-radius`,
   `--header-tab-radius`, `--header-tab-plate-radius`, `--toast-radius`;
 - app tiles: `--home-card-shadow`, `--home-card-focus-transform`,
-  `--home-card-focus-shadow-top`, `--home-card-sheen`;
+  `--home-card-focus-shadow-top`, `--home-card-sheen`,
+  `--home-card-selection-offset`;
 - Continue Watching: `--continue-title-text`, `--continue-focus-label-surface`,
   `--continue-focus-title-text`, `--continue-focus-episode-text`,
   `--continue-artwork-mark`, `--continue-artwork-mark-shadow`;
 - inputs: `--input-connected-text`, `--input-connected-icon-text`,
   `--input-connected-subtitle-text`, `--input-focus-icon-text`,
-  `--input-empty-opacity`;
+  `--input-empty-opacity`, `--input-empty-surface`, `--input-empty-border`;
 - header: `--header-icon-text`, `--header-icon-surface`, `--header-icon-shadow`,
   `--header-tab-plate-surface`, `--header-tab-plate-shadow`,
   `--header-tab-plate-border`, `--header-tab-plate-text`,
@@ -48,7 +58,7 @@ unset:
   `--settings-scroll-ring-room`;
 - spacing and toast: `--home-row-clearance`, `--toast-text`, `--toast-shadow`.
 
-The three `--input-connected-*` text variables are declared in `themes.css`,
+The three `--input-connected-*` text variables are declared in each theme file,
 where they follow the neutral input text. Four of the variables paint a layer
 that is empty until a theme sets it: `--home-card-sheen` over an app tile,
 `--continue-artwork-mark` over a Continue Watching image,
@@ -132,14 +142,14 @@ modifier with the shared `truncate` utility; other titles keep their two-line cl
 Tests use `#continue-items > [data-key]`, `data-focused` and `data-continue-part`
 hooks. Keep card focus paint and motion with the card, rather than in `base.css`.
 
-`InputDock` owns collection spacing and the compact Glass dock. `InputCard` owns
-its frame, icon, labels, status badge and focused/disconnected states. Pass the
-compact layout explicitly; child geometry must not depend on a parent's class.
-The card exposes `data-input-card`, `data-status`, `data-disconnected`, `data-variant`
-and `data-input-part` hooks. Classic and Glass keep their existing layouts.
-Theme tokens own neutral input paint; connection-status palettes keep local
-defaults through optional named variable fallbacks. Both labels reuse the shared
-truncate utility where their layout needs it.
+`InputDock` owns collection spacing and the compact dock. `InputCard` owns its
+frame, icon, labels, status badge and focused/disconnected states. Their styles
+use `data-theme` to stack the icon above the label and show the status badge in
+Glass and Gloss. Classic uses a horizontal card. Pass the compact layout
+explicitly so child geometry can use it directly. The card exposes
+`data-input-card`, `data-status`, `data-disconnected` and `data-input-part` hooks.
+Theme tokens own neutral input paint. Connection status palettes keep local
+defaults through optional named variable fallbacks.
 
 `Home` owns the viewport, fades, page reveals and section spacing. The inputs
 section exposes `data-home-section="inputs"` as a layout slot. Tests use
@@ -219,11 +229,10 @@ the current components.
 
 The remaining shell classes are public integration hooks, not module classes:
 
-| Hook            | Owner                          | Purpose                                        |
-| --------------- | ------------------------------ | ---------------------------------------------- |
-| `body.tv`       | `inputs/InputPlaybackView.tsx` | Hide Home while the native TVWindow is visible |
-| `body.glass-ui` | `home/index.tsx`               | Apply the existing appearance before measuring |
-| `body.editing`  | `useSettingsPresentation.ts`   | Settings visibility, with unmount cleanup      |
+| Hook           | Owner                          | Purpose                                        |
+| -------------- | ------------------------------ | ---------------------------------------------- |
+| `body.tv`      | `inputs/InputPlaybackView.tsx` | Hide Home while the native TVWindow is visible |
+| `body.editing` | `useSettingsPresentation.ts`   | Settings visibility, with unmount cleanup      |
 
 Native/background adapters also own page transparency; dynamic
 geometry, progress and feature artwork custom properties remain explicit inline data.

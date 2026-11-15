@@ -8,7 +8,8 @@
     margin-left: var(--input-dock-spacing);
   }
 
-  &[data-variant="glass"] {
+  [data-theme="glass"] &,
+  [data-theme="gloss"] & {
     --input-dock-spacing: 11px;
 
     position: relative;

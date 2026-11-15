@@ -1,5 +1,4 @@
-/* Theme paint is defined once. Component styles own geometry and state selectors. */
-:root {
+body[data-theme="classic"] {
   --bg: #000;
   --fg: #fff;
   --muted: #b8b8c0;
@@ -7,8 +6,6 @@
   --focus: #7c5cff;
   --focus-glow: rgba(124, 92, 255, 0.23);
   --update-notice: #ffd34f;
-}
-body {
   --toast-surface: var(--card);
   --fireplace-notice-surface: rgba(0, 0, 0, 0.55);
   --surface-control: rgba(236, 242, 255, 0.08);
@@ -134,71 +131,9 @@ body {
   --menu-backdrop: rgba(5, 8, 16, 0.53);
   --network-offline: #ff6b6b;
 }
-body.glass-ui {
-  --input-icon-badge: transparent;
-  --input-icon-text: #fff;
-  --input-text: #fff;
-  --input-label-shadow: 0 1px 6px rgba(0, 0, 0, 0.33);
-  --input-subtitle-text: rgba(255, 255, 255, 0.83);
-  --input-dock-border: rgba(255, 255, 255, 0.31);
-  --input-dock-surface: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, 0.2),
-    rgba(60, 68, 78, 0.44) 18%,
-    rgba(20, 25, 35, 0.63) 62%,
-    rgba(15, 20, 28, 0.71)
-  );
-  --input-dock-shadow:
-    inset 0 1px rgba(255, 255, 255, 0.24), inset 0 -1px rgba(255, 255, 255, 0.09), 0 13px 32px rgba(0, 0, 0, 0.27);
-  --input-dock-shine: linear-gradient(to bottom, rgba(255, 255, 255, 0.075), transparent);
-  --input-card-border: rgba(255, 255, 255, 0.18);
-  --input-card-surface: linear-gradient(
-    170deg,
-    rgba(255, 255, 255, 0.145),
-    rgba(255, 255, 255, 0.035) 70%,
-    rgba(255, 255, 255, 0.055)
-  );
-  --input-card-shadow: inset 0 1px rgba(255, 255, 255, 0.16), 0 4px 13px rgba(0, 0, 0, 0.1);
-  --input-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.28), 0 7px 18px rgba(0, 0, 0, 0.25);
-  --focus: #edf2ff;
-  --focus-glow: rgba(237, 242, 255, 0.23);
-  --header-tab-surface: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, 0.19) 0%,
-    rgba(60, 68, 78, 0.43) 22%,
-    rgba(20, 25, 35, 0.62) 63%,
-    rgba(15, 20, 28, 0.72) 100%
-  );
-  --header-tab-shadow: inset 0 1px rgba(255, 255, 255, 0.24), 0 13px 32px rgba(0, 0, 0, 0.27);
-  --header-tab-text: rgba(234, 239, 247, 0.78);
-  --header-tab-isolation: isolate;
-  --header-focus-surface: rgba(236, 242, 255, 0.16);
-  --header-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.2);
-  --header-gear-border: 2px;
-  --settings-surface: linear-gradient(160deg, #626a78 0%, #333b4a 13%, #232b39 51%, #151a25 100%);
-  --settings-main-surface: rgba(10, 16, 28, 0.17);
-  --settings-border: rgba(255, 255, 255, 0.35);
-  --settings-radius: 25px;
-  --settings-shadow: inset 0 1px rgba(255, 255, 255, 0.24), 0 12px 28px rgba(0, 0, 0, 0.4);
-  --settings-focus-border: rgba(255, 255, 255, 0.89);
-  --settings-sidebar-focus-surface: rgba(236, 242, 255, 0.18);
-  --settings-content-focus-surface: rgba(236, 242, 255, 0.055);
-  --settings-sidebar-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.2);
-  --settings-content-focus-shadow: inset 0 1px rgba(255, 255, 255, 0.19);
-  --choice-selected-surface: rgba(189, 218, 255, 0.24);
-  --choice-selected-border: rgba(201, 225, 255, 0.55);
-  --choice-focused-surface: rgba(236, 242, 255, 0.15);
-  --selection-surface: #475269;
-  --continue-surface: linear-gradient(160deg, rgba(86, 97, 116, 0.84), rgba(22, 29, 42, 0.94));
-  --continue-shadow: inset 0 1px rgba(255, 255, 255, 0.24), 0 10px 24px rgba(0, 0, 0, 0.28);
-  --continue-label-surface: rgba(18, 25, 38, 0.38);
-  --continue-episode-text: #d5deec;
-  --continue-progress-track: rgba(217, 227, 242, 0.24);
-  --menu-focus-surface: rgba(236, 242, 255, 0.18);
-}
 
 /* Solid colours keep their full range. Floating Home text follows luminance. */
-:root[data-light-background="true"] body {
+:root[data-light-background="true"] body[data-theme="classic"] {
   --clock-text: #15151b;
   --clock-shadow: none;
   --clock-minimal-text: #15151b;
@@ -216,13 +151,13 @@ body.glass-ui {
   --network-offline: #a01429;
 }
 
-:root[data-light-background="true"] [data-header-shortcuts],
-:root[data-light-background="true"] [data-header-status] {
+:root[data-light-background="true"] body[data-theme="classic"] [data-header-shortcuts],
+:root[data-light-background="true"] body[data-theme="classic"] [data-header-status] {
   --fg: #15151b;
   --muted: #303038;
 }
 
-:root[data-light-background="true"] [data-header-shortcuts] {
+:root[data-light-background="true"] body[data-theme="classic"] [data-header-shortcuts] {
   --header-focus-surface: rgba(0, 0, 0, 0.12);
   --header-focus-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.55);
 }

@@ -53,6 +53,8 @@
   --store-label-size: 19px;
   --store-subtitle-size: 13px;
   --store-subtitle-gap: 4px;
+
+  border-radius: var(--control-radius);
 }
 
 .icon {

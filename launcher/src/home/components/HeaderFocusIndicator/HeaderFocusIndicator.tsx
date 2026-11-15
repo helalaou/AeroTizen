@@ -11,6 +11,15 @@ const GROUP_KEYS: Record<"tabs" | "shortcuts", readonly string[]> = {
   shortcuts: ["gear", "samsung-home-shortcut"],
 };
 
+interface PlateBox {
+  height: string;
+  transform: string;
+  width: string;
+}
+
+const sameBox = (first: PlateBox, second: PlateBox) =>
+  first.transform === second.transform && first.width === second.width && first.height === second.height;
+
 export const HeaderFocusIndicator = ({
   env,
   group = "shortcuts",
@@ -39,11 +48,10 @@ export const HeaderFocusIndicator = ({
     if (!node || !host) {
       return;
     }
-    const rect = node.getBoundingClientRect();
-    const parent = host.getBoundingClientRect();
-    setPlate({
-      motion: positioned.current,
-      style: {
+    const measure = () => {
+      const rect = node.getBoundingClientRect();
+      const parent = host.getBoundingClientRect();
+      return {
         transform:
           "translate3d(" +
           (rect.left - parent.left - host.clientLeft) +
@@ -54,9 +62,18 @@ export const HeaderFocusIndicator = ({
         height: rect.height + "px",
         left: "0px",
         top: "0px",
-      },
-    });
+      };
+    };
+    const followResize = () => {
+      const style = measure();
+      setPlate((previous) => (sameBox(previous.style, style) ? previous : { motion: false, style }));
+    };
+    setPlate({ motion: positioned.current, style: measure() });
     positioned.current = true;
+    const resize = typeof ResizeObserver === "function" ? new ResizeObserver(followResize) : undefined;
+    resize?.observe(node);
+    resize?.observe(host);
+    return () => resize?.disconnect();
   }, [env, key, language]);
   return (
     <div
