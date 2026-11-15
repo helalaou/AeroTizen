@@ -41,13 +41,14 @@ unset:
   `--continue-badge-radius`, `--input-card-radius`, `--input-dock-radius`,
   `--header-tab-radius`, `--header-tab-plate-radius`, `--toast-radius`;
 - app tiles: `--home-card-shadow`, `--home-card-focus-transform`,
-  `--home-card-focus-shadow-top`, `--home-card-sheen`;
+  `--home-card-focus-shadow-top`, `--home-card-sheen`,
+  `--home-card-selection-offset`;
 - Continue Watching: `--continue-title-text`, `--continue-focus-label-surface`,
   `--continue-focus-title-text`, `--continue-focus-episode-text`,
   `--continue-artwork-mark`, `--continue-artwork-mark-shadow`;
 - inputs: `--input-connected-text`, `--input-connected-icon-text`,
   `--input-connected-subtitle-text`, `--input-focus-icon-text`,
-  `--input-empty-opacity`;
+  `--input-empty-opacity`, `--input-empty-surface`, `--input-empty-border`;
 - header: `--header-icon-text`, `--header-icon-surface`, `--header-icon-shadow`,
   `--header-tab-plate-surface`, `--header-tab-plate-shadow`,
   `--header-tab-plate-border`, `--header-tab-plate-text`,

@@ -87,8 +87,8 @@
       --input-subtitle-text: var(--input-empty-subtitle-text);
 
       opacity: var(--input-empty-opacity, 0.37);
-      border-color: transparent;
-      background: transparent;
+      border-color: var(--input-empty-border, transparent);
+      background: var(--input-empty-surface, transparent);
       box-shadow: none;
     }
 

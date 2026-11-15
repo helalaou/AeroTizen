@@ -12,6 +12,8 @@
 .home {
   width: var(--app-card-size);
   height: var(--app-card-size);
+  --selection-offset: var(--home-card-selection-offset, 12px);
+
   border-radius: var(--home-card-radius, 10px);
   background: var(--app-background, var(--app-placeholder-surface));
   box-shadow: var(--home-card-shadow, none);
