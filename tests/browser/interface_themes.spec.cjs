@@ -71,20 +71,23 @@ test("Appearance lists the themes after Classic and Glass", async ({ page }) => 
 });
 
 for (const theme of THEMES) {
-  test(`${theme.names.en} restyles Home on the Glass layout with its fonts and survives a restart`, async ({
-    page,
-  }) => {
+  test(`${theme.names.en} restyles Home with stacked input cards and survives a restart`, async ({ page }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
+    const dock = page.locator("[data-input-dock]");
+    const card = page.locator("[data-input-card]").first();
+    const status = card.locator('[data-input-part="status"]');
     await open(page, { theme: "classic", language: "en" });
     await expect.poll(() => tileRadius(page)).toBe(CLASSIC_TILE_RADIUS);
+    await expect(card).toHaveCSS("flex-direction", "row");
+    await expect(status).toBeHidden();
     await openAppearance(page);
     await page.locator(choice(theme.id)).click();
     await expect(page.locator(choice(theme.id))).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator("body")).toHaveAttribute("data-theme", theme.id);
-    await expect(page.locator("[data-input-dock]")).toHaveAttribute("data-variant", "glass");
-    await expect(page.locator("[data-input-card]")).toHaveAttribute("data-variant", "glass");
-    await expect(page.locator('[data-input-part="status"]')).toHaveCount(1);
+    await expect(dock).toHaveCSS("display", "inline-flex");
+    await expect(card).toHaveCSS("flex-direction", "column");
+    await expect(status).toBeVisible();
     await expect.poll(() => tileRadius(page)).toBe(theme.tileRadius);
     await expect.poll(() => tabFont(page)).toBe(theme.fonts[0]);
     for (const font of theme.fonts) expect(await fontLoads(page, font), font).toBe(true);
@@ -92,10 +95,15 @@ for (const theme of THEMES) {
     await page.reload();
     await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
     await expect(page.locator("body")).toHaveAttribute("data-theme", theme.id);
+    await expect(card).toHaveCSS("flex-direction", "column");
+    await expect(status).toBeVisible();
     await expect.poll(() => tileRadius(page)).toBe(theme.tileRadius);
     await openAppearance(page);
     await page.locator(choice("classic")).click();
     await expect(page.locator("body")).toHaveAttribute("data-theme", "classic");
+    await expect(dock).toHaveCSS("display", "flex");
+    await expect(card).toHaveCSS("flex-direction", "row");
+    await expect(status).toBeHidden();
     await expect.poll(() => tileRadius(page)).toBe(CLASSIC_TILE_RADIUS);
     expect(errors).toEqual([]);
   });

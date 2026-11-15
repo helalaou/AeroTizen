@@ -1,7 +1,6 @@
 import { ArrowUp } from "lucide-preact";
 import { useLayoutEffect } from "preact/hooks";
 
-import { THEME_BASE } from "../../../contracts/preferences";
 import { useStore, useStoreSelector } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { Icon } from "../../../shared/icons/Icon/Icon";
@@ -103,7 +102,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
                   {t("home.emptyApps")}
                 </p>
                 <ContinueWatchingRow env={env} items={items} visible={showContinueWatching} />
-                <InputDock env={env} inputs={inputs} visible={page === "home"} variant={THEME_BASE[settings.theme]} />
+                <InputDock env={env} inputs={inputs} visible={page === "home"} />
               </div>
               {page === "apps" && apps.length > 0 && (
                 <HomeControl

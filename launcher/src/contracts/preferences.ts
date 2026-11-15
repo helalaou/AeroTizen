@@ -4,8 +4,6 @@ export type TimeFormat = "12" | "24";
 export type TemperatureUnit = "C" | "F";
 export type DateFormat = "compact" | "short" | "long" | "numeric-short" | "numeric" | "iso" | "none";
 export type Theme = "classic" | "glass" | "gloss";
-export type ThemeBase = "classic" | "glass";
-export const THEME_BASE: Record<Theme, ThemeBase> = { classic: "classic", glass: "glass", gloss: "glass" };
 // "tv" follows the TV clock. "weather" follows the weather location's time zone.
 export type TimeZoneSource = "tv" | "weather";
 export interface CustomGradient {

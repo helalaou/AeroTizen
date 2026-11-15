@@ -13,8 +13,7 @@ migrated; imports name the component file directly, without a barrel per folder.
 Each theme keeps its paint in its own file, `launcher/css/theme-<id>.css`, on
 `body[data-theme="<id>"]`. A theme sets every theme variable itself: there are no
 shared defaults and no theme builds on another one's values, so changing one theme
-never changes another. `THEME_BASE` in `contracts/preferences.ts` says which
-layout, Classic or Glass, a theme uses.
+never changes another.
 A theme's fonts ship with the launcher: `launcher/css/fonts.css` declares them, and
 each family sits in `launcher/fonts/<family>/` next to its licence, `OFL.txt`.
 On Home, give a surface that moves or changes with the focus a flat colour, or an
@@ -143,14 +142,14 @@ modifier with the shared `truncate` utility; other titles keep their two-line cl
 Tests use `#continue-items > [data-key]`, `data-focused` and `data-continue-part`
 hooks. Keep card focus paint and motion with the card, rather than in `base.css`.
 
-`InputDock` owns collection spacing and the compact Glass dock. `InputCard` owns
-its frame, icon, labels, status badge and focused/disconnected states. Pass the
-compact layout explicitly; child geometry must not depend on a parent's class.
-The card exposes `data-input-card`, `data-status`, `data-disconnected`, `data-variant`
-and `data-input-part` hooks. Classic and Glass keep their existing layouts.
-Theme tokens own neutral input paint; connection-status palettes keep local
-defaults through optional named variable fallbacks. Both labels reuse the shared
-truncate utility where their layout needs it.
+`InputDock` owns collection spacing and the compact dock. `InputCard` owns its
+frame, icon, labels, status badge and focused/disconnected states. Their styles
+use `data-theme` to stack the icon above the label and show the status badge in
+Glass and Gloss. Classic uses a horizontal card. Pass the compact layout
+explicitly so child geometry can use it directly. The card exposes
+`data-input-card`, `data-status`, `data-disconnected` and `data-input-part` hooks.
+Theme tokens own neutral input paint. Connection status palettes keep local
+defaults through optional named variable fallbacks.
 
 `Home` owns the viewport, fades, page reveals and section spacing. The inputs
 section exposes `data-home-section="inputs"` as a layout slot. Tests use
