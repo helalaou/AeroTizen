@@ -1,4 +1,4 @@
 .track {
   position: relative;
-  gap: 24px;
+  grid-gap: 24px;
 }

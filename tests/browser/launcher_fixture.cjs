@@ -11,7 +11,7 @@ const previewScript = () =>
       logLevel: "silent",
       build: {
         write: false,
-        target: ["chrome69", "es2018"],
+        target: ["chrome63", "es2018"],
         lib: {
           entry: path.join(__dirname, "../../launcher/src/dev/installTestPlatforms.ts"),
           name: "BrowserPreviewFixture",

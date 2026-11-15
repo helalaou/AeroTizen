@@ -23,7 +23,7 @@
   text-align: start;
 
   > * + * {
-    margin-inline-start: 14px;
+    -webkit-margin-start: 14px;
   }
 
   &[data-focused="true"] {

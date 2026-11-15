@@ -15,7 +15,7 @@
 .facts {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 10px 32px;
+  grid-gap: 10px 32px;
   margin: 16px 0;
   padding: 12px 0;
   border-top: 1px solid var(--settings-divider);
@@ -86,11 +86,11 @@
   align-items: center;
   margin-top: -12px;
   margin-bottom: 20px;
-  margin-inline-start: -20px;
+  -webkit-margin-start: -20px;
 
   > :not([hidden]) {
     margin-top: 12px;
-    margin-inline-start: 20px;
+    -webkit-margin-start: 20px;
   }
 }
 

@@ -298,7 +298,7 @@ export const startStage = (canvas: HTMLCanvasElement): StageAnimation | undefine
 
   renderer.draw(time);
   document.addEventListener("visibilitychange", update);
-  // Chromium 69 uses the original MediaQueryList listener API.
+  // Chromium 63 uses the original MediaQueryList listener API.
   motion?.addListener(update);
   update();
   return {

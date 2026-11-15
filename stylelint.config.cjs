@@ -1,8 +1,14 @@
+const tvCompatibilityRules = require("./tools/launcher-css-rules.cjs");
+
 module.exports = {
   overrides: [
     {
       files: ["launcher/src/**/*.module.css"],
       rules: { "max-nesting-depth": 2, "selector-max-id": 0 },
+    },
+    {
+      files: ["launcher/css/**/*.css"],
+      rules: { "max-nesting-depth": 0 },
     },
   ],
   rules: {
@@ -18,8 +24,7 @@ module.exports = {
     "keyframe-declaration-no-important": true,
     "no-duplicate-selectors": true,
     "property-no-unknown": true,
-    // Chromium 69 needs the four position longhands.
-    "property-disallowed-list": ["inset"],
+    ...tvCompatibilityRules,
     "selector-pseudo-class-no-unknown": true,
     "selector-pseudo-element-no-unknown": true,
     "string-no-newline": true,

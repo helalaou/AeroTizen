@@ -96,7 +96,7 @@ for (const [name, url] of [
     });
     expect(componentCss.sheets).toBeGreaterThan(0);
     expect(componentCss.selectors.some((selector) => selector.includes("#editor"))).toBe(false);
-    expect(componentCss.nested, "Chromium 69 receives flattened CSS in development and production").toEqual([]);
+    expect(componentCss.nested, "Chromium 63 receives flattened CSS in development and production").toEqual([]);
 
     const standalone = await page
       .locator('#settings-appearance, #settings-appearance [data-focused="true"]')

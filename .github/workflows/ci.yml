@@ -101,6 +101,7 @@ jobs:
               b"stylelint.config.cjs",
               b"tools/build-launcher.mjs",
               b"tools/dev-build-badge.mjs",
+              b"tools/launcher-css-rules.cjs",
               b"tools/translation-lint.cjs",
               b"tsconfig.json",
               b"tsconfig.node.json",

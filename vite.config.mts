@@ -11,6 +11,8 @@ import { build, defineConfig } from "vite";
 const root = fileURLToPath(new URL("./", import.meta.url));
 const source = path.join(root, "launcher");
 const outputNames: Readonly<Record<string, string>> = { demo: "demo", "tv-dev": "launcher-dev" };
+const TV_CHROMIUM_MAJOR = 63;
+const TV_BROWSER_TARGET = "chrome" + TV_CHROMIUM_MAJOR;
 
 const SERVICE_ENTRIES = {
   diagnostics: "diagnostics/service.ts",
@@ -45,7 +47,7 @@ const compileRuntimeScript = async ({
     logLevel: "silent",
     build: {
       write: false,
-      target: ["chrome69", "es2018"],
+      target: [TV_BROWSER_TARGET, "es2018"],
       rolldownOptions: {
         external: [
           "fs",
@@ -173,7 +175,7 @@ export default defineConfig(({ mode }) => {
     css: {
       transformer: "lightningcss",
       // Lightning CSS encodes major.minor.patch in three bytes, including in development.
-      lightningcss: { targets: { chrome: 69 << 16 } },
+      lightningcss: { targets: { chrome: TV_CHROMIUM_MAJOR << 16 } },
     },
     plugins: [
       preact({
@@ -191,8 +193,8 @@ export default defineConfig(({ mode }) => {
       setupFiles: ["src/test/setup.ts"],
     },
     build: {
-      target: ["chrome69", "es2018"],
-      cssTarget: "chrome69",
+      target: [TV_BROWSER_TARGET, "es2018"],
+      cssTarget: TV_BROWSER_TARGET,
       outDir: path.join(output, "js"),
       emptyOutDir: false,
       minify: true,

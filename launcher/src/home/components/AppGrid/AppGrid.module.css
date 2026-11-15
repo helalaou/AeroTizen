@@ -8,7 +8,7 @@
   display: grid;
   grid-template-columns: repeat(var(--app-columns), var(--app-card-size));
   justify-content: center;
-  gap: 30px 32px;
+  grid-gap: 30px 32px;
   /* Keep focused cards and reorder controls clear of the header and fade. */
   margin: 24px 0 40px;
 

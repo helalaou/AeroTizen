@@ -114,4 +114,4 @@ if (values.dev) {
   console.log(`TV app name: ${label}`);
 }
 await verifyScripts(output);
-console.log(`Built ${output} for Chromium 69; shipped scripts parse as ES2018.`);
+console.log(`Built ${output}; shipped scripts parse as ES2018.`);

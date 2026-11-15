@@ -83,16 +83,15 @@ frame and sidebar, while the content uses `hidden`. Tests can use the stable
 `data-settings-update-notice` hooks instead of private classes.
 
 Use standard CSS nesting in `.module.css` files. Vite's Lightning CSS transformer
-flattens nested selectors for Chromium 69 in both development and production.
+flattens nested selectors for Chromium 63 in both development and production.
 Keep nesting at two levels or fewer. Shared sheets under `launcher/css/` ship as
 copied assets, so they must remain flat. Sass is not required for nesting; theme
 values remain runtime custom properties such as `var(--control-text)`.
 
-Lightning CSS also adds vendor prefixes for the configured Chromium 69 target.
-Write standard properties in compiled modules and let that transformer supply
-supported fallbacks; a separate Autoprefixer pass is not needed. All component
-styles pass through this compiler; shared page rules retain their
-explicit font-smoothing prefix.
+Lightning CSS adds vendor prefixes for the configured Chromium 63 target. All
+component styles pass through this compiler. Keep the explicit Grid and margin
+aliases below because the compiler does not supply them. Shared page rules
+retain their explicit font-smoothing prefix.
 
 The multiline clamp is an intentional exception: keep `display: -webkit-box`,
 `-webkit-box-orient: vertical` and `-webkit-line-clamp` together. They form the
@@ -163,7 +162,7 @@ its own motif through `--app-background`; installed apps do not set this propert
 use a smaller image with the app name below it in Home, All apps, Settings and
 source badges. `AppFallback` uses its explicit compact layout for that name.
 The presentation data identifies the package icon; views do not inspect file paths
-or maintain app lists. Icon spacing uses margins for Chromium 69 compatibility.
+or maintain app lists. Icon spacing uses margins for Chromium 63 compatibility.
 
 The shared `AppCard` favourite/source variants own Settings focus, selection dimming and
 disabled paint. All apps shows the shared check for Home members without dimming other
@@ -254,16 +253,20 @@ duplicate declarations/selectors, and unsafe keyframe declarations. `npm run lin
 runs both ESLint and Stylelint; CI uses that command with zero warnings allowed.
 Module rules also reject ID selectors and nesting deeper than two levels.
 
-Keep CSS compatible with Chromium 69. Use `top`, `right`, `bottom` and `left`
-instead of the `inset` property; Stylelint rejects the latter. Chromium 69 ignores
-`gap` on flex containers; grid gaps work. Space flex children with margins: in a
-row, `margin-inline-start` on each child after the first, so right-to-left layouts
-follow, and in a column, `margin-top`. Use `:not([hidden])` when a child can be
-hidden. In a wrapping row, give every child both margins, give the container the
-same negative margins on its top and inline start, and add the gap to a `100%`
-width. A collection of fixed-size cards can use a grid instead. A build's JavaScript
-syntax check does not establish CSS or TV compatibility. Animate transforms and
-opacity, preserve the reduced-motion rules, and test remote focus after changes.
+Use `top`, `right`, `bottom` and `left` for absolute positioning. For Grid spacing
+on Chromium 63, use `grid-gap`, `grid-row-gap` and `grid-column-gap`. For flex
+rows, use `-webkit-margin-start` on each child after the first so spacing follows
+the text direction. Use `-webkit-margin-end` for spacing on the other side and
+`margin-top` for flex columns. Use `:not([hidden])` when a child can be hidden.
+In a wrapping row, give every child both margins, give the container the same
+negative margins on its top and inline start, and add the gap to a `100%` width.
+
+The same compatibility rules run on source CSS and all packaged stylesheets.
+They reject unprefixed gap and logical spacing properties and selected unsupported
+selectors and at-rules. The package check also requires flat CSS. Keep
+`prefers-reduced-motion` as an enhancement for newer browsers. Performance mode
+applies the same motion limits to the UI on older TVs. Test remote focus after
+layout changes.
 
 Keep an explicit `translateZ(0)` when a transform needs 3D compositing.
 Lightning CSS can simplify `translate3d(x, y, 0)` to a 2D transform; this can change

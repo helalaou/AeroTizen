@@ -173,7 +173,7 @@ for (const language of ["en", "ar"])
       await page.goto("/");
       await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
       await page.locator("#gear").click();
-      // Check authored longhands as well as geometry: inset is unavailable on Chromium 69.
+      // Check authored longhands as well as geometry: inset is unavailable on Chromium 63.
       const bounds = await page.locator("#editor").evaluate((el) => {
         const rule = Array.from(document.styleSheets)
           .flatMap((sheet) => Array.from(sheet.cssRules))

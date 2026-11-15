@@ -9,7 +9,7 @@
   }
 
   > * + * {
-    margin-inline-start: 12px;
+    -webkit-margin-start: 12px;
   }
 
   > svg {
@@ -48,7 +48,7 @@
   color: var(--weather-expanded-text);
 
   > * + * {
-    margin-inline-start: 12px;
+    -webkit-margin-start: 12px;
   }
 
   &[data-clock-layout="minimal"] {

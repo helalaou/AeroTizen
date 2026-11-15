@@ -502,7 +502,7 @@ See the runtime boundary in the
 Each component has one style owner. Theme differences use tokens from `themes.css`;
 layout and state rules stay with the component. Browser tests assert current view
 contracts rather than compare against the retired JavaScript renderer. See
-[style rules](styles.md) for the cascade, CSS checks and Chromium 69 constraints.
+[style rules](styles.md) for the cascade, CSS checks and Chromium 63 constraints.
 
 See [interface icons](icons.md) for named imports, accessibility, custom artwork and
 third-party notices.

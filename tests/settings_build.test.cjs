@@ -5,6 +5,7 @@ const { readFileSync, readdirSync, existsSync } = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const { parse } = require("acorn");
+const tvCompatibilityRules = require("../tools/launcher-css-rules.cjs");
 
 const root = path.resolve(__dirname, "..");
 const output = path.join(root, "dist/launcher");
@@ -65,11 +66,7 @@ test("compiled launcher uses the production page, local scripts and the Preact l
   const componentStyles = read(output, "js/launcher-ui.css");
   assert.match(componentStyles, /var\(--choice-selected-surface\)/);
   assert.match(componentStyles, /data-focused/);
-  assert.doesNotMatch(
-    componentStyles,
-    /#editor|:global\(|:is\(|:where\(|@layer\b|\binset:/,
-    "component styles have no editor dependency or unsupported Chromium 69 selectors",
-  );
+  assert.doesNotMatch(componentStyles, /#editor|:global\(/);
   assert.equal(existsSync(path.join(output, "src")), false, "TypeScript source is not a TV runtime asset");
   assert.doesNotMatch(read(output, "js/launcher-ui.js"), /@vite\/client|@prefresh|preact\/debug/);
   assert.doesNotMatch(
@@ -88,6 +85,24 @@ test("compiled launcher uses the production page, local scripts and the Preact l
     read(output, "licenses/lucide-preact.txt"),
     /The MIT License.*Feather|The MIT License.*icons listed above/,
   );
+});
+
+test("packaged styles are flat and meet the Chromium 63 CSS rules", async () => {
+  const { default: stylelint } = await import("stylelint");
+  const stylesheets = readdirSync(output, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".css"))
+    .map((entry) => path.join(entry.parentPath, entry.name));
+  assert.ok(stylesheets.includes(path.join(output, "js/launcher-ui.css")));
+  assert.ok(stylesheets.includes(path.join(output, "css/base.css")));
+  const { results } = await stylelint.lint({
+    config: { rules: { ...tvCompatibilityRules, "max-nesting-depth": 0 } },
+    files: stylesheets,
+    ignoreDisables: true,
+  });
+  const violations = results.flatMap(({ source, warnings }) =>
+    warnings.map(({ line, column, text }) => `${path.relative(output, source)}:${line}:${column} ${text}`),
+  );
+  assert.equal(violations.join("\n"), "", "Unsupported CSS in the TV package");
 });
 
 test("compilation preserves runtime scripts, CSS, service and app identity", () => {

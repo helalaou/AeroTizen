@@ -1,5 +1,5 @@
 // The launcher runs on Samsung's Tizen web runtime (Chromium-based, but older models lag),
-// so legacy scripts retain ES5 syntax and compiled Settings targets Chromium 69.
+// so legacy scripts retain ES5 syntax and the compiled UI targets Chromium 63.
 const js = require("@eslint/js");
 const globals = require("globals");
 const react = require("eslint-plugin-react");

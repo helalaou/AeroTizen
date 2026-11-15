@@ -8,11 +8,11 @@
   &:not(.grid) {
     max-width: calc(100% + 12px);
     margin-top: -12px;
-    margin-inline-start: -12px;
+    -webkit-margin-start: -12px;
 
     > * {
       margin-top: 12px;
-      margin-inline-start: 12px;
+      -webkit-margin-start: 12px;
     }
   }
 }
@@ -20,5 +20,5 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  grid-gap: 12px;
 }

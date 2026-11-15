@@ -67,7 +67,7 @@
       width: 100%;
       max-width: none;
       margin-top: 5px;
-      margin-inline-start: 0;
+      -webkit-margin-start: 0;
       font-family: var(--font-ui, "SamsungOne", "Roboto", Arial, sans-serif);
       font-size: 22px;
       line-height: 1.13;
@@ -182,7 +182,7 @@
   text-shadow: var(--input-label-shadow);
   max-width: 60%;
   min-width: 0;
-  margin-inline-start: 22px;
+  -webkit-margin-start: 22px;
   line-height: 1.1;
 }
 
@@ -216,7 +216,7 @@
     width: 6px;
     height: 6px;
     flex: 0 0 6px;
-    margin-inline-end: 5px;
+    -webkit-margin-end: 5px;
     border-radius: 50%;
     background: currentColor;
   }
