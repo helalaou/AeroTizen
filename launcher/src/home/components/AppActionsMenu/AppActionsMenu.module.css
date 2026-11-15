@@ -75,7 +75,7 @@
   }
 
   > * + * {
-    margin-inline-start: 12px;
+    -webkit-margin-start: 12px;
   }
 
   &[aria-selected="true"] {

@@ -1,6 +1,7 @@
 const { test, expect } = require("./launcher_fixture.cjs");
 const http = require("node:http");
 const path = require("node:path");
+const { chromiumMajor } = require("../../launcher-browser.json");
 
 let service, adapter;
 test.beforeAll(async () => {
@@ -11,7 +12,7 @@ test.beforeAll(async () => {
       logLevel: "silent",
       build: {
         write: false,
-        target: ["chrome69", "es2018"],
+        target: ["chrome" + chromiumMajor, "es2018"],
         lib: {
           entry: path.join(__dirname, "../../launcher/src", entry),
           name,

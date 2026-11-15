@@ -2,7 +2,7 @@ import { ASPECT, LAYER_HEIGHT, LAYER_WIDTH, STAGE_HEIGHT, STAGE_WIDTH, TAU } fro
 import type { StageLook } from "./stageLook";
 import { NOISE_SIZE } from "./stageNoise";
 
-// Written for the TV browser (Chromium 69, WebGL 1): GLSL ES 1.00 without loops, and mediump floats, so the renderer
+// Written for the TV browser (Chromium 63, WebGL 1): GLSL ES 1.00 without loops, and mediump floats, so the renderer
 // wraps every animated value before it reaches a shader.
 
 // Text over the wallpaper keeps a 3:1 contrast: the light is dimmed by STATUS_SHADE over the header status, then a soft

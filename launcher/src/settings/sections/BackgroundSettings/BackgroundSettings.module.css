@@ -3,12 +3,12 @@
   flex-wrap: wrap;
   margin-top: -15px;
   margin-bottom: 40px;
-  margin-inline-start: -15px;
+  -webkit-margin-start: -15px;
   width: calc(100% + 15px);
 
   > * {
     margin-top: 15px;
-    margin-inline-start: 15px;
+    -webkit-margin-start: 15px;
   }
 }
 

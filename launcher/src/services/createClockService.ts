@@ -193,6 +193,7 @@ export const createClockService = ({
     getSnapshot: () => store.getSnapshot().time,
     subscribe: store.subscribe,
     DATE_FORMATS: dateFormats,
+    clearTimeWidthCache: () => timeWidths.clear(),
     defaultTimeFormat() {
       const pattern = platform.getTimePattern();
       if (/h/.test(pattern) && /m/.test(pattern)) {

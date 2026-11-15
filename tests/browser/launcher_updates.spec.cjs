@@ -146,6 +146,9 @@ test("a newer installed launcher re-arms the notice for a further release", asyn
 });
 
 test("Check for updates asks GitHub again and reports the result", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "AbortController", { configurable: true, value: undefined });
+  });
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   let checks = 0;
   let latest = installed;

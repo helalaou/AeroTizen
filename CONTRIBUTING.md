@@ -96,8 +96,13 @@ differences, lint warnings and errors, and type errors.
 
 Build and test output are excluded from formatting. Diagnostics imports its privacy
 schema from plain JSON, with CLI parity checked by the Python tests. The app catalogue
-is plain JSON imported into the typed bundle. Compiled UI output retains the Chromium 69
-and ES2018 checks; generated background service modules retain ES5 compatibility.
+is plain JSON imported into the typed bundle. [launcher-browser.json](launcher-browser.json)
+sets the launcher target for Vite and the ESLint browser API rule. The rule checks
+known browser APIs and JavaScript built-ins in TV frontend source. Use a documented
+exception only when the newer API has a tested fallback. CI also checks authored and
+packaged CSS, checks compiled UI scripts for ES2018 syntax, and exercises the
+packaged launcher in Playwright with selected newer APIs disabled. Physical TVs
+still need device testing. Background service modules retain ES5 compatibility.
 
 Prettier uses double quotes, semicolons, a 120-column print width, two-space indentation,
 LF line endings, parenthesised arrow parameters and trailing commas wherever supported.
@@ -253,7 +258,7 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
 - Run `aerotizen inspect launcher` to inspect the TV build.
   This restarts the launcher in debug mode and exposes Chrome DevTools at
   http://localhost:9222/json. Press Ctrl+C to stop forwarding.
-- Keep legacy scripts ES5-compatible. Compiled Settings targets Chromium 69, the 2020
+- Keep legacy scripts ES5-compatible. The compiled UI targets Chromium 63, the 2019
   TV engine, with an ES2018 syntax ceiling. Animate with `transform` only.
 
 Inspection is included in both the Python package and standalone CLI. It uses the

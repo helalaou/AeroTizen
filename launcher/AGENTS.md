@@ -31,13 +31,13 @@ also read the [style rules](../docs/styles.md) or [icon rules](../docs/icons.md)
   without companion files flat. Move existing components when working on their
   styles; avoid unrelated bulk moves or one-line barrel files.
 - Use local module classes without ID/global scopes. Standard CSS nesting is compiled
-  for Chromium 69; keep it at two levels or fewer and leave copied legacy CSS flat.
+  for Chromium 63; keep it at two levels or fewer and leave copied legacy CSS flat.
 - Use shared duration tokens from `css/motion.css` for UI motion. Keep component
   reduced-motion queries only for behavior that cannot be expressed by those tokens.
 
 ## Compatibility
 
-Author launcher runtime code in TypeScript/TSX under `src/`. Target Chromium 69 for
+Author launcher runtime code in TypeScript/TSX under `src/`. Target Chromium 63 for
 compiled frontend code and browser APIs, with an ES2018 syntax ceiling. Keep generated
 background service modules and build metadata ES5-compatible. Preserve current saved settings and service interfaces. Keep
 broader global-service migrations separate from unrelated changes.

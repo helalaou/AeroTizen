@@ -119,6 +119,7 @@ export const SettingsFocusIndicator = ({
       });
     };
     const reflow = () => schedule(false);
+    // eslint-disable-next-line compat/compat -- The mutation observer and window resize listener handle Chromium 63.
     const resize = typeof ResizeObserver === "function" ? new ResizeObserver(reflow) : undefined;
     // Ignore the indicator's own styles and focus attributes to avoid a measurement loop.
     const mutations = new MutationObserver(reflow);

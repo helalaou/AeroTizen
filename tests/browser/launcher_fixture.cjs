@@ -1,5 +1,6 @@
 const base = require("@playwright/test");
 const path = require("node:path");
+const { chromiumMajor } = require("../../launcher-browser.json");
 
 let preview;
 const previewScript = () =>
@@ -11,7 +12,7 @@ const previewScript = () =>
       logLevel: "silent",
       build: {
         write: false,
-        target: ["chrome69", "es2018"],
+        target: ["chrome" + chromiumMajor, "es2018"],
         lib: {
           entry: path.join(__dirname, "../../launcher/src/dev/installTestPlatforms.ts"),
           name: "BrowserPreviewFixture",

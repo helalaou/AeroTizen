@@ -8,7 +8,7 @@
   margin-left: var(--header-status-margin);
 
   > :not([hidden]) ~ :not([hidden]) {
-    margin-inline-start: 28px;
+    -webkit-margin-start: 28px;
   }
 
   &[data-expanded="true"] {

@@ -36,5 +36,5 @@ MIT notice. Packaging requires that file and the Preact notice. Do not replace i
 with a short attribution. See the official [Preact guide](https://lucide.dev/guide/preact/getting-started)
 and [license](https://lucide.dev/license).
 
-Compiled scripts continue to target Chromium 69 and pass the ES2018 parser check.
+Compiled scripts continue to target Chromium 63 and pass the ES2018 parser check.
 These syntax checks and browser tests do not replace physical TV acceptance.

@@ -9,6 +9,8 @@ const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 // Keeps repeated presses of "Check for updates" from spending that limit.
 const MANUAL_INTERVAL_MS = 60 * 1000;
 const TIMEOUT_MS = 8000;
+const HTTP_OK = 200;
+const CHECK_FAILED = "Could not check launcher releases";
 const VERSION = /^(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})$/;
 const MAX_NOTES = 4;
 const MAX_NOTE_LENGTH = 120;
@@ -69,19 +71,47 @@ const saveStored = (key: string, value: object) => {
   }
 };
 
-const findLatestLauncher = async (signal: AbortSignal) => {
+const createReleaseRequest = () => {
+  // Chromium 63 can cancel XMLHttpRequest but has no AbortController for fetch.
+  const request = new XMLHttpRequest();
+  return {
+    readPage: (page: number, timeoutMs: number) =>
+      new Promise<{ hasNext: boolean; releases: unknown[] }>((resolve, reject) => {
+        const fail = () => reject(new Error(CHECK_FAILED));
+        request.open("GET", RELEASES + "&page=" + page);
+        request.timeout = timeoutMs;
+        request.responseType = "json";
+        request.onload = () => {
+          const releases: unknown = request.response;
+          if (request.status !== HTTP_OK || !Array.isArray(releases)) {
+            fail();
+            return;
+          }
+          // Read only exposed headers. A cross-origin response may omit Link.
+          const hasNext = /^link:[^\r\n]*;[ \t]*rel="next"/im.test(request.getAllResponseHeaders());
+          resolve({ releases, hasNext });
+        };
+        request.onerror = request.ontimeout = request.onabort = fail;
+        request.send();
+      }),
+    abort: () => request.abort(),
+  };
+};
+
+type ReleaseRequest = ReturnType<typeof createReleaseRequest>;
+
+const findLatestLauncher = async (request: ReleaseRequest) => {
+  // Share one timeout across the paginated check.
+  const deadline = performance.now() + TIMEOUT_MS;
   let latest: { version: string; body: unknown } | null = null;
   // CLI and launcher releases share this feed. Compare launcher versions across pages.
   for (let page = 1; ; page++) {
-    const response = await fetch(RELEASES + "&page=" + page, { signal, credentials: "omit" });
-    if (!response.ok) {
-      throw new Error("Could not check launcher releases");
+    const remainingMs = Math.ceil(deadline - performance.now());
+    if (remainingMs <= 0) {
+      throw new Error(CHECK_FAILED);
     }
-    const releases: unknown = await response.json();
-    if (!Array.isArray(releases)) {
-      throw new Error("Invalid launcher release list");
-    }
-    for (const item of releases as unknown[]) {
+    const { hasNext, releases } = await request.readPage(page, remainingMs);
+    for (const item of releases) {
       if (
         !item ||
         typeof item !== "object" ||
@@ -100,7 +130,7 @@ const findLatestLauncher = async (signal: AbortSignal) => {
         latest = { version, body: "body" in item ? item.body : null };
       }
     }
-    if (!/;\s*rel="next"/.test(response.headers.get("Link") || "")) {
+    if (!hasNext) {
       return latest;
     }
   }
@@ -126,7 +156,7 @@ export const createLauncherUpdates = (installedVersion: string): LauncherUpdates
     isVersion(storedAck.latestVersion)
       ? { installedVersion: storedAck.installedVersion, latestVersion: storedAck.latestVersion }
       : null;
-  let request: AbortController | undefined;
+  let request: ReleaseRequest | undefined;
   let disposed = false;
   let manual: LauncherUpdateCheck = "idle";
 
@@ -164,12 +194,10 @@ export const createLauncherUpdates = (installedVersion: string): LauncherUpdates
     }
     attemptedAt = now;
     saveStored(CACHE_KEY, { latest, notes, attemptedAt });
-    const controller = new AbortController();
-    request = controller;
-    const timeout = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
-      const found = await findLatestLauncher(controller.signal);
-      if (!controller.signal.aborted) {
+      request = createReleaseRequest();
+      const found = await findLatestLauncher(request);
+      if (!disposed) {
         latest = found?.version ?? null;
         notes = releaseNotes(found?.body);
         saveStored(CACHE_KEY, { latest, notes, attemptedAt });
@@ -181,7 +209,6 @@ export const createLauncherUpdates = (installedVersion: string): LauncherUpdates
         publish("failed");
       }
     } finally {
-      window.clearTimeout(timeout);
       request = undefined;
     }
   };

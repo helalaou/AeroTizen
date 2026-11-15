@@ -2,5 +2,5 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, 160px);
   width: 100%;
-  gap: 18px;
+  grid-gap: 18px;
 }

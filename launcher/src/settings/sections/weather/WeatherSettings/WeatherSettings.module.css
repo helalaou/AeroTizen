@@ -1,7 +1,7 @@
 .displayRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 412px;
-  column-gap: 24px;
+  grid-column-gap: 24px;
   align-items: baseline;
 }
 
@@ -15,7 +15,7 @@
 .locationSummary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 200px;
-  gap: 24px;
+  grid-gap: 24px;
   align-items: center;
   margin-bottom: 16px;
 }
@@ -35,13 +35,13 @@
 .searchControls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 200px;
-  gap: 12px;
+  grid-gap: 12px;
 }
 
 .results {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  row-gap: 12px;
+  grid-row-gap: 12px;
   margin: 20px 0;
 }
 
@@ -52,7 +52,7 @@
 .automatic {
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);
-  gap: 24px;
+  grid-gap: 24px;
   align-items: center;
   margin-top: 20px;
 }

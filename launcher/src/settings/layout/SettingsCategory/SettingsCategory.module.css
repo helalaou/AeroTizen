@@ -35,7 +35,7 @@
 .icon {
   flex: 0 0 35px;
   width: 35px;
-  margin-inline-end: 11px;
+  -webkit-margin-end: 11px;
   text-align: center;
   font-size: 27px;
   color: var(--settings-category-icon, inherit);
@@ -54,7 +54,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  margin-inline-end: 11px;
+  -webkit-margin-end: 11px;
 }
 
 .title {
