@@ -2,7 +2,6 @@ import { createRef, render } from "preact";
 import { flushSync } from "preact/compat";
 
 import type { SettingsStore } from "../contracts/preferences";
-import { THEME_BASE } from "../contracts/preferences";
 import type { StatusStores } from "../contracts/status";
 import type { LauncherUpdateNotice } from "../contracts/updates";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
@@ -25,10 +24,10 @@ export const mountHome = (
 ) => {
   const document = mount.ownerDocument;
   const artworkEnvironment = { tv: !!runtime.tizen };
+  const initialTheme = document.body.getAttribute("data-theme") || "";
   // Apply the shell appearance before any Home focus geometry is measured.
   const syncShell = () => {
     const values = settings.getSnapshot();
-    document.body.classList.toggle("glass-ui", THEME_BASE[values.theme] === "glass");
     document.body.setAttribute("data-theme", values.theme);
     document.documentElement.setAttribute("data-performance-mode", String(values.performanceMode));
   };
@@ -65,8 +64,7 @@ export const mountHome = (
     render(null, mount);
     inventory.dispose();
     unsubscribeShell();
-    document.body.classList.remove("glass-ui");
-    document.body.removeAttribute("data-theme");
+    document.body.setAttribute("data-theme", initialTheme);
     document.documentElement.removeAttribute("data-performance-mode");
   };
   try {

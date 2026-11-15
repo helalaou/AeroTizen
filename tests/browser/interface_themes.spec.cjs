@@ -82,7 +82,6 @@ for (const theme of THEMES) {
     await page.locator(choice(theme.id)).click();
     await expect(page.locator(choice(theme.id))).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator("body")).toHaveAttribute("data-theme", theme.id);
-    await expect(page.locator("body")).toHaveClass(/\bglass-ui\b/);
     await expect(page.locator("[data-input-dock]")).toHaveAttribute("data-variant", "glass");
     await expect(page.locator("[data-input-card]")).toHaveAttribute("data-variant", "glass");
     await expect(page.locator('[data-input-part="status"]')).toHaveCount(1);
@@ -97,7 +96,6 @@ for (const theme of THEMES) {
     await openAppearance(page);
     await page.locator(choice("classic")).click();
     await expect(page.locator("body")).toHaveAttribute("data-theme", "classic");
-    await expect(page.locator("body")).not.toHaveClass(/\bglass-ui\b/);
     await expect.poll(() => tileRadius(page)).toBe(CLASSIC_TILE_RADIUS);
     expect(errors).toEqual([]);
   });

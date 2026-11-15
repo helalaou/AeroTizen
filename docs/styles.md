@@ -2,19 +2,19 @@
 
 Use the [component ownership map](component-structure.md) to find a stylesheet.
 All component styles live in co-located `Component.module.css` files. Only
-`base.css`, `themes.css`, `motion.css`, `fonts.css` and the `theme-<id>.css`
-files remain global, for page rules, shared paint, motion policy, font faces and
-theme values. Keep layout and state selectors with their component.
+`base.css`, `motion.css`, `fonts.css` and the `theme-<id>.css` files remain
+global, for page rules, motion policy, font faces and theme values. Keep layout and state selectors with their component.
 
 Use a component-named directory for a styled component and its private helpers,
 for example `AppGrid/AppGrid.tsx` with `AppGrid/AppGrid.module.css`. Small components
 without companion files can stay flat. Apply this structure as components are
 migrated; imports name the component file directly, without a barrel per folder.
 
-Keep theme paint in `launcher/css/themes.css`, which defines the default Classic
-values and the `body.glass-ui` overrides. Each further theme sets its variables
-in its own file named `launcher/css/theme-<id>.css`, on `body[data-theme]`, and
-keeps the Glass layout: `THEME_BASE` in `contracts/preferences.ts` says which.
+Each theme keeps its paint in its own file, `launcher/css/theme-<id>.css`, on
+`body[data-theme="<id>"]`. A theme sets every theme variable itself: there are no
+shared defaults and no theme builds on another one's values, so changing one theme
+never changes another. `THEME_BASE` in `contracts/preferences.ts` says which
+layout, Classic or Glass, a theme uses.
 A theme's fonts ship with the launcher: `launcher/css/fonts.css` declares them, and
 each family sits in `launcher/fonts/<family>/` next to its licence, `OFL.txt`.
 On Home, give a surface that moves or changes with the focus a flat colour, or an
@@ -58,7 +58,7 @@ unset:
   `--settings-scroll-ring-room`;
 - spacing and toast: `--home-row-clearance`, `--toast-text`, `--toast-shadow`.
 
-The three `--input-connected-*` text variables are declared in `themes.css`,
+The three `--input-connected-*` text variables are declared in each theme file,
 where they follow the neutral input text. Four of the variables paint a layer
 that is empty until a theme sets it: `--home-card-sheen` over an app tile,
 `--continue-artwork-mark` over a Continue Watching image,
@@ -229,11 +229,10 @@ the current components.
 
 The remaining shell classes are public integration hooks, not module classes:
 
-| Hook            | Owner                          | Purpose                                        |
-| --------------- | ------------------------------ | ---------------------------------------------- |
-| `body.tv`       | `inputs/InputPlaybackView.tsx` | Hide Home while the native TVWindow is visible |
-| `body.glass-ui` | `home/index.tsx`               | Apply the existing appearance before measuring |
-| `body.editing`  | `useSettingsPresentation.ts`   | Settings visibility, with unmount cleanup      |
+| Hook           | Owner                          | Purpose                                        |
+| -------------- | ------------------------------ | ---------------------------------------------- |
+| `body.tv`      | `inputs/InputPlaybackView.tsx` | Hide Home while the native TVWindow is visible |
+| `body.editing` | `useSettingsPresentation.ts`   | Settings visibility, with unmount cleanup      |
 
 Native/background adapters also own page transparency; dynamic
 geometry, progress and feature artwork custom properties remain explicit inline data.

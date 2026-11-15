@@ -7,7 +7,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | Component                                                            | Responsibility                                                                  | Data and commands                                                            |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `backgrounds/BackgroundSceneView`                                    | Render decorative gradients, waves and particle canvas                          | Background bridge provides scenes and speed. The app mounts and disposes it. |
-| `backgrounds/BackgroundLayer`                                        | Render the fixed wallpaper container and its visibility                         | Background snapshots; document background and shared text contrast hooks    |
+| `backgrounds/BackgroundLayer`                                        | Render the fixed wallpaper container and its visibility                         | Background snapshots; document background and shared text contrast hooks     |
 | `home/components/Home`                                               | Compose the screen and refresh focus when its inventory or layout changes       | Shared settings/inventory and Home controller                                |
 | `HomeHeader`                                                         | Shortcuts, page tabs and status placement                                       | Home navigation and shared status stores                                     |
 | `HeaderFocusIndicator`                                               | Measure a registered shortcut/tab and render its focus position                 | Explicit `shortcuts` or `tabs` group                                         |
@@ -446,12 +446,11 @@ keys and values also remain compatible.
 
 | Stylesheet                                                                                       | Owner                                                                         |
 | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| `themes.css`                                                                                     | Shared semantic paint tokens and Classic/Glass values                         |
-| `theme-<id>.css`                                                                                 | One further theme's variable values                                           |
+| `theme-<id>.css`                                                                                 | One theme's variable values                                                   |
 | `fonts.css`                                                                                      | Font faces of the theme fonts                                                 |
 | `motion.css`                                                                                     | Shared UI durations and reduced-motion policy                                 |
 | `settings/components/*/*.module.css`                                                             | Shared Settings focus, choices, group layout and headings                     |
-| `shared/components/SelectionIndicator/SelectionIndicator.module.css`                             | Shared selected-choice check and contrast badge                              |
+| `shared/components/SelectionIndicator/SelectionIndicator.module.css`                             | Shared selected-choice check and contrast badge                               |
 | `settings/SettingsRoot/SettingsRoot.module.css`                                                  | Settings overlay and preview visibility                                       |
 | `settings/layout/SettingsDrawer/SettingsDrawer.module.css`                                       | Drawer frame, headings, sidebar and active pane layout                        |
 | `settings/layout/SettingsCategory/SettingsCategory.module.css`                                   | Category and Samsung Home rows, current state and update notice               |
@@ -462,7 +461,7 @@ keys and values also remain compatible.
 | `shared/components/AppFallback/AppFallback.module.css`                                           | Shared name geometry with explicit Home, favourite, source and badge variants |
 | `base.css`                                                                                       | Page sizing, fonts, hidden state and native/preview visibility                |
 | `backgrounds/*/*.module.css`                                                                     | Blob, wave, WebGL canvas and weather-photo presentation                       |
-| `backgrounds/BackgroundLayer/BackgroundLayer.module.css`                                         | Fixed wallpaper container geometry                                          |
+| `backgrounds/BackgroundLayer/BackgroundLayer.module.css`                                         | Fixed wallpaper container geometry                                            |
 | `home/components/Home/Home.module.css`                                                           | Home viewport, fades, page reveals, section spacing and content clearance     |
 | `home/components/HomeHeader/HomeHeader.module.css`                                               | Header layout, shortcuts, tabs and expanded clock clearance                   |
 | `home/components/HeaderFocusIndicator/HeaderFocusIndicator.module.css`                           | Measured shortcut/tab focus plates and shared motion durations                |
@@ -470,7 +469,7 @@ keys and values also remain compatible.
 | `status/HeaderStatus/HeaderStatus.module.css`                                                    | Compact/expanded status placement                                             |
 | `status/WeatherStatus/WeatherStatus.module.css`, `status/NetworkStatus/NetworkStatus.module.css` | Weather and network presentation, with explicit layout/state props            |
 | `home/components/AppGrid/AppGrid.module.css`                                                     | App sizes, columns and clock clearance                                        |
-| `shared/components/AppCard/AppCard.module.css`                                                  | Shared app/Fireplace frame, layout variants and focus/selection/moving states |
+| `shared/components/AppCard/AppCard.module.css`                                                   | Shared app/Fireplace frame, layout variants and focus/selection/moving states |
 | `shared/components/AppArtworkContent/AppArtworkContent.module.css`                               | Shared image geometry and compact package-icon layout                         |
 | `shared/components/StoreCard/StoreCard.module.css`                                               | Shared store surface, corners, focus ring, icon, labels and size variants     |
 | `home/components/FireplaceCard/FireplaceCard.module.css`                                         | Fireplace card artwork                                                        |
@@ -501,7 +500,7 @@ Home layout/card tests use `data-home-viewport`, `data-home-mask`, `data-home-pa
 See the runtime boundary in the
 [style rules](styles.md) for the remaining public body classes.
 
-Each component has one style owner. Theme differences use tokens from `themes.css`;
+Each component has one style owner. Theme differences use tokens from the `theme-<id>.css` files;
 layout and state rules stay with the component. Browser tests assert current view
 contracts rather than compare against the retired JavaScript renderer. See
 [style rules](styles.md) for the cascade, CSS checks and Chromium 69 constraints.

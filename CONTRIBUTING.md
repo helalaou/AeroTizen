@@ -212,8 +212,8 @@ Continue Watching owns immutable feed snapshots and bounded retries. Home and Se
 its arrays directly; Samsung and Stremio adapters retain transport and launching. The service
 survives hot reload, and its disposer releases requests, timers and subscriptions.
 `Clock` owns time/date presentation and uses layout variants. `WeatherStatus` and
-`NetworkStatus` own their markup. Component CSS has one owner; shared theme paint
-is defined in `launcher/css/themes.css`. Semantic IDs remain stable for service and
+`NetworkStatus` own their markup. Component CSS has one owner; each theme's paint
+is defined in its `launcher/css/theme-<id>.css`. Semantic IDs remain stable for service and
 test integration. See [style rules](docs/styles.md) for the cascade and CSS checks.
 
 ## Working on the launcher
