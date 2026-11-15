@@ -6,6 +6,7 @@ import type { SettingsSectionProps } from "../types";
 const APPEARANCE_OPTIONS = [
   { value: "classic", labelKey: "appearance.classic" },
   { value: "glass", labelKey: "appearance.glass" },
+  { value: "gloss", labelKey: "appearance.gloss" },
 ] as const;
 
 const HOME_CARD_COLUMNS_OPTIONS = [

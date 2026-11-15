@@ -162,7 +162,7 @@ test.describe("automatic development preview", () => {
     const grid = page.locator("#grid");
     const apps = grid.locator("> [data-id]");
     const cards = page.locator("#continue-items > [data-key]");
-    await expect(page.locator("body")).toHaveClass(/\bglass-ui\b/);
+    await expect(page.locator("body")).toHaveAttribute("data-theme", "glass");
     await expect(grid).toHaveAttribute("data-columns", "5");
     await expect(grid).toHaveAttribute("data-scroll", "true");
     await expect(apps).toHaveCount(6);
@@ -181,10 +181,7 @@ test.describe("automatic development preview", () => {
     await expect.poll(async () => Number(await grid.getAttribute("data-offset"))).toBeGreaterThan(0);
     for (const theme of ["classic", "glass"]) {
       await page.evaluate((theme) => AeroTizen.settings.update({ theme }), theme);
-      await page.waitForFunction(
-        (theme) => document.body.classList.contains("glass-ui") === (theme === "glass"),
-        theme,
-      );
+      await page.waitForFunction((theme) => document.body.getAttribute("data-theme") === theme, theme);
       const fill = await page
         .locator("#grid > [data-id]")
         .first()

@@ -19,7 +19,6 @@ html {
   width: 1920px;
   height: 1080px;
   overflow: hidden;
-  color: var(--fg);
   font-family: var(--font-ui, "Roboto", "SamsungOne", "Helvetica Neue", Arial, sans-serif);
   -webkit-font-smoothing: antialiased;
 }

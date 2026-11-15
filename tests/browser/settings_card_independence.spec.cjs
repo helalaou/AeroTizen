@@ -79,8 +79,8 @@ for (const theme of ["classic", "glass"]) {
           return Object.fromEntries(properties.map((property) => [property, style.getPropertyValue(property)]));
         };
         return {
-          frame: read(node, ["background", "border-radius", "border-width", "border-style", "box-shadow", "transform"]),
-          ring: read(node, ["border-radius", "box-shadow", "opacity"], "::after"),
+          frame: read(node, ["background", "border-width", "border-style", "box-shadow", "transform"]),
+          ring: read(node, ["box-shadow", "opacity"], "::after"),
           parts: Array.from(node.querySelectorAll("[data-app-store-part]"), (part) =>
             read(part, ["color", "font-family", "font-weight", "text-align", "text-shadow", "letter-spacing"]),
           ),
@@ -100,6 +100,8 @@ for (const theme of ["classic", "glass"]) {
     await page.locator('[data-key="section:apps"]').click();
     const small = page.locator('#all-apps [data-key="add"]');
     await expect(small).toBeFocused();
+    const radius = (card) => card.evaluate((node) => getComputedStyle(node).borderTopLeftRadius);
+    expect(await radius(small)).toBe(await radius(page.locator('#all-apps [data-key^="app:"]').first()));
     await expect.poll(() => appearance(small)).toEqual(largeFocused);
     const focusPlate = page.locator('[data-settings-focus="content"]');
     await expect(focusPlate).not.toHaveAttribute("data-visible", "true");
