@@ -5,8 +5,8 @@
   --header-padding-bottom: 0px;
   --header-align: center;
   --header-shortcuts-offset: 0px;
+  --header-tabs-clearance: 8px;
   display: flex;
-  justify-content: space-between;
   align-items: var(--header-align);
   height: var(--header-height);
   min-height: var(--header-min-height);
@@ -27,6 +27,8 @@
 
 .shortcuts {
   display: flex;
+  flex: 1 1 0;
+  min-width: 0;
   align-items: center;
   position: relative;
   margin-top: var(--header-shortcuts-offset);
@@ -77,12 +79,12 @@
 }
 
 .tabs {
-  position: absolute;
-  left: 50%;
-  top: 24px;
-  transform: translate3d(-50%, 0, 0);
+  position: relative;
+  z-index: 0;
+  align-self: flex-start;
+  margin: calc(24px - var(--header-padding-top)) var(--header-tabs-clearance) 0;
   display: flex;
-  flex-shrink: 0;
+  flex: 0 0 auto;
   align-items: stretch;
   padding: 7px;
   height: 76px;

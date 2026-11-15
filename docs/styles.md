@@ -124,6 +124,11 @@ Do not add extra IDs or theme selectors to beat an earlier rule. `HomeHeader` ow
 header clearance, `HeaderStatus` owns status placement, and `Clock` owns its layout
 variants. Weather receives the clock layout and weather-only state as explicit
 props. Their modules do not depend on a parent's private class or body clock mode.
+The header is one flex row: shortcuts and status share the space left by the tabs
+equally, so the tabs stay centred, and `--header-tabs-clearance` is the least gap
+kept on each side of them. When the compact status needs more than its share, the
+weather location is shortened with the shared `truncate` utility, then the date.
+The time and the temperature keep their width.
 Tests use `data-home-header`, `data-header-focus`, `data-clock-part` and
 `data-weather-part`; semantic IDs remain available for integrations.
 
