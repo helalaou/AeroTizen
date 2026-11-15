@@ -26,11 +26,47 @@ export const useClockWidth = (
       return;
     }
     const font = style.fontWeight + " " + style.fontSize + " " + style.fontFamily;
-    context.font = font;
-    if (clock.measureTimeDeferred) {
-      return clock.measureTimeDeferred(format, font, (value) => context.measureText(value).width, setWidth);
+    const fonts = node.ownerDocument.fonts;
+    let cancelScan: (() => void) | undefined;
+    let waitingForFonts = false;
+    let disposed = false;
+    const measure = () => {
+      context.font = font;
+      const measureText = (value: string) => context.measureText(value).width;
+      if (clock.measureTimeDeferred) {
+        cancelScan = clock.measureTimeDeferred(format, font, measureText, setWidth);
+      } else {
+        setWidth(clock.measureTime(format, font, measureText));
+      }
+    };
+    const waitForFonts = () => {
+      if (!fonts || waitingForFonts) {
+        return;
+      }
+      waitingForFonts = true;
+      cancelScan?.();
+      cancelScan = undefined;
+      // The CSS font string stays the same when a web font replaces its fallback.
+      clock.clearTimeWidthCache?.();
+      setWidth(undefined);
+      void fonts.ready.then(() => {
+        if (!disposed) {
+          waitingForFonts = false;
+          measure();
+        }
+      });
+    };
+    fonts?.addEventListener("loading", waitForFonts);
+    if (fonts?.status === "loading") {
+      waitForFonts();
+    } else {
+      measure();
     }
-    setWidth(clock.measureTime(format, font, (value) => context.measureText(value).width));
+    return () => {
+      disposed = true;
+      cancelScan?.();
+      fonts?.removeEventListener("loading", waitForFonts);
+    };
   }, [ref, clock, format, timestamp, appearance, visible]);
   return width;
 };

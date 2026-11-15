@@ -108,26 +108,36 @@ for (const theme of THEMES) {
     expect(errors).toEqual([]);
   });
 
-  test(`${theme.names.en} tab plate keeps the size of its tab when the theme changes the font`, async ({ page }) => {
-    const appsTab = page.locator("#apps-tab");
-    const plateAgainstTab = () =>
-      page.evaluate(() => {
-        const tab = document.querySelector("#apps-tab").getBoundingClientRect();
-        const plate = document.querySelector("[data-header-focus=tabs]").getBoundingClientRect();
-        return [plate.left - tab.left, plate.width - tab.width].map(Math.round);
-      });
-    await open(page, { theme: "glass", language: "ru" });
-    await appsTab.click();
-    await expect.poll(plateAgainstTab).toEqual([0, 0]);
-    const glassWidth = (await appsTab.boundingBox()).width;
-    await openAppearance(page);
-    await page.locator(choice(theme.id)).click();
-    await page.keyboard.press("Escape");
-    await page.keyboard.press("Escape");
-    await expect.poll(() => tabFont(page)).toBe(theme.fonts[0]);
-    await expect.poll(async () => (await appsTab.boundingBox()).width).not.toBe(glassWidth);
-    await expect.poll(plateAgainstTab).toEqual([0, 0]);
-  });
+  for (const browser of ["current browser", "Chromium 63 API surface"]) {
+    test(`${theme.names.en} keeps the tab highlight aligned after switching themes on the ${browser}`, async ({
+      page,
+    }) => {
+      if (browser === "Chromium 63 API surface") {
+        await page.addInitScript(() => {
+          Object.defineProperty(window, "ResizeObserver", { configurable: true, value: undefined });
+        });
+      }
+      const appsTab = page.locator("#apps-tab");
+      const plateAgainstTab = () =>
+        page.evaluate(() => {
+          const tab = document.querySelector("#apps-tab").getBoundingClientRect();
+          const plate = document.querySelector("[data-header-focus=tabs]").getBoundingClientRect();
+          return [plate.left - tab.left, plate.width - tab.width].map(Math.round);
+        });
+      await open(page, { theme: "glass", language: "ru" });
+      await appsTab.click();
+      await expect.poll(plateAgainstTab).toEqual([0, 0]);
+      const glassWidth = (await appsTab.boundingBox()).width;
+      await openAppearance(page);
+      await page.locator(choice(theme.id)).click();
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+      await expect.poll(() => tabFont(page)).toBe(theme.fonts[0]);
+      await page.evaluate(() => document.fonts.ready.then(() => undefined));
+      await expect.poll(async () => (await appsTab.boundingBox()).width).not.toBe(glassWidth);
+      await expect.poll(plateAgainstTab).toEqual([0, 0]);
+    });
+  }
 }
 
 for (const language of LANGUAGES) {

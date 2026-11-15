@@ -26,7 +26,7 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
       aria-hidden={!active}
     >
       <div class={styles.shortcuts} data-header-shortcuts>
-        <HeaderFocusIndicator env={env} />
+        <HeaderFocusIndicator env={env} theme={settings.theme} />
         <HomeControl
           env={env}
           id="gear"
@@ -50,7 +50,7 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
         <NetworkStatus status={env.status} />
       </div>
       <nav class={styles.tabs} data-header-tabs aria-label={t("home.views")}>
-        <HeaderFocusIndicator env={env} group="tabs" />
+        <HeaderFocusIndicator env={env} group="tabs" theme={settings.theme} />
         <HomeControl
           env={env}
           id="home-tab"

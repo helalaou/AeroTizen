@@ -51,6 +51,7 @@ export interface ClockPlatform {
   getTimePattern(): string;
 }
 export interface ClockService extends Store<number> {
+  clearTimeWidthCache?(): void;
   DATE_FORMATS: ReadonlyArray<{ id: DateFormat; format(date: Date): string }>;
   defaultTimeFormat(): TimeFormat;
   formatDate(date: Date, format: DateFormat): string;

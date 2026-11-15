@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 
+import type { Theme } from "../../../contracts/preferences";
 import { useStoreSelector } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import type { HomeEnvironment } from "../../types";
@@ -23,9 +24,11 @@ const sameBox = (first: PlateBox, second: PlateBox) =>
 export const HeaderFocusIndicator = ({
   env,
   group = "shortcuts",
+  theme,
 }: {
   env: HomeEnvironment;
   group?: "shortcuts" | "tabs";
+  theme: Theme;
 }) => {
   const { language } = useTranslation();
   const tabs = group === "tabs";
@@ -37,7 +40,7 @@ export const HeaderFocusIndicator = ({
     }
     return tabs ? state.page + "-tab" : "";
   });
-  const positioned = useRef(false);
+  const previousKey = useRef<string>();
   const [plate, setPlate] = useState({
     motion: false,
     style: { transform: "", width: "64px", height: "64px", left: "0px", top: "0px" },
@@ -45,13 +48,14 @@ export const HeaderFocusIndicator = ({
   useLayoutEffect(() => {
     const node = env.nodes.get(key);
     const host = node?.parentElement;
-    if (!node || !host) {
+    const view = node?.ownerDocument.defaultView;
+    if (!node || !host || !view) {
       return;
     }
-    const measure = () => {
+    const update = (motion: boolean) => {
       const rect = node.getBoundingClientRect();
       const parent = host.getBoundingClientRect();
-      return {
+      const style = {
         transform:
           "translate3d(" +
           (rect.left - parent.left - host.clientLeft) +
@@ -63,18 +67,31 @@ export const HeaderFocusIndicator = ({
         left: "0px",
         top: "0px",
       };
+      setPlate((previous) => (sameBox(previous.style, style) ? previous : { motion, style }));
     };
-    const followResize = () => {
-      const style = measure();
-      setPlate((previous) => (sameBox(previous.style, style) ? previous : { motion: false, style }));
+    update(previousKey.current !== undefined && previousKey.current !== key);
+    previousKey.current = key;
+
+    let frame: number | undefined;
+    const followLayout = () => {
+      if (frame === undefined) {
+        frame = view.requestAnimationFrame(() => {
+          frame = undefined;
+          update(false);
+        });
+      }
     };
-    setPlate({ motion: positioned.current, style: measure() });
-    positioned.current = true;
-    const resize = typeof ResizeObserver === "function" ? new ResizeObserver(followResize) : undefined;
-    resize?.observe(node);
-    resize?.observe(host);
-    return () => resize?.disconnect();
-  }, [env, key, language]);
+    const fonts = node.ownerDocument.fonts;
+    fonts?.addEventListener("loadingdone", followLayout);
+    view.addEventListener("resize", followLayout);
+    return () => {
+      if (frame !== undefined) {
+        view.cancelAnimationFrame(frame);
+      }
+      fonts?.removeEventListener("loadingdone", followLayout);
+      view.removeEventListener("resize", followLayout);
+    };
+  }, [env, key, language, theme]);
   return (
     <div
       aria-hidden="true"
