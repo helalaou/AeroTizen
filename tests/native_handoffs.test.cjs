@@ -923,6 +923,19 @@ test("HDMI selection refreshes a stale tile and blocks a disconnected port in ei
   }
 });
 
+test("HDMI selection switches to a recognised standby device so CEC can wake it", () => {
+  for (const native of [false, true]) {
+    const h = harness({ visible: true });
+    h.A.settings.update({ hdmiNativeViewer: native });
+    const raw = { type: "HDMI", number: 1, editName: "Apple TV" };
+    h.tz.systeminfo.getPropertyValue = (_name, done) => done({ disconnected: [raw] });
+    h.A.inputs.show({ type: "HDMI", number: 1, editName: "Apple TV" });
+    assert.equal(h.A.inputs.getSnapshot().sources[0].connected, false);
+    assert.deepEqual(h.toasts, []);
+    assert.ok(h.inputs.length + h.requests.length > 0, "the switch must be attempted");
+  }
+});
+
 test("failed HDMI refresh does not open the cached input", () => {
   const h = harness({ visible: true });
   h.tz.systeminfo.getPropertyValue = (_name, _done, fail) => fail();

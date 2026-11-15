@@ -349,7 +349,7 @@ export const createInputsService = ({
           return;
         }
         const current = store.getSnapshot().sources.find((item) => sourceKey(item) === sourceKey(source));
-        if (!success || !current?.connected) {
+        if (!success || !current || !(current.connected || hasRecognizedDevice(current))) {
           notify("inputs.couldNotShow", { input: displayLabel(source) });
           return;
         }
