@@ -95,6 +95,7 @@ jobs:
               b".prettierignore",
               b".prettierrc.json",
               b"eslint.config.js",
+              b"launcher-browser.json",
               b"package-lock.json",
               b"package.json",
               b"playwright.config.cjs",
@@ -260,7 +261,8 @@ jobs:
         if: needs.changes.outputs.launcher != 'false'
       - run: npm run format:check
         if: needs.changes.outputs.launcher != 'false'
-      - run: npm run lint
+      - name: Lint launcher source and check browser compatibility
+        run: npm run lint
         if: needs.changes.outputs.launcher != 'false'
       - run: npm run build
         if: needs.changes.outputs.launcher != 'false'

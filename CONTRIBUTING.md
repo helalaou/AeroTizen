@@ -96,9 +96,13 @@ differences, lint warnings and errors, and type errors.
 
 Build and test output are excluded from formatting. Diagnostics imports its privacy
 schema from plain JSON, with CLI parity checked by the Python tests. The app catalogue
-is plain JSON imported into the typed bundle. The launcher targets Chromium 63.
-CI checks both authored and packaged CSS against the TV rules and checks compiled
-UI scripts for ES2018 syntax. Background service modules retain ES5 compatibility.
+is plain JSON imported into the typed bundle. [launcher-browser.json](launcher-browser.json)
+sets the launcher target for Vite and the ESLint browser API rule. The rule checks
+known browser APIs and JavaScript built-ins in TV frontend source. Use a documented
+exception only when the newer API has a tested fallback. CI also checks authored and
+packaged CSS, checks compiled UI scripts for ES2018 syntax, and exercises the
+packaged launcher in Playwright with selected newer APIs disabled. Physical TVs
+still need device testing. Background service modules retain ES5 compatibility.
 
 Prettier uses double quotes, semicolons, a 120-column print width, two-space indentation,
 LF line endings, parenthesised arrow parameters and trailing commas wherever supported.

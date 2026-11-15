@@ -8,10 +8,12 @@ import ts from "typescript";
 import type { Plugin } from "vite";
 import { build, defineConfig } from "vite";
 
+import launcherBrowser from "./launcher-browser.json" with { type: "json" };
+
 const root = fileURLToPath(new URL("./", import.meta.url));
 const source = path.join(root, "launcher");
 const outputNames: Readonly<Record<string, string>> = { demo: "demo", "tv-dev": "launcher-dev" };
-const TV_CHROMIUM_MAJOR = 63;
+const TV_CHROMIUM_MAJOR = launcherBrowser.chromiumMajor;
 const TV_BROWSER_TARGET = "chrome" + TV_CHROMIUM_MAJOR;
 
 const SERVICE_ENTRIES = {

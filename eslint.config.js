@@ -7,10 +7,12 @@ const reactHooks = require("eslint-plugin-react-hooks");
 const tsParser = require("@typescript-eslint/parser");
 const tsPlugin = require("@typescript-eslint/eslint-plugin");
 const prettier = require("eslint-config-prettier");
+const compat = require("eslint-plugin-compat");
 const simpleImportSort = require("eslint-plugin-simple-import-sort");
 const perfectionist = require("eslint-plugin-perfectionist");
 const translationLint = require("./tools/translation-lint.cjs");
 const unusedImports = require("eslint-plugin-unused-imports");
+const { chromiumMajor } = require("./launcher-browser.json");
 
 module.exports = [
   {
@@ -146,6 +148,13 @@ module.exports = [
       ],
       eqeqeq: "error",
     },
+  },
+  {
+    files: ["launcher/src/**/*.{ts,tsx}", "launcher/js/**/*.js"],
+    ignores: ["launcher/src/{dev,service,test}/**", "launcher/src/**/*.test.{ts,tsx}"],
+    plugins: { compat },
+    settings: { targets: ["chrome " + chromiumMajor], lintAllEsApis: true },
+    rules: { "compat/compat": "error" },
   },
   {
     files: ["launcher/src/**/*.{ts,tsx}", "vite.config.mts", "tools/*.mjs"],
