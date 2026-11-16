@@ -71,10 +71,9 @@ class FakeTV:
                 remote_id += 1
                 service = payload.rstrip(b"\0").decode()
                 conn.sendall(_frame(sdb.OKAY, remote_id, arg0))
-                if service.startswith("shell:"):
-                    conn.sendall(
-                        _frame(sdb.WRTE, remote_id, arg0, self.replies.get(service[6:], "").encode())
-                    )
+                if service.startswith("shell:") or service == "capability:":
+                    key = service[6:] if service.startswith("shell:") else service
+                    conn.sendall(_frame(sdb.WRTE, remote_id, arg0, self.replies.get(key, "").encode()))
                     conn.sendall(_frame(sdb.CLSE, remote_id, arg0))
                 elif service == "sync:":
                     sync[remote_id] = bytearray()

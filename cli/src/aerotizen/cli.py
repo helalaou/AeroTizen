@@ -251,7 +251,7 @@ def verify_install(app_id, version, output, applist):
         if installed_version != version:
             raise ValueError(f"The TV reports version {installed_version}; expected {version}.")
         print(f"\nInstalled: {app_id} (version {installed_version} verified)")
-        return
+        return installed_version
     # Captured vd_appinstall reply from a Samsung Frame; progress alone is not confirmation.
     completed = re.search(rf"app_id\[{re.escape(app_id)}\]\s+install completed\b", output, re.I)
     if not completed:
@@ -261,21 +261,28 @@ def verify_install(app_id, version, output, applist):
 
 def _install_signed(session, src, temporary, host):
     """Update in place with the saved signing profile and verify the TV's reply."""
+    cdir = cert_dir_for(session.duid())
+    if not os.path.exists(os.path.join(cdir, "distributor.p12")):
+        sys.exit(f"No certificates for this TV yet. Run: aerotizen --tv {host} certs")
+    return install_signed_package(session, src, temporary, cdir)
+
+
+def install_signed_package(session, src, temporary, cdir):
+    """Use the standard Samsung developer install command with a local signing profile."""
     from aerotizen import signer
 
     app_id, version = app_metadata_of(src)
-    duid = session.duid()
     tool_path = session.capability().get("sdk_toolpath", "/home/owner/share/tmp/sdk_tools")
-    cdir = cert_dir_for(duid)
-    if not os.path.exists(os.path.join(cdir, "distributor.p12")):
-        sys.exit(f"No certificates for this TV yet. Run: aerotizen --tv {host} certs")
+    if not re.fullmatch(r"(?:/[A-Za-z0-9_-][A-Za-z0-9_.-]*)+/?", tool_path):
+        raise ValueError("The TV reported an invalid SDK tools path.")
+    tool_path = tool_path.rstrip("/")
     signed = Path(temporary) / f"{app_id.split('.')[0]}-signed.wgt"
     signer.sign_wgt(src, signed, cdir)
     with open(os.path.join(cdir, "device-profile.xml"), "rb") as f:
         session.push(f.read(), f"{tool_path}/device-profile.xml")
     output = session.install(app_id, signed.read_bytes(), tool_path)
     print(output.strip())
-    verify_install(app_id, version, output, session.applist())
+    return verify_install(app_id, version, output, session.applist())
 
 
 def cmd_install(args):
