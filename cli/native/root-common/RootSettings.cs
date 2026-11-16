@@ -85,7 +85,7 @@ namespace AeroTizen.Root
                 return bytes;
             }
         }
-        internal static void WriteNew(string path, byte[] bytes, uint mode = 0x180)
+        internal static void WriteNew(string path, byte[] bytes, uint mode = 0x180, bool overwrite = false)
         {
             string temporary = path + ".new-" + Guid.NewGuid().ToString("N");
             try
@@ -95,7 +95,7 @@ namespace AeroTizen.Root
                     if (chmod(temporary, mode) != 0) throw new IOException("Could not restrict file permissions");
                     file.Write(bytes, 0, bytes.Length); file.Flush(true);
                 }
-                File.Move(temporary, path, false);
+                File.Move(temporary, path, overwrite);
             }
             finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }

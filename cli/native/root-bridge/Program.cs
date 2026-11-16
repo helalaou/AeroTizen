@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -134,7 +135,8 @@ namespace AeroTizen.Root
         {
             if (files.Count == 0) return; // Previous cleanup may have removed the final marker.
             foreach (string name in files.Keys)
-                if (name != "pairing.json" && name != "server.pfx" && name != "installation" && name != "server.json")
+                if (name != "pairing.json" && name != "server.pfx" && name != "installation" && name != "server.json"
+                    && !ButtonService.OwnsStateFile(name))
                     throw new IOException("Unknown private root file retained");
             if (!files.TryGetValue("installation", out var marker) || Encoding.ASCII.GetString(marker) != installation)
                 throw new IOException("Foreign or incomplete ownership marker; refusing removal");
@@ -158,6 +160,8 @@ namespace AeroTizen.Root
             string disabled = RootPaths.Data + "/disabled";
             if (Directory.Exists(RootPaths.Data) && !File.Exists(disabled)) RootPaths.WriteNew(disabled, Encoding.ASCII.GetBytes(settings.Installation + "\n"), 0x124);
             if (!Directory.Exists(RootPaths.Private)) return;
+            foreach (string name in files.Keys.Where(ButtonService.OwnsStateFile))
+                File.Delete(RootPaths.Private + "/" + name);
             // Keep the ownership marker until last, so an interrupted cleanup can be retried.
             foreach (string name in new[] { "pairing.json", "server.pfx", "server.json", "installation" })
             {
@@ -333,9 +337,11 @@ namespace AeroTizen.Root
                 if (pairing.Installation != settings.Installation) throw new IOException("Root pairing identity differs");
                 using (var certificate = new X509Certificate2(RootPaths.PrivateFile(RootPaths.Private + "/server.pfx", 0, 32768),
                     (string)null, X509KeyStorageFlags.EphemeralKeySet))
+                using (var buttons = new ButtonService())
                 using (var server = new BridgeServer(settings, certificate, pairing.Token, () => {
                     var value = Identity(); value["origin"] = args[3]; value["launch_nonce"] = nonce; return value;
-                }, () => Remove(settings, pairing.Token), diagnostic: (phase, error) => Diagnostic(nonce, phase, error)))
+                }, () => Remove(settings, pairing.Token), diagnostic: (phase, error) => Diagnostic(nonce, phase, error),
+                    buttons: buttons))
                 using (var stremio = args[3] == "boot" ? new StremioFeed() : null)
                 {
                     Detach();
@@ -343,6 +349,7 @@ namespace AeroTizen.Root
                         ServerLifetime.Record(settings);
                         Ready(nonce);
                         stremio?.Start();
+                        buttons.Start();
                     }).GetAwaiter().GetResult();
                 }
                 return 0;

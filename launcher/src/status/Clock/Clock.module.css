@@ -1,5 +1,7 @@
 .compactDate {
   position: relative;
+  display: flex;
+  min-width: 0;
   font-size: 36px;
   font-weight: var(--clock-date-weight, 400);
 

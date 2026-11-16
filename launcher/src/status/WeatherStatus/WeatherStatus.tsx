@@ -1,4 +1,5 @@
 import type { ClockLayout } from "../../contracts/status";
+import text from "../../shared/styles/text.module.css";
 import type { useWeather } from "../hooks/useWeather";
 import { WeatherIcon } from "../WeatherIcon";
 
@@ -29,7 +30,9 @@ export const WeatherStatus = ({
         <>
           <WeatherIcon code={weather.code} />
           <b class={styles.compactTemperature}>{weather.text}</b>
-          {weather.showLocation ? <span class={styles.compactLocation}>{weather.city}</span> : null}
+          {weather.showLocation ? (
+            <span class={styles.compactLocation + " " + text.truncate}>{weather.city}</span>
+          ) : null}
         </>
       ) : null}
     </span>

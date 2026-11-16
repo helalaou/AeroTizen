@@ -31,10 +31,11 @@ def _read_frame(conn):
 
 
 class FakeTV:
-    """Accepts one connection; answers CNXN, shell:<cmd> from `replies`, and sync: uploads."""
+    """Answers CNXN, shell:<cmd> from `replies`, and sync: uploads."""
 
-    def __init__(self, replies=None):
+    def __init__(self, replies=None, *, allow_reconnect=False):
         self.replies = replies or {}
+        self.allow_reconnect = allow_reconnect
         self.uploads = {}
         self.server = socket.socket()
         self.server.bind(("127.0.0.1", 0))
@@ -48,11 +49,15 @@ class FakeTV:
                 sock.close()
 
     def _run(self):
-        try:
-            self.conn, _ = self.server.accept()
-        except OSError:
-            return  # closed before a client connected
-        self._serve(self.conn)
+        while True:
+            try:
+                self.conn, _ = self.server.accept()
+            except OSError:
+                return
+            with self.conn:
+                self._serve(self.conn)
+            if not self.allow_reconnect:
+                return
 
     def _serve(self, conn):
         remote_id = 100
@@ -105,8 +110,8 @@ class FakeTV:
 def fake_tv():
     made = []
 
-    def make(replies=None):
-        tv = FakeTV(replies)
+    def make(replies=None, *, allow_reconnect=False):
+        tv = FakeTV(replies, allow_reconnect=allow_reconnect)
         made.append(tv)
         return tv
 
