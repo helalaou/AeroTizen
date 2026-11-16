@@ -105,6 +105,7 @@ and how to restore the original settings before uninstalling AeroTizen.
 - [Troubleshoot and export logs](docs/diagnostics.md)
 - [Reduce ads and tracking in Samsung settings](docs/settings.md) and [DNS blocklists](dns/)
 - [Optional root setup and recovery](docs/root-cli.md)
+- [Remap or disable remote app buttons](docs/root-cli.md#change-app-buttons-on-the-remote)
 
 ## Contributing
 

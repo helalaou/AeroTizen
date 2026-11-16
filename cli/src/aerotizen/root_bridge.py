@@ -22,9 +22,11 @@ class BridgeClient:
     def __init__(self, host, receipt, *, timeout=8):
         self.host, self.receipt, self.timeout = host, receipt, timeout
 
-    def open(self, operation):
-        if operation not in ("status", "sdb", "remove"):
+    def open(self, operation, *, button_request=None):
+        if operation not in ("status", "sdb", "remove", "buttons"):
             raise BridgeError("Unknown root bridge operation")
+        if (operation == "buttons") != (button_request is not None):
+            raise BridgeError("Invalid button request")
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE  # Exact certificate pin is checked before authentication.
@@ -38,6 +40,8 @@ class BridgeClient:
                 raise BridgeError("Root bridge certificate does not match this TV's saved pairing")
             nonce = secrets.token_hex(16)
             request = {"protocol": 1, "operation": operation, "token": self.receipt["token"], "nonce": nonce}
+            if button_request is not None:
+                request["buttons"] = button_request
             secured.sendall(json.dumps(request, separators=(",", ":")).encode() + b"\n")
             reply = bytearray()
             while len(reply) <= MAX_REPLY:
@@ -75,8 +79,8 @@ class BridgeClient:
         except (KeyError, TypeError, ValueError, AttributeError) as exc:
             raise BridgeError("Root bridge returned an invalid current boot identity") from exc
 
-    def request(self, operation="status"):
-        connection, result = self.open(operation)
+    def request(self, operation="status", *, button_request=None):
+        connection, result = self.open(operation, button_request=button_request)
         connection.close()
         return result
 
