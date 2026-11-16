@@ -1,22 +1,13 @@
 .status {
-  --header-status-margin: 0px;
-
   color: var(--fg);
   text-shadow: var(--header-status-shadow, none);
   display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: flex-end;
   align-items: center;
-  margin-left: var(--header-status-margin);
 
   > :not([hidden]) ~ :not([hidden]) {
     -webkit-margin-start: 28px;
-  }
-
-  &[data-expanded="true"] {
-    --header-status-margin: auto;
-  }
-
-  [dir="rtl"] & {
-    margin-left: 0;
-    margin-right: var(--header-status-margin);
   }
 }
