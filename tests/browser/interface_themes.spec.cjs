@@ -13,6 +13,12 @@ const THEMES = [
     fonts: ["Google Sans"],
     names: { en: "Gloss", fr: "Brillance", it: "Lucido", ru: "Глянец", ar: "لمعان", "pt-BR": "Brilho" },
   },
+  {
+    id: "amethyst",
+    tileRadius: "16px",
+    fonts: ["Manrope", "Changa"],
+    names: { en: "Amethyst", fr: "Améthyste", it: "Ametista", ru: "Аметист", ar: "جمشت", "pt-BR": "Ametista" },
+  },
 ];
 const LANGUAGES = Object.keys(THEMES[0].names);
 
