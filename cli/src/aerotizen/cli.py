@@ -535,21 +535,30 @@ def cmd_home_probe(args):
         sys.exit(f"Home probe failed: {error}")
 
 
-def cmd_home_plan(args):
-    from aerotizen import home_control
-
-    plan = home_control.plan_actions(args.action)
-    if args.json:
-        print(json.dumps(plan, indent=2))
+def _report_paired_home_status(status, as_json):
+    if as_json:
+        print(json.dumps(status, indent=2))
         return
-    print("Home settings preview")
-    labels = {"home-button": "Home button", "startup": "Startup"}
-    for action, changes in plan["actions"].items():
-        print(labels[action])
-        for setting, target in changes["settings"].items():
-            print(f"  {setting} = {target}")
-        if mode := changes.get("watcher_after"):
-            print(f"  AeroTizen routing mode = {mode}")
+
+    def value(item):
+        if item is None:
+            return "Unavailable"
+        if type(item) is bool:
+            return "On" if item else "Off"
+        return item or "Not set"
+
+    button, startup = status["home_button"], status["startup"]
+    print("Home button")
+    print(f"  Assigned app = {value(button['assigned_app'])}")
+    print(f"  Configured Home app = {value(button['configured_app'])}")
+    print("Startup")
+    print(f"  Startup app = {value(startup['app'])}")
+    print(f"  Backup startup app = {value(startup['backup_app'])}")
+    print(f"  Smart Hub autostart = {value(startup['smart_hub_autostart'])}")
+    print("AeroTizen routing")
+    print(f"  Mode = {value(status['aerotizen_routing_mode'])}")
+    if status["native_settings_source"] is None:
+        print("The paired TV helper did not report native Home settings.", file=sys.stderr)
 
 
 def cmd_home(args):
@@ -557,6 +566,13 @@ def cmd_home(args):
     from aerotizen.root import SamsungTvRoot
 
     try:
+        if args.home_command == "status" and getattr(args, "paired", False):
+            from aerotizen import home_status
+
+            with require_sdb(pick_tv(args)) as session:
+                status = home_status.read_paired(session)
+            _report_paired_home_status(status, args.json)
+            return
         writing = args.home_command in ("apply", "restore")
         if getattr(args, "boot", False):
             print("The --boot option is deprecated. Home apply includes startup setup.", file=sys.stderr)
@@ -799,16 +815,16 @@ def main():
     )
     command.add_argument("--json", action="store_true", help="also print the report as JSON")
     command.set_defaults(fn=cmd_home_probe)
-    from aerotizen.home_control import HOME_ACTIONS
-
-    command = commands.add_parser("plan", help="preview Home button and startup settings offline")
-    command.add_argument("--action", choices=HOME_ACTIONS, default="all", help="which part to preview")
-    command.add_argument("--json", action="store_true", help="print the plan as JSON")
-    command.set_defaults(fn=cmd_home_plan)
     for name in ("status", "backup", "apply", "restore"):
         command = commands.add_parser(name)
         if name in ("status", "backup"):
-            command.add_argument(
+            root_options = command
+            if name == "status":
+                root_options = command.add_mutually_exclusive_group()
+                root_options.add_argument(
+                    "--paired", action="store_true", help="read current settings using the paired TV helper"
+                )
+            root_options.add_argument(
                 "--root", action="store_true", help="use temporary root instead of the default SDK user"
             )
             command.add_argument("--root-tool", type=Path, help="verified samsung-tv-root v0.0.12 executable")

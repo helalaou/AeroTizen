@@ -23,6 +23,9 @@ from aerotizen import diagnostic_privacy as privacy
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_FILES = 10
 MAX_TV_BYTES = 256 * 1024
+HOME_WATCHER_PORT = 47790
+WATCHER_STATUS_TIMEOUT_SECONDS = 2
+MAX_WATCHER_STATUS_BYTES = 128 * 1024
 _CURRENT = contextvars.ContextVar("aerotizen_diagnostics", default=None)
 
 
@@ -177,10 +180,24 @@ class _SocketBody:
         return io.BytesIO(self.raw)
 
 
+def fetch_watcher_status(session):
+    raw = session.tcp_request(
+        HOME_WATCHER_PORT,
+        b"GET / HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+        timeout=WATCHER_STATUS_TIMEOUT_SECONDS,
+        max_output=MAX_WATCHER_STATUS_BYTES,
+    )
+    with http.client.HTTPResponse(_SocketBody(raw)) as response:
+        response.begin()
+        if response.status != http.client.OK:
+            raise ValueError(f"Home watcher HTTP {response.status}")
+        return json.load(response)
+
+
 def fetch_tv(session, *, policy=None):
     policy = policy or privacy.Policy()
     raw = session.tcp_request(
-        47790,
+        HOME_WATCHER_PORT,
         b"GET /diagnostics/logs HTTP/1.0\r\nHost: localhost\r\n"
         b"Connection: close\r\nX-AeroTizen-Diagnostics: 1\r\n\r\n",
         timeout=5,

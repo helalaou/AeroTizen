@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../cli/native/home-query/HomeQuery.cs" Link="HomeQuery.cs"/>
+    <Compile Include="../../cli/native/home-common/HomeSettings.cs" Link="HomeSettings.cs"/>
     <Compile Include="../../cli/native/home-control/Compatibility.cs" Link="Compatibility.cs"/>
     <Compile Include="../../cli/native/home-control/ControlPolicy.cs" Link="ControlPolicy.cs"/>
     <Compile Include="../../cli/native/home-control/HomeControl.cs" Link="HomeControl.cs"/>
