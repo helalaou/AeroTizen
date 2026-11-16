@@ -5,7 +5,7 @@
   --header-padding-bottom: 0px;
   --header-align: center;
   --header-shortcuts-offset: 0px;
-  --header-tabs-clearance: 8px;
+  --header-tabs-clearance: 24px;
   display: flex;
   align-items: var(--header-align);
   height: var(--header-height);
