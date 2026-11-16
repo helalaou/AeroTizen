@@ -535,6 +535,23 @@ def cmd_home_probe(args):
         sys.exit(f"Home probe failed: {error}")
 
 
+def cmd_home_plan(args):
+    from aerotizen import home_control
+
+    plan = home_control.plan_actions(args.action)
+    if args.json:
+        print(json.dumps(plan, indent=2))
+        return
+    print("Home settings preview")
+    labels = {"home-button": "Home button", "startup": "Startup"}
+    for action, changes in plan["actions"].items():
+        print(labels[action])
+        for setting, target in changes["settings"].items():
+            print(f"  {setting} = {target}")
+        if mode := changes.get("watcher_after"):
+            print(f"  AeroTizen routing mode = {mode}")
+
+
 def cmd_home(args):
     from aerotizen import home, home_control
     from aerotizen.root import SamsungTvRoot
@@ -782,6 +799,12 @@ def main():
     )
     command.add_argument("--json", action="store_true", help="also print the report as JSON")
     command.set_defaults(fn=cmd_home_probe)
+    from aerotizen.home_control import HOME_ACTIONS
+
+    command = commands.add_parser("plan", help="preview Home button and startup settings offline")
+    command.add_argument("--action", choices=HOME_ACTIONS, default="all", help="which part to preview")
+    command.add_argument("--json", action="store_true", help="print the plan as JSON")
+    command.set_defaults(fn=cmd_home_plan)
     for name in ("status", "backup", "apply", "restore"):
         command = commands.add_parser(name)
         if name in ("status", "backup"):

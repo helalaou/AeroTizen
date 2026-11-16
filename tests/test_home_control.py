@@ -62,6 +62,38 @@ def test_cli_preview_never_discovers_or_connects(monkeypatch, action, capsys):
     assert "tv_recovery" not in result
 
 
+@pytest.mark.parametrize(
+    ("scope", "selected"),
+    [
+        (None, ("home-button", "startup")),
+        ("all", ("home-button", "startup")),
+        ("home-button", ("home-button",)),
+        ("startup", ("startup",)),
+    ],
+)
+def test_cli_home_plan_reports_only_selected_settings_without_tv_contact(
+    monkeypatch, capsys, scope, selected
+):
+    monkeypatch.setattr(cli, "pick_tv", lambda *_: pytest.fail("No TV contact allowed"))
+    monkeypatch.setattr(home_control, "load_helper", lambda: pytest.fail("No helper needed for a preview"))
+    selection = ["--action", scope] if scope else []
+    monkeypatch.setattr("sys.argv", ["aerotizen", "home", "plan", "--json", *selection])
+    cli.main()
+    plan = json.loads(capsys.readouterr().out)
+    assert plan["will_write"] is False
+    assert tuple(plan["actions"]) == selected
+    app = home.releases.APP_ID
+    if "home-button" in selected:
+        assert plan["actions"]["home-button"] == {
+            "settings": {home.OPERATION: app, home.HOME_KEY: app},
+            "watcher_after": "native",
+        }
+    if "startup" in selected:
+        assert plan["actions"]["startup"] == {
+            "settings": {**dict.fromkeys(home.STARTUP_KEYS, app), home.AUTOSTART_KEY: 1},
+        }
+
+
 def test_control_payload_matches_current_sources():
     manifest = json.loads(home_control.PAYLOAD_PATH.read_text())
     sources = b"\0".join(

@@ -42,6 +42,22 @@ The CLI saves `original-home.json` in `~/.config/aerotizen/backups/<TV identity>
 Keep the **whole folder**, including the `transactions/` directory. Later backups
 keep the original file and report if the current settings differ.
 
+### Preview Home actions
+
+Use an offline plan to see which settings belong to the Home button and which
+belong to startup. Omit `--action` to show both.
+
+```sh
+aerotizen home plan --action home-button
+aerotizen home plan --action startup
+aerotizen home plan --json
+```
+
+The Home-button plan assigns both Home bindings to AeroTizen and selects native
+routing. The startup plan assigns both startup app IDs and enables Smart Hub
+autostart after the IDs are verified. These plans show the intended values
+before firmware and backup checks.
+
 ### Apply Native Home
 
 Preview the change, then apply it. If the installed launcher's control service is

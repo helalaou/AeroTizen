@@ -25,6 +25,7 @@ MAX_RECOVERY_RECEIPTS = 1024
 SERVICE_START_TIMEOUT = 15.0
 SERVICE_POLL_INTERVAL = 1.0
 LAUNCH_TIMEOUT = 8
+HOME_ACTIONS = ("home-button", "startup", "all")
 START_RECOVERY = (
     f"Open AeroTizen on the TV or run 'aerotizen launch {home.releases.APP_ID}', then retry. "
     "No Home settings were changed."
@@ -39,6 +40,23 @@ def load_helper():
             "Home control payload is missing or invalid. "
             "Build it with python cli/tools/build_home_control.py."
         ) from exc
+
+
+def plan_actions(scope):
+    if scope not in HOME_ACTIONS:
+        raise ValueError("Unknown Home action.")
+    app = home.releases.APP_ID
+    actions = {
+        "home-button": {
+            "settings": {home.OPERATION: app, home.HOME_KEY: app},
+            "watcher_after": "native",
+        },
+        "startup": {
+            "settings": {**dict.fromkeys(home.STARTUP_KEYS, app), home.AUTOSTART_KEY: 1},
+        },
+    }
+    selected = actions if scope == "all" else {scope: actions[scope]}
+    return {"will_write": False, "actions": selected}
 
 
 def preview(action, backup=None):
