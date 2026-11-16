@@ -1,21 +1,23 @@
-"""Decide which installed packages are safe to offer for removal.
+"""Classify installed packages for review.
 
-The rule (from field testing, see README credits): only Samsung-store style
-packages (10-char random id + name) are ever candidates. Platform packages
-(org.tizen.*, com.samsung.*, and everything else) are never touched, because
-removing one can break Home and only a factory reset brings it back.
+Protect known infrastructure even when the TV reports it as removable.
+Older firmware has no removability flag, so use the store-style package
+pattern as a fallback for identifying candidates.
 """
 
 import re
 
 STORE_PKG = re.compile(r"^[A-Za-z0-9]{10}$")
 
-# Store-pattern packages that are actually TV infrastructure.
+# Infrastructure packages to protect even when the TV reports them as removable.
 PROTECTED_PKGS = {
     "ZODRT12q2l",  # WebAccountExtension (account plumbing)
     "aQjWjLsPaO",  # MultiScreenWebLauncher
     "30IKH0OX8U",  # Aria video background services
     "DclHome001",  # this project's own launcher
+    "org.aerotizen.roothelper",  # this project's root helper
+    "com.samsung.tv.SecurityCenter",  # reported as removable on the Tizen 9 Frame
+    "org.tizen.browser",  # Samsung's built-in TV browser
 }
 PROTECTED_NAME_HINTS = ("lowmem", "webaccount", "multiscreen", "adplayer", "launcher")
 
@@ -137,7 +139,7 @@ def classify(app):
     if pkgid in PROTECTED_PKGS:
         return "protected"
     if "removable" in app:
-        # Newer firmware says outright what it lets you remove; trust it.
+        # A false flag rules out removal. A true flag does not guarantee developer uninstall.
         if not app["removable"]:
             return "protected"
     elif not STORE_PKG.match(pkgid):

@@ -1,5 +1,6 @@
 import { Alert, AppShell, Loader, LoadingOverlay, Modal, Stack, Text } from "@mantine/core";
 import { useState } from "react";
+import { AppsPanel } from "./components/AppsPanel";
 import { Header } from "./components/Header";
 import { LauncherPanel } from "./components/LauncherPanel";
 import { SelectedTvView } from "./components/SelectedTvView";
@@ -24,11 +25,17 @@ export function App({ service }: AppProps) {
   const selected = manager.selected;
   const busy = Boolean(manager.busy);
   const busyMessage = manager.busy?.message ?? (manager.loading ? "Loading saved TVs…" : null);
-  const appLoading = Boolean(busyMessage) && manager.busy?.scope !== "discovery";
+  const appLoading = manager.loading || manager.busy?.scope === "app";
   const backendVersion = manager.backend?.version;
   const goToPage = (next: TvPage) => {
     setPage(next);
     setMenuOpened(false);
+    if (next === page) return;
+    if (page === "apps") manager.cancelAppLoad();
+    if (next === "apps" && selected) {
+      manager.clearAppRemoval();
+      manager.loadApps(selected.id);
+    }
   };
   const connect = async (host: string, profileId?: string) => {
     const success = await manager.connect(host, profileId);
@@ -42,8 +49,10 @@ export function App({ service }: AppProps) {
     manager.clearError();
     setDialog(next);
   };
-  const checkConnection = () => {
-    if (selected) void manager.connect(selected.host, selected.id);
+  const checkConnection = async () => {
+    if (!selected) return;
+    const connected = await manager.connect(selected.host, selected.id);
+    if (connected && page === "apps") manager.loadApps(selected.id);
   };
 
   function tvContent() {
@@ -67,12 +76,29 @@ export function App({ service }: AppProps) {
         />
       );
     }
+    if (page === "apps") {
+      return (
+        <AppsPanel
+          key={selected.id}
+          tvName={selected.name}
+          packages={manager.apps}
+          removal={manager.appRemoval}
+          appRefusals={manager.appRefusals}
+          error={manager.appsError}
+          loading={manager.appsLoading}
+          onRefresh={() => manager.loadApps(selected.id)}
+          onDismissResults={manager.clearAppRemoval}
+          onRemove={(picked) => void manager.removeApps(selected.id, picked)}
+        />
+      );
+    }
     return (
       <LauncherPanel
         key={selected.id}
         profile={selected}
         releases={manager.launcherReleases}
-        busy={busy}
+        busy={appLoading}
+        canInstall={!busy}
         onInstall={manager.installLauncher}
         onRetryVersions={manager.retryLauncherVersions}
       />
@@ -97,6 +123,7 @@ export function App({ service }: AppProps) {
           profile={selected}
           page={page}
           busy={busy}
+          navigationDisabled={appLoading}
           canCheck={!busy && manager.ready}
           onCheck={checkConnection}
           onPage={goToPage}

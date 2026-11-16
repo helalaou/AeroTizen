@@ -1,11 +1,15 @@
 import { test as base } from "@playwright/test";
-import type { SavedTv } from "../src/contracts";
-import { bedroom, livingRoom, office, testReleases, testStatus } from "../src/test/tvs";
+import type { AppPackageSelection, AppRemovalOutcome, SavedTv, TvAppPackage } from "../src/contracts";
+import { bedroom, livingRoom, office, testPackages, testReleases, testStatus } from "../src/test/tvs";
 
-export const test = base.extend({
-  page: async ({ page }, use) => {
+export const test = base.extend<{
+  inventory: { packages: TvAppPackage[]; failures?: Record<string, Omit<AppRemovalOutcome, "id">> };
+}>({
+  inventory: [{ packages: testPackages }, { option: true }],
+  page: async ({ page, inventory }, use) => {
     await page.addInitScript(
-      ({ initial, known, releases, status }) => {
+      ({ initial, known, packages, failures, releases, status }) => {
+        let currentPackages = packages;
         const profileKey = "test-native-profiles";
         const profiles = new Map<string, SavedTv>(
           JSON.parse(sessionStorage.getItem(profileKey) ?? JSON.stringify(initial.map((tv) => [tv.id, tv]))),
@@ -25,6 +29,29 @@ export const test = base.extend({
                   return releases;
                 case "list_tvs":
                   return [...profiles.values()];
+                case "list_tv_apps":
+                  if (!profiles.has(String(args.id))) throw new Error("Connect to the TV first.");
+                  return structuredClone(currentPackages);
+                case "cancel_tv_app_list":
+                  return;
+                case "remove_tv_apps": {
+                  if (!profiles.has(String(args.id))) throw new Error("Connect to the TV first.");
+                  const selected = args.packages as AppPackageSelection[];
+                  for (const item of selected) {
+                    const current = currentPackages.find((candidate) => candidate.id === item.id);
+                    if (!current || current.protected || current.revision !== item.revision) {
+                      throw new Error("Review the installed apps again.");
+                    }
+                  }
+                  const removed = new Set(
+                    selected.filter(({ id }) => !Object.hasOwn(failures, id)).map(({ id }) => id),
+                  );
+                  currentPackages = currentPackages.filter((item) => !removed.has(item.id));
+                  return {
+                    apps: structuredClone(currentPackages),
+                    results: selected.map(({ id }) => ({ id, ...(failures[id] ?? { status: "removed" }) })),
+                  };
+                }
                 case "discover_tvs":
                   await new Promise((resolve) => setTimeout(resolve, 350));
                   return known;
@@ -64,6 +91,8 @@ export const test = base.extend({
       {
         initial: [livingRoom, bedroom],
         known: [livingRoom, bedroom, office],
+        packages: inventory.packages,
+        failures: inventory.failures ?? {},
         releases: testReleases,
         status: testStatus,
       },

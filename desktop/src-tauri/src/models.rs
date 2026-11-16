@@ -60,6 +60,12 @@ pub struct SavedTv {
     pub tv: VerifiedTv,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AppPackageSelection {
+    id: String,
+    revision: String,
+}
+
 pub fn valid_identity(value: &str) -> bool {
     value.len() == 64
         && value

@@ -9,6 +9,7 @@ interface LauncherPanelProps {
   profile: SavedTv;
   releases: LauncherRelease[] | null | undefined;
   busy: boolean;
+  canInstall: boolean;
   onInstall(version: string, confirmReplace: boolean): Promise<boolean>;
   onRetryVersions(): void;
 }
@@ -28,7 +29,7 @@ function installLabel(target: string, installed: string | null, comparison: numb
   return `Update to ${target}`;
 }
 
-export function LauncherPanel({ profile, releases, busy, onInstall, onRetryVersions }: LauncherPanelProps) {
+export function LauncherPanel({ profile, releases, busy, canInstall, onInstall, onRetryVersions }: LauncherPanelProps) {
   const [choice, setChoice] = useState<string | null>(null);
   const [showVersions, setShowVersions] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -86,7 +87,7 @@ export function LauncherPanel({ profile, releases, busy, onInstall, onRetryVersi
                 )}
                 <Group>
                   <Button
-                    disabled={busy || !ready}
+                    disabled={!canInstall || !ready}
                     onClick={() => (needsConfirmation ? setConfirm(true) : void install(false))}
                   >
                     {action}

@@ -102,6 +102,136 @@ def test_different_saved_identity_is_refused(connected_tv):
     assert "result" not in reply
 
 
+def test_list_apps_groups_packages_and_preserves_protection(connected_tv, monkeypatch):
+    connected_tv.replies["0 vd_applist"] = (
+        "app_id=Abcdefghij.Player app_title=Player\n"
+        "app_id=Abcdefghij.Home app_title=Launcher Companion\n"
+        "app_id=DclHome001.Home app_title=AeroTizen\n"
+        "app_id=KLMNOPQRST.Media app_title=Video &amp; Music\n"
+    )
+    monkeypatch.setattr(DeviceSession, "uninstall", lambda *_: pytest.fail("Unexpected uninstall"))
+    identity = hashlib.sha256(b"test-duid").hexdigest()
+    reply = worker.handle(request("list_apps", host="127.0.0.1", expected_identity=identity))
+    assert all(worker.IDENTITY_PATTERN.fullmatch(row["revision"]) for row in reply["result"])
+    assert [{key: value for key, value in row.items() if key != "revision"} for row in reply["result"]] == [
+        {
+            "id": "DclHome001",
+            "name": "AeroTizen",
+            "apps": ["AeroTizen"],
+            "protected": True,
+        },
+        {
+            "id": "Abcdefghij",
+            "name": "Player",
+            "apps": ["Player", "Launcher Companion"],
+            "protected": True,
+        },
+        {
+            "id": "KLMNOPQRST",
+            "name": "Video & Music",
+            "apps": ["Video & Music"],
+            "protected": False,
+        },
+    ]
+    assert connected_tv.uploads == {}
+    assert "test-duid" not in json.dumps(reply)
+
+
+def test_list_apps_checks_identity_before_reading_packages(connected_tv, monkeypatch):
+    monkeypatch.setattr(DeviceSession, "applist", lambda *_: pytest.fail("Unexpected inventory read"))
+    reply = worker.handle(request("list_apps", host="127.0.0.1", expected_identity="0" * 64))
+    assert reply["error"]["code"] == "identity_mismatch"
+
+
+@pytest.fixture
+def removal_request(connected_tv):
+    raw = (
+        "apps count: 3\n"
+        "app_id=DclHome001.Home app_title=AeroTizen\n"
+        "app_id=Abcdefghij.Player app_title=Player\n"
+        "app_id=KLMNOPQRST.Media app_title=Media\n"
+    )
+    connected_tv.replies["0 vd_applist"] = raw
+    entries = {row["id"]: row["revision"] for row in worker.app_rows(worker.packages(raw))}
+    return request(
+        "remove_apps",
+        host="127.0.0.1",
+        expected_identity=hashlib.sha256(b"test-duid").hexdigest(),
+        packages=[{"id": key, "revision": entries[key]} for key in ("Abcdefghij", "KLMNOPQRST")],
+    )
+
+
+@pytest.mark.parametrize(
+    ("kind", "code"),
+    [("identity", "identity_mismatch"), ("stale", "apps_changed"), ("protected", "protected_package")],
+)
+def test_remove_apps_validates_all_packages_before_uninstall(
+    connected_tv, removal_request, monkeypatch, kind, code
+):
+    monkeypatch.setattr(DeviceSession, "uninstall", lambda *_: pytest.fail("Unexpected uninstall"))
+    params = removal_request["params"]
+    if kind == "identity":
+        params["expected_identity"] = "0" * 64
+    elif kind == "stale":
+        params["packages"][1]["revision"] = "0" * 64
+    else:
+        launcher = worker.packages(connected_tv.replies["0 vd_applist"])["DclHome001"]
+        params["packages"][1] = {"id": "DclHome001", "revision": worker.package_revision(launcher)}
+    assert worker.handle(removal_request)["error"]["code"] == code
+
+
+@pytest.mark.parametrize(
+    ("lost_inventory", "reply", "expected"),
+    [
+        (True, "", None),
+        (False, "uninstall Media\nCan not uninstall app\x00\nuninstall completed\n", {"status": "refused"}),
+        (False, "uninstall completed\n", {"status": "still_installed"}),
+        (
+            False,
+            "Uninstall failed (1009)\n",
+            {"status": "still_installed", "detail": "Uninstall failed (1009)"},
+        ),
+    ],
+)
+def test_remove_apps_verifies_results_and_stops_when_inventory_is_unavailable(
+    connected_tv, removal_request, monkeypatch, lost_inventory, reply, expected
+):
+    calls = []
+    standard_uninstall = DeviceSession.uninstall
+    connected_tv.replies["0 vd_appuninstall Abcdefghij.Player"] = "Can not uninstall app\n"
+    connected_tv.replies["0 vd_appuninstall KLMNOPQRST.Media"] = reply
+
+    def uninstall(session, app_id):
+        calls.append(app_id)
+        reply = standard_uninstall(session, app_id)
+        if app_id == "Abcdefghij.Player":
+            connected_tv.replies["0 vd_applist"] = (
+                "apps count: 2\n"
+                "app_id=DclHome001.Home app_title=AeroTizen\n"
+                + ("" if lost_inventory else "app_id=KLMNOPQRST.Media app_title=Media\n")
+            )
+        return reply
+
+    monkeypatch.setattr(DeviceSession, "uninstall", uninstall)
+    result = worker.handle(removal_request)["result"]
+    if lost_inventory:
+        assert calls == ["Abcdefghij.Player"]
+        assert result == {
+            "apps": None,
+            "results": [
+                {"id": "Abcdefghij", "status": "unverified"},
+                {"id": "KLMNOPQRST", "status": "not_attempted"},
+            ],
+        }
+    else:
+        assert calls == ["Abcdefghij.Player", "KLMNOPQRST.Media"]
+        assert [item["id"] for item in result["apps"]] == ["DclHome001", "KLMNOPQRST"]
+        assert result["results"] == [
+            {"id": "Abcdefghij", "status": "removed"},
+            {"id": "KLMNOPQRST", **expected},
+        ]
+
+
 @pytest.mark.parametrize("host", [True, 123, None, "tv.local", "0.0.0.0", "255.255.255.255", "224.0.0.1"])
 def test_invalid_hosts_fail_before_network_access(monkeypatch, host):
     monkeypatch.setattr(worker.remote, "info", lambda _: pytest.fail("Unexpected network access"))
@@ -137,6 +267,33 @@ def test_protocol_keeps_stdout_machine_readable_and_rejects_oversized_input():
         assert process.stderr == ""
 
 
+def test_cancellable_app_list_exits_when_its_input_pipe_closes():
+    # Keep the read blocked after it starts, as it can be while the TV is slow to respond.
+    script = """
+from threading import Event
+from aerotizen import desktop_worker
+
+def blocked_read(request):
+    print("reading", flush=True)
+    Event().wait()
+
+desktop_worker.handle = blocked_read
+desktop_worker.main()
+"""
+    with subprocess.Popen(
+        [sys.executable, "-c", script], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True
+    ) as process:
+        try:
+            process.stdin.write(json.dumps({**request("list_apps"), "cancellable": True}) + "\n")
+            process.stdin.flush()
+            assert process.stdout.readline().strip() == "reading"
+            process.stdin.close()
+            assert process.wait(timeout=5) == 0
+        finally:
+            if process.poll() is None:
+                process.kill()
+
+
 def test_handshake_does_not_open_a_connection(monkeypatch):
     monkeypatch.setattr(worker, "DeviceSession", lambda _: pytest.fail("Unexpected TV connection"))
     reply = worker.handle(request("handshake"))
@@ -145,6 +302,8 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "handshake",
         "discover",
         "connect",
+        "list_apps",
+        "remove_apps",
         "launcher_catalog",
         "install_launcher",
     ]

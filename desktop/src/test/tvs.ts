@@ -1,4 +1,4 @@
-import type { DesktopService, LauncherRelease, SavedTv } from "../contracts";
+import type { DesktopService, LauncherRelease, SavedTv, TvAppPackage } from "../contracts";
 
 export const livingRoom: SavedTv = {
   id: "1".repeat(64),
@@ -47,6 +47,23 @@ export const testReleases: LauncherRelease[] = [
   { version: "2.7.0", sections: [{ heading: "Bug Fixes", changes: ["Fix app card spacing."] }] },
 ];
 export const testStatus = { name: "aerotizen-desktop-worker", version: "3.0.1", operations: [] };
+export const testPackages: TvAppPackage[] = [
+  { id: "DclHome001", name: "AeroTizen", apps: ["AeroTizen"], protected: true, revision: "1".repeat(64) },
+  {
+    id: "Abcdefghij",
+    name: "Player",
+    apps: ["Player", "Media Companion"],
+    protected: false,
+    revision: "2".repeat(64),
+  },
+  {
+    id: "com.samsung.tv.SecurityCenter",
+    name: "SecurityCenter",
+    apps: ["SecurityCenter"],
+    protected: true,
+    revision: "3".repeat(64),
+  },
+];
 
 export function testService(): DesktopService {
   const profiles = new Map([livingRoom, bedroom].map((tv) => [tv.id, tv]));
@@ -55,6 +72,10 @@ export function testService(): DesktopService {
     launcherCatalog: async () => testReleases,
     list: async () => [...profiles.values()],
     discover: async () => [livingRoom, bedroom, office],
+    listApps: async () => testPackages,
+    removeApps: async () => {
+      throw new Error("Set the removal result in the test.");
+    },
     connect: async (host, id) => {
       const tv = [livingRoom, bedroom, office].find((known) => known.host === host);
       if (!tv) throw new Error("Could not connect to the TV.");

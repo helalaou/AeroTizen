@@ -38,12 +38,35 @@ export interface LauncherRelease {
   sections: { heading: string | null; changes: string[] }[];
 }
 
+export interface TvAppPackage {
+  id: string;
+  name: string;
+  apps: string[];
+  protected: boolean;
+  revision: string;
+}
+
+export type AppPackageSelection = Pick<TvAppPackage, "id" | "revision">;
+export type AppRemovalStatus = "removed" | "refused" | "still_installed" | "unverified" | "not_attempted";
+export interface AppRemovalOutcome {
+  id: string;
+  status: AppRemovalStatus;
+  detail?: string;
+}
+export interface AppRemovalResult {
+  apps: TvAppPackage[] | null;
+  results: AppRemovalOutcome[];
+}
+export type NamedAppRemovalOutcome = AppRemovalOutcome & { name: string };
+
 export interface DesktopService {
   status(): Promise<BackendStatus>;
   launcherCatalog(): Promise<LauncherRelease[]>;
   list(): Promise<SavedTv[]>;
   discover(): Promise<TvCandidate[]>;
   connect(host: string, profileId?: string): Promise<SavedTv>;
+  listApps(id: string, signal: AbortSignal): Promise<TvAppPackage[]>;
+  removeApps(id: string, packages: AppPackageSelection[]): Promise<AppRemovalResult>;
   installLauncher(
     id: string,
     version: string,
@@ -54,7 +77,7 @@ export interface DesktopService {
   forget(id: string): Promise<void>;
 }
 
-export type TvPage = "overview" | "launcher";
+export type TvPage = "overview" | "launcher" | "apps";
 
 export function errorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;

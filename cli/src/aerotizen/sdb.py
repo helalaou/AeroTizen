@@ -5,10 +5,11 @@ TCP 26101 means no Tizen Studio, no x86-only binaries and no local sdb server.
 Protocol details follow Samsung's sdb and the MIT-licensed TizenSdb.Core client.
 
 Retail TVs only accept a handful of shell verbs ("0 vd_applist",
-"0 vd_appuninstall <pkgid>", "0 was_execute <appid>", "0 getduid", ...) and
+"0 vd_appuninstall <appid>", "0 was_execute <appid>", "0 getduid", ...) and
 only from the Host PC IP set in the TV's Developer Mode dialog.
 """
 
+import re
 import socket
 import struct
 import time
@@ -16,6 +17,9 @@ import time
 PORT = 26101
 VERSION = 0x01000000
 MAX_DATA = 256 * 1024
+UNINSTALL_FAILURE = re.compile(
+    r"\b(?:fail(?:ed|ure)?|can\s*not|denied|not (?:allowed|permitted)|1009)\b", re.IGNORECASE
+)
 
 CNXN, AUTH, OPEN, OKAY, WRTE, CLSE = (
     struct.unpack("<I", c)[0] for c in (b"CNXN", b"AUTH", b"OPEN", b"OKAY", b"WRTE", b"CLSE")
@@ -25,6 +29,10 @@ NAMES = {CNXN: "CNXN", AUTH: "AUTH", OPEN: "OPEN", OKAY: "OKAY", WRTE: "WRTE", C
 
 class SdbError(Exception):
     pass
+
+
+def uninstall_failure_line(reply):
+    return next((line.strip() for line in reply.splitlines() if UNINSTALL_FAILURE.search(line)), "")
 
 
 class Sdb:

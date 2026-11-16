@@ -38,7 +38,7 @@ test("reconnects from the saved TV menu and refreshes from the sidebar", async (
   await page.screenshot({ path: join(tmpdir(), `aerotizen-overview-${testInfo.project.name}.png`) });
   if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
   const nav = page.getByRole("navigation", { name: "TV actions" });
-  await expect(nav.getByRole("button")).toHaveText(["Overview", "Launcher"]);
+  await expect(nav.getByRole("button")).toHaveText(["Overview", "Launcher", "Apps"]);
   await nav.getByRole("button", { name: "Launcher" }).click();
   await page.getByRole("button", { name: "Choose another version" }).click();
   const version = page.getByRole("combobox", { name: "Launcher version" });

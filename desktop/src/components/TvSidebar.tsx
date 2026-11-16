@@ -1,24 +1,35 @@
 import { ActionIcon, AppShell, Button, Divider, Group, NavLink, Stack, Text } from "@mantine/core";
-import { ArrowLeft, LayoutDashboard, Package, RefreshCw } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, LayoutGrid, Package, RefreshCw } from "lucide-react";
 import type { TvPage, SavedTv } from "../contracts";
 import styles from "../styles.module.css";
 
 const PAGES = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "launcher", label: "Launcher", icon: Package },
+  { key: "apps", label: "Apps", icon: LayoutGrid },
 ] as const;
 
 interface TvSidebarProps {
   profile: SavedTv;
   page: TvPage;
   busy: boolean;
+  navigationDisabled: boolean;
   canCheck: boolean;
   onCheck(): void;
   onBack(): void;
   onPage(page: TvPage): void;
 }
 
-export function TvSidebar({ profile, page, busy, canCheck, onCheck, onBack, onPage }: TvSidebarProps) {
+export function TvSidebar({
+  profile,
+  page,
+  busy,
+  navigationDisabled,
+  canCheck,
+  onCheck,
+  onBack,
+  onPage,
+}: TvSidebarProps) {
   return (
     <AppShell.Navbar p="md" className={styles.sidebar}>
       <Button
@@ -63,6 +74,7 @@ export function TvSidebar({ profile, page, busy, canCheck, onCheck, onBack, onPa
               type="button"
               label={label}
               leftSection={<Icon size={18} />}
+              disabled={navigationDisabled}
               active={page === key}
               aria-current={page === key ? "page" : undefined}
               onClick={() => onPage(key)}

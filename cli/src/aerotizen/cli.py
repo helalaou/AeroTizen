@@ -49,7 +49,7 @@ from tempfile import TemporaryDirectory
 
 from aerotizen import __version__, buttons, catalog, diagnostics, discover, remote
 from aerotizen.device import DeviceSession
-from aerotizen.sdb import SdbError
+from aerotizen.sdb import SdbError, uninstall_failure_line
 
 STATE_DIR = remote.CONFIG_DIR
 
@@ -188,7 +188,7 @@ def _debloat(args, host, s):
         gone = pkgid not in packages(after)
         print(f"{'removed' if gone else 'STILL PRESENT'}  {pkgs[pkgid]['name']} ({pkgid})")
         if not gone:
-            reason = next((ln for ln in out.splitlines() if "fail" in ln or "can not" in ln), out[-120:])
+            reason = uninstall_failure_line(out) or out[-120:]
             print("   TV said:", reason or "(nothing)")
             refused.append(pkgs[pkgid]["name"])
         current = after
@@ -438,7 +438,7 @@ def cmd_uninstall(args):
                 )
         out = s.uninstall(app_id).strip()
         if app_id in {a["appid"] for a in catalog.parse_applist(s.applist())}:
-            reason = next((ln for ln in out.splitlines() if "fail" in ln or "can not" in ln), out[-120:])
+            reason = uninstall_failure_line(out) or out[-120:]
             sys.exit(f"{name} is still installed. TV said: {reason or '(nothing)'}")
         print(f"Uninstalled {name} ({app_id}).")
 

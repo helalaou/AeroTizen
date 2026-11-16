@@ -3,6 +3,7 @@ import { test } from "./fixtures";
 import type { Page } from "@playwright/test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { testPackages } from "../src/test/tvs";
 
 async function showAction(page: Page, isMobile: boolean, name: string) {
   if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
@@ -29,7 +30,7 @@ test("navigates the selected TV actions and keeps the initial screen TV-only", a
   await expect(page.getByRole("button", { name: "Update to 3.1.0" })).toBeEnabled();
   if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
   const nav = page.getByRole("navigation", { name: "TV actions" });
-  await expect(nav.getByRole("button")).toHaveText(["Overview", "Launcher"]);
+  await expect(nav.getByRole("button")).toHaveText(["Overview", "Launcher", "Apps"]);
   await expect(nav.getByRole("button", { name: "Launcher", exact: true })).toHaveAttribute("aria-current", "page");
   await page.screenshot({ path: join(tmpdir(), `aerotizen-tv-sidebar-${info.project.name}.png`) });
   if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
@@ -77,4 +78,145 @@ test("installs on a TV without a launcher and shows the version on Overview", as
   await showAction(page, isMobile, "Overview");
   await expect(page.getByRole("main").getByText("3.1.0", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Update available" })).toHaveCount(0);
+});
+
+test.describe("Installed apps", () => {
+  test.use({
+    inventory: {
+      failures: {
+        "test.package.0": { status: "refused" },
+        "test.package.1": { status: "still_installed", detail: "Uninstall failed (1009)" },
+      },
+      packages: [
+        ...testPackages,
+        ...Array.from({ length: 30 }, (_, index) => ({
+          id: `test.package.${index}`,
+          name: `Test app ${index}`,
+          apps: [`Test app ${index}`],
+          protected: false,
+          revision: "a".repeat(64),
+        })),
+      ],
+    },
+  });
+
+  test("keeps search and package count docked while scrolling the app list", async ({ page, isMobile, inventory }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Connect to Living room" }).click();
+    await showAction(page, isMobile, "Apps");
+    const results = page.getByRole("region", { name: "App search results" });
+    const list = results.getByRole("table", { name: "Installed app packages" });
+    const launcher = list.getByRole("row").filter({ hasText: "AeroTizen" });
+    const player = list.getByRole("row").filter({ hasText: "Player" });
+    await expect(launcher.getByText("Protected", { exact: true })).toBeVisible();
+    await expect(player.getByText("Protected", { exact: true })).toHaveCount(0);
+    const search = page.getByRole("searchbox", { name: "Search installed apps" });
+    const total = inventory.packages.length;
+    const count = page.getByText(`${total} packages`, { exact: true });
+    await expect(count).toBeInViewport();
+    const searchPosition = await search.boundingBox();
+    const countPosition = await count.boundingBox();
+    await results.hover();
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => results.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    expect(await search.boundingBox()).toEqual(searchPosition);
+    expect(await count.boundingBox()).toEqual(countPosition);
+    await expect(count).toBeInViewport();
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+    await search.fill("MEdiA CoMpaNiON");
+    await expect(page.getByText(`1 of ${total} packages`, { exact: true })).toBeVisible();
+    await expect(player).toBeInViewport();
+    await expect(launcher).toHaveCount(0);
+    await search.fill("no matching package");
+    await expect(page.getByText(`0 of ${total} packages`, { exact: true })).toBeVisible();
+    await expect(page.getByText("No apps match your search.")).toBeVisible();
+    await page.getByRole("button", { name: "Clear search" }).click();
+    await expect(search).toHaveValue("");
+    await expect(search).toBeFocused();
+    await expect(launcher).toBeVisible();
+    await expect(player).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+
+  test("reviews selected app packages across filters and excludes protected packages", async ({ page, isMobile }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Connect to Living room" }).click();
+    await showAction(page, isMobile, "Apps");
+    const review = page.getByRole("button", { name: /^Remove/ });
+    const search = page.getByRole("searchbox", { name: "Search installed apps" });
+    await expect(review).toBeDisabled();
+    await expect(page.getByRole("checkbox", { name: "AeroTizen" })).toBeDisabled();
+    const securityCenter = page.getByRole("row").filter({ hasText: "SecurityCenter" });
+    await expect(securityCenter.getByRole("checkbox")).toBeDisabled();
+    await securityCenter.getByRole("cell").last().click();
+    await expect(securityCenter.getByRole("checkbox")).not.toBeChecked();
+    const playerRow = page.getByRole("row").filter({ hasText: "Player" });
+    const player = playerRow.getByRole("checkbox");
+    await playerRow.getByText("Player", { exact: true }).click();
+    await expect(player).toBeChecked();
+    await playerRow.getByRole("cell").last().click();
+    await expect(player).not.toBeChecked();
+    await playerRow.getByRole("cell").last().click();
+    await expect(player).toBeChecked();
+    await search.fill("Test app 0");
+    await page.getByRole("checkbox", { name: "Test app 0", exact: true }).check();
+    await search.fill("SecurityCenter");
+    await expect(review).toHaveText("Remove (2)");
+    await review.click();
+    const preview = page.getByRole("dialog", { name: "Remove apps?" });
+    await expect(preview).toContainText("Living room");
+    await expect(preview).toContainText("Player");
+    await expect(preview).toContainText("Media Companion");
+    await expect(preview).toContainText("Test app 0");
+    await expect(preview).not.toContainText("SecurityCenter");
+    await expect(preview).toContainText("saved data");
+    await preview.getByRole("button", { name: "Cancel" }).click();
+    await expect(preview).toBeHidden();
+    await search.clear();
+    await expect(player).toBeChecked();
+    if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+    await page.getByRole("button", { name: "Refresh TV connection" }).click();
+    await expect(review).toBeDisabled();
+    await expect(player).not.toBeChecked();
+  });
+
+  test("confirms removal and shows verified and refused results", async ({ page, isMobile }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Connect to Living room" }).click();
+    await showAction(page, isMobile, "Apps");
+    const results = page.getByRole("region", { name: "App search results" });
+    const deleteOnTv = results.getByText("Delete on TV", { exact: true });
+    const refused = results
+      .getByRole("row")
+      .filter({ has: page.getByRole("checkbox", { name: "Test app 0", exact: true }) });
+    await page.getByRole("checkbox", { name: /^Player/ }).check();
+    await page.getByRole("checkbox", { name: "Test app 0", exact: true }).check();
+    await page.getByRole("checkbox", { name: "Test app 1", exact: true }).check();
+    await expect(deleteOnTv).toHaveCount(0);
+    await page.getByRole("button", { name: "Remove (3)", exact: true }).click();
+    const confirmation = page.getByRole("dialog", { name: "Remove apps?" });
+    await confirmation.getByRole("button", { name: "Remove", exact: true }).click();
+    await expect(confirmation).toBeHidden();
+    await expect(page.getByText("Player · Removed", { exact: true })).toBeInViewport();
+    await expect(page.getByText("Test app 0 · Failed to uninstall", { exact: true })).toBeInViewport();
+    await expect(page.getByText("Can not uninstall app", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Uninstall failed (1009)", { exact: true })).toBeVisible();
+    await expect(deleteOnTv).toHaveCount(1);
+    await expect(refused.getByText("Delete on TV", { exact: true })).toBeVisible();
+    await expect(page.getByText("You can check for a Delete option in Apps → Settings on the TV.")).toBeInViewport();
+    await expect(page.getByRole("checkbox", { name: /^Player/ })).toHaveCount(0);
+    await expect(page.getByRole("checkbox", { name: "Test app 0", exact: true })).not.toBeChecked();
+    const banner = page.getByRole("status", { name: "Removal results" });
+    const bannerPosition = await banner.boundingBox();
+    await results.hover();
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => results.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    expect(await banner.boundingBox()).toEqual(bannerPosition);
+    await showAction(page, isMobile, "Launcher");
+    await showAction(page, isMobile, "Apps");
+    await expect(banner).toHaveCount(0);
+    await page.getByRole("button", { name: "Refresh apps", exact: true }).click();
+    await expect(refused.getByText("Delete on TV", { exact: true })).toBeVisible();
+  });
 });

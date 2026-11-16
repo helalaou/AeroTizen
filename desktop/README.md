@@ -34,6 +34,12 @@ It excludes TV names, network addresses, device IDs, credentials and raw command
 For a full diagnostic ZIP, see
 [CLI log export](../docs/diagnostics.md).
 
+Open **Apps** to search the TV's installed packages by name. A package can contain more
+than one app. The list shows them together and labels packages the CLI protects.
+Select packages and choose **Remove**. Review the apps and TV in the confirmation
+before you remove them. If the TV refuses removal, the package shows **Delete on TV**.
+Check for **Delete** in **Apps → Settings** on the TV. Use **Refresh apps** to fetch the current list.
+
 ## Development
 
 Install the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), Node.js 22.12+

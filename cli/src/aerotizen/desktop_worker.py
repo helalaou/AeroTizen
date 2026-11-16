@@ -5,18 +5,20 @@ import hashlib
 import io
 import ipaddress
 import json
+import os
 import re
 import sys
 from datetime import datetime, timezone
 from html import unescape
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from threading import Thread
 
 from aerotizen import __version__, catalog, discover, home, releases, remote
-from aerotizen.cli import install_signed_package
+from aerotizen.cli import install_signed_package, packages
 from aerotizen.device import DeviceSession
 from aerotizen.diagnostic_privacy import Policy
-from aerotizen.sdb import SdbError
+from aerotizen.sdb import SdbError, uninstall_failure_line
 
 PROTOCOL_VERSION = 1
 WORKER_NAME = "aerotizen-desktop-worker"
@@ -24,8 +26,20 @@ MAX_REQUEST_BYTES = 16 * 1024
 MAX_TEXT_CHARACTERS = 256
 MAX_DISCOVERED_TVS = 32
 IDENTITY_PATTERN = re.compile(r"[a-f0-9]{64}")
+PACKAGE_IDENTIFIER = re.compile(rf"[A-Za-z0-9][A-Za-z0-9_.-]{{0,{MAX_TEXT_CHARACTERS - 1}}}")
+APP_COUNT_HEADER = re.compile(r"^\s*apps count\s*:\s*(\d+)\s*$", re.IGNORECASE | re.MULTILINE)
+APP_LIST_ERROR = re.compile(r"^\s*(?:error|fail(?:ed|ure)?|permission denied)\b", re.IGNORECASE)
+UNINSTALL_REFUSAL = re.compile(r"can\s*not\s+uninstall\s+app[.!]?", re.IGNORECASE)
 CERTIFICATE_FILES = ("author.p12", "distributor.p12", "password.txt", "device-profile.xml")
-OPERATIONS = ("handshake", "discover", "connect", "launcher_catalog", "install_launcher")
+OPERATIONS = (
+    "handshake",
+    "discover",
+    "connect",
+    "list_apps",
+    "remove_apps",
+    "launcher_catalog",
+    "install_launcher",
+)
 
 
 class RequestError(ValueError):
@@ -145,6 +159,135 @@ def installed_launcher_version(session):
     return text_value(launchers[0].get("version"), "Unknown")
 
 
+def package_revision(package):
+    apps = sorted((app["appid"], app["name"], app.get("version") or "") for app in package["apps"])
+    return hashlib.sha256(json.dumps(apps, separators=(",", ":")).encode()).hexdigest()
+
+
+def app_rows(installed):
+    entries = [
+        {
+            "id": pkgid,
+            "name": text_value(package["name"]),
+            "apps": list(dict.fromkeys(text_value(app["name"]) for app in package["apps"])),
+            "protected": package["class"] == "protected",
+            "revision": package_revision(package),
+        }
+        for pkgid, package in installed.items()
+    ]
+    return sorted(entries, key=lambda entry: entry["name"].casefold())
+
+
+def list_apps(params):
+    host = host_value(params.get("host"))
+    expected = checked_identity(params.get("expected_identity"))
+    with DeviceSession(host) as session:
+        read_identity(session, expected)
+        installed = packages(session.applist())
+        read_identity(session, expected)
+    return app_rows(installed)
+
+
+def removal_selection(value):
+    if not isinstance(value, list) or not value:
+        raise RequestError("invalid_request", "Select at least one package to remove.")
+    selected = {}
+    for item in value:
+        pkgid = item.get("id") if isinstance(item, dict) else None
+        revision = item.get("revision") if isinstance(item, dict) else None
+        if (
+            not isinstance(pkgid, str)
+            or not PACKAGE_IDENTIFIER.fullmatch(pkgid)
+            or pkgid in selected
+            or not isinstance(revision, str)
+            or not IDENTITY_PATTERN.fullmatch(revision)
+        ):
+            raise RequestError("invalid_request", "Review the installed packages and select them again.")
+        selected[pkgid] = revision
+    return selected
+
+
+def checked_app_inventory(session):
+    raw = session.applist()
+    installed = packages(raw)
+    app_ids = [app["appid"] for item in installed.values() for app in item["apps"]]
+    count = APP_COUNT_HEADER.search(raw)
+    if count:
+        complete = int(count[1]) == len(app_ids)
+    else:
+        complete = installed and "app_tizen_id" not in raw and not APP_LIST_ERROR.match(raw)
+    if not complete or len(set(app_ids)) != len(app_ids):
+        raise RequestError(
+            "inventory_unavailable", "Could not verify the TV's app list. Refresh the TV and try again."
+        )
+    return installed
+
+
+def removal_app_id(pkgid, revision, installed):
+    package = installed.get(pkgid)
+    if package is None or package_revision(package) != revision:
+        raise RequestError(
+            "apps_changed", "The app list changed. Refresh the TV and review your selection again."
+        )
+    if package["class"] == "protected":
+        raise RequestError("protected_package", "The selection includes a protected package.")
+    app_id = package["apps"][0]["appid"]
+    if not PACKAGE_IDENTIFIER.fullmatch(app_id):
+        raise RequestError("invalid_app_id", "The TV reported an unsupported app identifier.")
+    return app_id
+
+
+def remove_apps(params):
+    host = host_value(params.get("host"))
+    expected = checked_identity(params.get("expected_identity"))
+    selected = removal_selection(params.get("packages"))
+    with DeviceSession(host) as session:
+        read_identity(session, expected)
+        current = checked_app_inventory(session)
+        read_identity(session, expected)
+        # Validate every package before starting the first uninstall.
+        for pkgid, revision in selected.items():
+            removal_app_id(pkgid, revision, current)
+        results = []
+        for pkgid, revision in selected.items():
+            status = "not_attempted"
+            detail = ""
+            if current is not None:
+                try:
+                    app_id = removal_app_id(pkgid, revision, current)
+                except RequestError:
+                    results.append({"id": pkgid, "status": status})
+                    continue
+                try:
+                    reply = session.uninstall(app_id)
+                    after = checked_app_inventory(session)
+                    read_identity(session, expected)
+                except (SdbError, OSError, ValueError):
+                    current = None
+                    status = "unverified"
+                else:
+                    # A dropped or incomplete list must not count as a successful removal.
+                    if current.keys() - after.keys() - {pkgid}:
+                        current = None
+                        status = "unverified"
+                    else:
+                        current = after
+                        status = "still_installed" if pkgid in current else "removed"
+                        if status == "still_installed":
+                            if any(
+                                UNINSTALL_REFUSAL.fullmatch(line.strip(" \t\x00"))
+                                for line in reply.splitlines()
+                            ):
+                                status = "refused"
+                            else:
+                                detail = text_value(uninstall_failure_line(reply), fallback="")
+            result = {"id": pkgid, "status": status}
+            if detail:
+                result["detail"] = detail
+            results.append(result)
+    return {"apps": app_rows(current) if current is not None else None, "results": results}
+
+
 def connect_tv(params):
     host = host_value(params.get("host"))
     expected = params.get("expected_identity")
@@ -249,6 +392,10 @@ def handle(request):
                 result = {"name": WORKER_NAME, "version": __version__, "operations": list(OPERATIONS)}
             elif request["operation"] == "discover":
                 result = find_tvs()
+            elif request["operation"] == "list_apps":
+                result = list_apps(params)
+            elif request["operation"] == "remove_apps":
+                result = remove_apps(params)
             elif request["operation"] == "launcher_catalog":
                 result = releases.launcher_catalog()
             elif request["operation"] == "install_launcher":
@@ -298,6 +445,12 @@ def connection_error(response):
     }
 
 
+def stop_on_input_close():
+    # Read from the raw pipe so interpreter shutdown can close buffered stdin when the request finishes.
+    os.read(sys.stdin.fileno(), 1)
+    os._exit(0)
+
+
 def main():
     line = sys.stdin.buffer.readline(MAX_REQUEST_BYTES + 1)
     try:
@@ -306,6 +459,12 @@ def main():
         request = json.loads(line)
     except (ValueError, UnicodeError):
         request = None
+    if (
+        isinstance(request, dict)
+        and request.get("operation") == "list_apps"
+        and request.get("cancellable") is True
+    ):
+        Thread(target=stop_on_input_close, daemon=True).start()
     print(json.dumps(handle(request), separators=(",", ":")), flush=True)
 
 

@@ -2,16 +2,18 @@ mod models;
 mod profiles;
 mod worker;
 
-use models::{AppError, AppResult, SavedTv, VerifiedTv};
+use models::{AppError, AppPackageSelection, AppResult, SavedTv, VerifiedTv};
 use profiles::Profiles;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use tauri::Manager;
+use tokio::sync::watch;
 
 struct AppState {
     profiles: Profiles,
     worker_path: PathBuf,
     operation: tokio::sync::Mutex<()>,
+    cancelled_app_list: watch::Sender<String>,
 }
 
 #[tauri::command]
@@ -34,6 +36,55 @@ fn list_tvs(state: tauri::State<'_, AppState>) -> AppResult<Vec<SavedTv>> {
 #[tauri::command]
 async fn launcher_catalog(state: tauri::State<'_, AppState>) -> AppResult<Value> {
     worker::request(&state.worker_path, "launcher_catalog", json!({})).await
+}
+
+#[tauri::command]
+async fn list_tv_apps(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    request_id: String,
+) -> AppResult<Value> {
+    let _guard = state.operation.try_lock().map_err(|_| busy())?;
+    let saved = state.profiles.get(&id)?;
+    let cancelled = state.cancelled_app_list.subscribe();
+    if *cancelled.borrow() == request_id {
+        return Err(AppError::new(
+            "app_list_cancelled",
+            "App refresh cancelled.",
+        ));
+    }
+    worker::request_with_cancellation(
+        &state.worker_path,
+        "list_apps",
+        json!({ "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256 }),
+        Some((cancelled, request_id)),
+    )
+    .await
+}
+
+#[tauri::command]
+fn cancel_tv_app_list(state: tauri::State<'_, AppState>, request_id: String) {
+    state.cancelled_app_list.send_replace(request_id);
+}
+
+#[tauri::command]
+async fn remove_tv_apps(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    packages: Vec<AppPackageSelection>,
+) -> AppResult<Value> {
+    let _guard = state.operation.try_lock().map_err(|_| busy())?;
+    let saved = state.profiles.get(&id)?;
+    worker::request(
+        &state.worker_path,
+        "remove_apps",
+        json!({
+            "host": saved.tv.host,
+            "expected_identity": saved.tv.identity_sha256,
+            "packages": packages,
+        }),
+    )
+    .await
 }
 
 #[tauri::command]
@@ -162,12 +213,16 @@ pub fn run() {
                 profiles,
                 worker_path,
                 operation: tokio::sync::Mutex::new(()),
+                cancelled_app_list: watch::Sender::new(String::new()),
             });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             backend_status,
             list_tvs,
+            list_tv_apps,
+            cancel_tv_app_list,
+            remove_tv_apps,
             launcher_catalog,
             install_launcher,
             discover_tvs,

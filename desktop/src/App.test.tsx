@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import type { DesktopService } from "./contracts";
-import { testService } from "./test/tvs";
+import { testPackages, testService } from "./test/tvs";
 
 function mount(service: DesktopService = testService()) {
   return render(
@@ -15,16 +15,55 @@ function mount(service: DesktopService = testService()) {
 }
 
 describe("TV selection", () => {
-  it("opens Overview and shows only Overview and Launcher in the TV menu", async () => {
+  it("opens Overview and shows Overview, Launcher and Apps in the TV menu", async () => {
     const user = userEvent.setup();
     mount();
     await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
     expect(await screen.findByRole("heading", { name: "Overview" })).toBeVisible();
     const nav = within(screen.getByRole("navigation", { name: "TV actions" }));
-    expect(nav.getAllByRole("button")).toHaveLength(2);
+    expect(nav.getAllByRole("button")).toHaveLength(3);
+    expect(nav.getByRole("button", { name: "Apps" })).toBeVisible();
     expect(nav.getByRole("button", { name: "Overview" })).toHaveAttribute("aria-current", "page");
     await user.click(nav.getByRole("button", { name: "Launcher" }));
     expect(screen.getByRole("heading", { name: "Launcher" })).toBeVisible();
+  });
+
+  it("cancels an app list fetch when leaving Apps and starts a fresh request on return", async () => {
+    const service = testService();
+    let finishLoad: () => void = () => {
+      throw new Error("The app list did not start loading.");
+    };
+    const listApps = vi.spyOn(service, "listApps").mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishLoad = () => resolve(testPackages);
+        }),
+    );
+    const user = userEvent.setup();
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
+    await screen.findByRole("heading", { name: "Overview" });
+    const nav = within(screen.getByRole("navigation", { name: "TV actions" }));
+    await user.click(nav.getByRole("button", { name: "Apps" }));
+    const refreshApps = () => screen.getByRole("button", { name: "Refresh apps" });
+    expect(refreshApps()).toBeDisabled();
+    expect(listApps).toHaveBeenCalledTimes(1);
+    await user.click(nav.getByRole("button", { name: "Launcher" }));
+    expect(screen.getByRole("heading", { name: "Launcher" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Choose another version" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Update to 3.1.0" })).toBeEnabled();
+    expect(listApps.mock.calls.at(0)?.[1].aborted).toBe(true);
+    await user.click(nav.getByRole("button", { name: "Apps" }));
+    expect(screen.getByRole("button", { name: "Remove" })).toBeDisabled();
+    expect(listApps).toHaveBeenCalledTimes(1);
+    listApps.mockResolvedValueOnce(testPackages.slice(0, 1));
+    finishLoad();
+    expect(await screen.findByText("1 package")).toBeVisible();
+    expect(listApps).toHaveBeenCalledTimes(2);
+
+    await user.click(refreshApps());
+    expect(await screen.findByText(`${testPackages.length} packages`)).toBeVisible();
+    expect(listApps).toHaveBeenCalledTimes(3);
   });
 
   it("requires a successful connection to open and refresh a saved TV", async () => {

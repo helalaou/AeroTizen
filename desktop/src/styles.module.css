@@ -83,6 +83,41 @@
   margin: 0 auto;
   flex: 1;
 }
+.appsContent {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--mantine-spacing-lg);
+  max-height: calc(100dvh - var(--app-shell-header-offset));
+}
+.appsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  min-height: 0;
+}
+.appsSearch {
+  flex-shrink: 0;
+}
+.appsRemovalResults {
+  flex-shrink: 0;
+  max-height: min(12rem, 25dvh);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+.appsResults {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+}
+.appPackageRow,
+.appPackageRow label {
+  cursor: pointer;
+}
+.appPackageRow:hover {
+  background-color: var(--mantine-color-gray-0);
+}
 .details {
   margin-top: 28px;
   border-color: #e5eaf0;
