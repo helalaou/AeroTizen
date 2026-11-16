@@ -4,6 +4,7 @@ import { useRef } from "preact/hooks";
 import type { ClockService } from "../../contracts/launcher";
 import type { SettingsSnapshot } from "../../contracts/preferences";
 import type { ClockLayout } from "../../contracts/status";
+import text from "../../shared/styles/text.module.css";
 import type { useClock } from "../hooks/useClock";
 import { useClockWidth } from "../hooks/useClockWidth";
 
@@ -39,7 +40,7 @@ export const Clock = ({
     <>
       {children}
       <span id="date" class={styles.compactDate} hidden={settings.dateFormat === "none"}>
-        {value.date}
+        <span class={text.truncate}>{value.date}</span>
       </span>
       <span
         id="time"
