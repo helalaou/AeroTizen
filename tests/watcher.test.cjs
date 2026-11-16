@@ -1002,6 +1002,44 @@ test("repeated app query fields cannot clear inventory or an active watch", () =
   h.api.onExit();
 });
 
+test("a slow app inventory is asked for a few statuses at a time", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  const ids = ["slow.a", "slow.b", "slow.c", "slow.d", "slow.e", "slow.f", "slow.g", "slow.h"];
+  ids.forEach((id) => h.statuses.set(id, { running: false, visible: false }));
+  h.control("/apps?ids=" + ids.join(","));
+  ids.forEach((id) => h.hold(id));
+  h.advance(3000);
+  h.control();
+  assert.equal(h.launches.length, 1, "only the boot launch has happened");
+  const statuses = () => h.requests.filter((item) => ids.some((id) => item.options.path.endsWith("/" + id)));
+  assert.equal(statuses().length, 4, "at most four status requests in flight");
+  h.respond(h.pendingRequest("slow.a"));
+  h.respond(h.pendingRequest("slow.b"));
+  h.respond(h.pendingRequest("slow.c"));
+  h.respond(h.pendingRequest("slow.d"));
+  assert.equal(
+    statuses()
+      .filter((item) => !item.replied)
+      .map((item) => decodeURIComponent(item.options.path.split("/").pop())).length,
+    4,
+    "four unanswered at a time",
+  );
+  assert.equal(
+    statuses().some((item) => item.options.path.endsWith("/slow.e")),
+    true,
+  );
+  h.hold(SELF);
+  h.advance(2000);
+  const waiting = statuses().filter((item) => !item.replied);
+  assert.equal(waiting.length, 4, "no more than four status requests were ever in flight");
+  waiting.forEach((item) => h.respond(item));
+  h.setArt("off");
+  h.advance(1000);
+  assert.equal(h.launches.length, 1, "a stalled inventory never launches on a guess");
+  h.api.onExit();
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try {

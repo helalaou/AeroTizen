@@ -35,6 +35,12 @@ interface AppSnapshot {
   visible: string | null;
 }
 
+interface RunningSnapshot {
+  complete: boolean;
+  running: Record<string, boolean>;
+  visible: string | null;
+}
+
 interface LaunchCandidate {
   readonly epoch: number;
   readonly reason: string;
@@ -194,6 +200,8 @@ const MAX_API_REPLY_CHARACTERS = 65536;
 const LAUNCH_COOLDOWN_MS = 2000;
 const GUARD_DEADLINE_MS = 6000;
 const SCAN_WATCHDOG_MS = 2000;
+const MAX_PARALLEL_STATUS_REQUESTS = 4; // a slow local API is not asked for the whole inventory at once
+const SLOW_SCAN_MS = 4000; // longer inventory scans are logged so slow TVs show up in reports
 const CAPABILITY_RETRY_MS = 5000;
 const WATCHER_POLL_INTERVAL_MS = 300;
 const GUARD_HISTORY_LIMIT = 100;
@@ -379,14 +387,26 @@ function appStatus(id: string, cb: (value: AppStatus | null, unavailable: boolea
 }
 function snapshot(cb: (value: AppSnapshot) => void) {
   const ids = state.apps.slice();
+  const result: RunningSnapshot = { running: {}, visible: null, complete: true };
   let left = ids.length;
-  const result: AppSnapshot = { running: {}, visible: null, complete: true };
-  if (!left) {
-    cb(result);
-    return;
+  // At most MAX_PARALLEL_STATUS_REQUESTS in flight: a busy TV API answers a few requests in time.
+  let active = 0;
+  let index = 0;
+  function settle() {
+    while (active < MAX_PARALLEL_STATUS_REQUESTS && index < ids.length) {
+      request(ids[index]);
+      index += 1;
+    }
+    if (left) {
+      return;
+    }
+    cb({ running: Object.assign({}, result.running), visible: result.visible, complete: result.complete });
   }
-  ids.forEach(function (id) {
+  function request(id: string) {
+    active += 1;
     appStatus(id, function (value, unavailable) {
+      active -= 1;
+      left -= 1;
       if (!value && !unavailable) {
         result.complete = false;
       }
@@ -394,12 +414,14 @@ function snapshot(cb: (value: AppSnapshot) => void) {
       if (value && value.visible) {
         result.visible = id;
       }
-      left -= 1;
-      if (!left) {
-        cb(result);
-      }
+      settle();
     });
-  });
+  }
+  if (left) {
+    settle();
+  } else {
+    cb({ running: {}, visible: null, complete: true });
+  }
 }
 function standAside(result: AppSnapshot, knownApp?: string | null) {
   let id = result.visible;
@@ -654,6 +676,7 @@ function tick() {
   busy = true;
   const number = ++scanNumber;
   const epoch = state.epoch;
+  const tickAt = Date.now();
   let finished = false;
   const watchdog = setTimeout(done, SCAN_WATCHDOG_MS);
   function done() {
@@ -772,6 +795,12 @@ function tick() {
       // relaunch. The TV's API can stall for seconds while Samsung Home loads.
       if ((result.complete || !isFrame()) && !standAside(result)) {
         launchSelf("covered without an app");
+      }
+      if (Date.now() - tickAt >= SLOW_SCAN_MS) {
+        record(
+          "slow-scan",
+          "app inventory took " + (Date.now() - tickAt) + " ms" + (result.complete ? "" : ", incomplete"),
+        );
       }
       done();
     });
