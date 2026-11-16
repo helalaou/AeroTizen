@@ -48,6 +48,19 @@ no settings setter or application-control setter. A missing native getter or
 unreadable value is reported as unavailable; a stock default is never invented.
 An incomplete query cannot become a backup.
 
+### Read current settings through a paired helper
+
+```sh
+aerotizen --tv TV_IP home status --paired
+```
+
+The command shows the current Home-button assignment and configured Home app,
+both startup app IDs, Smart Hub autostart, and AeroTizen's routing mode. Add
+`--json` to return the settings in separate Home button and startup groups.
+The TV needs an already paired helper with Home status support for the native
+values. Unavailable values are reported individually. AeroTizen's routing mode
+comes from the running launcher service.
+
 ## Backup behavior
 
 By default, the baseline is saved under AeroTizen's local configuration folder:

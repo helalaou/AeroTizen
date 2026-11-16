@@ -341,7 +341,7 @@ namespace AeroTizen.Root
                 using (var server = new BridgeServer(settings, certificate, pairing.Token, () => {
                     var value = Identity(); value["origin"] = args[3]; value["launch_nonce"] = nonce; return value;
                 }, () => Remove(settings, pairing.Token), diagnostic: (phase, error) => Diagnostic(nonce, phase, error),
-                    buttons: buttons))
+                    buttons: buttons, homeStatus: AeroTizen.Home.HomeSettings.ReadBridgeStatus))
                 using (var stremio = args[3] == "boot" ? new StremioFeed() : null)
                 {
                     Detach();

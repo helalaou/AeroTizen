@@ -180,6 +180,11 @@ class DeviceSession:
             connection = self._require_connection()
             return connection.root_status.get("runtime_version") if self.managed_root else None
 
+    def read_root_home_status(self):
+        """Read fixed Home settings through the paired helper, when supported."""
+        with self._mutex:
+            return self._call("read_home_status") if self.managed_root else None
+
     def _call(self, method, *args):
         with self._mutex:
             started = time.monotonic()
