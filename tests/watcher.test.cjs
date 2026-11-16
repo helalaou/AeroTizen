@@ -1040,6 +1040,146 @@ test("a slow app inventory is asked for a few statuses at a time", () => {
   h.api.onExit();
 });
 
+const INVENTORY_IDS = ["inv.a", "inv.b", "inv.c", "inv.d", "inv.e", "inv.f", "inv.g", "inv.h"];
+function inventoryRequests(h) {
+  return h.requests.filter((item) => INVENTORY_IDS.some((id) => item.options.path.endsWith("/" + id)));
+}
+function inFlight(h) {
+  return inventoryRequests(h).filter((item) => !item.replied && !item.destroyed);
+}
+function registerInventory(h) {
+  INVENTORY_IDS.forEach((id) => h.statuses.set(id, { running: false, visible: false }));
+  h.control("/apps?ids=" + INVENTORY_IDS.join(","));
+}
+function answerInFlight(h) {
+  inFlight(h).forEach((item) => h.respond(item));
+  h.advance(0);
+}
+function guardKinds(h) {
+  return h.state().guard.history.map((item) => item.kind);
+}
+
+test("Home returns when eight apps each answer in 1.1 s, which is slower than the 2 s status watchdog", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(3000);
+  registerInventory(h);
+  h.advance(3000);
+  assert.equal(h.launches.length, 1);
+  INVENTORY_IDS.forEach((id) => h.hold(id));
+  h.statuses.set(SELF, { running: true, visible: false });
+  for (let i = 0; i < 100 && !inFlight(h).length; i += 1) h.advance(50);
+  assert.equal(inFlight(h).length, 4, "the first batch of four is out");
+  h.advance(1100);
+  answerInFlight(h);
+  assert.equal(inFlight(h).length, 4, "the second batch follows the replies");
+  h.advance(1100);
+  answerInFlight(h);
+  assert.equal(h.launches.length, 2, "2.2 s of inventory still finishes in time to return Home");
+  const kinds = guardKinds(h);
+  assert.ok(!kinds.includes("scan-timeout"));
+  assert.ok(!kinds.includes("slow-scan"));
+});
+
+test("a Frame relaunch waits for a slow but complete inventory and is blocked by an incomplete one", () => {
+  for (const stuck of [false, true]) {
+    const h = ready();
+    registerInventory(h);
+    candidate(h);
+    INVENTORY_IDS.forEach((id) => h.hold(id));
+    h.answerArt("off");
+    h.advance(0);
+    assert.equal(inFlight(h).length, 4, "the guard recheck asks four apps at a time");
+    h.advance(1100);
+    answerInFlight(h);
+    assert.equal(inFlight(h).length, 4);
+    h.advance(1100);
+    if (!stuck) {
+      answerInFlight(h);
+      assert.equal(h.artReplies.length, 1, "a complete inventory reaches the final Art read");
+      h.answerArt("off");
+      h.advance(0);
+      assert.equal(h.launches.length, 1);
+      continue;
+    }
+    const [unanswered, ...others] = inFlight(h);
+    others.forEach((item) => h.respond(item));
+    h.advance(0);
+    assert.equal(inFlight(h).length, 1, "one app never answers");
+    h.advance(900);
+    assert.ok(unanswered.destroyed, "the deadline destroys the unanswered request");
+    h.advance(10000);
+    assert.equal(h.launches.length, 0, "an incomplete inventory blocks the Frame relaunch");
+    const history = h.state().guard.history;
+    assert.ok(history.some((item) => item.kind === "scan-timeout" && /timed out after 3000 ms/.test(item.detail)));
+    assert.ok(history.some((item) => item.detail === "app inventory unavailable"));
+  }
+});
+
+test("a timed-out inventory scan is logged where it happens and stops its requests", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(3000);
+  registerInventory(h);
+  h.advance(3000);
+  INVENTORY_IDS.forEach((id) => h.hold(id));
+  h.statuses.set(SELF, { running: true, visible: false });
+  for (let i = 0; i < 100 && !inFlight(h).length; i += 1) h.advance(50);
+  h.advance(3000);
+  const timeouts = h.state().guard.history.filter((item) => item.kind === "scan-timeout");
+  assert.equal(timeouts.length, 1);
+  assert.match(timeouts[0].detail, /app inventory timed out after 3000 ms, 4 of 8 answered/);
+  assert.ok(!guardKinds(h).includes("slow-scan"), "a timed-out scan is not also logged as slow");
+  assert.equal(h.launches.length, 2, "a non-Frame TV still returns Home after an incomplete scan");
+});
+
+test("a scan is cancelled before busy is released and again when the state changes", () => {
+  const h = harness({ capability: false });
+  h.api.onStart();
+  h.advance(3000);
+  registerInventory(h);
+  h.advance(3000);
+  INVENTORY_IDS.forEach((id) => h.hold(id));
+  // The launcher is hidden, the watcher has nothing to follow, and every status request stalls.
+  h.statuses.set(SELF, { running: true, visible: false });
+  h.statuses.set("slow.watch", { running: true, visible: false });
+  let most = 0;
+  const started = new Set();
+  function sample() {
+    const now = inFlight(h);
+    now.forEach((item) => started.add(item));
+    most = Math.max(most, now.length);
+    assert.ok(now.length <= 4, "at most four inventory requests are in flight across both scans");
+  }
+  for (let i = 0; i < 100 && !inFlight(h).length; i += 1) {
+    h.advance(50);
+    sample();
+  }
+  for (let i = 0; i < 100; i += 1) {
+    h.advance(100);
+    sample();
+  }
+  assert.equal(most, 4);
+  assert.ok(
+    h.state().guard.history.filter((item) => item.kind === "scan-timeout").length >= 2,
+    "the next poll ran a second scan after the first one timed out",
+  );
+  assert.ok(
+    inventoryRequests(h)
+      .filter((item) => !item.replied)
+      .every((item) => item.destroyed || inFlight(h).includes(item)),
+  );
+  // Leave while a scan is open: its queue stops and late replies start nothing new.
+  const open = inFlight(h);
+  assert.ok(open.length > 0);
+  const before = inventoryRequests(h).length;
+  h.control("/leave");
+  assert.equal(inFlight(h).length, 0, "invalidation destroys the open requests");
+  open.forEach((item) => h.respond(item));
+  h.advance(10000);
+  assert.equal(inventoryRequests(h).length, before, "no inventory request starts after /leave");
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try {
