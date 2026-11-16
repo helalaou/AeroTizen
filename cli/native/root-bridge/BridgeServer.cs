@@ -27,14 +27,17 @@ namespace AeroTizen.Root
         private readonly Action remove;
         private readonly Func<CancellationToken, Task<TcpClient>> connectSdb;
         private readonly Action<string, Exception> diagnostic;
+        private readonly ButtonService buttons;
         internal int Port => ((IPEndPoint)listener.LocalEndpoint).Port;
         internal BridgeServer(RootSettings settings, X509Certificate2 certificate, string token,
             Func<Dictionary<string, object>> identity, Action remove, IPAddress bind = null, int? port = null,
-            Func<CancellationToken, Task<TcpClient>> connectSdb = null, Action<string, Exception> diagnostic = null)
+            Func<CancellationToken, Task<TcpClient>> connectSdb = null, Action<string, Exception> diagnostic = null,
+            ButtonService buttons = null)
         {
             this.settings = settings; this.certificate = certificate; this.identity = identity; this.remove = remove;
             this.connectSdb = connectSdb ?? ConnectLocalSdb;
             this.diagnostic = diagnostic;
+            this.buttons = buttons;
             secret = Encoding.ASCII.GetBytes(RootSettings.Hex(token, 64));
             if (Bundle.Digest(certificate.RawData) != settings.Certificate) throw new InvalidDataException("Root TLS certificate pin differs");
             listener = new TcpListener(bind ?? IPAddress.Any, port ?? settings.Port);
@@ -95,7 +98,9 @@ namespace AeroTizen.Root
                             throw new AuthenticationException("Pairing failed");
                         string nonce = RootSettings.Hex(value.GetProperty("nonce").GetString(), 32);
                         string operation = value.GetProperty("operation").GetString();
-                        if (operation != "status" && operation != "sdb" && operation != "remove") throw new InvalidDataException("Unknown bridge operation");
+                        if (operation != "status" && operation != "sdb" && operation != "remove"
+                            && !(operation == "buttons" && buttons != null))
+                            throw new InvalidDataException("Unknown bridge operation");
                         phase = "identity";
                         var result = identity();
                         result["protocol"] = 1; result["authenticated"] = true; result["nonce"] = nonce;
@@ -103,6 +108,14 @@ namespace AeroTizen.Root
                         result["app_id"] = RootPaths.AppId; result["version"] = RootPaths.Version;
                         result["runtime_version"] = RootPaths.RuntimeVersion;
                         result["configuration_sha256"] = settings.ConfigurationSha256;
+                        if (buttons != null)
+                        {
+                            result["buttons_protocol"] = ButtonService.Protocol;
+                            result["buttons_discovery"] = true;
+                            result["buttons_key_names"] = true;
+                            result["buttons_friendly_names"] = true;
+                            result["buttons_input_devices"] = true;
+                        }
                         TcpClient sdb = null;
                         bool removalCompleted = false;
                         try
@@ -114,8 +127,20 @@ namespace AeroTizen.Root
                             }
                             if (operation == "remove")
                             {
-                                phase = "remove"; remove(); removalCompleted = true;
+                                phase = "remove";
+                                if (buttons == null) remove();
+                                else await buttons.Remove(remove, deadline.Token);
+                                removalCompleted = true;
                                 result["prepared_for_removal"] = true;
+                            }
+                            if (operation == "buttons")
+                            {
+                                phase = "buttons";
+                                var buttonRequest = value.GetProperty("buttons");
+                                if (buttonRequest.TryGetProperty("action", out var action) &&
+                                    action.ValueKind == JsonValueKind.String && action.GetString() == "learn")
+                                    deadline.CancelAfter(TimeSpan.FromSeconds(ButtonService.LearnRequestSeconds));
+                                result["buttons"] = await buttons.Handle(buttonRequest, deadline.Token);
                             }
                             phase = "reply";
                             byte[] reply = JsonSerializer.SerializeToUtf8Bytes(result);
