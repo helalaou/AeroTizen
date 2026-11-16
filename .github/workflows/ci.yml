@@ -86,9 +86,17 @@ jobs:
               capture_output=True,
           )
           paths = diff.stdout.split(b"\0")[:-1] if diff.returncode == 0 else []
+          # Desktop builds and tests run locally.
+          desktop_files = {
+              b"cli/src/aerotizen/desktop_worker.py",
+              b"cli/tools/build_desktop_worker.py",
+              b"tests/test_desktop_worker.py",
+          }
           code_paths = [
               path for path in paths
-              if path not in (b"README.md", b"CONTRIBUTING.md") and not path.startswith(b"docs/")
+              if path not in (b"README.md", b"CONTRIBUTING.md")
+              and path not in desktop_files
+              and not path.startswith((b"docs/", b"desktop/"))
           ]
 
           launcher_files = {
@@ -188,7 +196,7 @@ jobs:
         run: |
           ruff check .
           ruff format --check .
-          pytest
+          pytest --ignore=tests/test_desktop_worker.py
 
   python-312:
     name: python (3.12)

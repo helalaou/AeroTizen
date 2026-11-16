@@ -54,8 +54,6 @@ Python executable that has the project and PyInstaller installed.
 The native development command builds and smoke-tests the standalone worker before
 opening the app. TV checks use the same network access and Developer Mode settings as
 the CLI. An existing valid root receipt can select the paired connection automatically.
-Samsung account actions and other later stages are described in the
-[MVP plan](../docs/desktop-mvp-plan.md).
 
 On macOS, allow AeroTizen Desktop to access the Local Network when prompted. If the
 first check fails while the prompt is open, allow access and retry the check. The main
@@ -105,10 +103,9 @@ Browser tests use Playwright's separate bundled Chromium and fresh test profiles
 test run has a two-minute global limit and closes its owned browser contexts and processes.
 Screenshots and traces are written to the operating system's temporary folder.
 
-The desktop workflow builds macOS Apple silicon, macOS Intel and Windows x64 artifacts.
-These are development artifacts. Public distribution still needs Apple signing and
-notarization and Windows signing. The initial macOS minimum is 12.3, with JavaScript
-targets Safari 15.4 and Chromium 108; older OS support needs its own native testing.
+Build development packages locally with Tauri. Public distribution still needs Apple signing
+and notarization and Windows signing. The initial macOS minimum is 12.3, with JavaScript
+targets Safari 15.4 and Chromium 108. Older OS support needs its own native testing.
 
 The TypeScript lint dependency uses a scoped minimatch 11 override to include its patched
 glob parser. Keep lint and type checks in the validation path when updating that tooling.

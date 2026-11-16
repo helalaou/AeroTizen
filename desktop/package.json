@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "eslint src --max-warnings=0",
-    "format": "prettier --write src tools e2e *.json *.ts *.mjs index.html README.md src-tauri/*.json src-tauri/capabilities/*.json ../.github/workflows/desktop.yml",
-    "format:check": "prettier --check src tools e2e *.json *.ts *.mjs index.html README.md src-tauri/*.json src-tauri/capabilities/*.json ../.github/workflows/desktop.yml",
+    "format": "prettier --write src tools e2e *.json *.ts *.mjs index.html README.md src-tauri/*.json src-tauri/capabilities/*.json",
+    "format:check": "prettier --check src tools e2e *.json *.ts *.mjs index.html README.md src-tauri/*.json src-tauri/capabilities/*.json",
     "worker:build": "node tools/build-worker.mjs",
     "tauri": "tauri",
     "test:browser": "playwright test"
