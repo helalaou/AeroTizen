@@ -99,7 +99,9 @@ def status():
 
 
 def test_native_helper_imports_only_getters_and_memory_functions():
-    source = (ROOT / "cli/native/home-query/HomeQuery.cs").read_text()
+    source = (ROOT / "cli/native/home-query/HomeQuery.cs").read_text() + (
+        ROOT / "cli/native/home-common/HomeSettings.cs"
+    ).read_text()
     imports = set(re.findall(r"extern\s+(?:uint|void|IntPtr|int)\s+(\w+)\(", source))
     assert imports == {"getuid", "free", "vconf_get_str", "vconf_get_int", "app_operation_get_current_app"}
 
@@ -112,6 +114,8 @@ def test_packaged_helper_matches_current_source_and_loads():
         + (ROOT / "cli/native/home-query/HomeQuery.csproj").read_bytes()
         + b"\0"
         + (ROOT / "cli/native/home-common/Installation.cs").read_bytes()
+        + b"\0"
+        + (ROOT / "cli/native/home-common/HomeSettings.cs").read_bytes()
     )
     assert manifest["source_sha256"] == hashlib.sha256(sources).hexdigest()
     files = home.load_helper()

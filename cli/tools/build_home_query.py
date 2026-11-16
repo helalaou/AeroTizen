@@ -52,6 +52,7 @@ def build(dotnet):
                 SOURCE / "HomeQuery.cs",
                 SOURCE / "HomeQuery.csproj",
                 SOURCE.parent / "home-common/Installation.cs",
+                SOURCE.parent / "home-common/HomeSettings.cs",
             )
         )
         manifest = {

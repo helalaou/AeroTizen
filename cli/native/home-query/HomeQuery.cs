@@ -13,61 +13,8 @@ using AeroTizen.Home;
 internal static class HomeQuery
 {
     private const int ServiceTimeoutMs = 1500;
-    private const string MainOperation = "http://tizen.org/appcontrol/operation/main";
-    private static readonly string[] StringKeys = {
-        "db/appfw/home_appid", "db/appfw/startup_appid",
-        "db/appfw/booting_appid_backup", "db/first_screen/type"
-    };
-    private const string AutoStartKey = "db/menu/smart_hub/ontvsetting/auto_start";
 
     [DllImport("libc.so.6")] private static extern uint getuid();
-    [DllImport("libc.so.6")] private static extern void free(IntPtr value);
-    [DllImport("libvconf.so.0", SetLastError = true)]
-    private static extern IntPtr vconf_get_str(string key);
-    [DllImport("libvconf.so.0", SetLastError = true)]
-    private static extern int vconf_get_int(string key, out int value);
-    [DllImport("libcapi-appfw-app-operation-tv.so.0")]
-    private static extern int app_operation_get_current_app(string operation, out IntPtr appId);
-
-    private static Dictionary<string, object> Unavailable(string type, string error)
-    {
-        return new Dictionary<string, object> {
-            ["type"] = type, ["status"] = "unavailable", ["value"] = null, ["error"] = error
-        };
-    }
-
-    private static Dictionary<string, object> StringValue(string key, bool operation = false)
-    {
-        IntPtr value = IntPtr.Zero;
-        try
-        {
-            if (operation)
-            {
-                int result = app_operation_get_current_app(key, out value);
-                if (result != 0) return Unavailable("string", "native return code " + result);
-            }
-            else value = vconf_get_str(key);
-            if (value == IntPtr.Zero)
-                return Unavailable("string", "getter returned null; errno=" + Marshal.GetLastWin32Error());
-            return new Dictionary<string, object> {
-                ["type"] = "string", ["status"] = "ok", ["value"] = Marshal.PtrToStringAnsi(value)
-            };
-        }
-        catch (Exception error) { return Unavailable("string", error.GetType().Name + ": " + error.Message); }
-        finally { if (value != IntPtr.Zero) free(value); }
-    }
-
-    private static Dictionary<string, object> IntegerValue(string key)
-    {
-        try
-        {
-            int value;
-            int result = vconf_get_int(key, out value);
-            if (result != 0) return Unavailable("int", "native return code " + result);
-            return new Dictionary<string, object> { ["type"] = "int", ["status"] = "ok", ["value"] = value };
-        }
-        catch (Exception error) { return Unavailable("int", error.GetType().Name + ": " + error.Message); }
-    }
 
     private static Dictionary<string, string> OsRelease()
     {
@@ -164,13 +111,10 @@ internal static class HomeQuery
             if (uid != 0 && uid != 901) throw new Exception("Expected root or SDK execution context.");
             var os = OsRelease();
             if (!os.ContainsKey("ID") || os["ID"] != "tizen") throw new Exception("Expected Tizen.");
-            var settings = new Dictionary<string, object>();
-            foreach (string key in StringKeys) settings[key] = StringValue(key);
-            settings[AutoStartKey] = IntegerValue(AutoStartKey);
             var result = new {
                 schema_version = 1, read_only = true, uid = uid, architecture_bits = IntPtr.Size * 8,
-                os_release = os, main_operation = StringValue(MainOperation, true),
-                settings = settings, watcher = Watcher(), boot = Boot(), launcher = Installation.Status()
+                os_release = os, main_operation = HomeSettings.ReadMainOperation(),
+                settings = HomeSettings.ReadValues(), watcher = Watcher(), boot = Boot(), launcher = Installation.Status()
             };
             Console.WriteLine("AEROTIZEN_HOME_QUERY=" + JsonSerializer.Serialize(result));
             return 0;

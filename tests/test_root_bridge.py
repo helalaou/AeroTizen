@@ -86,6 +86,8 @@ def bridge_server(native_root, tmp_path, fake_tv, request):
     if getattr(request, "param", {}).get("pause_remove"):
         fixture["remove_started_file"] = str(tmp_path / "remove-started")
         fixture["remove_release_file"] = str(tmp_path / "remove-release")
+    if "home_settings" in getattr(request, "param", {}):
+        fixture["home_settings"] = request.param["home_settings"]
     if getattr(request, "param", {}).get("buttons"):
         buttons_file = tmp_path / "buttons.json"
         fixture["buttons_file"] = str(buttons_file)
@@ -357,6 +359,34 @@ def test_actual_native_tls_status_and_sdb_relay(bridge_server):
     assert receipt["token"] not in json.dumps(status)
     with BridgeSdb("127.0.0.1", receipt) as session:
         assert session.duid() == "paired-tv"
+        assert session.read_home_status() is None
+
+
+@pytest.mark.parametrize(
+    "bridge_server",
+    [
+        {
+            "home_settings": {
+                "home_button_app": "DclHome001.Home",
+                "startup_app": None,
+                "smart_hub_autostart": False,
+            }
+        }
+    ],
+    indirect=True,
+)
+def test_native_home_status_uses_authenticated_pairing(bridge_server):
+    receipt, fixture, _ = bridge_server
+    host = "127.0.0.1"
+    status = BridgeClient(host, receipt).request()
+    assert status["home_status_protocol"] == 1
+    assert "home_settings" not in status
+    with BridgeSdb(host, receipt) as session:
+        assert session.read_home_status() == fixture["home_settings"]
+
+    altered = {**receipt, "token": ("0" if receipt["token"][0] != "0" else "1") + receipt["token"][1:]}
+    with pytest.raises(BridgeError):
+        BridgeClient(host, altered, timeout=2).request("home_status")
 
 
 @pytest.mark.parametrize("bridge_server", [{"identity_fail_once": True}], indirect=True)
