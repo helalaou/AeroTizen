@@ -49,7 +49,7 @@ body[data-theme="amethyst"] {
 
   --input-dock-surface: rgba(53, 37, 83, 0.55);
   --input-dock-border: rgba(220, 200, 255, 0.24);
-  --input-dock-radius: 24px;
+  --input-dock-radius: 30px;
   --input-dock-shadow: inset 0 1px rgba(255, 255, 255, 0.16);
   --input-dock-shine: none;
   --input-card-radius: 18px;
