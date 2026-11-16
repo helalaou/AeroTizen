@@ -193,7 +193,7 @@ const BOOT_FALLBACK_MS = 15000; // launch anyway if the TV type is still unknown
 const API_REQUEST_TIMEOUT_MS = 1500;
 const MAX_API_REPLY_CHARACTERS = 65536;
 const LAUNCH_COOLDOWN_MS = 2000;
-const GUARD_DEADLINE_MS = 6000;
+const ART_FRESH_TIMEOUT_MS = 2500; // longest a fresh Art Mode read waits for its reply (see createArtMode)
 const SCAN_WATCHDOG_MS = 2000;
 const MAX_PARALLEL_STATUS_REQUESTS = 4; // a slow local API is not asked for the whole inventory at once
 const SLOW_SCAN_MS = 4000; // longer inventory scans are logged so slow TVs show up in reports
@@ -399,6 +399,14 @@ function appStatus(id: string, cb: (value: AppStatus | null, unavailable: boolea
 // gets one request timeout per batch. Direct status checks keep the shorter SCAN_WATCHDOG_MS.
 function inventoryDeadline(count: number) {
   return Math.max(1, Math.ceil(count / MAX_PARALLEL_STATUS_REQUESTS)) * API_REQUEST_TIMEOUT_MS;
+}
+// A Frame relaunch runs two fresh Art reads around the recheck: the launcher status, the watched
+// app's status when there is one, the batched inventory (when any apps are registered) and the
+// power check. Each step keeps its own timeout, so the guard is the sum of them rather than a
+// fixed number that a long inventory would outrun.
+function guardDeadline(watched: string | null) {
+  const inventory = state.apps.length ? inventoryDeadline(state.apps.length) : 0;
+  return 2 * ART_FRESH_TIMEOUT_MS + (watched ? 3 : 2) * API_REQUEST_TIMEOUT_MS + inventory;
 }
 // Returns a function that cancels the scan: no more requests start, open ones are destroyed and
 // `cb` is not called. A scan that reaches its deadline is cancelled the same way, then reported
@@ -689,7 +697,7 @@ function launchSelf(why: string) {
   record("checking", why);
   candidate.timer = setTimeout(function () {
     cancel(candidate, "guard deadline");
-  }, GUARD_DEADLINE_MS);
+  }, guardDeadline(candidate.watched));
   // First read protects the app checks; a second read authorizes the launch itself.
   freshOff(function (value) {
     if (!current(candidate)) {

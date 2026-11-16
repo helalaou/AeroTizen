@@ -1116,6 +1116,29 @@ test("a Frame relaunch waits for a slow but complete inventory and is blocked by
   }
 });
 
+test("a Frame relaunch finishes when each reply is within its own timeout but the whole recheck takes over 6 s", () => {
+  // Art off, eight inactive apps replying in 1.2 s (two batches), two fresh Art replies in 1.9 s.
+  const h = ready();
+  registerInventory(h);
+  candidate(h);
+  INVENTORY_IDS.forEach((id) => h.hold(id));
+  h.advance(1900);
+  h.answerArt("off");
+  h.advance(0);
+  assert.equal(inFlight(h).length, 4, "the first inventory batch is out");
+  h.advance(1200);
+  answerInFlight(h);
+  assert.equal(inFlight(h).length, 4, "the second inventory batch follows");
+  h.advance(1200);
+  answerInFlight(h);
+  assert.equal(h.artReplies.length, 1, "a complete inventory reaches the final Art read");
+  h.advance(1900);
+  h.answerArt("off");
+  h.advance(0);
+  assert.equal(h.launches.length, 1, "6.2 s of slow but valid replies still returns Home");
+  assert.ok(!h.state().guard.history.some((item) => item.detail === "guard deadline"));
+});
+
 test("a timed-out inventory scan is logged where it happens and stops its requests", () => {
   const h = harness({ capability: false });
   h.api.onStart();
