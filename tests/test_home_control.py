@@ -62,6 +62,61 @@ def test_cli_preview_never_discovers_or_connects(monkeypatch, action, capsys):
     assert "tv_recovery" not in result
 
 
+@pytest.mark.parametrize("helper_supports_home_status", [True, False])
+def test_cli_paired_home_status_shows_current_settings_by_action(
+    monkeypatch, capsys, helper_supports_home_status
+):
+    native_settings = {
+        "home_button_app": "com.samsung.tv.csfs",
+        "home_app": "DclHome001.Home",
+        "startup_app": "org.tizen.tv-viewer",
+        "startup_backup_app": None,
+        "smart_hub_autostart": False,
+    }
+    watcher = json.dumps({"homeControl": {"protocol": 1, "app_id": home.releases.APP_ID, "mode": "native"}})
+    session = SimpleNamespace(
+        managed_root=True,
+        read_root_home_status=lambda: native_settings if helper_supports_home_status else None,
+        tcp_request=lambda *_args, **_kwargs: b"HTTP/1.0 200 OK\r\n\r\n" + watcher.encode(),
+    )
+    monkeypatch.setattr(cli, "require_sdb", lambda _: nullcontext(session))
+    monkeypatch.setattr(
+        home, "load_helper", lambda: pytest.fail("Paired status must read the installed helper")
+    )
+    monkeypatch.setattr(
+        "sys.argv", ["aerotizen", "--tv", "192.0.2.10", "home", "status", "--paired", "--json"]
+    )
+    cli.main()
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["aerotizen_routing_mode"] == "native"
+    if helper_supports_home_status:
+        assert report["native_settings_source"] == "paired_helper"
+        assert report["home_button"] == {
+            "assigned_app": "com.samsung.tv.csfs",
+            "configured_app": "DclHome001.Home",
+        }
+        assert report["startup"] == {
+            "app": "org.tizen.tv-viewer",
+            "backup_app": None,
+            "smart_hub_autostart": False,
+        }
+    else:
+        assert report["native_settings_source"] is None
+        assert report["home_button"] == {"assigned_app": None, "configured_app": None}
+        assert report["startup"] == {"app": None, "backup_app": None, "smart_hub_autostart": None}
+
+
+def test_cli_paired_home_status_requires_pairing_without_falling_back(monkeypatch):
+    monkeypatch.setattr(cli, "require_sdb", lambda _: nullcontext(SimpleNamespace(managed_root=False)))
+    monkeypatch.setattr(
+        home, "load_helper", lambda: pytest.fail("Paired status must not fall back to the SDK query")
+    )
+    monkeypatch.setattr("sys.argv", ["aerotizen", "--tv", "192.0.2.10", "home", "status", "--paired"])
+    with pytest.raises(SystemExit, match="requires a connection through the paired TV helper"):
+        cli.main()
+
+
 def test_control_payload_matches_current_sources():
     manifest = json.loads(home_control.PAYLOAD_PATH.read_text())
     sources = b"\0".join(

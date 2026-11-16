@@ -12,6 +12,8 @@ from aerotizen.root_state import APP_ID
 from aerotizen.sdb import AUTH, CNXN, MAX_DATA, NAMES, VERSION, Sdb, SdbError
 
 MAX_REPLY = 8192
+HOME_STATUS_PROTOCOL = 1
+HOME_STATUS_TIMEOUT_SECONDS = 4
 
 
 class BridgeError(SdbError):
@@ -23,7 +25,7 @@ class BridgeClient:
         self.host, self.receipt, self.timeout = host, receipt, timeout
 
     def open(self, operation, *, button_request=None):
-        if operation not in ("status", "sdb", "remove", "buttons"):
+        if operation not in ("status", "sdb", "remove", "buttons", "home_status"):
             raise BridgeError("Unknown root bridge operation")
         if (operation == "buttons") != (button_request is not None):
             raise BridgeError("Invalid button request")
@@ -99,3 +101,12 @@ class BridgeSdb(Sdb):
         self.max_data = min(MAX_DATA, limit or MAX_DATA)
         self.banner = payload.decode(errors="replace").strip("\0")
         return self
+
+    def read_home_status(self):
+        protocol = self.root_status.get("home_status_protocol")
+        if type(protocol) is not int or protocol != HOME_STATUS_PROTOCOL:
+            return None
+        result = BridgeClient(self.host, self.receipt, timeout=HOME_STATUS_TIMEOUT_SECONDS).request(
+            "home_status"
+        )
+        return result.get("home_settings") if result["boot_id"] == self.root_status["boot_id"] else None

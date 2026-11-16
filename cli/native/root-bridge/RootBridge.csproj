@@ -5,6 +5,7 @@
     <StartupObject>AeroTizen.Root.BridgeProgram</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../home-common/HomeSettings.cs" Link="HomeSettings.cs" />
     <Compile Include="../root-common/*.cs" Link="Common/%(Filename)%(Extension)" />
     <Compile Include="../stremio-bridge/*.cs" Link="Stremio/%(Filename)%(Extension)" />
     <Compile Include="../untethered-probe/Bundle.cs" Link="Bundle.cs" />

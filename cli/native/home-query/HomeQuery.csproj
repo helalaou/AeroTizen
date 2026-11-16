@@ -11,6 +11,7 @@
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../home-common/HomeSettings.cs" Link="HomeSettings.cs"/>
     <Compile Include="../home-common/Installation.cs" Link="Installation.cs"/>
   </ItemGroup>
 </Project>

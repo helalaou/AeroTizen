@@ -104,6 +104,7 @@ internal static class RootTests
             using var buttons = value.TryGetProperty("buttons_file", out var buttonFile)
                 ? TestButtons(buttonFile.GetString(), learnedCode, keyLayout, keyCodes, inputDevices) : null;
             buttons?.Start();
+            Func<object> readHome = value.TryGetProperty("home_settings", out var home) ? () => home.Clone() : null;
             using (var certificate = new X509Certificate2(Convert.FromBase64String(value.GetProperty("server_pfx").GetString()),
                 (string)null, System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX)
                     ? X509KeyStorageFlags.DefaultKeySet : X509KeyStorageFlags.EphemeralKeySet))
@@ -130,7 +131,7 @@ internal static class RootTests
                 var client = new TcpClient();
                 await client.ConnectAsync(IPAddress.Loopback, value.GetProperty("sdb_port").GetInt32(), cancel); return client;
             }, (phase, error) => File.WriteAllText(value.GetProperty("diagnostic_file").GetString(),
-                JsonSerializer.Serialize(new { phase, error_type = error.GetType().Name })), buttons: buttons))
+                JsonSerializer.Serialize(new { phase, error_type = error.GetType().Name })), buttons: buttons, homeStatus: readHome))
             {
                 Task serving = server.Run();
                 Console.WriteLine("ROOT_TEST_SERVER_PORT=" + server.Port); Console.Out.Flush();
