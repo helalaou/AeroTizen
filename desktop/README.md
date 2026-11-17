@@ -52,6 +52,20 @@ Apply first prepares the original backup, reusing a valid one for the selected T
 first capture needs an updated paired helper and complete, unchanged Home and startup
 settings. Once applied, AeroTizen routing shows Native Home mode.
 
+Open **Button mapping** to see the remote's detected app buttons and their saved
+assignments. A rooted TV needs a compatible paired helper. A pending assignment
+is saved and waiting for the remote or helper to activate it.
+Open a button's action menu to choose an installed app, disable the button, or
+restore its original action.
+Use **Learn a button** for an app button the TV did not detect. Enter a name
+and press the app button when the dialog prompts you. **Reset all buttons** in
+the page menu restores every original action and forgets manually learned buttons.
+
+See screenshots of [Button mapping](screenshots/button-mapping.png),
+[choosing an app](screenshots/button-mapping-app-picker.png),
+[learning a button](screenshots/button-mapping-learn.png), and
+[resetting all buttons](screenshots/button-mapping-reset.png).
+
 ## Development
 
 Install the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), Node.js 22.12+

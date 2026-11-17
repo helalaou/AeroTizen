@@ -1,5 +1,6 @@
 """The actual native TLS bridge must authenticate before relaying SDB."""
 
+import hashlib
 import json
 import os
 import queue
@@ -15,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from aerotizen import cli, root_package, root_state
+from aerotizen import cli, desktop_worker, root_package, root_state
 from aerotizen.root_bridge import BridgeClient, BridgeError, BridgeSdb
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -242,6 +243,82 @@ def test_cli_button_rules_preview_apply_and_restore(bridge_server, tmp_path, mon
     assert len(saved) == 1 and saved[0]["button"] == "Amazon Prime" and saved[0]["mode"] == "default"
     assert command("reset", "--yes")["rules"] == []
     assert json.loads(stored.read_text()) == []
+
+
+@pytest.mark.parametrize("bridge_server", [{"buttons": True, "learned_code": 245}], indirect=True)
+def test_desktop_worker_changes_only_the_selected_buttons(bridge_server, tmp_path, monkeypatch):
+    receipt, fixture, _ = bridge_server
+    host = "127.0.0.1"
+    identity = hashlib.sha256(b"paired-tv").hexdigest()
+    root_state.save(root_state.receipt_path(host, tmp_path), {**receipt, "duid_sha256": identity})
+    monkeypatch.setattr(desktop_worker.remote, "CONFIG_DIR", tmp_path)
+    monkeypatch.setattr(desktop_worker.remote, "info", lambda _: {"developerIP": host})
+
+    def send(operation, **params):
+        return desktop_worker.handle(
+            {
+                "protocol": 1,
+                "id": "desktop-button-test",
+                "operation": operation,
+                "params": {
+                    "host": host,
+                    "expected_identity": identity,
+                    **params,
+                },
+            }
+        )
+
+    assert [app["id"] for app in send("list_button_apps")["result"]] == ["test.app"]
+    for change in (
+        {"mode": "app", "app_id": "test.app"},
+        {"mode": "disabled"},
+        {"mode": "default"},
+    ):
+        reply = send("change_button", change={"button": "netflix", **change})
+        row = reply["result"]
+        assert row["button"] == "netflix"
+        assert row["mode"] == change["mode"]
+        assert row["app_id"] == change.get("app_id")
+        rows = send("list_buttons")["result"]["buttons"]
+        assert {row["button"]: row["mode"] for row in rows} == {
+            "netflix": change["mode"],
+            "disney-plus": "default",
+            "prime-video": "default",
+        }
+
+    rules = Path(fixture["buttons_file"])
+    saved = rules.read_bytes()
+    bad_identity = send(
+        "change_button", expected_identity="0" * 64, change={"button": "netflix", "mode": "disabled"}
+    )
+    assert bad_identity["error"]["code"] == "identity_mismatch"
+    invalid = send("change_button", change={"button": "netflix", "mode": "reset"})
+    assert invalid["error"]["code"] == "invalid_request"
+    missing_app = send("change_button", change={"button": "netflix", "mode": "app", "app_id": "missing.app"})
+    assert missing_app["error"] == {"code": "button_change_failed", "message": "Target app is not installed."}
+    assert rules.read_bytes() == saved
+
+    assert send("change_button", change={"action": "learn", "button": "Streaming"})["result"] is True
+    learned = send("list_buttons")["result"]["buttons"]
+    assert any(row["button"] == "Streaming" and row["mode"] == "default" for row in learned)
+    assert (
+        send("change_button", change={"button": "netflix", "mode": "disabled"})["result"]["mode"]
+        == "disabled"
+    )
+    saved = rules.read_bytes()
+    wrong_tv = send("change_button", expected_identity="0" * 64, change={"action": "reset"})
+    assert wrong_tv["error"]["code"] == "identity_mismatch"
+    ambiguous = send("change_button", change={"action": "reset", "button": "netflix"})
+    assert ambiguous["error"]["code"] == "invalid_request"
+    assert rules.read_bytes() == saved
+    assert send("change_button", change={"action": "reset"})["result"] is True
+    assert json.loads(rules.read_text()) == []
+    after_reset = send("list_buttons")["result"]["buttons"]
+    assert {row["button"]: row["mode"] for row in after_reset} == {
+        "netflix": "default",
+        "disney-plus": "default",
+        "prime-video": "default",
+    }
 
 
 @pytest.mark.parametrize("bridge_server", [{"buttons": True}], indirect=True)

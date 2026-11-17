@@ -1,6 +1,7 @@
 import { Alert, AppShell, Loader, LoadingOverlay, Modal, Stack, Text } from "@mantine/core";
 import { useState } from "react";
 import { AppsPanel } from "./components/AppsPanel";
+import { ButtonMappingPanel } from "./components/ButtonMappingPanel";
 import { Header } from "./components/Header";
 import { LauncherPanel } from "./components/LauncherPanel";
 import { SelectedTvView } from "./components/SelectedTvView";
@@ -32,11 +33,12 @@ export function App({ service }: AppProps) {
     setPage(next);
     setMenuOpened(false);
     if (next === page) return;
-    if (page === "apps") manager.cancelAppLoad();
+    if (page === "apps" || page === "buttons") manager.cancelPageRead();
     if (next === "apps" && selected) {
       manager.clearAppRemoval();
       manager.loadApps(selected.id);
     }
+    if (next === "buttons" && selected) manager.loadButtons(selected.id);
   };
   const connect = async (host: string, profileId?: string) => {
     const success = await manager.connect(host, profileId);
@@ -54,6 +56,7 @@ export function App({ service }: AppProps) {
     if (!selected) return;
     const connected = await manager.connect(selected.host, selected.id);
     if (connected && page === "apps") manager.loadApps(selected.id);
+    if (connected && page === "buttons") manager.loadButtons(selected.id);
   };
 
   function tvContent() {
@@ -105,6 +108,34 @@ export function App({ service }: AppProps) {
           readHomeBackup={service.readHomeBackup}
           onRestoreBackup={
             restore ? (capturedAt, reportError) => restore(selected.id, capturedAt, reportError) : undefined
+          }
+        />
+      );
+    }
+    if (page === "buttons") {
+      return (
+        <ButtonMappingPanel
+          key={selected.id}
+          tvName={selected.name}
+          mappings={manager.buttonMappings}
+          loading={manager.buttonsLoading}
+          error={manager.buttonsError}
+          onRefresh={() => manager.loadButtons(selected.id)}
+          actions={
+            service.buttonActions
+              ? {
+                  busy,
+                  apps: manager.buttonApps,
+                  appsLoading: manager.buttonAppsLoading,
+                  appsError: manager.buttonAppsError,
+                  changeError: manager.buttonChangeError,
+                  loadApps: () => manager.loadButtonApps(selected.id),
+                  cancelApps: manager.cancelPageRead,
+                  change: (change, reportError) => manager.changeButton(selected.id, change, reportError),
+                  updateInventory: (change, reportError) =>
+                    manager.updateButtonInventory(selected.id, change, reportError),
+                }
+              : undefined
           }
         />
       );

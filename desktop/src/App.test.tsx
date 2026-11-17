@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import type { DesktopService } from "./contracts";
-import { livingRoom, office, testBackupSha256, testPackages, testService } from "./test/tvs";
+import { livingRoom, office, testBackupSha256, testButtonMappings, testPackages, testService } from "./test/tvs";
 
 function mount(service: DesktopService = testService()) {
   return render(
@@ -125,12 +125,65 @@ describe("TV selection", () => {
     await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
     expect(await screen.findByRole("heading", { name: "Overview" })).toBeVisible();
     const nav = within(screen.getByRole("navigation", { name: "TV actions" }));
-    expect(nav.getAllByRole("button")).toHaveLength(4);
+    expect(nav.getAllByRole("button")).toHaveLength(5);
     expect(nav.getByRole("button", { name: "Apps" })).toBeVisible();
     expect(nav.getByRole("button", { name: "Home and startup" })).toBeVisible();
+    expect(nav.getByRole("button", { name: "Button mapping" })).toBeVisible();
     expect(nav.getByRole("button", { name: "Overview" })).toHaveAttribute("aria-current", "page");
     await user.click(nav.getByRole("button", { name: "Launcher" }));
     expect(screen.getByRole("heading", { name: "Launcher" })).toBeVisible();
+  });
+
+  it("cancels the button read when leaving the page and reloads current mappings on return", async () => {
+    const user = userEvent.setup();
+    const service = testService();
+    const listButtons = vi.spyOn(service, "listButtons").mockImplementationOnce(
+      (_id, signal) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+        }),
+    );
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
+    const nav = await screen.findByRole("navigation", { name: "TV actions" });
+    const view = within(nav).getByRole("button", { name: "Button mapping" });
+    await user.click(view);
+    expect(await screen.findByRole("status", { name: "Loading button mappings" })).toBeVisible();
+    await user.click(within(nav).getByRole("button", { name: "Launcher" }));
+    expect(screen.getByRole("heading", { name: "Launcher" })).toBeVisible();
+    expect(listButtons.mock.calls.at(0)?.[1].aborted).toBe(true);
+    listButtons.mockResolvedValueOnce(testButtonMappings);
+    await user.click(view);
+    expect(await screen.findByRole("table", { name: "Remote app buttons" })).toBeVisible();
+    expect(screen.getByText("Stremio")).toBeVisible();
+    expect(listButtons).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the selected app in the picker when saving fails and allows a retry", async () => {
+    const user = userEvent.setup();
+    const service = testService();
+    const actions = service.buttonActions;
+    if (!actions) throw new Error("The fixture must support button actions.");
+    const save = vi.spyOn(actions, "change").mockRejectedValueOnce(new Error("The TV could not save this mapping."));
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
+    await user.click(await screen.findByRole("button", { name: "Button mapping" }));
+    const row = within(await screen.findByRole("row", { name: /Netflix/ }));
+    await user.click(row.getByRole("button", { name: "Actions for Netflix" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Choose app" }));
+    const dialog = within(screen.getByRole("dialog", { name: "Choose an app for Netflix" }));
+    const search = dialog.getByRole("combobox", { name: "Installed app" });
+    await user.clear(search);
+    await user.type(search, "YouT");
+    await user.click(await dialog.findByRole("option", { name: "YouTube" }));
+    const assign = dialog.getByRole("button", { name: "Assign app" });
+    await user.click(assign);
+    expect(await dialog.findByRole("alert")).toHaveTextContent("The TV could not save this mapping.");
+    expect(search).toHaveValue("YouTube");
+    await user.click(assign);
+    expect(await row.findByText("YouTube")).toBeVisible();
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith(livingRoom.id, { button: "Netflix", mode: "app", app_id: "test.YouTube" });
   });
 
   it("cancels an app list fetch when leaving Apps and starts a fresh request on return", async () => {

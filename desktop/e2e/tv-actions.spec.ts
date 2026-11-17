@@ -30,7 +30,13 @@ test("navigates the selected TV actions and keeps the initial screen TV-only", a
   await expect(page.getByRole("button", { name: "Update to 3.1.0" })).toBeEnabled();
   if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
   const nav = page.getByRole("navigation", { name: "TV actions" });
-  await expect(nav.getByRole("button")).toHaveText(["Overview", "Launcher", "Apps", "Home and startup"]);
+  await expect(nav.getByRole("button")).toHaveText([
+    "Overview",
+    "Launcher",
+    "Apps",
+    "Home and startup",
+    "Button mapping",
+  ]);
   await expect(nav.getByRole("button", { name: "Launcher", exact: true })).toHaveAttribute("aria-current", "page");
   await page.screenshot({ path: join(tmpdir(), `aerotizen-tv-sidebar-${info.project.name}.png`) });
   if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
@@ -164,6 +170,52 @@ test("applies Native Home, backing up the original settings first", async ({ pag
   const backup = page.getByRole("dialog", { name: "Original Home backup" });
   await expect(backup.getByText(/Original backup saved/)).toBeVisible();
   await expect(backup.getByRole("button", { name: "Restore original settings", exact: true })).toBeEnabled();
+});
+
+test("shows detected buttons and saved assignments on the selected TV", async ({ page, isMobile }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Connect to Living room" }).click();
+  await showAction(page, isMobile, "Button mapping");
+  const table = page.getByRole("table", { name: "Remote app buttons" });
+  await expect(table.getByRole("row", { name: /Netflix/ })).toContainText("Stremio");
+  await expect(table.getByRole("row", { name: /Netflix/ })).toContainText("Active");
+  await expect(table.getByRole("row", { name: /Disney/ })).toContainText("Disabled");
+  await expect(table.getByRole("row", { name: /Disney/ })).toContainText("Pending");
+  await expect(table.getByRole("row", { name: /Prime Video/ })).toContainText("Original action");
+  await page.getByRole("button", { name: "Refresh button mappings" }).click();
+  await expect(table).toBeVisible();
+
+  if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+  await page.getByRole("button", { name: "Back to TVs" }).click();
+  await page.getByRole("button", { name: "Connect to Bedroom" }).click();
+  await showAction(page, isMobile, "Button mapping");
+  await expect(page.getByText("Paired TV helper required")).toBeVisible();
+  await expect(table).toHaveCount(0);
+});
+
+test("keeps the app dropdown clickable in a short window", async ({ page, isMobile }) => {
+  await page.setViewportSize({ width: isMobile ? 390 : 868, height: 424 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Connect to Living room" }).click();
+  await showAction(page, isMobile, "Button mapping");
+  await page.getByRole("button", { name: "Actions for Disney+" }).click();
+  await page.getByRole("menuitem", { name: "Choose app" }).click();
+  const dialog = page.getByRole("dialog", { name: "Choose an app for Disney+" });
+  const input = dialog.getByRole("combobox", { name: "Installed app" });
+  await input.click();
+  const lastApp = page.getByRole("option", { name: "YouTube", exact: true });
+  await expect
+    .poll(() =>
+      lastApp.evaluate((option) => {
+        const rect = option.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        return [rect.top + 2, rect.bottom - 2].every((y) => option.contains(document.elementFromPoint(x, y)));
+      }),
+    )
+    .toBe(true);
+  await lastApp.click();
+  await expect(input).toHaveValue("YouTube");
+  await expect(dialog.getByRole("button", { name: "Assign app" })).toBeEnabled();
 });
 
 test.describe("Installed apps", () => {

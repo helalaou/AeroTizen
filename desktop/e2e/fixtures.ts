@@ -6,6 +6,8 @@ import {
   office,
   testBackupSettings,
   testBackupSha256,
+  testButtonApps,
+  testButtonMappings,
   testPackages,
   testReleases,
   testStatus,
@@ -17,7 +19,18 @@ export const test = base.extend<{
   inventory: [{ packages: testPackages }, { option: true }],
   page: async ({ page, inventory }, use) => {
     await page.addInitScript(
-      ({ initial, known, packages, failures, releases, status, backupSettings, backupSha256 }) => {
+      ({
+        initial,
+        known,
+        packages,
+        failures,
+        releases,
+        status,
+        backupSettings,
+        backupSha256,
+        buttonApps,
+        buttonMappings,
+      }) => {
         let currentPackages = packages;
         const profileKey = "test-native-profiles";
         const profiles = new Map<string, SavedTv>(
@@ -97,7 +110,13 @@ export const test = base.extend<{
                 case "list_tv_apps":
                   if (!profiles.has(String(args.id))) throw new Error("Connect to the TV first.");
                   return structuredClone(currentPackages);
-                case "cancel_tv_app_list":
+                case "list_tv_buttons":
+                  return profiles.get(String(args.id))?.transport === "paired_root"
+                    ? buttonMappings
+                    : { status: "pairing_required" };
+                case "list_tv_button_apps":
+                  return buttonApps;
+                case "cancel_tv_read":
                   return;
                 case "remove_tv_apps": {
                   if (!profiles.has(String(args.id))) throw new Error("Connect to the TV first.");
@@ -161,6 +180,8 @@ export const test = base.extend<{
         releases: testReleases,
         status: testStatus,
         backupSettings: testBackupSettings,
+        buttonMappings: testButtonMappings,
+        buttonApps: testButtonApps,
         backupSha256: testBackupSha256,
       },
     );

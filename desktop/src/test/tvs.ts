@@ -1,11 +1,14 @@
 import { canApplyNativeHome } from "../contracts";
 import type {
+  ButtonMappings,
+  ButtonTargetApp,
   DesktopService,
   HomeBackupSettings,
   LauncherRelease,
   NativeHomeSettings,
   SavedTv,
   TvAppPackage,
+  TvButtonMapping,
 } from "../contracts";
 
 export const livingRoom: SavedTv = {
@@ -76,6 +79,25 @@ export const testBackupSettings: HomeBackupSettings = {
   smart_hub_autostart: false,
 };
 export const testBackupSha256 = "d".repeat(64);
+export const testButtonMappings: Extract<ButtonMappings, { status: "ready" }> = {
+  status: "ready",
+  discovery_detail: null,
+  buttons: [
+    { button: "Disney+", mode: "disabled", app_id: null, app_name: null, active: false },
+    { button: "Netflix", mode: "app", app_id: "test.Stremio", app_name: "Stremio", active: true },
+    { button: "Prime Video", mode: "default", app_id: null, app_name: null, active: false },
+  ],
+};
+export const testButtonApps: ButtonTargetApp[] = [
+  { id: "DclHome001.Home", name: "AeroTizen" },
+  { id: "test.Stremio", name: "Stremio" },
+  { id: "test.YouTube", name: "YouTube" },
+];
+const SIMULATED_REMOTE_PRESS_DELAY_MS = 1_500;
+
+function originalButton(button: string): TvButtonMapping {
+  return { button, mode: "default", app_id: null, app_name: null, active: false };
+}
 export const testPackages: TvAppPackage[] = [
   { id: "DclHome001", name: "AeroTizen", apps: ["AeroTizen"], protected: true, revision: "1".repeat(64) },
   {
@@ -97,12 +119,57 @@ export const testPackages: TvAppPackage[] = [
 export function testService(): DesktopService {
   const profiles = new Map([livingRoom, bedroom].map((tv) => [tv.id, tv]));
   const originalSettings = new Map<string, NativeHomeSettings>([[livingRoom.id, testBackupSettings]]);
+  let buttonMappings = testButtonMappings.buttons;
   return {
     status: async () => testStatus,
     launcherCatalog: async () => testReleases,
     list: async () => [...profiles.values()],
     discover: async () => [livingRoom, bedroom, office],
     listApps: async () => testPackages,
+    listButtons: async (id) =>
+      profiles.get(id)?.transport === "paired_root"
+        ? { ...testButtonMappings, buttons: buttonMappings }
+        : { status: "pairing_required" },
+    buttonActions: {
+      listApps: async (id) => {
+        if (profiles.get(id)?.transport !== "paired_root") throw new Error("A paired TV helper is required.");
+        return testButtonApps;
+      },
+      change: async (id, change) => {
+        if (
+          profiles.get(id)?.transport !== "paired_root" ||
+          !buttonMappings.some((row) => row.button === change.button)
+        ) {
+          throw new Error("The remote button is unavailable.");
+        }
+        const app = change.mode === "app" ? testButtonApps.find((app) => app.id === change.app_id) : undefined;
+        if (change.mode === "app" && !app) throw new Error("Choose an installed app.");
+        const updated: TvButtonMapping = {
+          button: change.button,
+          mode: change.mode,
+          app_id: app?.id ?? null,
+          app_name: app?.name ?? null,
+          active: change.mode !== "default",
+        };
+        buttonMappings = buttonMappings.map((row) => (row.button === change.button ? updated : row));
+        return updated;
+      },
+      updateInventory: async (id, change) => {
+        if (profiles.get(id)?.transport !== "paired_root") throw new Error("A paired TV helper is required.");
+        if (change.action === "learn") {
+          await new Promise((resolve) => setTimeout(resolve, SIMULATED_REMOTE_PRESS_DELAY_MS));
+          if (buttonMappings.some((row) => row.button.toLowerCase() === change.button.toLowerCase())) {
+            throw new Error("A button already has this name.");
+          }
+          buttonMappings = [...buttonMappings, originalButton(change.button)].sort((a, b) =>
+            a.button.localeCompare(b.button),
+          );
+        } else {
+          buttonMappings = testButtonMappings.buttons.map((row) => originalButton(row.button));
+        }
+        return true;
+      },
+    },
     removeApps: async () => {
       throw new Error("Set the removal result in the test.");
     },

@@ -55,12 +55,17 @@ fn request_local_network_access(operation: &str, params: &Value) {
     const DISCOVERY_MULTICAST_ADDRESS: Ipv4Addr = Ipv4Addr::new(239, 255, 255, 250);
     let address = match operation {
         "discover" => Some(DISCOVERY_MULTICAST_ADDRESS),
-        "connect" | "install_launcher" | "list_apps" | "remove_apps" | "prepare_native_home" => {
-            params
-                .get("host")
-                .and_then(Value::as_str)
-                .and_then(|host| host.parse::<Ipv4Addr>().ok())
-        }
+        "connect"
+        | "install_launcher"
+        | "list_apps"
+        | "list_buttons"
+        | "list_button_apps"
+        | "change_button"
+        | "remove_apps"
+        | "prepare_native_home" => params
+            .get("host")
+            .and_then(Value::as_str)
+            .and_then(|host| host.parse::<Ipv4Addr>().ok()),
         _ => None,
     };
     if let Some(address) = address.filter(|address| !address.is_loopback()) {
@@ -143,7 +148,7 @@ pub async fn request_with_cancellation(
         .map_err(|_| unavailable())?;
     let response_limit = match operation {
         "launcher_catalog" => MAX_CATALOG_RESPONSE_BYTES,
-        "list_apps" | "remove_apps" => MAX_APP_LIST_RESPONSE_BYTES,
+        "list_apps" | "list_button_apps" | "remove_apps" => MAX_APP_LIST_RESPONSE_BYTES,
         _ => MAX_RESPONSE_BYTES,
     };
     if !output.status.success() || output.stdout.len() > response_limit {

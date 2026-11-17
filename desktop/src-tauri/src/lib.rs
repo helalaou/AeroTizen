@@ -16,7 +16,7 @@ struct AppState {
     profiles: Profiles,
     worker_path: PathBuf,
     operation: tokio::sync::Mutex<()>,
-    cancelled_app_list: watch::Sender<String>,
+    cancelled_tv_read: watch::Sender<String>,
 }
 
 #[tauri::command]
@@ -41,24 +41,21 @@ async fn launcher_catalog(state: tauri::State<'_, AppState>) -> AppResult<Value>
     worker::request(&state.worker_path, "launcher_catalog", json!({})).await
 }
 
-#[tauri::command]
-async fn list_tv_apps(
-    state: tauri::State<'_, AppState>,
+async fn read_tv(
+    state: &AppState,
+    operation: &str,
     id: String,
     request_id: String,
 ) -> AppResult<Value> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
     let saved = state.profiles.get(&id)?;
-    let cancelled = state.cancelled_app_list.subscribe();
+    let cancelled = state.cancelled_tv_read.subscribe();
     if *cancelled.borrow() == request_id {
-        return Err(AppError::new(
-            "app_list_cancelled",
-            "App refresh cancelled.",
-        ));
+        return Err(AppError::new("tv_read_cancelled", "TV refresh cancelled."));
     }
     worker::request_with_cancellation(
         &state.worker_path,
-        "list_apps",
+        operation,
         json!({ "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256 }),
         Some((cancelled, request_id)),
     )
@@ -66,8 +63,55 @@ async fn list_tv_apps(
 }
 
 #[tauri::command]
-fn cancel_tv_app_list(state: tauri::State<'_, AppState>, request_id: String) {
-    state.cancelled_app_list.send_replace(request_id);
+async fn list_tv_apps(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    request_id: String,
+) -> AppResult<Value> {
+    read_tv(&state, "list_apps", id, request_id).await
+}
+
+#[tauri::command]
+async fn list_tv_buttons(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    request_id: String,
+) -> AppResult<Value> {
+    read_tv(&state, "list_buttons", id, request_id).await
+}
+
+#[tauri::command]
+async fn list_tv_button_apps(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    request_id: String,
+) -> AppResult<Value> {
+    read_tv(&state, "list_button_apps", id, request_id).await
+}
+
+#[tauri::command]
+async fn change_tv_button(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    change: Value,
+) -> AppResult<Value> {
+    let _guard = state.operation.try_lock().map_err(|_| busy())?;
+    let saved = state.profiles.get(&id)?;
+    worker::request(
+        &state.worker_path,
+        "change_button",
+        json!({
+            "host": saved.tv.host,
+            "expected_identity": saved.tv.identity_sha256,
+            "change": change,
+        }),
+    )
+    .await
+}
+
+#[tauri::command]
+fn cancel_tv_read(state: tauri::State<'_, AppState>, request_id: String) {
+    state.cancelled_tv_read.send_replace(request_id);
 }
 
 #[tauri::command]
@@ -335,7 +379,7 @@ pub fn run() {
                 profiles,
                 worker_path,
                 operation: tokio::sync::Mutex::new(()),
-                cancelled_app_list: watch::Sender::new(String::new()),
+                cancelled_tv_read: watch::Sender::new(String::new()),
             });
             Ok(())
         })
@@ -343,7 +387,10 @@ pub fn run() {
             backend_status,
             list_tvs,
             list_tv_apps,
-            cancel_tv_app_list,
+            list_tv_buttons,
+            list_tv_button_apps,
+            change_tv_button,
+            cancel_tv_read,
             remove_tv_apps,
             launcher_catalog,
             install_launcher,

@@ -79,6 +79,26 @@ export interface AppRemovalResult {
 }
 export type NamedAppRemovalOutcome = AppRemovalOutcome & { name: string };
 
+export interface TvButtonMapping {
+  button: string;
+  mode: "default" | "app" | "disabled";
+  app_id: string | null;
+  app_name: string | null;
+  active: boolean;
+}
+
+export type ButtonMappings =
+  | { status: "ready"; buttons: TvButtonMapping[]; discovery_detail: string | null }
+  | { status: "pairing_required" | "helper_update_required" };
+
+export interface ButtonTargetApp {
+  id: string;
+  name: string;
+}
+
+export type ButtonChange = { button: string } & ({ mode: "app"; app_id: string } | { mode: "default" | "disabled" });
+export type ButtonInventoryChange = { action: "learn"; button: string } | { action: "reset" };
+
 export interface DesktopService {
   status(): Promise<BackendStatus>;
   launcherCatalog(): Promise<LauncherRelease[]>;
@@ -86,6 +106,12 @@ export interface DesktopService {
   discover(): Promise<TvCandidate[]>;
   connect(host: string, profileId?: string): Promise<SavedTv>;
   listApps(id: string, signal: AbortSignal): Promise<TvAppPackage[]>;
+  listButtons(id: string, signal: AbortSignal): Promise<ButtonMappings>;
+  buttonActions?: {
+    listApps(id: string, signal: AbortSignal): Promise<ButtonTargetApp[]>;
+    change(id: string, change: ButtonChange): Promise<TvButtonMapping>;
+    updateInventory(id: string, change: ButtonInventoryChange): Promise<true>;
+  };
   removeApps(id: string, packages: AppPackageSelection[]): Promise<AppRemovalResult>;
   installLauncher(
     id: string,
@@ -111,7 +137,7 @@ export function canApplyNativeHome(profile: SavedTv): boolean {
   );
 }
 
-export type TvPage = "overview" | "launcher" | "apps" | "home";
+export type TvPage = "overview" | "launcher" | "apps" | "home" | "buttons";
 
 export function errorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;

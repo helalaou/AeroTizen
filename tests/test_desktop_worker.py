@@ -540,7 +540,8 @@ def test_protocol_keeps_stdout_machine_readable_and_rejects_oversized_input():
         assert process.stderr == ""
 
 
-def test_cancellable_app_list_exits_when_its_input_pipe_closes():
+@pytest.mark.parametrize("operation", ["list_apps", "list_buttons", "list_button_apps"])
+def test_cancellable_tv_read_exits_when_its_input_pipe_closes(operation):
     # Keep the read blocked after it starts, as it can be while the TV is slow to respond.
     script = """
 from threading import Event
@@ -557,7 +558,7 @@ desktop_worker.main()
         [sys.executable, "-c", script], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True
     ) as process:
         try:
-            process.stdin.write(json.dumps({**request("list_apps"), "cancellable": True}) + "\n")
+            process.stdin.write(json.dumps({**request(operation), "cancellable": True}) + "\n")
             process.stdin.flush()
             assert process.stdout.readline().strip() == "reading"
             process.stdin.close()
@@ -576,6 +577,9 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "discover",
         "connect",
         "list_apps",
+        "list_buttons",
+        "list_button_apps",
+        "change_button",
         "remove_apps",
         "launcher_catalog",
         "install_launcher",
@@ -584,6 +588,84 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "apply_native_home",
         "restore_home_backup",
     ]
+
+
+@pytest.mark.parametrize(
+    ("scenario", "outcome", "requests"),
+    [
+        ("supported", "ready", ["status", "list"]),
+        ("saved_only", "ready", ["status", "status"]),
+        ("unpaired", "pairing_required", []),
+        ("old_helper", "helper_update_required", ["status"]),
+        ("different_tv", "identity_mismatch", []),
+    ],
+)
+def test_list_buttons_reads_only_the_selected_tv(monkeypatch, scenario, outcome, requests):
+    identity = hashlib.sha256(b"test-duid").hexdigest()
+    receipt = (
+        None
+        if scenario == "unpaired"
+        else {
+            "phase": "active",
+            "duid_sha256": "0" * 64 if scenario == "different_tv" else identity,
+        }
+    )
+    monkeypatch.setattr(worker.buttons.root_state, "find", lambda *_: receipt)
+    monkeypatch.setattr(
+        worker.buttons, "DeviceSession", lambda *_, **_kwargs: SimpleNamespace(ownership=nullcontext)
+    )
+    connected = SimpleNamespace(duid=lambda: "test-duid", applist=lambda: "app_id=test.Stremio name=Stremio")
+    monkeypatch.setattr(worker, "DeviceSession", lambda *_, **_kwargs: nullcontext(connected))
+    calls = []
+
+    def bridge_request(operation="status", *, button_request=None):
+        if operation == "status":
+            calls.append(operation)
+            return (
+                {}
+                if scenario == "old_helper"
+                else {
+                    "buttons_protocol": worker.buttons.PROTOCOL,
+                    "buttons_discovery": scenario != "saved_only",
+                }
+            )
+        assert operation == "buttons"
+        assert button_request["apply"] is False
+        calls.append(button_request["action"])
+        return {
+            "buttons": {
+                "rules": [{"button": "Netflix", "mode": "app", "app_id": "test.Stremio", "active": True}],
+                "discovered": [{"button": "Netflix"}, {"button": "Disney+"}]
+                if scenario == "supported"
+                else None,
+            }
+        }
+
+    monkeypatch.setattr(
+        worker.buttons, "BridgeClient", lambda *_args, **_kwargs: SimpleNamespace(request=bridge_request)
+    )
+    reply = worker.handle(request("list_buttons", host="127.0.0.1", expected_identity=identity))
+    assert calls == requests
+    if outcome == "identity_mismatch":
+        assert reply["error"]["code"] == outcome
+    else:
+        assert reply["result"]["status"] == outcome
+    if outcome == "ready":
+        result = reply["result"]
+        assert result["buttons"][-1] == {
+            "button": "Netflix",
+            "mode": "app",
+            "app_id": "test.Stremio",
+            "app_name": "Stremio",
+            "active": True,
+        }
+        if scenario == "supported":
+            assert result["buttons"][0]["mode"] == "default"
+            assert len(result["buttons"]) == 2
+            assert result["discovery_detail"] is None
+        else:
+            assert len(result["buttons"]) == 1
+            assert "Update" in result["discovery_detail"]
 
 
 def test_launcher_catalog_does_not_open_a_tv_connection(monkeypatch):

@@ -1,5 +1,5 @@
 import { ActionIcon, AppShell, Button, Divider, Group, NavLink, Stack, Text } from "@mantine/core";
-import { ArrowLeft, House, LayoutDashboard, LayoutGrid, Package, RefreshCw } from "lucide-react";
+import { ArrowLeft, Gamepad2, House, LayoutDashboard, LayoutGrid, Package, RefreshCw } from "lucide-react";
 import type { TvPage, SavedTv } from "../contracts";
 import styles from "../styles.module.css";
 
@@ -8,6 +8,7 @@ const PAGES = [
   { key: "launcher", label: "Launcher", icon: Package },
   { key: "apps", label: "Apps", icon: LayoutGrid },
   { key: "home", label: "Home and startup", icon: House },
+  { key: "buttons", label: "Button mapping", icon: Gamepad2 },
 ] as const;
 
 interface TvSidebarProps {

@@ -2,6 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { canApplyNativeHome, errorMessage } from "./contracts";
 import type {
   BackendStatus,
+  ButtonChange,
+  ButtonInventoryChange,
+  ButtonMappings,
+  ButtonTargetApp,
   DesktopService,
   LauncherRelease,
   NamedAppRemovalOutcome,
@@ -22,6 +26,13 @@ export function useTvManager(service: DesktopService) {
   const [apps, setApps] = useState<TvAppPackage[] | null>(null);
   const [appsLoading, setAppsLoading] = useState(false);
   const [appsError, setAppsError] = useState<string | null>(null);
+  const [buttonMappings, setButtonMappings] = useState<ButtonMappings | null>(null);
+  const [buttonsLoading, setButtonsLoading] = useState(false);
+  const [buttonsError, setButtonsError] = useState<string | null>(null);
+  const [buttonChangeError, setButtonChangeError] = useState<string | null>(null);
+  const [buttonApps, setButtonApps] = useState<ButtonTargetApp[] | null>(null);
+  const [buttonAppsLoading, setButtonAppsLoading] = useState(false);
+  const [buttonAppsError, setButtonAppsError] = useState<string | null>(null);
   const [appRemoval, setAppRemoval] = useState<NamedAppRemovalOutcome[]>([]);
   const [appRefusals, setAppRefusals] = useState<ReadonlyMap<string, string>>(() => new Map());
   const [backend, setBackend] = useState<BackendStatus | null>(null);
@@ -32,7 +43,11 @@ export function useTvManager(service: DesktopService) {
   const [error, setError] = useState<string | null>(null);
   const active = useRef(false);
   const mounted = useRef(false);
-  const appList = useRef<{ controller: AbortController; completion: Promise<void> } | null>(null);
+  const pageRead = useRef<{
+    controller: AbortController;
+    completion: Promise<void>;
+    stopLoading: () => void;
+  } | null>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -48,7 +63,7 @@ export function useTvManager(service: DesktopService) {
     return () => {
       cancelled = true;
       mounted.current = false;
-      appList.current?.controller.abort();
+      pageRead.current?.controller.abort();
     };
   }, [service]);
 
@@ -67,11 +82,11 @@ export function useTvManager(service: DesktopService) {
     };
   }, [service, releaseCheck]);
 
-  const cancelAppLoad = useCallback(() => {
-    const pending = appList.current;
+  const cancelPageRead = useCallback(() => {
+    const pending = pageRead.current;
     if (pending) {
       pending.controller.abort();
-      setAppsLoading(false);
+      pending.stopLoading();
     }
     return pending?.completion;
   }, []);
@@ -88,7 +103,7 @@ export function useTvManager(service: DesktopService) {
       setBusy({ message, scope });
       setError(null);
       try {
-        const cancelling = cancelAppLoad();
+        const cancelling = cancelPageRead();
         if (cancelling) await cancelling;
         await action();
         return true;
@@ -100,7 +115,7 @@ export function useTvManager(service: DesktopService) {
         if (mounted.current) setBusy(null);
       }
     },
-    [cancelAppLoad],
+    [cancelPageRead],
   );
 
   const connect = (host: string, profileId?: string) =>
@@ -161,30 +176,99 @@ export function useTvManager(service: DesktopService) {
     });
   };
 
-  const loadApps = (id: string) => {
-    const previous = appList.current;
+  function loadPage<Result>(
+    query: (signal: AbortSignal) => Promise<Result>,
+    update: (result: Result | null) => void,
+    showError: (error: string | null) => void,
+    setLoading: (loading: boolean) => void,
+  ) {
+    const previous = pageRead.current;
     if (active.current || (previous && !previous.controller.signal.aborted)) return;
     const controller = new AbortController();
     const { signal } = controller;
-    setApps(null);
-    setAppsError(null);
-    setAppsLoading(true);
+    update(null);
+    showError(null);
+    setLoading(true);
+    const stopLoading = () => setLoading(false);
     const completion = (async () => {
       await previous?.completion;
       try {
         signal.throwIfAborted();
-        const installed = await service.listApps(id, signal);
-        if (mounted.current && !signal.aborted) updateAppInventory(installed);
+        const result = await query(signal);
+        if (mounted.current && !signal.aborted) update(result);
       } catch (caught) {
-        if (mounted.current && !signal.aborted) setAppsError(errorMessage(caught));
+        if (mounted.current && !signal.aborted) showError(errorMessage(caught));
       } finally {
-        if (appList.current?.controller === controller) {
-          appList.current = null;
-          if (mounted.current) setAppsLoading(false);
+        if (pageRead.current?.controller === controller) {
+          pageRead.current = null;
+          if (mounted.current) stopLoading();
         }
       }
     })();
-    appList.current = { controller, completion };
+    pageRead.current = { controller, completion, stopLoading };
+  }
+
+  const loadApps = (id: string) =>
+    loadPage((signal) => service.listApps(id, signal), updateAppInventory, setAppsError, setAppsLoading);
+
+  const loadButtons = (id: string) => {
+    setButtonChangeError(null);
+    loadPage((signal) => service.listButtons(id, signal), setButtonMappings, setButtonsError, setButtonsLoading);
+  };
+
+  const buttonActions = service.buttonActions;
+  const loadButtonApps = (id: string) => {
+    if (buttonActions) {
+      loadPage((signal) => buttonActions.listApps(id, signal), setButtonApps, setButtonAppsError, setButtonAppsLoading);
+    }
+  };
+
+  const changeButton = (
+    id: string,
+    change: ButtonChange,
+    reportError: (message: string) => void = setButtonChangeError,
+  ) => {
+    if (!buttonActions || selected?.id !== id) return Promise.resolve(false);
+    return run(
+      "Saving button assignment…",
+      async () => {
+        setButtonChangeError(null);
+        const updated = await buttonActions.change(id, change);
+        if (!mounted.current) return;
+        const name = updated.app_name ?? buttonApps?.find((app) => app.id === updated.app_id)?.name ?? null;
+        setButtonMappings((current) =>
+          current?.status === "ready"
+            ? {
+                ...current,
+                buttons: current.buttons.map((row) =>
+                  row.button === change.button ? { ...updated, app_name: name } : row,
+                ),
+              }
+            : current,
+        );
+      },
+      "app",
+      reportError,
+    );
+  };
+
+  const updateButtonInventory = async (
+    id: string,
+    change: ButtonInventoryChange,
+    reportError: (message: string) => void,
+  ) => {
+    if (!buttonActions || selected?.id !== id) return false;
+    const success = await run(
+      change.action === "learn" ? "Waiting for a remote button press…" : "Resetting remote buttons…",
+      async () => {
+        setButtonChangeError(null);
+        await buttonActions.updateInventory(id, change);
+      },
+      "app",
+      reportError,
+    );
+    if (success && mounted.current) loadButtons(id);
+    return success;
   };
 
   const removeApps = (id: string, picked: TvAppPackage[]) =>
@@ -275,6 +359,13 @@ export function useTvManager(service: DesktopService) {
     appsError,
     appRemoval,
     appRefusals,
+    buttonMappings,
+    buttonsLoading,
+    buttonsError,
+    buttonChangeError,
+    buttonApps,
+    buttonAppsLoading,
+    buttonAppsError,
     backend,
     latestLauncher: launcherReleases?.[0]?.version ?? (launcherReleases === undefined ? undefined : null),
     launcherReleases,
@@ -284,7 +375,11 @@ export function useTvManager(service: DesktopService) {
     ready: !loading && backend !== null,
     connect,
     loadApps,
-    cancelAppLoad,
+    loadButtons,
+    loadButtonApps,
+    changeButton,
+    updateButtonInventory,
+    cancelPageRead,
     removeApps,
     discover,
     rename,
@@ -299,7 +394,7 @@ export function useTvManager(service: DesktopService) {
     clearError: () => setError(null),
     clearAppRemoval: () => setAppRemoval([]),
     back: () => {
-      cancelAppLoad();
+      cancelPageRead();
       setError(null);
       setSelected(null);
       setApps(null);
