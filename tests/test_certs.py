@@ -26,7 +26,8 @@ def test_samsung_sign_in_rejects_an_unrelated_callback_and_accepts_the_matching_
                 ).encode()
                 with pytest.raises(urllib.error.HTTPError) as rejected:
                     urllib.request.urlopen(redirect, data=invalid, timeout=3)
-                assert rejected.value.code == 400
+                with rejected.value as response:
+                    assert response.code == 400
                 valid = urllib.parse.urlencode(
                     {"state": params["state"][0], "code": json.dumps(expected)}
                 ).encode()
