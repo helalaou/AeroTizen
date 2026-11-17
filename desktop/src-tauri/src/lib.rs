@@ -1,5 +1,6 @@
 mod models;
 mod profiles;
+mod samsung;
 mod worker;
 
 use models::{
@@ -17,6 +18,7 @@ struct AppState {
     worker_path: PathBuf,
     operation: tokio::sync::Mutex<()>,
     cancelled_tv_read: watch::Sender<String>,
+    samsung: samsung::SamsungState,
 }
 
 #[tauri::command]
@@ -380,11 +382,17 @@ pub fn run() {
                 worker_path,
                 operation: tokio::sync::Mutex::new(()),
                 cancelled_tv_read: watch::Sender::new(String::new()),
+                samsung: samsung::SamsungState::default(),
             });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             backend_status,
+            samsung::samsung_account,
+            samsung::samsung_sign_in,
+            samsung::cancel_samsung_sign_in,
+            samsung::samsung_sign_out,
+            samsung::prepare_signing_profile,
             list_tvs,
             list_tv_apps,
             list_tv_buttons,

@@ -32,6 +32,7 @@ export const test = base.extend<{
         buttonMappings,
       }) => {
         let currentPackages = packages;
+        let samsungAccount: { email: string } | null = null;
         const profileKey = "test-native-profiles";
         const profiles = new Map<string, SavedTv>(
           JSON.parse(sessionStorage.getItem(profileKey) ?? JSON.stringify(initial.map((tv) => [tv.id, tv]))),
@@ -45,6 +46,22 @@ export const test = base.extend<{
           value: {
             async invoke(command: string, args: Record<string, unknown> = {}) {
               switch (command) {
+                case "samsung_account":
+                  return samsungAccount;
+                case "samsung_sign_in":
+                  samsungAccount = { email: "demo@example.com" };
+                  return samsungAccount;
+                case "cancel_samsung_sign_in":
+                  return;
+                case "samsung_sign_out":
+                  samsungAccount = null;
+                  return;
+                case "prepare_signing_profile": {
+                  const tv = profiles.get(String(args.id));
+                  if (!tv || (!samsungAccount && !tv.launcher_signing_ready)) throw new Error("Sign in to Samsung.");
+                  save({ ...tv, launcher_signing_ready: true });
+                  return { identity_sha256: tv.id, launcher_signing_ready: true };
+                }
                 case "backend_status":
                   return status;
                 case "launcher_catalog":

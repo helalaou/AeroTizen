@@ -13,9 +13,16 @@ and [Launcher](screenshots/launcher.png).
    The change list below the install controls follows your selection.
 3. Wait for the TV to report the selected version. Downgrades require confirmation and may fail on some TVs.
 
-The app uses the signing profile for this TV from the CLI state folder. For a first install,
-create it with `aerotizen --tv <TV IP> certs`, then refresh the TV in the app. For an existing
-installation, use the original signing profile. See [Samsung's signing requirements](https://developer.samsung.com/smarttv/develop/getting-started/setting-up-sdk/creating-certificates.html).
+If a first install needs signing certificates, the app guides you through Samsung
+sign-in in your browser, creates the TV's signing profile, and continues installation.
+You can also sign in and out through the app menu. The account session lasts until
+sign-out, expiry, or closing the app. Certificates are saved per TV for future updates.
+The app reuses signing profiles from the CLI state folder. For an existing installation,
+use its original signing profile. See [Samsung's signing requirements](https://developer.samsung.com/smarttv/develop/getting-started/setting-up-sdk/creating-certificates.html).
+
+See screenshots of [Samsung sign-in](screenshots/samsung-sign-in.png),
+[certificate setup](screenshots/samsung-certificates.png), and the
+[account menu after installation](screenshots/samsung-account-menu.png).
 
 ## TV details and GitHub reports
 

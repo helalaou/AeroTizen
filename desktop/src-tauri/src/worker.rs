@@ -11,6 +11,7 @@ use tokio::sync::watch;
 const PROTOCOL_VERSION: u32 = 1;
 const WORKER_TIMEOUT_SECONDS: u64 = 120;
 const PACKAGE_ACTION_TIMEOUT_SECONDS: u64 = 300;
+const SAMSUNG_ACTION_TIMEOUT_SECONDS: u64 = 320;
 const MAX_RESPONSE_BYTES: usize = 64 * 1024;
 const MAX_APP_LIST_RESPONSE_BYTES: usize = 256 * 1024;
 const MAX_CATALOG_RESPONSE_BYTES: usize = 2 * 1024 * 1024;
@@ -122,6 +123,7 @@ pub async fn request_with_cancellation(
     });
     let timeout_seconds = match operation {
         "install_launcher" | "remove_apps" => PACKAGE_ACTION_TIMEOUT_SECONDS,
+        "samsung_sign_in" | "prepare_signing_profile" => SAMSUNG_ACTION_TIMEOUT_SECONDS,
         _ => WORKER_TIMEOUT_SECONDS,
     };
     let output = tokio::time::timeout(

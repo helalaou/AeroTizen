@@ -12,6 +12,7 @@ interface LauncherPanelProps {
   canInstall: boolean;
   onInstall(version: string, confirmReplace: boolean): Promise<boolean>;
   onRetryVersions(): void;
+  canSetupSigning?: boolean;
 }
 
 function releaseLabel(releases: LauncherPanelProps["releases"]) {
@@ -29,7 +30,15 @@ function installLabel(target: string, installed: string | null, comparison: numb
   return `Update to ${target}`;
 }
 
-export function LauncherPanel({ profile, releases, busy, canInstall, onInstall, onRetryVersions }: LauncherPanelProps) {
+export function LauncherPanel({
+  profile,
+  releases,
+  busy,
+  canInstall,
+  onInstall,
+  onRetryVersions,
+  canSetupSigning,
+}: LauncherPanelProps) {
   const [choice, setChoice] = useState<string | null>(null);
   const [showVersions, setShowVersions] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -40,7 +49,7 @@ export function LauncherPanel({ profile, releases, busy, canInstall, onInstall, 
   const target = selectedRelease?.version;
   const comparison = installed && target ? compareLauncherVersions(target, installed) : null;
   const needsConfirmation = installed !== null && (comparison === null || comparison < 0);
-  const ready = Boolean(target && profile.launcher_signing_ready && target !== installed);
+  const ready = Boolean(target && (profile.launcher_signing_ready || canSetupSigning) && target !== installed);
   const action = target ? installLabel(target, installed, comparison) : null;
 
   async function install(confirmed: boolean) {
@@ -64,9 +73,15 @@ export function LauncherPanel({ profile, releases, busy, canInstall, onInstall, 
             </div>
             {!profile.launcher_signing_ready && (
               <Alert color="orange" title="Signing certificates required">
-                Use the signing profile for this TV. If this is your first install, run{" "}
-                <Code>{`aerotizen --tv ${profile.host} certs`}</Code>, then refresh the TV. For an existing install,
-                reuse its original signing profile.
+                {canSetupSigning ? (
+                  "The app will help you sign in to Samsung and set up this TV before installing AeroTizen."
+                ) : (
+                  <>
+                    Use the signing profile for this TV. If this is your first install, run{" "}
+                    <Code>{`aerotizen --tv ${profile.host} certs`}</Code>, then refresh the TV.
+                  </>
+                )}
+                {installed && " For an existing installation, use its original signing profile."}
               </Alert>
             )}
             {target && (

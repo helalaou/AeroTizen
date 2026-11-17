@@ -80,6 +80,9 @@ test("installs on a TV without a launcher and shows the version on Overview", as
   await page.getByRole("button", { name: "Connect to Bedroom" }).click();
   await showAction(page, isMobile, "Launcher");
   await page.getByRole("button", { name: "Install 3.1.0" }).click();
+  const setup = page.getByRole("dialog", { name: "Set up Bedroom" });
+  await setup.getByRole("button", { name: "Sign in with Samsung" }).click();
+  await expect(setup).toBeHidden();
   await expect(page.getByText("AeroTizen 3.1.0 installed and verified.")).toBeVisible();
   await showAction(page, isMobile, "Overview");
   await expect(page.getByRole("main").getByText("3.1.0", { exact: true })).toBeVisible();

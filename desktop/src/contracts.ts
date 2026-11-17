@@ -99,7 +99,19 @@ export interface ButtonTargetApp {
 export type ButtonChange = { button: string } & ({ mode: "app"; app_id: string } | { mode: "default" | "disabled" });
 export type ButtonInventoryChange = { action: "learn"; button: string } | { action: "reset" };
 
+export interface SamsungAccount {
+  email: string | null;
+}
+
+export interface SamsungService {
+  account(): Promise<SamsungAccount | null>;
+  signIn(signal: AbortSignal): Promise<SamsungAccount>;
+  signOut(): Promise<void>;
+  prepareCertificates(id: string): Promise<{ identity_sha256: string; launcher_signing_ready: boolean }>;
+}
+
 export interface DesktopService {
+  samsung?: SamsungService;
   status(): Promise<BackendStatus>;
   launcherCatalog(): Promise<LauncherRelease[]>;
   list(): Promise<SavedTv[]>;

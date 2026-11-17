@@ -5,6 +5,7 @@ import { ButtonMappingPanel } from "./components/ButtonMappingPanel";
 import { Header } from "./components/Header";
 import { LauncherPanel } from "./components/LauncherPanel";
 import { SelectedTvView } from "./components/SelectedTvView";
+import { SamsungSignInDialog } from "./components/SamsungSignInDialog";
 import { TvActionView } from "./components/TvActionView";
 import { TvDialogs } from "./components/TvDialogs";
 import type { TvDialog } from "./components/TvDialogs";
@@ -12,6 +13,7 @@ import { TvSelection } from "./components/TvSelection";
 import { TvSidebar } from "./components/TvSidebar";
 import type { DesktopService, TvPage } from "./contracts";
 import { useTvManager } from "./useTvManager";
+import { useSamsungAccount } from "./useSamsungAccount";
 import styles from "./styles.module.css";
 
 interface AppProps {
@@ -20,6 +22,12 @@ interface AppProps {
 
 export function App({ service }: AppProps) {
   const manager = useTvManager(service);
+  const samsung = useSamsungAccount(service.samsung);
+  const [signInDialog, setSignInDialog] = useState<
+    | { kind: "account" }
+    | { kind: "install"; version: string; confirmed: boolean; resolve(success: boolean): void }
+    | null
+  >(null);
   const [page, setPage] = useState<TvPage>("overview");
   const [dialog, setDialog] = useState<TvDialog | null>(null);
   const [about, setAbout] = useState(false);
@@ -147,7 +155,11 @@ export function App({ service }: AppProps) {
         releases={manager.launcherReleases}
         busy={appLoading}
         canInstall={!busy}
-        onInstall={manager.installLauncher}
+        canSetupSigning={Boolean(service.samsung)}
+        onInstall={(version, confirmed) => {
+          if (selected.launcher_signing_ready || !service.samsung) return manager.installLauncher(version, confirmed);
+          return new Promise<boolean>((resolve) => setSignInDialog({ kind: "install", version, confirmed, resolve }));
+        }}
         onRetryVersions={manager.retryLauncherVersions}
       />
     );
@@ -164,6 +176,17 @@ export function App({ service }: AppProps) {
           menuOpened={menuOpened}
           toggleMenu={() => setMenuOpened((current) => !current)}
           onAbout={() => setAbout(true)}
+          samsung={
+            service.samsung
+              ? {
+                  signedIn: samsung.account !== null,
+                  email: samsung.account?.email ?? null,
+                  busy: samsung.loading || samsung.busy || busy,
+                  signIn: () => setSignInDialog({ kind: "account" }),
+                  signOut: () => void samsung.signOut(),
+                }
+              : undefined
+          }
         />
       </AppShell.Header>
       {selected && (
@@ -183,7 +206,20 @@ export function App({ service }: AppProps) {
       )}
       <AppShell.Main className={styles.main}>
         <div className={styles.body} aria-busy={appLoading}>
-          {manager.error && !dialog && (
+          {samsung.error && (
+            <div className={styles.feedback}>
+              <Alert
+                role="alert"
+                color="red"
+                withCloseButton
+                onClose={samsung.clearError}
+                closeButtonLabel="Dismiss Samsung error"
+              >
+                {samsung.error}
+              </Alert>
+            </div>
+          )}
+          {manager.error && !dialog && !signInDialog && (
             <div className={styles.feedback}>
               <Alert
                 role="alert"
@@ -203,7 +239,32 @@ export function App({ service }: AppProps) {
       <div role="status" className={styles.srOnly}>
         {busyMessage}
       </div>
-      {appLoading && !dialog && (
+      {signInDialog && (
+        <SamsungSignInDialog
+          signedIn={samsung.account !== null}
+          signIn={samsung.signIn}
+          tvName={signInDialog.kind === "install" ? selected?.name : undefined}
+          prepareCertificates={
+            signInDialog.kind === "install" && selected
+              ? async (reportError) => {
+                  const prepared = await manager.prepareCertificates(selected.id, reportError);
+                  if (!prepared) await samsung.refresh();
+                  return prepared;
+                }
+              : undefined
+          }
+          install={
+            signInDialog.kind === "install"
+              ? () => manager.installLauncher(signInDialog.version, signInDialog.confirmed)
+              : undefined
+          }
+          onComplete={(success) => {
+            if (signInDialog.kind === "install") signInDialog.resolve(success);
+            setSignInDialog(null);
+          }}
+        />
+      )}
+      {appLoading && !dialog && !signInDialog && (
         <LoadingOverlay
           visible
           pos="fixed"

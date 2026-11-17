@@ -7,6 +7,7 @@ import type {
   LauncherRelease,
   NativeHomeSettings,
   SavedTv,
+  SamsungAccount,
   TvAppPackage,
   TvButtonMapping,
 } from "../contracts";
@@ -48,6 +49,7 @@ export const bedroom: SavedTv = {
   host: "192.0.2.21",
   name: "Bedroom",
   launcher_version: null,
+  launcher_signing_ready: false,
   transport: "developer",
   home_backup: { status: "missing" },
   home_routing_mode: undefined,
@@ -61,6 +63,7 @@ export const office: SavedTv = {
   host: "192.0.2.22",
   name: "Office",
   launcher_version: "3.1.0",
+  launcher_signing_ready: true,
   home_routing_mode: "watcher",
 };
 
@@ -94,6 +97,8 @@ export const testButtonApps: ButtonTargetApp[] = [
   { id: "test.YouTube", name: "YouTube" },
 ];
 const SIMULATED_REMOTE_PRESS_DELAY_MS = 1_500;
+const SIMULATED_SIGN_IN_DELAY_MS = 1_500;
+const SIMULATED_CERTIFICATE_DELAY_MS = 700;
 
 function originalButton(button: string): TvButtonMapping {
   return { button, mode: "default", app_id: null, app_name: null, active: false };
@@ -120,7 +125,40 @@ export function testService(): DesktopService {
   const profiles = new Map([livingRoom, bedroom].map((tv) => [tv.id, tv]));
   const originalSettings = new Map<string, NativeHomeSettings>([[livingRoom.id, testBackupSettings]]);
   let buttonMappings = testButtonMappings.buttons;
+  let samsungAccount: SamsungAccount | null = null;
   return {
+    samsung: {
+      account: async () => samsungAccount,
+      signIn: async (signal) => {
+        signal.throwIfAborted();
+        await new Promise<void>((resolve, reject) => {
+          const cancel = () => {
+            clearTimeout(timer);
+            reject(new DOMException("Sign-in cancelled.", "AbortError"));
+          };
+          const timer = setTimeout(() => {
+            signal.removeEventListener("abort", cancel);
+            resolve();
+          }, SIMULATED_SIGN_IN_DELAY_MS);
+          signal.addEventListener("abort", cancel, { once: true });
+        });
+        signal.throwIfAborted();
+        samsungAccount = { email: "demo@example.com" };
+        return samsungAccount;
+      },
+      signOut: async () => {
+        samsungAccount = null;
+      },
+      prepareCertificates: async (id) => {
+        const profile = profiles.get(id);
+        if (!profile) throw new Error("Connect to this TV first.");
+        if (!profile.launcher_signing_ready && !samsungAccount)
+          throw new Error("Sign in to Samsung to set up this TV.");
+        await new Promise((resolve) => setTimeout(resolve, SIMULATED_CERTIFICATE_DELAY_MS));
+        profiles.set(id, { ...profile, launcher_signing_ready: true });
+        return { identity_sha256: id, launcher_signing_ready: true };
+      },
+    },
     status: async () => testStatus,
     launcherCatalog: async () => testReleases,
     list: async () => [...profiles.values()],
@@ -181,8 +219,16 @@ export function testService(): DesktopService {
       profiles.set(tv.id, connected);
       return connected;
     },
-    installLauncher: async () => {
-      throw new Error("Set the install result in the test.");
+    installLauncher: async (id, version, currentVersion, confirmReplace) => {
+      const profile = profiles.get(id);
+      if (!profile || profile.launcher_version !== currentVersion || !profile.launcher_signing_ready) {
+        throw new Error("Refresh the TV and check its signing certificates.");
+      }
+      if (!testReleases.some((release) => release.version === version)) throw new Error("Choose an available version.");
+      if (version === "2.7.0" && !confirmReplace) throw new Error("Confirm the downgrade first.");
+      const updated = { ...profile, launcher_version: version };
+      profiles.set(id, updated);
+      return updated;
     },
     prepareNativeHome: async (id) => {
       const tv = profiles.get(id);

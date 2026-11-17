@@ -9,6 +9,7 @@ import type {
   LauncherRelease,
   PreparedHomeApply,
   SavedTv,
+  SamsungAccount,
   TvAppPackage,
   TvButtonMapping,
   TvCandidate,
@@ -35,6 +36,29 @@ async function readTv<Result>(
 }
 
 export const nativeService: DesktopService = {
+  samsung: {
+    account: () => invoke<SamsungAccount | null>("samsung_account"),
+    signIn: async (signal) => {
+      signal.throwIfAborted();
+      const requestId = crypto.getRandomValues(new Uint32Array(4)).join("-");
+      let cancellation: Promise<void> | undefined;
+      const cancel = () => {
+        cancellation = invoke<void>("cancel_samsung_sign_in", { requestId }).catch(() => undefined);
+      };
+      signal.addEventListener("abort", cancel, { once: true });
+      try {
+        const account = await invoke<SamsungAccount>("samsung_sign_in", { requestId });
+        signal.throwIfAborted();
+        return account;
+      } finally {
+        signal.removeEventListener("abort", cancel);
+        await cancellation;
+      }
+    },
+    signOut: () => invoke<void>("samsung_sign_out"),
+    prepareCertificates: (id) =>
+      invoke<{ identity_sha256: string; launcher_signing_ready: boolean }>("prepare_signing_profile", { id }),
+  },
   status: () => invoke<BackendStatus>("backend_status"),
   launcherCatalog: () => invoke<LauncherRelease[]>("launcher_catalog"),
   list: () => invoke<SavedTv[]>("list_tvs"),

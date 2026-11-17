@@ -303,6 +303,21 @@ export function useTvManager(service: DesktopService) {
     });
   };
 
+  const prepareCertificates = (id: string, reportError: (message: string) => void) =>
+    run(
+      "Creating signing certificates…",
+      async () => {
+        if (!service.samsung || selected?.id !== id) throw new Error("Connect to this TV before setting it up.");
+        const result = await service.samsung.prepareCertificates(id);
+        if (result.identity_sha256 !== id || !result.launcher_signing_ready) {
+          throw new Error("Could not verify the signing certificates for this TV.");
+        }
+        updateProfile(id, { ...selected, launcher_signing_ready: true });
+      },
+      "app",
+      reportError,
+    );
+
   const apply = service.applyNativeHome;
   const applyNativeHome = apply
     ? (id: string, reportError: (message: string) => void) =>
@@ -385,6 +400,7 @@ export function useTvManager(service: DesktopService) {
     rename,
     forget,
     installLauncher,
+    prepareCertificates,
     applyNativeHome,
     restoreHomeBackup,
     retryLauncherVersions: () => {

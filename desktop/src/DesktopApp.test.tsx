@@ -24,7 +24,8 @@ describe("Desktop app", () => {
     expect(connect).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "App menu" }));
     expect(await screen.findByRole("menuitem", { name: "About AeroTizen" })).toBeVisible();
-    expect(screen.getAllByRole("menuitem")).toHaveLength(1);
+    expect(screen.getAllByRole("menuitem")).toHaveLength(2);
+    expect(screen.getByRole("menuitem", { name: "Sign in to Samsung" })).toBeVisible();
   });
 
   it("requires the native app in a browser", () => {
@@ -33,7 +34,7 @@ describe("Desktop app", () => {
     expect(screen.queryByRole("button", { name: "Search for TVs" })).not.toBeInTheDocument();
   });
 
-  it("explains how to get a signing profile when install is unavailable", async () => {
+  it("offers Samsung setup when an install needs a signing profile", async () => {
     const service = testService();
     const profile = { ...livingRoom, launcher_signing_ready: false };
     const user = userEvent.setup();
@@ -41,6 +42,6 @@ describe("Desktop app", () => {
     await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
     await user.click(await screen.findByRole("button", { name: "Update available" }));
     expect(screen.getByText("Signing certificates required")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Update to 3.1.0" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Update to 3.1.0" })).toBeEnabled();
   });
 });

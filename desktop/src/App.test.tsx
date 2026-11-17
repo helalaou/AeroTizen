@@ -4,7 +4,15 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import type { DesktopService } from "./contracts";
-import { livingRoom, office, testBackupSha256, testButtonMappings, testPackages, testService } from "./test/tvs";
+import {
+  bedroom,
+  livingRoom,
+  office,
+  testBackupSha256,
+  testButtonMappings,
+  testPackages,
+  testService,
+} from "./test/tvs";
 
 function mount(service: DesktopService = testService()) {
   return render(
@@ -296,5 +304,61 @@ describe("TV selection", () => {
     mount(service);
     expect(await screen.findByRole("button", { name: "Connect to Study" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Saved TVs (3)" })).toBeVisible();
+  });
+});
+
+describe("Samsung setup", () => {
+  it("cancels the pending browser sign-in from the menu", async () => {
+    const user = userEvent.setup();
+    const service = testService();
+    const samsung = service.samsung;
+    if (!samsung) throw new Error("The fixture must support Samsung sign-in.");
+    const signIn = vi.spyOn(samsung, "signIn").mockImplementation(
+      (signal) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+        }),
+    );
+    mount(service);
+    await screen.findByRole("heading", { name: "Your TVs" });
+    await user.click(screen.getByRole("button", { name: "App menu" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Sign in to Samsung" }));
+    const dialog = within(screen.getByRole("dialog", { name: "Samsung sign-in" }));
+    await user.click(dialog.getByRole("button", { name: "Sign in with Samsung" }));
+    expect(dialog.getByRole("status")).toHaveTextContent("Complete Samsung sign-in in your browser.");
+    await user.click(dialog.getByRole("button", { name: "Cancel" }));
+    expect(signIn.mock.calls[0]?.[0].aborted).toBe(true);
+    expect(await samsung.account()).toBeNull();
+  });
+
+  it("stops before install if certificates fail and uses an existing sign-in for the retry", async () => {
+    const user = userEvent.setup();
+    const service = testService();
+    const samsung = service.samsung;
+    if (!samsung) throw new Error("The fixture must support Samsung sign-in.");
+    const signIn = vi.spyOn(samsung, "signIn");
+    const certificates = vi
+      .spyOn(samsung, "prepareCertificates")
+      .mockRejectedValueOnce(new Error("Samsung could not issue the certificates."))
+      .mockResolvedValue({ identity_sha256: bedroom.id, launcher_signing_ready: true });
+    const install = vi.spyOn(service, "installLauncher").mockImplementation(async () => ({
+      ...bedroom,
+      launcher_version: "3.1.0",
+      launcher_signing_ready: true,
+    }));
+    vi.spyOn(samsung, "account").mockResolvedValue({ email: "demo@example.com" });
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Bedroom" }));
+    await user.click(await screen.findByRole("button", { name: "Launcher" }));
+    await user.click(screen.getByRole("button", { name: "Install 3.1.0" }));
+    const dialog = within(screen.getByRole("dialog", { name: "Set up Bedroom" }));
+    await user.click(dialog.getByRole("button", { name: "Continue" }));
+    expect(await dialog.findByRole("alert")).toHaveTextContent("Samsung could not issue the certificates.");
+    expect(install).not.toHaveBeenCalled();
+    await user.click(dialog.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("AeroTizen 3.1.0 installed and verified.")).toBeVisible();
+    expect(certificates).toHaveBeenCalledTimes(2);
+    expect(install).toHaveBeenCalledExactlyOnceWith(bedroom.id, "3.1.0", null, false);
+    expect(signIn).not.toHaveBeenCalled();
   });
 });
