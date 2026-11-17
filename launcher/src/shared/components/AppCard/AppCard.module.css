@@ -65,7 +65,7 @@
   box-shadow: var(--settings-card-shadow, none);
 
   &[aria-pressed="false"] {
-    opacity: 0.5;
+    opacity: var(--settings-card-unselected-opacity, 0.5);
 
     &[data-focused="true"] {
       opacity: 0.85;

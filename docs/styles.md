@@ -55,7 +55,7 @@ unset:
   `--header-tab-underline-shadow`, `--header-status-shadow`,
   `--header-status-divider`;
 - Settings: `--choice-selected-text`, `--settings-category-icon`,
-  `--settings-scroll-ring-room`;
+  `--settings-scroll-ring-room`, `--settings-card-unselected-opacity`;
 - spacing and toast: `--home-row-clearance`, `--toast-text`, `--toast-shadow`.
 
 The three `--input-connected-*` text variables are declared in each theme file,
