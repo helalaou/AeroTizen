@@ -94,7 +94,20 @@ export function App({ service }: AppProps) {
       );
     }
     if (page === "home") {
-      return <TvActionView key={selected.id} page="home" profile={selected} readHomeBackup={service.readHomeBackup} />;
+      const apply = manager.applyNativeHome;
+      const restore = manager.restoreHomeBackup;
+      return (
+        <TvActionView
+          key={selected.id}
+          page="home"
+          profile={selected}
+          onApplyNativeHome={apply ? (reportError) => apply(selected.id, reportError) : undefined}
+          readHomeBackup={service.readHomeBackup}
+          onRestoreBackup={
+            restore ? (capturedAt, reportError) => restore(selected.id, capturedAt, reportError) : undefined
+          }
+        />
+      );
     }
     return (
       <LauncherPanel

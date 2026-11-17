@@ -1,6 +1,7 @@
 import { Accordion, Button, Group, Paper, SimpleGrid, Stack, Text, Title } from "@mantine/core";
 import { useState } from "react";
 import type { DesktopService, HomeBackup, HomeRoutingMode, SavedTv } from "../contracts";
+import { canApplyNativeHome } from "../contracts";
 import {
   autostartLabel,
   developerModeLabel,
@@ -11,8 +12,11 @@ import {
   transportLabel,
 } from "../tvDetails";
 import styles from "../styles.module.css";
+import { ApplyNativeHomeDialog } from "./ApplyNativeHomeDialog";
+import type { ApplyNativeHome } from "./ApplyNativeHomeDialog";
 import { GithubReportButton } from "./GithubReportButton";
 import { HomeBackupDialog } from "./HomeBackupDialog";
+import type { RestoreHomeBackup } from "./HomeBackupDialog";
 import { RootStatusBadge } from "./RootStatusBadge";
 
 type ActionPage = "home" | "root" | "recovery" | "diagnostics";
@@ -42,10 +46,20 @@ interface TvActionViewProps {
   page: ActionPage;
   profile: SavedTv;
   backendVersion?: string;
+  onApplyNativeHome?: ApplyNativeHome;
   readHomeBackup?: DesktopService["readHomeBackup"];
+  onRestoreBackup?: RestoreHomeBackup;
 }
 
-export function TvActionView({ page, profile, backendVersion, readHomeBackup }: TvActionViewProps) {
+export function TvActionView({
+  page,
+  profile,
+  backendVersion,
+  onApplyNativeHome,
+  readHomeBackup,
+  onRestoreBackup,
+}: TvActionViewProps) {
+  const [showApply, setShowApply] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
   const version = rootVersion(profile);
   const originalBackup = originalBackupLabel(profile.home_backup);
@@ -77,7 +91,7 @@ export function TvActionView({ page, profile, backendVersion, readHomeBackup }: 
           <Title order={1}>{PAGE_TITLES[page]}</Title>
           {page === "home" && (
             <Button variant="default" onClick={() => setShowBackup(true)}>
-              Backup status
+              {backupDate && readHomeBackup ? "Backup & restore" : "Backup status"}
             </Button>
           )}
         </Group>
@@ -93,6 +107,9 @@ export function TvActionView({ page, profile, backendVersion, readHomeBackup }: 
                     {profile.home_routing_mode ? HOME_ROUTING_LABELS[profile.home_routing_mode] : "Unavailable"}
                   </Text>
                 </Stack>
+                {onApplyNativeHome && canApplyNativeHome(profile) && (
+                  <Button onClick={() => setShowApply(true)}>Apply Native Home</Button>
+                )}
               </Group>
             </Paper>
             {rootStatus(profile) === "Yes" && (
@@ -114,13 +131,23 @@ export function TvActionView({ page, profile, backendVersion, readHomeBackup }: 
                 ))}
               </SimpleGrid>
             )}
+            {showApply && onApplyNativeHome && (
+              <ApplyNativeHomeDialog
+                tvName={profile.name}
+                hasBackup={profile.home_backup?.status === "saved"}
+                onApply={onApplyNativeHome}
+                onClose={() => setShowApply(false)}
+              />
+            )}
             {showBackup && (
               <HomeBackupDialog
                 key={backupDate}
                 tvId={profile.id}
+                tvName={profile.name}
                 status={originalBackup}
                 capturedAt={backupDate}
                 readBackup={readHomeBackup}
+                onRestore={onRestoreBackup}
                 onClose={() => setShowBackup(false)}
               />
             )}

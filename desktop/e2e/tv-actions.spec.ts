@@ -89,7 +89,7 @@ test("shows the connected TV's Home button, startup, routing and backup status",
   const routing = page.getByRole("region", { name: "AeroTizen routing", exact: true });
   const backup = page.getByRole("dialog", { name: "Original Home backup" });
   const titleRow = page.getByRole("heading", { name: "Home and startup", level: 1 }).locator("..");
-  const backupButton = titleRow.getByRole("button", { name: "Backup status", exact: true });
+  const backupButton = titleRow.getByRole("button", { name: "Backup & restore", exact: true });
   await expect(page.getByRole("heading", { level: 2 })).toHaveText(["AeroTizen routing", "Home button", "Startup"]);
   await expect(routing.getByText("Native Home mode", { exact: true })).toBeVisible();
   await expect(backup).toBeHidden();
@@ -98,17 +98,28 @@ test("shows the connected TV's Home button, startup, routing and backup status",
   await expect(backup.getByText("Samsung Home", { exact: true })).toHaveCount(3);
   await expect(backup.getByText("TV viewer", { exact: true })).toHaveCount(2);
   await expect(backup.getByText("Off", { exact: true })).toBeVisible();
+  await backup.getByRole("button", { name: "Restore original settings", exact: true }).click();
+  const review = page.getByRole("dialog", { name: "Restore original settings?" });
+  await expect(review.getByText("Living room", { exact: true })).toBeVisible();
+  await expect(review.getByText("Samsung Home", { exact: true })).toHaveCount(3);
+  await expect(review.getByRole("button", { name: "Confirm restore", exact: true })).toBeEnabled();
+  await expect(review.getByRole("button", { name: "Cancel", exact: true })).toBeFocused();
+  await review.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
-  await backup.getByRole("button", { name: "Close backup status" }).click();
+  await backup.getByRole("button", { name: "Restore original settings", exact: true }).click();
+  await review.getByRole("button", { name: "Confirm restore", exact: true }).click();
+  await expect(backup.getByText("Home backup restored.")).toBeVisible();
+  await backup.getByRole("button", { name: "Done" }).click();
   await expect(backup).toBeHidden();
+  await expect(routing.getByText("Watcher", { exact: true })).toBeVisible();
   const setting = (section: Locator, label: string) =>
     section
       .locator("dl > div")
       .filter({ has: page.getByText(label, { exact: true }) })
       .locator("dd");
-  await expect(setting(homeButton, "Current assignment")).toHaveText("AeroTizen");
+  await expect(setting(homeButton, "Current assignment")).toHaveText("Samsung Home");
   await expect(setting(homeButton, "Saved Home setting")).toHaveText("Samsung Home");
-  await expect(setting(startup, "Startup app")).toHaveText("Unavailable");
+  await expect(setting(startup, "Startup app")).toHaveText("TV viewer");
   await expect(setting(startup, "Backup startup app")).toHaveText("TV viewer");
   await expect(setting(startup, "Smart Hub autostart")).toHaveText("Off");
 
@@ -121,6 +132,7 @@ test("shows the connected TV's Home button, startup, routing and backup status",
   await expect(routing.getByText("Unavailable", { exact: true })).toBeVisible();
   await titleRow.getByRole("button", { name: "Backup status", exact: true }).click();
   await expect(backup.getByText("No original Home backup found on this computer.")).toBeVisible();
+  await expect(backup.getByRole("button", { name: "Restore original settings", exact: true })).toHaveCount(0);
 });
 
 test.describe("Installed apps", () => {

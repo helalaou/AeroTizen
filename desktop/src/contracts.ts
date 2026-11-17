@@ -88,9 +88,20 @@ export interface DesktopService {
     currentVersion: string | null,
     confirmReplace: boolean,
   ): Promise<SavedTv>;
+  applyNativeHome?(id: string): Promise<SavedTv>;
   readHomeBackup?(id: string, capturedAt: string): Promise<HomeBackupSettings>;
+  /** Resolve with the current TV profile after verifying the restored settings. */
+  restoreHomeBackup?(id: string, capturedAt: string): Promise<SavedTv>;
   rename(id: string, name: string): Promise<void>;
   forget(id: string): Promise<void>;
+}
+
+export function canApplyNativeHome(profile: SavedTv): boolean {
+  return (
+    profile.launcher_version !== null &&
+    profile.home_routing_mode === "watcher" &&
+    profile.home_backup?.status !== "unreadable"
+  );
 }
 
 export type TvPage = "overview" | "launcher" | "apps" | "home";

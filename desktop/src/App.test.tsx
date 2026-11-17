@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import type { DesktopService } from "./contracts";
-import { testPackages, testService } from "./test/tvs";
+import { livingRoom, office, testPackages, testService } from "./test/tvs";
 
 function mount(service: DesktopService = testService()) {
   return render(
@@ -13,6 +13,82 @@ function mount(service: DesktopService = testService()) {
     </MantineProvider>,
   );
 }
+
+describe("Home and startup", () => {
+  it("creates an original backup when Native Home setup is confirmed", async () => {
+    const user = userEvent.setup();
+    const service = testService();
+    const apply = vi.spyOn(service, "applyNativeHome");
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Search for TVs" }));
+    await user.click(await screen.findByRole("button", { name: "Connect to Office at 192.0.2.22" }));
+    await user.click(await screen.findByRole("button", { name: "Home and startup" }));
+    const applyButton = screen.getByRole("button", { name: "Apply Native Home" });
+    await user.click(applyButton);
+    let review = within(screen.getByRole("dialog", { name: "Apply Native Home?" }));
+    expect(review.getByText("Office")).toBeVisible();
+    await user.click(review.getByRole("button", { name: "Cancel" }));
+    expect(apply).not.toHaveBeenCalled();
+    expect(screen.getByText("Watcher")).toBeVisible();
+
+    await user.click(applyButton);
+    review = within(screen.getByRole("dialog", { name: "Apply Native Home?" }));
+    await user.click(review.getByRole("button", { name: "Confirm apply" }));
+    expect(await screen.findByText("Native Home mode")).toBeVisible();
+    expect(apply).toHaveBeenCalledExactlyOnceWith(office.id);
+    expect(screen.queryByRole("button", { name: "Apply Native Home" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Backup & restore" }));
+    const backup = within(screen.getByRole("dialog", { name: "Original Home backup" }));
+    expect(backup.getByText(/Original backup saved/)).toBeVisible();
+    expect(await backup.findByRole("button", { name: "Restore original settings" })).toBeEnabled();
+  });
+
+  it("allows cancellation, reports a restore failure, and updates the TV after a confirmed retry", async () => {
+    const user = userEvent.setup();
+    const service = testService();
+    const restore = vi.spyOn(service, "restoreHomeBackup").mockRejectedValueOnce(new Error("TV disconnected."));
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
+    await user.click(await screen.findByRole("button", { name: "Home and startup" }));
+    await user.click(screen.getByRole("button", { name: "Backup & restore" }));
+    const backup = within(screen.getByRole("dialog", { name: "Original Home backup" }));
+    await user.click(await backup.findByRole("button", { name: "Restore original settings" }));
+    const review = within(screen.getByRole("dialog", { name: "Restore original settings?" }));
+    expect(review.getByText("Living room")).toBeVisible();
+    expect(review.getAllByText("Samsung Home")).toHaveLength(3);
+    expect(review.getAllByText("TV viewer")).toHaveLength(2);
+    expect(review.getByText("Off")).toBeVisible();
+    expect(restore).not.toHaveBeenCalled();
+    await user.click(review.getByRole("button", { name: "Cancel" }));
+    expect(restore).not.toHaveBeenCalled();
+    expect(screen.getByText("Native Home mode")).toBeVisible();
+    await user.click(await backup.findByRole("button", { name: "Restore original settings" }));
+    await user.click(review.getByRole("button", { name: "Confirm restore" }));
+    expect(await review.findByRole("alert")).toHaveTextContent("TV disconnected.");
+
+    await user.click(review.getByRole("button", { name: "Confirm restore" }));
+    expect(await backup.findByText("Home backup restored.")).toBeVisible();
+    expect(restore).toHaveBeenCalledTimes(2);
+    expect(restore).toHaveBeenLastCalledWith(
+      livingRoom.id,
+      livingRoom.home_backup?.status === "saved" ? livingRoom.home_backup.captured_at : undefined,
+    );
+    await user.click(backup.getByRole("button", { name: "Done" }));
+    expect(screen.getByText("Watcher")).toBeVisible();
+    expect(within(screen.getByRole("region", { name: "Home button" })).getAllByText("Samsung Home")).toHaveLength(2);
+  });
+
+  it("offers no restore action when there is no backup", async () => {
+    const user = userEvent.setup();
+    mount();
+    await user.click(await screen.findByRole("button", { name: "Connect to Bedroom" }));
+    await user.click(await screen.findByRole("button", { name: "Home and startup" }));
+    await user.click(screen.getByRole("button", { name: "Backup status" }));
+    const backup = within(screen.getByRole("dialog", { name: "Original Home backup" }));
+    expect(backup.getByText("No original Home backup found on this computer.")).toBeVisible();
+    expect(backup.queryByRole("button", { name: "Restore original settings" })).not.toBeInTheDocument();
+  });
+});
 
 describe("TV selection", () => {
   it("opens Overview and shows the TV actions", async () => {

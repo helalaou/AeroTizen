@@ -188,6 +188,39 @@ async fn read_home_backup(
 }
 
 #[tauri::command]
+async fn restore_home_backup(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    captured_at: String,
+) -> AppResult<SavedTv> {
+    let _guard = state.operation.try_lock().map_err(|_| busy())?;
+    let saved = state.profiles.get(&id)?;
+    let result = worker::request(
+        &state.worker_path,
+        "restore_home_backup",
+        json!({
+            "host": saved.tv.host,
+            "expected_identity": saved.tv.identity_sha256,
+            "captured_at": captured_at,
+        }),
+    )
+    .await?;
+    let tv: VerifiedTv = serde_json::from_value(result).map_err(|_| {
+        AppError::new(
+            "invalid_response",
+            "The TV backend returned invalid connection details.",
+        )
+    })?;
+    if tv.host != saved.tv.host || tv.identity_sha256 != saved.tv.identity_sha256 {
+        return Err(AppError::new(
+            "identity_mismatch",
+            "The TV check returned a different address or identity.",
+        ));
+    }
+    state.profiles.save(tv)
+}
+
+#[tauri::command]
 fn rename_tv(state: tauri::State<'_, AppState>, id: String, name: String) -> AppResult<()> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
     state.profiles.rename(&id, &name)
@@ -245,6 +278,7 @@ pub fn run() {
             discover_tvs,
             connect_tv,
             read_home_backup,
+            restore_home_backup,
             rename_tv,
             forget_tv
         ])

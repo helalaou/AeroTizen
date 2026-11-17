@@ -44,6 +44,24 @@ export const test = base.extend<{
                   }
                   return backupSettings;
                 }
+                case "restore_home_backup": {
+                  const tv = profiles.get(String(args.id));
+                  const backup = tv?.home_backup;
+                  if (!tv || backup?.status !== "saved" || backup.captured_at !== args.capturedAt) {
+                    throw new Error("The backup changed. Refresh the TV connection to review it.");
+                  }
+                  return save({
+                    ...tv,
+                    home_routing_mode: tv.launcher_version ? "watcher" : undefined,
+                    native_home_settings: {
+                      home_button_app: backupSettings.home_button_app,
+                      home_app: backupSettings.home_app,
+                      startup_app: backupSettings.startup_app,
+                      startup_backup_app: backupSettings.startup_backup_app,
+                      smart_hub_autostart: backupSettings.smart_hub_autostart,
+                    },
+                  });
+                }
                 case "list_tv_apps":
                   if (!profiles.has(String(args.id))) throw new Error("Connect to the TV first.");
                   return structuredClone(currentPackages);

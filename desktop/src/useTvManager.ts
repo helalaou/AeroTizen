@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { errorMessage } from "./contracts";
+import { canApplyNativeHome, errorMessage } from "./contracts";
 import type {
   BackendStatus,
   DesktopService,
@@ -77,7 +77,12 @@ export function useTvManager(service: DesktopService) {
   }, []);
 
   const run = useCallback(
-    async (message: string, action: () => Promise<void>, scope: PendingOperation["scope"] = "app") => {
+    async (
+      message: string,
+      action: () => Promise<void>,
+      scope: PendingOperation["scope"] = "app",
+      reportError: (message: string) => void = setError,
+    ) => {
       if (active.current) return false;
       active.current = true;
       setBusy({ message, scope });
@@ -88,7 +93,7 @@ export function useTvManager(service: DesktopService) {
         await action();
         return true;
       } catch (caught) {
-        if (mounted.current) setError(errorMessage(caught));
+        if (mounted.current) reportError(errorMessage(caught));
         return false;
       } finally {
         active.current = false;
@@ -199,16 +204,63 @@ export function useTvManager(service: DesktopService) {
       setAppRemoval(picked.map(({ id, name }) => ({ ...(resultById.get(id) ?? { id, status: "unverified" }), name })));
     });
 
+  const updateProfile = (id: string, profile: SavedTv) => {
+    if (!mounted.current) return;
+    setProfiles((current) => current.map((item) => (item.id === id ? profile : item)));
+    setSelected((current) => (current?.id === id ? profile : current));
+  };
+
   const installLauncher = (version: string, confirmReplace: boolean) => {
     if (!selected) return Promise.resolve(false);
     const { id } = selected;
     return run(`Installing AeroTizen ${version}…`, async () => {
       const updated = await service.installLauncher(id, version, selected.launcher_version, confirmReplace);
-      if (!mounted.current) return;
-      setProfiles((current) => current.map((profile) => (profile.id === id ? updated : profile)));
-      setSelected((current) => (current?.id === id ? updated : current));
+      updateProfile(id, updated);
     });
   };
+
+  const apply = service.applyNativeHome;
+  const applyNativeHome = apply
+    ? (id: string, reportError: (message: string) => void) =>
+        run(
+          "Applying Native Home…",
+          async () => {
+            if (selected?.id !== id || !canApplyNativeHome(selected)) {
+              throw new Error("Native Home is unavailable for this TV. Refresh the connection and check its settings.");
+            }
+            const updated = await apply(id);
+            if (
+              updated.id !== id ||
+              updated.home_routing_mode !== "native" ||
+              updated.home_backup?.status !== "saved"
+            ) {
+              throw new Error("Could not verify Native Home and its original backup.");
+            }
+            updateProfile(id, updated);
+          },
+          "app",
+          reportError,
+        )
+    : undefined;
+
+  const restoreBackup = service.restoreHomeBackup;
+  const restoreHomeBackup = restoreBackup
+    ? (id: string, capturedAt: string, reportError: (message: string) => void) =>
+        run(
+          "Restoring Home backup…",
+          async () => {
+            const backup = selected?.home_backup;
+            if (selected?.id !== id || backup?.status !== "saved" || backup.captured_at !== capturedAt) {
+              throw new Error("The backup changed. Close this dialog and review the current backup.");
+            }
+            const updated = await restoreBackup(id, capturedAt);
+            if (updated.id !== id) throw new Error("Could not verify the restored TV.");
+            updateProfile(id, updated);
+          },
+          "app",
+          reportError,
+        )
+    : undefined;
 
   return {
     profiles,
@@ -234,6 +286,8 @@ export function useTvManager(service: DesktopService) {
     rename,
     forget,
     installLauncher,
+    applyNativeHome,
+    restoreHomeBackup,
     retryLauncherVersions: () => {
       setLauncherReleases(undefined);
       setReleaseCheck((current) => current + 1);

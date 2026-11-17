@@ -1,4 +1,12 @@
-import type { DesktopService, HomeBackupSettings, LauncherRelease, SavedTv, TvAppPackage } from "../contracts";
+import { canApplyNativeHome } from "../contracts";
+import type {
+  DesktopService,
+  HomeBackupSettings,
+  LauncherRelease,
+  NativeHomeSettings,
+  SavedTv,
+  TvAppPackage,
+} from "../contracts";
 
 export const livingRoom: SavedTv = {
   id: "1".repeat(64),
@@ -87,6 +95,7 @@ export const testPackages: TvAppPackage[] = [
 
 export function testService(): DesktopService {
   const profiles = new Map([livingRoom, bedroom].map((tv) => [tv.id, tv]));
+  const originalSettings = new Map<string, NativeHomeSettings>([[livingRoom.id, testBackupSettings]]);
   return {
     status: async () => testStatus,
     launcherCatalog: async () => testReleases,
@@ -107,12 +116,50 @@ export function testService(): DesktopService {
     installLauncher: async () => {
       throw new Error("Set the install result in the test.");
     },
+    applyNativeHome: async (id) => {
+      const tv = profiles.get(id);
+      if (!tv || !canApplyNativeHome(tv)) throw new Error("Native Home is unavailable for this TV.");
+      const backup = tv.home_backup;
+      if (backup?.status !== "saved" && tv.native_home_settings) {
+        originalSettings.set(id, tv.native_home_settings);
+      }
+      const updated: SavedTv = {
+        ...tv,
+        home_backup: backup?.status === "saved" ? backup : { status: "saved", captured_at: new Date().toISOString() },
+        home_routing_mode: "native",
+        native_home_settings:
+          tv.transport === "paired_root"
+            ? {
+                home_button_app: "DclHome001.Home",
+                home_app: "DclHome001.Home",
+                startup_app: "DclHome001.Home",
+                startup_backup_app: "DclHome001.Home",
+                smart_hub_autostart: true,
+              }
+            : undefined,
+      };
+      profiles.set(id, updated);
+      return updated;
+    },
     readHomeBackup: async (id, capturedAt) => {
       const backup = profiles.get(id)?.home_backup;
       if (backup?.status !== "saved" || backup.captured_at !== capturedAt) {
         throw new Error("The original Home backup could not be verified.");
       }
-      return testBackupSettings;
+      return { ...testBackupSettings, ...originalSettings.get(id) };
+    },
+    restoreHomeBackup: async (id, capturedAt) => {
+      const tv = profiles.get(id);
+      if (tv?.home_backup?.status !== "saved" || tv.home_backup.captured_at !== capturedAt) {
+        throw new Error("The original Home backup could not be verified.");
+      }
+      const updated: SavedTv = {
+        ...tv,
+        home_routing_mode: tv.launcher_version ? "watcher" : undefined,
+        native_home_settings: originalSettings.get(id),
+      };
+      profiles.set(id, updated);
+      return updated;
     },
     rename: async (id, name) => {
       const tv = profiles.get(id);

@@ -42,8 +42,9 @@ Check for **Delete** in **Apps → Settings** on the TV. Use **Refresh apps** to
 
 Open **Home and startup** to see the AeroTizen routing mode. On a rooted TV with a
 compatible paired helper, the page also shows the current Home button assignment,
-startup apps and Smart Hub autostart. Select **Backup status** to review the original
-Home and startup settings saved on this computer.
+startup apps and Smart Hub autostart. When an original backup exists, select
+**Backup & restore** to review its settings, then **Restore original settings** to
+apply them back to the selected TV after confirmation.
 
 ## Development
 

@@ -14,7 +14,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Thread
 
-from aerotizen import __version__, catalog, discover, home, home_status, releases, remote
+from aerotizen import __version__, catalog, discover, home, home_control, home_status, releases, remote
 from aerotizen.cli import install_signed_package, packages
 from aerotizen.device import DeviceSession
 from aerotizen.diagnostic_privacy import Policy
@@ -40,6 +40,7 @@ OPERATIONS = (
     "launcher_catalog",
     "install_launcher",
     "read_home_backup",
+    "restore_home_backup",
 )
 
 
@@ -152,6 +153,20 @@ def read_home_backup(params):
         "first_screen": values[home.FIRST_SCREEN_KEY]["value"],
         "smart_hub_autostart": bool(autostart) if autostart in (0, 1) else None,
     }
+
+
+def restore_home_backup(params):
+    host = host_value(params.get("host"))
+    expected = checked_identity(params.get("expected_identity"))
+    _verified_backup_document(expected, params.get("captured_at"))
+    with DeviceSession(host) as session:
+        read_identity(session, expected)
+        try:
+            info = home.device_info(session, host, state_dir=remote.CONFIG_DIR)
+            home_control.change(session, info, "restore", state_dir=remote.CONFIG_DIR)
+        except home.HomeError as error:
+            raise RequestError("restore_failed", str(error)) from error
+        return _connected_profile(session, host, expected, info)
 
 
 def checked_identity(expected):
@@ -443,6 +458,8 @@ def handle(request):
                 result = install_launcher(params)
             elif request["operation"] == "read_home_backup":
                 result = read_home_backup(params)
+            elif request["operation"] == "restore_home_backup":
+                result = restore_home_backup(params)
             else:
                 result = connect_tv(params)
         return {**response, "result": result}
