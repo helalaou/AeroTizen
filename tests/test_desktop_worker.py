@@ -7,7 +7,7 @@ import zipfile
 import pytest
 
 from aerotizen import desktop_worker as worker
-from aerotizen import signer
+from aerotizen import diagnostics, signer
 from aerotizen.device import DeviceSession
 
 
@@ -28,6 +28,7 @@ def connected_tv(monkeypatch, fake_tv, tmp_path):
         worker.remote, "info", lambda _: {"name": "Living room", "modelName": "Frame", "model": "24_PTM"}
     )
     monkeypatch.setattr(worker.remote, "CONFIG_DIR", tmp_path)
+    monkeypatch.setattr(DeviceSession, "tcp_request", lambda *_args, **_kwargs: b"")
     monkeypatch.setattr(
         worker,
         "DeviceSession",
@@ -46,6 +47,8 @@ def test_connection_uses_real_sdb_and_returns_only_hashed_identity(connected_tv)
     assert result["launcher_signing_ready"] is False
     assert result["transport"] == "developer"
     assert result["home_backup"] == {"status": "missing"}
+    assert result["home_routing_mode"] is None
+    assert result["native_home_settings"] is None
     assert result["technical_details"] == {
         "model_code": None,
         "tizen_version": "9.0.0",
@@ -55,6 +58,53 @@ def test_connection_uses_real_sdb_and_returns_only_hashed_identity(connected_tv)
     }
     assert "test-duid" not in json.dumps(reply)
     assert "/private/path" not in json.dumps(reply)
+
+
+@pytest.mark.parametrize(
+    ("app_id", "mode", "expected"),
+    [
+        ("DclHome001.Home", "native", "native"),
+        ("DclHome001.Home", "unknown", None),
+        ("OtherApp.Home", "native", None),
+    ],
+)
+def test_connect_reads_only_aerotizen_routing_mode(connected_tv, monkeypatch, app_id, mode, expected):
+    body = json.dumps(
+        {"homeControl": {"protocol": 1, "app_id": app_id, "mode": mode, "transaction": "private"}}
+    )
+
+    def watcher_request(_session, port, request, **_kwargs):
+        assert port == diagnostics.HOME_WATCHER_PORT
+        assert request.startswith(b"GET / HTTP/1.0\r\n")
+        return b"HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\n" + body.encode()
+
+    monkeypatch.setattr(DeviceSession, "tcp_request", watcher_request)
+    result = worker.handle(request("connect", host="127.0.0.1"))["result"]
+    assert result["home_routing_mode"] == expected
+    assert "transaction" not in json.dumps(result)
+
+
+def test_connect_returns_only_typed_home_settings_from_the_paired_helper(connected_tv, monkeypatch):
+    monkeypatch.setattr(
+        DeviceSession,
+        "read_root_home_status",
+        lambda _: {
+            "home_button_app": "DclHome001.Home",
+            "home_app": "com.samsung.tv.csfs",
+            "startup_app": "",
+            "startup_backup_app": "invalid app id",
+            "smart_hub_autostart": False,
+            "unknown": "private",
+        },
+    )
+    result = worker.handle(request("connect", host="127.0.0.1"))["result"]["native_home_settings"]
+    assert result == {
+        "home_button_app": "DclHome001.Home",
+        "home_app": "com.samsung.tv.csfs",
+        "startup_app": "",
+        "startup_backup_app": None,
+        "smart_hub_autostart": False,
+    }
 
 
 @pytest.mark.parametrize("matches_tv", [True, False])
@@ -94,6 +144,20 @@ def test_connection_reports_only_original_backup_status_and_capture_time(connect
     expected = {"status": "saved", "captured_at": captured_at} if matches_tv else {"status": "unreadable"}
     assert reply["result"]["home_backup"] == expected
     assert str(backup) not in json.dumps(reply)
+    saved = worker.handle(request("read_home_backup", expected_identity=identity, captured_at=captured_at))
+    if matches_tv:
+        assert saved["result"] == {
+            "home_button_app": "stock-home",
+            "home_app": "stock-home",
+            "startup_app": "stock-home",
+            "startup_backup_app": "stock-home",
+            "first_screen": "stock-home",
+            "smart_hub_autostart": False,
+        }
+        changed = worker.handle(request("read_home_backup", expected_identity=identity, captured_at="stale"))
+        assert changed["error"]["code"] == "backup_changed"
+    else:
+        assert saved["error"]["code"] == "backup_unreadable"
 
 
 def test_different_saved_identity_is_refused(connected_tv):
@@ -306,6 +370,7 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "remove_apps",
         "launcher_catalog",
         "install_launcher",
+        "read_home_backup",
     ]
 
 

@@ -40,6 +40,11 @@ Select packages and choose **Remove**. Review the apps and TV in the confirmatio
 before you remove them. If the TV refuses removal, the package shows **Delete on TV**.
 Check for **Delete** in **Apps → Settings** on the TV. Use **Refresh apps** to fetch the current list.
 
+Open **Home and startup** to see the AeroTizen routing mode. On a rooted TV with a
+compatible paired helper, the page also shows the current Home button assignment,
+startup apps and Smart Hub autostart. Select **Backup status** to review the original
+Home and startup settings saved on this computer.
+
 ## Development
 
 Install the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), Node.js 22.12+

@@ -1,4 +1,4 @@
-import type { DesktopService, LauncherRelease, SavedTv, TvAppPackage } from "../contracts";
+import type { DesktopService, HomeBackupSettings, LauncherRelease, SavedTv, TvAppPackage } from "../contracts";
 
 export const livingRoom: SavedTv = {
   id: "1".repeat(64),
@@ -20,6 +20,14 @@ export const livingRoom: SavedTv = {
     root_runtime_version: "3.0.1",
   },
   home_backup: { status: "saved", captured_at: "2026-11-16T10:00:00Z" },
+  home_routing_mode: "native",
+  native_home_settings: {
+    home_button_app: "DclHome001.Home",
+    home_app: "com.samsung.tv.csfs",
+    startup_app: null,
+    startup_backup_app: "org.tizen.tv-viewer",
+    smart_hub_autostart: false,
+  },
 };
 
 export const bedroom: SavedTv = {
@@ -31,6 +39,8 @@ export const bedroom: SavedTv = {
   launcher_version: null,
   transport: "developer",
   home_backup: { status: "missing" },
+  home_routing_mode: undefined,
+  native_home_settings: undefined,
 };
 
 export const office: SavedTv = {
@@ -39,6 +49,8 @@ export const office: SavedTv = {
   identity_sha256: "3".repeat(64),
   host: "192.0.2.22",
   name: "Office",
+  launcher_version: "3.1.0",
+  home_routing_mode: "watcher",
 };
 
 export const testReleases: LauncherRelease[] = [
@@ -47,6 +59,14 @@ export const testReleases: LauncherRelease[] = [
   { version: "2.7.0", sections: [{ heading: "Bug Fixes", changes: ["Fix app card spacing."] }] },
 ];
 export const testStatus = { name: "aerotizen-desktop-worker", version: "3.0.1", operations: [] };
+export const testBackupSettings: HomeBackupSettings = {
+  home_button_app: "com.samsung.tv.csfs",
+  home_app: "com.samsung.tv.csfs",
+  startup_app: "org.tizen.tv-viewer",
+  startup_backup_app: "org.tizen.tv-viewer",
+  first_screen: "com.samsung.tv.csfs",
+  smart_hub_autostart: false,
+};
 export const testPackages: TvAppPackage[] = [
   { id: "DclHome001", name: "AeroTizen", apps: ["AeroTizen"], protected: true, revision: "1".repeat(64) },
   {
@@ -86,6 +106,13 @@ export function testService(): DesktopService {
     },
     installLauncher: async () => {
       throw new Error("Set the install result in the test.");
+    },
+    readHomeBackup: async (id, capturedAt) => {
+      const backup = profiles.get(id)?.home_backup;
+      if (backup?.status !== "saved" || backup.captured_at !== capturedAt) {
+        throw new Error("The original Home backup could not be verified.");
+      }
+      return testBackupSettings;
     },
     rename: async (id, name) => {
       const tv = profiles.get(id);

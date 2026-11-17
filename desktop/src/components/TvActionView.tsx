@@ -1,8 +1,18 @@
-import { Accordion, Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
-import type { HomeBackup, SavedTv } from "../contracts";
-import { developerModeLabel, platformRows, rootVersion, transportLabel } from "../tvDetails";
+import { Accordion, Button, Group, Paper, SimpleGrid, Stack, Text, Title } from "@mantine/core";
+import { useState } from "react";
+import type { DesktopService, HomeBackup, HomeRoutingMode, SavedTv } from "../contracts";
+import {
+  autostartLabel,
+  developerModeLabel,
+  homeAppLabel,
+  platformRows,
+  rootStatus,
+  rootVersion,
+  transportLabel,
+} from "../tvDetails";
 import styles from "../styles.module.css";
 import { GithubReportButton } from "./GithubReportButton";
+import { HomeBackupDialog } from "./HomeBackupDialog";
 import { RootStatusBadge } from "./RootStatusBadge";
 
 type ActionPage = "home" | "root" | "recovery" | "diagnostics";
@@ -12,6 +22,13 @@ const PAGE_TITLES: Record<ActionPage, string> = {
   root: "Root",
   recovery: "Backup and recovery",
   diagnostics: "Diagnostics",
+};
+
+const HOME_ROUTING_LABELS: Record<HomeRoutingMode, string> = {
+  watcher: "Watcher",
+  native: "Native Home mode",
+  hold: "On hold",
+  blocked: "Blocked",
 };
 
 function originalBackupLabel(backup: HomeBackup | undefined): string {
@@ -25,30 +42,89 @@ interface TvActionViewProps {
   page: ActionPage;
   profile: SavedTv;
   backendVersion?: string;
-  onPage(page: ActionPage): void;
+  readHomeBackup?: DesktopService["readHomeBackup"];
 }
 
-export function TvActionView({ page, profile, backendVersion, onPage }: TvActionViewProps) {
+export function TvActionView({ page, profile, backendVersion, readHomeBackup }: TvActionViewProps) {
+  const [showBackup, setShowBackup] = useState(false);
   const version = rootVersion(profile);
   const originalBackup = originalBackupLabel(profile.home_backup);
+  const backupDate = profile.home_backup?.status === "saved" ? profile.home_backup.captured_at : undefined;
+  const home = profile.native_home_settings;
+  const nativeSettings = [
+    {
+      id: "home-button",
+      title: "Home button",
+      rows: [
+        ["Current assignment", homeAppLabel(home?.home_button_app ?? null)],
+        ["Saved Home setting", homeAppLabel(home?.home_app ?? null)],
+      ],
+    },
+    {
+      id: "startup",
+      title: "Startup",
+      rows: [
+        ["Startup app", homeAppLabel(home?.startup_app ?? null)],
+        ["Backup startup app", homeAppLabel(home?.startup_backup_app ?? null)],
+        ["Smart Hub autostart", autostartLabel(home?.smart_hub_autostart ?? null)],
+      ],
+    },
+  ];
   return (
     <div className={styles.detailContent}>
       <Stack gap="lg">
-        <Title order={1}>{PAGE_TITLES[page]}</Title>
+        <Group justify="space-between" gap="sm">
+          <Title order={1}>{PAGE_TITLES[page]}</Title>
+          {page === "home" && (
+            <Button variant="default" onClick={() => setShowBackup(true)}>
+              Backup status
+            </Button>
+          )}
+        </Group>
         {page === "home" && (
-          <Paper withBorder p="lg">
-            <Stack gap="sm">
-              <Text>Changes to the Home button, startup and app-return settings are unavailable in this build.</Text>
-              <Text size="sm" c="dimmed">
-                {originalBackup}
-              </Text>
-              <Group>
-                <Button variant="default" onClick={() => onPage("recovery")}>
-                  Backup and recovery
-                </Button>
+          <Stack gap="md">
+            <Paper component="section" aria-labelledby="aerotizen-routing" withBorder p="lg">
+              <Group justify="space-between" gap="sm">
+                <Stack gap="xs">
+                  <Title id="aerotizen-routing" order={2} size="h3">
+                    AeroTizen routing
+                  </Title>
+                  <Text size="sm" role="status">
+                    {profile.home_routing_mode ? HOME_ROUTING_LABELS[profile.home_routing_mode] : "Unavailable"}
+                  </Text>
+                </Stack>
               </Group>
-            </Stack>
-          </Paper>
+            </Paper>
+            {rootStatus(profile) === "Yes" && (
+              <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
+                {nativeSettings.map(({ id, title, rows }) => (
+                  <Paper key={id} component="section" aria-labelledby={id} withBorder p="lg">
+                    <Title id={id} order={2} size="h3">
+                      {title}
+                    </Title>
+                    <dl className={styles.definitionList}>
+                      {rows.map(([label, value]) => (
+                        <div key={label}>
+                          <dt>{label}</dt>
+                          <dd>{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </Paper>
+                ))}
+              </SimpleGrid>
+            )}
+            {showBackup && (
+              <HomeBackupDialog
+                key={backupDate}
+                tvId={profile.id}
+                status={originalBackup}
+                capturedAt={backupDate}
+                readBackup={readHomeBackup}
+                onClose={() => setShowBackup(false)}
+              />
+            )}
+          </Stack>
         )}
         {page === "recovery" && (
           <Paper withBorder p="lg">

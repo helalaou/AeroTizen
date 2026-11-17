@@ -1,6 +1,14 @@
 import { test as base } from "@playwright/test";
 import type { AppPackageSelection, AppRemovalOutcome, SavedTv, TvAppPackage } from "../src/contracts";
-import { bedroom, livingRoom, office, testPackages, testReleases, testStatus } from "../src/test/tvs";
+import {
+  bedroom,
+  livingRoom,
+  office,
+  testBackupSettings,
+  testPackages,
+  testReleases,
+  testStatus,
+} from "../src/test/tvs";
 
 export const test = base.extend<{
   inventory: { packages: TvAppPackage[]; failures?: Record<string, Omit<AppRemovalOutcome, "id">> };
@@ -8,7 +16,7 @@ export const test = base.extend<{
   inventory: [{ packages: testPackages }, { option: true }],
   page: async ({ page, inventory }, use) => {
     await page.addInitScript(
-      ({ initial, known, packages, failures, releases, status }) => {
+      ({ initial, known, packages, failures, releases, status, backupSettings }) => {
         let currentPackages = packages;
         const profileKey = "test-native-profiles";
         const profiles = new Map<string, SavedTv>(
@@ -29,6 +37,13 @@ export const test = base.extend<{
                   return releases;
                 case "list_tvs":
                   return [...profiles.values()];
+                case "read_home_backup": {
+                  const backup = profiles.get(String(args.id))?.home_backup;
+                  if (backup?.status !== "saved" || backup.captured_at !== args.capturedAt) {
+                    throw new Error("The original Home backup could not be verified.");
+                  }
+                  return backupSettings;
+                }
                 case "list_tv_apps":
                   if (!profiles.has(String(args.id))) throw new Error("Connect to the TV first.");
                   return structuredClone(currentPackages);
@@ -95,6 +110,7 @@ export const test = base.extend<{
         failures: inventory.failures ?? {},
         releases: testReleases,
         status: testStatus,
+        backupSettings: testBackupSettings,
       },
     );
     await use(page);

@@ -15,14 +15,15 @@ function mount(service: DesktopService = testService()) {
 }
 
 describe("TV selection", () => {
-  it("opens Overview and shows Overview, Launcher and Apps in the TV menu", async () => {
+  it("opens Overview and shows the TV actions", async () => {
     const user = userEvent.setup();
     mount();
     await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
     expect(await screen.findByRole("heading", { name: "Overview" })).toBeVisible();
     const nav = within(screen.getByRole("navigation", { name: "TV actions" }));
-    expect(nav.getAllByRole("button")).toHaveLength(3);
+    expect(nav.getAllByRole("button")).toHaveLength(4);
     expect(nav.getByRole("button", { name: "Apps" })).toBeVisible();
+    expect(nav.getByRole("button", { name: "Home and startup" })).toBeVisible();
     expect(nav.getByRole("button", { name: "Overview" })).toHaveAttribute("aria-current", "page");
     await user.click(nav.getByRole("button", { name: "Launcher" }));
     expect(screen.getByRole("heading", { name: "Launcher" })).toBeVisible();

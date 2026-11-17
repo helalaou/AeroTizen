@@ -35,6 +35,24 @@ pub enum HomeBackup {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum HomeRoutingMode {
+    Watcher,
+    Native,
+    Hold,
+    Blocked,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct NativeHomeSettings {
+    pub home_button_app: Option<String>,
+    pub home_app: Option<String>,
+    pub startup_app: Option<String>,
+    pub startup_backup_app: Option<String>,
+    pub smart_hub_autostart: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VerifiedTv {
     pub identity_sha256: String,
     pub host: String,
@@ -51,6 +69,10 @@ pub struct VerifiedTv {
     pub technical_details: TechnicalDetails,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub home_backup: Option<HomeBackup>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub home_routing_mode: Option<HomeRoutingMode>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub native_home_settings: Option<NativeHomeSettings>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { testPackages } from "../src/test/tvs";
@@ -30,7 +30,7 @@ test("navigates the selected TV actions and keeps the initial screen TV-only", a
   await expect(page.getByRole("button", { name: "Update to 3.1.0" })).toBeEnabled();
   if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
   const nav = page.getByRole("navigation", { name: "TV actions" });
-  await expect(nav.getByRole("button")).toHaveText(["Overview", "Launcher", "Apps"]);
+  await expect(nav.getByRole("button")).toHaveText(["Overview", "Launcher", "Apps", "Home and startup"]);
   await expect(nav.getByRole("button", { name: "Launcher", exact: true })).toHaveAttribute("aria-current", "page");
   await page.screenshot({ path: join(tmpdir(), `aerotizen-tv-sidebar-${info.project.name}.png`) });
   if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
@@ -78,6 +78,49 @@ test("installs on a TV without a launcher and shows the version on Overview", as
   await showAction(page, isMobile, "Overview");
   await expect(page.getByRole("main").getByText("3.1.0", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Update available" })).toHaveCount(0);
+});
+
+test("shows the connected TV's Home button, startup, routing and backup status", async ({ page, isMobile }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Connect to Living room" }).click();
+  await showAction(page, isMobile, "Home and startup");
+  const homeButton = page.getByRole("region", { name: "Home button", exact: true });
+  const startup = page.getByRole("region", { name: "Startup", exact: true });
+  const routing = page.getByRole("region", { name: "AeroTizen routing", exact: true });
+  const backup = page.getByRole("dialog", { name: "Original Home backup" });
+  const titleRow = page.getByRole("heading", { name: "Home and startup", level: 1 }).locator("..");
+  const backupButton = titleRow.getByRole("button", { name: "Backup status", exact: true });
+  await expect(page.getByRole("heading", { level: 2 })).toHaveText(["AeroTizen routing", "Home button", "Startup"]);
+  await expect(routing.getByText("Native Home mode", { exact: true })).toBeVisible();
+  await expect(backup).toBeHidden();
+  await backupButton.click();
+  await expect(backup.getByText(/Original backup saved/)).toBeVisible();
+  await expect(backup.getByText("Samsung Home", { exact: true })).toHaveCount(3);
+  await expect(backup.getByText("TV viewer", { exact: true })).toHaveCount(2);
+  await expect(backup.getByText("Off", { exact: true })).toBeVisible();
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await backup.getByRole("button", { name: "Close backup status" }).click();
+  await expect(backup).toBeHidden();
+  const setting = (section: Locator, label: string) =>
+    section
+      .locator("dl > div")
+      .filter({ has: page.getByText(label, { exact: true }) })
+      .locator("dd");
+  await expect(setting(homeButton, "Current assignment")).toHaveText("AeroTizen");
+  await expect(setting(homeButton, "Saved Home setting")).toHaveText("Samsung Home");
+  await expect(setting(startup, "Startup app")).toHaveText("Unavailable");
+  await expect(setting(startup, "Backup startup app")).toHaveText("TV viewer");
+  await expect(setting(startup, "Smart Hub autostart")).toHaveText("Off");
+
+  if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+  await page.getByRole("button", { name: "Back to TVs" }).click();
+  await page.getByRole("button", { name: "Connect to Bedroom" }).click();
+  await showAction(page, isMobile, "Home and startup");
+  await expect(homeButton).toHaveCount(0);
+  await expect(startup).toHaveCount(0);
+  await expect(routing.getByText("Unavailable", { exact: true })).toBeVisible();
+  await titleRow.getByRole("button", { name: "Backup status", exact: true }).click();
+  await expect(backup.getByText("No original Home backup found on this computer.")).toBeVisible();
 });
 
 test.describe("Installed apps", () => {

@@ -123,6 +123,8 @@ async fn install_launcher(
     }
     state.profiles.save(VerifiedTv {
         launcher_version: Some(version),
+        home_routing_mode: None,
+        native_home_settings: None,
         ..saved.tv
     })
 }
@@ -168,6 +170,21 @@ async fn connect_tv(
         ));
     }
     state.profiles.save(tv)
+}
+
+#[tauri::command]
+async fn read_home_backup(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    captured_at: String,
+) -> AppResult<Value> {
+    let saved = state.profiles.get(&id)?;
+    worker::request(
+        &state.worker_path,
+        "read_home_backup",
+        json!({ "expected_identity": saved.tv.identity_sha256, "captured_at": captured_at }),
+    )
+    .await
 }
 
 #[tauri::command]
@@ -227,6 +244,7 @@ pub fn run() {
             install_launcher,
             discover_tvs,
             connect_tv,
+            read_home_backup,
             rename_tv,
             forget_tv
         ])

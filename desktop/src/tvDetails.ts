@@ -8,6 +8,22 @@ const MODEL = /^[A-Z]{2,6}\d[A-Z0-9_-]{2,80}$/;
 const PLATFORM = /^(?=.*\d)[A-Z0-9][A-Z0-9_.-]{1,127}$/;
 const IPV4 = /^\d{1,3}(?:\.\d{1,3}){3}$/;
 const ARCHITECTURES = new Set(["arm", "armv7", "armv7l", "aarch64", "arm64", "x86", "x86_64", "x64", "ia32"]);
+const HOME_APP_NAMES = new Map([
+  ["com.samsung.tv.csfs", "Samsung Home"],
+  ["DclHome001.Home", "AeroTizen"],
+  ["org.tizen.tv-viewer", "TV viewer"],
+]);
+
+export function homeAppLabel(app: string | null): string {
+  if (app === null) return UNAVAILABLE;
+  if (app === "") return "Not set";
+  return HOME_APP_NAMES.get(app) ?? app;
+}
+
+export function autostartLabel(value: boolean | null): string {
+  if (value === null) return UNAVAILABLE;
+  return value ? "On" : "Off";
+}
 
 function matches(value: string | null | undefined, pattern: RegExp): string {
   return typeof value === "string" && pattern.test(value) && !IPV4.test(value) ? value : UNAVAILABLE;

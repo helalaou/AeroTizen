@@ -4,6 +4,7 @@ import { AppsPanel } from "./components/AppsPanel";
 import { Header } from "./components/Header";
 import { LauncherPanel } from "./components/LauncherPanel";
 import { SelectedTvView } from "./components/SelectedTvView";
+import { TvActionView } from "./components/TvActionView";
 import { TvDialogs } from "./components/TvDialogs";
 import type { TvDialog } from "./components/TvDialogs";
 import { TvSelection } from "./components/TvSelection";
@@ -91,6 +92,9 @@ export function App({ service }: AppProps) {
           onRemove={(picked) => void manager.removeApps(selected.id, picked)}
         />
       );
+    }
+    if (page === "home") {
+      return <TvActionView key={selected.id} page="home" profile={selected} readHomeBackup={service.readHomeBackup} />;
     }
     return (
       <LauncherPanel

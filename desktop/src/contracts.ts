@@ -15,9 +15,24 @@ export interface SavedTv extends TvCandidate {
   checked_at: string;
   technical_details?: TechnicalDetails;
   home_backup?: HomeBackup;
+  home_routing_mode?: HomeRoutingMode;
+  native_home_settings?: NativeHomeSettings;
 }
 
 export type HomeBackup = { status: "saved"; captured_at: string } | { status: "missing" | "unreadable" };
+export type HomeRoutingMode = "watcher" | "native" | "hold" | "blocked";
+
+export interface NativeHomeSettings {
+  home_button_app: string | null;
+  home_app: string | null;
+  startup_app: string | null;
+  startup_backup_app: string | null;
+  smart_hub_autostart: boolean | null;
+}
+
+export interface HomeBackupSettings extends NativeHomeSettings {
+  first_screen: string;
+}
 
 export interface TechnicalDetails {
   model_code: string | null;
@@ -73,11 +88,12 @@ export interface DesktopService {
     currentVersion: string | null,
     confirmReplace: boolean,
   ): Promise<SavedTv>;
+  readHomeBackup?(id: string, capturedAt: string): Promise<HomeBackupSettings>;
   rename(id: string, name: string): Promise<void>;
   forget(id: string): Promise<void>;
 }
 
-export type TvPage = "overview" | "launcher" | "apps";
+export type TvPage = "overview" | "launcher" | "apps" | "home";
 
 export function errorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;

@@ -151,6 +151,8 @@ mod tests {
             checked_at: "2026-11-14T10:00:00Z".into(),
             technical_details: Default::default(),
             home_backup: None,
+            home_routing_mode: None,
+            native_home_settings: None,
         }
     }
 

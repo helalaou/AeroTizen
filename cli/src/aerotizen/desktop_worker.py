@@ -14,7 +14,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Thread
 
-from aerotizen import __version__, catalog, discover, home, releases, remote
+from aerotizen import __version__, catalog, discover, home, home_status, releases, remote
 from aerotizen.cli import install_signed_package, packages
 from aerotizen.device import DeviceSession
 from aerotizen.diagnostic_privacy import Policy
@@ -39,6 +39,7 @@ OPERATIONS = (
     "remove_apps",
     "launcher_catalog",
     "install_launcher",
+    "read_home_backup",
 )
 
 
@@ -108,8 +109,12 @@ def technical_details(session, info):
     }
 
 
+def _home_backup_path(identity):
+    return Path(remote.CONFIG_DIR) / "backups" / identity / "original-home.json"
+
+
 def _home_backup_summary(identity):
-    path = Path(remote.CONFIG_DIR) / "backups" / identity / "original-home.json"
+    path = _home_backup_path(identity)
     try:
         if not path.exists():
             return {"status": "missing"}
@@ -120,6 +125,33 @@ def _home_backup_summary(identity):
     except (OSError, ValueError, home.HomeError):
         return {"status": "unreadable"}
     return {"status": "saved", "captured_at": captured_at}
+
+
+def _verified_backup_document(identity, captured_at):
+    try:
+        document, _ = home._load_backup(_home_backup_path(identity), identity)
+        verified_at = datetime.fromisoformat(document["captured_at"]).isoformat()
+    except (OSError, ValueError, RecursionError, home.HomeError) as error:
+        raise RequestError("backup_unreadable", "The original Home backup could not be verified.") from error
+    if verified_at != captured_at:
+        raise RequestError("backup_changed", "The backup changed. Refresh the TV connection to review it.")
+    return document
+
+
+def read_home_backup(params):
+    identity = checked_identity(params.get("expected_identity"))
+    document = _verified_backup_document(identity, params.get("captured_at"))
+    values = document["home"]["settings"]
+    startup, startup_backup = home.STARTUP_KEYS
+    autostart = values[home.AUTOSTART_KEY]["value"]
+    return {
+        "home_button_app": document["home"]["default_app"],
+        "home_app": values[home.HOME_KEY]["value"],
+        "startup_app": values[startup]["value"],
+        "startup_backup_app": values[startup_backup]["value"],
+        "first_screen": values[home.FIRST_SCREEN_KEY]["value"],
+        "smart_hub_autostart": bool(autostart) if autostart in (0, 1) else None,
+    }
 
 
 def checked_identity(expected):
@@ -288,6 +320,33 @@ def remove_apps(params):
     return {"apps": app_rows(current) if current is not None else None, "results": results}
 
 
+def _connected_profile(session, host, expected, info):
+    duid, identity = read_identity(session, expected)
+    launcher_version = installed_launcher_version(session)
+    details = technical_details(session, info)
+    if session.duid().strip() != duid:
+        raise RequestError("identity_mismatch", "The TV identity changed during the connection check.")
+    native_home_settings = home_status.read_native_settings(session)
+    # A timeout closes the SDB stream, so check this optional status after the TV identity.
+    home_routing_mode = home_status.read_routing_mode(session) if launcher_version else None
+    return {
+        "identity_sha256": identity,
+        "host": host,
+        "name": text_value(info.get("name"), "Samsung TV"),
+        "model": text_value(info.get("modelName"), "Samsung TV"),
+        "launcher_version": launcher_version,
+        "launcher_signing_ready": signing_profile(duid) is not None,
+        "transport": "paired_root" if session.managed_root else "developer",
+        "developer_mode": text_value(info.get("developerMode"), "Unknown"),
+        "developer_host": text_value(info.get("developerIP"), "Unknown"),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "technical_details": details,
+        "home_backup": _home_backup_summary(identity),
+        "home_routing_mode": home_routing_mode,
+        "native_home_settings": native_home_settings,
+    }
+
+
 def connect_tv(params):
     host = host_value(params.get("host"))
     expected = params.get("expected_identity")
@@ -298,25 +357,7 @@ def connect_tv(params):
     except SystemExit:
         info = {}
     with DeviceSession(host) as session:
-        duid, identity = read_identity(session, expected)
-        launcher_version = installed_launcher_version(session)
-        details = technical_details(session, info)
-        if session.duid().strip() != duid:
-            raise RequestError("identity_mismatch", "The TV identity changed during the connection check.")
-        return {
-            "identity_sha256": identity,
-            "host": host,
-            "name": text_value(info.get("name"), "Samsung TV"),
-            "model": text_value(info.get("modelName"), "Samsung TV"),
-            "launcher_version": launcher_version,
-            "launcher_signing_ready": signing_profile(duid) is not None,
-            "transport": "paired_root" if session.managed_root else "developer",
-            "developer_mode": text_value(info.get("developerMode"), "Unknown"),
-            "developer_host": text_value(info.get("developerIP"), "Unknown"),
-            "checked_at": datetime.now(timezone.utc).isoformat(),
-            "technical_details": details,
-            "home_backup": _home_backup_summary(identity),
-        }
+        return _connected_profile(session, host, expected, info)
 
 
 def install_launcher(params):
@@ -400,6 +441,8 @@ def handle(request):
                 result = releases.launcher_catalog()
             elif request["operation"] == "install_launcher":
                 result = install_launcher(params)
+            elif request["operation"] == "read_home_backup":
+                result = read_home_backup(params)
             else:
                 result = connect_tv(params)
         return {**response, "result": result}
