@@ -147,7 +147,7 @@ test("the theme persists and falls back to the default for unknown values", () =
   assert.equal(settings.getSnapshot().theme, "classic");
   settings.update({ theme: "glass" });
   assert.equal(loadSettings(store).settings.getSnapshot().theme, "glass");
-  for (const theme of ["gloss", "amethyst", "mint"]) {
+  for (const theme of ["gloss", "amethyst", "mint", "halo"]) {
     settings.update({ theme });
     assert.equal(loadSettings(store).settings.getSnapshot().theme, theme);
   }

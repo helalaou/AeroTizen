@@ -25,6 +25,12 @@ const THEMES = [
     fonts: ["Noto Sans KR", "Alexandria"],
     names: { en: "Mint", fr: "Menthe", it: "Menta", ru: "Мята", ar: "نعناع", "pt-BR": "Menta" },
   },
+  {
+    id: "halo",
+    tileRadius: "28px",
+    fonts: ["Nunito", "Alan Sans"],
+    names: { en: "Halo", fr: "Halo", it: "Alone", ru: "Ореол", ar: "هالة", "pt-BR": "Halo" },
+  },
 ];
 const LANGUAGES = Object.keys(THEMES[0].names);
 

@@ -9,6 +9,7 @@ const APPEARANCE_OPTIONS = [
   { value: "gloss", labelKey: "appearance.gloss" },
   { value: "amethyst", labelKey: "appearance.amethyst" },
   { value: "mint", labelKey: "appearance.mint" },
+  { value: "halo", labelKey: "appearance.halo" },
 ] as const;
 
 const HOME_CARD_COLUMNS_OPTIONS = [
