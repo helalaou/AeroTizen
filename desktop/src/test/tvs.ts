@@ -75,6 +75,7 @@ export const testBackupSettings: HomeBackupSettings = {
   first_screen: "com.samsung.tv.csfs",
   smart_hub_autostart: false,
 };
+export const testBackupSha256 = "d".repeat(64);
 export const testPackages: TvAppPackage[] = [
   { id: "DclHome001", name: "AeroTizen", apps: ["AeroTizen"], protected: true, revision: "1".repeat(64) },
   {
@@ -116,16 +117,25 @@ export function testService(): DesktopService {
     installLauncher: async () => {
       throw new Error("Set the install result in the test.");
     },
-    applyNativeHome: async (id) => {
+    prepareNativeHome: async (id) => {
       const tv = profiles.get(id);
       if (!tv || !canApplyNativeHome(tv)) throw new Error("Native Home is unavailable for this TV.");
       const backup = tv.home_backup;
-      if (backup?.status !== "saved" && tv.native_home_settings) {
-        originalSettings.set(id, tv.native_home_settings);
+      if (backup?.status === "saved") {
+        return { id, captured_at: backup.captured_at, backup_sha256: testBackupSha256 };
+      }
+      if (tv.native_home_settings) originalSettings.set(id, tv.native_home_settings);
+      const captured_at = new Date().toISOString();
+      profiles.set(id, { ...tv, home_backup: { status: "saved", captured_at } });
+      return { id, captured_at, backup_sha256: testBackupSha256 };
+    },
+    applyNativeHome: async (id, backupSha256) => {
+      const tv = profiles.get(id);
+      if (!tv || tv.home_backup?.status !== "saved" || backupSha256 !== testBackupSha256) {
+        throw new Error("The original Home backup could not be verified.");
       }
       const updated: SavedTv = {
         ...tv,
-        home_backup: backup?.status === "saved" ? backup : { status: "saved", captured_at: new Date().toISOString() },
         home_routing_mode: "native",
         native_home_settings:
           tv.transport === "paired_root"

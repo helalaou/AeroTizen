@@ -34,6 +34,13 @@ pub enum HomeBackup {
     Unreadable,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PreparedHomeApply {
+    pub id: String,
+    pub captured_at: String,
+    pub backup_sha256: String,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum HomeRoutingMode {

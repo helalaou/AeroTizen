@@ -3,6 +3,8 @@ import json
 import subprocess
 import sys
 import zipfile
+from contextlib import nullcontext
+from types import SimpleNamespace
 
 import pytest
 
@@ -190,6 +192,99 @@ def _write_backup(tmp_path, identity, captured_at):
         )
     )
     return backup
+
+
+@pytest.fixture
+def paired_home_backup(monkeypatch, tmp_path):
+    duid = "test-duid"
+    identity = hashlib.sha256(duid.encode()).hexdigest()
+    settings = {
+        "home_button_app": "com.samsung.tv.csfs",
+        "home_app": "com.samsung.tv.csfs",
+        "startup_app": "org.tizen.tv-viewer",
+        "startup_backup_app": "org.tizen.tv-viewer",
+        "first_screen": "com.samsung.tv.csfs",
+        "smart_hub_autostart": False,
+        "firmware_build": "test-firmware",
+        "helper_sha256": "a" * 64,
+    }
+    session = SimpleNamespace(duid=lambda: duid, managed_root=True, read_root_home_status=lambda: settings)
+    monkeypatch.setattr(worker, "DeviceSession", lambda _host: nullcontext(session))
+    monkeypatch.setattr(worker.remote, "info", lambda _host: {"modelName": "Frame"})
+    monkeypatch.setattr(worker.remote, "CONFIG_DIR", tmp_path)
+    return session, settings, identity
+
+
+def test_prepare_native_home_saves_once_and_reuses_original(paired_home_backup, tmp_path):
+    session, settings, identity = paired_home_backup
+    prepare = request("prepare_native_home", host="127.0.0.1", expected_identity=identity)
+    result = worker.handle(prepare)["result"]
+    backup = tmp_path / "backups" / identity / "original-home.json"
+    original = backup.read_bytes()
+    document = json.loads(original)
+    assert result == {
+        "id": identity,
+        "captured_at": document["captured_at"],
+        "backup_sha256": hashlib.sha256(original).hexdigest(),
+    }
+    assert document["device"]["firmware_build"] == settings["firmware_build"]
+    assert document["evidence"] == {
+        "access": "paired_helper",
+        "uid": 0,
+        "authenticated": True,
+        "helper_sha256": settings["helper_sha256"],
+    }
+    review = worker.handle(
+        request("read_home_backup", expected_identity=identity, captured_at=result["captured_at"])
+    )
+    assert review["result"] == {
+        field: value
+        for field, value in settings.items()
+        if field
+        in (
+            "home_button_app",
+            "home_app",
+            "startup_app",
+            "startup_backup_app",
+            "first_screen",
+            "smart_hub_autostart",
+        )
+    }
+
+    session.read_root_home_status = lambda: pytest.fail(
+        "The existing backup must be reused without a settings read"
+    )
+    assert worker.handle(prepare)["result"] == result
+    assert backup.read_bytes() == original
+
+
+@pytest.mark.parametrize(
+    ("field", "changed_value", "message"),
+    [
+        ("first_screen", None, "could not verify every original"),
+        ("firmware_build", None, "Updating the paired TV helper is required"),
+        ("startup_backup_app", "DclHome001.Home", "before opening AeroTizen"),
+    ],
+)
+def test_prepare_native_home_rejects_unverified_settings(
+    paired_home_backup, tmp_path, field, changed_value, message
+):
+    _, settings, identity = paired_home_backup
+    settings[field] = changed_value
+    reply = worker.handle(request("prepare_native_home", host="127.0.0.1", expected_identity=identity))
+    assert reply["error"]["code"] == "backup_unavailable"
+    assert message in reply["error"]["message"]
+    assert not (tmp_path / "backups" / identity / "original-home.json").exists()
+
+
+def test_prepare_native_home_does_not_replace_an_invalid_backup(paired_home_backup, tmp_path):
+    session, _, identity = paired_home_backup
+    backup = _write_backup(tmp_path, identity, "2026-11-16T10:00:00+00:00")
+    backup.write_text("unreadable backup")
+    session.read_root_home_status = lambda: pytest.fail("An invalid existing backup must not be recaptured")
+    reply = worker.handle(request("prepare_native_home", host="127.0.0.1", expected_identity=identity))
+    assert reply["error"]["code"] == "backup_unavailable"
+    assert backup.read_text() == "unreadable backup"
 
 
 def test_restore_home_backup_calls_change_and_returns_profile(connected_tv, tmp_path, monkeypatch):
@@ -444,6 +539,7 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "launcher_catalog",
         "install_launcher",
         "read_home_backup",
+        "prepare_native_home",
         "restore_home_backup",
     ]
 

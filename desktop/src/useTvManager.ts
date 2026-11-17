@@ -228,11 +228,15 @@ export function useTvManager(service: DesktopService) {
             if (selected?.id !== id || !canApplyNativeHome(selected)) {
               throw new Error("Native Home is unavailable for this TV. Refresh the connection and check its settings.");
             }
-            const updated = await apply(id);
+            const prepared = await service.prepareNativeHome(id);
+            if (prepared.id !== id) throw new Error("Could not verify the backup for this TV.");
+            updateProfile(id, { ...selected, home_backup: { status: "saved", captured_at: prepared.captured_at } });
+            const updated = await apply(id, prepared.backup_sha256);
             if (
               updated.id !== id ||
               updated.home_routing_mode !== "native" ||
-              updated.home_backup?.status !== "saved"
+              updated.home_backup?.status !== "saved" ||
+              updated.home_backup.captured_at !== prepared.captured_at
             ) {
               throw new Error("Could not verify Native Home and its original backup.");
             }

@@ -44,7 +44,7 @@ export function ApplyNativeHomeDialog({ tvName, hasBackup, onApply, onClose }: A
         <Text size="sm">
           {hasBackup
             ? "Your existing original backup will be kept."
-            : "Your original Home and startup settings will be backed up before the TV settings change."}
+            : "Your original Home and startup settings will be backed up before AeroTizen opens."}
         </Text>
         {error && (
           <Alert color="red" role="alert">

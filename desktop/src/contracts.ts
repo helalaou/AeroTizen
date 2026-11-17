@@ -20,6 +20,11 @@ export interface SavedTv extends TvCandidate {
 }
 
 export type HomeBackup = { status: "saved"; captured_at: string } | { status: "missing" | "unreadable" };
+export interface PreparedHomeApply {
+  id: string;
+  captured_at: string;
+  backup_sha256: string;
+}
 export type HomeRoutingMode = "watcher" | "native" | "hold" | "blocked";
 
 export interface NativeHomeSettings {
@@ -88,7 +93,9 @@ export interface DesktopService {
     currentVersion: string | null,
     confirmReplace: boolean,
   ): Promise<SavedTv>;
-  applyNativeHome?(id: string): Promise<SavedTv>;
+  prepareNativeHome(id: string): Promise<PreparedHomeApply>;
+  /** Verify the prepared backup revision before changing any TV settings. */
+  applyNativeHome?(id: string, backupSha256: string): Promise<SavedTv>;
   readHomeBackup?(id: string, capturedAt: string): Promise<HomeBackupSettings>;
   /** Resolve with the current TV profile after verifying the restored settings. */
   restoreHomeBackup?(id: string, capturedAt: string): Promise<SavedTv>;
@@ -99,7 +106,7 @@ export interface DesktopService {
 export function canApplyNativeHome(profile: SavedTv): boolean {
   return (
     profile.launcher_version !== null &&
-    profile.home_routing_mode === "watcher" &&
+    (profile.home_routing_mode === "watcher" || profile.home_routing_mode === undefined) &&
     profile.home_backup?.status !== "unreadable"
   );
 }

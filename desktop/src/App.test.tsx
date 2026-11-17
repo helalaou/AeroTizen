@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import type { DesktopService } from "./contracts";
-import { livingRoom, office, testPackages, testService } from "./test/tvs";
+import { livingRoom, office, testBackupSha256, testPackages, testService } from "./test/tvs";
 
 function mount(service: DesktopService = testService()) {
   return render(
@@ -15,9 +15,10 @@ function mount(service: DesktopService = testService()) {
 }
 
 describe("Home and startup", () => {
-  it("creates an original backup when Native Home setup is confirmed", async () => {
+  it("prepares the original backup before applying Native Home", async () => {
     const user = userEvent.setup();
     const service = testService();
+    const prepare = vi.spyOn(service, "prepareNativeHome");
     const apply = vi.spyOn(service, "applyNativeHome");
     mount(service);
     await user.click(await screen.findByRole("button", { name: "Search for TVs" }));
@@ -28,6 +29,7 @@ describe("Home and startup", () => {
     let review = within(screen.getByRole("dialog", { name: "Apply Native Home?" }));
     expect(review.getByText("Office")).toBeVisible();
     await user.click(review.getByRole("button", { name: "Cancel" }));
+    expect(prepare).not.toHaveBeenCalled();
     expect(apply).not.toHaveBeenCalled();
     expect(screen.getByText("Watcher")).toBeVisible();
 
@@ -35,12 +37,38 @@ describe("Home and startup", () => {
     review = within(screen.getByRole("dialog", { name: "Apply Native Home?" }));
     await user.click(review.getByRole("button", { name: "Confirm apply" }));
     expect(await screen.findByText("Native Home mode")).toBeVisible();
-    expect(apply).toHaveBeenCalledExactlyOnceWith(office.id);
+    expect(prepare).toHaveBeenCalledExactlyOnceWith(office.id);
+    expect(apply).toHaveBeenCalledExactlyOnceWith(office.id, testBackupSha256);
+    expect(prepare).toHaveBeenCalledBefore(apply);
     expect(screen.queryByRole("button", { name: "Apply Native Home" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Backup & restore" }));
     const backup = within(screen.getByRole("dialog", { name: "Original Home backup" }));
     expect(backup.getByText(/Original backup saved/)).toBeVisible();
     expect(await backup.findByRole("button", { name: "Restore original settings" })).toBeEnabled();
+  });
+
+  it("can prepare a backup before the launcher starts and stops Apply if preparation fails", async () => {
+    const user = userEvent.setup();
+    const service = testService();
+    const connect = service.connect;
+    vi.spyOn(service, "connect").mockImplementation(async (...args) => ({
+      ...(await connect(...args)),
+      home_routing_mode: undefined,
+    }));
+    const prepare = vi
+      .spyOn(service, "prepareNativeHome")
+      .mockRejectedValueOnce(new Error("Backup could not be saved."));
+    const apply = vi.spyOn(service, "applyNativeHome");
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Search for TVs" }));
+    await user.click(await screen.findByRole("button", { name: "Connect to Office at 192.0.2.22" }));
+    await user.click(await screen.findByRole("button", { name: "Home and startup" }));
+    await user.click(screen.getByRole("button", { name: "Apply Native Home" }));
+    const review = within(screen.getByRole("dialog", { name: "Apply Native Home?" }));
+    await user.click(review.getByRole("button", { name: "Confirm apply" }));
+    expect(await review.findByRole("alert")).toHaveTextContent("Backup could not be saved.");
+    expect(prepare).toHaveBeenCalledExactlyOnceWith(office.id);
+    expect(apply).not.toHaveBeenCalled();
   });
 
   it("allows cancellation, reports a restore failure, and updates the TV after a confirmed retry", async () => {

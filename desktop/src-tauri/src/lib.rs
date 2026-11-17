@@ -2,7 +2,10 @@ mod models;
 mod profiles;
 mod worker;
 
-use models::{AppError, AppPackageSelection, AppResult, SavedTv, VerifiedTv};
+use models::{
+    valid_identity, AppError, AppPackageSelection, AppResult, PreparedHomeApply, SavedTv,
+    VerifiedTv,
+};
 use profiles::Profiles;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -188,6 +191,36 @@ async fn read_home_backup(
 }
 
 #[tauri::command]
+async fn prepare_native_home(
+    state: tauri::State<'_, AppState>,
+    id: String,
+) -> AppResult<PreparedHomeApply> {
+    let _guard = state.operation.try_lock().map_err(|_| busy())?;
+    let saved = state.profiles.get(&id)?;
+    let result = worker::request(
+        &state.worker_path,
+        "prepare_native_home",
+        json!({ "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256 }),
+    )
+    .await?;
+    let invalid_backup = || {
+        AppError::new(
+            "invalid_response",
+            "The TV backend could not verify the original Home backup.",
+        )
+    };
+    let prepared: PreparedHomeApply =
+        serde_json::from_value(result).map_err(|_| invalid_backup())?;
+    if prepared.id != id
+        || !valid_identity(&prepared.backup_sha256)
+        || prepared.captured_at.is_empty()
+    {
+        return Err(invalid_backup());
+    }
+    Ok(prepared)
+}
+
+#[tauri::command]
 async fn restore_home_backup(
     state: tauri::State<'_, AppState>,
     id: String,
@@ -278,6 +311,7 @@ pub fn run() {
             discover_tvs,
             connect_tv,
             read_home_backup,
+            prepare_native_home,
             restore_home_backup,
             rename_tv,
             forget_tv

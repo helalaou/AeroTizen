@@ -55,10 +55,12 @@ fn request_local_network_access(operation: &str, params: &Value) {
     const DISCOVERY_MULTICAST_ADDRESS: Ipv4Addr = Ipv4Addr::new(239, 255, 255, 250);
     let address = match operation {
         "discover" => Some(DISCOVERY_MULTICAST_ADDRESS),
-        "connect" | "install_launcher" | "list_apps" | "remove_apps" => params
-            .get("host")
-            .and_then(Value::as_str)
-            .and_then(|host| host.parse::<Ipv4Addr>().ok()),
+        "connect" | "install_launcher" | "list_apps" | "remove_apps" | "prepare_native_home" => {
+            params
+                .get("host")
+                .and_then(Value::as_str)
+                .and_then(|host| host.parse::<Ipv4Addr>().ok())
+        }
         _ => None,
     };
     if let Some(address) = address.filter(|address| !address.is_loopback()) {

@@ -46,6 +46,10 @@ startup apps and Smart Hub autostart. When an original backup exists, select
 **Backup & restore** to review its settings, then **Restore original settings** to
 apply them back to the selected TV after confirmation.
 
+Native Home Apply prepares the original backup before the writer can open AeroTizen.
+It reuses a valid backup for the selected TV. A first capture needs an updated
+paired helper and complete, unchanged Home and startup settings.
+
 ## Development
 
 Install the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), Node.js 22.12+
