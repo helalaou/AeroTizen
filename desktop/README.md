@@ -46,9 +46,11 @@ startup apps and Smart Hub autostart. When an original backup exists, select
 **Backup & restore** to review its settings, then **Restore original settings** to
 apply them back to the selected TV after confirmation.
 
-Native Home Apply prepares the original backup before the writer can open AeroTizen.
-It reuses a valid backup for the selected TV. A first capture needs an updated
-paired helper and complete, unchanged Home and startup settings.
+When AeroTizen routing is in Watcher mode, select **Apply Native Home** to switch the
+TV's Home app, startup apps and Smart Hub autostart to AeroTizen after confirmation.
+Apply first prepares the original backup, reusing a valid one for the selected TV; a
+first capture needs an updated paired helper and complete, unchanged Home and startup
+settings. Once applied, AeroTizen routing shows Native Home mode.
 
 ## Development
 

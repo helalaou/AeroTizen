@@ -135,6 +135,37 @@ test("shows the connected TV's Home button, startup, routing and backup status",
   await expect(backup.getByRole("button", { name: "Restore original settings", exact: true })).toHaveCount(0);
 });
 
+test("applies Native Home, backing up the original settings first", async ({ page, isMobile }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Search for TVs" }).click();
+  await page.getByRole("button", { name: "Connect to Office at 192.0.2.22", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+  await showAction(page, isMobile, "Home and startup");
+  const routing = page.getByRole("region", { name: "AeroTizen routing", exact: true });
+  await expect(routing.getByText("Watcher", { exact: true })).toBeVisible();
+  const applyButton = page.getByRole("button", { name: "Apply Native Home", exact: true });
+  await expect(applyButton).toBeVisible();
+  const dialog = page.getByRole("dialog", { name: "Apply Native Home?" });
+  await applyButton.click();
+  await expect(dialog.getByText("Office", { exact: true })).toBeVisible();
+  await expect(dialog.getByText(/will be backed up before AeroTizen opens/)).toBeVisible();
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(routing.getByText("Watcher", { exact: true })).toBeVisible();
+
+  await applyButton.click();
+  await dialog.getByRole("button", { name: "Confirm apply", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(routing.getByText("Native Home mode", { exact: true })).toBeVisible();
+  await expect(applyButton).toHaveCount(0);
+
+  const titleRow = page.getByRole("heading", { name: "Home and startup", level: 1 }).locator("..");
+  await titleRow.getByRole("button", { name: "Backup & restore", exact: true }).click();
+  const backup = page.getByRole("dialog", { name: "Original Home backup" });
+  await expect(backup.getByText(/Original backup saved/)).toBeVisible();
+  await expect(backup.getByRole("button", { name: "Restore original settings", exact: true })).toBeEnabled();
+});
+
 test.describe("Installed apps", () => {
   test.use({
     inventory: {

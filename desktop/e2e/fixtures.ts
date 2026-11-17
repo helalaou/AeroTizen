@@ -5,6 +5,7 @@ import {
   livingRoom,
   office,
   testBackupSettings,
+  testBackupSha256,
   testPackages,
   testReleases,
   testStatus,
@@ -16,7 +17,7 @@ export const test = base.extend<{
   inventory: [{ packages: testPackages }, { option: true }],
   page: async ({ page, inventory }, use) => {
     await page.addInitScript(
-      ({ initial, known, packages, failures, releases, status, backupSettings }) => {
+      ({ initial, known, packages, failures, releases, status, backupSettings, backupSha256 }) => {
         let currentPackages = packages;
         const profileKey = "test-native-profiles";
         const profiles = new Map<string, SavedTv>(
@@ -43,6 +44,37 @@ export const test = base.extend<{
                     throw new Error("The original Home backup could not be verified.");
                   }
                   return backupSettings;
+                }
+                case "prepare_native_home": {
+                  const tv = profiles.get(String(args.id));
+                  if (!tv) throw new Error("Could not connect to the TV.");
+                  const backup = tv.home_backup;
+                  if (backup?.status === "saved") {
+                    return { id: tv.id, captured_at: backup.captured_at, backup_sha256: backupSha256 };
+                  }
+                  const captured_at = new Date().toISOString();
+                  save({ ...tv, home_backup: { status: "saved", captured_at } });
+                  return { id: tv.id, captured_at, backup_sha256: backupSha256 };
+                }
+                case "apply_native_home": {
+                  const tv = profiles.get(String(args.id));
+                  if (!tv || tv.home_backup?.status !== "saved" || args.backupSha256 !== backupSha256) {
+                    throw new Error("The original Home backup could not be verified.");
+                  }
+                  return save({
+                    ...tv,
+                    home_routing_mode: "native",
+                    native_home_settings:
+                      tv.transport === "paired_root"
+                        ? {
+                            home_button_app: "DclHome001.Home",
+                            home_app: "DclHome001.Home",
+                            startup_app: "DclHome001.Home",
+                            startup_backup_app: "DclHome001.Home",
+                            smart_hub_autostart: true,
+                          }
+                        : undefined,
+                  });
                 }
                 case "restore_home_backup": {
                   const tv = profiles.get(String(args.id));
@@ -129,6 +161,7 @@ export const test = base.extend<{
         releases: testReleases,
         status: testStatus,
         backupSettings: testBackupSettings,
+        backupSha256: testBackupSha256,
       },
     );
     await use(page);

@@ -39,6 +39,7 @@ export const nativeService: DesktopService = {
     invoke<SavedTv>("install_launcher", { id, version, currentVersion, confirmReplace }),
   readHomeBackup: (id, capturedAt) => invoke<HomeBackupSettings>("read_home_backup", { id, capturedAt }),
   prepareNativeHome: (id) => invoke<PreparedHomeApply>("prepare_native_home", { id }),
+  applyNativeHome: (id, backupSha256) => invoke<SavedTv>("apply_native_home", { id, backupSha256 }),
   restoreHomeBackup: (id, capturedAt) => invoke<SavedTv>("restore_home_backup", { id, capturedAt }),
   rename: (id, name) => invoke<void>("rename_tv", { id, name }),
   forget: (id) => invoke<void>("forget_tv", { id }),

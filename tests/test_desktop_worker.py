@@ -328,6 +328,47 @@ def test_restore_home_backup_reports_the_native_home_error(connected_tv, tmp_pat
     }
 
 
+def test_apply_native_home_calls_change_and_returns_profile(connected_tv, tmp_path, monkeypatch):
+    identity = hashlib.sha256(b"test-duid").hexdigest()
+    backup = _write_backup(tmp_path, identity, "2026-11-16T10:00:00+00:00")
+    digest = hashlib.sha256(backup.read_bytes()).hexdigest()
+    calls = []
+    monkeypatch.setattr(
+        worker.home_control,
+        "change",
+        lambda session, info, action, **kwargs: calls.append((action, kwargs)),
+    )
+    reply = worker.handle(
+        request("apply_native_home", host="127.0.0.1", expected_identity=identity, backup_sha256=digest)
+    )
+    assert calls == [("apply", {"state_dir": tmp_path})]
+    assert reply["result"]["identity_sha256"] == identity
+
+    stale = worker.handle(
+        request("apply_native_home", host="127.0.0.1", expected_identity=identity, backup_sha256="f" * 64)
+    )
+    assert stale["error"]["code"] == "backup_changed"
+    assert calls == [("apply", {"state_dir": tmp_path})]
+
+
+def test_apply_native_home_reports_the_native_home_error(connected_tv, tmp_path, monkeypatch):
+    identity = hashlib.sha256(b"test-duid").hexdigest()
+    backup = _write_backup(tmp_path, identity, "2026-11-16T10:00:00+00:00")
+    digest = hashlib.sha256(backup.read_bytes()).hexdigest()
+
+    def fail(*_args, **_kwargs):
+        raise worker.home.HomeError("AeroTizen is installed but its control service is unavailable.")
+
+    monkeypatch.setattr(worker.home_control, "change", fail)
+    reply = worker.handle(
+        request("apply_native_home", host="127.0.0.1", expected_identity=identity, backup_sha256=digest)
+    )
+    assert reply["error"] == {
+        "code": "apply_failed",
+        "message": "AeroTizen is installed but its control service is unavailable.",
+    }
+
+
 def test_different_saved_identity_is_refused(connected_tv):
     reply = worker.handle(request("connect", host="127.0.0.1", expected_identity="0" * 64))
     assert reply["error"]["code"] == "identity_mismatch"
@@ -540,6 +581,7 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "install_launcher",
         "read_home_backup",
         "prepare_native_home",
+        "apply_native_home",
         "restore_home_backup",
     ]
 

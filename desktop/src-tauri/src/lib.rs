@@ -221,6 +221,45 @@ async fn prepare_native_home(
 }
 
 #[tauri::command]
+async fn apply_native_home(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    backup_sha256: String,
+) -> AppResult<SavedTv> {
+    let _guard = state.operation.try_lock().map_err(|_| busy())?;
+    if !valid_identity(&backup_sha256) {
+        return Err(AppError::new(
+            "invalid_response",
+            "The Home backup verification is invalid.",
+        ));
+    }
+    let saved = state.profiles.get(&id)?;
+    let result = worker::request(
+        &state.worker_path,
+        "apply_native_home",
+        json!({
+            "host": saved.tv.host,
+            "expected_identity": saved.tv.identity_sha256,
+            "backup_sha256": backup_sha256,
+        }),
+    )
+    .await?;
+    let tv: VerifiedTv = serde_json::from_value(result).map_err(|_| {
+        AppError::new(
+            "invalid_response",
+            "The TV backend returned invalid connection details.",
+        )
+    })?;
+    if tv.host != saved.tv.host || tv.identity_sha256 != saved.tv.identity_sha256 {
+        return Err(AppError::new(
+            "identity_mismatch",
+            "The TV check returned a different address or identity.",
+        ));
+    }
+    state.profiles.save(tv)
+}
+
+#[tauri::command]
 async fn restore_home_backup(
     state: tauri::State<'_, AppState>,
     id: String,
@@ -312,6 +351,7 @@ pub fn run() {
             connect_tv,
             read_home_backup,
             prepare_native_home,
+            apply_native_home,
             restore_home_backup,
             rename_tv,
             forget_tv
