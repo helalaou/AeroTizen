@@ -28,8 +28,7 @@ concurrency:
 
 jobs:
   changes:
-    # A release call selects tests by component and checks out its exact tag commit.
-    if: inputs.ref == ''
+    # Release calls verify previous PR CI against the exact tag commit too.
     runs-on: ubuntu-latest
     outputs:
       cli: ${{ steps.select.outputs.cli }}
@@ -39,11 +38,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.ref || github.sha }}
           fetch-depth: 2
           persist-credentials: false
       - name: Record the tested PR checkout
         id: pr-checkout
-        if: github.event_name == 'pull_request'
+        if: inputs.ref == '' && github.event_name == 'pull_request'
         continue-on-error: true
         env:
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
@@ -56,11 +56,13 @@ jobs:
           printf 'base=%s\ntree=%s\n' "$base" "$tree" >> "$GITHUB_OUTPUT"
       - name: Check for a successful PR run
         id: reuse
-        if: github.event_name == 'push' && !github.event.forced
+        if: inputs.ref != '' || (github.event_name == 'push' && !github.event.forced)
         continue-on-error: true
         timeout-minutes: 1
         env:
           BEFORE: ${{ github.event.before }}
+          RELEASE_REF: ${{ inputs.ref }}
+          RELEASE_BRANCH: ${{ github.event.repository.default_branch }}
         run: python3 tools/ci_reuse.py
       # The jobs API preserves this step name after GitHub removes the PR merge ref.
       - name: >-
@@ -70,6 +72,7 @@ jobs:
         env:
           BEFORE: ${{ github.event.before }}
           REUSED_PR_CI_RUN: ${{ steps.reuse.outputs.run }}
+          RELEASE_REF: ${{ inputs.ref }}
         run: |
           import os
           import subprocess
@@ -79,13 +82,16 @@ jobs:
                   print("cli=false\nlauncher=false", file=output)
               raise SystemExit(0)
 
-          # Compare the PR merge commit to its base parent, or use the push's previous tip.
-          base = "HEAD^1" if os.environ["GITHUB_EVENT_NAME"] == "pull_request" else os.environ["BEFORE"]
-          diff = subprocess.run(
-              ["git", "diff", "--no-renames", "--name-only", "-z", base, "HEAD", "--"],
-              capture_output=True,
-          )
-          paths = diff.stdout.split(b"\0")[:-1] if diff.returncode == 0 else []
+          # Unverified release commits retain the full component test selection.
+          paths = []
+          if not os.environ["RELEASE_REF"]:
+              # Compare the PR merge checkout to its base, or use the push's previous tip.
+              base = "HEAD^1" if os.environ["GITHUB_EVENT_NAME"] == "pull_request" else os.environ["BEFORE"]
+              diff = subprocess.run(
+                  ["git", "diff", "--no-renames", "--name-only", "-z", base, "HEAD", "--"],
+                  capture_output=True,
+              )
+              paths = diff.stdout.split(b"\0")[:-1] if diff.returncode == 0 else []
           code_paths = [
               path for path in paths
               if path not in (b"README.md", b"CONTRIBUTING.md") and not path.startswith(b"docs/")
@@ -243,7 +249,7 @@ jobs:
 
   launcher-checks:
     needs: changes
-    if: ${{ !cancelled() && inputs.release_component != 'cli' && (needs.changes.outputs.launcher != 'false' || needs.changes.outputs.format_contributing == 'true') }}
+    if: ${{ !cancelled() && inputs.release_component != 'cli' && (needs.changes.outputs.launcher != 'false' || needs.changes.outputs.format_contributing == 'true' || inputs.release_component == 'launcher') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -259,14 +265,14 @@ jobs:
           prettier_package=$(node -p 'require("./package-lock.json").packages["node_modules/prettier"].resolved')
           npm exec --yes --ignore-scripts --package "$prettier_package" -- prettier --check CONTRIBUTING.md
       - run: npm ci --no-audit --no-fund
-        if: needs.changes.outputs.launcher != 'false'
+        if: needs.changes.outputs.launcher != 'false' || inputs.release_component == 'launcher'
       - run: npm run format:check
         if: needs.changes.outputs.launcher != 'false'
       - name: Lint launcher source and check browser compatibility
         run: npm run lint
         if: needs.changes.outputs.launcher != 'false'
       - run: npm run build
-        if: needs.changes.outputs.launcher != 'false'
+        if: needs.changes.outputs.launcher != 'false' || inputs.release_component == 'launcher'
       - run: npm run test:service
         if: needs.changes.outputs.launcher != 'false'
       - run: npm test
@@ -281,7 +287,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Check compiled launcher release packaging
-        if: needs.changes.outputs.launcher != 'false'
+        if: needs.changes.outputs.launcher != 'false' || inputs.release_component == 'launcher'
         env:
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
@@ -333,7 +339,7 @@ jobs:
   launcher:
     # Keep the existing required check name and require both checks and browser tests.
     needs: [changes, launcher-checks, launcher-browser]
-    if: ${{ !cancelled() && inputs.release_component != 'cli' && (needs.changes.outputs.launcher != 'false' || needs.changes.outputs.format_contributing == 'true') }}
+    if: ${{ !cancelled() && inputs.release_component != 'cli' && (needs.changes.outputs.launcher != 'false' || needs.changes.outputs.format_contributing == 'true' || inputs.release_component == 'launcher') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
