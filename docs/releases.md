@@ -88,9 +88,22 @@ and [required status checks](https://docs.github.com/en/repositories/configuring
 2. Release Please opens a separate release PR for each changed component. Review its
    version and notes and let CI pass.
 3. Merge the release PR. Release Please creates its tag and a **draft** GitHub release.
-4. The build workflow checks out that exact commit, runs CI, builds the assets, and
-   smoke-tests the CLI binaries. It publishes the release only after all required jobs
-   succeed and all assets have been uploaded.
+4. The build workflow checks out that exact commit and verifies whether its PR CI
+   already passed for the same base commit and source tree. It reuses matching test
+   results, or runs CI when a match cannot be verified. It always builds and validates
+   fresh launcher packages or CLI binaries, checks release versions and checksums,
+   and smoke-tests the CLI binaries before publishing.
+
+CI reuse requires a successful run of the repository's CI workflow for the PR that
+was squash-merged into the default branch. The recorded PR checkout must match the
+release commit's parent and complete source tree. A green run for another commit or
+only a matching source tree is insufficient. API errors, missing results and other
+merge shapes leave the normal test jobs enabled. Manual retries verify the selected
+tag commit, even when `main` has advanced.
+
+Reuse skips source-test jobs; it does not reuse release assets. Package builds, binary
+smoke tests, version validation, checksums and the final check that the tag has not
+moved still run for the pinned release commit.
 
 Release Please refreshes pending release PRs even when their release notes have not
 changed. This keeps the shared version manifest current after another component is

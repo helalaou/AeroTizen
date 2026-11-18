@@ -1,5 +1,8 @@
+import json
 import runpy
+from io import BytesIO
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import pytest
 
@@ -82,10 +85,8 @@ def test_requires_the_recorded_checkout_for_this_pr(github, marker):
     assert find_run(github) is None
 
 
-def test_an_api_failure_leaves_normal_push_jobs_enabled(monkeypatch, tmp_path):
-    def timeout(*args, **kwargs):
-        raise TimeoutError
-
+@pytest.fixture
+def ci_command(monkeypatch, tmp_path, github):
     output = tmp_path / "outputs"
     for name, value in {
         "GITHUB_SHA": "squash",
@@ -94,13 +95,75 @@ def test_an_api_failure_leaves_normal_push_jobs_enabled(monkeypatch, tmp_path):
         "GITHUB_REF_NAME": "main",
         "GITHUB_API_URL": "https://api.github.com",
         "GITHUB_OUTPUT": str(output),
+        "RELEASE_REF": "",
+        "RELEASE_BRANCH": "main",
     }.items():
         monkeypatch.setenv(name, value)
+
+    checkout = {"parents": "squash prior", "tree": "matching"}
     monkeypatch.setattr(
-        "subprocess.check_output", lambda args, **kw: "squash prior" if "rev-list" in args else "tree"
+        "subprocess.check_output",
+        lambda args, **kw: checkout["parents"] if "rev-list" in args else checkout["tree"],
     )
+
+    def response(request, **kwargs):
+        path = urlsplit(request.full_url).path.removeprefix("/repos/owner/repo/")
+        return BytesIO(json.dumps(github[path]).encode())
+
+    monkeypatch.setattr("urllib.request.urlopen", response)
+
+    def execute(**environment):
+        for name, value in environment.items():
+            monkeypatch.setenv(name, value)
+        runpy.run_path(str(SCRIPT), run_name="__main__")
+        return output.read_text() if output.exists() else ""
+
+    return execute, checkout
+
+
+@pytest.mark.parametrize("release_ref", ["", "squash"])
+def test_matching_push_and_release_commands_output_the_verified_run(ci_command, release_ref):
+    execute, _ = ci_command
+    assert execute(RELEASE_REF=release_ref) == "run=123\n"
+
+
+def test_a_release_retry_checks_its_pinned_tag_after_main_has_advanced(ci_command):
+    execute, _ = ci_command
+    assert (
+        execute(
+            RELEASE_REF="squash",
+            GITHUB_SHA="new-main",
+            BEFORE="new-parent",
+            GITHUB_REF_NAME="manual-retry-branch",
+        )
+        == "run=123\n"
+    )
+
+
+@pytest.mark.parametrize("parents", ["squash", "squash prior second-parent", "other prior"])
+def test_a_release_needs_a_single_parent_and_the_requested_commit(ci_command, parents):
+    execute, checkout = ci_command
+    checkout["parents"] = parents
+    assert execute(RELEASE_REF="squash") == ""
+
+
+def test_a_push_cannot_reuse_results_when_its_before_commit_is_not_the_parent(ci_command):
+    execute, _ = ci_command
+    assert execute(BEFORE="different-parent") == ""
+
+
+@pytest.mark.parametrize(("field", "value"), [("parents", "squash new-base"), ("tree", "new-tree")])
+def test_a_release_with_a_different_base_or_tree_keeps_normal_tests_enabled(ci_command, field, value):
+    execute, checkout = ci_command
+    checkout[field] = value
+    assert execute(RELEASE_REF="squash") == ""
+
+
+@pytest.mark.parametrize("release_ref", ["", "squash"])
+def test_an_api_failure_leaves_normal_test_jobs_enabled(ci_command, monkeypatch, release_ref):
+    def timeout(*args, **kwargs):
+        raise TimeoutError
+
+    execute, _ = ci_command
     monkeypatch.setattr("urllib.request.urlopen", timeout)
-
-    runpy.run_path(str(SCRIPT), run_name="__main__")
-
-    assert not output.exists()
+    assert execute(RELEASE_REF=release_ref) == ""
