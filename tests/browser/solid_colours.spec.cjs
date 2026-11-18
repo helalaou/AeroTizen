@@ -144,10 +144,13 @@ for (const theme of ["classic", "glass"]) {
 
   test(`${theme}: remote-only picker previews, cancels, applies and restores focus`, async ({ page }) => {
     const errors = await openSolid(page, theme);
-    // Pass both category rows before entering the first wallpaper tile.
+    // Pass both category rows, enter the aligned tile, then move across to Custom.
     await page.keyboard.press("ArrowDown");
     await expect(page.locator('[data-key="wallpaper-categories:animated"]')).toBeFocused();
     await page.keyboard.press("ArrowDown");
+    const tiles = page.locator("#bg-still [data-wallpaper-swatch]:visible");
+    await expect(tiles.nth(4)).toBeFocused();
+    for (let column = 4; column > 0; column--) await page.keyboard.press("ArrowLeft");
     await expect(page.locator('[data-key="bg:custom"]')).toBeFocused();
     await page.keyboard.press("Enter");
     const picker = page.getByRole("dialog", { name: "Custom colour" });

@@ -69,6 +69,9 @@ for (const theme of ["classic", "glass"]) {
     await page.keyboard.press("ArrowDown");
     await expect(page.locator('[data-key="wallpaper-categories:animated"]')).toBeFocused();
     await page.keyboard.press("ArrowDown");
+    await expect(tiles.nth(4)).toBeFocused();
+    // Enter the aligned rightmost tile, then move across to Custom.
+    for (let column = 4; column > 0; column--) await page.keyboard.press("ArrowLeft");
     await expect(tiles.first()).toBeFocused();
     await page.keyboard.press("Enter");
     const editor = page.getByRole("dialog", { name: "Custom gradient" });
