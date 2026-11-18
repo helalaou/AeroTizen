@@ -23,6 +23,7 @@ not establish that result. Use the full model code from your TV to find a match.
 | Samsung 55" BU8000 (UE55BU8000KXXC) | 2022 | Tizen 6.5 | Yes | Native (HDMI limits) | Yes | [#192](https://github.com/helalaou/AeroTizen/issues/192) |
 | Samsung 75" QLED Q60B (QE75Q60BAUXXC) | 2022 | Tizen 6.5 | Unknown | Unknown | Unknown | — |
 | Samsung 55" QLED Q60B (QE55Q60BAUXZT) | 2022 | Tizen 6.5 | Yes | Native | Yes | Native Home and cold boot work ([#115](https://github.com/helalaou/AeroTizen/issues/115)) |
+| Samsung 50" QLED Q60B (QE50Q60BAUXXC) | 2022 | Tizen 6.5 | Yes | Native (HDMI limits) | Yes | Native Home works; pressing Home during HDMI playback does nothing ([#259](https://github.com/helalaou/AeroTizen/issues/259)). |
 | Samsung 55" OLED S95B (QE55S95BATXXC) | 2022 | Tizen 6.5 | Unknown | Unknown | Issue reported | Cold boot issue ([#47](https://github.com/helalaou/AeroTizen/issues/47)) |
 | Samsung 55" QLED Q80B (QE55Q80BATXXC) | 2022 | Unknown | Yes | Watcher | Unknown | Watcher works; native Home apply fixed in [#79](https://github.com/helalaou/AeroTizen/pull/79) |
 | Samsung 50" The Serif LS01B (QE50LS01BAUXXH) | 2022 | Tizen 6.5 | Yes | Native | Unknown | Native Home works |
