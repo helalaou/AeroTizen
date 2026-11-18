@@ -114,6 +114,7 @@ body[data-theme="pop"] {
   --settings-content-focus-surface: rgba(var(--focus-rgb), 0.04);
   --settings-focus-border: var(--focus);
   --settings-content-focus-shadow: none;
+  --settings-selected-focus-outline: 2px solid var(--choice-selected-text, var(--control-focused-text));
   --settings-sidebar-line-height: 1.2;
   --surface-control: #f5edf1;
   --settings-card-shadow: inset 0 0 0 1px rgba(42, 10, 29, 0.3);

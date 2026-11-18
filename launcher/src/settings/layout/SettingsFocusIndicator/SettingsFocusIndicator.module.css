@@ -36,6 +36,11 @@
   background: var(--settings-content-focus-surface);
   box-shadow: var(--settings-content-focus-shadow);
 
+  &[data-selected="true"] {
+    outline: var(--settings-selected-focus-outline);
+    outline-offset: -4px;
+  }
+
   &[data-motion="false"] {
     transition: none;
   }

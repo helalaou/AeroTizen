@@ -106,6 +106,7 @@ body[data-theme="mint"] {
   --settings-sidebar-focus-surface: rgba(var(--focus-rgb), 0.12);
   --settings-sidebar-focus-shadow: none;
   --settings-content-focus-shadow: none;
+  --settings-selected-focus-outline: 2px solid var(--choice-selected-text, var(--control-focused-text));
   --settings-sidebar-line-height: 1.2;
   --settings-return-label-wrap: nowrap;
   --settings-focus-border: var(--focus);

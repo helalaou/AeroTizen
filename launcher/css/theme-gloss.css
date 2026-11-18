@@ -114,6 +114,7 @@ body[data-theme="gloss"] {
   --settings-sidebar-focus-surface: rgba(255, 255, 255, 0.1);
   --settings-focus-border: #fff;
   --settings-content-focus-shadow: 0 0 0 3px rgba(10, 4, 14, 0.25), 0 0 0 5px #fff;
+  --settings-selected-focus-outline: none;
   --settings-scroll-ring-room: 2px;
   --settings-sidebar-line-height: 1.2;
   --surface-control: rgba(255, 255, 255, 0.06);

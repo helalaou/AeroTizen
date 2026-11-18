@@ -5,8 +5,13 @@ for (const [build, url] of [
   ["compiled", "http://127.0.0.1:8171/"],
   ["development", "http://127.0.0.1:8172/"],
 ]) {
-  for (const theme of ["classic", "glass"]) {
-    test(`${build} ${theme} Settings shares motion policy and keeps reduced-motion focus visible`, async ({
+  for (const [theme, width] of [
+    ["classic", 1920],
+    ["glass", 1920],
+    ["classic", 1367],
+    ["glass", 1367],
+  ]) {
+    test(`${build} ${theme} ${width}px Settings shares motion policy and keeps reduced-motion focus visible`, async ({
       page,
     }, info) => {
       const errors = [];
@@ -25,6 +30,7 @@ for (const [build, url] of [
         }
       }, theme);
       await page.emulateMedia({ reducedMotion: "no-preference" });
+      await page.setViewportSize({ width, height: 1080 });
       await page.goto(url);
       await expect(page).toHaveTitle("AeroTizen");
       await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
@@ -51,9 +57,12 @@ for (const [build, url] of [
         // First positioning snaps; movement between controls keeps the shared duration.
         await expect(content).toHaveAttribute("data-motion", "false");
         await expect(content).toHaveCSS("transition-duration", "0s");
-        await page.keyboard.press("ArrowRight");
-        await expect(content).toHaveAttribute("data-motion", "true");
-        await expect(content).toHaveCSS("transition-duration", "0.15s, 0.1s, 0.12s");
+        for (const key of ["ArrowRight", "ArrowRight", "ArrowLeft", "ArrowLeft"]) {
+          await page.keyboard.press(key);
+          await expect(content).toHaveAttribute("data-motion", "true");
+          await expect(content).toHaveCSS("transition-duration", "0.15s, 0.1s, 0.12s");
+          await expect.poll(alignment).toBeLessThan(1);
+        }
       };
       await expect(sidebar).toHaveCSS("transition-duration", "0.15s, 0.1s");
       await expect(drawer).toHaveCSS("animation-duration", "0.2s");
