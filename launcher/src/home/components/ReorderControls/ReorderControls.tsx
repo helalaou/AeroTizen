@@ -18,7 +18,7 @@ export const ReorderControls = ({ env, id }: { env: HomeEnvironment; id: string 
   const settings = useStore(env.settings);
   const ids = draft || settings.home;
   const index = ids.indexOf(id);
-  const columns = env.columns(settings);
+  const columns = settings.homeCardColumns;
   const allowed = {
     left: language === "ar" ? index < ids.length - 1 : index > 0,
     right: language === "ar" ? index > 0 : index < ids.length - 1,

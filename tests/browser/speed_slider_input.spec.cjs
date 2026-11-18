@@ -17,6 +17,8 @@ const openSlider = async (page, theme) => {
   await openCategory(page, "wallpaper");
   const slider = page.getByRole("slider", { name: "Background speed" });
   await slider.focus();
+  await expect(slider).toHaveAttribute("data-inline", "true");
+  await expect(page.locator('[data-settings-focus="content"]')).not.toHaveAttribute("data-visible", "true");
   return slider;
 };
 

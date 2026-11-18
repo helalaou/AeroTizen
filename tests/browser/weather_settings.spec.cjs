@@ -21,8 +21,9 @@ const entries = [
   { name: "compiled", url: "http://127.0.0.1:8171/" },
   { name: "development", url: "http://127.0.0.1:8172/" },
 ];
+const themes = ["classic", "glass", "pop", "frost", "gloss", "amethyst", "mint", "halo"];
 
-const setup = async (page, { url, theme = "classic", language = "en" }) => {
+const setup = async (page, { url, theme = "classic", language = "en", showWeather = true }) => {
   const errors = [];
   const searches = [];
   const pending = [];
@@ -56,7 +57,7 @@ const setup = async (page, { url, theme = "classic", language = "en" }) => {
     return route.fulfill({ json: { results: [paris, boston] } });
   });
   await page.addInitScript(
-    ({ theme, language }) => {
+    ({ theme, language, showWeather }) => {
       if (!localStorage.getItem("aerotizen.settings.v1")) {
         localStorage.setItem(
           "aerotizen.settings.v1",
@@ -65,7 +66,7 @@ const setup = async (page, { url, theme = "classic", language = "en" }) => {
             background: "black",
             theme,
             language,
-            showWeather: false,
+            showWeather,
             weatherShowLocation: false,
             tempUnit: "C",
           }),
@@ -83,12 +84,12 @@ const setup = async (page, { url, theme = "classic", language = "en" }) => {
         );
       }
     },
-    { theme, language },
+    { theme, language, showWeather },
   );
   await page.goto(url);
   await page.locator("#gear").click();
   await openCategory(page, "weather");
-  await expect(page.locator("[data-weather-location-summary]")).toContainText("London");
+  if (showWeather) await expect(page.locator("[data-weather-location-summary]")).toContainText("London");
   return {
     errors,
     searches,
@@ -103,36 +104,118 @@ const setup = async (page, { url, theme = "classic", language = "en" }) => {
   };
 };
 
+for (const theme of themes) {
+  test(`${theme} weather switches keep remote focus, act once per press and retain hidden preferences`, async ({
+    page,
+  }) => {
+    const h = await setup(page, { ...entries[0], theme, showWeather: false });
+    const display = page.getByRole("switch", { name: "Show weather", exact: true });
+    const locationName = page.getByRole("switch", { name: "Show location name", exact: true });
+    await expect(display).toBeFocused();
+    await expect(page.getByRole("switch")).toHaveCount(1);
+    await page.keyboard.down("Enter");
+    await page.keyboard.down("Enter");
+    await page.keyboard.up("Enter");
+    await expect(display).toHaveAttribute("aria-checked", "true");
+    await expect(display).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(locationName).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(locationName).toHaveAttribute("aria-checked", "false");
+    await page.keyboard.down("Space");
+    await page.keyboard.down("Space");
+    await page.keyboard.up("Space");
+    await expect(locationName).toHaveAttribute("aria-checked", "true");
+    await expect(locationName).toHaveAccessibleName("Show location name");
+    await expect(locationName).toBeFocused();
+    await page.keyboard.press("ArrowUp");
+    await expect(display).toBeFocused();
+    await page.keyboard.press("Space");
+    await expect(display).toHaveAttribute("aria-checked", "false");
+    await expect(display).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(display).toBeFocused();
+    await expect(page.getByRole("switch")).toHaveCount(1);
+    await expect(page.locator("#units")).toBeHidden();
+    await expect(page.locator('[data-key="weather:change"]')).toBeHidden();
+    await page.reload();
+    await page.locator("#gear").click();
+    await openCategory(page, "weather");
+    await expect(display).toHaveAttribute("aria-checked", "false");
+    await page.keyboard.press("Enter");
+    await expect(locationName).toHaveAttribute("aria-checked", "true");
+    expect(h.errors).toEqual([]);
+  });
+}
+
+test("turning weather off during a location search closes the editor and ignores its pending reply", async ({
+  page,
+}) => {
+  const h = await setup(page, entries[0]);
+  h.hold();
+  await page.locator('[data-key="weather:change"]').click();
+  const input = page.getByRole("textbox", { name: "Weather location", exact: true });
+  await input.fill("Paris");
+  await input.press("Enter");
+  await expect.poll(() => h.searches.length).toBe(1);
+  await page.getByRole("switch", { name: "Show weather", exact: true }).click();
+  await expect(page.locator("#weather-location-editor")).toBeHidden();
+  await expect(page.locator('#editor [data-focused="true"]')).toBeVisible();
+  await h.reply(0, { results: [paris] });
+  const display = page.getByRole("switch", { name: "Show weather", exact: true });
+  await display.click();
+  await page.locator('[data-key="weather:change"]').click();
+  await expect(page.locator("#weather-results")).toBeHidden();
+  await expect(page.locator('[data-key="weather:search"]')).toHaveAttribute("aria-busy", "false");
+  expect(h.errors).toEqual([]);
+});
+
 for (const entry of entries) {
   for (const theme of ["classic", "glass"]) {
     test(`${entry.name} ${theme} weather groups Home controls and saves an explicit location without extra searches`, async ({
       page,
     }) => {
-      const h = await setup(page, { ...entry, theme });
+      const h = await setup(page, { ...entry, theme, showWeather: false });
       const summary = page.locator("[data-weather-location-summary]");
       const change = page.locator('[data-key="weather:change"]');
       const input = page.getByRole("textbox", { name: "Weather location", exact: true });
-      await expect(page.getByRole("heading", { name: "Home weather", exact: true })).toBeVisible();
-      await expect(page.locator('#weather-display [aria-pressed="true"]')).toHaveText("Off");
-      await expect(page.locator('#weather-visibility [aria-pressed="true"]')).toHaveText("Off");
-      await expect(summary).toHaveText("Automatic · London");
+      await expect(page.getByRole("heading", { name: "Show weather", exact: true })).toBeVisible();
+      const display = page.getByRole("switch", { name: "Show weather", exact: true });
+      const locationName = page.getByRole("switch", { name: "Show location name", exact: true });
+      await expect(display).toHaveAttribute("aria-checked", "false");
+      await expect(locationName).toBeHidden();
+      await expect(page.locator("#units")).toBeHidden();
+      await expect(summary).toBeHidden();
+      await expect(change).toBeHidden();
       await expect(input).toBeHidden();
       await expect(change).toHaveAttribute("aria-expanded", "false");
       expect(h.searches).toEqual([]);
-      await page.locator('[data-key="weather-display:true"]').click();
+      await display.click();
       await expect(page.locator("#weather b")).toHaveText("12°");
       await expect(page.locator("#weather span")).toHaveCount(0);
-      await page.locator('[data-key="weather-visibility:true"]').click();
+      await expect(locationName).toHaveAttribute("aria-checked", "false");
+      await locationName.click();
       await expect(page.locator("#weather span")).toHaveText("London");
       await page.locator('[data-key="units:F"]').click();
       await expect(page.locator("#weather b")).toHaveText("54°");
-      await page.locator('[data-key="weather-display:false"]').click();
+      await display.click();
+      await expect(display).toBeFocused();
+      await expect(locationName).toBeHidden();
+      await expect(page.locator("#units")).toBeHidden();
+      await expect(change).toBeHidden();
+      expect(await page.evaluate(() => AeroTizen.settings.getSnapshot())).toMatchObject({
+        weatherShowLocation: true,
+        tempUnit: "F",
+      });
+      await display.click();
+      await expect(locationName).toHaveAttribute("aria-checked", "true");
+      await expect(page.locator('#units [aria-pressed="true"]')).toHaveText("°F Fahrenheit");
       await expect(summary).toHaveText("Automatic · London");
       h.hold();
       await change.click();
       await expect(input).toBeFocused();
       await expect(change).toHaveAttribute("aria-expanded", "true");
-      await expect(page.getByRole("heading", { name: "Home weather", exact: true })).toBeHidden();
+      await expect(page.getByRole("heading", { name: "Show weather", exact: true })).toBeVisible();
       expect(h.searches).toEqual([]);
       await input.fill("Paris");
       await input.press("Enter");

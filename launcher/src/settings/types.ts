@@ -72,9 +72,9 @@ export interface SettingsActions {
   setClockLayout(layout: "classic" | SettingsValues["aeroClockStyle"]): void;
   setContinueWatching(enabled: boolean): void;
   setDateFormat(format: DateFormat): void;
+  setDateVisible(visible: boolean): void;
   setGradientStop(stop: 0 | 1): void;
   setHdmiKeepVisible(port: string, keep: boolean): void;
-  setHdmiNativeViewer(enabled: boolean): void;
   setHdmiVisibility(hide: boolean): void;
   setHomeAppLayout(layout: SettingsValues["homeAppLayout"]): void;
   setHomeCardColumns(columns: number): void;
@@ -88,6 +88,7 @@ export interface SettingsActions {
   setTempUnit(unit: TemperatureUnit): void;
   setTheme(theme: Theme): void;
   setTimeFormat(format: TimeFormat | "none"): void;
+  setTimeVisible(visible: boolean): void;
   setTimeZone(source: TimeZoneSource): void;
   setWeatherPhoto(enabled: boolean): void;
   setWeatherVisible(visible: boolean): void;

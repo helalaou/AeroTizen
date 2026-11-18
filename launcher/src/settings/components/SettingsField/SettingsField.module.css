@@ -1,0 +1,40 @@
+.field {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+  grid-gap: 16px 32px;
+  align-items: center;
+  min-width: 0;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--settings-divider);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.heading {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.topAligned {
+  align-items: start;
+}
+
+.controls {
+  --settings-button-width: calc((100% - 24px) / 3);
+
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
+}
+
+.details {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.fullWidthDetails {
+  grid-column: 1 / -1;
+}

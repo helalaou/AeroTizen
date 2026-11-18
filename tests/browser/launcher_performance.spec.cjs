@@ -66,7 +66,7 @@ for (const theme of ["classic", "glass"]) {
     await expect(blob).not.toHaveCSS("animation-name", "none");
     await page.locator("#gear").click();
     await openCategory(page, "appearance");
-    await page.locator('[data-key="performance-mode:true"]').click();
+    await page.locator('[data-key="performance-mode"]').click();
     await expect(page.locator("html")).toHaveAttribute("data-performance-mode", "true");
     await expect(blob).toHaveCSS("animation-name", "none");
     await expect(blob).toHaveCSS("will-change", "auto");
@@ -82,7 +82,7 @@ for (const theme of ["classic", "glass"]) {
     await page.screenshot({ path: info.outputPath("performance-mode-home.png") });
     await page.locator("#gear").click();
     await openCategory(page, "appearance");
-    await expect(page.locator('[data-key="performance-mode:true"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-key="performance-mode"]')).toHaveAttribute("aria-checked", "true");
     await page.screenshot({ path: info.outputPath("performance-mode-settings.png") });
     // All animated wallpaper families must stop work, including WebGL loops.
     for (const background of ["waves", "stars", "nebula", "rain", "stage"]) {
@@ -99,7 +99,7 @@ for (const theme of ["classic", "glass"]) {
       AeroTizen.settings.update({ background: "aurora" });
       AeroTizen.applyBackground();
     });
-    await page.locator('[data-key="performance-mode:false"]').click();
+    await page.locator('[data-key="performance-mode"]').click();
     await expect(blob).not.toHaveCSS("animation-name", "none");
     await closeSettings(page);
     await expect(page.locator("#grid > [data-id]").first()).toHaveCSS("transition-duration", "0.15s");

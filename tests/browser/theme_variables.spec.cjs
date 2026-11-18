@@ -44,6 +44,7 @@ const CATEGORY_ICON = '[data-key="section:about"] > span';
 const STORE_LABEL = '[data-key="add"] [data-app-store-part="label"]';
 const FAVOURITE_BADGE = "#grid [data-selection-indicator]";
 const SETTINGS_BADGE = "#all-apps [data-selection-indicator]";
+const UNSELECTED_APP = '#all-apps [data-app-option][aria-pressed="false"]';
 
 const HOME_VARIABLES = [
   ["--home-card-radius", "56px", TILE, RADIUS, "10px", "56px"],
@@ -217,6 +218,7 @@ const ALL_APPS_VARIABLES = [
 const APPS_PANE_VARIABLES = [
   ["--home-card-radius", "32px", '[data-key="add"]', RADIUS, "17px", "17px"],
   ["--home-card-selection-offset", "24px", SETTINGS_BADGE, "top", "12px", "12px"],
+  ["--settings-card-unselected-opacity", "0.7", UNSELECTED_APP, "opacity", "0.5", "0.7"],
   [
     "--muted",
     THEME_COLOUR,

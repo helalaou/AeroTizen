@@ -33,7 +33,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
     inputs.length > 0 &&
     !showContinueWatching &&
     visibleHome.length > 0 &&
-    (settings.homeAppLayout === "scroll" || visibleHome.length <= env.columns(settings));
+    (settings.homeAppLayout === "scroll" || visibleHome.length <= settings.homeCardColumns);
   const atAppsEnd = page === "apps" && scroll === appsEndOffset;
   useLayoutEffect(() => {
     env.bridge.focus();

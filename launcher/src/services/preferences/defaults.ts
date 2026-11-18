@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS: SettingsDefaults = {
   speed: 1,
   showWeather: true,
   showTime: true,
+  showDate: true,
   showNetwork: true,
   tempUnit: null,
   weatherLocation: null,
@@ -30,7 +31,6 @@ export const DEFAULT_SETTINGS: SettingsDefaults = {
   continueWatchingApps: [],
   showLiveTv: true,
   hideDisconnectedHdmi: false,
-  hdmiNativeViewer: false,
   hdmiKeepVisible: {},
   inputNames: {},
 };

@@ -20,6 +20,13 @@ body[data-theme="classic"] {
   --settings-close-surface: rgba(255, 255, 255, 0.07);
   --app-label-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   --settings-slider-track: #3a3a40;
+  --settings-toggle-off-surface: #3a3a40;
+  --settings-toggle-off-border: #9a9aa8;
+  --settings-toggle-off-thumb: #fff;
+  --settings-toggle-on-surface: #7c5cff;
+  --settings-toggle-on-border: #7c5cff;
+  --settings-toggle-on-thumb: #fff;
+  --settings-toggle-radius: 22px;
   --settings-slider-thumb: #fff;
   --settings-slider-thumb-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   --wallpaper-label-text: #fff;

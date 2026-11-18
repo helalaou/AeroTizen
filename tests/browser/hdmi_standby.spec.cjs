@@ -27,7 +27,7 @@ test("Preact standby overrides persist without confusing custom labels with devi
   await expect(page.locator("#inputs")).not.toContainText("Custom console label");
   await page.locator("#gear").click();
   await openCategory(page, "sources");
-  await page.locator('[data-key="hdmi-keep:2:true"]').click();
+  await page.locator('[data-key="hdmi-keep:2"]').click();
   await closeSettings(page);
   await expect(page.locator("#inputs")).toContainText("Custom console label");
   await page.reload();
@@ -35,65 +35,84 @@ test("Preact standby overrides persist without confusing custom labels with devi
   expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().hdmiKeepVisible["2"])).toBe(true);
   await page.locator("#gear").click();
   await openCategory(page, "sources");
-  await page.locator('[data-key="hdmi-keep:2:false"]').click();
+  const override = page.locator('[data-key="hdmi-keep:2"]');
+  await expect(override).toHaveAttribute("aria-checked", "true");
+  const hide = page.locator('[data-key="input-visibility"]');
+  await hide.focus();
+  await page.keyboard.press("Enter");
+  await expect(override).toBeHidden();
+  await expect(hide).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.locator('[data-key="name:HDMI 1"]')).toBeFocused();
+  await hide.focus();
+  await page.keyboard.press("Space");
+  await expect(override).toHaveAttribute("aria-checked", "true");
+  await page.locator('[data-key="hdmi-keep:2"]').click();
   await closeSettings(page);
   await expect(page.locator("#inputs")).not.toContainText("Custom console label");
   expect(errors).toEqual([]);
 });
 
-test("HDMI playback preference survives reload and changes how the Inputs tile opens", async ({ page }) => {
-  const errors = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
-  await page.route("http://127.0.0.1:47790/**", (route) =>
-    route.fulfill({ json: watcherStatus(route.request().url()) }),
-  );
-  await page.addInitScript(() => {
-    window.hdmiCalls = [];
-    window.tizen = {
-      application: {
-        getAppsInfo: (done) => done([]),
-        launch(id, done) {
-          window.hdmiCalls.push(id);
-          done();
+for (const savedViewer of [undefined, false, true]) {
+  test(`HDMI always uses Samsung viewer with saved preference ${savedViewer}`, async ({ page }) => {
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
+    await page.route("http://127.0.0.1:47790/**", (route) =>
+      route.fulfill({ json: watcherStatus(route.request().url()) }),
+    );
+    await page.addInitScript((savedViewer) => {
+      if (!localStorage.getItem("aerotizen.settings.v1")) {
+        localStorage.setItem(
+          "aerotizen.settings.v1",
+          JSON.stringify({ hdmiNativeViewer: savedViewer, showWeather: false }),
+        );
+      }
+      window.hdmiCalls = [];
+      window.tizen = {
+        application: {
+          getAppsInfo: (done) => done([]),
+          launch(id, done) {
+            window.hdmiCalls.push(id);
+            done();
+          },
         },
-      },
-      systeminfo: {
-        getPropertyValue(name, done) {
-          if (name === "VIDEOSOURCE") done({ connected: [{ type: "HDMI", number: 2 }], disconnected: [] });
+        systeminfo: {
+          getPropertyValue(name, done) {
+            if (name === "VIDEOSOURCE") done({ connected: [{ type: "HDMI", number: 2 }], disconnected: [] });
+          },
         },
-      },
-      tvwindow: {
-        setSource(source, done) {
-          window.hdmiCalls.push(source.type + " " + source.number);
-          done();
+        tvwindow: {
+          setSource(source, done) {
+            window.hdmiCalls.push(source.type + " " + source.number);
+            done();
+          },
+          show(done) {
+            window.hdmiCalls.push("embedded");
+            done();
+          },
         },
-        show(done) {
-          window.hdmiCalls.push("embedded");
-          done();
-        },
-      },
-    };
+      };
+    }, savedViewer);
+    await page.goto("/");
+    await expect(page).toHaveTitle("AeroTizen");
+    const hdmiTile = page.getByRole("button", { name: "HDMI 2", exact: true });
+    await hdmiTile.click();
+    await expect.poll(() => page.evaluate(() => window.hdmiCalls)).toEqual(["HDMI 2", "org.tizen.tv-viewer"]);
+    await expect(page.locator("body")).not.toHaveClass(/\btv\b/);
+    await page.locator("#gear").click();
+    await openCategory(page, "sources");
+    await expect(page.locator('[data-section-pane="sources"]')).toBeVisible();
+    await expect(page.getByRole("button", { name: "Inside AeroTizen" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Samsung viewer", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "HDMI playback", exact: true })).toHaveCount(0);
+    expect(await page.evaluate(() => "hdmiNativeViewer" in AeroTizen.settings.getSnapshot())).toBe(false);
+    await page.reload();
+    await hdmiTile.click();
+    await expect.poll(() => page.evaluate(() => window.hdmiCalls)).toEqual(["HDMI 2", "org.tizen.tv-viewer"]);
+    expect(errors).toEqual([]);
   });
-  await page.goto("/");
-  await expect(page).toHaveTitle("AeroTizen");
-  const hdmiTile = page.getByRole("button", { name: "HDMI 2", exact: true });
-  await hdmiTile.click();
-  await expect.poll(() => page.evaluate(() => window.hdmiCalls)).toEqual(["HDMI 2", "embedded"]);
-
-  await page.reload();
-  await page.locator("#gear").click();
-  await openCategory(page, "sources");
-  await expect(page.getByRole("button", { name: "Inside AeroTizen" })).toHaveAttribute("aria-pressed", "true");
-  const samsungViewer = page.getByRole("button", { name: "Samsung viewer", exact: true });
-  await samsungViewer.click();
-  await expect(samsungViewer).toHaveAttribute("aria-pressed", "true");
-  await page.reload();
-
-  await hdmiTile.click();
-  await expect.poll(() => page.evaluate(() => window.hdmiCalls)).toEqual(["HDMI 2", "org.tizen.tv-viewer"]);
-  expect(errors).toEqual([]);
-});
+}
 
 for (const hidesLauncher of [true, false]) {
   test(`Samsung HDMI viewer ${hidesLauncher ? "does not warn after a quick Home return" : "warns if it never takes focus"}`, async ({
@@ -106,10 +125,7 @@ for (const hidesLauncher of [true, false]) {
       route.fulfill({ json: watcherStatus(route.request().url()) }),
     );
     await page.addInitScript((hide) => {
-      localStorage.setItem(
-        "aerotizen.settings.v1",
-        JSON.stringify({ background: "black", showWeather: false, hdmiNativeViewer: true }),
-      );
+      localStorage.setItem("aerotizen.settings.v1", JSON.stringify({ background: "black", showWeather: false }));
       window.viewerAccepted = false;
       window.tizen = {
         application: {
@@ -148,13 +164,13 @@ for (const hidesLauncher of [true, false]) {
 }
 
 // Flow: connected HDMI tile -> unplug/switch -> updated status or usable Home.
-async function mockHdmi(page, { stage = "ready", hideDisconnected = false } = {}) {
+async function mockInput(page, { stage = "ready", hideDisconnected = false, sourceType = "HDMI" } = {}) {
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (route) =>
     route.fulfill({ json: watcherStatus(route.request().url()) }),
   );
   await page.addInitScript(
-    ({ stage, hideDisconnected }) => {
+    ({ stage, hideDisconnected, sourceType }) => {
       localStorage.setItem(
         "aerotizen.settings.v1",
         JSON.stringify({
@@ -170,7 +186,7 @@ async function mockHdmi(page, { stage = "ready", hideDisconnected = false } = {}
         systeminfo: {
           getPropertyValue(name, done, fail) {
             if (name !== "VIDEOSOURCE") return fail?.();
-            const port = { type: "HDMI", number: 1 };
+            const port = { type: sourceType, number: 1 };
             done({ connected: tv.connected ? [port] : [], disconnected: tv.connected ? [] : [port] });
           },
           addPropertyValueChangeListener(name, callback) {
@@ -200,19 +216,19 @@ async function mockHdmi(page, { stage = "ready", hideDisconnected = false } = {}
         },
       };
     },
-    { stage, hideDisconnected },
+    { stage, hideDisconnected, sourceType },
   );
   await page.goto("/");
   await expect(page).toHaveTitle("AeroTizen");
-  await expect(page.locator("[data-input-card]")).toHaveAttribute("data-status", "active");
+  if (sourceType === "HDMI") await expect(page.locator("[data-input-card]")).toHaveAttribute("data-status", "active");
 }
 
 for (const exitKey of ["ENTER", "BACK", "ESC"]) {
-  test(`remote ${exitKey} exits embedded playback and restores Home control`, async ({ page }) => {
+  test(`remote ${exitKey} exits embedded Live TV fallback and restores Home control`, async ({ page }) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await mockHdmi(page);
-    const tile = page.getByRole("button", { name: "HDMI 1", exact: true });
+    await mockInput(page, { sourceType: "TV" });
+    const tile = page.getByRole("button", { name: "Live TV", exact: true });
     await expect(tile).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page.locator("body")).toHaveClass(/\btv\b/);
@@ -240,7 +256,7 @@ for (const exitKey of ["ENTER", "BACK", "ESC"]) {
 test("unplug clears ACTIVE and a stale visible tile cannot open a black input", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await mockHdmi(page);
+  await mockInput(page);
   // Miss the firmware event; selection must refresh the old tile itself.
   await page.evaluate(() => {
     window.inputTest.connected = false;
@@ -256,7 +272,7 @@ test("unplug clears ACTIVE and a stale visible tile cannot open a black input", 
 });
 
 test("hot unplug removes an empty selected HDMI port with filtering enabled", async ({ page }) => {
-  await mockHdmi(page, { hideDisconnected: true });
+  await mockInput(page, { hideDisconnected: true });
   await page.evaluate(() => {
     window.inputTest.connected = false;
     window.inputTest.changed();
@@ -267,7 +283,7 @@ test("hot unplug removes an empty selected HDMI port with filtering enabled", as
 
 test("foreground polling corrects an unplug even without a firmware event", async ({ page }) => {
   await page.clock.install();
-  await mockHdmi(page, { hideDisconnected: true });
+  await mockInput(page, { hideDisconnected: true });
   await page.evaluate(() => {
     window.inputTest.connected = false;
   });
@@ -275,25 +291,20 @@ test("foreground polling corrects an unplug even without a firmware event", asyn
   await expect(page.locator("[data-input-card]")).toHaveCount(0);
 });
 
-test("unplug during playback returns to usable Home", async ({ page }) => {
-  await mockHdmi(page);
+test("HDMI reports an unavailable viewer without opening embedded playback", async ({ page }) => {
+  await mockInput(page);
   await page.getByRole("button", { name: "HDMI 1", exact: true }).click();
-  await expect(page.locator("body")).toHaveClass(/\btv\b/);
-  await page.evaluate(() => {
-    window.inputTest.connected = false;
-    window.inputTest.changed();
-  });
   await expect(page.locator("body")).not.toHaveClass(/\btv\b/);
-  await expect(page.locator("#toast")).toHaveText("HDMI 1 disconnected");
-  await expect(page.locator("#gear")).toBeVisible();
+  await expect(page.locator("#toast")).toHaveText("Could not show HDMI 1");
+  expect(await page.evaluate(() => window.inputTest.calls)).toEqual([]);
   await page.locator("#gear").click();
   await expect(page.locator("#editor")).toBeVisible();
 });
 
 for (const stage of ["setSource", "show"]) {
-  test(`remote Back cancels pending ${stage} and ignores a late callback`, async ({ page }) => {
-    await mockHdmi(page, { stage });
-    await page.getByRole("button", { name: "HDMI 1", exact: true }).click();
+  test(`remote Back cancels pending Live TV ${stage} and ignores a late callback`, async ({ page }) => {
+    await mockInput(page, { stage, sourceType: "TV" });
+    await page.getByRole("button", { name: "Live TV", exact: true }).click();
     await expect.poll(() => page.evaluate(() => AeroTizen.inputs.getSnapshot().playback !== "idle")).toBe(true);
     await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { keyCode: 10009, bubbles: true })));
     await expect.poll(() => page.evaluate(() => AeroTizen.inputs.getSnapshot().playback !== "idle")).toBe(false);
@@ -303,13 +314,13 @@ for (const stage of ["setSource", "show"]) {
     await expect(page.locator("#editor")).toBeVisible();
   });
 
-  test(`pending ${stage} times out and restores Home`, async ({ page }) => {
+  test(`pending Live TV ${stage} times out and restores Home`, async ({ page }) => {
     await page.clock.install();
-    await mockHdmi(page, { stage });
-    await page.getByRole("button", { name: "HDMI 1", exact: true }).click();
+    await mockInput(page, { stage, sourceType: "TV" });
+    await page.getByRole("button", { name: "Live TV", exact: true }).click();
     await page.clock.fastForward(8100);
     await expect.poll(() => page.evaluate(() => AeroTizen.inputs.getSnapshot().playback !== "idle")).toBe(false);
-    await expect(page.locator("#toast")).toHaveText("Could not show HDMI 1");
+    await expect(page.locator("#toast")).toHaveText("Could not show Live TV");
     await page.locator("#gear").click();
     await expect(page.locator("#editor")).toBeVisible();
   });
@@ -391,7 +402,7 @@ test("the standard launcher adds the active missing port and restores a working 
   await expect(tile).toHaveCount(0);
   await page.locator("#gear").click();
   await openCategory(page, "sources");
-  const add = page.getByRole("button", { name: "Find and add input" });
+  const add = page.getByRole("button", { name: "Find input" });
   await add.click();
   const toast = page.locator("#toast");
   await expect(toast).toHaveText("HDMI 5 added to Home.");
@@ -437,7 +448,7 @@ test.describe("missing-input development preview", () => {
     await page.goto("http://127.0.0.1:8172/");
     await page.locator("#gear").click();
     await openCategory(page, "sources");
-    await page.getByRole("button", { name: "Find and add input" }).click();
+    await page.getByRole("button", { name: "Find input" }).click();
     await expect(page.locator("#toast")).toHaveText("HDMI 5 added to Home.");
     await closeSettings(page);
     const tile = page.getByRole("button", { name: "HDMI 5", exact: true });

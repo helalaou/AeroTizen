@@ -8,6 +8,18 @@ const CLASSIC_TILE_RADIUS = "10px";
 const BUILT_IN_NAMES = ["Classic", "Glass"];
 const THEMES = [
   {
+    id: "pop",
+    tileRadius: "48px",
+    fonts: ["Nunito", "Baloo Bhaijaan 2"],
+    names: { en: "Pop", fr: "Pop", it: "Pop", ru: "Поп", ar: "بوب", "pt-BR": "Pop" },
+  },
+  {
+    id: "frost",
+    tileRadius: "24px",
+    fonts: ["Jost", "Tajawal"],
+    names: { en: "Frost", fr: "Givre", it: "Brina", ru: "Иней", ar: "صقيع", "pt-BR": "Geada" },
+  },
+  {
     id: "gloss",
     tileRadius: "56px",
     fonts: ["Google Sans"],
@@ -18,6 +30,18 @@ const THEMES = [
     tileRadius: "16px",
     fonts: ["Manrope", "Changa"],
     names: { en: "Amethyst", fr: "Améthyste", it: "Ametista", ru: "Аметист", ar: "جمشت", "pt-BR": "Ametista" },
+  },
+  {
+    id: "mint",
+    tileRadius: "14px",
+    fonts: ["Noto Sans KR", "Alexandria"],
+    names: { en: "Mint", fr: "Menthe", it: "Menta", ru: "Мята", ar: "نعناع", "pt-BR": "Menta" },
+  },
+  {
+    id: "halo",
+    tileRadius: "28px",
+    fonts: ["Nunito", "Alan Sans"],
+    names: { en: "Halo", fr: "Halo", it: "Alone", ru: "Ореол", ar: "هالة", "pt-BR": "Halo" },
   },
 ];
 const LANGUAGES = Object.keys(THEMES[0].names);

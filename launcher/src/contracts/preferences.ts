@@ -3,7 +3,7 @@ import type { Store } from "../shared/state/createStore";
 export type TimeFormat = "12" | "24";
 export type TemperatureUnit = "C" | "F";
 export type DateFormat = "compact" | "short" | "long" | "numeric-short" | "numeric" | "iso" | "none";
-export type Theme = "classic" | "glass" | "gloss" | "amethyst";
+export type Theme = "classic" | "glass" | "pop" | "frost" | "gloss" | "amethyst" | "mint" | "halo";
 // "tv" follows the TV clock. "weather" follows the weather location's time zone.
 export type TimeZoneSource = "tv" | "weather";
 export interface CustomGradient {
@@ -29,7 +29,6 @@ export interface SettingsValues {
   customGradient: CustomGradient;
   dateFormat: DateFormat;
   hdmiKeepVisible: Record<string, boolean>;
-  hdmiNativeViewer: boolean;
   hideDisconnectedHdmi: boolean;
   home: string[];
   homeAppLayout: "grid" | "scroll";
@@ -38,6 +37,7 @@ export interface SettingsValues {
   language: string;
   numerals: "latn" | "arab";
   performanceMode: boolean;
+  showDate: boolean;
   showLiveTv: boolean;
   showNetwork: boolean;
   showTime: boolean;

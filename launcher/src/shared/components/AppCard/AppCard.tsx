@@ -29,15 +29,16 @@ const NO_ARTWORK: readonly string[] = [];
 // Screens supply focus and activation. The card owns its appearance and artwork lifetime.
 export const AppCard = ({ active = false, children, presentation, renderControl, selected, variant }: Props) => {
   const artwork = useImageSequence(presentation?.artwork || NO_ARTWORK, active);
+  const content = (
+    <>
+      {presentation ? <AppArtworkContent presentation={presentation} artwork={artwork} variant={variant} /> : null}
+      {children}
+      {selected ? <SelectionIndicator /> : null}
+    </>
+  );
   return renderControl({
     artworkLoaded: artwork.loaded,
     className: styles.card + " " + (variant === "home" ? styles.home : styles.choice),
-    children: (
-      <>
-        {presentation ? <AppArtworkContent presentation={presentation} artwork={artwork} variant={variant} /> : null}
-        {children}
-        {selected ? <SelectionIndicator /> : null}
-      </>
-    ),
+    children: variant === "home" ? content : <div class={styles.choiceContent}>{content}</div>,
   });
 };

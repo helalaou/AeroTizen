@@ -84,12 +84,12 @@ for (const [name, url] of [
     await expect(page.locator("#weather b")).toHaveText("54°");
     await expect.poll(() => forecasts.length).toBe(1);
     await expect.poll(() => page.evaluate(() => AeroTizen.weather.currentReading()?.unit)).toBe("F");
-    await page.locator('[data-key="weather-visibility:false"]').click();
+    await page.locator('[data-key="weather-visibility"]').click();
     await expect(page.locator("#weather span")).toHaveCount(0);
-    await page.locator('[data-key="weather-display:false"]').click();
+    await page.locator('[data-key="weather-display"]').click();
     await expect(page.locator("#weather")).toBeHidden();
     expect(await polls()).toBe(0);
-    await page.locator('[data-key="weather-display:true"]').click();
+    await page.locator('[data-key="weather-display"]').click();
     await expect(page.locator("#weather b")).toHaveText("54°");
     expect(await polls()).toBe(1);
     expect(forecasts).toHaveLength(1);

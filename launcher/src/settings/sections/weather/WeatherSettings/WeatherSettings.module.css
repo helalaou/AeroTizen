@@ -1,35 +1,9 @@
-.displayRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 412px;
-  grid-column-gap: 24px;
-  align-items: baseline;
-}
-
-.label {
-  padding-top: 24px;
-  color: var(--control-text);
-  font-size: 20px;
-  line-height: 1.3;
-}
-
-.locationSummary {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 200px;
-  grid-gap: 24px;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.location {
-  margin: 0;
-  color: var(--control-text);
-  font-size: 23px;
-  line-height: 1.35;
-  overflow-wrap: break-word;
+.change {
+  width: var(--settings-button-width);
 }
 
 .editor {
-  margin-top: 20px;
+  min-width: 0;
 }
 
 .searchControls {

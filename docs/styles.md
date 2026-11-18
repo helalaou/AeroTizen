@@ -55,7 +55,7 @@ unset:
   `--header-tab-underline-shadow`, `--header-status-shadow`,
   `--header-status-divider`;
 - Settings: `--choice-selected-text`, `--settings-category-icon`,
-  `--settings-scroll-ring-room`;
+  `--settings-scroll-ring-room`, `--settings-card-unselected-opacity`;
 - spacing and toast: `--home-row-clearance`, `--toast-text`, `--toast-shadow`.
 
 The three `--input-connected-*` text variables are declared in each theme file,
@@ -149,10 +149,10 @@ hooks. Keep card focus paint and motion with the card, rather than in `base.css`
 `InputDock` owns collection spacing and the compact dock. `InputCard` owns its
 frame, icon, labels, status badge and focused/disconnected states. Their styles
 use `data-theme` to stack the icon above the label and show the status badge in
-Glass, Gloss and Amethyst. Classic uses a horizontal card. Pass the compact layout
-explicitly so child geometry can use it directly. The card exposes
-`data-input-card`, `data-status`, `data-disconnected` and `data-input-part` hooks.
-Theme tokens own neutral input paint. Connection status palettes keep local
+Glass, Gloss, Amethyst, Mint, Halo, Pop and Frost. Classic uses a horizontal card.
+Pass the compact layout explicitly so child geometry can use it directly. The card
+exposes `data-input-card`, `data-status`, `data-disconnected` and `data-input-part`
+hooks. Theme tokens own neutral input paint. Connection status palettes keep local
 defaults through optional named variable fallbacks.
 
 `Home` owns the viewport, fades, page reveals and section spacing. The inputs
@@ -196,8 +196,27 @@ dimensions; paint and typography rules are shared. The screen wrappers supply
 layout, while About applies local classes directly to paragraphs, facts and notes.
 
 `ControlGroup` owns wrapping and grid layout for Settings controls. `ChoiceGroup`
-supplies its choices; time/date and input-name sections use the same layout owner.
+supplies its choices; time/date choices use the same layout owner.
 `SettingsControl` supplies common focus resets; each control owns its state paint.
+
+`SettingsField` owns the shared label/control columns, field spacing, divider and
+inline editor placement. It uses the existing theme text and divider tokens.
+`ControlGroup` owns three equal choice/action columns, and `ChoiceOption` fills one
+cell. Incomplete rows align to the logical end, including single actions.
+The drawer reserves a themed scrollbar gutter so content keeps the same width.
+Fields with several control rows align their heading to the top; single-row
+fields keep their heading vertically centred.
+Collection grids fill the pane with equal flexible columns. Settings app cards and
+wallpaper swatches keep their proportions with percentage-padding boxes for Chromium 63.
+The weather location editor uses the field's full-width details variant.
+
+`SettingsToggle` owns its compact control, state text, track and thumb. Its `aria-checked` state
+moves the thumb; `data-focused` remains independent of the on/off value. Every theme
+defines its `--settings-toggle-*` colours and radius. The shared Settings focus
+indicator draws the control focus, and thumb motion uses the shared feedback duration.
+Gloss and Mint share their selected-choice gradients with the toggle track. Glass
+and Amethyst use their own shaded tracks; optional theme shadows add depth.
+Fireplace supplies its focused card surface to retain its artwork under focus.
 `SelectionIndicator` takes an explicit small variant for wallpaper swatches.
 Component variants must not depend on a parent's private CSS class.
 
