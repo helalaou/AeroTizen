@@ -6,7 +6,7 @@ const openSettings = async (page, theme) => {
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ json: {} }));
   await page.addInitScript((theme) => {
     if (!localStorage.getItem("aerotizen.settings.v1")) {
-      localStorage.setItem("aerotizen.settings.v1", JSON.stringify({ theme, showWeather: false, weatherPhoto: false }));
+      localStorage.setItem("aerotizen.settings.v1", JSON.stringify({ theme, showWeather: true, weatherPhoto: false }));
     }
   }, theme);
   await page.goto("/");

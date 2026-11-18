@@ -67,6 +67,8 @@ for (const theme of ["classic", "glass"]) {
     const before = await saved(page);
     const original = await image(page);
     await page.keyboard.press("ArrowDown");
+    await expect(page.locator('[data-key="wallpaper-categories:animated"]')).toBeFocused();
+    await page.keyboard.press("ArrowDown");
     await expect(tiles.first()).toBeFocused();
     await page.keyboard.press("Enter");
     const editor = page.getByRole("dialog", { name: "Custom gradient" });

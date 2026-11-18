@@ -128,6 +128,13 @@ body[data-theme="pop"] {
   --settings-category-icon: var(--focus);
   --control-text: #1a1220;
   --settings-slider-track: #fff;
+  --settings-toggle-off-surface: #eadde5;
+  --settings-toggle-off-border: #806975;
+  --settings-toggle-off-thumb: #68515d;
+  --settings-toggle-on-surface: #d70e5a;
+  --settings-toggle-on-border: #d70e5a;
+  --settings-toggle-on-thumb: #fff;
+  --settings-toggle-radius: 22px;
   --settings-slider-thumb: #d70e5a;
 
   --menu-focus-surface: #fde7f0;

@@ -101,6 +101,13 @@ body[data-theme="amethyst"] {
   --selection-surface: #8a6ad6;
   --control-text: var(--fg);
   --settings-slider-track: rgba(220, 200, 255, 0.18);
+  --settings-toggle-off-surface: #352743;
+  --settings-toggle-off-border: #b8a1cf;
+  --settings-toggle-off-thumb: #f6f1ff;
+  --settings-toggle-on-surface: linear-gradient(135deg, #dec7ff, #a985ef);
+  --settings-toggle-on-border: #c8a6fa;
+  --settings-toggle-on-thumb: #251238;
+  --settings-toggle-radius: 22px;
   --settings-title-transform: uppercase;
   --settings-title-tracking: 2px;
 

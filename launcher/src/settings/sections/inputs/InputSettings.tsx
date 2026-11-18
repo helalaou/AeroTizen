@@ -1,23 +1,13 @@
 import type { InputOption } from "../../../contracts/launcher";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
-import { ChoiceGroup } from "../../components/ChoiceGroup";
-import { ControlGroup } from "../../components/ControlGroup/ControlGroup";
+import { SettingsField } from "../../components/SettingsField/SettingsField";
 import { SettingsSection } from "../../components/SettingsSection/SettingsSection";
+import { SettingsToggle } from "../../components/SettingsToggle/SettingsToggle";
 import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
 import type { SettingsSectionProps } from "../../types";
 
 import { InputName } from "./InputName";
 import { IpControlProbe } from "./IpControlProbe";
-
-const LIVE_TV_VISIBILITY_OPTIONS = [
-  { value: true, labelKey: "common.show" },
-  { value: false, labelKey: "common.hide" },
-] as const;
-
-const INPUT_VISIBILITY_OPTIONS = [
-  { value: false, labelKey: "inputs.showAll" },
-  { value: true, labelKey: "inputs.hideDisconnected" },
-] as const;
 
 interface Props extends SettingsSectionProps {
   inputs: readonly InputOption[];
@@ -28,52 +18,51 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => {
   const { services } = useSettingsEnvironment();
   return (
     <>
-      <SettingsSection title={t("inputs.liveTv")} description={t("inputs.liveTvHint")}>
-        <ChoiceGroup
-          id="live-tv-visibility"
+      <SettingsField title={t("inputs.liveTv")} description={t("inputs.liveTvHint")}>
+        <SettingsToggle
+          focusKey="live-tv-visibility"
           label={t("inputs.liveTvVisibility")}
-          value={settings.showLiveTv}
-          options={LIVE_TV_VISIBILITY_OPTIONS}
-          onSelect={actions.setLiveTvVisible}
+          checked={settings.showLiveTv}
+          onChange={actions.setLiveTvVisible}
         />
-      </SettingsSection>
-      <SettingsSection title={t("inputs.hdmi")} description={t("inputs.hdmiHint")}>
-        <ChoiceGroup
-          id="input-visibility"
-          label={t("inputs.hdmiVisibility")}
-          value={settings.hideDisconnectedHdmi}
-          options={INPUT_VISIBILITY_OPTIONS}
-          onSelect={actions.setHdmiVisibility}
+      </SettingsField>
+      <SettingsField title={t("inputs.hideDisconnected")} description={t("inputs.hdmiHint")}>
+        <SettingsToggle
+          focusKey="input-visibility"
+          label={t("inputs.hideDisconnected")}
+          checked={settings.hideDisconnectedHdmi}
+          onChange={actions.setHdmiVisibility}
         />
-      </SettingsSection>
-      <SettingsSection title={t("inputs.keepVisible")} description={t("inputs.keepHint")}>
+      </SettingsField>
+      <SettingsSection
+        title={t("inputs.keepVisible")}
+        description={t("inputs.keepHint")}
+        hidden={!settings.hideDisconnectedHdmi}
+      >
         <div id="hdmi-keep-visible">
           {inputs
             .filter((input) => /^HDMI \d+$/.test(input.port))
             .map((input) => {
               const number = input.port.slice(5);
               return (
-                <ChoiceGroup
-                  key={input.port}
-                  id={"hdmi-keep:" + number}
-                  label={t("inputs.standbyVisibility", { port: input.port })}
-                  value={settings.hdmiKeepVisible[number] === true}
-                  options={[
-                    { value: false, label: t("inputs.automatic", { port: input.port }) },
-                    { value: true, label: t("inputs.alwaysShow", { port: input.port }) },
-                  ]}
-                  onSelect={(keep) => actions.setHdmiKeepVisible(number, keep)}
-                />
+                <SettingsField key={input.port} title={t("inputs.alwaysShow", { port: input.port })}>
+                  <SettingsToggle
+                    focusKey={"hdmi-keep:" + number}
+                    label={t("inputs.alwaysShow", { port: input.port })}
+                    checked={settings.hdmiKeepVisible[number] === true}
+                    onChange={(keep) => actions.setHdmiKeepVisible(number, keep)}
+                  />
+                </SettingsField>
               );
             })}
         </div>
       </SettingsSection>
       <SettingsSection title={t("inputs.names")}>
-        <ControlGroup id="input-names">
+        <div id="input-names">
           {inputs.map((input) => (
             <InputName key={input.port} {...input} name={settings.inputNames[input.port]} actions={actions} />
           ))}
-        </ControlGroup>
+        </div>
       </SettingsSection>
       {services.canLearnIpControlInput() && <IpControlProbe />}
     </>

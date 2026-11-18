@@ -12,6 +12,7 @@ interface Props extends SliderInputOptions {
   ariaLabel?: string;
   background?: string;
   compact?: boolean;
+  inline?: boolean;
   label: string;
   max: number;
   min?: number;
@@ -27,6 +28,7 @@ export const SettingsSlider = ({
   compact = false,
   focusKey,
   label,
+  inline = false,
   max,
   min = 0,
   onAdjust,
@@ -46,6 +48,8 @@ export const SettingsSlider = ({
     <SettingsControl
       class={styles.control}
       data-compact={compact ? "true" : undefined}
+      data-inline={inline ? "true" : undefined}
+      data-settings-focus-owner={inline ? "control" : undefined}
       focusKey={focusKey}
       role="slider"
       aria-label={accessibleLabel}
@@ -54,13 +58,15 @@ export const SettingsSlider = ({
       aria-valuenow={value}
       aria-valuetext={value + unit}
     >
-      <div class={styles.label}>
-        <span>{label}</span>
-        <span>
-          {value}
-          {unit}
-        </span>
-      </div>
+      {!inline && (
+        <div class={styles.label}>
+          <span>{label}</span>
+          <span>
+            {value}
+            {unit}
+          </span>
+        </div>
+      )}
       <div class={styles.adjustment}>
         <SliderStepButton
           direction={-1}
@@ -78,6 +84,12 @@ export const SettingsSlider = ({
           onAdjust={adjustWithPointer}
         />
       </div>
+      {inline && (
+        <span class={styles.value}>
+          {value}
+          {unit}
+        </span>
+      )}
     </SettingsControl>
   );
 };

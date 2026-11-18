@@ -56,7 +56,7 @@ test("static demo loads its own sample data and assets from a project subpath", 
   await launcher.locator("#escape").click();
   await expect(launcher.locator("#toast")).toHaveText("Would open Samsung Home");
   await openCategory(launcher, "sources");
-  await launcher.getByRole("button", { name: "Find and add input" }).click();
+  await launcher.getByRole("button", { name: "Find input" }).click();
   await expect(launcher.locator("#toast")).toHaveText("HDMI 5 added to Home.");
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");

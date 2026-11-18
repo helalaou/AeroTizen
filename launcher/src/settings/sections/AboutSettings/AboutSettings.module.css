@@ -1,4 +1,5 @@
 .info {
+  padding-top: 20px;
   font-size: 22px;
   line-height: 1.4;
 }
@@ -16,8 +17,8 @@
   display: grid;
   grid-template-columns: max-content 1fr;
   grid-gap: 10px 32px;
-  margin: 16px 0;
-  padding: 12px 0;
+  margin: 20px 0;
+  padding: 20px 0;
   border-top: 1px solid var(--settings-divider);
   border-bottom: 1px solid var(--settings-divider);
 }
@@ -32,7 +33,7 @@
 }
 
 .update {
-  margin-bottom: 20px;
+  margin-top: 20px;
   padding: 16px 20px;
   border: 1px solid var(--settings-divider);
   border-radius: 16px;
@@ -80,20 +81,8 @@
   }
 }
 
-.check {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-top: -12px;
-  margin-bottom: 20px;
-  -webkit-margin-start: -20px;
-
-  > :not([hidden]) {
-    margin-top: 12px;
-    -webkit-margin-start: 20px;
-  }
-}
-
 .checkStatus {
   --settings-hint-margin: 0;
+
+  text-align: end;
 }

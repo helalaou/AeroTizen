@@ -7,6 +7,15 @@
   padding: 18px 22px;
   border-radius: 14px;
   background: var(--surface-control);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+
+  &[data-inline="true"] {
+    display: flex;
+    align-items: center;
+    padding: 12px 18px;
+  }
 }
 
 .label {
@@ -21,6 +30,21 @@
   display: flex;
   align-items: center;
   direction: ltr;
+  flex: 1;
+  min-width: 0;
+}
+
+.value {
+  margin-left: 20px;
+  min-width: 52px;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+
+  [dir="rtl"] & {
+    margin-left: 0;
+    margin-right: 20px;
+  }
 }
 
 .arrow {

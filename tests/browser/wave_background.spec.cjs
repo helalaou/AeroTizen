@@ -72,8 +72,7 @@ test("weather photos unmount waves and restore them at the selected speed", asyn
   await page.locator("#gear").click();
   await openCategory(page, "wallpaper");
   await page.locator('[data-key="wallpaper-categories:photo"]').click();
-  const control = page.getByRole("group", { name: "Dynamic weather wallpapers" });
-  await control.getByRole("button", { name: "Automatic (weather)", exact: true }).click();
+
   await expect(page.locator("#weather-photo")).toBeVisible();
   await expect(page.locator("#bg [data-background-wave]")).toHaveCount(0);
   await expect(page.locator("#bg")).toBeHidden();
@@ -89,7 +88,7 @@ test("weather photos unmount waves and restore them at the selected speed", asyn
   await expect(page.locator("#weather-photo")).toBeHidden();
   await expect(page.locator("#bg [data-background-wave]")).toHaveCount(2);
 
-  await control.getByRole("button", { name: "Off", exact: true }).click();
+  await page.locator('[data-key="wallpaper-categories:animated"]').click();
   await expect(page.locator("#weather-photo")).toBeHidden();
   await expect(page.locator("#bg")).toBeVisible();
   await expect(page.locator("#bg [data-background-wave]")).toHaveCount(2);

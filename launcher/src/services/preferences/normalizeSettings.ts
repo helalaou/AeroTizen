@@ -78,6 +78,7 @@ export const normalizeSettings = (
         : defaults.speed,
     showWeather: boolean(data.showWeather, defaults.showWeather),
     showTime: boolean(data.showTime, defaults.showTime),
+    showDate: boolean(data.showDate, defaults.showDate),
     showNetwork: boolean(data.showNetwork, defaults.showNetwork),
     tempUnit: data.tempUnit === "C" || data.tempUnit === "F" ? data.tempUnit : defaults.tempUnit || locale.tempUnit(),
     timeZone: choice(data.timeZone, ["tv", "weather"] as const, defaults.timeZone),

@@ -144,7 +144,9 @@ for (const theme of ["classic", "glass"]) {
 
   test(`${theme}: remote-only picker previews, cancels, applies and restores focus`, async ({ page }) => {
     const errors = await openSolid(page, theme);
-    // Custom is the first tile below the category row.
+    // Pass both category rows before entering the first wallpaper tile.
+    await page.keyboard.press("ArrowDown");
+    await expect(page.locator('[data-key="wallpaper-categories:animated"]')).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect(page.locator('[data-key="bg:custom"]')).toBeFocused();
     await page.keyboard.press("Enter");

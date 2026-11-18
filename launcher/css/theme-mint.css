@@ -121,6 +121,13 @@ body[data-theme="mint"] {
   --control-text: var(--fg);
   --selection-text: #05211b;
   --settings-slider-track: rgba(255, 255, 255, 0.12);
+  --settings-toggle-off-surface: #32383b;
+  --settings-toggle-off-border: #94a7a4;
+  --settings-toggle-off-thumb: #edf5f3;
+  --settings-toggle-on-surface: var(--theme-gradient);
+  --settings-toggle-on-border: #19e3b1;
+  --settings-toggle-on-thumb: #05211b;
+  --settings-toggle-radius: 22px;
 
   --menu-focus-surface: rgba(var(--focus-rgb), 0.12);
   --menu-option-text: rgba(244, 246, 247, 0.86);

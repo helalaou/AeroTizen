@@ -1,7 +1,8 @@
 import { APP_CARD_SIZE_OPTIONS } from "../../shared/apps/appCardSizes";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../components/ChoiceGroup";
-import { SettingsSection } from "../components/SettingsSection/SettingsSection";
+import { SettingsField } from "../components/SettingsField/SettingsField";
+import { SettingsToggle } from "../components/SettingsToggle/SettingsToggle";
 import type { SettingsSectionProps } from "../types";
 
 const APPEARANCE_OPTIONS = [
@@ -20,16 +21,11 @@ const HOME_APP_LAYOUT_OPTIONS = [
   { value: "scroll", labelKey: "appearance.scroll" },
 ] as const;
 
-const PERFORMANCE_OPTIONS = [
-  { value: false, labelKey: "common.off" },
-  { value: true, labelKey: "common.on" },
-] as const;
-
 export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) => {
   const { t } = useTranslation();
   return (
     <>
-      <SettingsSection title={t("appearance.title")}>
+      <SettingsField title={t("appearance.title")} topAligned>
         <ChoiceGroup
           id="settings-appearance"
           label={t("appearance.title")}
@@ -37,8 +33,8 @@ export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) 
           options={APPEARANCE_OPTIONS}
           onSelect={actions.setTheme}
         />
-      </SettingsSection>
-      <SettingsSection title={t("appearance.size")}>
+      </SettingsField>
+      <SettingsField title={t("appearance.size")}>
         <ChoiceGroup
           id="home-card-columns"
           label={t("appearance.size")}
@@ -46,8 +42,8 @@ export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) 
           options={APP_CARD_SIZE_OPTIONS}
           onSelect={(value) => actions.setHomeCardColumns(Number(value))}
         />
-      </SettingsSection>
-      <SettingsSection title={t("appearance.homeLayout")}>
+      </SettingsField>
+      <SettingsField title={t("appearance.homeLayout")}>
         <ChoiceGroup
           id="home-app-layout"
           label={t("appearance.homeLayout")}
@@ -55,16 +51,15 @@ export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) 
           options={HOME_APP_LAYOUT_OPTIONS}
           onSelect={actions.setHomeAppLayout}
         />
-      </SettingsSection>
-      <SettingsSection title={t("appearance.performanceMode")} description={t("appearance.performanceHint")}>
-        <ChoiceGroup
-          id="performance-mode"
+      </SettingsField>
+      <SettingsField title={t("appearance.performanceMode")} description={t("appearance.performanceHint")}>
+        <SettingsToggle
+          focusKey="performance-mode"
           label={t("appearance.performanceMode")}
-          value={settings.performanceMode}
-          options={PERFORMANCE_OPTIONS}
-          onSelect={actions.setPerformanceMode}
+          checked={settings.performanceMode}
+          onChange={actions.setPerformanceMode}
         />
-      </SettingsSection>
+      </SettingsField>
     </>
   );
 };

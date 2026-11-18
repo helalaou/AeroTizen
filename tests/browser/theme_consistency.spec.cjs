@@ -99,14 +99,16 @@ for (const theme of ["classic", "glass"]) {
           .map((n) => ({
             height: n.getBoundingClientRect().height,
             font: getComputedStyle(n).fontSize,
-            minWidth: getComputedStyle(n).minWidth,
+            width: n.getBoundingClientRect().width,
+            labelFits: n.querySelector("span").scrollWidth <= n.querySelector("span").clientWidth,
           })),
       );
     expect(choices.length).toBeGreaterThan(3);
     for (const choice of choices) {
       expect(choice.height).toBe(72);
       expect(choice.font).toBe("20px");
-      expect(choice.minWidth).toBe("160px");
+      expect(choice.width).toBeGreaterThanOrEqual(120);
+      expect(choice.labelFits).toBe(true);
     }
     await page.screenshot({ path: info.outputPath("settings-control-scale.png") });
     await page.locator('[data-key="section:status"]').click();
@@ -137,25 +139,30 @@ for (const theme of ["classic", "glass"]) {
     }
     await page.screenshot({ path: info.outputPath("status-control-scale.png") });
     await page.locator('[data-key="section:apps"]').click();
-    const appsGap = await page
-      .locator("#all-apps")
-      .evaluate(
-        (grid) =>
-          document.querySelector('[aria-label="Continue Watching settings"] h3').getBoundingClientRect().top -
-          grid.getBoundingClientRect().bottom,
-      );
-    expect(appsGap).toBe(30);
+    const appsGap = await page.locator("#all-apps").evaluate((grid) => {
+      const field = document.querySelector('[aria-label="Continue Watching settings"] [data-settings-field]');
+      const heading = field.querySelector("[data-settings-heading]").getBoundingClientRect();
+      const controls = field.querySelector("[data-settings-field-controls]").getBoundingClientRect();
+      return Math.min(heading.top, controls.top) - grid.getBoundingClientRect().bottom;
+    });
+    expect(appsGap).toBe(41);
     const icons = await page
       .locator("#all-apps > [data-settings-card]")
       .evaluateAll((nodes) => nodes.map((n) => [n.offsetWidth, n.offsetHeight]));
-    for (const size of icons) expect(size).toEqual([160, 160]);
+    for (const [width, height] of icons) {
+      expect(width).toBeGreaterThanOrEqual(160);
+      expect(height).toBe(width);
+    }
     await page.screenshot({ path: info.outputPath("settings-standard-icons.png") });
     await page.locator('[data-key="section:sources"]').click();
-    const short = page.locator('[data-key="live-tv-visibility:true"]');
-    const wrapped = page.locator('[data-key="hdmi-keep:1:true"]');
+    const short = page.locator('[data-key="live-tv-visibility"]');
+    await page.locator('[data-key="input-visibility"]').click();
+    const wrapped = page.locator('[data-key="hdmi-keep:1"]');
     await expect(short).toHaveCSS("height", "72px");
     await expect(wrapped).toHaveCSS("height", "72px");
-    await expect(wrapped.locator("span")).toHaveCSS("height", "48px");
+    expect(await wrapped.locator('[aria-hidden="true"]').evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(
+      true,
+    );
     expect(errors).toEqual([]);
   });
 }

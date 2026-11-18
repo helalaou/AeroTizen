@@ -33,6 +33,8 @@ screens need the same behavior, rather than because they have a similar shape.
 | `ChoiceGroup`, `ChoiceOption`                                        | A labelled choice group and one selectable option                               | Value, options and selection callback                                        |
 | `SelectionIndicator`                                                 | Decorative selected-choice check with a consistent contrast badge               | Parent control owns selection and `aria-pressed`                             |
 | `SettingsControl`                                                    | Register a Settings control and render focus/activation                         | Settings navigation context                                                  |
+| `SettingsField`                                                      | Align a setting label and help beside its controls and optional inline editor   | Presentation only; controls keep their navigation and actions                |
+| `SettingsToggle`                                                     | One labelled on/off switch with visible state and remote focus                  | Checked/disabled state and a change callback                                 |
 | `WallpaperSwatch`, `SettingsSlider`, `SettingsTextInput`             | Wallpaper choices, numeric sliders and location input                           | Explicit values, state and callbacks; no platform requests                   |
 | `SettingsHint`                                                       | Shared Settings help and status copy                                            | Text, semantic attributes and optional spacing override                      |
 
@@ -47,6 +49,11 @@ background, text colour and font. Each consumer owns its position, size and spac
 Panel titles share one size; section titles use the smaller variant. The colour and
 gradient dialogs use the same description style and link their instructions with
 `aria-describedby`. `SettingsSection` supplies section spacing and content.
+
+Settings uses `SettingsField` to align labels and descriptions beside controls.
+Choice and action groups use three equal columns; toggles contain only
+their On/Off state and switch. App and wallpaper collections retain their grids.
+The wallpaper speed slider has an inline layout; picker sliders keep their labels.
 
 `shared/components/AppCard` owns the app/Fireplace frame, artwork lifetime and optional
 selection badge. Its Home variant keeps launchable apps at full brightness; Settings
@@ -235,6 +242,8 @@ HDMI selection refreshes cable state before opening the Samsung viewer. Failed h
 show an error without opening an embedded HDMI window. Live TV retains its embedded
 fallback when the native viewer API is unavailable; Back, native Home and resume
 retain their existing recovery behaviour for embedded playback.
+Hide disconnected is the default visibility rule. Its per-port Always show exceptions
+appear only while that rule is enabled, and switching it off retains the exceptions.
 
 `inputs/InputPlaybackView.tsx` selects only the playback state through the shared
 external-store hook. Its layout effect synchronizes the external TV video surface
@@ -302,9 +311,9 @@ The service survives view hot reload with the other input state.
 The typed background IP Control module pairs and reads the active source only when Settings
 requests discovery. It stores the token and learned ports in a separate private file.
 Native navigation acknowledges the watcher handoff before selecting the source, then opens
-the viewer through its existing cancellation and focus checks. All HDMI playback uses
-the Samsung viewer. The default development demo simulates a missing HDMI 5 input
-through the development adapters.
+the viewer through its existing cancellation and focus checks. Normal HDMI playback remains
+controlled by the saved playback preference. The default development demo simulates a missing
+HDMI 5 input through the development adapters.
 
 ## Clock ownership
 
@@ -317,6 +326,8 @@ Continue Watching receive the same ticks to check expiry and system time correct
 locales. Format choices stay in the preference service. The clock reads live time.
 Formatters are shared within each tick and cleared on the next tick or resume so
 time-zone changes still take effect. Hidden time/date fields do no formatting.
+Time and date visibility have separate switches. Switching either off retains its
+format. The shared date-visibility rule also respects the saved `none` date format.
 The visible compact clock checks its exact full-day width in cancellable batches
 capped at 60 measurements with a 4 ms time budget. It uses the existing minimum width until the
 scan completes and shares the exact cached result with synchronous callers.
@@ -344,9 +355,13 @@ refresh timer and one settings/clock subscription. Disposal cancels forecasts an
 stops the timer and releases its subscriptions. Service tests assert weather snapshots
 directly; component and browser tests cover the rendered status.
 
-Weather Settings groups Home visibility, location-name visibility and temperature units.
-Its shared location summary reads the resolved city even when the Home widget is hidden.
-Change location opens an editor without starting a search. Enter or IME Done submits;
+Weather Settings uses `SettingsToggle` for Home visibility and location-name visibility.
+Turning Home weather off hides its remaining controls without changing their saved values.
+The location editor closes and cancels pending searches when Home weather is turned off.
+Its shared location summary reads the resolved city from the weather service.
+Change location expands the field's editor while keeping the other settings visible,
+without starting a search. The summary stays beside Change/Cancel, and the editor
+uses the full pane width. Enter or IME Done submits;
 matching pending submissions share one request. Results receive remote focus. Selecting a
 location, cancelling, leaving the pane or closing Settings clears the editor and cancels
 pending delivery. Back first leaves the on-screen keyboard, then closes the editor.

@@ -55,6 +55,32 @@
   --store-subtitle-gap: 4px;
 
   border-radius: var(--control-radius);
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 0;
+
+  &::before {
+    content: "";
+    display: block;
+    padding-top: 100%;
+  }
+
+  > .content {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+  }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
 }
 
 .icon {

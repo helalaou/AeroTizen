@@ -27,7 +27,7 @@ test("Preact standby overrides persist without confusing custom labels with devi
   await expect(page.locator("#inputs")).not.toContainText("Custom console label");
   await page.locator("#gear").click();
   await openCategory(page, "sources");
-  await page.locator('[data-key="hdmi-keep:2:true"]').click();
+  await page.locator('[data-key="hdmi-keep:2"]').click();
   await closeSettings(page);
   await expect(page.locator("#inputs")).toContainText("Custom console label");
   await page.reload();
@@ -35,7 +35,19 @@ test("Preact standby overrides persist without confusing custom labels with devi
   expect(await page.evaluate(() => AeroTizen.settings.getSnapshot().hdmiKeepVisible["2"])).toBe(true);
   await page.locator("#gear").click();
   await openCategory(page, "sources");
-  await page.locator('[data-key="hdmi-keep:2:false"]').click();
+  const override = page.locator('[data-key="hdmi-keep:2"]');
+  await expect(override).toHaveAttribute("aria-checked", "true");
+  const hide = page.locator('[data-key="input-visibility"]');
+  await hide.focus();
+  await page.keyboard.press("Enter");
+  await expect(override).toBeHidden();
+  await expect(hide).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.locator('[data-key="name:HDMI 1"]')).toBeFocused();
+  await hide.focus();
+  await page.keyboard.press("Space");
+  await expect(override).toHaveAttribute("aria-checked", "true");
+  await page.locator('[data-key="hdmi-keep:2"]').click();
   await closeSettings(page);
   await expect(page.locator("#inputs")).not.toContainText("Custom console label");
   expect(errors).toEqual([]);
@@ -390,7 +402,7 @@ test("the standard launcher adds the active missing port and restores a working 
   await expect(tile).toHaveCount(0);
   await page.locator("#gear").click();
   await openCategory(page, "sources");
-  const add = page.getByRole("button", { name: "Find and add input" });
+  const add = page.getByRole("button", { name: "Find input" });
   await add.click();
   const toast = page.locator("#toast");
   await expect(toast).toHaveText("HDMI 5 added to Home.");
@@ -436,7 +448,7 @@ test.describe("missing-input development preview", () => {
     await page.goto("http://127.0.0.1:8172/");
     await page.locator("#gear").click();
     await openCategory(page, "sources");
-    await page.getByRole("button", { name: "Find and add input" }).click();
+    await page.getByRole("button", { name: "Find input" }).click();
     await expect(page.locator("#toast")).toHaveText("HDMI 5 added to Home.");
     await closeSettings(page);
     const tile = page.getByRole("button", { name: "HDMI 5", exact: true });
