@@ -123,7 +123,7 @@ for (const [build, url] of [
             if (name !== "VIDEOSOURCE") return failed?.();
             tv.reads++;
             if (tv.defer) tv.lateRead = done;
-            else done({ connected: [{ type: "HDMI", number: 1 }], disconnected: [] });
+            else done({ connected: [{ type: "TV", number: 1 }], disconnected: [] });
           },
           addPropertyValueChangeListener() {
             return 1;
@@ -145,7 +145,7 @@ for (const [build, url] of [
       };
     });
     await page.goto(url);
-    await page.getByRole("button", { name: "HDMI 1", exact: true }).click();
+    await page.getByRole("button", { name: "Live TV", exact: true }).click();
     await expect.poll(() => page.evaluate(() => AeroTizen.inputs.getSnapshot().playback)).toBe("opening");
     await page.evaluate(() => {
       window.inputsTest.defer = true;

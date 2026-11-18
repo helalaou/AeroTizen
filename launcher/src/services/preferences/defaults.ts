@@ -30,7 +30,6 @@ export const DEFAULT_SETTINGS: SettingsDefaults = {
   continueWatchingApps: [],
   showLiveTv: true,
   hideDisconnectedHdmi: false,
-  hdmiNativeViewer: false,
   hdmiKeepVisible: {},
   inputNames: {},
 };

@@ -50,7 +50,6 @@ export const createInputsService = ({
   let started = false;
   let selection = 0;
   let playback = 0;
-  let playingSource: InputSource | null = null;
   let timeout: number | undefined;
   let interval: number | undefined;
   let pending: (() => void) | undefined;
@@ -192,7 +191,6 @@ export const createInputsService = ({
       service.leave();
     }
     const id = ++playback;
-    playingSource = source;
     publish(undefined, "opening");
     const failed = () => {
       if (!disposed && id === playback) {
@@ -248,16 +246,18 @@ export const createInputsService = ({
       }
       return;
     }
-    const hdmi = source.type === "HDMI" && settings.getSnapshot().hdmiNativeViewer;
-    const fallback = () => {
-      if (!disposed && request === selection) {
-        showEmbedded(source);
+    if (source.type === "HDMI") {
+      const failed = () => {
+        if (!disposed && request === selection) {
+          notify(platform.native ? "inputs.couldNotShow" : "inputs.wouldSwitch", { input: displayLabel(source) });
+        }
+      };
+      if (!platform.openNative(source, { label: displayLabel(source), fallback: failed })) {
+        failed();
       }
-    };
-    if (
-      (source.type === "TV" || hdmi) &&
-      platform.openNative(source, hdmi ? { label: displayLabel(source), fallback } : null)
-    ) {
+      return;
+    }
+    if (source.type === "TV" && platform.openNative(source, null)) {
       return;
     }
     showEmbedded(source);
@@ -319,16 +319,6 @@ export const createInputsService = ({
         reported = records.map(inputRecord);
         sourcesReady = true;
         publishSources();
-        const sources = store.getSnapshot().sources;
-        if (store.getSnapshot().playback === "playing" && playingSource?.type === "HDMI") {
-          const key = sourceKey(playingSource);
-          const current = sources.find((source) => sourceKey(source) === key);
-          if (!current?.connected) {
-            const input = displayLabel(playingSource);
-            service.leave();
-            notify("inputs.disconnected", { input });
-          }
-        }
         done?.(true);
       });
       if (!active) {
@@ -363,7 +353,6 @@ export const createInputsService = ({
       selection++;
       playback++;
       clearTimeout();
-      playingSource = null;
       publish(undefined, "idle");
       platform.hide();
     },

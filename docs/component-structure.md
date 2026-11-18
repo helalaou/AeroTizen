@@ -231,10 +231,10 @@ The service owns one five-second foreground polling fallback, one native cable w
 Home/visibility listeners and the eight-second pending-playback timeout. Starting it
 twice does not duplicate work. It survives hot reload; disposal removes subscriptions
 and timers, cancels pending delivery and rejects late source/playback callbacks.
-HDMI selection refreshes cable state before either viewer. Disconnects, Back, native
-Home and resume retain their existing recovery behaviour.
-An HDMI signal loss during playback returns to Home with a disconnected notice;
-failed selections and playback errors retain their separate launch-failure message.
+HDMI selection refreshes cable state before opening the Samsung viewer. Failed handoffs
+show an error without opening an embedded HDMI window. Live TV retains its embedded
+fallback when the native viewer API is unavailable; Back, native Home and resume
+retain their existing recovery behaviour for embedded playback.
 
 `inputs/InputPlaybackView.tsx` selects only the playback state through the shared
 external-store hook. Its layout effect synchronizes the external TV video surface
@@ -302,9 +302,9 @@ The service survives view hot reload with the other input state.
 The typed background IP Control module pairs and reads the active source only when Settings
 requests discovery. It stores the token and learned ports in a separate private file.
 Native navigation acknowledges the watcher handoff before selecting the source, then opens
-the viewer through its existing cancellation and focus checks. Normal HDMI playback remains
-controlled by the saved playback preference. The default development demo simulates a missing
-HDMI 5 input through the development adapters.
+the viewer through its existing cancellation and focus checks. All HDMI playback uses
+the Samsung viewer. The default development demo simulates a missing HDMI 5 input
+through the development adapters.
 
 ## Clock ownership
 
