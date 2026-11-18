@@ -1,6 +1,7 @@
 # AeroTizen desktop
 
-Use AeroTizen Desktop to find and save Samsung TVs and install published launcher releases.
+Use AeroTizen Desktop to find and save Samsung TVs, install the launcher and local apps,
+manage installed apps, configure Home and remote buttons, and set up or update root access.
 The app uses Tauri, React, Mantine and a bundled Python worker. SQLite stores saved TV profiles.
 
 See screenshots of [TV selection](screenshots/tv-selection.png), [Overview](screenshots/overview.png),
@@ -47,6 +48,9 @@ Select packages and choose **Remove**. Review the apps and TV in the confirmatio
 before you remove them. If the TV refuses removal, the package shows **Delete on TV**.
 Check for **Delete** in **Apps → Settings** on the TV. Use **Refresh apps** to fetch the current list.
 
+See screenshots of [removal confirmation](screenshots/apps-confirm-removal.png) and
+[removal results](screenshots/apps-removal-results.png).
+
 In **Apps**, choose **Install app** to select a local Tizen `.wgt` file. Review the app,
 version and target TV before installing. Replacing an installed app requires confirmation;
 older versions can be incompatible with saved settings and updates need the original
@@ -70,6 +74,10 @@ TV's Home app, startup apps and Smart Hub autostart to AeroTizen after confirmat
 Apply first prepares the original backup, reusing a valid one for the selected TV; a
 first capture needs an updated paired helper and complete, unchanged Home and startup
 settings. Once applied, AeroTizen routing shows Native Home mode.
+
+See screenshots of [Home and startup](screenshots/home-and-startup.png),
+[backup and restore](screenshots/home-backup-status.png), and
+[Apply Native Home](screenshots/apply-native-home.png).
 
 Open **Button mapping** to see the remote's detected app buttons and their saved
 assignments. A rooted TV needs a compatible paired helper. A pending assignment
