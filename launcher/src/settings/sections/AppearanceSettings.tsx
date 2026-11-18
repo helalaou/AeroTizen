@@ -1,3 +1,4 @@
+import { APP_CARD_SIZE_OPTIONS } from "../../shared/apps/appCardSizes";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../components/ChoiceGroup";
 import { SettingsSection } from "../components/SettingsSection/SettingsSection";
@@ -12,12 +13,6 @@ const APPEARANCE_OPTIONS = [
   { value: "amethyst", labelKey: "appearance.amethyst" },
   { value: "mint", labelKey: "appearance.mint" },
   { value: "halo", labelKey: "appearance.halo" },
-] as const;
-
-const HOME_CARD_COLUMNS_OPTIONS = [
-  { value: "5", labelKey: "appearance.small" },
-  { value: "4", labelKey: "appearance.medium" },
-  { value: "3", labelKey: "appearance.large" },
 ] as const;
 
 const HOME_APP_LAYOUT_OPTIONS = [
@@ -48,7 +43,7 @@ export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) 
           id="home-card-columns"
           label={t("appearance.size")}
           value={String(settings.homeCardColumns)}
-          options={HOME_CARD_COLUMNS_OPTIONS}
+          options={APP_CARD_SIZE_OPTIONS}
           onSelect={(value) => actions.setHomeCardColumns(Number(value))}
         />
       </SettingsSection>

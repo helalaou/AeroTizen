@@ -1,5 +1,6 @@
 import type { InstalledApp } from "../../../contracts/launcher";
 import type { SettingsSnapshot } from "../../../contracts/preferences";
+import { getAppGridColumns } from "../../../shared/apps/appCardSizes";
 import { useStoreSelector } from "../../../shared/hooks/useStore";
 import type { HomeEnvironment, Page } from "../../types";
 import { AppCard } from "../AppCard";
@@ -39,7 +40,7 @@ export const AppGrid = ({
       trackClass={styles.grid}
       trackData={{
         "data-app-grid": "",
-        "data-columns": env.columns(settings, page),
+        "data-columns": getAppGridColumns(settings.homeCardColumns, page),
         "data-page": page,
         "data-expanded": settings.clockLayout === "custom" ? "true" : "false",
         "data-scroll": scroll ? "true" : "false",

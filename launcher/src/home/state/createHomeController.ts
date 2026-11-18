@@ -1,3 +1,4 @@
+import { getAppGridColumns } from "../../shared/apps/appCardSizes";
 import { createInputScope } from "../../shared/input/createInputScope";
 import { focusControl } from "../../shared/navigation/focusControl";
 import { createStore } from "../../shared/state/createStore";
@@ -179,7 +180,7 @@ export const createHomeController = (
   };
   const sourceKey = (source: { type: string; number?: number }) => "input:" + source.type + ":" + source.number;
   const rows = (): readonly (readonly string[])[] => {
-    const columns = env.columns(settings.getSnapshot(), state.getSnapshot().page);
+    const columns = getAppGridColumns(settings.getSnapshot().homeCardColumns, state.getSnapshot().page);
     const appKeys = ids().map((id) => "app:" + id);
     const all = state.getSnapshot().page === "apps" ? [ADD_APPS_KEY, ...appKeys] : appKeys;
     const rowLength = scrollApps() ? Math.max(1, all.length) : columns;
@@ -392,7 +393,7 @@ export const createHomeController = (
         }
         const home = [...homeIds()];
         const from = home.indexOf(current.moving);
-        const step = code === K.UP || code === K.DOWN ? env.columns(settings.getSnapshot()) : 1;
+        const step = code === K.UP || code === K.DOWN ? settings.getSnapshot().homeCardColumns : 1;
         const to = Math.max(0, Math.min(home.length - 1, from + delta * step));
         update({ draft: moveItem(home, from, to, current.moving) });
         focus();
