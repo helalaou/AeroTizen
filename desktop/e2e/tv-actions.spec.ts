@@ -36,6 +36,7 @@ test("navigates the selected TV actions and keeps the initial screen TV-only", a
     "Apps",
     "Home and startup",
     "Button mapping",
+    "Root access",
   ]);
   await expect(nav.getByRole("button", { name: "Launcher", exact: true })).toHaveAttribute("aria-current", "page");
   await page.screenshot({ path: join(tmpdir(), `aerotizen-tv-sidebar-${info.project.name}.png`) });

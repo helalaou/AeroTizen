@@ -12,6 +12,7 @@ const PROTOCOL_VERSION: u32 = 1;
 const WORKER_TIMEOUT_SECONDS: u64 = 120;
 const PACKAGE_ACTION_TIMEOUT_SECONDS: u64 = 300;
 const SAMSUNG_ACTION_TIMEOUT_SECONDS: u64 = 320;
+const ROOT_WRITE_TIMEOUT_SECONDS: u64 = 600;
 const MAX_RESPONSE_BYTES: usize = 64 * 1024;
 const MAX_APP_LIST_RESPONSE_BYTES: usize = 256 * 1024;
 const MAX_CATALOG_RESPONSE_BYTES: usize = 2 * 1024 * 1024;
@@ -60,6 +61,9 @@ fn request_local_network_access(operation: &str, params: &Value) {
         | "install_launcher"
         | "inspect_local_app"
         | "install_local_app"
+        | "root_status"
+        | "setup_root"
+        | "upgrade_root"
         | "list_apps"
         | "list_buttons"
         | "list_button_apps"
@@ -124,6 +128,7 @@ pub async fn request_with_cancellation(
         })
     });
     let timeout_seconds = match operation {
+        "setup_root" | "upgrade_root" => ROOT_WRITE_TIMEOUT_SECONDS,
         "install_launcher" | "install_local_app" | "remove_apps" => PACKAGE_ACTION_TIMEOUT_SECONDS,
         "samsung_sign_in" | "prepare_signing_profile" => SAMSUNG_ACTION_TIMEOUT_SECONDS,
         _ => WORKER_TIMEOUT_SECONDS,
@@ -141,6 +146,8 @@ pub async fn request_with_cancellation(
             AppError::new(
             "connection_timeout",
             match operation {
+                "setup_root" => "Root setup timed out. Refresh Root access to check the saved progress before retrying.",
+                "upgrade_root" => "Root update timed out. Refresh Root access to check the saved progress before retrying.",
                 "install_launcher" | "install_local_app" => {
                     "Installation timed out. Refresh the TV to check its version before retrying."
                 }

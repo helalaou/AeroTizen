@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures";
+import { testRootOutdated } from "../src/test/tvs";
 import type { Locator } from "@playwright/test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,6 +9,14 @@ async function rightEdge(locator: Locator) {
   const bounds = await locator.boundingBox();
   if (!bounds) throw new Error("Expected a visible TV action");
   return bounds.x + bounds.width;
+}
+
+function heldResponse() {
+  let release = () => {};
+  const response = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  return { response, release: () => release() };
 }
 
 test("reconnects from the saved TV menu and refreshes from the sidebar", async ({ page, isMobile }, testInfo) => {
@@ -44,6 +53,7 @@ test("reconnects from the saved TV menu and refreshes from the sidebar", async (
     "Apps",
     "Home and startup",
     "Button mapping",
+    "Root access",
   ]);
   await nav.getByRole("button", { name: "Launcher" }).click();
   await page.getByRole("button", { name: "Choose another version" }).click();
@@ -91,7 +101,9 @@ test("shows root access and opens a pre-filled GitHub draft without private fiel
   await page.goto("/");
   await page.getByRole("button", { name: "Connect to Living room", exact: true }).click();
   await expect(page.getByText("Yes", { exact: true })).toBeVisible();
-  await expect(page.getByText("3.0.1", { exact: true })).toBeVisible();
+  await expect(page.getByText("Root helper version", { exact: true }).locator("..")).toContainText(
+    testRootOutdated.runtime_version!,
+  );
   const [draft] = await Promise.all([
     page.waitForEvent("popup"),
     page.getByRole("link", { name: "Report issue" }).click(),
@@ -102,6 +114,7 @@ test("shows root access and opens a pre-filled GitHub draft without private fiel
   expect(url.searchParams.get("model")).toBe("QE65LS03DAUXXU");
   const report = url.searchParams.get("diagnostics");
   expect(report).toContain("Rooted: Yes");
+  expect(report).toContain(`Root helper version: ${testRootOutdated.runtime_version}`);
   expect(url.searchParams.get("versions")).toBe("Launcher: 3.0.0, CLI: 3.0.1, Tizen: 9.0.0");
   expect(report).not.toMatch(/192\.0\.2\.|Living room|Source:/);
   await draft.close();
@@ -109,6 +122,22 @@ test("shows root access and opens a pre-filled GitHub draft without private fiel
 
 test("discovers, saves and forgets a TV without an automatic connection after reload", async ({ page, isMobile }) => {
   await page.goto("/");
+  const discovery = heldResponse();
+  const connection = heldResponse();
+  await page.exposeFunction("waitForTvResponse", (command: string) =>
+    command === "discover_tvs" ? discovery.response : connection.response,
+  );
+  await page.evaluate(() => {
+    const fixture = window as unknown as {
+      __TAURI_INTERNALS__: { invoke(command: string, args?: Record<string, unknown>): Promise<unknown> };
+      waitForTvResponse(command: string): Promise<void>;
+    };
+    const invoke = fixture.__TAURI_INTERNALS__.invoke;
+    fixture.__TAURI_INTERNALS__.invoke = async (command, args) => {
+      if (command === "discover_tvs" || command === "connect_tv") await fixture.waitForTvResponse(command);
+      return invoke(command, args);
+    };
+  });
   const title = page.getByRole("heading", { name: "Your TVs" });
   const results = page.getByRole("region", { name: "TVs on your network" });
   const search = results.getByRole("button", { name: "Search for TVs" });
@@ -121,18 +150,26 @@ test("discovers, saves and forgets a TV without an automatic connection after re
   await expect(search).toBeEnabled();
   const position = await title.boundingBox();
   const overlay = page.locator(".mantine-LoadingOverlay-root");
-  await search.click();
-  await expect(page.getByRole("status").filter({ hasText: "Searching your network…" })).toBeAttached();
-  await expect(results).toHaveAttribute("aria-busy", "true");
-  await expect(overlay).toHaveCount(0);
-  expect(await title.boundingBox()).toEqual(position);
+  try {
+    await search.click();
+    await expect(page.getByRole("status").filter({ hasText: "Searching your network…" })).toBeAttached();
+    await expect(results).toHaveAttribute("aria-busy", "true");
+    await expect(overlay).toHaveCount(0);
+    expect(await title.boundingBox()).toEqual(position);
+  } finally {
+    discovery.release();
+  }
   await expect(results.getByRole("button", { name: /^Connect to/ })).toHaveCount(1);
   const connectOffice = results.getByRole("button", { name: "Connect to Office at 192.0.2.22", exact: true });
   expect(await rightEdge(connectOffice)).toBeCloseTo(await rightEdge(enterAddress));
-  await connectOffice.click();
-  await expect(page.getByRole("status").filter({ hasText: "Connecting…" })).toBeAttached();
-  await expect(overlay).toBeVisible();
-  expect(await title.boundingBox()).toEqual(position);
+  try {
+    await connectOffice.click();
+    await expect(page.getByRole("status").filter({ hasText: "Connecting…" })).toBeAttached();
+    await expect(overlay).toBeVisible();
+    expect(await title.boundingBox()).toEqual(position);
+  } finally {
+    connection.release();
+  }
   await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
   if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
   await page.getByRole("button", { name: "Back to TVs" }).click();

@@ -5,6 +5,9 @@ import { ButtonMappingPanel } from "./components/ButtonMappingPanel";
 import { Header } from "./components/Header";
 import { LauncherPanel } from "./components/LauncherPanel";
 import { LocalAppInstallDialog } from "./components/LocalAppInstallDialog";
+import { RootAccessPanel } from "./components/RootAccessPanel";
+import { RootSetupDialog } from "./components/RootSetupDialog";
+import { RootUpdateDialog } from "./components/RootUpdateDialog";
 import { SelectedTvView } from "./components/SelectedTvView";
 import { SamsungSignInDialog } from "./components/SamsungSignInDialog";
 import { TvActionView } from "./components/TvActionView";
@@ -33,6 +36,8 @@ export function App({ service }: AppProps) {
   const [dialog, setDialog] = useState<TvDialog | null>(null);
   const [about, setAbout] = useState(false);
   const [localInstallOpened, setLocalInstallOpened] = useState(false);
+  const [rootSetupOpened, setRootSetupOpened] = useState(false);
+  const [rootUpdateOpened, setRootUpdateOpened] = useState(false);
   const [menuOpened, setMenuOpened] = useState(false);
   const selected = manager.selected;
   const busy = Boolean(manager.busy);
@@ -43,12 +48,13 @@ export function App({ service }: AppProps) {
     setPage(next);
     setMenuOpened(false);
     if (next === page) return;
-    if (page === "apps" || page === "buttons") manager.cancelPageRead();
+    if (page === "apps" || page === "buttons" || page === "root") manager.cancelPageRead();
     if (next === "apps" && selected) {
       manager.clearAppRemoval();
       manager.loadApps(selected.id);
     }
     if (next === "buttons" && selected) manager.loadButtons(selected.id);
+    if (next === "root" && selected) manager.loadRootStatus(selected.id);
   };
   const connect = async (host: string, profileId?: string) => {
     const success = await manager.connect(host, profileId);
@@ -67,6 +73,7 @@ export function App({ service }: AppProps) {
     const connected = await manager.connect(selected.host, selected.id);
     if (connected && page === "apps") manager.loadApps(selected.id);
     if (connected && page === "buttons") manager.loadButtons(selected.id);
+    if (connected && page === "root") manager.loadRootStatus(selected.id);
   };
 
   function tvContent() {
@@ -105,6 +112,19 @@ export function App({ service }: AppProps) {
           onRemove={(picked) => void manager.removeApps(selected.id, picked)}
           onInstall={service.localApps ? () => setLocalInstallOpened(true) : undefined}
           installDisabled={busy}
+        />
+      );
+    }
+    if (page === "root") {
+      return (
+        <RootAccessPanel
+          status={manager.rootStatus}
+          loading={manager.rootLoading}
+          error={manager.rootError}
+          busy={busy}
+          onRefresh={() => manager.loadRootStatus(selected.id)}
+          onSetup={() => setRootSetupOpened(true)}
+          onUpdate={() => setRootUpdateOpened(true)}
         />
       );
     }
@@ -284,7 +304,36 @@ export function App({ service }: AppProps) {
           onClose={() => setLocalInstallOpened(false)}
         />
       )}
-      {appLoading && !dialog && !signInDialog && !localInstallOpened && (
+      {rootSetupOpened && selected && manager.rootStatus && (
+        <RootSetupDialog
+          key={selected.id}
+          profile={selected}
+          status={manager.rootStatus}
+          signedIn={samsung.account !== null}
+          signIn={samsung.signIn}
+          prepareCertificates={async (reportError) => {
+            const prepared = await manager.prepareCertificates(selected.id, reportError);
+            if (!prepared) await samsung.refresh();
+            return prepared;
+          }}
+          setup={manager.setupRoot}
+          simulateRestart={manager.simulateRootRestart}
+          onRefresh={() => manager.loadRootStatus(selected.id)}
+          onClose={() => setRootSetupOpened(false)}
+        />
+      )}
+      {rootUpdateOpened && selected && manager.rootStatus && (
+        <RootUpdateDialog
+          key={selected.id}
+          profile={selected}
+          status={manager.rootStatus}
+          upgrade={manager.upgradeRoot}
+          simulateRestart={manager.simulateRootRestart}
+          onRefresh={() => manager.loadRootStatus(selected.id)}
+          onClose={() => setRootUpdateOpened(false)}
+        />
+      )}
+      {appLoading && !dialog && !signInDialog && !localInstallOpened && !rootSetupOpened && !rootUpdateOpened && (
         <LoadingOverlay
           visible
           pos="fixed"

@@ -85,6 +85,38 @@ See screenshots of [Button mapping](screenshots/button-mapping.png),
 [learning a button](screenshots/button-mapping-learn.png), and
 [resetting all buttons](screenshots/button-mapping-reset.png).
 
+## Root access
+
+Open **Root access** for a fresh status check, or use **Refresh root status** to check again.
+The page shows root availability, the live helper version, automatic startup verification
+and whether setup progress is saved on this computer. Missing pairing or an unreachable
+helper shows **Unverified**; a saved recovery record alone does not establish live access.
+
+Choose **Set up root access** and confirm the Developer Mode settings. The app reuses
+the CLI's setup, prepares Samsung signing certificates when needed and saves its private
+recovery record before root changes. After installation, follow the Host PC IP and
+60-second power-disconnect instructions, then choose **Check after restart**. Setup stays
+pending until the CLI verifies a new automatic boot and finishes its checks. Reopen the
+page and choose **Continue setup** to resume saved progress. Setup preserves Home, launcher
+startup and Art Mode settings.
+
+When the live helper is older than the bundled CLI, choose **Update available**. Review
+the installed and target versions, confirm, then update using the original signing
+certificates. The update preserves pairing and saves progress. Restart the TV and choose
+**Check after restart**; completion requires the new runtime on a new automatic boot.
+Use **Continue update** after interruption. The dialog includes recovery steps if root
+access does not return. Root removal remains a CLI feature.
+
+See screenshots of [Root access](screenshots/root-access.png),
+[update confirmation](screenshots/root-update-review.png), and
+[restart verification on mobile](screenshots/root-restart-mobile.png).
+
+Development fixtures include an older helper on Living room, a fresh Bedroom TV and interrupted
+setup on Office. In the browser preview, **Demo: restart TV** simulates a new boot; it
+does not complete setup until **Check after restart** verifies it. The native adapter
+does not expose the simulation control. See [the CLI root guide](../docs/root-cli.md)
+for hardware validation and recovery details.
+
 ## Development
 
 Install the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), Node.js 22.12+

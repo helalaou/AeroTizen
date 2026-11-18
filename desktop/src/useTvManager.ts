@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { canApplyNativeHome, errorMessage } from "./contracts";
+import { profileAfterRootSetup } from "./services/rootAccess";
 import type {
   BackendStatus,
   ButtonChange,
@@ -10,6 +11,9 @@ import type {
   LauncherRelease,
   LocalAppPackage,
   NamedAppRemovalOutcome,
+  RootAccessStatus,
+  RootSetupAction,
+  RootUpdateAction,
   SavedTv,
   TvAppPackage,
   TvCandidate,
@@ -34,6 +38,9 @@ export function useTvManager(service: DesktopService) {
   const [buttonApps, setButtonApps] = useState<ButtonTargetApp[] | null>(null);
   const [buttonAppsLoading, setButtonAppsLoading] = useState(false);
   const [buttonAppsError, setButtonAppsError] = useState<string | null>(null);
+  const [rootStatus, setRootStatus] = useState<RootAccessStatus | null>(null);
+  const [rootLoading, setRootLoading] = useState(false);
+  const [rootError, setRootError] = useState<string | null>(null);
   const [appRemoval, setAppRemoval] = useState<NamedAppRemovalOutcome[]>([]);
   const [appRefusals, setAppRefusals] = useState<ReadonlyMap<string, string>>(() => new Map());
   const [backend, setBackend] = useState<BackendStatus | null>(null);
@@ -130,6 +137,8 @@ export function useTvManager(service: DesktopService) {
       }
       if (!mounted.current) return;
       if (profile.id !== selected?.id) {
+        setRootStatus(null);
+        setRootError(null);
         setApps(null);
         setAppsError(null);
         setAppRemoval([]);
@@ -217,6 +226,11 @@ export function useTvManager(service: DesktopService) {
     loadPage((signal) => service.listButtons(id, signal), setButtonMappings, setButtonsError, setButtonsLoading);
   };
 
+  const rootAccess = service.rootAccess;
+  const loadRootStatus = (id: string) => {
+    if (rootAccess) loadPage((signal) => rootAccess.status(id, signal), setRootStatus, setRootError, setRootLoading);
+  };
+
   const buttonActions = service.buttonActions;
   const loadButtonApps = (id: string) => {
     if (buttonActions) {
@@ -294,6 +308,61 @@ export function useTvManager(service: DesktopService) {
     setProfiles((current) => current.map((item) => (item.id === id ? profile : item)));
     setSelected((current) => (current?.id === id ? profile : current));
   };
+
+  const changeRoot = async (
+    label: string,
+    change: () => Promise<RootAccessStatus>,
+    reportError: (message: string) => void,
+  ): Promise<RootAccessStatus | null> => {
+    if (!rootAccess || !selected) return null;
+    let result: RootAccessStatus | null = null;
+    const success = await run(
+      label,
+      async () => {
+        const status = await change();
+        result = status;
+        if (!mounted.current) return;
+        setRootStatus(status);
+        setProfiles((current) =>
+          current.map((profile) => (profile.id === selected.id ? profileAfterRootSetup(profile, status) : profile)),
+        );
+        setSelected((current) => (current?.id === selected.id ? profileAfterRootSetup(current, status) : current));
+      },
+      "app",
+      reportError,
+    );
+    return success ? result : null;
+  };
+
+  const setupRoot = (action: RootSetupAction, reportError: (message: string) => void) =>
+    changeRoot(
+      action === "start" ? "Setting up root access…" : "Checking root setup after restart…",
+      () => rootAccess!.setup(selected!.id, action),
+      reportError,
+    );
+
+  const previewRestart = rootAccess?.simulateRestart;
+  const upgradeRoot = (action: RootUpdateAction, reportError: (message: string) => void) =>
+    changeRoot(
+      action === "start" ? "Updating the root helper…" : "Checking the root helper update…",
+      () => rootAccess!.upgrade(selected!.id, action),
+      reportError,
+    );
+  const simulateRootRestart = previewRestart
+    ? async (reportError: (message: string) => void) => {
+        if (!selected || !rootAccess) return;
+        await run(
+          "Simulating a TV restart…",
+          async () => {
+            await previewRestart(selected.id);
+            const status = await rootAccess.status(selected.id, new AbortController().signal);
+            if (mounted.current) setRootStatus(status);
+          },
+          "app",
+          reportError,
+        );
+      }
+    : undefined;
 
   const installLauncher = (version: string, confirmReplace: boolean) => {
     if (!selected) return Promise.resolve(false);
@@ -420,6 +489,9 @@ export function useTvManager(service: DesktopService) {
     buttonApps,
     buttonAppsLoading,
     buttonAppsError,
+    rootStatus,
+    rootLoading,
+    rootError,
     backend,
     latestLauncher: launcherReleases?.[0]?.version ?? (launcherReleases === undefined ? undefined : null),
     launcherReleases,
@@ -431,6 +503,10 @@ export function useTvManager(service: DesktopService) {
     loadApps,
     loadButtons,
     loadButtonApps,
+    loadRootStatus,
+    setupRoot,
+    upgradeRoot,
+    simulateRootRestart,
     changeButton,
     updateButtonInventory,
     cancelPageRead,

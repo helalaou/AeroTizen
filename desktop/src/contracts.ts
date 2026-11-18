@@ -92,6 +92,25 @@ export interface LocalAppInstallResult {
   app_id: string;
   version: string;
 }
+
+export interface RootAccessStatus {
+  phase:
+    "not_configured" | "prepared" | "installed" | "root_requested" | "waiting_boot" | "active" | "removing" | "removed";
+  root_available: boolean;
+  setup_complete: boolean;
+  runtime_version: string | null;
+  target_runtime_version: string;
+  update_available: boolean;
+  update_pending: boolean;
+  automatic_startup: boolean | null;
+  automatic_boot_verified: boolean;
+  bootstrap_completed: boolean;
+  recovery_saved: boolean;
+  original_pc_host: string | null;
+}
+
+export type RootSetupAction = "start" | "verify";
+export type RootUpdateAction = "start" | "resume";
 export type NamedAppRemovalOutcome = AppRemovalOutcome & { name: string };
 
 export interface TvButtonMapping {
@@ -127,6 +146,13 @@ export interface SamsungService {
 
 export interface DesktopService {
   samsung?: SamsungService;
+  rootAccess?: {
+    status(id: string, signal: AbortSignal): Promise<RootAccessStatus>;
+    setup(id: string, action: RootSetupAction): Promise<RootAccessStatus>;
+    upgrade(id: string, action: RootUpdateAction): Promise<RootAccessStatus>;
+    /** Development fixtures only; never supplied by the native adapter. */
+    simulateRestart?(id: string): Promise<void>;
+  };
   localApps?: {
     choose(id: string): Promise<LocalAppPackage | null>;
     install(id: string, selectionId: string, confirmInstall: boolean): Promise<LocalAppInstallResult>;
@@ -168,7 +194,7 @@ export function canApplyNativeHome(profile: SavedTv): boolean {
   );
 }
 
-export type TvPage = "overview" | "launcher" | "apps" | "home" | "buttons";
+export type TvPage = "overview" | "launcher" | "apps" | "home" | "buttons" | "root";
 
 export function errorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;

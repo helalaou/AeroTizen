@@ -1,5 +1,5 @@
 import { test as base } from "@playwright/test";
-import type { AppPackageSelection, AppRemovalOutcome, SavedTv, TvAppPackage } from "../src/contracts";
+import type { AppPackageSelection, AppRemovalOutcome, RootAccessStatus, SavedTv, TvAppPackage } from "../src/contracts";
 import {
   bedroom,
   livingRoom,
@@ -11,6 +11,10 @@ import {
   testPackages,
   testReleases,
   testStatus,
+  testRootReady,
+  testRootNotConfigured,
+  testRootWaiting,
+  testRootOutdated,
 } from "../src/test/tvs";
 
 export const test = base.extend<{
@@ -30,6 +34,10 @@ export const test = base.extend<{
         backupSha256,
         buttonApps,
         buttonMappings,
+        rootReady,
+        rootNotConfigured,
+        rootWaiting,
+        rootOutdated,
       }) => {
         let currentPackages = packages;
         let samsungAccount: { email: string } | null = null;
@@ -42,10 +50,77 @@ export const test = base.extend<{
           sessionStorage.setItem(profileKey, JSON.stringify([...profiles]));
           return tv;
         };
+        const rootKey = "test-root-progress";
+        const rootProgress = new Map<string, RootAccessStatus>(
+          JSON.parse(
+            sessionStorage.getItem(rootKey) ??
+              JSON.stringify([
+                [known[0]!.id, rootOutdated],
+                [known[1]!.id, rootNotConfigured],
+              ]),
+          ),
+        );
+        const saveRoot = (id: string, value: RootAccessStatus) => {
+          rootProgress.set(id, value);
+          sessionStorage.setItem(rootKey, JSON.stringify([...rootProgress]));
+          return value;
+        };
+        Object.defineProperty(window, "__restartDemoRoot", {
+          value: (id: string) => {
+            const current = rootProgress.get(id);
+            if (!current || (current.phase !== "waiting_boot" && !current.update_pending))
+              throw new Error("No pending root operation.");
+            saveRoot(id, {
+              ...current,
+              runtime_version: current.target_runtime_version,
+              automatic_boot_verified: true,
+              bootstrap_completed: true,
+            });
+          },
+        });
         Object.defineProperty(window, "__TAURI_INTERNALS__", {
           value: {
             async invoke(command: string, args: Record<string, unknown> = {}) {
               switch (command) {
+                case "root_access_status":
+                  if (!profiles.has(String(args.id))) throw new Error("Connect to the TV first.");
+                  return structuredClone(rootProgress.get(String(args.id)) ?? rootNotConfigured);
+                case "setup_root_access": {
+                  const id = String(args.id);
+                  const tv = profiles.get(id);
+                  const current = rootProgress.get(id) ?? rootNotConfigured;
+                  if (!tv || args.confirmed !== true) throw new Error("Confirm root setup first.");
+                  if (args.action === "start") {
+                    if (!tv.launcher_signing_ready || current.phase === "waiting_boot" || current.phase === "active")
+                      throw new Error("Review root setup and signing certificates first.");
+                    return saveRoot(id, { ...rootWaiting });
+                  }
+                  if (args.action !== "verify" || (current.phase !== "waiting_boot" && current.phase !== "active"))
+                    throw new Error("There is no setup waiting for restart.");
+                  if (!current.automatic_boot_verified || !current.bootstrap_completed) return structuredClone(current);
+                  save({ ...tv, transport: "paired_root" });
+                  return saveRoot(id, { ...rootReady });
+                }
+                case "upgrade_root_access": {
+                  const id = String(args.id);
+                  const tv = profiles.get(id);
+                  const current = rootProgress.get(id);
+                  if (!tv || args.confirmed !== true || current?.phase !== "active")
+                    throw new Error("Confirm the update first.");
+                  if (args.action === "start") {
+                    if (!tv.launcher_signing_ready || !current.update_available)
+                      throw new Error("Review update requirements first.");
+                    return saveRoot(id, { ...current, update_available: false, update_pending: true });
+                  }
+                  if (args.action !== "resume" || !current.update_pending) throw new Error("No pending update.");
+                  if (current.runtime_version !== current.target_runtime_version || !current.automatic_boot_verified)
+                    return structuredClone(current);
+                  save({
+                    ...tv,
+                    technical_details: { ...tv.technical_details!, root_runtime_version: rootReady.runtime_version },
+                  });
+                  return saveRoot(id, { ...rootReady });
+                }
                 case "samsung_account":
                   return samsungAccount;
                 case "samsung_sign_in":
@@ -200,6 +275,10 @@ export const test = base.extend<{
         buttonMappings: testButtonMappings,
         buttonApps: testButtonApps,
         backupSha256: testBackupSha256,
+        rootReady: testRootReady,
+        rootNotConfigured: testRootNotConfigured,
+        rootWaiting: testRootWaiting,
+        rootOutdated: testRootOutdated,
       },
     );
     await use(page);

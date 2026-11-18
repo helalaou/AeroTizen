@@ -94,6 +94,55 @@ async fn list_tv_button_apps(
 }
 
 #[tauri::command]
+async fn root_access_status(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    request_id: String,
+) -> AppResult<Value> {
+    read_tv(&state, "root_status", id, request_id).await
+}
+
+#[tauri::command]
+async fn setup_root_access(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    action: String,
+    confirmed: bool,
+) -> AppResult<Value> {
+    let _guard = state.operation.try_lock().map_err(|_| busy())?;
+    let saved = state.profiles.get(&id)?;
+    worker::request(
+        &state.worker_path,
+        "setup_root",
+        json!({
+            "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256,
+            "action": action, "confirmed": confirmed,
+        }),
+    )
+    .await
+}
+
+#[tauri::command]
+async fn upgrade_root_access(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    action: String,
+    confirmed: bool,
+) -> AppResult<Value> {
+    let _guard = state.operation.try_lock().map_err(|_| busy())?;
+    let saved = state.profiles.get(&id)?;
+    worker::request(
+        &state.worker_path,
+        "upgrade_root",
+        json!({
+            "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256,
+            "action": action, "confirmed": confirmed,
+        }),
+    )
+    .await
+}
+
+#[tauri::command]
 async fn change_tv_button(
     state: tauri::State<'_, AppState>,
     id: String,
@@ -401,6 +450,9 @@ pub fn run() {
             list_tv_apps,
             list_tv_buttons,
             list_tv_button_apps,
+            root_access_status,
+            setup_root_access,
+            upgrade_root_access,
             change_tv_button,
             cancel_tv_read,
             remove_tv_apps,

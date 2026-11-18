@@ -7,6 +7,7 @@ import type {
   LauncherRelease,
   LocalAppPackage,
   NativeHomeSettings,
+  RootAccessStatus,
   SavedTv,
   SamsungAccount,
   TvAppPackage,
@@ -30,7 +31,7 @@ export const livingRoom: SavedTv = {
     tizen_version: "9.0.0",
     architecture: "armv7",
     platform: "24_PTM",
-    root_runtime_version: "3.0.1",
+    root_runtime_version: "3.0.0",
   },
   home_backup: { status: "saved", captured_at: "2026-11-16T10:00:00Z" },
   home_routing_mode: "native",
@@ -51,6 +52,7 @@ export const bedroom: SavedTv = {
   name: "Bedroom",
   launcher_version: null,
   launcher_signing_ready: false,
+  technical_details: { ...livingRoom.technical_details!, root_runtime_version: null },
   transport: "developer",
   home_backup: { status: "missing" },
   home_routing_mode: undefined,
@@ -74,6 +76,46 @@ export const testReleases: LauncherRelease[] = [
   { version: "2.7.0", sections: [{ heading: "Bug Fixes", changes: ["Fix app card spacing."] }] },
 ];
 export const testStatus = { name: "aerotizen-desktop-worker", version: "3.0.1", operations: [] };
+export const testRootNotConfigured: RootAccessStatus = {
+  phase: "not_configured",
+  root_available: false,
+  setup_complete: false,
+  runtime_version: null,
+  target_runtime_version: testStatus.version,
+  update_available: false,
+  update_pending: false,
+  automatic_startup: null,
+  automatic_boot_verified: false,
+  bootstrap_completed: false,
+  recovery_saved: false,
+  original_pc_host: null,
+};
+export const testRootReady: RootAccessStatus = {
+  phase: "active",
+  root_available: true,
+  setup_complete: true,
+  runtime_version: "3.0.1",
+  target_runtime_version: testStatus.version,
+  update_available: false,
+  update_pending: false,
+  automatic_startup: true,
+  automatic_boot_verified: true,
+  bootstrap_completed: true,
+  recovery_saved: true,
+  original_pc_host: "192.0.2.10",
+};
+export const testRootWaiting: RootAccessStatus = {
+  ...testRootReady,
+  phase: "waiting_boot",
+  setup_complete: false,
+  automatic_boot_verified: false,
+  bootstrap_completed: false,
+};
+export const testRootOutdated: RootAccessStatus = {
+  ...testRootReady,
+  runtime_version: "3.0.0",
+  update_available: true,
+};
 export const testLocalApp: LocalAppPackage = {
   selection_id: "e".repeat(64),
   name: "Sample Player",
@@ -109,6 +151,7 @@ export const testButtonApps: ButtonTargetApp[] = [
 const SIMULATED_REMOTE_PRESS_DELAY_MS = 1_500;
 const SIMULATED_SIGN_IN_DELAY_MS = 1_500;
 const SIMULATED_CERTIFICATE_DELAY_MS = 700;
+const SIMULATED_ROOT_SETUP_DELAY_MS = 1000;
 
 function originalButton(button: string): TvButtonMapping {
   return { button, mode: "default", app_id: null, app_name: null, active: false };
@@ -137,7 +180,81 @@ export function testService(): DesktopService {
   let buttonMappings = testButtonMappings.buttons;
   let samsungAccount: SamsungAccount | null = null;
   const appInventories = new Map<string, TvAppPackage[]>();
+  const rootProgress = new Map<string, RootAccessStatus>([
+    [livingRoom.id, testRootOutdated],
+    [bedroom.id, testRootNotConfigured],
+    [office.id, { ...testRootNotConfigured, phase: "installed", recovery_saved: true, original_pc_host: "192.0.2.10" }],
+  ]);
   return {
+    rootAccess: {
+      status: async (id, signal) => {
+        signal.throwIfAborted();
+        if (!profiles.has(id)) throw new Error("Connect to this TV first.");
+        return { ...(rootProgress.get(id) ?? testRootNotConfigured) };
+      },
+      setup: async (id, action) => {
+        const tv = profiles.get(id);
+        if (!tv) throw new Error("Connect to this TV first.");
+        const current = rootProgress.get(id) ?? testRootNotConfigured;
+        if (current.phase === "removing") throw new Error("Finish root removal before starting setup.");
+        if (action === "start") {
+          if (!tv.launcher_signing_ready) throw new Error("Prepare this TV's signing certificates first.");
+          if (current.phase === "waiting_boot" || current.phase === "active")
+            throw new Error("Refresh Root access to continue the existing setup.");
+          await new Promise((resolve) => setTimeout(resolve, SIMULATED_ROOT_SETUP_DELAY_MS));
+          rootProgress.set(id, { ...testRootWaiting });
+        } else {
+          if (current.phase !== "waiting_boot" && current.phase !== "active")
+            throw new Error("There is no setup waiting for restart.");
+          if (current.automatic_boot_verified && current.bootstrap_completed) {
+            rootProgress.set(id, { ...testRootReady });
+            profiles.set(id, {
+              ...tv,
+              transport: "paired_root",
+              launcher_signing_ready: true,
+              technical_details: tv.technical_details
+                ? { ...tv.technical_details, root_runtime_version: testRootReady.runtime_version }
+                : undefined,
+            });
+          }
+        }
+        return { ...rootProgress.get(id)! };
+      },
+      simulateRestart: async (id) => {
+        const status = rootProgress.get(id);
+        if (!status || (status.phase !== "waiting_boot" && !status.update_pending))
+          throw new Error("Start root setup or an update before simulating a restart.");
+        rootProgress.set(id, {
+          ...status,
+          runtime_version: status.target_runtime_version,
+          automatic_boot_verified: true,
+          bootstrap_completed: true,
+        });
+      },
+      upgrade: async (id, action) => {
+        const tv = profiles.get(id);
+        const current = rootProgress.get(id);
+        if (!tv || !current || current.phase !== "active") throw new Error("Complete root setup first.");
+        if (action === "start") {
+          if (!tv.launcher_signing_ready) throw new Error("Restore the original signing certificates first.");
+          if (!current.update_available || current.update_pending) throw new Error("Refresh Root access first.");
+          await new Promise((resolve) => setTimeout(resolve, SIMULATED_ROOT_SETUP_DELAY_MS));
+          rootProgress.set(id, { ...current, update_available: false, update_pending: true });
+        } else {
+          if (!current.update_pending) throw new Error("There is no pending root helper update.");
+          if (current.runtime_version === current.target_runtime_version && current.automatic_boot_verified) {
+            rootProgress.set(id, { ...testRootReady });
+            profiles.set(id, {
+              ...tv,
+              technical_details: tv.technical_details
+                ? { ...tv.technical_details, root_runtime_version: testRootReady.runtime_version }
+                : undefined,
+            });
+          }
+        }
+        return { ...rootProgress.get(id)! };
+      },
+    },
     localApps: {
       choose: async (id) => ({
         ...testLocalApp,

@@ -9,6 +9,7 @@ import type {
   LauncherRelease,
   LocalAppPackage,
   LocalAppInstallResult,
+  RootAccessStatus,
   PreparedHomeApply,
   SavedTv,
   SamsungAccount,
@@ -18,7 +19,7 @@ import type {
 } from "../contracts";
 
 async function readTv<Result>(
-  command: "list_tv_apps" | "list_tv_buttons" | "list_tv_button_apps",
+  command: "list_tv_apps" | "list_tv_buttons" | "list_tv_button_apps" | "root_access_status",
   id: string,
   signal: AbortSignal,
 ): Promise<Result> {
@@ -38,6 +39,11 @@ async function readTv<Result>(
 }
 
 export const nativeService: DesktopService = {
+  rootAccess: {
+    status: (id, signal) => readTv<RootAccessStatus>("root_access_status", id, signal),
+    setup: (id, action) => invoke<RootAccessStatus>("setup_root_access", { id, action, confirmed: true }),
+    upgrade: (id, action) => invoke<RootAccessStatus>("upgrade_root_access", { id, action, confirmed: true }),
+  },
   localApps: {
     choose: (id) => invoke<LocalAppPackage | null>("choose_local_app", { id }),
     install: (id, selectionId, confirmInstall) =>
