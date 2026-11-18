@@ -14,6 +14,12 @@ const THEMES = [
     names: { en: "Pop", fr: "Pop", it: "Pop", ru: "Поп", ar: "بوب", "pt-BR": "Pop" },
   },
   {
+    id: "frost",
+    tileRadius: "24px",
+    fonts: ["Jost", "Tajawal"],
+    names: { en: "Frost", fr: "Givre", it: "Brina", ru: "Иней", ar: "صقيع", "pt-BR": "Geada" },
+  },
+  {
     id: "gloss",
     tileRadius: "56px",
     fonts: ["Google Sans"],
