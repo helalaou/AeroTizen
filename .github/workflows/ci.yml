@@ -299,14 +299,10 @@ jobs:
           retention-days: 7
 
   launcher-browser:
-    name: Browser tests (${{ matrix.shard }}/${{ strategy.job-total }})
+    name: Browser tests
     needs: changes
     if: ${{ !cancelled() && inputs.release_component != 'cli' && needs.changes.outputs.launcher != 'false' }}
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -316,26 +312,26 @@ jobs:
         with:
           node-version: 20
       - run: npm ci --no-audit --no-fund
-      # Type checking runs once in launcher-checks. Each browser job builds its own assets.
+      # Type checking runs in launcher-checks, alongside this browser job.
       - run: node tools/build-launcher.mjs
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test --workers=3 --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+      - run: npx playwright test --workers=3
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: browser-test-timings-${{ matrix.shard }}-of-${{ strategy.job-total }}
+          name: browser-test-timings
           path: test-results/browser-file-timings.json
           if-no-files-found: ignore
           retention-days: 7
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: browser-failures-${{ matrix.shard }}-of-${{ strategy.job-total }}
+          name: browser-failures
           path: test-results/
           retention-days: 7
 
   launcher:
-    # Keep the existing required check name and reject any failed or missing shard.
+    # Keep the existing required check name and require both checks and browser tests.
     needs: [changes, launcher-checks, launcher-browser]
     if: ${{ !cancelled() && inputs.release_component != 'cli' && (needs.changes.outputs.launcher != 'false' || needs.changes.outputs.format_contributing == 'true') }}
     runs-on: ubuntu-latest

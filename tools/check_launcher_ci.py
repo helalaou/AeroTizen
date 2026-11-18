@@ -1,4 +1,4 @@
-"""Keep the required launcher check dependent on all selected checks and browser shards."""
+"""Keep the required launcher check dependent on source checks and the browser job."""
 
 import os
 

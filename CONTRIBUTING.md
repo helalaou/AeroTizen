@@ -95,11 +95,10 @@ and demo entry checks for their distinct startup and build behaviour.
 
 Playwright prints per-file timings and writes `test-results/browser-file-timings.json`.
 CI also adds the table to the job summary and uploads the JSON on success or failure.
-CI runs browser tests in three parallel jobs with `--shard=1/3`, `2/3` and `3/3`,
-each with three workers. Launcher source checks run in parallel with those jobs.
-The required `launcher` check waits for source checks and every browser shard.
-Each shard has separate timing and failure artifacts; its timing report includes
-the shard number. Local `npm run test:browser` still runs the complete suite.
+CI runs the complete browser suite in one job with three workers. Launcher source
+checks run alongside that job. The required `launcher` check waits for both jobs.
+Keep CI unsharded while the critical suite is fast; use measured runtime to justify
+additional jobs. Local `npm run test:browser` also runs the complete suite.
 File times sum test execution across workers and retries; the report records suite
 wall time separately. Failure screenshots and traces remain enabled.
 

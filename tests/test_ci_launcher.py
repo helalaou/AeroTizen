@@ -11,7 +11,7 @@ launcher_checks_pass = runpy.run_path(str(SCRIPT))["launcher_checks_pass"]
 
 
 class LauncherCIGateTests(unittest.TestCase):
-    def test_passes_after_all_checks_and_browser_shards_succeed(self):
+    def test_passes_after_source_checks_and_the_browser_job_succeed(self):
         self.assertTrue(launcher_checks_pass("success", "success", True))
 
     def test_format_only_changes_allow_skipped_browser_jobs(self):
