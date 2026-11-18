@@ -1,5 +1,27 @@
 # Changelog
 
+## [3.3.0](https://github.com/helalaou/AeroTizen/compare/launcher-v3.2.0...launcher-v3.3.0) (2026-11-18)
+
+
+### Features
+
+* **launcher:** add the Amethyst interface theme ([#271](https://github.com/helalaou/AeroTizen/issues/271)) ([f98ee01](https://github.com/helalaou/AeroTizen/commit/f98ee01d0923de7ed1a2882aa2a775b5df0e54db))
+* **launcher:** add the Frost interface theme ([#291](https://github.com/helalaou/AeroTizen/issues/291)) ([7a6f479](https://github.com/helalaou/AeroTizen/commit/7a6f4798c6f1227dbfb48784ec8aeb4d9bd36af7))
+* **launcher:** add the Halo interface theme ([#285](https://github.com/helalaou/AeroTizen/issues/285)) ([be1cdbf](https://github.com/helalaou/AeroTizen/commit/be1cdbf423d8ab644257f316cef12658df75210c))
+* **launcher:** add the Mint interface theme ([#283](https://github.com/helalaou/AeroTizen/issues/283)) ([d1f1b5d](https://github.com/helalaou/AeroTizen/commit/d1f1b5dc01d4f621e8619da8e5d19077be9c99fa))
+* **launcher:** add the Pop interface theme ([#289](https://github.com/helalaou/AeroTizen/issues/289)) ([1f6f675](https://github.com/helalaou/AeroTizen/commit/1f6f6757f5fcf284a1232a0d2725d9ae10c980b4))
+* **launcher:** let a theme set the dimming of unselected app cards ([#286](https://github.com/helalaou/AeroTizen/issues/286)) ([f4bd7b0](https://github.com/helalaou/AeroTizen/commit/f4bd7b011439f2ccaaf048054fb4054d358eabd7))
+* **launcher:** unify settings controls and themed toggles ([#295](https://github.com/helalaou/AeroTizen/issues/295)) ([bb68e64](https://github.com/helalaou/AeroTizen/commit/bb68e64b8b6cb15cfcb68952c4df1920661e261d))
+
+
+### Bug Fixes
+
+* **launcher:** align toggle sizing and keep Fireplace text white ([#296](https://github.com/helalaou/AeroTizen/issues/296)) ([4a3bd82](https://github.com/helalaou/AeroTizen/commit/4a3bd829bb77c9c68295931fa96700cefc7984a0))
+* **launcher:** always use Samsung viewer for HDMI playback ([#294](https://github.com/helalaou/AeroTizen/issues/294)) ([da8db68](https://github.com/helalaou/AeroTizen/commit/da8db68ed4a7b082f0de45c18bd2ba3360d59e75))
+* **launcher:** fill All apps rows with page-specific sizes ([#293](https://github.com/helalaou/AeroTizen/issues/293)) ([b83428f](https://github.com/helalaou/AeroTizen/commit/b83428f6ee1a7fb990f8e38b4d325e7f8babb9a7))
+* **launcher:** keep Amethyst's input cards concentric with their bar ([#282](https://github.com/helalaou/AeroTizen/issues/282)) ([9d74971](https://github.com/helalaou/AeroTizen/commit/9d749712ef291dad231d5acad2d9f2454102bf25))
+* **launcher:** keep the header status clear of the tabs ([#272](https://github.com/helalaou/AeroTizen/issues/272)) ([e58d1c0](https://github.com/helalaou/AeroTizen/commit/e58d1c0efd7b2469cf8242d11a0271a1fe62367a))
+
 ## [3.2.0](https://github.com/helalaou/AeroTizen/compare/launcher-v3.1.0...launcher-v3.2.0) (2026-11-15)
 
 
