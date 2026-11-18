@@ -12,18 +12,19 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from aerotizen import releases, remote
+from aerotizen import home_status, releases, remote
 from aerotizen.device import DeviceSessionError
 from aerotizen.root import SUPPORTED_VERSION
 
 OPERATION = "http://tizen.org/appcontrol/operation/main"
 HOME_KEY = "db/appfw/home_appid"
 STARTUP_KEYS = ("db/appfw/startup_appid", "db/appfw/booting_appid_backup")
+FIRST_SCREEN_KEY = "db/first_screen/type"
 AUTOSTART_KEY = "db/menu/smart_hub/ontvsetting/auto_start"
 SETTINGS = {
     HOME_KEY: "string",
     **dict.fromkeys(STARTUP_KEYS, "string"),
-    "db/first_screen/type": "string",
+    FIRST_SCREEN_KEY: "string",
     AUTOSTART_KEY: "int",
 }
 PAYLOAD_PATH = Path(__file__).parent / "helpers/home-query.json"
@@ -273,6 +274,61 @@ def read_status(session, provider, info):
     }
 
 
+def read_paired_backup_status(session, identity, info):
+    """Capture a complete baseline through the authenticated getter-only helper."""
+    if not session.managed_root:
+        raise HomeError("Creating an original Home backup requires a compatible paired TV helper.")
+    reply = session.read_root_home_status()
+    if not isinstance(reply, dict):
+        raise HomeError("The paired TV helper did not return the original Home settings.")
+    model = info.get("modelName")
+    if not isinstance(model, str) or not model.strip():
+        raise HomeError("The TV model could not be verified for an original Home backup.")
+    metadata = (reply.get("firmware_build"), reply.get("helper_sha256"))
+    if any(not isinstance(value, str) or not value.strip() for value in metadata):
+        raise HomeError("Updating the paired TV helper is required to verify a new original Home backup.")
+    firmware, helper_checksum = metadata
+    main = reply.get("home_button_app")
+    startup, startup_backup = STARTUP_KEYS
+    strings = {
+        HOME_KEY: reply.get("home_app"),
+        startup: reply.get("startup_app"),
+        startup_backup: reply.get("startup_backup_app"),
+        FIRST_SCREEN_KEY: reply.get("first_screen"),
+    }
+    autostart = reply.get("smart_hub_autostart")
+    if type(autostart) is not bool or any(
+        not isinstance(value, str) or not home_status.APP_ID.fullmatch(value)
+        for value in (main, *strings.values())
+    ):
+        raise HomeError("The paired TV helper could not verify every original Home and startup setting.")
+    if main != strings[HOME_KEY]:
+        raise HomeError("The current Home assignments disagree. An original backup cannot be created.")
+    return {
+        "queried_at": datetime.now(timezone.utc).isoformat(),
+        "complete": True,
+        "device": {
+            "identity_sha256": identity,
+            "model": model,
+            "platform": info.get("model"),
+            "firmware_build": firmware,
+        },
+        "home": {
+            "main_operation": {"value": main},
+            "settings": {
+                **{key: {"type": "string", "value": value} for key, value in strings.items()},
+                AUTOSTART_KEY: {"type": "int", "value": int(autostart)},
+            },
+        },
+        "evidence": {
+            "access": "paired_helper",
+            "authenticated": True,
+            "uid": 0,
+            "helper_sha256": helper_checksum,
+        },
+    }
+
+
 def baseline_from_status(status):
     if status.get("complete") is not True:
         raise HomeError("Cannot back up incomplete native Home state; resolve unavailable reads first.")
@@ -332,13 +388,15 @@ def validate_backup(document, identity):
                 "Capture the original values before opening AeroTizen; keep any existing original backup."
             )
         evidence = document["evidence"]
-        required = ["authenticated", "query_staging_cleaned"]
+        required = ["authenticated"]
         if evidence["access"] == "temporary_root":
-            required += ["upstream_staging_cleaned", "system_files_unchanged"]
+            required += ["query_staging_cleaned", "upstream_staging_cleaned", "system_files_unchanged"]
             expected_uid = 0
         elif evidence["access"] == "sdk_uid_901":
-            required += ["sdk_staging_cleaned"]
+            required += ["query_staging_cleaned", "sdk_staging_cleaned"]
             expected_uid = 901
+        elif evidence["access"] == "paired_helper":
+            expected_uid = 0
         else:
             raise ValueError("Unknown baseline access method")
         for key in required:

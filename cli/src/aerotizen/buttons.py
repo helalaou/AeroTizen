@@ -21,6 +21,12 @@ MAX_KEY_CODE = 767
 READ_ACTIONS = {"list", "status", "key-names", "input-devices"}
 
 
+class ButtonAvailabilityError(DeviceSessionError):
+    def __init__(self, code, message):
+        super().__init__(message)
+        self.code = code
+
+
 def configure_parser(parser, handler):
     commands = parser.add_subparsers(dest="buttons_command", required=True)
     actions = {
@@ -80,23 +86,29 @@ def resolve_app(target, host, receipt):
     raise ValueError("Installed app not found. Use aerotizen apps --json to find its Tizen app ID.")
 
 
-def run(args, host, state_dir):
+def valid_label(label):
+    return (
+        isinstance(label, str)
+        and bool(label)
+        and label == label.strip()
+        and not any(unicodedata.category(char) in ("Cc", "Cs", "Zl", "Zp") for char in label)
+        and len(label.encode("utf-16-le")) // 2 <= MAX_LABEL_LENGTH
+    )
+
+
+def run(args, host, state_dir, *, expected_identity=None, target_app_id=None):
     action = args.button_action
     label = getattr(args, "button", "").strip()
-    if (
-        action not in READ_ACTIONS
-        and action != "reset"
-        and (
-            not label
-            or any(unicodedata.category(char) in ("Cc", "Cs", "Zl", "Zp") for char in label)
-            or len(label.encode("utf-16-le")) // 2 > MAX_LABEL_LENGTH
-        )
-    ):
+    if action not in READ_ACTIONS and action != "reset" and not valid_label(label):
         raise ValueError(f"Use a single-line button name of up to {MAX_LABEL_LENGTH} characters.")
     receipt = root_state.load(args.receipt) if args.receipt else root_state.find(host, state_dir)
     if not receipt or receipt["phase"] != "active":
-        raise DeviceSessionError(
-            "Complete root setup and verify the paired helper with aerotizen root status."
+        raise ButtonAvailabilityError(
+            "pairing_required", "Complete root setup and verify the paired helper with aerotizen root status."
+        )
+    if expected_identity is not None and receipt["duid_sha256"] != expected_identity:
+        raise ButtonAvailabilityError(
+            "identity_mismatch", "This address belongs to a different TV. No changes were made."
         )
     apply = getattr(args, "yes", False)
     payload = {"action": action, "apply": apply}
@@ -108,19 +120,25 @@ def run(args, host, state_dir):
         client = BridgeClient(host, receipt, timeout=LEARN_TIMEOUT_SECONDS if action == "learn" else 8)
         capabilities = client.request()
         if capabilities.get("buttons_protocol") != PROTOCOL:
-            raise DeviceSessionError("The TV helper needs an update for app buttons.")
+            raise ButtonAvailabilityError(
+                "helper_update_required", "The TV helper needs an update for app buttons."
+            )
         if label:
             if not capabilities.get("buttons_friendly_names"):
                 label = label.lower()
                 if not LEGACY_LABEL.fullmatch(label):
-                    raise DeviceSessionError("Update the TV helper to use this button name.")
+                    raise ButtonAvailabilityError(
+                        "helper_update_required", "Update the TV helper to use this button name."
+                    )
             payload["button"] = label
         if action == "key-names" and not capabilities.get("buttons_key_names"):
             raise DeviceSessionError("Update the TV helper to look up Samsung key names.")
         if action == "input-devices" and not capabilities.get("buttons_input_devices"):
             raise DeviceSessionError("Update the TV helper to list compositor input devices.")
         if action == "map":
-            payload["app_id"] = resolve_app(args.app, host, receipt)
+            payload["app_id"] = (
+                target_app_id if target_app_id is not None else resolve_app(args.app, host, receipt)
+            )
         if action == "learn" and apply:
             print(f"Press the {label} app button on the physical remote once.", file=sys.stderr, flush=True)
         upgrade_discovery = action == "list" and not capabilities.get("buttons_discovery")

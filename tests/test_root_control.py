@@ -2,6 +2,7 @@
 
 import base64
 import copy
+import hashlib
 import json
 import uuid
 from contextlib import contextmanager
@@ -247,6 +248,48 @@ def test_setup_requires_a_new_automatic_boot_before_completion(rig):
     assert state["home"] == {"assignment": "original", "startup": "original"}
 
 
+def test_desktop_setup_checks_selected_identity_before_tv_writes(rig):
+    state, path, _, _ = rig
+    with pytest.raises(control.RootIdentityError, match="different TV"):
+        control.setup(state["host"], state_dir=path.parents[2], expected_duid_sha256="0" * 64)
+    assert not path.exists()
+    assert not state["root_calls"]
+    assert state["installs"] == 0
+
+
+def test_desktop_setup_reuses_recovery_and_still_requires_a_new_boot(rig):
+    state, path, _, _ = rig
+    expected = hashlib.sha256(b"fixture-duid").hexdigest()
+    options = {"receipt_path": path, "state_dir": path.parents[2], "expected_duid_sha256": expected}
+    assert control.setup(state["host"], **options)["setup_complete"] is False
+    original = root_state.load(path)
+    assert control.setup(state["host"], **options)["setup_complete"] is False
+    with pytest.raises(control.RootIdentityError):
+        control.setup(state["host"], **{**options, "expected_duid_sha256": "0" * 64})
+    state["boot"], state["origin"], state["developer"] = str(uuid.uuid4()), "boot", "127.0.0.1"
+    assert control.setup(state["host"], **options)["setup_complete"] is True
+    assert root_state.load(path)["installation_id"] == original["installation_id"]
+    assert state["installs"] == 1
+    assert len(state["root_calls"]) == 1
+
+
+def test_verification_cannot_begin_a_new_installation_if_recovery_state_changes(rig, monkeypatch):
+    state, path, start, _ = rig
+    with pytest.raises(control.RootSetupStateError):
+        control.setup(state["host"], receipt_path=path, verify_only=True)
+    assert state["installs"] == 0
+    start()
+    removed = {**root_state.load(path), "phase": "removed"}
+    root_state.save(path, removed)
+    monkeypatch.setattr(
+        root_package, "runtime_files", lambda *_: pytest.fail("Verification prepared a new install")
+    )
+    with pytest.raises(control.RootSetupStateError):
+        control.setup(state["host"], receipt_path=path, verify_only=True)
+    assert root_state.load(path) == removed
+    assert state["installs"] == 1
+
+
 def test_manual_setup_root_on_a_new_boot_is_not_automatic_boot_evidence(rig):
     state, _, setup, _ = rig
     setup()
@@ -435,6 +478,26 @@ def test_upgrade_checks_runtime_prerequisites_before_installing(rig, monkeypatch
     assert [operation for operation, _ in state["root_calls"]] == ["install"]
 
 
+def test_desktop_upgrade_checks_selected_identity_under_lock_before_tv_access(rig, monkeypatch):
+    state, path, original, _ = ready_for_upgrade(rig, monkeypatch)
+    monkeypatch.setattr(control, "_info", lambda *_: pytest.fail("Wrong identity reached TV"))
+    with pytest.raises(control.RootIdentityError):
+        control.upgrade(state["host"], receipt_path=path, expected_duid_sha256="0" * 64)
+    assert root_state.load(path) == original
+    assert state["installs"] == 1
+
+
+def test_desktop_resume_cannot_start_an_update_if_pending_progress_disappeared(rig, monkeypatch):
+    state, path, original, _ = ready_for_upgrade(rig, monkeypatch)
+    monkeypatch.setattr(control, "_info", lambda *_: pytest.fail("Resume started a new update"))
+    with pytest.raises(control.RootSetupStateError):
+        control.upgrade(
+            state["host"], receipt_path=path, expected_duid_sha256=original["duid_sha256"], resume_only=True
+        )
+    assert root_state.load(path) == original
+    assert state["installs"] == 1
+
+
 @pytest.mark.parametrize("reset_startup", [False, True])
 @pytest.mark.parametrize("installed_version", [None, "0.2.0"])
 def test_upgrade_preserves_pairing_and_requires_a_new_automatic_boot(
@@ -451,7 +514,9 @@ def test_upgrade_preserves_pairing_and_requires_a_new_automatic_boot(
     assert [operation for operation, _ in state["root_calls"]] == (
         ["install", "upgrade"] if reset_startup else ["install"]
     )
-    state["boot"], state["runtime_version"] = str(uuid.uuid4()), root_state.RUNTIME_VERSION
+    state["runtime_version"] = root_state.RUNTIME_VERSION
+    assert upgrade()["upgrade_complete"] is False
+    state["boot"] = str(uuid.uuid4())
     assert upgrade()["upgrade_complete"] is True
     assert upgrade()["upgrade_complete"] is True
     saved = root_state.load(path)

@@ -1,0 +1,196 @@
+.header {
+  height: 100%;
+  padding: 0 28px;
+  color: #101828;
+}
+.wordmark {
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.9px;
+}
+.main {
+  background: #fff;
+  color: #172b4d;
+}
+.body {
+  min-height: calc(100svh - 64px);
+  display: flex;
+  flex-direction: column;
+}
+.selection {
+  width: 100%;
+  max-width: 1024px;
+  padding: 56px 32px 32px;
+  margin: 0 auto;
+  flex: 1;
+}
+.savedSection {
+  margin-top: 52px;
+}
+.tvList {
+  margin-top: 18px;
+  border-top: 1px solid #e5eaf0;
+}
+.tvRow {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.tvRow,
+.candidate {
+  padding: 16px 0;
+  border-bottom: 1px solid #e5eaf0;
+}
+.monitorIcon {
+  flex: 0 0 auto;
+  color: #6b7280;
+}
+.tvName {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.lastConnected {
+  margin-right: 24px;
+}
+.rowActions {
+  flex: 0 0 auto;
+}
+.discovered {
+  margin-top: 40px;
+}
+.candidate {
+  gap: 20px;
+}
+.launcherVersion {
+  min-height: 30px;
+}
+.launcherVersion > :last-child {
+  margin-inline-start: auto;
+}
+.sidebar {
+  background: #fff;
+  overflow-y: auto;
+}
+.sidebarName {
+  flex: 1;
+  min-width: 0;
+}
+.detailContent {
+  width: 100%;
+  max-width: 1160px;
+  padding: 42px 32px;
+  margin: 0 auto;
+  flex: 1;
+}
+.appsContent {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--mantine-spacing-lg);
+  max-height: calc(100dvh - var(--app-shell-header-offset));
+}
+.appsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  min-height: 0;
+}
+.appsSearch {
+  flex-shrink: 0;
+}
+.appsRemovalResults {
+  flex-shrink: 0;
+  max-height: min(12rem, 25dvh);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+.appsResults {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+}
+.appPackageRow,
+.appPackageRow label {
+  cursor: pointer;
+}
+.appPackageRow:hover {
+  background-color: var(--mantine-color-gray-0);
+}
+.details {
+  margin-top: 28px;
+  border-color: #e5eaf0;
+  box-shadow: none;
+}
+.definitionList {
+  margin: 14px 0 0;
+}
+.definitionList > div {
+  display: grid;
+  grid-template-columns: minmax(140px, 28%) minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5eaf0;
+}
+.definitionList > div:last-child {
+  border-bottom: 0;
+}
+.definitionList dt {
+  color: #6b7280;
+}
+.definitionList dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.feedback {
+  padding: 20px 32px 0;
+  display: grid;
+  gap: 12px;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (max-width: 1000px) {
+  .lastConnected {
+    margin-right: 0;
+  }
+}
+@media (max-width: 700px) {
+  .header {
+    padding: 0 20px;
+  }
+  .selection,
+  .detailContent {
+    padding: 32px 20px;
+  }
+  .savedSection {
+    margin-top: 36px;
+  }
+  .tvRow {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .tvName {
+    flex-basis: calc(100% - 50px);
+  }
+  .lastConnected {
+    flex: 1;
+  }
+  .rowActions {
+    margin-left: auto;
+  }
+  .definitionList > div {
+    grid-template-columns: minmax(100px, 35%) minmax(0, 1fr);
+    gap: 10px;
+  }
+  .feedback {
+    padding: 16px 20px 0;
+  }
+}
