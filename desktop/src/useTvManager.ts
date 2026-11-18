@@ -8,6 +8,7 @@ import type {
   ButtonTargetApp,
   DesktopService,
   LauncherRelease,
+  LocalAppPackage,
   NamedAppRemovalOutcome,
   SavedTv,
   TvAppPackage,
@@ -318,6 +319,44 @@ export function useTvManager(service: DesktopService) {
       reportError,
     );
 
+  const chooseLocalApp = async (reportError: (message: string) => void) => {
+    let chosen: LocalAppPackage | null = null;
+    await run(
+      "Reading local app…",
+      async () => {
+        if (!selected || !service.localApps) throw new Error("Connect to a TV before choosing an app.");
+        chosen = await service.localApps.choose(selected.id);
+      },
+      "app",
+      reportError,
+    );
+    return chosen;
+  };
+
+  const installLocalApp = async (app: LocalAppPackage, reportError: (message: string) => void) => {
+    if (!selected || !service.localApps) return false;
+    const { id } = selected;
+    const localApps = service.localApps;
+    const success = await run(
+      `Installing ${app.name}…`,
+      async () => {
+        const result = await localApps.install(id, app.selection_id, true);
+        if (result.profile.id !== id || result.app_id !== app.app_id || result.version !== app.version) {
+          throw new Error("Could not verify the selected app on this TV. Refresh Apps to check.");
+        }
+        updateProfile(id, result.profile);
+        if (mounted.current) {
+          setAppRemoval([]);
+          setApps(null);
+        }
+      },
+      "app",
+      reportError,
+    );
+    if (success && mounted.current) loadApps(id);
+    return success;
+  };
+
   const apply = service.applyNativeHome;
   const applyNativeHome = apply
     ? (id: string, reportError: (message: string) => void) =>
@@ -401,6 +440,8 @@ export function useTvManager(service: DesktopService) {
     forget,
     installLauncher,
     prepareCertificates,
+    chooseLocalApp,
+    installLocalApp,
     applyNativeHome,
     restoreHomeBackup,
     retryLauncherVersions: () => {

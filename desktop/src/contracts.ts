@@ -77,6 +77,21 @@ export interface AppRemovalResult {
   apps: TvAppPackage[] | null;
   results: AppRemovalOutcome[];
 }
+export interface LocalAppPackage {
+  selection_id: string;
+  name: string;
+  app_id: string;
+  package_id: string;
+  version: string;
+  current_version: string | null;
+  replacing: boolean;
+}
+
+export interface LocalAppInstallResult {
+  profile: SavedTv;
+  app_id: string;
+  version: string;
+}
 export type NamedAppRemovalOutcome = AppRemovalOutcome & { name: string };
 
 export interface TvButtonMapping {
@@ -112,6 +127,10 @@ export interface SamsungService {
 
 export interface DesktopService {
   samsung?: SamsungService;
+  localApps?: {
+    choose(id: string): Promise<LocalAppPackage | null>;
+    install(id: string, selectionId: string, confirmInstall: boolean): Promise<LocalAppInstallResult>;
+  };
   status(): Promise<BackendStatus>;
   launcherCatalog(): Promise<LauncherRelease[]>;
   list(): Promise<SavedTv[]>;

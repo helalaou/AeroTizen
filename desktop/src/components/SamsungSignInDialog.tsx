@@ -5,15 +5,17 @@ import { errorMessage } from "../contracts";
 interface SamsungSignInDialogProps {
   signedIn: boolean;
   tvName?: string;
+  appName?: string;
   signIn(signal: AbortSignal): Promise<unknown>;
   prepareCertificates?(reportError: (message: string) => void): Promise<boolean>;
-  install?(): Promise<boolean>;
+  install?(reportError: (message: string) => void): Promise<boolean>;
   onComplete(success: boolean): void;
 }
 
 export function SamsungSignInDialog({
   signedIn,
   tvName,
+  appName = "AeroTizen",
   signIn,
   prepareCertificates,
   install,
@@ -50,8 +52,8 @@ export function SamsungSignInDialog({
           return;
         }
         setPhase("installing");
-        if (!(await install())) {
-          setError("Installation could not be verified. Refresh the TV and try again.");
+        if (!(await install(setError))) {
+          setError((current) => current ?? "Installation could not be verified. Refresh the TV and try again.");
           setPhase("idle");
           return;
         }
@@ -79,7 +81,7 @@ export function SamsungSignInDialog({
         {phase === "idle" && (
           <Text size="sm">
             {tvName
-              ? `We'll prepare the signing certificates for ${tvName}, then install AeroTizen.`
+              ? `We'll prepare the signing certificates for ${tvName}, then install ${appName}.`
               : "Sign in to your Samsung account in your browser."}
           </Text>
         )}
@@ -95,7 +97,7 @@ export function SamsungSignInDialog({
         )}
         {phase === "installing" && (
           <Text role="status" size="sm">
-            Installing AeroTizen on {tvName}…
+            Installing {appName} on {tvName}…
           </Text>
         )}
         {error && (

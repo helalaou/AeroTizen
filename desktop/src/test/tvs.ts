@@ -5,6 +5,7 @@ import type {
   DesktopService,
   HomeBackupSettings,
   LauncherRelease,
+  LocalAppPackage,
   NativeHomeSettings,
   SavedTv,
   SamsungAccount,
@@ -73,6 +74,15 @@ export const testReleases: LauncherRelease[] = [
   { version: "2.7.0", sections: [{ heading: "Bug Fixes", changes: ["Fix app card spacing."] }] },
 ];
 export const testStatus = { name: "aerotizen-desktop-worker", version: "3.0.1", operations: [] };
+export const testLocalApp: LocalAppPackage = {
+  selection_id: "e".repeat(64),
+  name: "Sample Player",
+  app_id: "LocalApp01.Player",
+  package_id: "LocalApp01",
+  version: "1.2.0",
+  current_version: null,
+  replacing: false,
+};
 export const testBackupSettings: HomeBackupSettings = {
   home_button_app: "com.samsung.tv.csfs",
   home_app: "com.samsung.tv.csfs",
@@ -126,7 +136,33 @@ export function testService(): DesktopService {
   const originalSettings = new Map<string, NativeHomeSettings>([[livingRoom.id, testBackupSettings]]);
   let buttonMappings = testButtonMappings.buttons;
   let samsungAccount: SamsungAccount | null = null;
+  const appInventories = new Map<string, TvAppPackage[]>();
   return {
+    localApps: {
+      choose: async (id) => ({
+        ...testLocalApp,
+        replacing: appInventories.has(id),
+        current_version: appInventories.has(id) ? testLocalApp.version : null,
+      }),
+      install: async (id, selectionId, confirmed) => {
+        const profile = profiles.get(id);
+        if (!profile?.launcher_signing_ready || selectionId !== testLocalApp.selection_id || !confirmed) {
+          throw new Error("Review the app and prepare this TV's signing certificates first.");
+        }
+        await new Promise((resolve) => setTimeout(resolve, SIMULATED_CERTIFICATE_DELAY_MS));
+        appInventories.set(id, [
+          ...testPackages,
+          {
+            id: testLocalApp.package_id,
+            name: testLocalApp.name,
+            apps: [testLocalApp.name],
+            protected: false,
+            revision: testLocalApp.selection_id,
+          },
+        ]);
+        return { profile, app_id: testLocalApp.app_id, version: testLocalApp.version };
+      },
+    },
     samsung: {
       account: async () => samsungAccount,
       signIn: async (signal) => {
@@ -163,7 +199,7 @@ export function testService(): DesktopService {
     launcherCatalog: async () => testReleases,
     list: async () => [...profiles.values()],
     discover: async () => [livingRoom, bedroom, office],
-    listApps: async () => testPackages,
+    listApps: async (id) => appInventories.get(id) ?? testPackages,
     listButtons: async (id) =>
       profiles.get(id)?.transport === "paired_root"
         ? { ...testButtonMappings, buttons: buttonMappings }

@@ -4,6 +4,7 @@ import { AppsPanel } from "./components/AppsPanel";
 import { ButtonMappingPanel } from "./components/ButtonMappingPanel";
 import { Header } from "./components/Header";
 import { LauncherPanel } from "./components/LauncherPanel";
+import { LocalAppInstallDialog } from "./components/LocalAppInstallDialog";
 import { SelectedTvView } from "./components/SelectedTvView";
 import { SamsungSignInDialog } from "./components/SamsungSignInDialog";
 import { TvActionView } from "./components/TvActionView";
@@ -31,6 +32,7 @@ export function App({ service }: AppProps) {
   const [page, setPage] = useState<TvPage>("overview");
   const [dialog, setDialog] = useState<TvDialog | null>(null);
   const [about, setAbout] = useState(false);
+  const [localInstallOpened, setLocalInstallOpened] = useState(false);
   const [menuOpened, setMenuOpened] = useState(false);
   const selected = manager.selected;
   const busy = Boolean(manager.busy);
@@ -101,6 +103,8 @@ export function App({ service }: AppProps) {
           onRefresh={() => manager.loadApps(selected.id)}
           onDismissResults={manager.clearAppRemoval}
           onRemove={(picked) => void manager.removeApps(selected.id, picked)}
+          onInstall={service.localApps ? () => setLocalInstallOpened(true) : undefined}
+          installDisabled={busy}
         />
       );
     }
@@ -264,7 +268,23 @@ export function App({ service }: AppProps) {
           }}
         />
       )}
-      {appLoading && !dialog && !signInDialog && (
+      {localInstallOpened && selected && (
+        <LocalAppInstallDialog
+          key={selected.id}
+          profile={selected}
+          signedIn={samsung.account !== null}
+          choose={manager.chooseLocalApp}
+          install={manager.installLocalApp}
+          signIn={samsung.signIn}
+          prepareCertificates={async (reportError) => {
+            const prepared = await manager.prepareCertificates(selected.id, reportError);
+            if (!prepared) await samsung.refresh();
+            return prepared;
+          }}
+          onClose={() => setLocalInstallOpened(false)}
+        />
+      )}
+      {appLoading && !dialog && !signInDialog && !localInstallOpened && (
         <LoadingOverlay
           visible
           pos="fixed"

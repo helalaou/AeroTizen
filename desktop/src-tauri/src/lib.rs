@@ -1,3 +1,4 @@
+mod local_apps;
 mod models;
 mod profiles;
 mod samsung;
@@ -19,6 +20,7 @@ struct AppState {
     operation: tokio::sync::Mutex<()>,
     cancelled_tv_read: watch::Sender<String>,
     samsung: samsung::SamsungState,
+    local_apps: local_apps::LocalAppsState,
 }
 
 #[tauri::command]
@@ -370,6 +372,7 @@ pub fn run() {
                 .open_js_links_on_click(false)
                 .build(),
         )
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let directory = app.path().app_data_dir()?;
             std::fs::create_dir_all(&directory)?;
@@ -383,6 +386,7 @@ pub fn run() {
                 operation: tokio::sync::Mutex::new(()),
                 cancelled_tv_read: watch::Sender::new(String::new()),
                 samsung: samsung::SamsungState::default(),
+                local_apps: local_apps::LocalAppsState::default(),
             });
             Ok(())
         })
@@ -402,6 +406,8 @@ pub fn run() {
             remove_tv_apps,
             launcher_catalog,
             install_launcher,
+            local_apps::choose_local_app,
+            local_apps::install_local_app,
             discover_tvs,
             connect_tv,
             read_home_backup,

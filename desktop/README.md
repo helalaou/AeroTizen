@@ -47,6 +47,18 @@ Select packages and choose **Remove**. Review the apps and TV in the confirmatio
 before you remove them. If the TV refuses removal, the package shows **Delete on TV**.
 Check for **Delete** in **Apps → Settings** on the TV. Use **Refresh apps** to fetch the current list.
 
+In **Apps**, choose **Install app** to select a local Tizen `.wgt` file. Review the app,
+version and target TV before installing. Replacing an installed app requires confirmation;
+older versions can be incompatible with saved settings and updates need the original
+signing certificate. The app guides you through Samsung sign-in and certificate setup
+when needed, then signs the widget with this TV's saved profile. Installation succeeds
+only after the TV reports the selected version, and the app list refreshes automatically.
+If the file or installed package changes after review, choose the file again.
+Local widgets are limited to 256 MiB compressed and 512 MiB unpacked.
+
+See screenshots of [local app review](screenshots/local-app-install.png) and
+[replacement confirmation on mobile](screenshots/local-app-replace-mobile.png).
+
 Open **Home and startup** to see the AeroTizen routing mode. On a rooted TV with a
 compatible paired helper, the page also shows the current Home button assignment,
 startup apps and Smart Hub autostart. When an original backup exists, select

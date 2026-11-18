@@ -16,7 +16,7 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import { RefreshCw, Search, TriangleAlert } from "lucide-react";
+import { FileUp, RefreshCw, Search, TriangleAlert } from "lucide-react";
 import { useRef, useState } from "react";
 import type { AppRemovalStatus, NamedAppRemovalOutcome, TvAppPackage } from "../contracts";
 import styles from "../styles.module.css";
@@ -31,6 +31,8 @@ interface AppsPanelProps {
   onRefresh(): void;
   onDismissResults(): void;
   onRemove(packages: TvAppPackage[]): void;
+  onInstall?(): void;
+  installDisabled?: boolean;
 }
 
 interface RemovalSelection {
@@ -74,6 +76,8 @@ export function AppsPanel({
   onRefresh,
   onDismissResults,
   onRemove,
+  onInstall,
+  installDisabled,
 }: AppsPanelProps) {
   const [search, setSearch] = useState("");
   const [selection, setSelection] = useState<RemovalSelection | null>(null);
@@ -115,18 +119,30 @@ export function AppsPanel({
     <div className={`${styles.detailContent} ${styles.appsContent}`}>
       <Group justify="space-between">
         <Title order={1}>Apps</Title>
-        <ActionIcon
-          type="button"
-          variant="subtle"
-          color="gray"
-          size="lg"
-          loading={loading}
-          aria-label="Refresh apps"
-          title="Refresh apps"
-          onClick={onRefresh}
-        >
-          <RefreshCw size={17} aria-hidden="true" />
-        </ActionIcon>
+        <Group gap="xs">
+          {onInstall && (
+            <Button
+              variant="default"
+              leftSection={<FileUp size={17} aria-hidden="true" />}
+              disabled={loading || installDisabled}
+              onClick={onInstall}
+            >
+              Install app
+            </Button>
+          )}
+          <ActionIcon
+            type="button"
+            variant="subtle"
+            color="gray"
+            size="lg"
+            loading={loading}
+            aria-label="Refresh apps"
+            title="Refresh apps"
+            onClick={onRefresh}
+          >
+            <RefreshCw size={17} aria-hidden="true" />
+          </ActionIcon>
+        </Group>
       </Group>
       <div role="status" className={styles.srOnly}>
         {loading && "Loading installed apps…"}

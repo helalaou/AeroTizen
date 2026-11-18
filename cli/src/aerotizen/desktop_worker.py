@@ -24,6 +24,7 @@ from aerotizen import (
     home,
     home_control,
     home_status,
+    local_package,
     releases,
     remote,
 )
@@ -61,6 +62,8 @@ OPERATIONS = (
     "remove_apps",
     "launcher_catalog",
     "install_launcher",
+    "inspect_local_app",
+    "install_local_app",
     "read_home_backup",
     "prepare_native_home",
     "apply_native_home",
@@ -725,6 +728,92 @@ def install_launcher(params):
             return installed
 
 
+def _local_app_metadata(path):
+    try:
+        metadata = local_package.inspect(path)
+    except (OSError, ValueError) as error:
+        raise RequestError(
+            "invalid_package", str(error) if isinstance(error, ValueError) else "Could not read the app file."
+        ) from error
+    if metadata["package_id"] in catalog.PROTECTED_PKGS - {releases.PACKAGE_ID}:
+        raise RequestError("protected_package", "This package belongs to a protected TV component.")
+    return {**metadata, "name": text_value(metadata["name"], metadata["app_id"])}
+
+
+def _local_app_revision(session, metadata):
+    package = checked_app_inventory(session).get(metadata["package_id"])
+    if package is None:
+        return None, None
+    current = next((app for app in package["apps"] if app["appid"] == metadata["app_id"]), None)
+    version = text_value(current.get("version"), "") if current else ""
+    return package_revision(package), version or None
+
+
+def inspect_local_app(params):
+    host = host_value(params.get("host"))
+    expected = checked_identity(params.get("expected_identity"))
+    with TemporaryDirectory(prefix="aerotizen-local-review-") as directory:
+        try:
+            path, checksum = local_package.snapshot(params.get("path", ""), directory)
+        except (OSError, ValueError) as error:
+            raise RequestError("invalid_package", "Could not read the selected .wgt file.") from error
+        metadata = _local_app_metadata(path)
+        with DeviceSession(host) as session:
+            read_identity(session, expected)
+            revision, version = _local_app_revision(session, metadata)
+            read_identity(session, expected)
+    return {**metadata, "sha256": checksum, "current_revision": revision, "current_version": version}
+
+
+def install_local_app(params):
+    host = host_value(params.get("host"))
+    expected = checked_identity(params.get("expected_identity"))
+    checksum = checked_identity(params.get("sha256"))
+    revision = params.get("current_revision")
+    if "current_revision" not in params or (
+        revision is not None and not IDENTITY_PATTERN.fullmatch(str(revision))
+    ):
+        raise RequestError("invalid_request", "Choose the app file again.")
+    if params.get("confirm_install") is not True:
+        raise RequestError("confirmation_required", "Review and confirm the app installation first.")
+    with TemporaryDirectory(prefix="aerotizen-local-install-") as directory:
+        try:
+            path, _ = local_package.snapshot(params.get("path", ""), directory, checksum)
+        except ValueError as error:
+            raise RequestError("package_changed", str(error)) from error
+        except OSError as error:
+            raise RequestError(
+                "invalid_package", "Could not read the selected .wgt file. Choose it again."
+            ) from error
+        metadata = _local_app_metadata(path)
+        with DeviceSession(host) as session:
+            duid, _ = read_identity(session, expected)
+            current_revision, _ = _local_app_revision(session, metadata)
+            if current_revision != revision:
+                raise RequestError(
+                    "apps_changed", "The installed app changed. Choose the file again to review it."
+                )
+            profile = signing_profile(duid)
+            if profile is None:
+                raise RequestError("certificates_required", "Set up this TV's signing certificates first.")
+            read_identity(session, expected)
+            try:
+                installed = install_signed_package(session, path, directory, profile)
+            except (OSError, ValueError, SdbError) as error:
+                raise RequestError(
+                    "install_failed",
+                    "Could not verify installation. Refresh Apps before retrying. "
+                    "For an existing app, use its original signing profile.",
+                ) from error
+            read_identity(session, expected)
+            if installed != metadata["version"]:
+                raise RequestError(
+                    "version_unverified",
+                    "The TV did not report the selected app version. Refresh Apps to check.",
+                )
+    return metadata
+
+
 def handle(request):
     request_id = request.get("id") if isinstance(request, dict) else None
     response = {"protocol": PROTOCOL_VERSION, "id": request_id}
@@ -753,6 +842,10 @@ def handle(request):
                 result = releases.launcher_catalog()
             elif request["operation"] == "install_launcher":
                 result = install_launcher(params)
+            elif request["operation"] == "inspect_local_app":
+                result = inspect_local_app(params)
+            elif request["operation"] == "install_local_app":
+                result = install_local_app(params)
             elif request["operation"] == "read_home_backup":
                 result = read_home_backup(params)
             elif request["operation"] == "prepare_native_home":

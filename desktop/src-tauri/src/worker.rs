@@ -58,6 +58,8 @@ fn request_local_network_access(operation: &str, params: &Value) {
         "discover" => Some(DISCOVERY_MULTICAST_ADDRESS),
         "connect"
         | "install_launcher"
+        | "inspect_local_app"
+        | "install_local_app"
         | "list_apps"
         | "list_buttons"
         | "list_button_apps"
@@ -122,7 +124,7 @@ pub async fn request_with_cancellation(
         })
     });
     let timeout_seconds = match operation {
-        "install_launcher" | "remove_apps" => PACKAGE_ACTION_TIMEOUT_SECONDS,
+        "install_launcher" | "install_local_app" | "remove_apps" => PACKAGE_ACTION_TIMEOUT_SECONDS,
         "samsung_sign_in" | "prepare_signing_profile" => SAMSUNG_ACTION_TIMEOUT_SECONDS,
         _ => WORKER_TIMEOUT_SECONDS,
     };
@@ -139,7 +141,7 @@ pub async fn request_with_cancellation(
             AppError::new(
             "connection_timeout",
             match operation {
-                "install_launcher" => {
+                "install_launcher" | "install_local_app" => {
                     "Installation timed out. Refresh the TV to check its version before retrying."
                 }
                 "remove_apps" => "Removal timed out. Check the installed apps before retrying.",

@@ -7,6 +7,8 @@ import type {
   DesktopService,
   HomeBackupSettings,
   LauncherRelease,
+  LocalAppPackage,
+  LocalAppInstallResult,
   PreparedHomeApply,
   SavedTv,
   SamsungAccount,
@@ -36,6 +38,11 @@ async function readTv<Result>(
 }
 
 export const nativeService: DesktopService = {
+  localApps: {
+    choose: (id) => invoke<LocalAppPackage | null>("choose_local_app", { id }),
+    install: (id, selectionId, confirmInstall) =>
+      invoke<LocalAppInstallResult>("install_local_app", { id, selectionId, confirmInstall }),
+  },
   samsung: {
     account: () => invoke<SamsungAccount | null>("samsung_account"),
     signIn: async (signal) => {
