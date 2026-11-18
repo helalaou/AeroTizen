@@ -2,6 +2,7 @@ const { test, expect } = require("./launcher_fixture.cjs");
 const { openCategory } = require("./drawer_helpers.cjs");
 
 const themes = ["classic", "glass", "pop", "frost", "gloss", "amethyst", "mint", "halo"];
+const selectedFocusThemes = new Set(["classic", "pop", "frost", "halo", "mint"]);
 const categories = ["appearance", "weather", "wallpaper", "status", "sources", "language", "about"];
 
 const expectFullWidthGrid = async (grid) => {
@@ -162,6 +163,36 @@ for (const theme of themes) {
       await expect(page.locator('[data-key="home-app-layout:grid"]')).toHaveAttribute("aria-pressed", "true");
       await expect(page.locator('[data-section-pane="appearance"]')).toBeVisible();
       await expect(page.locator("#settings-appearance")).toBeVisible();
+
+      const focusRing = page.locator('[data-settings-focus="content"]');
+      const selectedOutlineStyle = selectedFocusThemes.has(theme) ? "solid" : "none";
+      const activeTheme = page.locator(`#settings-appearance [data-key="settings-appearance:${theme}"]`);
+      await activeTheme.focus();
+      await expect(focusRing).toHaveAttribute("data-selected", "true");
+      await expect(focusRing).toHaveCSS("outline-style", selectedOutlineStyle);
+      await expect(focusRing).toHaveCSS("outline-offset", "-4px");
+      if (selectedFocusThemes.has(theme)) {
+        await expect(focusRing).toHaveCSS("outline-width", "2px");
+        await expect(focusRing).toHaveCSS(
+          "outline-color",
+          await activeTheme.evaluate((node) => getComputedStyle(node).color),
+        );
+      }
+
+      const medium = page.locator('[data-key="home-card-columns:4"]');
+      await medium.focus();
+      await expect(focusRing).not.toHaveAttribute("data-selected", "true");
+      await expect(focusRing).toHaveCSS("outline-style", "none");
+      await page.keyboard.press("Enter");
+      await expect(medium).toHaveAttribute("aria-pressed", "true");
+      await expect(medium).toBeFocused();
+      await expect(focusRing).toHaveAttribute("data-selected", "true");
+      await expect(focusRing).toHaveCSS("outline-style", selectedOutlineStyle);
+      const selectedFill = await medium.evaluate((node) => getComputedStyle(node).background);
+      await page.keyboard.press("ArrowRight");
+      await expect(focusRing).not.toHaveAttribute("data-selected", "true");
+      await expect(focusRing).toHaveCSS("outline-style", "none");
+      await expect(medium).toHaveCSS("background", selectedFill);
 
       await openCategory(page, "weather");
       const display = page.locator('[data-key="weather-display"]');
