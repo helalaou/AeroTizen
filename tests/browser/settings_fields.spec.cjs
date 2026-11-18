@@ -152,6 +152,20 @@ for (const theme of themes) {
       ).toBe(3);
       await openCategory(page, "appearance");
       await expect(page.locator("#settings-appearance [data-key]")).toHaveCount(8);
+      for (const [from, below] of [
+        ["settings-appearance:gloss", "settings-appearance:mint"],
+        ["settings-appearance:amethyst", "settings-appearance:halo"],
+        ["home-card-columns:4", "home-app-layout:grid"],
+        ["home-card-columns:3", "home-app-layout:scroll"],
+      ]) {
+        const source = page.locator(`[data-key="${from}"]`);
+        const target = page.locator(`[data-key="${below}"]`);
+        await source.focus();
+        await page.keyboard.press("ArrowDown");
+        await expect(target).toBeFocused();
+        await page.keyboard.press("ArrowUp");
+        await expect(source).toBeFocused();
+      }
       await page.locator('[data-key="settings-appearance:mint"]').focus();
       await page.keyboard.press(language === "ar" ? "ArrowRight" : "ArrowLeft");
       await expect(page.locator('[data-settings-drawer="frame"]')).toHaveAttribute("data-expanded", "false");

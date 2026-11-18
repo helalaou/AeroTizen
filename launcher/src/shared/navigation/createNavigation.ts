@@ -31,6 +31,13 @@ const DIRECTION_OFFSETS = {
   down: { row: 1, column: 0 },
 } as const;
 
+const nearestColumn = (targets: readonly Target[], left: number): number =>
+  targets.reduce(
+    (nearest, target, index) =>
+      Math.abs(target.left - left) < Math.abs(targets[nearest].left - left) ? index : nearest,
+    0,
+  );
+
 // Ref callbacks register controls. Geometry is read only when the layout changes;
 // the selected key is observable state, and components render its focus styling.
 export const createNavigation = (onFocus: (element: HTMLElement) => void): Navigation => {
@@ -137,10 +144,14 @@ export const createNavigation = (onFocus: (element: HTMLElement) => void): Navig
       rows = undefined;
     },
     move: (direction) => {
-      currentTarget();
-      selected = undefined;
+      const target = currentTarget();
       const offset = DIRECTION_OFFSETS[direction];
-      position = { row: position.row + offset.row, column: position.column + offset.column };
+      const all = getRows();
+      const row = Math.max(0, Math.min(position.row + offset.row, all.length - 1));
+      const column =
+        offset.row && target && all[row] ? nearestColumn(all[row], target.left) : position.column + offset.column;
+      selected = undefined;
+      position = { row, column };
       focus();
     },
   };
