@@ -158,6 +158,7 @@ namespace AeroTizen.Root
             if (!ValidLabel(name))
                 throw new InvalidDataException($"Use a single-line button name of up to {MaxLabelLength} characters.");
             ButtonRule previous = rules.FirstOrDefault(rule => ButtonNames.Equals(rule.Button, name));
+            if (action == "rename") return Rename(request, name, previous, write, cancel);
             if (action == "learn")
             {
                 if (previous?.Mode is Disabled or App)
@@ -205,6 +206,31 @@ namespace AeroTizen.Root
             }
             cancel.ThrowIfCancellationRequested();
             if (next != previous) await Replace(WithRule(next));
+            return Status();
+        }
+
+        private object Rename(JsonElement request, string name, ButtonRule previous, bool write, CancellationToken cancel)
+        {
+            string replacement = request.GetProperty("new_name").GetString()?.Trim();
+            if (!ValidLabel(replacement))
+                throw new InvalidDataException($"Use a single-line button name of up to {MaxLabelLength} characters.");
+            var detected = Unconfigured(discover()).ToArray();
+            bool saved = previous != null;
+            previous ??= detected.FirstOrDefault(rule => ButtonNames.Equals(rule.Button, name));
+            if (previous == null)
+                throw new InvalidDataException("This button is no longer available. Refresh the button list.");
+            if (rules.Any(rule => !ButtonNames.Equals(rule.Button, name) && ButtonNames.Equals(rule.Button, replacement))
+                || detected.Any(rule => !Overlaps(rule, previous) && ButtonNames.Equals(rule.Button, replacement)))
+                throw new InvalidDataException("A button already has this name.");
+            if (!saved && rules.Length == MaxRules)
+                throw new InvalidDataException("The TV has reached its saved button limit.");
+            if (!write) return Status(preview: "Rename " + name + " to " + replacement + ".");
+            cancel.ThrowIfCancellationRequested();
+            var renamed = previous with { Button = replacement };
+            var next = rules.Where(rule => !ButtonNames.Equals(rule.Button, name)).Append(renamed)
+                .OrderBy(rule => rule.Button, ButtonNames).ToArray();
+            // Names do not affect the physical key or running filters.
+            Persist(next);
             return Status();
         }
 

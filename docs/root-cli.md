@@ -89,6 +89,11 @@ original Netflix action, use `buttons unmap netflix --yes`. This keeps the saved
 button so you can map it again. `buttons reset --yes` restores all app buttons and
 clears what the TV learned.
 
+Use `buttons rename "My streaming button" --name "Streaming" --yes` to change a saved
+or discovered button's name while keeping its physical key and action. Omit `--yes`
+to preview. Renaming requires an updated helper with rename support. Names must be
+unique; use the new name in later CLI commands.
+
 The TV saves the rules and applies them when its paired helper and the learned
 remote are available. The computer can be switched off. `buttons status` shows
 which saved rules are active. Learning briefly restores original button actions.
