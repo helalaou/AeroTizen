@@ -1,7 +1,7 @@
 import type { RefObject } from "preact";
 
 import type { AppPresentation, ContinueItem, HomeBridge, InputSource, InstalledApp } from "../contracts/launcher";
-import type { SettingsSnapshot, SettingsStore } from "../contracts/preferences";
+import type { SettingsStore } from "../contracts/preferences";
 import type { StatusStores } from "../contracts/status";
 import type { LauncherUpdateNotice } from "../contracts/updates";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
@@ -36,7 +36,6 @@ export interface HomeEnvironment {
   appViewport: RefObject<HTMLDivElement>;
   bridge: HomeBridge;
   choose(index: number): void;
-  columns(settings: SettingsSnapshot): number;
   continueItems: RefObject<HTMLDivElement>;
   continueViewport: RefObject<HTMLDivElement>;
   describe(app: InstalledApp): AppPresentation;

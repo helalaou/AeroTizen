@@ -152,8 +152,9 @@ for (const theme of ["classic", "glass"]) {
     await page.keyboard.press("Escape");
     await expect(page.locator("#editor")).toBeHidden();
     await expect(store).toBeFocused();
-    // Move through the six app rows to the footer.
-    for (let row = 0; row < 6; row++) {
+    const gridColumns = Number(await page.locator("#grid").getAttribute("data-columns"));
+    const gridRows = Math.ceil((await page.locator("#grid > [role=button]").count()) / gridColumns);
+    for (let row = 0; row < gridRows; row++) {
       await page.keyboard.press("ArrowDown");
     }
     await expect(page.getByRole("button", { name: "Back to top" })).toBeFocused();
@@ -269,12 +270,13 @@ test("Back to top restores scroll and focus from below a partial app row", async
   await expect(button).toHaveCount(0);
   await page.locator("#apps-tab").click();
 
-  for (let row = 0; row < 7; row++) {
-    await page.keyboard.press("ArrowDown");
-  }
   const tiles = page.locator("#grid > [data-id]");
   const cards = page.locator("#grid > [role=button]");
-  const columns = await page.evaluate(() => AeroTizen.settings.getSnapshot().homeCardColumns);
+  const columns = Number(await page.locator("#grid").getAttribute("data-columns"));
+  const rowCount = Math.ceil((await cards.count()) / columns);
+  for (let row = 0; row < rowCount; row++) {
+    await page.keyboard.press("ArrowDown");
+  }
   const lastRowStart = Math.floor(((await cards.count()) - 1) / columns) * columns;
   const lastRowFirst = cards.nth(lastRowStart);
   await expect(lastRowFirst).toBeFocused();

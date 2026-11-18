@@ -50,7 +50,6 @@ export const mountHome = (
       nodes: new Map(),
       showMoveInstructions: () => runtime.toast(translations.getSnapshot().t("home.moveInstructions")),
       describe: (app) => describeApp(app, artworkEnvironment),
-      columns: (values) => values.homeCardColumns,
     },
     flushSync,
   );
