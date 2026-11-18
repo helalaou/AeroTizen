@@ -8,6 +8,12 @@ const CLASSIC_TILE_RADIUS = "10px";
 const BUILT_IN_NAMES = ["Classic", "Glass"];
 const THEMES = [
   {
+    id: "pop",
+    tileRadius: "48px",
+    fonts: ["Nunito", "Baloo Bhaijaan 2"],
+    names: { en: "Pop", fr: "Pop", it: "Pop", ru: "Поп", ar: "بوب", "pt-BR": "Pop" },
+  },
+  {
     id: "gloss",
     tileRadius: "56px",
     fonts: ["Google Sans"],

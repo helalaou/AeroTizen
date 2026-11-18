@@ -1,6 +1,6 @@
 const { test, expect } = require("./launcher_fixture.cjs");
 
-const THEMES = ["classic", "glass", "gloss", "mint", "halo"];
+const THEMES = ["classic", "glass", "pop", "gloss", "mint", "halo"];
 const LANGUAGES = ["en", "fr", "it", "pt-BR", "ru", "ar"];
 const SHORT_CITY = "Rome";
 const LONG_CITY = "A very long fixture city name";

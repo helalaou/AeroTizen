@@ -32,7 +32,8 @@
   [data-theme="gloss"] &,
   [data-theme="amethyst"] &,
   [data-theme="mint"] &,
-  [data-theme="halo"] & {
+  [data-theme="halo"] &,
+  [data-theme="pop"] & {
     z-index: 1;
     max-width: none;
     height: 120px;
