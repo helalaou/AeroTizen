@@ -4,11 +4,12 @@
   --app-card-large: 400px;
   --app-card-size: var(--app-card-small);
   --app-columns: 5;
+  --app-column-gap: 32px;
 
   display: grid;
   grid-template-columns: repeat(var(--app-columns), var(--app-card-size));
   justify-content: center;
-  grid-gap: 30px 32px;
+  grid-gap: 30px var(--app-column-gap);
   /* Keep focused cards and reorder controls clear of the header and fade. */
   margin: 24px 0 40px;
 
@@ -24,6 +25,10 @@
   &[data-columns="4"] {
     --app-card-size: var(--app-card-medium);
     --app-columns: 4;
+  }
+
+  &[data-columns="6"] {
+    --app-columns: 6;
   }
 
   &[data-expanded="true"] {
@@ -42,5 +47,13 @@
       --app-card-medium: 292px;
       --app-card-large: 312px;
     }
+  }
+
+  &[data-page="apps"] {
+    /* Fill each row inside the TV safe margins, independently of Home and its clock. */
+    --app-card-size: calc(
+      (var(--launcher-width) - 2 * var(--home-side-padding) - (var(--app-columns) - 1) * var(--app-column-gap)) /
+        var(--app-columns)
+    );
   }
 }

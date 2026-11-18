@@ -11,6 +11,7 @@ import { TranslationContext } from "../shared/i18n/useTranslation";
 import { InputScopeContext } from "../shared/input/context";
 
 import { Home } from "./components/Home/Home";
+import { getAppGridColumns } from "./state/appGridLayout";
 import { createHomeController } from "./state/createHomeController";
 import { createHomeInventory } from "./state/createHomeInventory";
 
@@ -50,7 +51,7 @@ export const mountHome = (
       nodes: new Map(),
       showMoveInstructions: () => runtime.toast(translations.getSnapshot().t("home.moveInstructions")),
       describe: (app) => describeApp(app, artworkEnvironment),
-      columns: (values) => values.homeCardColumns,
+      columns: getAppGridColumns,
     },
     flushSync,
   );

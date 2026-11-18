@@ -39,7 +39,7 @@ export const AppGrid = ({
       trackClass={styles.grid}
       trackData={{
         "data-app-grid": "",
-        "data-columns": env.columns(settings),
+        "data-columns": env.columns(settings, page),
         "data-page": page,
         "data-expanded": settings.clockLayout === "custom" ? "true" : "false",
         "data-scroll": scroll ? "true" : "false",

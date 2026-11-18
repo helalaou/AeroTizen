@@ -36,7 +36,7 @@ export interface HomeEnvironment {
   appViewport: RefObject<HTMLDivElement>;
   bridge: HomeBridge;
   choose(index: number): void;
-  columns(settings: SettingsSnapshot): number;
+  columns(settings: SettingsSnapshot, page?: Page): number;
   continueItems: RefObject<HTMLDivElement>;
   continueViewport: RefObject<HTMLDivElement>;
   describe(app: InstalledApp): AppPresentation;

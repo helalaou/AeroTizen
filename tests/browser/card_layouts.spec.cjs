@@ -4,6 +4,7 @@ const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
 for (const theme of ["classic", "glass"])
   for (const columns of [3, 4, 5]) {
     test(`${theme} square ${columns} columns retain artwork, remote navigation and persistence`, async ({ page }) => {
+      const allAppsColumns = columns + 1;
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
       await page.route("https://**/*", (r) => r.fulfill({ body: "{}" }));
@@ -26,20 +27,20 @@ for (const theme of ["classic", "glass"])
       await expect(choice).toHaveAttribute("aria-pressed", "true");
       await closeSettings(page);
       await page.locator("#apps-tab").click();
-      await expect(page.locator("#grid")).toHaveAttribute("data-columns", String(columns));
+      await expect(page.locator("#grid")).toHaveAttribute("data-columns", String(allAppsColumns));
       const tiles = page.locator("#grid > [data-id]");
       const positions = await page
         .locator("#grid > [role=button]")
         .evaluateAll((nodes) =>
-          nodes.slice(0, 6).map((n) => ({ top: n.offsetTop, width: n.offsetWidth, height: n.offsetHeight })),
+          nodes.slice(0, 7).map((n) => ({ top: n.offsetTop, width: n.offsetWidth, height: n.offsetHeight })),
         );
-      expect(positions.filter((p) => p.top === positions[0].top)).toHaveLength(columns);
+      expect(positions.filter((p) => p.top === positions[0].top)).toHaveLength(allAppsColumns);
       for (const position of positions) expect(position.width).toBe(position.height);
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("ArrowRight");
       await expect(tiles.first()).toHaveAttribute("data-focused", "true");
       await page.keyboard.press("ArrowDown");
-      await expect(tiles.nth(columns)).toHaveAttribute("data-focused", "true");
+      await expect(tiles.nth(allAppsColumns)).toHaveAttribute("data-focused", "true");
       // Long OK opens the app menu; moving uses the same square geometry.
       await page.locator("#home-tab").click();
       await page.keyboard.press("ArrowDown");

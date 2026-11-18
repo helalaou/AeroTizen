@@ -179,7 +179,7 @@ export const createHomeController = (
   };
   const sourceKey = (source: { type: string; number?: number }) => "input:" + source.type + ":" + source.number;
   const rows = (): readonly (readonly string[])[] => {
-    const columns = env.columns(settings.getSnapshot());
+    const columns = env.columns(settings.getSnapshot(), state.getSnapshot().page);
     const appKeys = ids().map((id) => "app:" + id);
     const all = state.getSnapshot().page === "apps" ? [ADD_APPS_KEY, ...appKeys] : appKeys;
     const rowLength = scrollApps() ? Math.max(1, all.length) : columns;

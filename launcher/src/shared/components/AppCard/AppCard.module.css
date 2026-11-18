@@ -36,6 +36,7 @@
     z-index: 2;
 
     [data-app-grid][data-scroll="false"][data-columns="5"] > &:nth-child(-n + 5):not([data-moving="true"]),
+    [data-app-grid][data-scroll="false"][data-columns="6"] > &:nth-child(-n + 6):not([data-moving="true"]),
     [data-app-grid][data-scroll="false"][data-columns="4"] > &:nth-child(-n + 4):not([data-moving="true"]),
     [data-app-grid][data-scroll="false"][data-columns="3"] > &:nth-child(-n + 3):not([data-moving="true"]),
     [data-app-grid][data-scroll="true"] > &:not([data-moving="true"]) {
