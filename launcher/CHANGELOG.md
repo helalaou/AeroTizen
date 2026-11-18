@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.3.1](https://github.com/helalaou/AeroTizen/compare/launcher-v3.3.0...launcher-v3.3.1) (2026-11-18)
+
+
+### Bug Fixes
+
+* **launcher:** align settings navigation across uneven rows ([#298](https://github.com/helalaou/AeroTizen/issues/298)) ([a83bae6](https://github.com/helalaou/AeroTizen/commit/a83bae6e23c81b10115264be024ed56c4a0af26b))
+* **launcher:** keep settings focus rings smooth and visible ([#299](https://github.com/helalaou/AeroTizen/issues/299)) ([1d96da8](https://github.com/helalaou/AeroTizen/commit/1d96da810454ad7bd3f27e15181fc695864bc234))
+
 ## [3.3.0](https://github.com/helalaou/AeroTizen/compare/launcher-v3.2.0...launcher-v3.3.0) (2026-11-18)
 
 
