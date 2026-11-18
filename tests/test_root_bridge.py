@@ -486,3 +486,74 @@ def test_root_receipt_private_and_status_does_not_expose_credentials(tmp_path):
         assert path.parent.stat().st_mode & 0o777 == 0o700
     public = json.dumps(root_state.public_status(receipt))
     assert receipt["token"] not in public and receipt["server_pfx"] not in public
+
+
+@pytest.mark.parametrize("bridge_server", [{"buttons": True}], indirect=True)
+def test_button_rename_preserves_physical_key_and_action_through_cli(
+    bridge_server, tmp_path, monkeypatch, capsys
+):
+    receipt, fixture, _ = bridge_server
+    path = root_state.receipt_path("127.0.0.1", tmp_path)
+    root_state.save(path, receipt)
+    monkeypatch.setattr(cli, "STATE_DIR", str(tmp_path))
+
+    def command(*args):
+        monkeypatch.setattr(
+            "sys.argv", ["aerotizen", "--tv", "127.0.0.1", "buttons", *args, "--receipt", str(path), "--json"]
+        )
+        cli.main()
+        return json.loads(capsys.readouterr().out)
+
+    command("map", "netflix", "--app", "test.app", "--yes")
+    stored = Path(fixture["buttons_file"])
+    before = json.loads(stored.read_text())
+    assert command("rename", "netflix", "--name", "Streaming")["preview"]
+    assert json.loads(stored.read_text()) == before
+    client = BridgeClient("127.0.0.1", receipt)
+    duplicate = client.request(
+        "buttons",
+        button_request={
+            "action": "rename",
+            "button": "netflix",
+            "new_name": "prime-video",
+            "apply": True,
+        },
+    )["buttons"]
+    assert duplicate["error"] == "A button already has this name."
+    assert json.loads(stored.read_text()) == before
+    missing = client.request(
+        "buttons",
+        button_request={
+            "action": "rename",
+            "button": "missing",
+            "new_name": "Streaming",
+            "apply": True,
+        },
+    )["buttons"]
+    assert missing["error"] and json.loads(stored.read_text()) == before
+    command("rename", "netflix", "--name", "Streaming", "--yes")
+    assert json.loads(stored.read_text()) == [{**before[0], "Button": "Streaming"}]
+    listing = command("list")
+    assert listing["rules"][0]["button"] == "Streaming"
+    assert not any(row["button"] == "netflix" for row in listing["discovered"])
+
+
+@pytest.mark.parametrize("bridge_server", [{"buttons": True}], indirect=True)
+def test_renaming_discovered_default_button_saves_one_original_action(bridge_server):
+    receipt, fixture, _ = bridge_server
+    client = BridgeClient("127.0.0.1", receipt)
+    reply = client.request(
+        "buttons",
+        button_request={
+            "action": "rename",
+            "button": "netflix",
+            "new_name": "Streaming",
+            "apply": True,
+        },
+    )["buttons"]
+    assert reply["rules"] == [
+        {"button": "Streaming", "mode": "default", "app_id": None, "active": False, "detail": None}
+    ]
+    assert len(json.loads(Path(fixture["buttons_file"]).read_text())) == 1
+    listing = client.request("buttons", button_request={"action": "list"})["buttons"]
+    assert all(row["button"] != "netflix" for row in listing["discovered"])

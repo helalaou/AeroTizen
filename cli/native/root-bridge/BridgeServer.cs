@@ -119,6 +119,7 @@ namespace AeroTizen.Root
                             result["buttons_discovery"] = true;
                             result["buttons_key_names"] = true;
                             result["buttons_friendly_names"] = true;
+                            result["buttons_rename"] = true;
                             result["buttons_input_devices"] = true;
                         }
                         TcpClient sdb = null;
