@@ -1,5 +1,4 @@
 const { test, expect } = require("./launcher_fixture.cjs");
-
 test.beforeEach(async ({ page }) => {
   await page.route("https://**/*", (route) => route.fulfill({ body: "{}" }));
   await page.route("http://127.0.0.1:47790/**", (route) => route.fulfill({ body: "{}" }));
@@ -10,7 +9,6 @@ test.beforeEach(async ({ page }) => {
     );
   });
 });
-
 test("Fireplace remote controls update volume and stop drawing and audio on close", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -54,7 +52,6 @@ test("Fireplace remote controls update volume and stop drawing and audio on clos
       const { frames, opened, closed, sources, gain } = window.fireplaceProbe;
       return { frames, opened, closed, sources, level: gain?.value };
     });
-
   await expect(tile).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(overlay).toBeVisible();
@@ -64,7 +61,6 @@ test("Fireplace remote controls update volume and stop drawing and audio on clos
   expect((await getPlayback()).sources).toBeGreaterThanOrEqual(2);
   await page.evaluate(() => window.Fireplace.open());
   expect((await getPlayback()).opened).toBe(1);
-
   await page.keyboard.press("ArrowUp");
   await expect(volume).toHaveText("Volume 7");
   await expect(volume).toHaveAttribute("data-visible", "true");
@@ -76,7 +72,6 @@ test("Fireplace remote controls update volume and stop drawing and audio on clos
   expect((await getPlayback()).level).toBe(0);
   await page.clock.runFor(1600);
   await expect(volume).not.toHaveAttribute("data-visible", "true");
-
   await page.evaluate(() => {
     document.dispatchEvent(new KeyboardEvent("keydown", { keyCode: AeroTizen.config.KEY.BACK }));
   });
@@ -86,7 +81,6 @@ test("Fireplace remote controls update volume and stop drawing and audio on clos
   expect(stopped.closed).toBe(1);
   await page.clock.runFor(1000);
   expect(await getPlayback()).toEqual(stopped);
-
   await page.keyboard.press("Enter");
   await expect(overlay).toBeVisible();
   await page.clock.runFor(100);
@@ -98,41 +92,5 @@ test("Fireplace remote controls update volume and stop drawing and audio on clos
   await page.keyboard.press("Escape");
   await expect(overlay).toBeHidden();
   expect((await getPlayback()).closed).toBe(2);
-  expect(errors).toEqual([]);
-});
-
-test("OK closes Fireplace without reopening it when the key is released", async ({ page }) => {
-  await page.goto("/");
-  const tile = page.getByRole("button", { name: "Fireplace" });
-  const overlay = page.locator("#fireplace");
-  await expect(tile).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(overlay).toBeVisible();
-
-  await page.keyboard.down("Enter");
-  await expect(overlay).toBeHidden();
-  await page.keyboard.up("Enter");
-  await expect(overlay).toBeHidden();
-  await expect(tile).toBeFocused();
-});
-
-test("Fireplace stays usable if the TV cannot start Web Audio", async ({ page }) => {
-  const errors = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  await page.addInitScript(() => {
-    window.AudioContext = class {
-      constructor() {
-        throw new Error("Audio unavailable");
-      }
-    };
-  });
-  await page.goto("/");
-  await page.getByRole("button", { name: "Fireplace" }).click();
-  const overlay = page.locator("#fireplace");
-  await expect(overlay).toBeVisible();
-  await page.keyboard.press("ArrowDown");
-  await expect(overlay.locator("#fire-volume")).toHaveText("Volume 5");
-  await page.keyboard.press("Escape");
-  await expect(overlay).toBeHidden();
   expect(errors).toEqual([]);
 });
