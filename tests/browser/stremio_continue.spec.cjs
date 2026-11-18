@@ -142,7 +142,7 @@ async function createSetup(page, options = {}) {
   await openCategory(page, "apps");
   expect(calls).toEqual([]);
   expect(await page.evaluate(() => window.privateReads.length)).toBe(0);
-  await page.locator('[data-key="continue-watching:true"]').click();
+  await page.locator('[data-key="continue-watching"]').click();
   return { state, calls, errors };
 }
 

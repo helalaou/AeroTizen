@@ -122,6 +122,13 @@ body[data-theme="halo"] {
   --control-text: var(--fg);
   --selection-text: #03201a;
   --settings-slider-track: rgba(150, 255, 220, 0.16);
+  --settings-toggle-off-surface: #153e37;
+  --settings-toggle-off-border: #86b7a8;
+  --settings-toggle-off-thumb: #e2fff5;
+  --settings-toggle-on-surface: var(--choice-selected-surface);
+  --settings-toggle-on-border: #fff;
+  --settings-toggle-on-thumb: #03201a;
+  --settings-toggle-radius: 22px;
 
   --menu-focus-surface: rgba(255, 255, 255, 0.12);
   --menu-option-text: rgba(235, 255, 248, 0.86);

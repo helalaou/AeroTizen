@@ -5,6 +5,7 @@ import type { ClockService } from "../../contracts/launcher";
 import type { SettingsSnapshot } from "../../contracts/preferences";
 import type { ClockLayout } from "../../contracts/status";
 import text from "../../shared/styles/text.module.css";
+import { isDateVisible } from "../../shared/time/clockVisibility";
 import type { useClock } from "../hooks/useClock";
 import { useClockWidth } from "../hooks/useClockWidth";
 
@@ -21,7 +22,7 @@ export const Clock = ({
   layout: ClockLayout;
   settings: Pick<
     SettingsSnapshot,
-    "showTime" | "dateFormat" | "showWeather" | "timeFormat" | "theme" | "language" | "numerals"
+    "showTime" | "showDate" | "dateFormat" | "showWeather" | "timeFormat" | "theme" | "language" | "numerals"
   >;
   clock: ClockService;
   value: ReturnType<typeof useClock>;
@@ -39,7 +40,7 @@ export const Clock = ({
   return layout === "compact" ? (
     <>
       {children}
-      <span id="date" class={styles.compactDate} hidden={settings.dateFormat === "none"}>
+      <span id="date" class={styles.compactDate} hidden={!isDateVisible(settings)}>
         <span class={text.truncate}>{value.date}</span>
       </span>
       <span
@@ -59,7 +60,7 @@ export const Clock = ({
         class={styles.expanded + " " + styles[layout]}
         data-clock="expanded"
         data-clock-layout={layout}
-        hidden={!settings.showTime && settings.dateFormat === "none" && !settings.showWeather}
+        hidden={!settings.showTime && !isDateVisible(settings) && !settings.showWeather}
       >
         <div class={styles.digits} data-clock-part="time" aria-label={value.text} hidden={!settings.showTime}>
           <span class={styles.digit + " " + styles.hours} data-clock-part="hours">
@@ -70,7 +71,7 @@ export const Clock = ({
             <small class={styles.period}>{value.period}</small>
           </span>
         </div>
-        <div class={styles.date} data-clock-part="date" hidden={settings.dateFormat === "none"}>
+        <div class={styles.date} data-clock-part="date" hidden={!isDateVisible(settings)}>
           {value.date}
         </div>
         {children}

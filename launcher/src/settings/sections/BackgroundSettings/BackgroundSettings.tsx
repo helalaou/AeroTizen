@@ -7,6 +7,7 @@ import type { BackgroundOption, LauncherConfig } from "../../../contracts/launch
 import { useStore } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../../components/ChoiceGroup";
+import { SettingsField } from "../../components/SettingsField/SettingsField";
 import { SettingsHint } from "../../components/SettingsHint/SettingsHint";
 import { SettingsSection } from "../../components/SettingsSection/SettingsSection";
 import { SettingsSlider } from "../../components/SettingsSlider/SettingsSlider";
@@ -21,11 +22,6 @@ const WALLPAPER_CATEGORY_OPTIONS = [
   { value: "solid", labelKey: "wallpaper.solid" },
   { value: "gradient", labelKey: "wallpaper.gradients" },
   { value: "animated", labelKey: "wallpaper.animated" },
-] as const;
-
-const WEATHER_PHOTO_OPTIONS = [
-  { value: false, labelKey: "common.off" },
-  { value: true, labelKey: "wallpaper.auto" },
 ] as const;
 
 interface Props extends SettingsSectionProps {
@@ -103,7 +99,7 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
 
   return (
     <>
-      <SettingsSection title={t("wallpaper.type")}>
+      <SettingsField title={t("wallpaper.type")} topAligned>
         <ChoiceGroup
           id="wallpaper-categories"
           label={t("wallpaper.type")}
@@ -111,38 +107,34 @@ export const BackgroundSettings = ({ settings, actions, config, backgrounds: lis
           options={WALLPAPER_CATEGORY_OPTIONS}
           onSelect={(category) => {
             flushSync(() => setFilter(category));
+            actions.setWeatherPhoto(category === "photo");
             navigation.invalidate();
           }}
         />
-      </SettingsSection>
-      <SettingsSection title={t("wallpaper.dynamic")} description={t("wallpaper.photoHint")} hidden={!show("photo")}>
-        <ChoiceGroup
-          id="weather-photo-choice"
-          value={settings.weatherPhoto}
-          label={t("wallpaper.dynamic")}
-          options={WEATHER_PHOTO_OPTIONS}
-          onSelect={actions.setWeatherPhoto}
-        />
-      </SettingsSection>
+      </SettingsField>
+      {show("photo") && <SettingsHint class={styles.hint}>{t("wallpaper.photoHint")}</SettingsHint>}
       <SettingsSection title={t("wallpaper.animated")} hidden={!show("animated")}>
         {unavailable && <SettingsHint>{t("wallpaper.unavailable")}</SettingsHint>}
         <div id="bg-anim" class={styles.swatches}>
           {swatches(true)}
         </div>
         <div id="speed-row" class={styles.speedRow} hidden={!animated}>
-          {animated ? (
-            <SettingsSlider
-              focusKey="speed"
-              label={t("wallpaper.speed")}
-              ariaLabel={t("wallpaper.speedLabel")}
-              unit="×"
-              active={open && !colourPicker && category === "wallpaper" && expanded && show("animated")}
-              value={settings.speed}
-              min={config.SPEED.MIN}
-              max={config.SPEED.MAX}
-              onAdjust={actions.setSpeed}
-            />
-          ) : null}
+          <SettingsField title={t("wallpaper.speedLabel")}>
+            {animated ? (
+              <SettingsSlider
+                focusKey="speed"
+                label={t("wallpaper.speed")}
+                ariaLabel={t("wallpaper.speedLabel")}
+                inline
+                unit="×"
+                active={open && !colourPicker && category === "wallpaper" && expanded && show("animated")}
+                value={settings.speed}
+                min={config.SPEED.MIN}
+                max={config.SPEED.MAX}
+                onAdjust={actions.setSpeed}
+              />
+            ) : null}
+          </SettingsField>
         </div>
       </SettingsSection>
       <SettingsSection title={t("wallpaper.still")} hidden={filter !== "solid" && filter !== "gradient"}>

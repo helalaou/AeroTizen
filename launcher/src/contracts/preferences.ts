@@ -37,6 +37,7 @@ export interface SettingsValues {
   language: string;
   numerals: "latn" | "arab";
   performanceMode: boolean;
+  showDate: boolean;
   showLiveTv: boolean;
   showNetwork: boolean;
   showTime: boolean;

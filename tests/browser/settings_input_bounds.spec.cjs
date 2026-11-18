@@ -30,7 +30,7 @@ for (const theme of ["classic", "glass"]) {
       const bounds = await input.evaluate((n) => {
         const a = n.getBoundingClientRect(),
           b = n.parentElement.getBoundingClientRect(),
-          label = n.previousElementSibling.getBoundingClientRect();
+          label = n.closest("[data-settings-field]").querySelector("[data-settings-heading]").getBoundingClientRect();
         return {
           inside: a.left >= b.left && a.right <= b.right && a.top >= b.top && a.bottom <= b.bottom,
           clear: a.left >= label.right,

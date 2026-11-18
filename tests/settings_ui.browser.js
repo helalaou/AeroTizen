@@ -66,9 +66,7 @@ const runSettingsUi = async (page, { screenshotPath }) => {
               : "gradient"
             : element.closest("#speed-row")
               ? "animated"
-              : element.closest("#weather-photo-choice")
-                ? "photo"
-                : null;
+              : null;
         if (group) {
           const filter = document.querySelector('[data-key="wallpaper-categories:' + group + '"]');
           filter.click();
@@ -108,7 +106,7 @@ const runSettingsUi = async (page, { screenshotPath }) => {
       document.querySelectorAll('#editor [data-key][tabindex="0"]').length === 1,
       "one remote control is in the tab order",
     );
-    assert(document.querySelectorAll("#editor [data-key]").length >= 80, "all sections present");
+    assert(document.querySelectorAll("#editor [data-section-pane]").length === 8, "all sections present");
     for (let i = 0; i < 10; i++) key(K.UP);
     assert(document.querySelectorAll("#editor " + focusSelector).length === 1, "top boundary keeps one focus");
     const weatherField = document.querySelector("#weather-location input");
@@ -118,22 +116,22 @@ const runSettingsUi = async (page, { screenshotPath }) => {
     assert(weatherField === document.querySelector("#weather-location input"), "unrelated input identity retained");
     assert(appTile === find("app:" + A.apps.getSnapshot().all[0].id), "artwork node retained on clock change");
     assert(JSON.parse(localStorage.getItem(A.config.STORAGE_KEY)).timeFormat === "24", "setting persisted");
-    find("time:none").click();
+    find("time-visibility").click();
     assert(document.getElementById("time").hidden, "time hidden");
-    find("time:24").click();
+    find("time-visibility").click();
     assert(!document.getElementById("time").hidden, "time restored");
-    find("weather-display:false").click();
+    find("weather-display").click();
     assert(document.getElementById("weather").hidden, "weather hidden");
-    find("weather-display:true").click();
-    find("network-visibility:false").click();
+    find("weather-display").click();
+    find("network-visibility").click();
     assert(document.getElementById("network").hasAttribute("hidden"), "network hidden");
-    find("network-visibility:true").click();
+    find("network-visibility").click();
     assert(!document.getElementById("network").hasAttribute("hidden"), "network restored");
-    find("live-tv-visibility:false").click();
+    find("live-tv-visibility").click();
     assert(preferences().showLiveTv === false, "Live TV hidden");
     find("home-card-columns:5").click();
     assert(preferences().homeCardColumns === 5, "apps per row saved");
-    find("input-visibility:true").click();
+    find("input-visibility").click();
     assert(
       !Array.from(document.querySelector("#inputs").children).some((el) => el.textContent === "HDMI 2"),
       "disconnected HDMI hidden",
@@ -189,7 +187,7 @@ const runSettingsUi = async (page, { screenshotPath }) => {
     callbacks.shift()([{ label: "Closed search", latitude: 0, longitude: 0 }]);
     A.settingsUi.open();
     assert(!document.querySelector("#weather-results").textContent.includes("Closed search"), "closed search ignored");
-    find("weather-visibility:false").click();
+    find("weather-visibility").click();
     assert(preferences().weatherShowLocation === false, "location visibility saved");
     A.settingsUi.close();
     assert(!document.body.classList.contains("editing"), "close clears Settings presentation state");

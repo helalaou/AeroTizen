@@ -1,9 +1,11 @@
 import type { ClockFormatter } from "../../contracts/launcher";
 import { useTranslation } from "../../shared/i18n/useTranslation";
+import { isDateVisible } from "../../shared/time/clockVisibility";
 import { ChoiceGroup } from "../components/ChoiceGroup";
 import { ChoiceOption } from "../components/ChoiceOption/ChoiceOption";
 import { ControlGroup } from "../components/ControlGroup/ControlGroup";
-import { SettingsSection } from "../components/SettingsSection/SettingsSection";
+import { SettingsField } from "../components/SettingsField/SettingsField";
+import { SettingsToggle } from "../components/SettingsToggle/SettingsToggle";
 import type { SettingsSectionProps } from "../types";
 
 const CLOCK_LAYOUT_OPTIONS = [
@@ -12,11 +14,6 @@ const CLOCK_LAYOUT_OPTIONS = [
   { value: "horizontal", labelKey: "clock.horizontal" },
   { value: "minimal", labelKey: "clock.thin" },
   { value: "bold", labelKey: "clock.bold" },
-] as const;
-
-const NETWORK_VISIBILITY_OPTIONS = [
-  { value: true, labelKey: "common.show" },
-  { value: false, labelKey: "common.hide" },
 ] as const;
 
 const TIME_FORMATS = ["12", "24"] as const;
@@ -40,50 +37,70 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
   const now = new Date(openedAt);
   return (
     <>
-      <SettingsSection title={t("clock.layout")}>
+      <SettingsField title={t("clock.layout")} topAligned>
         <ChoiceGroup
           id="clock-layouts"
-          grid
           label={t("clock.layout")}
           value={settings.clockLayout === "classic" ? "classic" : settings.aeroClockStyle}
           options={CLOCK_LAYOUT_OPTIONS}
           onSelect={actions.setClockLayout}
         />
-      </SettingsSection>
-      <SettingsSection title={t("clock.dateAndTime")}>
-        <ControlGroup id="time-formats">
-          {TIME_FORMATS.map((format) => (
-            <ChoiceOption
-              key={format}
-              id={"time:" + format}
-              selected={settings.showTime !== false && settings.timeFormat === format}
-              onSelect={() => actions.setTimeFormat(format)}
-            >
-              {t("clock.timeExample", { time: clock.formatTime(now, format), hours: format })}
-            </ChoiceOption>
-          ))}
-          <ChoiceOption
-            id="time:none"
-            selected={settings.showTime === false}
-            onSelect={() => actions.setTimeFormat("none")}
-          >
-            {t("clock.noTime")}
-          </ChoiceOption>
+      </SettingsField>
+      <SettingsField title={t("clock.showTime")}>
+        <SettingsToggle
+          focusKey="time-visibility"
+          label={t("clock.showTime")}
+          checked={settings.showTime}
+          onChange={actions.setTimeVisible}
+        />
+      </SettingsField>
+      <SettingsField title={t("clock.timeFormat")} hidden={!settings.showTime}>
+        <ControlGroup id="time-formats" label={t("clock.timeFormat")}>
+          {TIME_FORMATS.map((format) => {
+            const example = clock.formatTime(now, format);
+            return (
+              <ChoiceOption
+                key={format}
+                id={"time:" + format}
+                fill
+                selected={settings.showTime !== false && settings.timeFormat === format}
+                onSelect={() => actions.setTimeFormat(format)}
+                ariaLabel={t("clock.timeExample", { time: example, hours: format })}
+              >
+                {example}
+              </ChoiceOption>
+            );
+          })}
         </ControlGroup>
-        <ControlGroup id="date-formats">
-          {clock.DATE_FORMATS.map((format) => (
+      </SettingsField>
+      <SettingsField title={t("clock.showDate")}>
+        <SettingsToggle
+          focusKey="date-visibility"
+          label={t("clock.showDate")}
+          checked={isDateVisible(settings)}
+          onChange={actions.setDateVisible}
+        />
+      </SettingsField>
+      <SettingsField title={t("clock.dateFormat")} hidden={!isDateVisible(settings)} topAligned>
+        <ControlGroup id="date-formats" label={t("clock.dateFormat")}>
+          {clock.DATE_FORMATS.filter((format) => format.id !== "none").map((format) => (
             <ChoiceOption
               key={format.id}
               id={"date:" + format.id}
+              fill
               selected={settings.dateFormat === format.id}
               onSelect={() => actions.setDateFormat(format.id)}
             >
-              {format.id === "none" ? t("clock.noDate") : format.format(now)}
+              {format.format(now)}
             </ChoiceOption>
           ))}
         </ControlGroup>
-      </SettingsSection>
-      <SettingsSection title={t("clock.timeZone")} description={t("clock.timeZoneHint")}>
+      </SettingsField>
+      <SettingsField
+        title={t("clock.timeZone")}
+        description={t("clock.timeZoneHint")}
+        hidden={!settings.showTime && !isDateVisible(settings)}
+      >
         <ChoiceGroup
           id="time-zone"
           label={t("clock.timeZone")}
@@ -91,9 +108,9 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
           options={TIME_ZONE_OPTIONS}
           onSelect={actions.setTimeZone}
         />
-      </SettingsSection>
+      </SettingsField>
       {language === "ar" && (
-        <SettingsSection title={t("clock.digits")}>
+        <SettingsField title={t("clock.digits")}>
           <ChoiceGroup
             id="numerals"
             label={t("clock.digits")}
@@ -101,17 +118,16 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
             options={NUMERAL_OPTIONS}
             onSelect={actions.setNumerals}
           />
-        </SettingsSection>
+        </SettingsField>
       )}
-      <SettingsSection title={t("appearance.network")}>
-        <ChoiceGroup
-          id="network-visibility"
+      <SettingsField title={t("appearance.network")}>
+        <SettingsToggle
+          focusKey="network-visibility"
           label={t("appearance.networkVisibility")}
-          value={settings.showNetwork !== false}
-          options={NETWORK_VISIBILITY_OPTIONS}
-          onSelect={actions.setNetworkVisible}
+          checked={settings.showNetwork !== false}
+          onChange={actions.setNetworkVisible}
         />
-      </SettingsSection>
+      </SettingsField>
     </>
   );
 };

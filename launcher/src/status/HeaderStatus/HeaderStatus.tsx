@@ -2,6 +2,7 @@ import type { ClockService } from "../../contracts/launcher";
 import type { SettingsStore } from "../../contracts/preferences";
 import type { StatusStores } from "../../contracts/status";
 import { useStore } from "../../shared/hooks/useStore";
+import { isDateVisible } from "../../shared/time/clockVisibility";
 import { Clock } from "../Clock/Clock";
 import { useClock } from "../hooks/useClock";
 import { useWeather } from "../hooks/useWeather";
@@ -27,7 +28,7 @@ export const HeaderStatus = ({
       <Clock layout={layout} settings={settings} clock={clock} value={value}>
         <WeatherStatus
           layout={layout}
-          only={!settings.showTime && settings.dateFormat === "none"}
+          only={!settings.showTime && !isDateVisible(settings)}
           weather={weather}
           showWeather={settings.showWeather}
           showLocation={settings.weatherShowLocation}

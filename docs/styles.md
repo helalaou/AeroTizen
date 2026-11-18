@@ -196,8 +196,27 @@ dimensions; paint and typography rules are shared. The screen wrappers supply
 layout, while About applies local classes directly to paragraphs, facts and notes.
 
 `ControlGroup` owns wrapping and grid layout for Settings controls. `ChoiceGroup`
-supplies its choices; time/date and input-name sections use the same layout owner.
+supplies its choices; time/date choices use the same layout owner.
 `SettingsControl` supplies common focus resets; each control owns its state paint.
+
+`SettingsField` owns the shared label/control columns, field spacing, divider and
+inline editor placement. It uses the existing theme text and divider tokens.
+`ControlGroup` owns three equal choice/action columns, and `ChoiceOption` fills one
+cell. Incomplete rows align to the logical end, including single actions.
+The drawer reserves a themed scrollbar gutter so content keeps the same width.
+Fields with several control rows align their heading to the top; single-row
+fields keep their heading vertically centred.
+Collection grids fill the pane with equal flexible columns. Settings app cards and
+wallpaper swatches keep their proportions with percentage-padding boxes for Chromium 63.
+The weather location editor uses the field's full-width details variant.
+
+`SettingsToggle` owns its compact control, state text, track and thumb. Its `aria-checked` state
+moves the thumb; `data-focused` remains independent of the on/off value. Every theme
+defines its `--settings-toggle-*` colours and radius. The shared Settings focus
+indicator draws the control focus, and thumb motion uses the shared feedback duration.
+Gloss and Mint share their selected-choice gradients with the toggle track. Glass
+and Amethyst use their own shaded tracks; optional theme shadows add depth.
+Fireplace supplies its focused card surface to retain its artwork under focus.
 `SelectionIndicator` takes an explicit small variant for wallpaper swatches.
 Component variants must not depend on a parent's private CSS class.
 

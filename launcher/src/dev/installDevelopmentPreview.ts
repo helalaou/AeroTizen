@@ -1,6 +1,6 @@
 import { launcherRuntime as runtime } from "../app/initializeLauncherRuntime";
 
-import { createPreviewContinueWatching } from "./createPreviewContinueWatching";
+import { createPreviewContinueWatching, previewContinueSources } from "./createPreviewContinueWatching";
 import { createPreviewPlatforms } from "./createPreviewPlatforms";
 import { previewAppId } from "./previewApps";
 
@@ -15,6 +15,7 @@ if (!("tizen" in window) && !runtime.platforms) {
     ...config,
     DEFAULTS: {
       continueWatching: true,
+      continueWatchingApps: previewContinueSources.map((source) => source.id),
       theme: "glass",
       homeCardColumns: PREVIEW_SMALL_CARD_COLUMNS,
       homeAppLayout: "scroll",

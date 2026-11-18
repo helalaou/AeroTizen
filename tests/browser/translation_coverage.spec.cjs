@@ -249,11 +249,7 @@ for (const theme of ["classic", "glass"]) {
       }
     }
     await visit("status", "clock.layout");
-    await visit(
-      "weather",
-      "weather.homeDisplay",
-      `[data-settings-heading-title]:text-is("${pseudoText("weather.homeDisplay")}")`,
-    );
+    await visit("weather", "weather.show", `[data-settings-heading-title]:text-is("${pseudoText("weather.show")}")`);
     await page.locator('[data-key="weather:change"]').click();
     const search = page.getByPlaceholder(pseudoText("weather.searchPlaceholder"));
     await expect(search).toHaveAccessibleName(pseudoText("weather.locationLabel"));
@@ -264,7 +260,9 @@ for (const theme of ["classic", "glass"]) {
     await page.locator('[data-key="weather:search"]').click();
     await expect(page.locator("#weather-search-status")).toHaveText(pseudoText("weather.searchFailed"));
     await expectTranslatedScreen(page, "weather search failure");
-    await visit("sources", "inputs.keepVisible");
+    await visit("sources", "inputs.hideDisconnected");
+    await page.locator('[data-key="input-visibility"]').click();
+    await expect(page.getByRole("heading", { name: pseudoText("inputs.keepVisible"), exact: true })).toBeVisible();
     const input = page.getByRole("textbox", { name: pseudoText("inputs.nameLabel").replace("{{port}}", "HDMI 1") });
     await expect(input).toHaveValue(inputName);
 

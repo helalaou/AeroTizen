@@ -12,13 +12,31 @@ import { useSettingsEnvironment } from "./useSettingsEnvironment";
 interface Layout extends SettingsInventorySnapshot {
   animated: boolean;
   continueEnabled: boolean;
+  dateEnabled: boolean;
+  hdmiExceptionsEnabled: boolean;
   locationLabel?: string;
+  timeEnabled: boolean;
+  weatherEnabled: boolean;
 }
 const SPACE_KEY = 32;
+const SIDEBAR_EDGE_TOLERANCE_PX = 64;
+const FIELD_CONTROLS_SELECTOR = "[data-settings-field-controls], [data-settings-field-details]";
 
 export const useSettingsNavigation = (
   active: boolean,
-  { apps, inputs, continueSources, continueMessage, continueEnabled, animated, locationLabel }: Layout,
+  {
+    apps,
+    inputs,
+    continueSources,
+    continueMessage,
+    continueEnabled,
+    animated,
+    locationLabel,
+    weatherEnabled,
+    timeEnabled,
+    dateEnabled,
+    hdmiExceptionsEnabled,
+  }: Layout,
 ) => {
   const { language } = useTranslation();
   const { navigation, bridge, services, settings, root, drawer, categoryMenu, categoryContent, categoryScroll, panes } =
@@ -63,6 +81,10 @@ export const useSettingsNavigation = (
     continueEnabled,
     animated,
     locationLabel,
+    weatherEnabled,
+    timeEnabled,
+    dateEnabled,
+    hdmiExceptionsEnabled,
     language,
     navigation,
     settings,
@@ -133,8 +155,12 @@ export const useSettingsNavigation = (
           return;
         }
         const pane = categoryContent.current?.getBoundingClientRect();
+        const field = current?.closest(FIELD_CONTROLS_SELECTOR);
+        const edge = field?.querySelector("[data-key]")?.getBoundingClientRect() ?? pane;
         const atSidebarEdge = (box: DOMRect) =>
-          rtl ? box.right >= (pane?.right || 0) - 64 : box.left <= (pane?.left || 0) + 64;
+          rtl
+            ? box.right >= (edge?.right || 0) - SIDEBAR_EDGE_TOLERANCE_PX
+            : box.left <= (edge?.left || 0) + SIDEBAR_EDGE_TOLERANCE_PX;
         const leavesPane =
           code === out &&
           current &&
@@ -145,7 +171,9 @@ export const useSettingsNavigation = (
           flushSync(() => drawer.set({ ...currentDrawer, expanded: false }));
           return;
         }
-        if (code === K.ENTER || (code === SPACE_KEY && current?.getAttribute("role") === "button")) {
+        const role = current?.getAttribute("role");
+        const acceptsSpace = role === "button" || role === "switch";
+        if (code === K.ENTER || (code === SPACE_KEY && acceptsSpace)) {
           event.preventDefault();
           current?.click();
           return;
@@ -153,7 +181,13 @@ export const useSettingsNavigation = (
         const direction = directions[code];
         if (direction) {
           event.preventDefault();
-          flushSync(() => navigation.move(direction));
+          flushSync(() => {
+            navigation.move(direction);
+            // An incomplete row can start inside the field's first column.
+            if (code === out && navigation.current() === current) {
+              drawer.set({ ...currentDrawer, expanded: false });
+            }
+          });
         }
       },
     });

@@ -124,6 +124,14 @@ body[data-theme="frost"] {
   --control-focused-text: #16181e;
   --control-text: var(--fg);
   --settings-slider-track: rgba(30, 40, 70, 0.12);
+  --settings-toggle-off-surface: #e2e6ec;
+  --settings-toggle-off-border: #687282;
+  --settings-toggle-off-thumb: #525b6a;
+  --settings-toggle-on-surface: #1d1f26;
+  --settings-toggle-on-border: #1d1f26;
+  --settings-toggle-on-thumb: #fff;
+  --settings-toggle-radius: 14px;
+  --settings-toggle-thumb-radius: 10px;
 
   --menu-focus-surface: rgba(255, 255, 255, 0.85);
   --menu-option-text: #2a2e37;

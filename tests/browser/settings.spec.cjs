@@ -36,7 +36,6 @@ const openSettings = async (page, waitForApps = true) => {
   await expect(page.locator('[data-key="section:appearance"]')).toHaveAttribute("data-focused", "true");
   await openCategory(page, "wallpaper");
   await page.locator('[data-key="bg:black"]').click();
-  await page.locator('[data-key="wallpaper-categories:photo"]').click();
 };
 
 test("compiled Settings escape waits for /leave before launching native Samsung Home by remote", async ({ page }) => {
@@ -192,8 +191,8 @@ test("date previews stay stable during an opening and refresh on the next openin
   const original = await time.textContent();
   await page.clock.setFixedTime(new Date("2026-10-24T13:10:00Z"));
   await openCategory(page, "status");
-  await page.locator('[data-key="network-visibility:false"]').click();
-  await expect(page.locator('[data-key="network-visibility:false"]')).toHaveAttribute("aria-pressed", "true");
+  await page.locator('[data-key="network-visibility"]').click();
+  await expect(page.locator('[data-key="network-visibility"]')).toHaveAttribute("aria-checked", "false");
   await expect(time).toHaveText(original);
   await page.evaluate(() => AeroTizen.settingsUi.open());
   await expect(time).toHaveText(original);
@@ -284,8 +283,8 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
     }),
   );
   await openSettings(page);
-  const control = page.getByRole("group", { name: "Dynamic weather wallpapers", exact: true });
-  await expect(control.getByRole("button", { name: "Off", exact: true })).toHaveAttribute("aria-pressed", "true");
+  const control = page.locator('[data-key="wallpaper-categories:photo"]');
+  await expect(control).toHaveAttribute("aria-pressed", "false");
   expect(images).toEqual([]);
   await page.evaluate(() => {
     AeroTizen.settings.update({
@@ -297,7 +296,7 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
 
     AeroTizen.applyBackground();
   });
-  await control.getByRole("button", { name: "Automatic (weather)", exact: true }).click();
+  await control.click();
   await expect(page.locator("#weather-photo")).toBeVisible();
   await expect(page.locator("#weather")).toBeHidden();
   await expect(page.locator("#bg")).toBeHidden();
@@ -311,8 +310,7 @@ test("weather wallpapers are opt-in, use hidden-header weather, persist and rest
   await expect(page.locator("#weather-photo")).toBeVisible();
   await page.evaluate(() => AeroTizen.settingsUi.open());
   await openCategory(page, "wallpaper");
-  await page.locator('[data-key="wallpaper-categories:photo"]').click();
-  await control.getByRole("button", { name: "Off", exact: true }).click();
+  await page.locator('[data-key="wallpaper-categories:animated"]').click();
   await expect(page.locator("#weather-photo")).toBeHidden();
   await expect(page.locator("#bg")).toBeVisible();
   expect(
@@ -346,12 +344,11 @@ test("turning weather wallpaper off while its image is pending cannot hide the f
       solar: [{ sunrise: Date.parse("2026-10-28T06:00Z"), sunset: Date.parse("2026-10-28T18:00Z") }],
     });
   });
-  const control = page.getByRole("group", { name: "Dynamic weather wallpapers", exact: true });
-  await control.getByRole("button", { name: "Automatic (weather)", exact: true }).click();
+  const control = page.locator('[data-key="wallpaper-categories:photo"]');
+  await control.click();
   await expect.poll(() => typeof release).toBe("function");
   await openCategory(page, "wallpaper");
-  await page.locator('[data-key="wallpaper-categories:photo"]').click();
-  await control.getByRole("button", { name: "Off", exact: true }).click();
+  await page.locator('[data-key="wallpaper-categories:animated"]').click();
   await release();
   await expect(page.locator("#weather-photo")).toBeHidden();
   await expect(page.locator("#bg")).toBeVisible();
@@ -413,15 +410,15 @@ test("enabling compiled Settings at 23:00 repairs legacy solar cache once and ne
   await openSettings(page);
   expect(forecasts).toBe(0);
   expect(locations).toBe(0);
-  const group = page.getByRole("group", { name: "Dynamic weather wallpapers", exact: true });
-  await group.getByRole("button", { name: "Automatic (weather)", exact: true }).click();
+  const group = page.locator('[data-key="wallpaper-categories:photo"]');
+  await group.click();
   await expect.poll(() => typeof release).toBe("function");
   await expect(page.locator("#weather-photo")).toBeHidden();
   await expect(page.locator("#bg")).toBeVisible();
   expect(images).toEqual([]);
   for (let i = 0; i < 3; i++) {
-    await group.getByRole("button", { name: "Off", exact: true }).click();
-    await group.getByRole("button", { name: "Automatic (weather)", exact: true }).click();
+    await page.locator('[data-key="wallpaper-categories:solid"]').click();
+    await group.click();
   }
   expect(forecasts).toBe(1);
   expect(locations).toBe(1);

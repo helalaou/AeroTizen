@@ -7,11 +7,13 @@ import styles from "./ChoiceOption.module.css";
 
 interface Props {
   align?: "center" | "start";
+  ariaLabel?: string;
   busy?: boolean;
   children: ComponentChildren;
   controls?: string;
   disabled?: boolean;
   expanded?: boolean;
+  fill?: boolean;
   id: string;
   inline?: boolean;
   onSelect(): void;
@@ -30,14 +32,18 @@ export const ChoiceOption = ({
   controls,
   disabled,
   expanded,
+  fill = false,
   align = "center",
+  ariaLabel,
 }: Props) => {
   return (
     <SettingsControl
       class={styles.option}
       focusKey={id}
       role="button"
+      aria-label={ariaLabel}
       data-align={align}
+      data-fill={fill ? "true" : undefined}
       aria-pressed={selected}
       aria-busy={busy}
       aria-controls={controls}

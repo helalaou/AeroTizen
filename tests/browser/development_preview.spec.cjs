@@ -1,5 +1,6 @@
 const { test, expect } = require("./launcher_fixture.cjs");
 const { watcherStatus } = require("./watcher_helpers.cjs");
+const { openCategory, closeSettings } = require("./drawer_helpers.cjs");
 
 test.use({ previewPlatforms: false });
 test.beforeEach(async ({ page }) => {
@@ -51,12 +52,46 @@ test("local preview simulates Samsung Home from Home and Settings", async ({ pag
   await expect(page.locator("#grid > [data-id]")).toHaveCount(6);
   await page.locator("#samsung-home-shortcut").click();
   await expect(page.locator("#toast")).toHaveText("Would open Samsung Home");
+  await page.getByRole("button", { name: "Xbox", exact: true }).click();
+  await expect(page.locator("#toast")).toHaveText("Would switch to Xbox");
+  expect(await page.evaluate(() => AeroTizen.inputs.getSnapshot().playback)).toBe("idle");
   await page.locator("#gear").click();
   await expect(page.locator("#editor")).toBeVisible();
   await expect(page.locator("#toast")).toBeHidden();
   await page.locator("#escape").click();
   await expect(page.locator("#toast")).toHaveText("Would open Samsung Home");
 });
+
+for (const origin of ["http://127.0.0.1:8172/", "http://127.0.0.1:8174/demo/"]) {
+  test(`${origin} preview source switches filter sample programmes and persist selections`, async ({ page }) => {
+    const launcher = origin.includes("8174") ? page.frameLocator("iframe") : page;
+    await page.goto(origin);
+    await expect(launcher.locator("#continue-items > [data-key]")).toHaveCount(7);
+    await launcher.locator("#gear").click();
+    await openCategory(launcher, "apps");
+    const section = launcher.getByRole("region", { name: "Continue Watching settings", exact: true });
+    await expect(section.locator('[data-settings-card="source"]')).toHaveCount(5);
+    expect(await section.evaluate((node) => getComputedStyle(node).borderTopWidth)).toBe("1px");
+    const netflix = section.getByRole("button", { name: "Netflix", exact: true });
+    await netflix.click();
+    await expect(netflix).toHaveAttribute("aria-pressed", "false");
+    await closeSettings(launcher, page.keyboard);
+    await expect(launcher.locator("#continue-items > [data-key]")).toHaveCount(6);
+    await page.reload();
+    await expect(launcher.locator("#continue-items > [data-key]")).toHaveCount(6);
+    await launcher.locator("#gear").click();
+    await openCategory(launcher, "apps");
+    await netflix.click();
+    await expect(netflix).toHaveAttribute("aria-pressed", "true");
+    const toggle = launcher.getByRole("switch", { name: "Continue Watching", exact: true });
+    await toggle.click();
+    await expect(netflix).toBeHidden();
+    await toggle.click();
+    await expect(netflix).toHaveAttribute("aria-pressed", "true");
+    await closeSettings(launcher, page.keyboard);
+    await expect(launcher.locator("#continue-items > [data-key]")).toHaveCount(7);
+  });
+}
 
 test("local preview keeps existing ordinary settings ahead of old demo settings", async ({ page }) => {
   await page.addInitScript(() => {
