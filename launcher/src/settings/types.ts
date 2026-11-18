@@ -74,7 +74,6 @@ export interface SettingsActions {
   setDateFormat(format: DateFormat): void;
   setGradientStop(stop: 0 | 1): void;
   setHdmiKeepVisible(port: string, keep: boolean): void;
-  setHdmiNativeViewer(enabled: boolean): void;
   setHdmiVisibility(hide: boolean): void;
   setHomeAppLayout(layout: SettingsValues["homeAppLayout"]): void;
   setHomeCardColumns(columns: number): void;

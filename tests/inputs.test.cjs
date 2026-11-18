@@ -36,7 +36,12 @@ function harness(preferences = {}, ipControl) {
       removeEventListener: (_, fn) => visibility.delete(fn),
     },
     AeroTizen: {
-      homewatch: {},
+      homewatch: {
+        openNativeViewer(source) {
+          native.push(source);
+          return true;
+        },
+      },
       tizen: {
         application: {
           getCurrentApplication: () => ({
@@ -214,27 +219,28 @@ test("start owns one foreground poller, native watch and visibility/Home listene
   assert.equal(h.intervals.size + h.watches.size + h.visibility.size + h.events.size, 0);
 });
 
-test("an unplug during embedded playback clears active state and restores idle playback", () => {
+test("HDMI handoff leaves playback idle and cable changes do not open an embedded window", () => {
   const h = harness();
   h.service.show({ type: "HDMI", number: 1 });
-  assert.equal(h.service.getSnapshot().playback, "playing");
+  assert.equal(h.service.getSnapshot().playback, "idle");
+  assert.equal(h.native.length, 1);
   h.state.report = { disconnected: [{ type: "HDMI", number: 1 }] };
   h.service.load();
+  assert.equal(h.service.getSnapshot().sources[0].connected, false);
   assert.equal(h.service.getSnapshot().playback, "idle");
-  assert.equal(h.native.at(-1), "hide");
-  assert.deepEqual(h.toasts, ["PC disconnected"]);
-  h.service.load();
-  assert.deepEqual(h.toasts, ["PC disconnected"], "repeat discovery does not repeat the disconnect notice");
+  assert.equal(h.native.length, 1);
+  assert.deepEqual(h.toasts, []);
 });
 
 for (const stage of ["setSource", "show"]) {
   test(`pending ${stage} is cancellable and late callbacks cannot reopen video after disposal`, () => {
     const h = harness();
+    h.host.AeroTizen.homewatch.openNativeViewer = () => false;
     let complete;
     h.host.AeroTizen.tizen.tvwindow[stage] = (...args) => {
       complete = stage === "setSource" ? args[1] : args[0];
     };
-    h.service.show({ type: "HDMI", number: 1 });
+    h.service.show({ type: "TV", number: 1 });
     assert.equal(h.service.getSnapshot().playback, "opening");
     h.service.dispose();
     const before = h.service.getSnapshot();
@@ -248,10 +254,11 @@ for (const stage of ["setSource", "show"]) {
 
 test("Home return closes only active playback and ordinary appcontrol requests leave it running", () => {
   const h = harness();
+  h.host.AeroTizen.homewatch.openNativeViewer = () => false;
   h.service.start();
   h.events.get("appcontrol")();
   assert.deepEqual(h.native, []);
-  h.service.show({ type: "HDMI", number: 1 });
+  h.service.show({ type: "TV", number: 1 });
   h.state.operation = "view";
   h.events.get("appcontrol")();
   assert.equal(h.service.getSnapshot().playback, "playing");

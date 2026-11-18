@@ -29,7 +29,6 @@ export interface SettingsValues {
   customGradient: CustomGradient;
   dateFormat: DateFormat;
   hdmiKeepVisible: Record<string, boolean>;
-  hdmiNativeViewer: boolean;
   hideDisconnectedHdmi: boolean;
   home: string[];
   homeAppLayout: "grid" | "scroll";
