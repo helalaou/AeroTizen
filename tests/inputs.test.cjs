@@ -232,6 +232,22 @@ test("HDMI handoff leaves playback idle and cable changes do not open an embedde
   assert.deepEqual(h.toasts, []);
 });
 
+test("disposal rejects a pending source read and cannot restart discovery", () => {
+  const h = harness();
+  h.service.start();
+  h.state.deferred = true;
+  h.service.load();
+  const snapshot = h.service.getSnapshot();
+  h.service.dispose();
+  h.service.dispose();
+  h.pending[0]({ connected: [{ type: "HDMI", number: 2 }] });
+  h.service.start();
+  h.service.load();
+  assert.equal(h.service.getSnapshot(), snapshot);
+  assert.equal(h.state.reads, 2);
+  assert.equal(h.intervals.size + h.timeouts.size + h.watches.size + h.visibility.size + h.events.size, 0);
+});
+
 for (const stage of ["setSource", "show"]) {
   test(`pending ${stage} is cancellable and late callbacks cannot reopen video after disposal`, () => {
     const h = harness();

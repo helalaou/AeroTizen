@@ -101,6 +101,7 @@ jobs:
               b"playwright.config.cjs",
               b"stylelint.config.cjs",
               b"tools/build-launcher.mjs",
+              b"tools/check_launcher_ci.py",
               b"tools/dev-build-badge.mjs",
               b"tools/launcher-css-rules.cjs",
               b"tools/translation-lint.cjs",
@@ -127,7 +128,7 @@ jobs:
                   return "shared"
               if path.startswith(b"cli/"):
                   return "cli"
-              if path in launcher_files or path.startswith((b"launcher/", b"tests/browser/")):
+              if path in launcher_files or path.startswith((b"launcher/", b"tests/browser/", b"tests/reporters/")):
                   return "launcher"
               if path.startswith(b"tests/helpers/") and path.endswith(b".cjs"):
                   return "launcher"
@@ -240,7 +241,7 @@ jobs:
           PY
       - run: python -m pytest tests/test_root_bridge.py tests/test_root_package.py tests/test_root_control.py tests/test_root_transfer.py
 
-  launcher:
+  launcher-checks:
     needs: changes
     if: ${{ !cancelled() && inputs.release_component != 'cli' && (needs.changes.outputs.launcher != 'false' || needs.changes.outputs.format_contributing == 'true') }}
     runs-on: ubuntu-latest
@@ -272,9 +273,8 @@ jobs:
         if: needs.changes.outputs.launcher != 'false'
       - run: npm run test:components
         if: needs.changes.outputs.launcher != 'false'
-      - run: npx playwright install --with-deps chromium
-        if: needs.changes.outputs.launcher != 'false'
-      - run: npx playwright test --workers=3
+      - name: Test launcher CI gate
+        run: python3 -m unittest discover -s tests -p test_ci_launcher.py
         if: needs.changes.outputs.launcher != 'false'
       - uses: actions/setup-python@v5
         if: inputs.release_component == 'launcher'
@@ -297,12 +297,59 @@ jobs:
           path: dist/release-check/*
           if-no-files-found: error
           retention-days: 7
-      - uses: actions/upload-artifact@v4
-        if: failure() && needs.changes.outputs.launcher != 'false'
+
+  launcher-browser:
+    name: Browser tests (${{ matrix.shard }}/${{ strategy.job-total }})
+    needs: changes
+    if: ${{ !cancelled() && inputs.release_component != 'cli' && needs.changes.outputs.launcher != 'false' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
         with:
-          name: settings-browser-failures
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --no-audit --no-fund
+      # Type checking runs once in launcher-checks. Each browser job builds its own assets.
+      - run: node tools/build-launcher.mjs
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --workers=3 --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-test-timings-${{ matrix.shard }}-of-${{ strategy.job-total }}
+          path: test-results/browser-file-timings.json
+          if-no-files-found: ignore
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failures-${{ matrix.shard }}-of-${{ strategy.job-total }}
           path: test-results/
           retention-days: 7
+
+  launcher:
+    # Keep the existing required check name and reject any failed or missing shard.
+    needs: [changes, launcher-checks, launcher-browser]
+    if: ${{ !cancelled() && inputs.release_component != 'cli' && (needs.changes.outputs.launcher != 'false' || needs.changes.outputs.format_contributing == 'true') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - name: Require launcher and browser checks
+        env:
+          LAUNCHER_CHECKS_RESULT: ${{ needs.launcher-checks.result }}
+          BROWSER_TESTS_RESULT: ${{ needs.launcher-browser.result }}
+          BROWSER_TESTS_REQUIRED: ${{ needs.changes.outputs.launcher != 'false' }}
+        run: python3 tools/check_launcher_ci.py
 
   windows-home:
     # These tests exercise both the CLI and the launcher service.

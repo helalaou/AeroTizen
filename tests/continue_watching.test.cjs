@@ -544,6 +544,8 @@ test("clock correction reorders settled feeds without more reads and keeps futur
 
 test("feed snapshots are immutable and preserve earlier status, records and unchanged card identity", () => {
   const h = harness();
+  assert.equal("items" in h.cw, false);
+  assert.equal("sources" in h.cw, false);
   h.cw.start();
   h.enable();
   const checking = h.cw.getSnapshot();

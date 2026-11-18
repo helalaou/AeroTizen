@@ -68,8 +68,40 @@ those files change. Store data that tests read in `tests/fixtures/`.
 
 Put component tests next to the source file, for example `ChoiceOption.test.tsx`.
 Use Preact Testing Library to check what the user sees or can activate. Use
-Playwright for browser layout, remote navigation between components, and full
-launcher flows such as saving settings and reloading.
+Playwright for critical user journeys that need a real browser: startup, remote
+navigation, saving settings and native TV handoffs.
+
+Keep service rules, validation, timers and cancellation in Node unit tests. Use
+component tests for view state and input handling that does not require browser
+layout. The browser suite covers startup in each shipped entry, app launch and
+favourites, Settings persistence and text input, weather search, Continue Watching,
+HDMI and Live TV, Samsung Home, watcher startup and recovery, Fireplace and wallpaper
+editors. It also keeps a compatibility smoke test with newer APIs disabled, Performance
+mode, startup error capture and two header layout checks: Classic in English and Glass
+in Arabic. It does not test every theme, locale, clock layout, animation or spacing value.
+
+Test shared behaviour once in the compiled launcher. Add a browser case only when a
+critical journey or browser-specific integration is missing. Use Node and component
+tests for edge cases, state combinations and repeated key events. Prefer one complete
+journey over separate browser tests for each intermediate state. Use reduced motion
+for geometry checks. Catalogue parity, HTML shell copy and translation placeholders
+are checked without starting a browser.
+
+Use named `test.step` blocks when several checks share one user flow and setup.
+Keep independent flows in separate tests so they can run in parallel and a failure
+does not hide unrelated results. Each test gets fresh browser storage and context.
+The compiled launcher is the main integration target; keep development, TV development
+and demo entry checks for their distinct startup and build behaviour.
+
+Playwright prints per-file timings and writes `test-results/browser-file-timings.json`.
+CI also adds the table to the job summary and uploads the JSON on success or failure.
+CI runs browser tests in three parallel jobs with `--shard=1/3`, `2/3` and `3/3`,
+each with three workers. Launcher source checks run in parallel with those jobs.
+The required `launcher` check waits for source checks and every browser shard.
+Each shard has separate timing and failure artifacts; its timing report includes
+the shard number. Local `npm run test:browser` still runs the complete suite.
+File times sum test execution across workers and retries; the report records suite
+wall time separately. Failure screenshots and traces remain enabled.
 
 For a local performance audit, serve a compiled build and run
 `node tools/benchmark-launcher.mjs --url http://localhost:8000/ --cpu 4 --output /tmp/launcher-performance.json`.
@@ -150,10 +182,9 @@ diagnostics, and text supplied by apps, the TV, or users keep their original val
 
 TypeScript derives valid translation keys from the English catalogue. ESLint
 checks legacy keys and UI literals, and the Node suite checks catalogue parity
-and placeholders. Playwright checks the production HTML shell and uses a test-only
-locale that replaces copy with symbols. It scans visible text and text attributes
-for leftover words in the Home, Settings, empty, and error states it visits in
-both themes. Add coverage here for new UI paths.
+and placeholders. The Node suite also checks the production HTML shell for
+untranslated copy. Browser smoke tests check language selection, offline fallback
+and representative Arabic layout. Add translation edge cases to the fast tests.
 
 ## Project layout
 
