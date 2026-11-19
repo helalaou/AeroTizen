@@ -6,6 +6,7 @@
   height: 260px;
   will-change: transform;
   animation: waves linear infinite;
+  animation-play-state: var(--wallpaper-animation-play-state, running);
 
   &[data-static="true"] {
     animation: none;

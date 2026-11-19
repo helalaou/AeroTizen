@@ -73,6 +73,7 @@ test("Cinema follows remote focus across the header and rails and preserves Stan
   const hero = launcher.locator("[data-cinema-feature]");
   const backdrop = launcher.locator('[data-cinema-backdrop][data-visible="true"]');
   const blackBacking = launcher.locator("[data-cinema-backing]");
+  const wallpaper = launcher.locator("[data-background-blob]").first();
   const programmes = launcher.locator("#continue-items > [data-key]");
   const apps = launcher.locator("#grid > [data-id]");
   const inputs = launcher.locator("#inputs [data-input-card]");
@@ -97,7 +98,7 @@ test("Cinema follows remote focus across the header and rails and preserves Stan
           homeAppLayout: "grid",
           clockLayout: "custom",
           aeroClockStyle: "vertical",
-          background: "borealis",
+          background: "aurora",
         }),
       );
     }
@@ -151,6 +152,7 @@ test("Cinema follows remote focus across the header and rails and preserves Stan
 
   await test.step("Fade between the original demo card images", async () => {
     await expect(blackBacking).toHaveCSS("opacity", "0");
+    await expect(wallpaper).toHaveCSS("animation-play-state", "running");
     await page.keyboard.press("ArrowDown");
     await expect(programmes.first()).toBeFocused();
     await expect(programmes.first()).toHaveText("");
@@ -166,6 +168,12 @@ test("Cinema follows remote focus across the header and rails and preserves Stan
     await expect(backdrop).toHaveCSS("opacity", "1");
     await expect(blackBacking).toHaveCSS("background-color", "rgb(0, 0, 0)");
     await expect(blackBacking).toHaveCSS("opacity", "1");
+    await expect(wallpaper).toHaveCSS("animation-play-state", "paused");
+    await expect(backdrop).toHaveCSS("object-fit", "contain");
+    const artworkBounds = await backdrop.boundingBox();
+    const cardBounds = await programmes.first().boundingBox();
+    expect(artworkBounds.x).toBeGreaterThan(cardBounds.x + cardBounds.width);
+    expect(artworkBounds.y + artworkBounds.height).toBeLessThan(cardBounds.y + cardBounds.height / 4);
     await expect(backdrop).toHaveAttribute(
       "src",
       await programmes.first().locator('[data-continue-part="image"]').getAttribute("src"),
@@ -230,6 +238,7 @@ test("Cinema follows remote focus across the header and rails and preserves Stan
     await expect(hero).toBeHidden();
     await expect(backdrop).toHaveCount(0);
     await expect(blackBacking).toHaveCSS("opacity", "0");
+    await expect(wallpaper).toHaveCSS("animation-play-state", "running");
     await expect(launcher.locator("#grid [data-focused=true]")).toBeFocused();
     for (let index = 1, count = await apps.count(); index < count; index++) await page.keyboard.press("ArrowRight");
     await expect(apps.last()).toBeFocused();
