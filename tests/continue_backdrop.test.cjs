@@ -4,8 +4,8 @@ const { test } = require("node:test");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 
 const { normalizeContinueItems } = loadTypeScript("launcher/src/services/continueWatching/normalizeItems.ts");
-const { createCinemetaBackdropLookup } = loadTypeScript(
-  "launcher/src/services/continueWatching/createCinemetaBackdropLookup.ts",
+const { createCinemetaArtworkLookup } = loadTypeScript(
+  "launcher/src/services/continueWatching/createCinemetaArtworkLookup.ts",
 );
 
 const prime = { id: "org.tizen.primevideo", storeId: "1", name: "Prime Video" };
@@ -38,7 +38,7 @@ function harness({ now, storage } = {}) {
   const timers = new Map();
   const requests = [];
   const states = [];
-  const lookup = createCinemetaBackdropLookup({
+  const lookup = createCinemetaArtworkLookup({
     now,
     storage,
     excludedSourceIds: new Set([youtube.id]),
@@ -70,6 +70,7 @@ function harness({ now, storage } = {}) {
     requests,
     states,
     watch: (item) => lookup.watch(item, (state) => states.push(state)),
+    watchPoster: (item, report = (state) => states.push(state)) => lookup.watchPoster(item, report),
     tick() {
       const callbacks = [...timers.values()];
       timers.clear();
@@ -164,4 +165,56 @@ test("focus changes cancel old requests and YouTube keeps its own artwork", asyn
   h.requests[0].respond({ metas: [{ name: "A Show", background: backdrop("tt1234567") }] });
   await settle();
   assert.deepEqual(h.states, [{ status: "pending" }, { status: "ready" }]);
+});
+
+test("known IMDb posters load directly and YouTube uses source artwork", () => {
+  const h = harness();
+  const id = "tt1234567";
+  h.watchPoster(feedItem({ content_id: id }, stremio));
+  h.watchPoster(feedItem({ imdb_id: id }, youtube));
+  h.tick();
+  assert.equal(h.requests.length, 0);
+  assert.deepEqual(h.states, [
+    { status: "ready", url: `https://images.metahub.space/poster/small/${id}/img` },
+    { status: "ready" },
+  ]);
+});
+
+test("a poster and a backdrop share one title lookup", async () => {
+  const h = harness();
+  const id = "tt1234567";
+  const item = feedItem();
+  const poster = `https://images.metahub.space/poster/small/${id}/img`;
+  const posterStates = [];
+  const stopPoster = h.watchPoster(item, (state) => posterStates.push(state));
+  h.tick();
+  h.watch(item);
+  h.tick();
+  assert.equal(h.requests.length, 1);
+
+  h.requests[0].respond({ metas: [{ name: item.title, background: backdrop(id), poster }] });
+  await settle();
+  assert.equal(h.states.at(-1).url, backdrop(id));
+  assert.equal(posterStates.at(-1).url, poster);
+  stopPoster();
+
+  h.watchPoster(item);
+  h.tick();
+  assert.deepEqual(h.states.at(-1), { status: "ready", url: poster });
+  assert.equal(h.requests.length, 1);
+});
+
+test("visible poster lookups queue with a bound and release capacity on cancellation", async () => {
+  const h = harness();
+  const stops = Array.from({ length: 4 }, (_, index) =>
+    h.watchPoster(feedItem({ content_id: "item-" + index, content_title: "Show " + index })),
+  );
+  h.tick();
+  assert.equal(h.requests.length, 3);
+  stops[0]();
+  await settle();
+  assert.equal(h.requests[0].aborted, true);
+  assert.equal(h.requests.length, 4);
+  assert.ok(h.states.every((state) => state.status === "pending"));
+  stops.slice(1).forEach((stop) => stop());
 });

@@ -62,6 +62,12 @@ Stremio requires launcher 2.7.0 and the root helper from CLI 3.0.0, or developme
 builds with both changes. Set up or upgrade the helper using the [root guide](root-cli.md),
 then select **Stremio** in Continue Watching.
 
+### Cover art
+
+In **Settings → Apps → Continue Watching**, turn on **Cover art** to show portrait
+cards in Standard and Cinema. The launcher looks up Cinemeta posters for visible
+cards. A title without a poster keeps its source artwork inside the portrait card.
+
 ## Cinema layout
 
 Select **Settings → Appearance → Launcher layout → Cinema** to put Continue
@@ -83,4 +89,4 @@ to distinguish titles with the same name. It saves the image reference by app ID
 and content ID for up to 30 days.
 
 YouTube and titles without a clear backdrop match use the source app's artwork.
-Standard keeps the card artwork from each app.
+Separate backdrops are available in Cinema.
