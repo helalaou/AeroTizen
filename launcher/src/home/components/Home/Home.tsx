@@ -1,12 +1,14 @@
 import { ArrowUp } from "lucide-preact";
 import { useLayoutEffect } from "preact/hooks";
 
+import { usesHomeAppRail } from "../../../shared/homeLayout";
 import { useStore, useStoreSelector } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { Icon } from "../../../shared/icons/Icon/Icon";
 import type { HomeEnvironment } from "../../types";
 import { AppActionsMenu } from "../AppActionsMenu/AppActionsMenu";
 import { AppGrid } from "../AppGrid/AppGrid";
+import { CinemaFeature } from "../CinemaFeature/CinemaFeature";
 import { ContinueWatchingRow } from "../ContinueWatchingRow/ContinueWatchingRow";
 import { HomeControl } from "../HomeControl/HomeControl";
 import { HomeHeader } from "../HomeHeader/HomeHeader";
@@ -14,7 +16,12 @@ import { InputDock } from "../InputDock/InputDock";
 
 import styles from "./Home.module.css";
 
-export const Home = ({ env }: { env: HomeEnvironment }) => {
+interface Props {
+  env: HomeEnvironment;
+  onBackdropVisibilityChange(visible: boolean): void;
+}
+
+export const Home = ({ env, onBackdropVisibilityChange }: Props) => {
   const { t } = useTranslation();
   const settings = useStore(env.settings);
   const page = useStoreSelector(env.state, (state) => state.page);
@@ -23,6 +30,8 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
   const draft = useStoreSelector(env.state, (state) => state.draft);
   const scroll = useStoreSelector(env.state, (state) => state.scroll);
   const { apps, inputs, items, ready } = useStore(env.inventory);
+  const cinema = settings.homeLayout === "cinema";
+  const cinemaHome = cinema && page === "home";
   const home = draft || (settings.homeInitialized ? settings.home : [env.runtime.config.FIREPLACE_ID]);
   const visibleHome = home.filter(
     (id) => id === env.runtime.config.FIREPLACE_ID || !ready || apps.some((app) => app.id === id),
@@ -30,16 +39,22 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
   const showContinueWatching = page === "home" && settings.continueWatching && items.length > 0;
   const dockInputs =
     page === "home" &&
+    !cinema &&
     inputs.length > 0 &&
     !showContinueWatching &&
     visibleHome.length > 0 &&
-    (settings.homeAppLayout === "scroll" || visibleHome.length <= settings.homeCardColumns);
+    (usesHomeAppRail(settings) || visibleHome.length <= settings.homeCardColumns);
   const atAppsEnd = page === "apps" && scroll === appsEndOffset;
   useLayoutEffect(() => {
+    const viewport = env.viewport.current;
+    if (!cinemaHome && viewport?.scrollTop) {
+      viewport.scrollTop = 0;
+    }
     env.bridge.focus();
   }, [
     env,
     page,
+    cinemaHome,
     apps,
     inputs,
     items,
@@ -49,15 +64,48 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
     draft,
     settings.homeCardColumns,
     settings.homeAppLayout,
+    settings.homeLayout,
+    settings.continueWatching,
     settings.clockLayout,
     settings.aeroClockStyle,
   ]);
+  const continueWatching = (
+    <ContinueWatchingRow
+      env={env}
+      items={items}
+      showHeading={settings.showContinueWatchingHeading}
+      visible={showContinueWatching}
+      cinema={cinema}
+    />
+  );
+  const homeApps = (
+    <AppGrid
+      env={env}
+      ids={visibleHome}
+      apps={apps}
+      settings={settings}
+      page="home"
+      shown={page === "home"}
+      active={active}
+      label={t("home.homeApps")}
+    />
+  );
   return (
-    <div class={styles.home} data-home data-expanded={settings.clockLayout === "custom" ? "true" : "false"}>
+    <div
+      class={styles.home}
+      data-home
+      data-layout={settings.homeLayout}
+      data-cinema-home={cinemaHome ? "true" : undefined}
+      data-expanded={settings.clockLayout === "custom" ? "true" : "false"}
+    >
+      {cinemaHome && showContinueWatching && (
+        <CinemaFeature env={env} items={items} onBackdropVisibilityChange={onBackdropVisibilityChange} />
+      )}
       <HomeHeader env={env} />
       <div
         class={styles.viewport}
         data-home-viewport
+        ref={env.viewport}
         data-scrolled={scroll > 0 ? "true" : "false"}
         data-at-apps-end={atAppsEnd ? "true" : "false"}
         aria-hidden={!active}
@@ -78,16 +126,16 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
               style={{ "--home-offset": -scroll + "px", "--apps-end-offset": appsEndOffset + "px" }}
             >
               <div class={styles.page} data-home-page data-page={page} data-docked={dockInputs ? "true" : "false"}>
-                <AppGrid
-                  env={env}
-                  ids={visibleHome}
-                  apps={apps}
-                  settings={settings}
-                  page="home"
-                  shown={page === "home"}
-                  active={active}
-                  label={t("home.homeApps")}
-                />
+                {cinema ? (
+                  <div class={styles.cinemaLanding} hidden={!cinemaHome}>
+                    {continueWatching}
+                    <div class={styles.cinemaApps} hidden={!visibleHome.length}>
+                      {homeApps}
+                    </div>
+                  </div>
+                ) : (
+                  homeApps
+                )}
                 <AppGrid
                   env={env}
                   ids={apps.map((app) => app.id)}
@@ -101,12 +149,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
                 <p id="apps-empty" class={styles.empty} hidden={page === "home" || apps.length > 0}>
                   {t("home.emptyApps")}
                 </p>
-                <ContinueWatchingRow
-                  env={env}
-                  items={items}
-                  showHeading={settings.showContinueWatchingHeading}
-                  visible={showContinueWatching}
-                />
+                {!cinema && continueWatching}
                 <InputDock
                   env={env}
                   inputs={inputs}

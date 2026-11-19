@@ -79,6 +79,7 @@ export interface SettingsActions {
   setHdmiVisibility(hide: boolean): void;
   setHomeAppLayout(layout: SettingsValues["homeAppLayout"]): void;
   setHomeCardColumns(columns: number): void;
+  setHomeLayout(layout: SettingsValues["homeLayout"]): void;
   setInputsHeadingVisible(visible: boolean): void;
   setLiveTvVisible(visible: boolean): void;
   setLocation(location: WeatherLocation | null): void;

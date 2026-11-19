@@ -13,11 +13,13 @@ export const ContinueWatchingRow = ({
   items,
   showHeading,
   visible,
+  cinema,
 }: {
   env: HomeEnvironment;
   items: readonly ContinueItem[];
   showHeading: boolean;
   visible: boolean;
+  cinema: boolean;
 }) => {
   const { t } = useTranslation();
   const title = t("home.continueWatching");
@@ -36,7 +38,7 @@ export const ContinueWatchingRow = ({
         onOffsetChange={(offset) => env.state.set({ ...env.state.getSnapshot(), continueOffset: offset })}
       >
         {items.map((item) => (
-          <ContinueWatchingCard key={item.key} env={env} item={item} />
+          <ContinueWatchingCard key={item.key} env={env} item={item} cinema={cinema} />
         ))}
       </HorizontalScroller>
     </section>

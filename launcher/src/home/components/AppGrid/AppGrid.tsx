@@ -1,6 +1,7 @@
 import type { InstalledApp } from "../../../contracts/launcher";
 import type { SettingsSnapshot } from "../../../contracts/preferences";
 import { getAppGridColumns } from "../../../shared/apps/appCardSizes";
+import { usesHomeAppRail } from "../../../shared/homeLayout";
 import { useStoreSelector } from "../../../shared/hooks/useStore";
 import type { HomeEnvironment, Page } from "../../types";
 import { AppCard } from "../AppCard";
@@ -30,7 +31,8 @@ export const AppGrid = ({
   label: string;
 }) => {
   const appOffset = useStoreSelector(env.state, (state) => state.appOffset);
-  const scroll = page === "home" && settings.homeAppLayout === "scroll";
+  const scroll = page === "home" && usesHomeAppRail(settings);
+  const cinemaRail = page === "home" && settings.homeLayout === "cinema";
   return (
     <HorizontalScroller
       id={shown ? "grid" : page + "-grid-parked"}
@@ -43,6 +45,7 @@ export const AppGrid = ({
         "data-columns": getAppGridColumns(settings.homeCardColumns, page),
         "data-page": page,
         "data-expanded": settings.clockLayout === "custom" ? "true" : "false",
+        "data-cinema-rail": cinemaRail ? "true" : "false",
         "data-scroll": scroll ? "true" : "false",
       }}
       trackRef={page === "home" ? env.appItems : undefined}

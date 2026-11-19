@@ -5,7 +5,7 @@
   border-radius: var(--continue-card-radius, 10px);
   overflow: hidden;
   cursor: pointer;
-  transform: translateZ(0) scale(0.98);
+  transform: translateZ(0) scale(var(--continue-card-rest-scale, 0.98));
   transform-origin: center;
   transition: transform var(--motion-duration-continue-focus) cubic-bezier(0.2, 0.72, 0.25, 1);
   background: var(--continue-surface);
@@ -62,25 +62,6 @@
   }
 }
 
-.sourceBadge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  flex: 0 0 auto;
-  width: 56px;
-  height: 56px;
-  overflow: hidden;
-  border-radius: var(--continue-badge-radius, 7px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--app-placeholder-surface);
-  box-shadow: var(--continue-badge-shadow);
-  transform: translateZ(0);
-  transition: transform var(--motion-duration-focus) ease-out;
-  pointer-events: none;
-}
-
 .label {
   display: flex;
   align-items: flex-start;
@@ -130,4 +111,15 @@
 .progressFill {
   height: 100%;
   background: var(--focus);
+}
+
+.card[data-cinema-card="true"] {
+  --continue-card-rest-scale: 1;
+
+  width: var(--cinema-programme-width);
+
+  .artwork {
+    width: 100%;
+    height: calc(var(--cinema-programme-width) * 9 / 16);
+  }
 }

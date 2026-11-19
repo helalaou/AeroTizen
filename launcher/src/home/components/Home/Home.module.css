@@ -11,6 +11,59 @@
   &[data-expanded="true"] {
     --home-content-padding: 24px;
   }
+
+  &[data-cinema-home="true"] {
+    --cinema-programme-width: 400px;
+    --cinema-rail-gap: 32px;
+    --home-content-padding: 0px;
+    --home-section-heading-margin: 0 0 14px 9px;
+
+    position: relative;
+
+    .viewport {
+      mask-image: none;
+      overflow-y: auto;
+      scroll-behavior: var(--motion-scroll-behavior);
+    }
+
+    .viewport::-webkit-scrollbar {
+      display: none;
+    }
+
+    .mask,
+    .maskContent,
+    .rows,
+    .page {
+      height: 100%;
+    }
+
+    .mask,
+    .maskContent,
+    .rows {
+      mask-image: none;
+      transform: none;
+    }
+
+    .rows {
+      will-change: auto;
+    }
+
+    .page > [data-home-section="inputs"] {
+      padding-bottom: 24px;
+    }
+  }
+}
+
+.cinemaLanding {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 24px;
+
+  > :not([hidden]) + .cinemaApps {
+    margin-top: 24px;
+  }
 }
 
 .viewport {

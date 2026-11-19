@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: SettingsDefaults = {
   performanceMode: false,
   homeCardColumns: 3,
   homeAppLayout: "grid",
+  homeLayout: "standard",
   background: "aurora",
   customColour: DEFAULT_CUSTOM_COLOUR,
   customGradient: DEFAULT_CUSTOM_GRADIENT,

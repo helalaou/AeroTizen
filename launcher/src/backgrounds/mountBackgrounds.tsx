@@ -23,6 +23,7 @@ export const mountBackgrounds = (
   let generation = 0;
   let previewBackground: BackgroundPreview | null = null;
   const status = createStore<boolean | undefined>(undefined);
+  const cinemaBackdrop = createStore(false);
   const webGL: BackgroundGraphics = {
     getSnapshot: status.getSnapshot,
     subscribe: status.subscribe,
@@ -39,7 +40,7 @@ export const mountBackgrounds = (
       const scene = state?.current;
       render(
         state && (
-          <BackgroundLayer state={state} document={layer.ownerDocument}>
+          <BackgroundLayer cinemaBackdrop={cinemaBackdrop} state={state} document={layer.ownerDocument}>
             {scene && (
               <BackgroundSceneView
                 key={scene.anim === "stage" ? scene.id : generation++}
@@ -94,6 +95,7 @@ export const mountBackgrounds = (
   return {
     ...backgrounds,
     apply,
+    setCinemaBackdropVisible: cinemaBackdrop.set,
     previewBackground(preview: BackgroundPreview | null) {
       previewBackground = preview;
       apply();

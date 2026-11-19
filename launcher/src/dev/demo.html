@@ -25,7 +25,7 @@
     </style>
   </head>
   <body>
-    <iframe title="AeroTizen" src="launcher.html" width="1920" height="1080"></iframe>
+    <iframe title="AeroTizen" data-src="launcher.html" width="1920" height="1080"></iframe>
     <script>
       // Keep TV layout and focus geometry inside their own full-size viewport.
       const frame = document.querySelector("iframe");
@@ -38,6 +38,7 @@
       frame.addEventListener("load", () => frame.contentWindow.focus());
       window.addEventListener("resize", fit);
       fit();
+      frame.src = frame.dataset.src + window.location.search;
     </script>
   </body>
 </html>

@@ -22,8 +22,8 @@ const item: ContinueItem = {
   playback: 0.001,
 };
 
-test("prefers the episode thumbnail and falls back to series artwork on error", () => {
-  renderWithEnglish(<ContinueWatchingCard env={createCardEnvironment()} item={item} />);
+test.each([false, true])("prefers the thumbnail and falls back to series artwork in Cinema=%s", (cinema) => {
+  renderWithEnglish(<ContinueWatchingCard env={createCardEnvironment()} item={item} cinema={cinema} />);
   const card = screen.getByRole("button", { name: /Stremio programme.*Stremio/ });
   const image = () => card.querySelector<HTMLImageElement>("[data-continue-part=image]")!;
   expect(image().getAttribute("src")).toBe(item.thumbnailImage);
@@ -31,6 +31,8 @@ test("prefers the episode thumbnail and falls back to series artwork on error", 
   fireEvent.error(image());
   expect(image().getAttribute("src")).toBe(item.backgroundImage);
   expect(image().getAttribute("data-fit")).toBe("cover");
+  fireEvent.error(image());
+  expect(image().getAttribute("src")).toBe(item.image);
 });
 
 test("omits the progress fill for sub-second playback", () => {

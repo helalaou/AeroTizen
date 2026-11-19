@@ -7,10 +7,13 @@ import { previewAppId } from "./previewApps";
 const PREVIEW_MEDIUM_CARD_COLUMNS = 5;
 const PREVIEW_MISSING_HDMI_PORT = 5;
 const DEFAULT_HOME_APPS = ["YouTube", "Netflix", "Prime Video", "Disney+", "Apple TV", "Stremio"] as const;
+const CINEMA_HOME_APPS = [...DEFAULT_HOME_APPS, "Plex", "BBC iPlayer", "TizenBrew"] as const;
 
 // Explicit adapters and native SDK fixtures keep their own setup.
 if (!("tizen" in window) && !runtime.platforms) {
   const config = runtime.config;
+  const params = new URLSearchParams(window.location.search);
+  const cinema = params.get("layout") === "cinema";
   runtime.config = {
     ...config,
     DEFAULTS: {
@@ -19,7 +22,8 @@ if (!("tizen" in window) && !runtime.platforms) {
       theme: "glass",
       homeCardColumns: PREVIEW_MEDIUM_CARD_COLUMNS,
       homeAppLayout: "scroll",
-      home: DEFAULT_HOME_APPS.map(previewAppId),
+      ...(cinema ? { homeLayout: "cinema" } : {}),
+      home: (cinema ? CINEMA_HOME_APPS : DEFAULT_HOME_APPS).map(previewAppId),
     },
   };
   runtime.platforms = {
