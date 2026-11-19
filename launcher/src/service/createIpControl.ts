@@ -25,12 +25,13 @@ interface RemotePort {
   readonly appId: string;
   sendMessage(items: readonly MessageItem[]): void;
 }
+interface LocalPort {
+  addMessagePortListener(listener: (data: readonly MessageItem[], remote?: RemotePort) => void): number;
+  removeMessagePortListener(id: number): void;
+}
 export interface IpControlServiceHost extends DiagnosticsStorageHost {
   messageport?: {
-    requestTrustedLocalMessagePort(name: string): {
-      addMessagePortListener(listener: (data: readonly MessageItem[], remote?: RemotePort) => void): number;
-      removeMessagePortListener(id: number): void;
-    };
+    requestTrustedLocalMessagePort(name: string): LocalPort;
   };
 }
 interface State {
@@ -52,7 +53,14 @@ const readState = (store: HomePreference): State => {
   return { token: "", ports: [] };
 };
 
-const startIpControl = (host: IpControlServiceHost | null): (() => void) => {
+const startIpControl = (
+  host: IpControlServiceHost | null,
+  diagnostic: (event: string, data?: unknown) => void,
+): (() => void) | undefined => {
+  if (!host || typeof host.messageport?.requestTrustedLocalMessagePort !== "function") {
+    diagnostic("ip_control.start_failed", { reason: "message_port_unavailable" });
+    return;
+  }
   const pending = new Set<() => void>();
   let disposed = false;
   const request = (
@@ -141,9 +149,6 @@ const startIpControl = (host: IpControlServiceHost | null): (() => void) => {
         finish(new Error("Request failed"));
       }
     });
-  if (!host?.messageport) {
-    return () => {};
-  }
   let store: HomePreference | null = null;
   let state: State = { token: "", ports: [] };
   const ready = new Promise<void>((resolve) => {
@@ -228,12 +233,19 @@ const startIpControl = (host: IpControlServiceHost | null): (() => void) => {
     }
   };
   let running = false;
-  const local = host.messageport.requestTrustedLocalMessagePort(IP_CONTROL_PORT_NAME);
   const receive = async (data: readonly MessageItem[], remote?: RemotePort) => {
     const message = data[0];
-    if (disposed || !remote || remote.appId !== LAUNCHER_APP_ID || !message) {
+    if (disposed || !message) {
       return;
     }
+    if (!remote) {
+      diagnostic("ip_control.message_failed", { reason: "message_reply_port_missing" });
+      return;
+    }
+    if (remote.appId !== LAUNCHER_APP_ID) {
+      return;
+    }
+    let reason = "message_request_failed";
     try {
       const command = record(JSON.parse(message.value) as unknown);
       await ready;
@@ -260,15 +272,27 @@ const startIpControl = (host: IpControlServiceHost | null): (() => void) => {
         }
       }
       if (!disposed) {
+        reason = "message_reply_send_failed";
         remote.sendMessage([{ key: message.key, value: JSON.stringify(result) }]);
       }
-    } catch {
-      // The launcher can close while Samsung displays its pairing prompt.
+    } catch (error) {
+      if (!disposed) {
+        diagnostic("ip_control.message_failed", { reason, error: record(error)?.name });
+      }
     }
   };
-  const listener = local.addMessagePortListener((data, remote) => {
-    void receive(data, remote);
-  });
+  let local: LocalPort;
+  let listener: number;
+  try {
+    local = host.messageport.requestTrustedLocalMessagePort(IP_CONTROL_PORT_NAME);
+    listener = local.addMessagePortListener((data, remote) => {
+      void receive(data, remote);
+    });
+  } catch (error) {
+    diagnostic("ip_control.start_failed", { reason: "message_port_registration_failed", error: record(error)?.name });
+    return;
+  }
+  diagnostic("ip_control.ready");
   return () => {
     disposed = true;
     Array.from(pending).forEach((cancel) => cancel());
