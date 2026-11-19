@@ -3,18 +3,22 @@ import { useLayoutEffect, useState } from "preact/hooks";
 import type { ContinueArtwork } from "../../../contracts/continueWatching";
 import type { ContinueItem } from "../../../contracts/launcher";
 import { cardArtwork } from "../../../shared/continueWatchingArtwork";
+import { useStoreSelector } from "../../../shared/hooks/useStore";
+import type { HomeEnvironment } from "../../types";
 
 import { CinemaBackdrop } from "./CinemaBackdrop";
 import styles from "./CinemaFeature.module.css";
-import type { ProgrammeProps } from "./useSelectedProgramme";
-import { useSelectedProgramme } from "./useSelectedProgramme";
+import { CinemaProgrammeDetails } from "./CinemaProgrammeDetails";
 
-interface Props extends ProgrammeProps {
+interface Props {
+  env: HomeEnvironment;
+  items: readonly ContinueItem[];
   onBackdropVisibilityChange(visible: boolean): void;
 }
 
 export const CinemaFeature = ({ env, items, onBackdropVisibilityChange }: Props) => {
-  const item = useSelectedProgramme({ env, items });
+  const selected = useStoreSelector(env.state, (state) => (state.active ? state.selected : ""));
+  const item = items.find((item) => "continue:" + item.key === selected);
   const service = env.runtime.continueWatching;
   const [resolved, setResolved] = useState<{ item: ContinueItem; result: ContinueArtwork }>();
   const [failed, setFailed] = useState<{ item: ContinueItem; urls: readonly string[] }>();
@@ -45,6 +49,7 @@ export const CinemaFeature = ({ env, items, onBackdropVisibilityChange }: Props)
           }
         }}
       />
+      {item && <CinemaProgrammeDetails env={env} item={item} />}
     </div>
   );
 };

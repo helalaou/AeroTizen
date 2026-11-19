@@ -1,18 +1,23 @@
+import { useLayoutEffect, useRef } from "preact/hooks";
+
+import type { ContinueItem } from "../../../contracts/launcher";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
+import type { HomeEnvironment } from "../../types";
 import { ContinueWatchingSourceBadge } from "../ContinueWatchingSourceBadge/ContinueWatchingSourceBadge";
 
 import styles from "./CinemaFeature.module.css";
-import type { ProgrammeProps } from "./useSelectedProgramme";
-import { useSelectedProgramme } from "./useSelectedProgramme";
+import { positionCinemaDetails } from "./positionCinemaDetails";
 
-export const CinemaProgrammeDetails = ({ env, items }: ProgrammeProps) => {
+export const CinemaProgrammeDetails = ({ env, item }: { env: HomeEnvironment; item: ContinueItem }) => {
   const { t } = useTranslation();
-  const item = useSelectedProgramme({ env, items });
-  if (!item) {
-    return null;
-  }
+  const details = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (details.current && env.continueItems.current && env.viewport.current) {
+      return positionCinemaDetails(details.current, env.continueItems.current, env.viewport.current);
+    }
+  }, [env]);
   return (
-    <div class={styles.details} data-cinema-feature>
+    <div class={styles.details} data-cinema-feature ref={details}>
       <h1 class={styles.title}>{item.title}</h1>
       <div class={styles.source}>
         <ContinueWatchingSourceBadge env={env} item={item} placement="inline" />
