@@ -26,7 +26,10 @@ export const CinemaBackdrop = ({ src, onError, onVisibilityChange }: Props) => {
       return [...outgoing, incoming];
     });
   }, [src]);
-  const visible = Boolean(src) && layers.some((layer) => layer.ready);
+  // Keep the last image visible until its replacement loads, even during fast navigation.
+  const current =
+    src && (layers.find((layer) => layer.ready && layer.src === src) ?? layers.find((layer) => layer.ready));
+  const visible = Boolean(current);
   useLayoutEffect(() => {
     if (visible) {
       onVisibilityChange(true);
@@ -42,8 +45,9 @@ export const CinemaBackdrop = ({ src, onError, onVisibilityChange }: Props) => {
             key={layer.src}
             class={styles.art}
             data-cinema-backdrop
-            data-visible={layer.src === src && layer.ready ? "true" : "false"}
+            data-visible={layer === current ? "true" : "false"}
             src={layer.src}
+            decoding="async"
             alt=""
             onLoad={(event) => {
               // Commit the starting opacity before even cached artwork fades in.
@@ -57,7 +61,7 @@ export const CinemaBackdrop = ({ src, onError, onVisibilityChange }: Props) => {
               }
             }}
             onTransitionEnd={(event) => {
-              if (event.propertyName === "opacity" && layer.src !== src) {
+              if (event.propertyName === "opacity" && layer !== current && layer.src !== src) {
                 setLayers((layers) => layers.filter((item) => item.src !== layer.src));
               }
             }}

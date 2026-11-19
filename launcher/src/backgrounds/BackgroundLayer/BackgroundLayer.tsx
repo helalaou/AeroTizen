@@ -41,7 +41,7 @@ export const BackgroundLayer = ({ children, cinemaBackdrop, document, state }: P
     document.documentElement.setAttribute("data-light-background", String(light));
   }, [document, current, suspended, darkBackdropVisible]);
   return (
-    <div id="bg" class={styles.layer} data-background-host hidden={suspended}>
+    <div id="bg" class={styles.layer} data-background-host data-cinema-covered={darkBackdropVisible} hidden={suspended}>
       {!suspended && children}
     </div>
   );

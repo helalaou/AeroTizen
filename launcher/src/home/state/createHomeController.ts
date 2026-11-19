@@ -140,6 +140,7 @@ export const createHomeController = (
   let timer: number | undefined;
   let enterDown = false;
   let started = false;
+  let cinemaInputsRevealed = false;
   const cancelPress = () => {
     if (timer !== undefined) {
       window.clearTimeout(timer);
@@ -248,9 +249,15 @@ export const createHomeController = (
     }
     if (pending.page === "home" && settings.getSnapshot().homeLayout === "cinema") {
       const viewport = env.viewport.current;
+      const revealInputs = selected.startsWith("input:");
       if (viewport) {
-        viewport.scrollTop = selected.startsWith("input:") ? viewport.scrollHeight : 0;
+        if (revealInputs) {
+          viewport.scrollTop = viewport.scrollHeight;
+        } else if (cinemaInputsRevealed || viewport.scrollTop !== 0) {
+          viewport.scrollTop = 0;
+        }
       }
+      cinemaInputsRevealed = revealInputs;
       update({ appsEndOffset: 0, scroll: 0 });
       return;
     }
