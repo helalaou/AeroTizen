@@ -61,3 +61,16 @@ when available. Opening the correct programme still needs confirmation per app.
 Stremio requires launcher 2.7.0 and the root helper from CLI 3.0.0, or development
 builds with both changes. Set up or upgrade the helper using the [root guide](root-cli.md),
 then select **Stremio** in Continue Watching.
+
+## Cinema layout
+
+Select **Settings → Appearance → Launcher layout → Cinema** to put Continue
+Watching above a fixed-size, horizontally scrolling app row. Scroll down from
+apps to reach configured inputs. The Standard layout is the default. Cinema
+keeps your Standard app size and arrangement preferences for when you switch back.
+
+When a Continue Watching card is in focus, Cinema shows the title and source
+above the row. The backdrop fades into black and the saved wallpaper returns
+when focus moves away from the card. Samsung app feeds reuse the card image.
+Stremio can supply separate series artwork while keeping the episode thumbnail
+on its card.

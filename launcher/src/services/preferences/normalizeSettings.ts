@@ -68,6 +68,7 @@ export const normalizeSettings = (
     performanceMode: boolean(data.performanceMode, defaults.performanceMode),
     homeCardColumns: typeof columns === "number" && [3, 4, 5].includes(columns) ? columns : defaults.homeCardColumns,
     homeAppLayout: choice(data.homeAppLayout, ["grid", "scroll"], defaults.homeAppLayout),
+    homeLayout: choice(data.homeLayout, ["standard", "cinema"], defaults.homeLayout),
     background: text(data.background, defaults.background),
     customColour: normalizeColour(data.customColour, defaults.customColour),
     customGradient: normalizeGradient(data.customGradient, defaults.customGradient),

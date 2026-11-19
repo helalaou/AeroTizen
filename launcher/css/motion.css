@@ -12,6 +12,7 @@
   --motion-duration-backdrop: 0.13s;
   --motion-duration-menu: 0.14s;
   --motion-duration-reorder: 1s;
+  --motion-scroll-behavior: smooth;
 }
 
 :root[data-performance-mode="true"] {
@@ -27,6 +28,7 @@
   --motion-duration-backdrop: 0s;
   --motion-duration-menu: 0s;
   --motion-duration-reorder: 0s;
+  --motion-scroll-behavior: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -43,5 +45,6 @@
     --motion-duration-backdrop: 0s;
     --motion-duration-menu: 0s;
     --motion-duration-reorder: 0s;
+    --motion-scroll-behavior: auto;
   }
 }

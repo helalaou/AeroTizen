@@ -21,10 +21,25 @@ const HOME_APP_LAYOUT_OPTIONS = [
   { value: "scroll", labelKey: "appearance.scroll" },
 ] as const;
 
+const HOME_LAYOUT_OPTIONS = [
+  { value: "standard", labelKey: "appearance.standardLayout" },
+  { value: "cinema", labelKey: "appearance.cinemaLayout" },
+] as const;
+
 export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) => {
   const { t } = useTranslation();
+  const cinema = settings.homeLayout === "cinema";
   return (
     <>
+      <SettingsField title={t("appearance.launcherLayout")}>
+        <ChoiceGroup
+          id="home-layout"
+          label={t("appearance.launcherLayout")}
+          value={settings.homeLayout}
+          options={HOME_LAYOUT_OPTIONS}
+          onSelect={actions.setHomeLayout}
+        />
+      </SettingsField>
       <SettingsField title={t("appearance.title")} topAligned>
         <ChoiceGroup
           id="settings-appearance"
@@ -43,7 +58,7 @@ export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) 
           onSelect={(value) => actions.setHomeCardColumns(Number(value))}
         />
       </SettingsField>
-      <SettingsField title={t("appearance.homeLayout")}>
+      <SettingsField title={t("appearance.homeLayout")} hidden={cinema}>
         <ChoiceGroup
           id="home-app-layout"
           label={t("appearance.homeLayout")}

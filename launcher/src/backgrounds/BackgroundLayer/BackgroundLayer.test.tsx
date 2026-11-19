@@ -1,7 +1,8 @@
-import { render } from "@testing-library/preact";
+import { act, render } from "@testing-library/preact";
 import { afterEach, expect, test } from "vitest";
 
 import type { BackgroundScene } from "../../contracts/backgrounds";
+import { createStore } from "../../shared/state/createStore";
 import type { BackgroundState } from "../createBackgrounds";
 import { SCENES } from "../scenes";
 
@@ -19,21 +20,30 @@ const stateFor = (scene: BackgroundScene, suspended = false): BackgroundState =>
   suspended,
 });
 
-test("switching from a light wallpaper to a dark one restores floating Home text contrast", () => {
+test("floating Home text follows the visible wallpaper or Cinema backdrop", async () => {
+  const cinemaBackdrop = createStore(false);
   const light: BackgroundScene = { id: "custom", category: "solid", base: "#ffffff" };
   const dark = SCENES.find(({ id }) => id === "black")!;
-  const { rerender } = render(<BackgroundLayer document={document} state={stateFor(light)} />);
+  const { rerender } = render(
+    <BackgroundLayer cinemaBackdrop={cinemaBackdrop} document={document} state={stateFor(light)} />,
+  );
   expect(document.documentElement.getAttribute("data-light-background")).toBe("true");
   expect(document.body.style.background).toBe("transparent");
-  rerender(<BackgroundLayer document={document} state={stateFor(dark)} />);
+  await act(() => cinemaBackdrop.set(true));
+  expect(document.documentElement.getAttribute("data-light-background")).toBe("false");
+  expect(document.documentElement.style.background).toBe("rgb(255, 255, 255)");
+  await act(() => cinemaBackdrop.set(false));
+  expect(document.documentElement.getAttribute("data-light-background")).toBe("true");
+  rerender(<BackgroundLayer cinemaBackdrop={cinemaBackdrop} document={document} state={stateFor(dark)} />);
   expect(document.documentElement.style.background).toBe("rgb(0, 0, 0)");
   expect(document.documentElement.getAttribute("data-light-background")).toBe("false");
 });
 
 test("suspension removes the scene and preserves native transparency until the wallpaper resumes", () => {
+  const cinemaBackdrop = createStore(false);
   const scene: BackgroundScene = { id: "custom", category: "solid", base: "#ffffff" };
   const view = (suspended: boolean) => (
-    <BackgroundLayer document={document} state={stateFor(scene, suspended)}>
+    <BackgroundLayer cinemaBackdrop={cinemaBackdrop} document={document} state={stateFor(scene, suspended)}>
       <canvas />
     </BackgroundLayer>
   );
@@ -62,7 +72,9 @@ test("suspension removes the scene and preserves native transparency until the w
 test("a suspended mount cannot overwrite an active native video background", () => {
   document.documentElement.style.background = "transparent";
   const scene = SCENES.find(({ id }) => id === "pastel")!;
-  const { container } = render(<BackgroundLayer document={document} state={stateFor(scene, true)} />);
+  const { container } = render(
+    <BackgroundLayer cinemaBackdrop={createStore(false)} document={document} state={stateFor(scene, true)} />,
+  );
   expect(container.querySelector<HTMLElement>("[data-background-host]")!.hidden).toBe(true);
   expect(document.documentElement.style.background).toBe("transparent");
   expect(document.documentElement.getAttribute("data-light-background")).toBe("false");

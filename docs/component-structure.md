@@ -14,6 +14,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `AppGrid`                                                            | Render one keyed page of apps, preserving artwork while another page is active  | Ordered IDs, app records, layout settings and visibility                     |
 | `AppCard`, `FireplaceCard`                                           | Launchable Home app and fireplace presentation                                  | Existing app commands through `HomeControl`                                  |
 | `ContinueWatchingRow`, `ContinueWatchingCard`                        | Feed section and item presentation                                              | Immutable feed items; live launch records stay in the service                |
+| `ContinueWatchingSourceBadge`                                      | Shared source badge for the card corner and the Cinema details                  | Feed source identity and shared app artwork                                  |
 | `HorizontalScroller`                                                 | Shared clipping, track movement and offset limits for horizontal app/feed rows  | Each row owns its offset; the Home controller reveals the selected card      |
 | `InputDock`, `InputCard`                                             | Input collection and one input's label, artwork and connection state            | Existing input service capabilities and commands                             |
 | `shared/components/AppFallback`                                      | Shared app-name placeholder for Home and Settings                               | App presentation, image lifetime and visibility                              |
@@ -491,7 +492,8 @@ keys and values also remain compatible.
 | `home/components/HomeControl/HomeControl.module.css`                                             | Home control focus reset                                                      |
 | `home/components/HomeSectionHeading/HomeSectionHeading.module.css`                               | Shared Home section headings                                                  |
 | `home/components/ContinueWatchingRow/ContinueWatchingRow.module.css`                             | Continue Watching track spacing                                               |
-| `home/components/ContinueWatchingCard/ContinueWatchingCard.module.css`                           | Card focus, artwork, source badges, titles and progress                       |
+| `home/components/ContinueWatchingCard/ContinueWatchingCard.module.css`                           | Card focus, artwork, titles and progress                                      |
+| `home/components/ContinueWatchingSourceBadge/ContinueWatchingSourceBadge.module.css`             | Shared source badge appearance and placement                                 |
 | `home/components/HorizontalScroller/HorizontalScroller.module.css`                               | Shared horizontal viewport, track layout and motion                           |
 | `home/components/InputDock/InputDock.module.css`                                                 | Input collection spacing and compact dock layout                              |
 | `home/components/InputCard/InputCard.module.css`                                                 | Input frame, icon, labels, status badge and focus/state paint                 |

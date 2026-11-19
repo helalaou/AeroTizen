@@ -1,30 +1,30 @@
 import { memo } from "preact/compat";
-import { useMemo, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 
 import type { ContinueItem } from "../../../contracts/launcher";
+import { cardArtwork } from "../../../shared/continueWatchingArtwork";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import text from "../../../shared/styles/text.module.css";
 import type { HomeEnvironment } from "../../types";
-import { AppArtwork } from "../AppArtwork/AppArtwork";
+import { ContinueWatchingSourceBadge } from "../ContinueWatchingSourceBadge/ContinueWatchingSourceBadge";
 import { HomeControl } from "../HomeControl/HomeControl";
 
 import styles from "./ContinueWatchingCard.module.css";
 
 const MIN_PLAYBACK_SECONDS = 1;
 
-export const ContinueWatchingCard = memo(({ env, item }: { env: HomeEnvironment; item: ContinueItem }) => {
+interface Props {
+  cinema?: boolean;
+  env: HomeEnvironment;
+  item: ContinueItem;
+}
+
+export const ContinueWatchingCard = memo(({ env, item, cinema = false }: Props) => {
   const { t } = useTranslation();
-  const app = useMemo(
-    () => ({ id: item.sourceId, name: item.sourceName, icon: item.sourceIcon }),
-    [item.sourceId, item.sourceName, item.sourceIcon],
-  );
-  const presentation = useMemo(() => env.describe(app), [env, app]);
   const episode =
     item.season > 0 && item.episode > 0 ? t("continue.episode", { season: item.season, episode: item.episode }) : "";
-  const thumbnail = useArtwork(item.thumbnailImage);
-  const background = useArtwork(item.backgroundImage);
-  const poster = useArtwork(item.image);
-  const artwork = [thumbnail, background, poster].find((candidate) => candidate.src);
+  const [thumbnail, background, poster] = cardArtwork(item);
+  const artwork = [useArtwork(thumbnail), useArtwork(background), useArtwork(poster)].find(({ src }) => src);
   const progress =
     item.duration > 0 && item.playback >= MIN_PLAYBACK_SECONDS
       ? Math.min(100, (item.playback / item.duration) * 100)
@@ -34,6 +34,7 @@ export const ContinueWatchingCard = memo(({ env, item }: { env: HomeEnvironment;
       env={env}
       controlKey={"continue:" + item.key}
       dataKey={item.key}
+      dataAttributes={{ "data-cinema-card": cinema ? "true" : "false" }}
       className={styles.card}
       title={
         episode
@@ -42,52 +43,55 @@ export const ContinueWatchingCard = memo(({ env, item }: { env: HomeEnvironment;
       }
     >
       <div class={styles.artwork} data-continue-part="artwork">
-        {artwork && (
+        {artwork?.src && (
           <img
             key={artwork.src}
             class={styles.image}
             data-continue-part="image"
-            data-fit={artwork === poster ? "contain" : "cover"}
+            data-fit={artwork.fit}
             alt=""
             src={artwork.src}
             onError={artwork.onError}
           />
         )}
-        <div class={styles.sourceBadge} data-continue-part="source-badge" aria-hidden="true">
-          <AppArtwork presentation={presentation} active variant="badge" />
-        </div>
+        {!cinema && <ContinueWatchingSourceBadge env={env} item={item} />}
       </div>
-      <div
-        class={styles.progress}
-        data-continue-part="progress"
-        data-empty={progress > 0 ? "false" : "true"}
-        aria-hidden="true"
-      >
-        {progress > 0 && (
-          <div class={styles.progressFill} data-continue-part="progress-fill" style={{ width: progress + "%" }} />
-        )}
-      </div>
-      <div class={styles.label} data-continue-part="label">
-        <div class={styles.details}>
+      {!cinema && (
+        <>
           <div
-            class={styles.title + (episode ? " " + text.truncate : "")}
-            data-continue-part="title"
-            data-single-line={episode ? "true" : undefined}
+            class={styles.progress}
+            data-continue-part="progress"
+            data-empty={progress > 0 ? "false" : "true"}
+            aria-hidden="true"
           >
-            {item.title}
+            {progress > 0 && (
+              <div class={styles.progressFill} data-continue-part="progress-fill" style={{ width: progress + "%" }} />
+            )}
           </div>
-          {episode ? (
-            <div class={styles.episode} data-continue-part="episode">
-              {episode}
+          <div class={styles.label} data-continue-part="label">
+            <div class={styles.details}>
+              <div
+                class={styles.title + (episode ? " " + text.truncate : "")}
+                data-continue-part="title"
+                data-single-line={episode ? "true" : undefined}
+              >
+                {item.title}
+              </div>
+              {episode ? (
+                <div class={styles.episode} data-continue-part="episode">
+                  {episode}
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </HomeControl>
   );
 });
+
 // Artwork errors are local to each keyed feed item; changing its URL permits retry.
-const useArtwork = (url?: string) => {
+const useArtwork = ({ src, fit }: ReturnType<typeof cardArtwork>[number]) => {
   const [failed, setFailed] = useState<string | undefined>();
-  return { src: url === failed ? undefined : url, onError: () => setFailed(url) };
+  return { src: src === failed ? undefined : src, fit, onError: () => setFailed(src) };
 };

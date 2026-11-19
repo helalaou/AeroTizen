@@ -117,6 +117,7 @@ export const createSettingsActions = (
     setLiveTvVisible: (showLiveTv) => commit({ showLiveTv }),
     setHomeCardColumns: (homeCardColumns) => commit({ homeCardColumns }, services.applyCardSize),
     setHomeAppLayout: (homeAppLayout) => commit({ homeAppLayout }, services.applyCardSize),
+    setHomeLayout: (homeLayout) => commit({ homeLayout }),
     setHdmiVisibility: (hideDisconnectedHdmi) => commit({ hideDisconnectedHdmi }),
     setHdmiKeepVisible: (port, keep) =>
       commit({ hdmiKeepVisible: { ...settings.getSnapshot().hdmiKeepVisible, [port]: keep } }),

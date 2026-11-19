@@ -33,6 +33,7 @@ export interface SettingsValues {
   home: string[];
   homeAppLayout: "grid" | "scroll";
   homeCardColumns: number;
+  homeLayout: "standard" | "cinema";
   inputNames: Record<string, string>;
   language: string;
   numerals: "latn" | "arab";

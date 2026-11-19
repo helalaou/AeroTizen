@@ -197,6 +197,10 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   expect(await episodeTitle.evaluate((n) => n.scrollWidth > n.clientWidth && n.clientHeight <= 31)).toBe(true);
   const video = page.locator("#continue-items > [data-key]").last(),
     videoTitle = video.locator("[data-continue-part=title]");
+  const homeArtwork = page.locator(`#grid > [data-id="${prime}"] [data-app-artwork]`);
+  const sourceArtwork = video.locator("[data-continue-part=source-badge] [data-app-artwork]");
+  await expect(homeArtwork).toBeVisible();
+  await expect(sourceArtwork).toHaveAttribute("src", await homeArtwork.getAttribute("src"));
   await expect(video.locator("[data-continue-part=episode]")).toHaveCount(0);
   await expect(videoTitle).toHaveCSS("-webkit-line-clamp", "2");
   expect(
