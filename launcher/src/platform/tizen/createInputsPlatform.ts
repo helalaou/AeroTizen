@@ -1,3 +1,4 @@
+import type { UiDiagnostics } from "../../contracts/diagnostics";
 import type { InputsPlatform } from "../../contracts/inputs";
 import type { InputSource } from "../../contracts/launcher";
 import type { NativeHdmiHandoff } from "../../contracts/nativeNavigation";
@@ -25,6 +26,7 @@ export interface InputsTizen extends IpControlTizen {
 
 interface InputsHost {
   addEventListener(type: string, listener: () => void): void;
+  AeroDiagnostics?: Pick<UiDiagnostics, "flush" | "record">;
   AeroTizen: {
     config?: { SERVICE_ID: string };
     homewatch: {
@@ -57,6 +59,10 @@ export const createInputsPlatform = (host: InputsHost): InputsPlatform => {
       host.AeroTizen.config && host.setTimeout && host.clearTimeout
         ? createIpControlPlatform({
             AeroTizen: { ...host.AeroTizen, config: host.AeroTizen.config },
+            diagnostic(event, data) {
+              host.AeroDiagnostics?.record(event, data);
+              host.AeroDiagnostics?.flush();
+            },
             setTimeout: host.setTimeout.bind(host),
             clearTimeout: host.clearTimeout.bind(host),
           })
