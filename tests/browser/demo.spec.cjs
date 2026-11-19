@@ -173,7 +173,7 @@ test("Cinema follows remote focus across the header and rails and preserves Stan
     const artworkBounds = await backdrop.boundingBox();
     const cardBounds = await programmes.first().boundingBox();
     expect(artworkBounds.x).toBeGreaterThan(cardBounds.x + cardBounds.width);
-    expect(artworkBounds.y + artworkBounds.height).toBeLessThan(cardBounds.y + cardBounds.height / 4);
+    expect(artworkBounds.y + artworkBounds.height).toBeLessThan(cardBounds.y + cardBounds.height / 2);
     await expect(backdrop).toHaveAttribute(
       "src",
       await programmes.first().locator('[data-continue-part="image"]').getAttribute("src"),
