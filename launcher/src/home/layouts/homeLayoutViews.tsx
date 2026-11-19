@@ -4,7 +4,7 @@ import { cinemaLayout } from "./CinemaLayout/CinemaLayout";
 import type { HomeLayoutSectionsProps, HomeLayoutView } from "./types";
 
 const FlowSections = ({ definition, sections }: HomeLayoutSectionsProps) => (
-  <>{[...definition.main, ...definition.belowFold].map((section) => sections[section])}</>
+  <>{[...definition.main, ...definition.belowFold].map((section) => sections[section].content)}</>
 );
 
 const homeLayoutViews: Readonly<Record<HomeLayoutId, HomeLayoutView>> = {

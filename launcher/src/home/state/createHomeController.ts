@@ -140,7 +140,7 @@ export const createHomeController = (
   let timer: number | undefined;
   let enterDown = false;
   let started = false;
-  let belowFoldRevealed = false;
+  let navigated = false;
   const cancelPress = () => {
     if (timer !== undefined) {
       window.clearTimeout(timer);
@@ -197,7 +197,7 @@ export const createHomeController = (
       if (appKeys.length) {
         allRows.push(["back-to-top"]);
       }
-      return { allRows, belowFoldStart: allRows.length, scroll: "offset" as const };
+      return { allRows, scroll: "offset" as const };
     }
     const { items, inputs } = inventory.getSnapshot();
     const continueRows =
@@ -205,16 +205,12 @@ export const createHomeController = (
     const inputRows = inputs.length ? [inputs.map(sourceKey)] : [];
     const layout = getHomeLayout(preferences.homeLayout);
     const sectionRows = { apps: appRows, continueWatching: continueRows, inputs: inputRows };
-    for (const section of layout.main) {
+    for (const section of [...layout.main, ...layout.belowFold]) {
       allRows.push(...sectionRows[section]);
     }
-    const belowFoldStart = allRows.length;
-    for (const section of layout.belowFold) {
-      allRows.push(...sectionRows[section]);
-    }
-    return { allRows, belowFoldStart, scroll: layout.scroll };
+    return { allRows, scroll: layout.scroll };
   };
-  const focus = () => {
+  const focus = (withinRow = false) => {
     if (document.hidden || runtime.settingsUi?.isOpen()) {
       update({ active: false });
       return;
@@ -229,9 +225,10 @@ export const createHomeController = (
       update({ menu: null });
       cancelPress();
     }
-    const { allRows: list, belowFoldStart, scroll: scrollMode } = rows();
+    const { allRows: list, scroll: scrollMode } = rows();
     const old = state.getSnapshot().selected;
-    const selected = getSelectedKey(list, old, started);
+    // Allow a higher-priority rail to load after the initial Home render, until the user takes focus.
+    const selected = getSelectedKey(list, old, started && (scrollMode !== "native" || navigated));
     if (list[1]?.length) {
       started = true;
     }
@@ -259,15 +256,14 @@ export const createHomeController = (
     }
     if (scrollMode === "native") {
       const viewport = env.viewport.current;
-      const revealBelowFold = list.some((row, index) => index >= belowFoldStart && row.includes(selected));
-      if (viewport) {
-        if (revealBelowFold) {
-          viewport.scrollTop = viewport.scrollHeight;
-        } else if (belowFoldRevealed || viewport.scrollTop !== 0) {
-          viewport.scrollTop = 0;
-        }
+      if (viewport && !withinRow) {
+        const anchor = node.closest("[data-home-scroll-anchor]");
+        // Align the whole rail so focus scaling cannot move its resting position.
+        const offset = anchor
+          ? viewport.scrollTop + anchor.getBoundingClientRect().bottom - viewport.getBoundingClientRect().bottom
+          : 0;
+        viewport.scrollTop = Math.max(0, Math.round(offset));
       }
-      belowFoldRevealed = revealBelowFold;
       update({ appsEndOffset: 0, scroll: 0 });
       return;
     }
@@ -303,12 +299,13 @@ export const createHomeController = (
     });
     update({ appsEndOffset, scroll });
   };
-  const select = (selected: string) => {
+  const select = (selected: string, withinRow = false) => {
+    navigated = true;
     if (state.getSnapshot().selected !== selected) {
       cancelPress();
     }
     update({ selected });
-    focus();
+    focus(withinRow);
   };
   const endMove = () => {
     const draft = state.getSnapshot().draft;
@@ -323,6 +320,7 @@ export const createHomeController = (
     focus();
   };
   const showPage = (page: Page) => {
+    navigated = true;
     cancelPress();
     endMove();
     update({ page, appsEndOffset: 0, scroll: 0, menu: null, selected: page === "home" ? "home-tab" : "apps-tab" });
@@ -411,6 +409,7 @@ export const createHomeController = (
         return;
       }
       event.preventDefault();
+      navigated = true;
       if (current.moving) {
         if (code === K.ENTER || code === K.BACK || code === K.ESC) {
           if (code !== K.ENTER || !enterDown) {
@@ -472,7 +471,7 @@ export const createHomeController = (
             nodes,
             getViewport: (key) => getScroller(key)?.viewport || null,
           });
-      select(all[target][Math.max(0, Math.min(all[target].length - 1, column))]);
+      select(all[target][Math.max(0, Math.min(all[target].length - 1, column))], horizontal);
     });
   const keyup = (code: number) => {
     if (code !== K.ENTER) {

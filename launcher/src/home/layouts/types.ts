@@ -5,10 +5,8 @@ import type { HomeLayoutDefinition, HomeSection } from "../../shared/homeLayout"
 import type { HomeEnvironment } from "../types";
 
 export interface HomeLayoutSectionsProps {
-  readonly appsAvailable: boolean;
   readonly definition: HomeLayoutDefinition;
-  readonly sections: Readonly<Record<HomeSection, VNode>>;
-  readonly visible: boolean;
+  readonly sections: Readonly<Record<HomeSection, { readonly content: VNode; readonly visible: boolean }>>;
 }
 
 interface ProgrammeFeatureProps {

@@ -18,7 +18,7 @@
   position: absolute;
   top: 0;
   right: 0;
-  width: 80%;
+  left: 0;
   mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 53%, #0002 74%, transparent 81%);
   pointer-events: none;
 
@@ -29,8 +29,6 @@
   }
 
   [dir="rtl"] & {
-    right: auto;
-    left: 0;
     --cinema-feature-direction: to left;
     --cinema-art-position: top left;
   }
@@ -58,7 +56,7 @@
 .details {
   position: absolute;
   /* Anchor the source row so wrapped titles grow upward. */
-  bottom: 61%;
+  bottom: 40%;
   width: 840px;
   -webkit-margin-start: var(--home-side-padding);
   color: var(--home-section-heading-text);
