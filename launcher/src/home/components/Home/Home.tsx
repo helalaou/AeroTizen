@@ -146,7 +146,7 @@ export const Home = ({ env, onBackdropVisibilityChange }: Props) => {
               style={{ "--home-offset": -scroll + "px", "--apps-end-offset": appsEndOffset + "px" }}
             >
               <div class={styles.page} data-home-page data-page={page} data-docked={dockInputs ? "true" : "false"}>
-                <Sections definition={definition} sections={homeSections} />
+                <Sections definition={definition} env={env} items={items} sections={homeSections} />
                 <AppGrid
                   env={env}
                   ids={apps.map((app) => app.id)}

@@ -77,10 +77,10 @@ Watching above a fixed-size, horizontally scrolling app row. Scroll down from
 apps to reach configured inputs. The Standard layout is the default. Cinema
 keeps your Standard app size and arrangement preferences for when you switch back.
 
-When a Continue Watching card is in focus, Cinema shows the title and source
-above the row. The backdrop fades into black and the saved wallpaper returns
-when focus moves away from the card. Cinema can use a separate series backdrop
-while keeping the app or episode image on the card.
+When a Continue Watching card is in focus, Cinema centres its title and source
+vertically between the header and the row. The backdrop fades into black and the
+saved wallpaper returns when focus moves away from the card. Cinema can use a
+separate series backdrop while keeping the app or episode image on the card.
 
 ### Cinema backdrops
 
