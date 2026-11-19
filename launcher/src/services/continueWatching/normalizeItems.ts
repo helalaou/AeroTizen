@@ -1,10 +1,34 @@
 import type { ContinueFeedItem } from "../../contracts/continueWatching";
 import type { ContinueSource } from "../../contracts/launcher";
+import { readImdbId } from "../../shared/continueWatchingArtwork";
 
 const text = (value: unknown, limit: number) => (typeof value === "string" ? value.slice(0, limit) : "");
 const imageUrl = (value: unknown) =>
   typeof value === "string" && /^https?:\/\//i.test(value) ? text(value, 4000) : "";
 const nonnegative = (value: unknown) => (typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : 0);
+
+const readMediaKind = (value: unknown): ContinueFeedItem["mediaKind"] => {
+  switch (value) {
+    case "film":
+    case "movie":
+      return "movie";
+    case "episode":
+    case "series":
+    case "tv":
+      return "tv";
+    default:
+      return undefined;
+  }
+};
+
+const MIN_RELEASE_YEAR = 1000;
+const MAX_RELEASE_YEAR = 9999;
+const readReleaseYear = (value: unknown) => {
+  const year = typeof value === "string" && /^[0-9]{4}$/.test(value) ? Number(value) : value;
+  return typeof year === "number" && Number.isInteger(year) && year >= MIN_RELEASE_YEAR && year <= MAX_RELEASE_YEAR
+    ? year
+    : undefined;
+};
 
 const activity = (value: unknown, now: number) => {
   const number = nonnegative(value);
@@ -39,14 +63,20 @@ export const normalizeContinueItems = (source: ContinueSource, records: unknown,
     }
     const thumbnail = imageUrl(record.thumbnail_url);
     const background = imageUrl(record.background_url);
+    const imdbId = readImdbId(record.imdb_id) ?? (source.supportsSeparateBackdrop ? readImdbId(id) : undefined);
+    const season = nonnegative(record.season);
+    const episode = nonnegative(record.episode);
+    const mediaKind =
+      readMediaKind(record.media_type) ?? readMediaKind(record.content_type) ?? (season || episode ? "tv" : undefined);
+    const releaseYear = readReleaseYear(record.release);
     const item: ContinueFeedItem = {
       key: source.id + ":" + id,
       sourceId: source.id,
       sourceName: source.name,
       sourceIcon: source.icon || "",
       title,
-      season: nonnegative(record.season),
-      episode: nonnegative(record.episode),
+      season,
+      episode,
       payload,
       duration: nonnegative(record.duration),
       playback: nonnegative(record.playback),
@@ -55,6 +85,9 @@ export const normalizeContinueItems = (source: ContinueSource, records: unknown,
       ...(thumbnail ? { thumbnailImage: thumbnail } : {}),
       ...(background ? { backgroundImage: background } : {}),
       ...(background && source.supportsSeparateBackdrop ? { backdropImage: background } : {}),
+      ...(imdbId ? { imdbId } : {}),
+      ...(mediaKind ? { mediaKind } : {}),
+      ...(releaseYear ? { releaseYear } : {}),
     };
     const previous = result.get(id);
     if (!previous || item.timestamp > previous.timestamp) {

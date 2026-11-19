@@ -6,11 +6,16 @@ import { CinemaBackdrop } from "./CinemaBackdrop";
 test("keeps the current artwork visible while its replacement loads", () => {
   const onError = vi.fn();
   const onVisibilityChange = vi.fn();
-  const view = (src?: string) => <CinemaBackdrop src={src} onError={onError} onVisibilityChange={onVisibilityChange} />;
+  const view = (src?: string, pending = false) => (
+    <CinemaBackdrop src={src} pending={pending} onError={onError} onVisibilityChange={onVisibilityChange} />
+  );
   const { container, rerender } = render(view("/first.jpg"));
   const visibleArtwork = () => container.querySelector('[data-cinema-backdrop][data-visible="true"]');
 
   fireEvent.load(container.querySelector('img[src="/first.jpg"]')!);
+  expect(visibleArtwork()?.getAttribute("src")).toBe("/first.jpg");
+
+  rerender(view(undefined, true));
   expect(visibleArtwork()?.getAttribute("src")).toBe("/first.jpg");
 
   rerender(view("/second.jpg"));
