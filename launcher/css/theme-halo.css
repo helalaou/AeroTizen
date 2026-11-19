@@ -198,13 +198,16 @@ body[data-theme="halo"] {
 }
 
 :root:not([data-light-background="true"]) body[data-theme="halo"] {
-  --header-icon-surface: rgba(3, 28, 26, 0.58);
-  --header-icon-shadow: inset 0 0 0 2px rgba(150, 255, 220, 0.14);
   --home-section-heading-text: #fbfffd;
   --weather-location-text: #fff;
   --clock-minimal-date-text: #fff;
   --weather-minimal-text: #fff;
   --input-dock-surface: rgba(7, 31, 28, 0.8);
+}
+
+:root:not([data-light-background="true"]) body[data-theme="halo"] [data-header-shortcuts] > [role="button"] {
+  --header-icon-surface: rgba(3, 28, 26, 0.58);
+  --header-icon-shadow: inset 0 0 0 2px rgba(150, 255, 220, 0.14);
 }
 
 :root:not([data-light-background="true"]) body[data-theme="halo"] [data-header-status] {
