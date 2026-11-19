@@ -24,6 +24,21 @@ test("Cinema switches layouts and follows remote focus across the Home rails", a
       .toBeLessThan(64);
   };
 
+  const expectCentredDetails = async () => {
+    await expect
+      .poll(() =>
+        home.evaluate((node) => {
+          const header = node.querySelector("[data-home-header]").getBoundingClientRect();
+          const row = node.querySelector("#continue-section").getBoundingClientRect();
+          const details = node.querySelector("[data-cinema-feature]").getBoundingClientRect();
+          const above = details.top - header.bottom;
+          const below = row.top - details.bottom;
+          return Math.abs(above - below);
+        }),
+      )
+      .toBeLessThan(2);
+  };
+
   await page.route("https://api.github.com/repos/helalaou/AeroTizen/releases?*", (route) =>
     route.fulfill({ json: [] }),
   );
@@ -85,7 +100,7 @@ test("Cinema switches layouts and follows remote focus across the Home rails", a
     await expect(title).toHaveText("After the Tide");
     await expect(sourceBadge).toHaveText("Netflix");
     await expect(feature).toContainText("S1 E3");
-    const badgeTop = await sourceBadge.evaluate((node) => node.getBoundingClientRect().top);
+    await expectCentredDetails();
     const firstArtwork = await cardArtwork(programmes.first());
     await expect(backdrop).toHaveAttribute("src", firstArtwork);
     await expect(backdrop).toHaveCSS("opacity", "1");
@@ -114,7 +129,7 @@ test("Cinema switches layouts and follows remote focus across the Home rails", a
     await expect(title).toHaveText(/Signal North/);
     const lines = await title.evaluate((node) => node.clientHeight / parseFloat(getComputedStyle(node).lineHeight));
     expect(Math.round(lines)).toBe(3);
-    expect(await sourceBadge.evaluate((node) => node.getBoundingClientRect().top)).toBeCloseTo(badgeTop);
+    await expectCentredDetails();
   });
 
   await test.step("Dock apps on Down and reveal inputs on the next Down", async () => {
@@ -146,6 +161,18 @@ test("Cinema switches layouts and follows remote focus across the Home rails", a
     await expectDocked(focusedProgramme);
     await expect(apps.first()).not.toBeInViewport();
     await expect(backdrop).toBeVisible();
+  });
+
+  await test.step("Centre programme details with taller cards and an expanded header", async () => {
+    await page.evaluate(() => AeroTizen.settings.update({ continueWatchingCoverArt: true }));
+    await expect(page.locator("#continue-items")).toHaveAttribute("data-cover-art", "true");
+    await expectCentredDetails();
+
+    await page.evaluate(() => AeroTizen.settings.update({ clockLayout: "custom" }));
+    await expect(header).toHaveAttribute("data-expanded", "true");
+    await expectCentredDetails();
+
+    await page.evaluate(() => AeroTizen.settings.update({ clockLayout: "classic", continueWatchingCoverArt: false }));
   });
 
   await test.step("Start with apps when Continue Watching is off or empty", async () => {
