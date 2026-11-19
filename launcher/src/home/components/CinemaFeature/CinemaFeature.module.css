@@ -18,7 +18,7 @@
   position: absolute;
   top: 0;
   right: 0;
-  width: 80%;
+  left: 0;
   mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 53%, #0002 74%, transparent 81%);
   pointer-events: none;
 
@@ -29,8 +29,6 @@
   }
 
   [dir="rtl"] & {
-    right: auto;
-    left: 0;
     --cinema-feature-direction: to left;
     --cinema-art-position: top left;
   }
@@ -57,12 +55,16 @@
 
 .details {
   position: absolute;
-  /* Anchor the source row so wrapped titles grow upward. */
-  bottom: 61%;
+  /* Centre the one-line title and source row. Wrapped titles grow upward from the same source row. */
+  bottom: 52%;
   width: 840px;
   -webkit-margin-start: var(--home-side-padding);
   color: var(--home-section-heading-text);
   text-shadow: var(--home-section-heading-shadow);
+
+  [data-home][data-expanded="true"] & {
+    bottom: 42%;
+  }
 }
 
 .title {
