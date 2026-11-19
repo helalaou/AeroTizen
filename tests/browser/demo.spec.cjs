@@ -105,7 +105,7 @@ test("Cinema follows remote focus across the header and rails and preserves Stan
   await page.goto(DEMO_URL);
   await expect(layout).toHaveAttribute("data-layout", "standard");
   const cornerBadge = programmes.first().locator('[data-continue-part="source-badge"]');
-  await expect(cornerBadge).toHaveText("Stremio");
+  await expect(cornerBadge).toHaveText("Netflix");
   const standardBadge = await badgeAppearance(cornerBadge);
 
   await test.step("Select Cinema and reload", async () => {
@@ -149,7 +149,7 @@ test("Cinema follows remote focus across the header and rails and preserves Stan
     expect(clockBounds.y + clockBounds.height).toBeLessThan(railBounds.y);
   });
 
-  await test.step("Fade from a Stremio backdrop to the Netflix and YouTube card images", async () => {
+  await test.step("Fade between the original demo card images", async () => {
     await expect(blackBacking).toHaveCSS("opacity", "0");
     await page.keyboard.press("ArrowDown");
     await expect(programmes.first()).toBeFocused();
@@ -158,7 +158,7 @@ test("Cinema follows remote focus across the header and rails and preserves Stan
     expect(await programmes.first().evaluate((card) => card.offsetWidth / card.offsetHeight)).toBeCloseTo(16 / 9);
     const sourceBadge = hero.locator('[data-continue-part="source-badge"]');
     const title = hero.locator("h1");
-    await expect(sourceBadge).toHaveText("Stremio");
+    await expect(sourceBadge).toHaveText("Netflix");
     expect(await badgeAppearance(sourceBadge)).toEqual(standardBadge);
     await expect(hero).toContainText("S1 E3");
     const badgeTop = await sourceBadge.evaluate((node) => node.getBoundingClientRect().top);
@@ -166,7 +166,8 @@ test("Cinema follows remote focus across the header and rails and preserves Stan
     await expect(backdrop).toHaveCSS("opacity", "1");
     await expect(blackBacking).toHaveCSS("background-color", "rgb(0, 0, 0)");
     await expect(blackBacking).toHaveCSS("opacity", "1");
-    expect(await backdrop.getAttribute("src")).not.toBe(
+    await expect(backdrop).toHaveAttribute(
+      "src",
       await programmes.first().locator('[data-continue-part="image"]').getAttribute("src"),
     );
     await backdrop.evaluate((image) => {
@@ -176,7 +177,7 @@ test("Cinema follows remote focus across the header and rails and preserves Stan
     });
     await page.keyboard.press("ArrowRight");
     await expect(hero.locator("h1")).toHaveText("Paper Moons");
-    await expect(sourceBadge).toHaveText("Netflix");
+    await expect(sourceBadge).toHaveText("Prime Video");
     await expect(launcher.locator("body")).toHaveAttribute("data-test-faded", "true");
     await expect(backdrop).toHaveAttribute(
       "src",

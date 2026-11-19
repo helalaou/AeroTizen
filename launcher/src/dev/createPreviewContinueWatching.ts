@@ -1,122 +1,124 @@
-import type {
-  ContinueFeedItem,
-  ContinueWatchingService,
-  ContinueWatchingSnapshot,
-} from "../contracts/continueWatching";
+import type { ContinueWatchingService, ContinueWatchingSnapshot } from "../contracts/continueWatching";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
-import { normalizeContinueItems } from "../services/continueWatching/normalizeItems";
 import { createStore } from "../shared/state/createStore";
 
 import { previewAppId } from "./previewApps";
 
 const PREVIEW_DURATION_SECONDS = 100;
-const PREVIEW_ITEM_INTERVAL_MS = 60_000;
-const STREMIO_PREVIEW_CONTENT_ID = "tt0000000";
-const artworkDirectory = new URL(import.meta.env.DEV ? "src/dev/artwork/" : "artwork/", window.location.href);
-const artwork = (filename: string) => new URL(filename, artworkDirectory).href;
-
-// Model native feed records and the Stremio record after its artwork enrichment.
+const ARTWORK_MOON_POSITIONS = 5;
+// Fictional metadata and generated artwork belong only to the browser preview.
+/* eslint-disable launcher-i18n/translated-copy -- Programme titles are sample content metadata, like source-provided titles. */
 const programmes = [
   {
-    sourceName: "Stremio",
-    content_id: STREMIO_PREVIEW_CONTENT_ID,
-    content_title: "After the Tide",
+    title: "After the Tide",
+    sourceName: "Netflix",
     season: 1,
     episode: 3,
     playback: 62,
-    image_url: "",
-    thumbnail_url: artwork("after-the-tide.webp"),
-    background_url: artwork("after-the-tide-backdrop.webp"),
-    payload: JSON.stringify({
-      provider: "stremio",
-      type: "series",
-      id: STREMIO_PREVIEW_CONTENT_ID,
-      videoId: STREMIO_PREVIEW_CONTENT_ID + ":1:3",
-      kind: "resume",
-    }),
+    dark: "#142854",
+    light: "#6e9ba8",
   },
   {
-    sourceName: "Netflix",
-    content_id: "paper-moons",
-    content_title: "Paper Moons",
+    title: "Paper Moons",
+    sourceName: "Prime Video",
     season: 0,
     episode: 0,
     playback: 0,
-    image_url: artwork("paper-moons.webp"),
+    dark: "#241a48",
+    light: "#d5837c",
   },
   {
+    title: "The Lantern Trail",
     sourceName: "YouTube",
-    content_id: "lantern-trail",
-    content_title: "The Lantern Trail",
     season: 2,
     episode: 1,
     playback: 83,
-    image_url: artwork("lantern-trail.webp"),
+    dark: "#0e3531",
+    light: "#bbaf63",
   },
   {
+    title: "Signal North and the Last Broadcast from the Edge of the World",
     sourceName: "Apple TV",
-    content_id: "signal-north",
-    content_title: "Signal North and the Last Broadcast from the Edge of the World",
     season: 0,
     episode: 0,
     playback: 43,
-    image_url: artwork("signal-north.webp"),
+    dark: "#20345b",
+    light: "#7baad9",
   },
   {
+    title: "A Quiet Orbit",
     sourceName: "Prime Video",
-    content_id: "quiet-orbit",
-    content_title: "A Quiet Orbit",
     season: 0,
     episode: 0,
     playback: 16,
-    image_url: artwork("quiet-orbit.webp"),
+    dark: "#34233d",
+    light: "#b998ba",
   },
   {
+    title: "The Coral Archive",
     sourceName: "Disney+",
-    content_id: "coral-archive",
-    content_title: "The Coral Archive",
     season: 1,
     episode: 2,
     playback: 35,
-    image_url: artwork("coral-archive.webp"),
+    dark: "#17404d",
+    light: "#e09979",
   },
   {
+    title: "Midnight Dispatch",
     sourceName: "Apple TV",
-    content_id: "midnight-dispatch",
-    content_title: "Midnight Dispatch",
     season: 1,
     episode: 4,
     playback: 72,
-    image_url: new URL("assets/weather/night.jpg", window.location.href).href,
+    dark: "#292045",
+    light: "#a287cb",
   },
 ] as const;
-
-const previewSource = (name: (typeof programmes)[number]["sourceName"]) => {
-  const id = previewAppId(name);
-  return Object.freeze({ id, name, storeId: id, status: "", supportsSeparateBackdrop: name === "Stremio" });
-};
+/* eslint-enable launcher-i18n/translated-copy */
 
 export const previewContinueSources = Object.freeze(
   [...new Set(programmes.map((programme) => programme.sourceName))]
     .sort((left, right) => left.localeCompare(right))
-    .map(previewSource),
+    .map((name) => Object.freeze({ id: previewAppId(name), name, storeId: previewAppId(name), status: "" })),
 );
+
+const artwork = (dark: string, light: string, index: number) => {
+  const position = index % ARTWORK_MOON_POSITIONS;
+  return (
+    "data:image/svg+xml," +
+    encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+      <defs><linearGradient id="sky" x2="0" y2="1">
+        <stop stop-color="${dark}"/><stop offset="1" stop-color="${light}"/>
+      </linearGradient></defs>
+      <path fill="url(#sky)" d="M0 0h640v360H0z"/>
+      <circle cx="${143 + 87 * position}" cy="${128 - 13 * position}" r="${43 + 6 * position}" fill="#fff5d8" opacity=".78"/>
+      <path fill="${dark}" opacity=".6" d="M0 240 112 157 237 247 390 152 540 234 640 170V360H0Z"/>
+      <path fill="${dark}" d="M0 284 130 227 280 300 432 221 640 279V360H0Z"/>
+    </svg>
+  `)
+  );
+};
 
 export const createPreviewContinueWatching = (
   runtime: Pick<LauncherRuntime, "settings" | "toast" | "translate">,
 ): ContinueWatchingService => {
-  const now = Date.now();
-  const items = programmes.reduce<ContinueFeedItem[]>((items, { sourceName, ...record }, index) => {
-    const source = previewSource(sourceName);
-    const feedRecord = {
-      app_id: source.storeId,
-      duration: PREVIEW_DURATION_SECONDS,
-      timestamp: now - index * PREVIEW_ITEM_INTERVAL_MS,
-      payload: "watch?id=" + record.content_id,
-      ...record,
-    };
-    return items.concat(normalizeContinueItems(source, [feedRecord], now).map((item) => Object.freeze(item)));
-  }, []);
+  const items = Object.freeze(
+    programmes.map(({ title, sourceName, season, episode, playback, dark, light }, index) =>
+      Object.freeze({
+        key: "demo-" + index,
+        title,
+        sourceId: previewAppId(sourceName),
+        sourceName,
+        season,
+        episode,
+        duration: PREVIEW_DURATION_SECONDS,
+        playback,
+        image: artwork(dark, light, index),
+        payload: "",
+        timestamp: 0,
+      }),
+    ),
+  );
   const store = createStore<ContinueWatchingSnapshot>(
     Object.freeze({ items: Object.freeze([]), messageKey: "", sources: previewContinueSources }),
   );
