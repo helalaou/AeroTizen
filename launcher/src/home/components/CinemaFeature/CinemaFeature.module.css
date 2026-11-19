@@ -18,9 +18,9 @@
   position: absolute;
   top: 0;
   right: 0;
-  width: 1168px;
-  height: 657px;
-  mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 74%, transparent);
+  width: 1248px;
+  height: 702px;
+  mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 66%, #0002 93%, transparent);
   pointer-events: none;
 
   [dir="rtl"] & {
@@ -36,7 +36,7 @@
   height: 100%;
   object-fit: contain;
   object-position: var(--cinema-art-position, top right);
-  mask-image: linear-gradient(var(--cinema-feature-direction, to right), transparent, #0008 24%, #000 52%);
+  mask-image: linear-gradient(var(--cinema-feature-direction, to right), transparent, #0003 12%, #000a 34%, #000 56%);
   transition: opacity var(--motion-duration-backdrop) ease-in-out;
 }
 
