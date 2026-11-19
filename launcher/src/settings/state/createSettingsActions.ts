@@ -87,6 +87,7 @@ export const createSettingsActions = (
     setPerformanceMode: (performanceMode) => commit({ performanceMode }, services.applyBackground),
     setWeatherPhoto: (weatherPhoto) => commit({ weatherPhoto }, services.applyBackground),
     setContinueWatching: (continueWatching) => commit({ continueWatching }),
+    setContinueWatchingHeadingVisible: (showContinueWatchingHeading) => commit({ showContinueWatchingHeading }),
     toggleContinueApp(id) {
       const selected = settings.getSnapshot().continueWatchingApps;
       commit({
@@ -112,6 +113,7 @@ export const createSettingsActions = (
     },
     setNumerals: (numerals) => commit({ numerals }, services.applyClock),
     setNetworkVisible: (showNetwork) => commit({ showNetwork }),
+    setInputsHeadingVisible: (showInputsHeading) => commit({ showInputsHeading }),
     setLiveTvVisible: (showLiveTv) => commit({ showLiveTv }),
     setHomeCardColumns: (homeCardColumns) => commit({ homeCardColumns }, services.applyCardSize),
     setHomeAppLayout: (homeAppLayout) => commit({ homeAppLayout }, services.applyCardSize),

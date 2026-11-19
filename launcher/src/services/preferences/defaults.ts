@@ -29,6 +29,8 @@ export const DEFAULT_SETTINGS: SettingsDefaults = {
   timeZone: "tv",
   continueWatching: false,
   continueWatchingApps: [],
+  showContinueWatchingHeading: true,
+  showInputsHeading: true,
   showLiveTv: true,
   hideDisconnectedHdmi: false,
   hdmiKeepVisible: {},

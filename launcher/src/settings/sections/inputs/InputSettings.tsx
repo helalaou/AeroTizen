@@ -26,6 +26,14 @@ export const InputSettings = ({ settings, actions, inputs }: Props) => {
           onChange={actions.setLiveTvVisible}
         />
       </SettingsField>
+      <SettingsField title={t("inputs.showHeading")}>
+        <SettingsToggle
+          focusKey="inputs-heading-visibility"
+          label={t("inputs.showHeading")}
+          checked={settings.showInputsHeading}
+          onChange={actions.setInputsHeadingVisible}
+        />
+      </SettingsField>
       <SettingsField title={t("inputs.hideDisconnected")} description={t("inputs.hdmiHint")}>
         <SettingsToggle
           focusKey="input-visibility"

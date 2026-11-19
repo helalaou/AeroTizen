@@ -9,17 +9,20 @@ import styles from "./InputDock.module.css";
 export const InputDock = ({
   env,
   inputs,
+  showHeading,
   visible,
 }: {
   env: HomeEnvironment;
   inputs: readonly InputSource[];
+  showHeading: boolean;
   visible: boolean;
 }) => {
   const { t } = useTranslation();
+  const title = t("common.inputs");
   const compact = inputs.length < 5;
   return (
-    <section id="inputs-section" data-home-section="inputs" hidden={!visible || !inputs.length}>
-      <HomeSectionHeading title={t("common.inputs")} />
+    <section id="inputs-section" data-home-section="inputs" aria-label={title} hidden={!visible || !inputs.length}>
+      {showHeading && <HomeSectionHeading title={title} />}
       <div id="inputs" class={styles.dock} data-input-dock data-compact={compact ? "true" : "false"}>
         {inputs.map((source) => (
           <InputCard key={env.runtime.inputs.portName(source)} env={env} source={source} compact={compact} />

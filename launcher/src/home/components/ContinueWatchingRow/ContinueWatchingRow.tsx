@@ -11,20 +11,23 @@ import styles from "./ContinueWatchingRow.module.css";
 export const ContinueWatchingRow = ({
   env,
   items,
+  showHeading,
   visible,
 }: {
   env: HomeEnvironment;
   items: readonly ContinueItem[];
+  showHeading: boolean;
   visible: boolean;
 }) => {
   const { t } = useTranslation();
+  const title = t("home.continueWatching");
   const continueOffset = useStoreSelector(env.state, (state) => state.continueOffset);
   return (
-    <section id="continue-section" hidden={!visible || !items.length}>
-      <HomeSectionHeading title={t("home.continueWatching")} />
+    <section id="continue-section" aria-label={title} hidden={!visible || !items.length}>
+      {showHeading && <HomeSectionHeading title={title} />}
       <HorizontalScroller
         id="continue-items"
-        label={t("home.continueWatching")}
+        label={title}
         trackClass={styles.track}
         trackRef={env.continueItems}
         viewportRef={env.continueViewport}
