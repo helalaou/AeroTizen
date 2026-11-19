@@ -67,6 +67,7 @@ then select **Stremio** in Continue Watching.
 In **Settings → Apps → Continue Watching**, turn on **Cover art** to show portrait
 cards in Standard and Cinema. The launcher looks up Cinemeta posters for visible
 cards. A title without a poster keeps its source artwork inside the portrait card.
+In Standard, portrait cards omit the title and progress below the artwork.
 
 ## Cinema layout
 
