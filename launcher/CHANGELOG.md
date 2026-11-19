@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.2](https://github.com/helalaou/AeroTizen/compare/launcher-v3.3.1...launcher-v3.3.2) (2026-11-19)
+
+
+### Bug Fixes
+
+* **launcher:** report IP Control failures in support logs ([#306](https://github.com/helalaou/AeroTizen/issues/306)) ([6be4ca8](https://github.com/helalaou/AeroTizen/commit/6be4ca82a727b58241a751c6fce9fc619ff89103))
+
 ## [3.3.1](https://github.com/helalaou/AeroTizen/compare/launcher-v3.3.0...launcher-v3.3.1) (2026-11-18)
 
 
