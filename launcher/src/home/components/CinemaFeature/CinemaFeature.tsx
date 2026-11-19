@@ -1,5 +1,6 @@
-import { useState } from "preact/hooks";
+import { useLayoutEffect, useState } from "preact/hooks";
 
+import type { ContinueBackdrop } from "../../../contracts/continueWatching";
 import type { ContinueItem } from "../../../contracts/launcher";
 import { cardArtwork } from "../../../shared/continueWatchingArtwork";
 import { useStoreSelector } from "../../../shared/hooks/useStore";
@@ -20,16 +21,29 @@ export const CinemaFeature = ({ env, items, onBackdropVisibilityChange }: Props)
   const { t } = useTranslation();
   const selected = useStoreSelector(env.state, (state) => (state.active ? state.selected : ""));
   const item = items.find((item) => "continue:" + item.key === selected);
+  const service = env.runtime.continueWatching;
+  const [resolved, setResolved] = useState<{ item: ContinueItem; result: ContinueBackdrop }>();
   const [failed, setFailed] = useState<{ item: ContinueItem; urls: readonly string[] }>();
+  useLayoutEffect(() => {
+    if (item) {
+      return service.watchBackdrop?.(item, (result) => setResolved({ item, result }));
+    }
+  }, [item, service]);
+  const lookup = resolved?.item === item ? resolved?.result : undefined;
+  const awaitingArtwork = !!service.watchBackdrop && lookup?.status !== "ready";
   const backdrop =
     item &&
-    [item.backdropImage, ...cardArtwork(item).map(({ src }) => src)].find(
-      (url) => url && (failed?.item !== item || !failed.urls.includes(url)),
-    );
+    !awaitingArtwork &&
+    [
+      lookup?.status === "ready" ? lookup.url : undefined,
+      item.backdropImage,
+      ...cardArtwork(item).map(({ src }) => src),
+    ].find((url) => url && (failed?.item !== item || !failed.urls.includes(url)));
   return (
     <div class={styles.feature} aria-hidden="true">
       <CinemaBackdrop
-        src={backdrop}
+        src={backdrop || undefined}
+        pending={Boolean(item && awaitingArtwork)}
         onVisibilityChange={onBackdropVisibilityChange}
         onError={(url) => {
           if (item) {
