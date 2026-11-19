@@ -18,10 +18,15 @@
   position: absolute;
   top: 0;
   right: 0;
-  width: 1248px;
-  height: 702px;
-  mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 66%, #0002 93%, transparent);
+  width: 80%;
+  mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 53%, #0002 74%, transparent 81%);
   pointer-events: none;
+
+  &::before {
+    content: "";
+    display: block;
+    padding-top: 56.25%;
+  }
 
   [dir="rtl"] & {
     right: auto;
