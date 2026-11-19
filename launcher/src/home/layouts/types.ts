@@ -4,17 +4,14 @@ import type { ContinueItem } from "../../contracts/launcher";
 import type { HomeLayoutDefinition, HomeSection } from "../../shared/homeLayout";
 import type { HomeEnvironment } from "../types";
 
-interface ProgrammeProps {
-  readonly env: HomeEnvironment;
-  readonly items: readonly ContinueItem[];
-}
-
-export interface HomeLayoutSectionsProps extends ProgrammeProps {
+export interface HomeLayoutSectionsProps {
   readonly definition: HomeLayoutDefinition;
   readonly sections: Readonly<Record<HomeSection, { readonly content: VNode; readonly visible: boolean }>>;
 }
 
-interface ProgrammeFeatureProps extends ProgrammeProps {
+interface ProgrammeFeatureProps {
+  readonly env: HomeEnvironment;
+  readonly items: readonly ContinueItem[];
   onBackdropVisibilityChange(visible: boolean): void;
 }
 

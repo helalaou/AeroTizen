@@ -28,12 +28,13 @@ test("Cinema switches layouts and follows remote focus across the Home rails", a
     await expect
       .poll(() =>
         home.evaluate((node) => {
-          const header = node.querySelector("[data-home-header]").getBoundingClientRect();
+          const shortcuts = node.querySelector("[data-header-shortcuts]").getBoundingClientRect();
+          const tabs = node.querySelector("[data-header-tabs]").getBoundingClientRect();
           const row = node.querySelector("#continue-section").getBoundingClientRect();
           const details = node.querySelector("[data-cinema-feature]").getBoundingClientRect();
-          const above = details.top - header.bottom;
+          const above = details.top - Math.max(shortcuts.bottom, tabs.bottom);
           const below = row.top - details.bottom;
-          return Math.abs(above - below);
+          return Math.max(Math.abs(above - below), -above, -below);
         }),
       )
       .toBeLessThan(2);
@@ -168,7 +169,7 @@ test("Cinema switches layouts and follows remote focus across the Home rails", a
     await expect(page.locator("#continue-items")).toHaveAttribute("data-cover-art", "true");
     await expectCentredDetails();
 
-    await page.evaluate(() => AeroTizen.settings.update({ clockLayout: "custom" }));
+    await page.evaluate(() => AeroTizen.settings.update({ clockLayout: "custom", aeroClockStyle: "bold" }));
     await expect(header).toHaveAttribute("data-expanded", "true");
     await expectCentredDetails();
 
