@@ -51,6 +51,16 @@
       }
     },
     {
+      "key": "canal-plus",
+      "name": "CANAL+",
+      "variants": [
+        {
+          "appId": "QmpwflxWdt.CanalPlusLauncher",
+          "storeId": "3202010022094"
+        }
+      ]
+    },
+    {
       "key": "channel-4",
       "name": "Channel 4",
       "variants": [
@@ -86,6 +96,16 @@
       "legacy": {
         "artworkNames": ["disney+"]
       }
+    },
+    {
+      "key": "france-tv",
+      "name": "france.tv",
+      "variants": [
+        {
+          "appId": "QY16tZ64E3.francetv",
+          "storeId": "3202103023232"
+        }
+      ]
     },
     {
       "key": "hulu",
