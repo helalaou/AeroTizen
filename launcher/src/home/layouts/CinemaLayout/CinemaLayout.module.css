@@ -13,6 +13,10 @@
     padding-top: 0;
   }
 
+  [data-cover-art="true"] {
+    --continue-artwork-height: 324px;
+  }
+
   [data-app-grid][data-page="home"] {
     --app-column-gap: var(--cinema-rail-gap);
     --app-card-size: calc((var(--cinema-programme-width) - var(--app-column-gap)) / 2);
