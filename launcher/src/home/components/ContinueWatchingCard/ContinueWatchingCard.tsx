@@ -94,7 +94,7 @@ export const ContinueWatchingCard = memo(
           )}
           {showDetails && <ContinueWatchingSourceBadge env={env} item={item} />}
         </div>
-        {showDetails && (
+        {showDetails && !coverArt && (
           <>
             <div
               class={styles.progress}
