@@ -171,9 +171,12 @@ test("Cinema follows remote focus across the header and rails and preserves Stan
     await expect(wallpaper).toHaveCSS("animation-play-state", "paused");
     await expect(backdrop).toHaveCSS("object-fit", "contain");
     const artworkBounds = await backdrop.boundingBox();
-    const cardBounds = await programmes.first().boundingBox();
-    expect(artworkBounds.x).toBeGreaterThan(cardBounds.x + cardBounds.width);
-    expect(artworkBounds.y + artworkBounds.height).toBeLessThan(cardBounds.y + cardBounds.height / 2);
+    const layoutBounds = await layout.boundingBox();
+    const appBounds = await apps.first().boundingBox();
+    expect(artworkBounds.width / artworkBounds.height).toBeCloseTo(16 / 9);
+    expect(artworkBounds.x).toBeGreaterThan(layoutBounds.x);
+    expect(artworkBounds.x + artworkBounds.width).toBeCloseTo(layoutBounds.x + layoutBounds.width, 0);
+    expect(artworkBounds.y + artworkBounds.height).toBeLessThan(appBounds.y);
     await expect(backdrop).toHaveAttribute(
       "src",
       await programmes.first().locator('[data-continue-part="image"]').getAttribute("src"),
