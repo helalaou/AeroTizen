@@ -80,6 +80,12 @@ objects, and fixed options live outside the component. Data snapshots use read-o
 contracts. Navigation replaces position objects and app order arrays when they change.
 Private geometry buffers and DOM ref registries remain local to navigation.
 
+`shared/homeLayout.ts` defines layout IDs, settings choices, section order, app
+arrangement and vertical scroll mode. Home rendering and remote navigation
+read the same ordered groups, including sections below the first screen.
+`home/layouts` supplies the rendering and CSS for each layout. Shared cards
+receive presentation options and keep their focus and launch behaviour.
+
 ## Preference ownership
 
 `services/createSettingsService.ts` owns preferences, immutable snapshots and persistence.

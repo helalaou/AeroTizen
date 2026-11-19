@@ -1,4 +1,4 @@
 .track {
   position: relative;
-  grid-gap: var(--cinema-rail-gap, 24px);
+  grid-gap: var(--continue-row-gap, 24px);
 }

@@ -1,4 +1,5 @@
 import { APP_CARD_SIZE_OPTIONS } from "../../shared/apps/appCardSizes";
+import { getHomeLayout, HOME_LAYOUT_OPTIONS } from "../../shared/homeLayout";
 import { useTranslation } from "../../shared/i18n/useTranslation";
 import { ChoiceGroup } from "../components/ChoiceGroup";
 import { SettingsField } from "../components/SettingsField/SettingsField";
@@ -21,14 +22,9 @@ const HOME_APP_LAYOUT_OPTIONS = [
   { value: "scroll", labelKey: "appearance.scroll" },
 ] as const;
 
-const HOME_LAYOUT_OPTIONS = [
-  { value: "standard", labelKey: "appearance.standardLayout" },
-  { value: "cinema", labelKey: "appearance.cinemaLayout" },
-] as const;
-
 export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) => {
   const { t } = useTranslation();
-  const cinema = settings.homeLayout === "cinema";
+  const appArrangement = getHomeLayout(settings.homeLayout).appArrangement;
   return (
     <>
       <SettingsField title={t("appearance.launcherLayout")}>
@@ -58,7 +54,7 @@ export const AppearanceSettings = ({ settings, actions }: SettingsSectionProps) 
           onSelect={(value) => actions.setHomeCardColumns(Number(value))}
         />
       </SettingsField>
-      <SettingsField title={t("appearance.homeLayout")} hidden={cinema}>
+      <SettingsField title={t("appearance.homeLayout")} hidden={appArrangement !== "preference"}>
         <ChoiceGroup
           id="home-app-layout"
           label={t("appearance.homeLayout")}

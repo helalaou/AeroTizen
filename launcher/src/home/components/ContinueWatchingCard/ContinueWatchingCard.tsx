@@ -14,12 +14,12 @@ import styles from "./ContinueWatchingCard.module.css";
 const MIN_PLAYBACK_SECONDS = 1;
 
 interface Props {
-  cinema?: boolean;
   env: HomeEnvironment;
   item: ContinueItem;
+  showDetails?: boolean;
 }
 
-export const ContinueWatchingCard = memo(({ env, item, cinema = false }: Props) => {
+export const ContinueWatchingCard = memo(({ env, item, showDetails = true }: Props) => {
   const { t } = useTranslation();
   const episode =
     item.season > 0 && item.episode > 0 ? t("continue.episode", { season: item.season, episode: item.episode }) : "";
@@ -34,7 +34,6 @@ export const ContinueWatchingCard = memo(({ env, item, cinema = false }: Props) 
       env={env}
       controlKey={"continue:" + item.key}
       dataKey={item.key}
-      dataAttributes={{ "data-cinema-card": cinema ? "true" : "false" }}
       className={styles.card}
       title={
         episode
@@ -54,9 +53,9 @@ export const ContinueWatchingCard = memo(({ env, item, cinema = false }: Props) 
             onError={artwork.onError}
           />
         )}
-        {!cinema && <ContinueWatchingSourceBadge env={env} item={item} />}
+        {showDetails && <ContinueWatchingSourceBadge env={env} item={item} />}
       </div>
-      {!cinema && (
+      {showDetails && (
         <>
           <div
             class={styles.progress}

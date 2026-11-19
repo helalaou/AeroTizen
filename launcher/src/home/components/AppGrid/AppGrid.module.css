@@ -56,11 +56,4 @@
         var(--app-columns)
     );
   }
-
-  &[data-cinema-rail="true"] {
-    --app-column-gap: var(--cinema-rail-gap);
-    --app-card-size: calc((var(--cinema-programme-width) - var(--app-column-gap)) / 2);
-
-    margin: 0;
-  }
 }
