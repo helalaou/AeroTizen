@@ -92,7 +92,7 @@ const getVerticalColumn = ({
   if (row === 0) {
     return 0;
   }
-  const column = rows[row].indexOf(selected);
+  const column = row === 0 ? 0 : rows[row].indexOf(selected);
   if (!getViewport(selected) && !getViewport(rows[target][0])) {
     return column;
   }
