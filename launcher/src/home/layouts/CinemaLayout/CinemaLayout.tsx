@@ -3,20 +3,15 @@ import type { HomeLayoutSectionsProps, HomeLayoutView } from "../types";
 
 import styles from "./CinemaLayout.module.css";
 
-const CinemaSections = ({ appsAvailable, definition, sections, visible }: HomeLayoutSectionsProps) => (
+const CinemaSections = ({ definition, sections }: HomeLayoutSectionsProps) => (
   <>
-    <div class={styles.landing} hidden={!visible}>
-      {definition.main.map((section) =>
-        section === "apps" ? (
-          <div key={section} class={styles.apps} hidden={!appsAvailable}>
-            {sections.apps}
-          </div>
-        ) : (
-          sections[section]
-        ),
-      )}
-    </div>
-    {definition.belowFold.map((section) => sections[section])}
+    {[...definition.main, ...definition.belowFold]
+      .filter((section) => sections[section].visible)
+      .map((section) => (
+        <div key={section} class={styles.rail} data-home-scroll-anchor>
+          {sections[section].content}
+        </div>
+      ))}
   </>
 );
 

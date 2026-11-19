@@ -72,32 +72,41 @@ export const Home = ({ env, onBackdropVisibilityChange }: Props) => {
     settings.aeroClockStyle,
   ]);
   const homeSections = {
-    apps: (
-      <AppGrid
-        key="apps"
-        env={env}
-        ids={visibleHome}
-        apps={apps}
-        settings={settings}
-        page="home"
-        shown={onHome}
-        active={active}
-        label={t("home.homeApps")}
-      />
-    ),
-    continueWatching: (
-      <ContinueWatchingRow
-        key="continueWatching"
-        env={env}
-        items={items}
-        showDetails={showProgrammeDetails}
-        showHeading={settings.showContinueWatchingHeading}
-        visible={showContinueWatching}
-      />
-    ),
-    inputs: (
-      <InputDock key="inputs" env={env} inputs={inputs} visible={onHome} showHeading={settings.showInputsHeading} />
-    ),
+    apps: {
+      visible: onHome && visibleHome.length > 0,
+      content: (
+        <AppGrid
+          key="apps"
+          env={env}
+          ids={visibleHome}
+          apps={apps}
+          settings={settings}
+          page="home"
+          shown={onHome}
+          active={active}
+          label={t("home.homeApps")}
+        />
+      ),
+    },
+    continueWatching: {
+      visible: showContinueWatching,
+      content: (
+        <ContinueWatchingRow
+          key="continueWatching"
+          env={env}
+          items={items}
+          showDetails={showProgrammeDetails}
+          showHeading={settings.showContinueWatchingHeading}
+          visible={showContinueWatching}
+        />
+      ),
+    },
+    inputs: {
+      visible: onHome && inputs.length > 0,
+      content: (
+        <InputDock key="inputs" env={env} inputs={inputs} visible={onHome} showHeading={settings.showInputsHeading} />
+      ),
+    },
   };
   return (
     <div
@@ -135,12 +144,7 @@ export const Home = ({ env, onBackdropVisibilityChange }: Props) => {
               style={{ "--home-offset": -scroll + "px", "--apps-end-offset": appsEndOffset + "px" }}
             >
               <div class={styles.page} data-home-page data-page={page} data-docked={dockInputs ? "true" : "false"}>
-                <Sections
-                  appsAvailable={visibleHome.length > 0}
-                  definition={definition}
-                  sections={homeSections}
-                  visible={onHome}
-                />
+                <Sections definition={definition} sections={homeSections} />
                 <AppGrid
                   env={env}
                   ids={apps.map((app) => app.id)}

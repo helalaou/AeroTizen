@@ -23,10 +23,10 @@ const homeLayouts = {
   },
   cinema: {
     appArrangement: "scroll",
-    belowFold: ["inputs"],
+    belowFold: ["apps", "inputs"],
     dockInputsWhenSpaceAllows: false,
     labelKey: "appearance.cinemaLayout",
-    main: ["continueWatching", "apps"],
+    main: ["continueWatching"],
     scroll: "native",
   },
 } as const satisfies Readonly<Record<string, HomeLayoutDefinition>>;
