@@ -164,6 +164,7 @@
   "continue.settings": "Impostazioni Continua a guardare",
   "continue.showHeading": "Mostra il titolo Continua a guardare",
   "continue.hint": "Mostra i programmi salvati dalle app scelte.",
+  "continue.coverArt": "Locandine",
   "continue.chooseApps": "Scegli le app qui sotto. Gli elenchi si aggiornano al ritorno ad {{appName}}.",
   "apps.show": "Mostra nel menu app",
   "apps.hint": "Premi OK per mostrare o nascondere una scheda nella Home. Nella Home, tieni premuto OK su una scheda per spostarla.",

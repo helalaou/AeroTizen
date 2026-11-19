@@ -33,12 +33,13 @@ export interface ContinueWatchingPlatform {
   subscribeVisibility(listener: () => void): () => void;
 }
 
-export type ContinueBackdrop = { readonly status: "pending" } | { readonly status: "ready"; readonly url?: string };
+export type ContinueArtwork = { readonly status: "pending" } | { readonly status: "ready"; readonly url?: string };
 
 export interface ContinueWatchingService extends Store<ContinueWatchingSnapshot> {
   dispose(): void;
   open(item: ContinueItem): void;
   refresh(choicesChanged?: boolean): void;
   start(): void;
-  watchBackdrop?(item: ContinueItem, show: (result: ContinueBackdrop) => void): () => void;
+  watchBackdrop?(item: ContinueItem, show: (result: ContinueArtwork) => void): () => void;
+  watchPoster?(item: ContinueItem, show: (result: ContinueArtwork) => void): () => void;
 }

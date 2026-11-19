@@ -1,4 +1,8 @@
 .track {
   position: relative;
   grid-gap: var(--continue-row-gap, 24px);
+
+  &[data-cover-art="true"] {
+    --continue-card-width: calc(var(--continue-artwork-height, 233px) * 2 / 3);
+  }
 }

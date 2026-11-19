@@ -164,6 +164,7 @@
   "continue.settings": "Paramètres de Continuer à regarder",
   "continue.showHeading": "Afficher le titre Continuer à regarder",
   "continue.hint": "Afficher les programmes enregistrés des applications choisies.",
+  "continue.coverArt": "Affiches",
   "continue.chooseApps": "Choisissez les applications ci-dessous. Les listes se mettent à jour quand vous revenez sur {{appName}}.",
   "apps.show": "Afficher dans le menu des applis",
   "apps.hint": "Appuyez sur OK pour afficher ou masquer une vignette sur l’écran d’accueil. Sur l’écran d’accueil, maintenez OK sur une vignette pour la déplacer.",
