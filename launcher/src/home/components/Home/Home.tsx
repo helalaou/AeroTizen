@@ -1,14 +1,14 @@
 import { ArrowUp } from "lucide-preact";
 import { useLayoutEffect } from "preact/hooks";
 
-import { usesHomeAppRail } from "../../../shared/homeLayout";
+import { getHomeLayout, usesHomeAppRail } from "../../../shared/homeLayout";
 import { useStore, useStoreSelector } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { Icon } from "../../../shared/icons/Icon/Icon";
+import { getHomeLayoutView } from "../../layouts/homeLayoutViews";
 import type { HomeEnvironment } from "../../types";
 import { AppActionsMenu } from "../AppActionsMenu/AppActionsMenu";
 import { AppGrid } from "../AppGrid/AppGrid";
-import { CinemaFeature } from "../CinemaFeature/CinemaFeature";
 import { ContinueWatchingRow } from "../ContinueWatchingRow/ContinueWatchingRow";
 import { HomeControl } from "../HomeControl/HomeControl";
 import { HomeHeader } from "../HomeHeader/HomeHeader";
@@ -30,16 +30,18 @@ export const Home = ({ env, onBackdropVisibilityChange }: Props) => {
   const draft = useStoreSelector(env.state, (state) => state.draft);
   const scroll = useStoreSelector(env.state, (state) => state.scroll);
   const { apps, inputs, items, ready } = useStore(env.inventory);
-  const cinema = settings.homeLayout === "cinema";
-  const cinemaHome = cinema && page === "home";
+  const definition = getHomeLayout(settings.homeLayout);
+  const { ProgrammeFeature, Sections, rootClass, showProgrammeDetails } = getHomeLayoutView(settings.homeLayout);
+  const onHome = page === "home";
+  const scrollMode = onHome ? definition.scroll : "offset";
   const home = draft || (settings.homeInitialized ? settings.home : [env.runtime.config.FIREPLACE_ID]);
   const visibleHome = home.filter(
     (id) => id === env.runtime.config.FIREPLACE_ID || !ready || apps.some((app) => app.id === id),
   );
-  const showContinueWatching = page === "home" && settings.continueWatching && items.length > 0;
+  const showContinueWatching = onHome && settings.continueWatching && items.length > 0;
   const dockInputs =
-    page === "home" &&
-    !cinema &&
+    onHome &&
+    definition.dockInputsWhenSpaceAllows &&
     inputs.length > 0 &&
     !showContinueWatching &&
     visibleHome.length > 0 &&
@@ -47,14 +49,14 @@ export const Home = ({ env, onBackdropVisibilityChange }: Props) => {
   const atAppsEnd = page === "apps" && scroll === appsEndOffset;
   useLayoutEffect(() => {
     const viewport = env.viewport.current;
-    if (!cinemaHome && viewport?.scrollTop) {
+    if (scrollMode === "offset" && viewport?.scrollTop) {
       viewport.scrollTop = 0;
     }
     env.bridge.focus();
   }, [
     env,
     page,
-    cinemaHome,
+    scrollMode,
     apps,
     inputs,
     items,
@@ -69,37 +71,44 @@ export const Home = ({ env, onBackdropVisibilityChange }: Props) => {
     settings.clockLayout,
     settings.aeroClockStyle,
   ]);
-  const continueWatching = (
-    <ContinueWatchingRow
-      env={env}
-      items={items}
-      showHeading={settings.showContinueWatchingHeading}
-      visible={showContinueWatching}
-      cinema={cinema}
-    />
-  );
-  const homeApps = (
-    <AppGrid
-      env={env}
-      ids={visibleHome}
-      apps={apps}
-      settings={settings}
-      page="home"
-      shown={page === "home"}
-      active={active}
-      label={t("home.homeApps")}
-    />
-  );
+  const homeSections = {
+    apps: (
+      <AppGrid
+        key="apps"
+        env={env}
+        ids={visibleHome}
+        apps={apps}
+        settings={settings}
+        page="home"
+        shown={onHome}
+        active={active}
+        label={t("home.homeApps")}
+      />
+    ),
+    continueWatching: (
+      <ContinueWatchingRow
+        key="continueWatching"
+        env={env}
+        items={items}
+        showDetails={showProgrammeDetails}
+        showHeading={settings.showContinueWatchingHeading}
+        visible={showContinueWatching}
+      />
+    ),
+    inputs: (
+      <InputDock key="inputs" env={env} inputs={inputs} visible={onHome} showHeading={settings.showInputsHeading} />
+    ),
+  };
   return (
     <div
-      class={styles.home}
+      class={onHome && rootClass ? styles.home + " " + rootClass : styles.home}
       data-home
       data-layout={settings.homeLayout}
-      data-cinema-home={cinemaHome ? "true" : undefined}
+      data-scroll-mode={scrollMode}
       data-expanded={settings.clockLayout === "custom" ? "true" : "false"}
     >
-      {cinemaHome && showContinueWatching && (
-        <CinemaFeature env={env} items={items} onBackdropVisibilityChange={onBackdropVisibilityChange} />
+      {ProgrammeFeature && showContinueWatching && (
+        <ProgrammeFeature env={env} items={items} onBackdropVisibilityChange={onBackdropVisibilityChange} />
       )}
       <HomeHeader env={env} />
       <div
@@ -126,16 +135,12 @@ export const Home = ({ env, onBackdropVisibilityChange }: Props) => {
               style={{ "--home-offset": -scroll + "px", "--apps-end-offset": appsEndOffset + "px" }}
             >
               <div class={styles.page} data-home-page data-page={page} data-docked={dockInputs ? "true" : "false"}>
-                {cinema ? (
-                  <div class={styles.cinemaLanding} hidden={!cinemaHome}>
-                    {continueWatching}
-                    <div class={styles.cinemaApps} hidden={!visibleHome.length}>
-                      {homeApps}
-                    </div>
-                  </div>
-                ) : (
-                  homeApps
-                )}
+                <Sections
+                  appsAvailable={visibleHome.length > 0}
+                  definition={definition}
+                  sections={homeSections}
+                  visible={onHome}
+                />
                 <AppGrid
                   env={env}
                   ids={apps.map((app) => app.id)}
@@ -149,13 +154,6 @@ export const Home = ({ env, onBackdropVisibilityChange }: Props) => {
                 <p id="apps-empty" class={styles.empty} hidden={page === "home" || apps.length > 0}>
                   {t("home.emptyApps")}
                 </p>
-                {!cinema && continueWatching}
-                <InputDock
-                  env={env}
-                  inputs={inputs}
-                  visible={page === "home"}
-                  showHeading={settings.showInputsHeading}
-                />
               </div>
               {page === "apps" && apps.length > 0 && (
                 <HomeControl

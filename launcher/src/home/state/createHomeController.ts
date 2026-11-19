@@ -1,5 +1,5 @@
 import { getAppGridColumns } from "../../shared/apps/appCardSizes";
-import { usesHomeAppRail } from "../../shared/homeLayout";
+import { getHomeLayout, usesHomeAppRail } from "../../shared/homeLayout";
 import { createInputScope } from "../../shared/input/createInputScope";
 import { focusControl } from "../../shared/navigation/focusControl";
 import { createStore } from "../../shared/state/createStore";
@@ -140,7 +140,7 @@ export const createHomeController = (
   let timer: number | undefined;
   let enterDown = false;
   let started = false;
-  let cinemaInputsRevealed = false;
+  let belowFoldRevealed = false;
   const cancelPress = () => {
     if (timer !== undefined) {
       window.clearTimeout(timer);
@@ -181,7 +181,7 @@ export const createHomeController = (
     return null;
   };
   const sourceKey = (source: { type: string; number?: number }) => "input:" + source.type + ":" + source.number;
-  const rows = (): readonly (readonly string[])[] => {
+  const rows = () => {
     const preferences = settings.getSnapshot();
     const { page } = state.getSnapshot();
     const columns = getAppGridColumns(preferences.homeCardColumns, page);
@@ -191,18 +191,28 @@ export const createHomeController = (
     const appRows = Array.from({ length: Math.ceil(all.length / rowLength) }, (_, index) =>
       all.slice(index * rowLength, (index + 1) * rowLength),
     );
-    const appLayout = [HEADER_KEYS, ...appRows];
+    const allRows: (readonly string[])[] = [HEADER_KEYS];
     if (page === "apps") {
-      return appKeys.length ? [...appLayout, ["back-to-top"]] : appLayout;
+      allRows.push(...appRows);
+      if (appKeys.length) {
+        allRows.push(["back-to-top"]);
+      }
+      return { allRows, belowFoldStart: allRows.length, scroll: "offset" as const };
     }
     const { items, inputs } = inventory.getSnapshot();
     const continueRows =
       preferences.continueWatching && items.length ? [items.map((item) => "continue:" + item.key)] : [];
     const inputRows = inputs.length ? [inputs.map(sourceKey)] : [];
-    if (preferences.homeLayout === "cinema") {
-      return [HEADER_KEYS, ...continueRows, ...appRows, ...inputRows];
+    const layout = getHomeLayout(preferences.homeLayout);
+    const sectionRows = { apps: appRows, continueWatching: continueRows, inputs: inputRows };
+    for (const section of layout.main) {
+      allRows.push(...sectionRows[section]);
     }
-    return [...appLayout, ...continueRows, ...inputRows];
+    const belowFoldStart = allRows.length;
+    for (const section of layout.belowFold) {
+      allRows.push(...sectionRows[section]);
+    }
+    return { allRows, belowFoldStart, scroll: layout.scroll };
   };
   const focus = () => {
     if (document.hidden || runtime.settingsUi?.isOpen()) {
@@ -219,7 +229,7 @@ export const createHomeController = (
       update({ menu: null });
       cancelPress();
     }
-    const list = rows();
+    const { allRows: list, belowFoldStart, scroll: scrollMode } = rows();
     const old = state.getSnapshot().selected;
     const selected = getSelectedKey(list, old, started);
     if (list[1]?.length) {
@@ -247,17 +257,17 @@ export const createHomeController = (
       );
       update({ [scroller.offset]: offset });
     }
-    if (pending.page === "home" && settings.getSnapshot().homeLayout === "cinema") {
+    if (scrollMode === "native") {
       const viewport = env.viewport.current;
-      const revealInputs = selected.startsWith("input:");
+      const revealBelowFold = list.some((row, index) => index >= belowFoldStart && row.includes(selected));
       if (viewport) {
-        if (revealInputs) {
+        if (revealBelowFold) {
           viewport.scrollTop = viewport.scrollHeight;
-        } else if (cinemaInputsRevealed || viewport.scrollTop !== 0) {
+        } else if (belowFoldRevealed || viewport.scrollTop !== 0) {
           viewport.scrollTop = 0;
         }
       }
-      cinemaInputsRevealed = revealInputs;
+      belowFoldRevealed = revealBelowFold;
       update({ appsEndOffset: 0, scroll: 0 });
       return;
     }
@@ -440,7 +450,7 @@ export const createHomeController = (
         }
         return;
       }
-      const all = rows();
+      const { allRows: all } = rows();
       const row = all.findIndex((items) => items.includes(current.selected));
       if (row < 0) {
         focus();

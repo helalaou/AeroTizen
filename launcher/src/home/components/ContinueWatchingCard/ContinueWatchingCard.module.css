@@ -1,7 +1,7 @@
 .card {
   position: relative;
-  flex: 0 0 414px;
-  width: 414px;
+  flex: 0 0 var(--continue-card-width, 414px);
+  width: var(--continue-card-width, 414px);
   border-radius: var(--continue-card-radius, 10px);
   overflow: hidden;
   cursor: pointer;
@@ -32,8 +32,8 @@
 
 .artwork {
   position: relative;
-  width: 414px;
-  height: 233px;
+  width: 100%;
+  height: var(--continue-artwork-height, 233px);
   background: var(--continue-artwork-surface);
 
   &::after {
@@ -111,15 +111,4 @@
 .progressFill {
   height: 100%;
   background: var(--focus);
-}
-
-.card[data-cinema-card="true"] {
-  --continue-card-rest-scale: 1;
-
-  width: var(--cinema-programme-width);
-
-  .artwork {
-    width: 100%;
-    height: calc(var(--cinema-programme-width) * 9 / 16);
-  }
 }
