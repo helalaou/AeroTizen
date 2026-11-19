@@ -99,6 +99,8 @@ export const normalizeSettings = (
         : defaults.timeFormat || locale.timeFormat(),
     continueWatching: boolean(data.continueWatching, defaults.continueWatching),
     continueWatchingApps: ids(data.continueWatchingApps, 100),
+    showContinueWatchingHeading: boolean(data.showContinueWatchingHeading, defaults.showContinueWatchingHeading),
+    showInputsHeading: boolean(data.showInputsHeading, defaults.showInputsHeading),
     showLiveTv: boolean(data.showLiveTv, defaults.showLiveTv),
     hideDisconnectedHdmi: boolean(data.hideDisconnectedHdmi, defaults.hideDisconnectedHdmi),
     hdmiKeepVisible: dictionary<boolean>(data.hdmiKeepVisible, "boolean"),
