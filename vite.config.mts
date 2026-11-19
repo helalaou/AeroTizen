@@ -160,10 +160,7 @@ const developmentEntry: Plugin = {
   },
   transformIndexHtml: {
     order: "pre",
-    handler(html, context) {
-      if (context.path === "/src/dev/demo.html") {
-        return html.replace('data-src="launcher.html"', 'data-src="/"');
-      }
+    handler(html) {
       return html
         .replace('    <link rel="stylesheet" href="js/launcher-ui.css" />\n', "")
         .replace('<script src="js/launcher-ui.js"></script>', '<script type="module" src="/src/dev.ts"></script>');

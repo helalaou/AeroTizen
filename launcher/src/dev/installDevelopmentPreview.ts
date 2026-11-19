@@ -11,8 +11,6 @@ const DEFAULT_HOME_APPS = ["YouTube", "Netflix", "Prime Video", "Disney+", "Appl
 // Explicit adapters and native SDK fixtures keep their own setup.
 if (!("tizen" in window) && !runtime.platforms) {
   const config = runtime.config;
-  const params = new URLSearchParams(window.location.search);
-  const cinema = params.get("layout") === "cinema";
   runtime.config = {
     ...config,
     DEFAULTS: {
@@ -21,7 +19,6 @@ if (!("tizen" in window) && !runtime.platforms) {
       theme: "glass",
       homeCardColumns: PREVIEW_SMALL_CARD_COLUMNS,
       homeAppLayout: "scroll",
-      ...(cinema ? { homeLayout: "cinema" } : {}),
       home: DEFAULT_HOME_APPS.map(previewAppId),
     },
   };
