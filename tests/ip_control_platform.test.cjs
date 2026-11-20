@@ -3,10 +3,11 @@ const assert = require("node:assert/strict");
 const { loadTypeScript } = require("./helpers/load_typescript.cjs");
 const { createIpControlPlatform } = loadTypeScript("launcher/src/platform/tizen/createIpControlPlatform.ts");
 
-function harness() {
+function harness({ sendError } = {}) {
   const timers = new Map();
   const listeners = new Map();
   const messages = [];
+  const diagnostics = [];
   let nextId = 0;
   let start;
   const local = {
@@ -20,6 +21,7 @@ function harness() {
     },
   };
   const platform = createIpControlPlatform({
+    diagnostic: (event, data) => diagnostics.push({ event, data }),
     setTimeout(fn) {
       const id = ++nextId;
       timers.set(id, fn);
@@ -43,6 +45,7 @@ function harness() {
             assert.equal(name, "AeroTizen.IpControlProbe");
             return {
               sendMessage(items) {
+                if (sendError) throw sendError;
                 messages.push(items);
               },
             };
@@ -54,6 +57,7 @@ function harness() {
   return {
     platform,
     messages,
+    diagnostics,
     listeners,
     timers,
     ready: () => start(),
@@ -90,6 +94,7 @@ test("disposal settles requests and prevents late readiness or replies from send
     assert.equal(h.listeners.size, 0);
     assert.equal(h.timers.size, 0);
     assert.equal(await h.platform.request({ action: "list" }), null);
+    assert.deepEqual(h.diagnostics, []);
   }
 });
 
@@ -101,4 +106,26 @@ test("a request timeout releases the trusted message listener", async () => {
   assert.equal(await request, null);
   assert.equal(h.listeners.size, 0);
   assert.equal(h.timers.size, 0);
+  assert.deepEqual(h.diagnostics, [
+    {
+      event: "ip_control.message_failed",
+      data: { action: "switch", reason: "message_reply_timeout", error: undefined },
+    },
+  ]);
+});
+
+test("a message send error is reported without including the exception message", async () => {
+  const sendError = Object.assign(new Error("PRIVATE TV DETAILS"), { name: "SecurityError" });
+  const h = harness({ sendError });
+  const request = h.platform.request({ action: "list" });
+  h.ready();
+  assert.equal(await request, null);
+  assert.equal(h.listeners.size, 0);
+  assert.equal(h.timers.size, 0);
+  assert.deepEqual(h.diagnostics, [
+    {
+      event: "ip_control.message_failed",
+      data: { action: "list", reason: "message_request_send_failed", error: "SecurityError" },
+    },
+  ]);
 });

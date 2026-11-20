@@ -71,6 +71,7 @@ export interface SettingsActions {
   setBackground(background: string): void;
   setClockLayout(layout: "classic" | SettingsValues["aeroClockStyle"]): void;
   setContinueWatching(enabled: boolean): void;
+  setContinueWatchingHeadingVisible(visible: boolean): void;
   setDateFormat(format: DateFormat): void;
   setDateVisible(visible: boolean): void;
   setGradientStop(stop: 0 | 1): void;
@@ -78,6 +79,7 @@ export interface SettingsActions {
   setHdmiVisibility(hide: boolean): void;
   setHomeAppLayout(layout: SettingsValues["homeAppLayout"]): void;
   setHomeCardColumns(columns: number): void;
+  setInputsHeadingVisible(visible: boolean): void;
   setLiveTvVisible(visible: boolean): void;
   setLocation(location: WeatherLocation | null): void;
   setLocationVisible(visible: boolean): void;

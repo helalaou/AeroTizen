@@ -959,9 +959,14 @@ export const onStart = () => {
   started = true;
   diagnostics.record("service.start");
   try {
-    disposeIpControl = require("./ip-control")(typeof tizen !== "undefined" ? tizen : null);
-  } catch {
-    // IP Control is optional; HomeWatcher remains available without messaging APIs.
+    disposeIpControl = require("./ip-control")(typeof tizen !== "undefined" ? tizen : null, (event, data) =>
+      diagnostics.record(event, data),
+    );
+  } catch (error) {
+    diagnostics.record("ip_control.start_failed", {
+      reason: "ip_control_initialization_failed",
+      error: object(error)?.name,
+    });
   }
   setTimeout(function () {
     diagnosticContext.start();
