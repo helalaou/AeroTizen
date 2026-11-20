@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.1](https://github.com/helalaou/AeroTizen/compare/cli-v3.1.0...cli-v3.1.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* **cli:** use SDB model when HTTP metadata is blank ([#304](https://github.com/helalaou/AeroTizen/issues/304)) ([bd8f7bf](https://github.com/helalaou/AeroTizen/commit/bd8f7bf699c09f24196b46a3600f4463b22a3a6a))
+* **launcher:** report IP Control failures in support logs ([#306](https://github.com/helalaou/AeroTizen/issues/306)) ([6be4ca8](https://github.com/helalaou/AeroTizen/commit/6be4ca82a727b58241a751c6fce9fc619ff89103))
+
 ## [3.1.0](https://github.com/helalaou/AeroTizen/compare/cli-v3.0.1...cli-v3.1.0) (2026-11-18)
 
 
