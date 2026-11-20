@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.4.0](https://github.com/helalaou/AeroTizen/compare/launcher-v3.3.2...launcher-v3.4.0) (2026-11-20)
+
+
+### Features
+
+* **launcher:** add Home section heading toggles ([#309](https://github.com/helalaou/AeroTizen/issues/309)) ([19d2512](https://github.com/helalaou/AeroTizen/commit/19d2512aec962659dd525b5ed5091c752c843d5a))
+
+
+### Bug Fixes
+
+* **launcher:** remove button styling from the Halo network icon ([#311](https://github.com/helalaou/AeroTizen/issues/311)) ([59d00af](https://github.com/helalaou/AeroTizen/commit/59d00af4ced764ec652c81b257abb55c58eadca9))
+
 ## [3.3.2](https://github.com/helalaou/AeroTizen/compare/launcher-v3.3.1...launcher-v3.3.2) (2026-11-19)
 
 
