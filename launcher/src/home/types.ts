@@ -52,4 +52,5 @@ export interface HomeEnvironment {
   state: MutableStore<HomeState>;
   status: StatusStores;
   updates: LauncherUpdateNotice;
+  viewport: RefObject<HTMLDivElement>;
 }

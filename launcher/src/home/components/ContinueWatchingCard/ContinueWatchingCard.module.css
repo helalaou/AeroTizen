@@ -1,11 +1,11 @@
 .card {
   position: relative;
-  flex: 0 0 414px;
-  width: 414px;
+  flex: 0 0 var(--continue-card-width, 414px);
+  width: var(--continue-card-width, 414px);
   border-radius: var(--continue-card-radius, 10px);
   overflow: hidden;
   cursor: pointer;
-  transform: translateZ(0) scale(0.98);
+  transform: translateZ(0) scale(var(--continue-card-rest-scale, 0.98));
   transform-origin: center;
   transition: transform var(--motion-duration-continue-focus) cubic-bezier(0.2, 0.72, 0.25, 1);
   background: var(--continue-surface);
@@ -32,8 +32,8 @@
 
 .artwork {
   position: relative;
-  width: 414px;
-  height: 233px;
+  width: 100%;
+  height: var(--continue-artwork-height, 233px);
   background: var(--continue-artwork-surface);
 
   &::after {
@@ -60,25 +60,6 @@
   &[data-fit="cover"] {
     object-fit: cover;
   }
-}
-
-.sourceBadge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  flex: 0 0 auto;
-  width: 56px;
-  height: 56px;
-  overflow: hidden;
-  border-radius: var(--continue-badge-radius, 7px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--app-placeholder-surface);
-  box-shadow: var(--continue-badge-shadow);
-  transform: translateZ(0);
-  transition: transform var(--motion-duration-focus) ease-out;
-  pointer-events: none;
 }
 
 .label {

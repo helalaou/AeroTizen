@@ -22,16 +22,21 @@ const item: ContinueItem = {
   playback: 0.001,
 };
 
-test("prefers the episode thumbnail and falls back to series artwork on error", () => {
-  renderWithEnglish(<ContinueWatchingCard env={createCardEnvironment()} item={item} />);
-  const card = screen.getByRole("button", { name: /Stremio programme.*Stremio/ });
-  const image = () => card.querySelector<HTMLImageElement>("[data-continue-part=image]")!;
-  expect(image().getAttribute("src")).toBe(item.thumbnailImage);
-  expect(image().getAttribute("data-fit")).toBe("cover");
-  fireEvent.error(image());
-  expect(image().getAttribute("src")).toBe(item.backgroundImage);
-  expect(image().getAttribute("data-fit")).toBe("cover");
-});
+test.each([false, true])(
+  "prefers the thumbnail and falls back to series artwork with showDetails=%s",
+  (showDetails) => {
+    renderWithEnglish(<ContinueWatchingCard env={createCardEnvironment()} item={item} showDetails={showDetails} />);
+    const card = screen.getByRole("button", { name: /Stremio programme.*Stremio/ });
+    const image = () => card.querySelector<HTMLImageElement>("[data-continue-part=image]")!;
+    expect(image().getAttribute("src")).toBe(item.thumbnailImage);
+    expect(image().getAttribute("data-fit")).toBe("cover");
+    fireEvent.error(image());
+    expect(image().getAttribute("src")).toBe(item.backgroundImage);
+    expect(image().getAttribute("data-fit")).toBe("cover");
+    fireEvent.error(image());
+    expect(image().getAttribute("src")).toBe(item.image);
+  },
+);
 
 test("omits the progress fill for sub-second playback", () => {
   const env = createCardEnvironment();

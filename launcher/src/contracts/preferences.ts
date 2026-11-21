@@ -1,3 +1,4 @@
+import type { HomeAppArrangement, HomeLayoutId } from "../shared/homeLayout";
 import type { Store } from "../shared/state/createStore";
 
 export type TimeFormat = "12" | "24";
@@ -31,8 +32,9 @@ export interface SettingsValues {
   hdmiKeepVisible: Record<string, boolean>;
   hideDisconnectedHdmi: boolean;
   home: string[];
-  homeAppLayout: "grid" | "scroll";
+  homeAppLayout: HomeAppArrangement;
   homeCardColumns: number;
+  homeLayout: HomeLayoutId;
   inputNames: Record<string, string>;
   language: string;
   numerals: "latn" | "arab";

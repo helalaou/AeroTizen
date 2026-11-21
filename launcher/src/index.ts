@@ -237,7 +237,10 @@ try {
     runtime,
     platform,
     { home, settings: settingsHost },
-    { home: mountHome, settings: mountSettings },
+    {
+      home: (...args) => mountHome(...args, backgrounds.setCinemaBackdropVisible),
+      settings: mountSettings,
+    },
     createLauncherUpdates(version.trim()),
     settings,
   );

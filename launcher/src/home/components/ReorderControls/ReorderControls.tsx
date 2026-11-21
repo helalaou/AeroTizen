@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-preact";
 
+import { usesHomeAppRail } from "../../../shared/homeLayout";
 import { useStore } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { Icon } from "../../../shared/icons/Icon/Icon";
@@ -19,11 +20,12 @@ export const ReorderControls = ({ env, id }: { env: HomeEnvironment; id: string 
   const ids = draft || settings.home;
   const index = ids.indexOf(id);
   const columns = settings.homeCardColumns;
+  const grid = !usesHomeAppRail(settings);
   const allowed = {
     left: language === "ar" ? index < ids.length - 1 : index > 0,
     right: language === "ar" ? index > 0 : index < ids.length - 1,
-    up: settings.homeAppLayout !== "scroll" && index >= columns,
-    down: settings.homeAppLayout !== "scroll" && index + columns < ids.length,
+    up: grid && index >= columns,
+    down: grid && index + columns < ids.length,
   };
   return (
     <>
