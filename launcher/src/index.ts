@@ -32,6 +32,7 @@ import { createSamsungContinueWatchingProvider } from "./platform/tizen/createSa
 import { createStremioContinueWatchingProvider } from "./platform/tizen/createStremioContinueWatchingProvider";
 import { createWeatherPlatform } from "./platform/tizen/createWeatherPlatform";
 import { defaultTemperatureUnit } from "./platform/tizen/defaultTemperatureUnit";
+import { createCinemetaBackdropLookup } from "./services/continueWatching/createCinemetaBackdropLookup";
 import { createAppsService } from "./services/createAppsService";
 import { createClockService } from "./services/createClockService";
 import { createContinueWatchingService } from "./services/createContinueWatchingService";
@@ -175,6 +176,17 @@ const continueWatching =
   runtime.continueWatching ||
   createContinueWatchingService({
     apps: runtime.apps,
+    backdrops: createCinemetaBackdropLookup({
+      createRequest: () => new XMLHttpRequest(),
+      excludedSourceIds: new Set(
+        appCatalog.apps.find(({ key }) => key === "youtube")?.variants.map(({ appId }) => appId),
+      ),
+      storage: {
+        getItem: (key) => localStorage.getItem(key),
+        setItem: (key, value) => localStorage.setItem(key, value),
+      },
+      timers: window,
+    }),
     clock,
     elapsed: () => performance.now(),
     now: () => Date.now(),
