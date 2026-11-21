@@ -4,7 +4,7 @@ import { createPreviewContinueWatching, previewContinueSources } from "./createP
 import { createPreviewPlatforms } from "./createPreviewPlatforms";
 import { previewAppId } from "./previewApps";
 
-const PREVIEW_SMALL_CARD_COLUMNS = 5;
+const PREVIEW_MEDIUM_CARD_COLUMNS = 5;
 const PREVIEW_MISSING_HDMI_PORT = 5;
 const DEFAULT_HOME_APPS = ["YouTube", "Netflix", "Prime Video", "Disney+", "Apple TV", "Stremio"] as const;
 
@@ -17,7 +17,7 @@ if (!("tizen" in window) && !runtime.platforms) {
       continueWatching: true,
       continueWatchingApps: previewContinueSources.map((source) => source.id),
       theme: "glass",
-      homeCardColumns: PREVIEW_SMALL_CARD_COLUMNS,
+      homeCardColumns: PREVIEW_MEDIUM_CARD_COLUMNS,
       homeAppLayout: "scroll",
       home: DEFAULT_HOME_APPS.map(previewAppId),
     },

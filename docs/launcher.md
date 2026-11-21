@@ -14,7 +14,7 @@ These browser previews use sample data.
 
 ## Personalise Home
 
-- **Appearance.** Choose **Small**, **Medium**, or **Large** under **App size**.
+- **Appearance.** Choose an **App size** from **Tiny** to **Very large**.
   Choose **Grid** or **Scroll** under **Home app layout**.
 - **Backgrounds.** Choose a solid colour, gradient, or animated background. Select
   **Custom** under **Solid colour** or **Gradients** to make your own. Adjust the
