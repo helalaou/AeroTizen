@@ -68,6 +68,7 @@ export const Home = ({ env, onBackdropVisibilityChange }: Props) => {
     settings.homeAppLayout,
     settings.homeLayout,
     settings.continueWatching,
+    settings.continueWatchingCoverArt,
     settings.clockLayout,
     settings.aeroClockStyle,
   ]);
@@ -95,6 +96,7 @@ export const Home = ({ env, onBackdropVisibilityChange }: Props) => {
           key="continueWatching"
           env={env}
           items={items}
+          coverArt={settings.continueWatchingCoverArt}
           showDetails={showProgrammeDetails}
           showHeading={settings.showContinueWatchingHeading}
           visible={showContinueWatching}

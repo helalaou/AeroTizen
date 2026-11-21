@@ -87,6 +87,7 @@ export const createSettingsActions = (
     setPerformanceMode: (performanceMode) => commit({ performanceMode }, services.applyBackground),
     setWeatherPhoto: (weatherPhoto) => commit({ weatherPhoto }, services.applyBackground),
     setContinueWatching: (continueWatching) => commit({ continueWatching }),
+    setContinueWatchingCoverArt: (continueWatchingCoverArt) => commit({ continueWatchingCoverArt }),
     setContinueWatchingHeadingVisible: (showContinueWatchingHeading) => commit({ showContinueWatchingHeading }),
     toggleContinueApp(id) {
       const selected = settings.getSnapshot().continueWatchingApps;

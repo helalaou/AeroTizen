@@ -1,23 +1,24 @@
 import type { AppsService } from "../contracts/apps";
 import type {
+  ContinueArtwork,
   ContinueFeedItem,
   ContinueWatchingPlatform,
   ContinueWatchingProvider,
   ContinueWatchingService,
   ContinueWatchingSnapshot,
 } from "../contracts/continueWatching";
-import type { ClockService, ContinueSource } from "../contracts/launcher";
+import type { ClockService, ContinueItem, ContinueSource } from "../contracts/launcher";
 import type { SettingsStore } from "../contracts/preferences";
 import { createStore } from "../shared/state/createStore";
 import { equalRecord } from "../shared/state/equalRecord";
 import { snapshotList } from "../shared/state/snapshotList";
 
-import type { createCinemetaBackdropLookup } from "./continueWatching/createCinemetaBackdropLookup";
+import type { createCinemetaArtworkLookup } from "./continueWatching/createCinemetaArtworkLookup";
 import { normalizeContinueItems } from "./continueWatching/normalizeItems";
 
 interface ContinueWatchingDependencies {
   apps: Pick<AppsService, "getSnapshot" | "subscribeDiscovery">;
-  backdrops?: ReturnType<typeof createCinemetaBackdropLookup>;
+  artwork?: ReturnType<typeof createCinemetaArtworkLookup>;
   clock: Pick<ClockService, "subscribe">;
   elapsed(): number;
   now(): number;
@@ -40,7 +41,7 @@ const byName = (left: ContinueSource, right: ContinueSource) => left.name.locale
 
 export const createContinueWatchingService = ({
   apps,
-  backdrops,
+  artwork,
   clock,
   elapsed,
   now,
@@ -284,6 +285,32 @@ export const createContinueWatchingService = ({
     const preferences = settings.getSnapshot();
     return JSON.stringify([preferences.continueWatching, preferences.continueWatchingApps]);
   };
+  const watchArtwork = (kind: "backdrop" | "poster", item: ContinueItem, show: (result: ContinueArtwork) => void) => {
+    const watch = kind === "backdrop" ? artwork?.watch : artwork?.watchPoster;
+    if (disposed || !watch || !items.some((entry) => entry === item)) {
+      show({ status: "ready" });
+      return () => {};
+    }
+    const update = () => {
+      const active = items.find((entry) => entry === item);
+      const preferences = settings.getSnapshot();
+      const enabled = kind === "backdrop" ? preferences.homeLayout === "cinema" : preferences.continueWatchingCoverArt;
+      if (!disposed && active && enabled && !platform.isHidden()) {
+        return watch(active, show);
+      }
+      show({ status: "ready" });
+      return undefined;
+    };
+    let stop = update();
+    const unsubscribe = platform.subscribeVisibility(() => {
+      stop?.();
+      stop = update();
+    });
+    return () => {
+      unsubscribe();
+      stop?.();
+    };
+  };
   return {
     getSnapshot: store.getSnapshot,
     subscribe: store.subscribe,
@@ -294,29 +321,8 @@ export const createContinueWatchingService = ({
         candidates.get(active.sourceId)?.provider.open(active);
       }
     },
-    watchBackdrop(item, show) {
-      if (disposed || !backdrops || !items.some((entry) => entry === item)) {
-        show({ status: "ready" });
-        return () => {};
-      }
-      const update = () => {
-        const active = items.find((entry) => entry === item);
-        if (!disposed && active && settings.getSnapshot().homeLayout === "cinema" && !platform.isHidden()) {
-          return backdrops.watch(active, show);
-        }
-        show({ status: "ready" });
-        return undefined;
-      };
-      let stop = update();
-      const unsubscribe = platform.subscribeVisibility(() => {
-        stop?.();
-        stop = update();
-      });
-      return () => {
-        unsubscribe();
-        stop?.();
-      };
-    },
+    watchBackdrop: (item, show) => watchArtwork("backdrop", item, show),
+    watchPoster: (item, show) => watchArtwork("poster", item, show),
     start() {
       if (started || disposed) {
         return;
@@ -345,7 +351,7 @@ export const createContinueWatchingService = ({
         return;
       }
       disposed = true;
-      backdrops?.cancel();
+      artwork?.cancel();
       cancel();
       providers.forEach((provider) => provider.dispose?.());
       unsubscribers.forEach((unsubscribe) => unsubscribe());

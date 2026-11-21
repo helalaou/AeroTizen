@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS: SettingsDefaults = {
   timeZone: "tv",
   continueWatching: false,
   continueWatchingApps: [],
+  continueWatchingCoverArt: false,
   showContinueWatchingHeading: true,
   showInputsHeading: true,
   showLiveTv: true,

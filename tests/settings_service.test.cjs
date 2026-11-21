@@ -95,9 +95,16 @@ test("old fields use defaults on load and cannot affect runtime updates", () => 
   assert.equal(h.service.getSnapshot().theme, "glass");
   assert.equal(h.service.getSnapshot().dateFormat, "iso");
   assert.equal(h.service.getSnapshot().homeLayout, "standard");
-  h.service.update({ homeCardColumns: 5, homeLayout: "cinema", home: ["current.app"] });
+  assert.equal(h.service.getSnapshot().continueWatchingCoverArt, false);
+  h.service.update({
+    homeCardColumns: 5,
+    homeLayout: "cinema",
+    continueWatchingCoverArt: true,
+    home: ["current.app"],
+  });
   const current = h.service.getSnapshot();
   assert.equal(current.homeLayout, "cinema");
+  assert.equal(current.continueWatchingCoverArt, true);
   h.service.update(oldFields);
   assert.equal(h.service.getSnapshot(), current);
   const saved = JSON.parse(h.data.get("aerotizen.settings.v1"));
