@@ -127,6 +127,68 @@ test("Prime uses the feed year to identify a remake and reuses the match with th
   assert.equal(expired.requests.length, 1);
 });
 
+test("a confirmed miss falls back immediately for another episode until it expires", async () => {
+  const values = new Map();
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
+  const lifetimeMs = 24 * 60 * 60 * 1000;
+  let now = 1_700_000_000_000;
+  const item = feedItem({});
+  const first = harness({ now: () => now, storage });
+  first.watch(item);
+  first.tick();
+  first.requests[0].respond({ metas: [] });
+  await settle();
+  assert.equal(first.states.at(-1).status, "ready");
+  assert.equal(first.states.at(-1).url, undefined);
+
+  first.watch(item);
+  first.tick();
+  assert.deepEqual(first.states.at(-1), { status: "ready" });
+  assert.equal(first.requests.length, 1);
+
+  now += lifetimeMs - 1;
+  const otherEpisode = feedItem({ content_id: "sibling-episode", episode: 3 });
+  const warm = harness({ now: () => now, storage });
+  warm.watch(otherEpisode);
+  warm.tick();
+  assert.deepEqual(warm.states, [{ status: "ready" }]);
+  assert.equal(warm.requests.length, 0);
+
+  now++;
+  const expired = harness({ now: () => now, storage });
+  expired.watch(otherEpisode);
+  expired.tick();
+  assert.deepEqual(expired.states, [{ status: "pending" }]);
+  assert.equal(expired.requests.length, 1);
+  const asset = backdrop("tt1234567");
+  expired.requests[0].respond({ metas: [{ name: "A Show", background: asset }] });
+  await settle();
+  assert.deepEqual(expired.states.at(-1), { status: "ready", url: asset });
+});
+
+test("a partial catalogue result stays retryable after a timeout or an incomplete response", async () => {
+  const h = harness();
+  const item = feedItem({ season: 0, episode: 0 });
+  h.watch(item);
+  h.tick();
+  h.requests[0].respond({ metas: [] });
+  h.requests[1].ontimeout();
+  await settle();
+
+  h.watch(item);
+  h.tick();
+  assert.equal(h.requests.length, 4);
+  assert.deepEqual(h.states.at(-1), { status: "pending" });
+  h.requests[2].respond({ metas: [] });
+  h.requests[3].respond({ metas: [{ background: backdrop("tt1234567") }] });
+  await settle();
+
+  h.watch(item);
+  h.tick();
+  assert.equal(h.requests.length, 6);
+  assert.deepEqual(h.states.at(-1), { status: "pending" });
+});
+
 test("an unknown media kind checks both catalogues and rejects titles that match both", async () => {
   const h = harness();
   const item = feedItem({ season: 0, episode: 0 });

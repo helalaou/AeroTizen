@@ -4,6 +4,8 @@ import type { Candidate } from "./backdropMetadata";
 import { asRecord, titleKey } from "./backdropMetadata";
 import type { CacheStorage } from "./createBackdropCache";
 import { createBackdropCache } from "./createBackdropCache";
+import { createCinemetaMissCache } from "./createCinemetaMissCache";
+import { findCinemetaMatch } from "./findCinemetaMatch";
 
 const CINEMETA_API = "https://v3-cinemeta.strem.io";
 const CACHE_KEY = "aerotizen.continueWatching.cinemetaBackdrops.v1";
@@ -12,7 +14,6 @@ const METAHUB_BACKDROP =
 const FOCUS_DELAY_MS = 250;
 const REQUEST_TIMEOUT_MS = 4_000;
 const MAX_RESPONSE_CHARACTERS = 512_000;
-const LEADING_RELEASE_YEAR = /^([0-9]{4})\b/;
 
 const getCatalogueType = (kind: ContinueFeedItem["mediaKind"]) => {
   switch (kind) {
@@ -23,39 +24,6 @@ const getCatalogueType = (kind: ContinueFeedItem["mediaKind"]) => {
     default:
       return ["movie", "series"];
   }
-};
-
-const selectBackdrop = (item: ContinueFeedItem, results: readonly (Candidate | undefined)[]) => {
-  if (item.imdbId) {
-    const matches = results.map((result) => asRecord(result?.meta)).filter((meta) => meta?.id === item.imdbId);
-    return matches.length === 1 ? matches[0]?.background : undefined;
-  }
-
-  const exactTitle = titleKey(item.title);
-  const matches: Candidate[] = [];
-  for (const result of results) {
-    if (!Array.isArray(result?.metas)) {
-      return undefined;
-    }
-    for (const row of result.metas as unknown[]) {
-      const candidate = asRecord(row);
-      if (candidate && titleKey(candidate.name) === exactTitle) {
-        matches.push(candidate);
-      }
-    }
-  }
-  if (matches.length === 1) {
-    return matches[0].background;
-  }
-  // A feed year can describe an episode. Use it only to distinguish identical titles.
-  if (item.releaseYear) {
-    const byYear = matches.filter(
-      ({ releaseInfo }) =>
-        typeof releaseInfo === "string" && Number(LEADING_RELEASE_YEAR.exec(releaseInfo)?.[1]) === item.releaseYear,
-    );
-    return byYear.length === 1 ? byYear[0].background : undefined;
-  }
-  return undefined;
 };
 
 interface Dependencies {
@@ -76,6 +44,7 @@ export const createCinemetaBackdropLookup = ({
   timers,
 }: Dependencies) => {
   const cache = createBackdropCache(storageKey, (url) => (METAHUB_BACKDROP.test(url) ? url : undefined), now, storage);
+  const misses = createCinemetaMissCache(storageKey, now, storage);
   let cancelActive = () => {};
   return {
     cancel: () => cancelActive(),
@@ -106,6 +75,11 @@ export const createCinemetaBackdropLookup = ({
       const matchingArtwork = cache.reuse(item.key, matchKey);
       if (matchingArtwork) {
         show({ status: "ready", url: matchingArtwork });
+        return () => {};
+      }
+
+      if (misses.has(matchKey)) {
+        show({ status: "ready" });
         return () => {};
       }
 
@@ -142,19 +116,22 @@ export const createCinemetaBackdropLookup = ({
         });
 
       const load = async () => {
-        let image: unknown;
+        let match: Candidate | null | undefined;
         try {
           const title = item.imdbId ? undefined : encodeURIComponent(item.title.trim());
           const paths = getCatalogueType(item.mediaKind).map((type) =>
             item.imdbId ? `/meta/${type}/${item.imdbId}.json` : `/catalog/${type}/top/search=${title}.json`,
           );
-          image = selectBackdrop(item, await Promise.all(paths.map(read)));
+          match = findCinemetaMatch(item, await Promise.all(paths.map(read)));
         } catch {
           // Display source art if the catalogue cannot be read.
         }
         if (active) {
           active = false;
-          show({ status: "ready", url: cache.remember(item.key, image, matchKey) });
+          if (match === null) {
+            misses.remember(matchKey);
+          }
+          show({ status: "ready", url: cache.remember(item.key, match?.background, matchKey) });
         }
       };
       const timer = timers.setTimeout(() => void load(), FOCUS_DELAY_MS);

@@ -80,7 +80,8 @@ When you focus a Continue Watching card in Cinema, the launcher checks its local
 backdrop cache. A missing or expired entry can trigger a Cinemeta lookup for a
 movie or show by IMDb ID or title. The launcher uses the release year if it needs
 to distinguish titles with the same name. It saves the image reference by app ID
-and content ID for up to 30 days.
+and content ID for up to 30 days. A complete title search with no match uses the
+source app’s artwork for 24 hours before it can search again.
 
 YouTube and titles without a clear backdrop match use the source app's artwork.
 Standard keeps the card artwork from each app.

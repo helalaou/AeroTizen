@@ -15,6 +15,7 @@ export const createBackdropCache = (
   imageUrl: (reference: string) => string | undefined,
   now: () => number,
   storage?: CacheStorage,
+  ttlMs = CACHE_TTL_MS,
 ) => {
   let entries: Map<string, Entry> | undefined;
   const load = () => {
@@ -105,7 +106,7 @@ export const createBackdropCache = (
       const url = imageUrl(reference);
       if (url) {
         const time = now();
-        save(key, { reference, expiresAt: time + CACHE_TTL_MS, matchKey }, time);
+        save(key, { reference, expiresAt: time + ttlMs, matchKey }, time);
       }
       return url;
     },
