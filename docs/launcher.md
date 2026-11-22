@@ -71,6 +71,17 @@ keeps your Standard app size and arrangement preferences for when you switch bac
 
 When a Continue Watching card is in focus, Cinema shows the title and source
 above the row. The backdrop fades into black and the saved wallpaper returns
-when focus moves away from the card. Samsung app feeds reuse the card image.
-Stremio can supply separate series artwork while keeping the episode thumbnail
-on its card.
+when focus moves away from the card. Cinema can use a separate series backdrop
+while keeping the app or episode image on the card.
+
+### Cinema backdrops
+
+When you focus a Continue Watching card in Cinema, the launcher checks its local
+backdrop cache. A missing or expired entry can trigger a Cinemeta lookup for a
+movie or show by IMDb ID or title. The launcher uses the release year if it needs
+to distinguish titles with the same name. It saves the image reference by app ID
+and content ID for up to 30 days. A complete title search with no match uses the
+source app’s artwork for 24 hours before it can search again.
+
+YouTube and titles without a clear backdrop match use the source app's artwork.
+Standard keeps the card artwork from each app.

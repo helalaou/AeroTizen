@@ -12,10 +12,12 @@ import { createStore } from "../shared/state/createStore";
 import { equalRecord } from "../shared/state/equalRecord";
 import { snapshotList } from "../shared/state/snapshotList";
 
+import type { createCinemetaBackdropLookup } from "./continueWatching/createCinemetaBackdropLookup";
 import { normalizeContinueItems } from "./continueWatching/normalizeItems";
 
 interface ContinueWatchingDependencies {
   apps: Pick<AppsService, "getSnapshot" | "subscribeDiscovery">;
+  backdrops?: ReturnType<typeof createCinemetaBackdropLookup>;
   clock: Pick<ClockService, "subscribe">;
   elapsed(): number;
   now(): number;
@@ -38,6 +40,7 @@ const byName = (left: ContinueSource, right: ContinueSource) => left.name.locale
 
 export const createContinueWatchingService = ({
   apps,
+  backdrops,
   clock,
   elapsed,
   now,
@@ -291,6 +294,29 @@ export const createContinueWatchingService = ({
         candidates.get(active.sourceId)?.provider.open(active);
       }
     },
+    watchBackdrop(item, show) {
+      if (disposed || !backdrops || !items.some((entry) => entry === item)) {
+        show({ status: "ready" });
+        return () => {};
+      }
+      const update = () => {
+        const active = items.find((entry) => entry === item);
+        if (!disposed && active && settings.getSnapshot().homeLayout === "cinema" && !platform.isHidden()) {
+          return backdrops.watch(active, show);
+        }
+        show({ status: "ready" });
+        return undefined;
+      };
+      let stop = update();
+      const unsubscribe = platform.subscribeVisibility(() => {
+        stop?.();
+        stop = update();
+      });
+      return () => {
+        unsubscribe();
+        stop?.();
+      };
+    },
     start() {
       if (started || disposed) {
         return;
@@ -319,6 +345,7 @@ export const createContinueWatchingService = ({
         return;
       }
       disposed = true;
+      backdrops?.cancel();
       cancel();
       providers.forEach((provider) => provider.dispose?.());
       unsubscribers.forEach((unsubscribe) => unsubscribe());

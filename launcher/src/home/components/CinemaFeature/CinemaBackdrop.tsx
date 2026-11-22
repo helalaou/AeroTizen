@@ -10,10 +10,11 @@ interface Layer {
 interface Props {
   onError(url: string): void;
   onVisibilityChange(visible: boolean): void;
+  pending?: boolean;
   src?: string;
 }
 
-export const CinemaBackdrop = ({ src, onError, onVisibilityChange }: Props) => {
+export const CinemaBackdrop = ({ src, pending, onError, onVisibilityChange }: Props) => {
   const [layers, setLayers] = useState<readonly Layer[]>([]);
   useLayoutEffect(() => {
     setLayers((layers) => {
@@ -28,7 +29,9 @@ export const CinemaBackdrop = ({ src, onError, onVisibilityChange }: Props) => {
   }, [src]);
   // Keep the last image visible until its replacement loads, even during fast navigation.
   const current =
-    src && (layers.find((layer) => layer.ready && layer.src === src) ?? layers.find((layer) => layer.ready));
+    src || pending
+      ? (layers.find((layer) => layer.ready && layer.src === src) ?? layers.find((layer) => layer.ready))
+      : undefined;
   const visible = Boolean(current);
   useLayoutEffect(() => {
     if (visible) {
