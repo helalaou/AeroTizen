@@ -164,6 +164,7 @@
   "continue.settings": "Configurações do Continuar assistindo",
   "continue.showHeading": "Mostrar o título de Continuar assistindo",
   "continue.hint": "Mostrar programas salvos dos apps escolhidos.",
+  "continue.coverArt": "Capas",
   "continue.chooseApps": "Escolha os apps abaixo. As listas são atualizadas quando você volta ao {{appName}}.",
   "apps.show": "Mostrar no menu de apps",
   "apps.hint": "Aperte OK para mostrar ou ocultar um app na tela inicial. Na tela inicial, segure OK sobre um app para movê-lo.",

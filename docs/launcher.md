@@ -62,6 +62,14 @@ Stremio requires launcher 2.7.0 and the root helper from CLI 3.0.0, or developme
 builds with both changes. Set up or upgrade the helper using the [root guide](root-cli.md),
 then select **Stremio** in Continue Watching.
 
+### Cover art
+
+In **Settings → Apps → Continue Watching**, turn on **Cover art** to show portrait
+cards in Standard and Cinema. The launcher looks up Cinemeta posters for visible
+cards. A title without a poster keeps its source artwork inside the portrait card.
+In Standard, portrait cards omit the title and progress below the artwork. The
+poster fills the full height of the original card.
+
 ## Cinema layout
 
 Select **Settings → Appearance → Launcher layout → Cinema** to put Continue
@@ -69,10 +77,10 @@ Watching above a fixed-size, horizontally scrolling app row. Scroll down from
 apps to reach configured inputs. The Standard layout is the default. Cinema
 keeps your Standard app size and arrangement preferences for when you switch back.
 
-When a Continue Watching card is in focus, Cinema shows the title and source
-above the row. The backdrop fades into black and the saved wallpaper returns
-when focus moves away from the card. Cinema can use a separate series backdrop
-while keeping the app or episode image on the card.
+When a Continue Watching card is in focus, Cinema centres its title and source
+vertically between the header controls and the row. The backdrop fades into black
+and the saved wallpaper returns when focus moves away from the card. Cinema can
+use a separate series backdrop while keeping the app or episode image on the card.
 
 ### Cinema backdrops
 
@@ -84,4 +92,4 @@ and content ID for up to 30 days. A complete title search with no match uses the
 source app’s artwork for 24 hours before it can search again.
 
 YouTube and titles without a clear backdrop match use the source app's artwork.
-Standard keeps the card artwork from each app.
+Separate backdrops are available in Cinema.

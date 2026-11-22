@@ -26,6 +26,7 @@ export interface SettingsValues {
   clockLayout: "classic" | "custom";
   continueWatching: boolean;
   continueWatchingApps: string[];
+  continueWatchingCoverArt: boolean;
   customColour: string;
   customGradient: CustomGradient;
   dateFormat: DateFormat;

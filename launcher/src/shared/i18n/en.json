@@ -164,6 +164,7 @@
   "continue.settings": "Continue Watching settings",
   "continue.showHeading": "Show Continue Watching heading",
   "continue.hint": "Show saved programmes from selected apps.",
+  "continue.coverArt": "Cover art",
   "continue.chooseApps": "Choose apps below. Lists update when you return to {{appName}}.",
   "apps.show": "Show in app menu",
   "apps.hint": "Press OK to show or hide a tile on the home screen. On the home screen, hold OK on a tile to move it.",

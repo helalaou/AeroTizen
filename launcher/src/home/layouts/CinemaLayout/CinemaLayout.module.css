@@ -3,6 +3,7 @@
   --cinema-rail-gap: 32px;
   --continue-card-width: var(--cinema-programme-width);
   --continue-artwork-height: calc(var(--cinema-programme-width) * 9 / 16);
+  --continue-cover-art-height: 324px;
   --continue-card-rest-scale: 1;
   --continue-row-gap: var(--cinema-rail-gap);
   --home-section-heading-margin: 0 0 14px 9px;

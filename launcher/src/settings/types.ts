@@ -71,6 +71,7 @@ export interface SettingsActions {
   setBackground(background: string): void;
   setClockLayout(layout: "classic" | SettingsValues["aeroClockStyle"]): void;
   setContinueWatching(enabled: boolean): void;
+  setContinueWatchingCoverArt(enabled: boolean): void;
   setContinueWatchingHeadingVisible(visible: boolean): void;
   setDateFormat(format: DateFormat): void;
   setDateVisible(visible: boolean): void;

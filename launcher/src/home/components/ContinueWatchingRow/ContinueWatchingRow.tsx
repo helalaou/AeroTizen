@@ -11,10 +11,12 @@ import styles from "./ContinueWatchingRow.module.css";
 export const ContinueWatchingRow = ({
   env,
   items,
+  coverArt,
   showDetails,
   showHeading,
   visible,
 }: {
+  coverArt: boolean;
   env: HomeEnvironment;
   items: readonly ContinueItem[];
   showDetails: boolean;
@@ -31,6 +33,7 @@ export const ContinueWatchingRow = ({
         id="continue-items"
         label={title}
         trackClass={styles.track}
+        trackData={{ "data-cover-art": coverArt ? "true" : "false" }}
         trackRef={env.continueItems}
         viewportRef={env.continueViewport}
         offset={continueOffset}
@@ -38,7 +41,14 @@ export const ContinueWatchingRow = ({
         onOffsetChange={(offset) => env.state.set({ ...env.state.getSnapshot(), continueOffset: offset })}
       >
         {items.map((item) => (
-          <ContinueWatchingCard key={item.key} env={env} item={item} showDetails={showDetails} />
+          <ContinueWatchingCard
+            key={item.key}
+            env={env}
+            item={item}
+            showDetails={showDetails}
+            coverArt={coverArt}
+            visible={visible}
+          />
         ))}
       </HorizontalScroller>
     </section>
