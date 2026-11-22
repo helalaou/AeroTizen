@@ -1,3 +1,5 @@
+import { getAppGridColumns } from "../../shared/apps/appCardSizes";
+import { getHomeLayout, usesHomeAppRail } from "../../shared/homeLayout";
 import { createInputScope } from "../../shared/input/createInputScope";
 import { focusControl } from "../../shared/navigation/focusControl";
 import { createStore } from "../../shared/state/createStore";
@@ -138,6 +140,7 @@ export const createHomeController = (
   let timer: number | undefined;
   let enterDown = false;
   let started = false;
+  let navigated = false;
   const cancelPress = () => {
     if (timer !== undefined) {
       window.clearTimeout(timer);
@@ -163,7 +166,7 @@ export const createHomeController = (
   };
   const ids = () =>
     state.getSnapshot().page === "home" ? homeIds() : inventory.getSnapshot().apps.map((app) => app.id);
-  const scrollApps = () => state.getSnapshot().page === "home" && settings.getSnapshot().homeAppLayout === "scroll";
+  const scrollApps = () => state.getSnapshot().page === "home" && usesHomeAppRail(settings.getSnapshot());
   const getScroller = (key: string) => {
     if (key.startsWith("continue:")) {
       return {
@@ -178,25 +181,36 @@ export const createHomeController = (
     return null;
   };
   const sourceKey = (source: { type: string; number?: number }) => "input:" + source.type + ":" + source.number;
-  const rows = (): readonly (readonly string[])[] => {
-    const columns = env.columns(settings.getSnapshot());
+  const rows = () => {
+    const preferences = settings.getSnapshot();
+    const { page } = state.getSnapshot();
+    const columns = getAppGridColumns(preferences.homeCardColumns, page);
     const appKeys = ids().map((id) => "app:" + id);
-    const all = state.getSnapshot().page === "apps" ? [ADD_APPS_KEY, ...appKeys] : appKeys;
+    const all = page === "apps" ? [ADD_APPS_KEY, ...appKeys] : appKeys;
     const rowLength = scrollApps() ? Math.max(1, all.length) : columns;
     const appRows = Array.from({ length: Math.ceil(all.length / rowLength) }, (_, index) =>
       all.slice(index * rowLength, (index + 1) * rowLength),
     );
-    const appLayout = [HEADER_KEYS, ...appRows];
-    if (state.getSnapshot().page !== "home") {
-      return appKeys.length ? [...appLayout, ["back-to-top"]] : appLayout;
+    const allRows: (readonly string[])[] = [HEADER_KEYS];
+    if (page === "apps") {
+      allRows.push(...appRows);
+      if (appKeys.length) {
+        allRows.push(["back-to-top"]);
+      }
+      return { allRows, scroll: "offset" as const };
     }
     const { items, inputs } = inventory.getSnapshot();
     const continueRows =
-      settings.getSnapshot().continueWatching && items.length ? [items.map((item) => "continue:" + item.key)] : [];
+      preferences.continueWatching && items.length ? [items.map((item) => "continue:" + item.key)] : [];
     const inputRows = inputs.length ? [inputs.map(sourceKey)] : [];
-    return [...appLayout, ...continueRows, ...inputRows];
+    const layout = getHomeLayout(preferences.homeLayout);
+    const sectionRows = { apps: appRows, continueWatching: continueRows, inputs: inputRows };
+    for (const section of [...layout.main, ...layout.belowFold]) {
+      allRows.push(...sectionRows[section]);
+    }
+    return { allRows, scroll: layout.scroll };
   };
-  const focus = () => {
+  const focus = (withinRow = false) => {
     if (document.hidden || runtime.settingsUi?.isOpen()) {
       update({ active: false });
       return;
@@ -211,9 +225,10 @@ export const createHomeController = (
       update({ menu: null });
       cancelPress();
     }
-    const list = rows();
+    const { allRows: list, scroll: scrollMode } = rows();
     const old = state.getSnapshot().selected;
-    const selected = getSelectedKey(list, old, started);
+    // Allow a higher-priority rail to load after the initial Home render, until the user takes focus.
+    const selected = getSelectedKey(list, old, started && (scrollMode !== "native" || navigated));
     if (list[1]?.length) {
       started = true;
     }
@@ -238,6 +253,19 @@ export const createHomeController = (
         document.documentElement.dir === "rtl",
       );
       update({ [scroller.offset]: offset });
+    }
+    if (scrollMode === "native") {
+      const viewport = env.viewport.current;
+      if (viewport && !withinRow) {
+        const anchor = node.closest("[data-home-scroll-anchor]");
+        // Align the whole rail so focus scaling cannot move its resting position.
+        const offset = anchor
+          ? viewport.scrollTop + anchor.getBoundingClientRect().bottom - viewport.getBoundingClientRect().bottom
+          : 0;
+        viewport.scrollTop = Math.max(0, Math.round(offset));
+      }
+      update({ appsEndOffset: 0, scroll: 0 });
+      return;
     }
     // Home's header and first row always use the top position. Avoid style/layout reads for each horizontal move.
     if (pending.page === "home" && (list[0].includes(selected) || list[1]?.includes(selected))) {
@@ -271,12 +299,13 @@ export const createHomeController = (
     });
     update({ appsEndOffset, scroll });
   };
-  const select = (selected: string) => {
+  const select = (selected: string, withinRow = false) => {
+    navigated = true;
     if (state.getSnapshot().selected !== selected) {
       cancelPress();
     }
     update({ selected });
-    focus();
+    focus(withinRow);
   };
   const endMove = () => {
     const draft = state.getSnapshot().draft;
@@ -291,6 +320,7 @@ export const createHomeController = (
     focus();
   };
   const showPage = (page: Page) => {
+    navigated = true;
     cancelPress();
     endMove();
     update({ page, appsEndOffset: 0, scroll: 0, menu: null, selected: page === "home" ? "home-tab" : "apps-tab" });
@@ -379,6 +409,7 @@ export const createHomeController = (
         return;
       }
       event.preventDefault();
+      navigated = true;
       if (current.moving) {
         if (code === K.ENTER || code === K.BACK || code === K.ESC) {
           if (code !== K.ENTER || !enterDown) {
@@ -392,7 +423,7 @@ export const createHomeController = (
         }
         const home = [...homeIds()];
         const from = home.indexOf(current.moving);
-        const step = code === K.UP || code === K.DOWN ? env.columns(settings.getSnapshot()) : 1;
+        const step = code === K.UP || code === K.DOWN ? settings.getSnapshot().homeCardColumns : 1;
         const to = Math.max(0, Math.min(home.length - 1, from + delta * step));
         update({ draft: moveItem(home, from, to, current.moving) });
         focus();
@@ -418,7 +449,7 @@ export const createHomeController = (
         }
         return;
       }
-      const all = rows();
+      const { allRows: all } = rows();
       const row = all.findIndex((items) => items.includes(current.selected));
       if (row < 0) {
         focus();
@@ -440,7 +471,7 @@ export const createHomeController = (
             nodes,
             getViewport: (key) => getScroller(key)?.viewport || null,
           });
-      select(all[target][Math.max(0, Math.min(all[target].length - 1, column))]);
+      select(all[target][Math.max(0, Math.min(all[target].length - 1, column))], horizontal);
     });
   const keyup = (code: number) => {
     if (code !== K.ENTER) {

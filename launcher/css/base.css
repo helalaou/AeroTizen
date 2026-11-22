@@ -16,7 +16,9 @@ body.tv [data-weather-photo] {
 }
 
 html {
-  width: 1920px;
+  --launcher-width: 1920px;
+
+  width: var(--launcher-width);
   height: 1080px;
   overflow: hidden;
   font-family: var(--font-ui, "Roboto", "SamsungOne", "Helvetica Neue", Arial, sans-serif);
@@ -45,7 +47,7 @@ body.editing [data-home-content] {
   pointer-events: none;
 }
 body {
-  width: 1920px;
+  width: var(--launcher-width);
   height: 1080px;
   overflow: hidden;
   color: var(--fg);

@@ -142,10 +142,25 @@
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto;
+  overflow-y: scroll;
   overflow-x: hidden;
   margin-left: calc(-1 * var(--settings-scroll-ring-room, 0px));
   padding: 24px 9px 25px calc(4px + var(--settings-scroll-ring-room, 0px));
+
+  &::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 12px;
+    background: var(--settings-subtitle);
+    background-clip: padding-box;
+  }
 }
 
 .pane {

@@ -1,5 +1,6 @@
-import type { ContinueWatchingService } from "../contracts/continueWatching";
+import type { ContinueWatchingService, ContinueWatchingSnapshot } from "../contracts/continueWatching";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
+import { createStore } from "../shared/state/createStore";
 
 import { previewAppId } from "./previewApps";
 
@@ -74,6 +75,12 @@ const programmes = [
 ] as const;
 /* eslint-enable launcher-i18n/translated-copy */
 
+export const previewContinueSources = Object.freeze(
+  [...new Set(programmes.map((programme) => programme.sourceName))]
+    .sort((left, right) => left.localeCompare(right))
+    .map((name) => Object.freeze({ id: previewAppId(name), name, storeId: previewAppId(name), status: "" })),
+);
+
 const artwork = (dark: string, light: string, index: number) => {
   const position = index % ARTWORK_MOON_POSITIONS;
   return (
@@ -93,7 +100,7 @@ const artwork = (dark: string, light: string, index: number) => {
 };
 
 export const createPreviewContinueWatching = (
-  runtime: Pick<LauncherRuntime, "toast" | "translate">,
+  runtime: Pick<LauncherRuntime, "settings" | "toast" | "translate">,
 ): ContinueWatchingService => {
   const items = Object.freeze(
     programmes.map(({ title, sourceName, season, episode, playback, dark, light }, index) =>
@@ -112,13 +119,39 @@ export const createPreviewContinueWatching = (
       }),
     ),
   );
-  const snapshot = Object.freeze({ items, messageKey: "" as const, sources: Object.freeze([]) });
+  const store = createStore<ContinueWatchingSnapshot>(
+    Object.freeze({ items: Object.freeze([]), messageKey: "", sources: previewContinueSources }),
+  );
+  let unsubscribe: (() => void) | undefined;
+  let disposed = false;
+  const refresh = () => {
+    if (disposed) {
+      return;
+    }
+    const settings = runtime.settings.getSnapshot();
+    store.set(
+      Object.freeze({
+        items: Object.freeze(
+          items.filter((item) => settings.continueWatching && settings.continueWatchingApps.includes(item.sourceId)),
+        ),
+        messageKey: "",
+        sources: previewContinueSources,
+      }),
+    );
+  };
   return {
-    getSnapshot: () => snapshot,
+    ...store,
     open: (item) => runtime.toast(runtime.translate("apps.wouldOpen", { name: item.title })),
-    dispose: () => undefined,
-    refresh: () => undefined,
-    start: () => undefined,
-    subscribe: () => () => undefined,
+    dispose() {
+      disposed = true;
+      unsubscribe?.();
+    },
+    refresh,
+    start() {
+      if (!disposed && !unsubscribe) {
+        unsubscribe = runtime.settings.subscribe(refresh);
+        refresh();
+      }
+    },
   };
 };

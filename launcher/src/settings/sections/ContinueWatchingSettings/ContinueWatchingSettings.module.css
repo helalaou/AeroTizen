@@ -1,7 +1,16 @@
+.section {
+  margin-top: 20px;
+  border-top: 1px solid var(--settings-divider);
+}
+
 .apps {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 160px);
-  width: 1792px;
-  grid-gap: 22px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  width: 100%;
+  grid-gap: 18px;
+  margin-bottom: 20px;
+}
+
+.hint {
+  --settings-hint-margin: 20px 0;
 }

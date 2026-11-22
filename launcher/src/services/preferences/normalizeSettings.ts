@@ -1,6 +1,7 @@
 import { normalizeColour } from "../../backgrounds/colours";
 import { normalizeGradient } from "../../backgrounds/gradients";
 import type { SettingsDefaults, SettingsPreferences, WeatherLocation } from "../../contracts/preferences";
+import { HOME_LAYOUT_IDS } from "../../shared/homeLayout";
 
 const record = (value: unknown): Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -60,10 +61,16 @@ export const normalizeSettings = (
   const validHome = Array.isArray(home) ? ids(home) : defaults.home;
   return {
     home: home === null ? null : validHome,
-    theme: choice(data.theme, ["classic", "glass", "gloss", "amethyst"], defaults.theme),
+    theme: choice(
+      data.theme,
+      ["classic", "glass", "pop", "frost", "gloss", "amethyst", "mint", "halo"],
+      defaults.theme,
+    ),
     performanceMode: boolean(data.performanceMode, defaults.performanceMode),
-    homeCardColumns: typeof columns === "number" && [3, 4, 5].includes(columns) ? columns : defaults.homeCardColumns,
+    homeCardColumns:
+      typeof columns === "number" && [3, 4, 5, 6, 7, 8].includes(columns) ? columns : defaults.homeCardColumns,
     homeAppLayout: choice(data.homeAppLayout, ["grid", "scroll"], defaults.homeAppLayout),
+    homeLayout: choice(data.homeLayout, HOME_LAYOUT_IDS, defaults.homeLayout),
     background: text(data.background, defaults.background),
     customColour: normalizeColour(data.customColour, defaults.customColour),
     customGradient: normalizeGradient(data.customGradient, defaults.customGradient),
@@ -74,6 +81,7 @@ export const normalizeSettings = (
         : defaults.speed,
     showWeather: boolean(data.showWeather, defaults.showWeather),
     showTime: boolean(data.showTime, defaults.showTime),
+    showDate: boolean(data.showDate, defaults.showDate),
     showNetwork: boolean(data.showNetwork, defaults.showNetwork),
     tempUnit: data.tempUnit === "C" || data.tempUnit === "F" ? data.tempUnit : defaults.tempUnit || locale.tempUnit(),
     timeZone: choice(data.timeZone, ["tv", "weather"] as const, defaults.timeZone),
@@ -94,9 +102,11 @@ export const normalizeSettings = (
         : defaults.timeFormat || locale.timeFormat(),
     continueWatching: boolean(data.continueWatching, defaults.continueWatching),
     continueWatchingApps: ids(data.continueWatchingApps, 100),
+    continueWatchingCoverArt: boolean(data.continueWatchingCoverArt, defaults.continueWatchingCoverArt),
+    showContinueWatchingHeading: boolean(data.showContinueWatchingHeading, defaults.showContinueWatchingHeading),
+    showInputsHeading: boolean(data.showInputsHeading, defaults.showInputsHeading),
     showLiveTv: boolean(data.showLiveTv, defaults.showLiveTv),
     hideDisconnectedHdmi: boolean(data.hideDisconnectedHdmi, defaults.hideDisconnectedHdmi),
-    hdmiNativeViewer: boolean(data.hdmiNativeViewer, defaults.hdmiNativeViewer),
     hdmiKeepVisible: dictionary<boolean>(data.hdmiKeepVisible, "boolean"),
     inputNames: dictionary<string>(data.inputNames, "string"),
   };

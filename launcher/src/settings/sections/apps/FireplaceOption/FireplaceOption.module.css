@@ -2,6 +2,7 @@
   --settings-card-direction: column;
   --settings-card-padding: 12px;
   --settings-card-surface: radial-gradient(110% 120% at 50% 110%, #ff8a1e 0%, #c2380d 35%, #3a0d04 70%, #120402 100%);
+  --settings-card-focused-surface: var(--settings-card-surface);
 }
 
 .icon {
@@ -14,7 +15,7 @@
   margin-top: 8px;
   font-size: 19px;
   font-weight: 500;
-  color: var(--control-text);
+  color: #fff;
   text-shadow: var(--app-label-shadow);
   max-width: 100%;
   line-height: 21px;

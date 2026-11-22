@@ -1,0 +1,112 @@
+.control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  width: var(--settings-button-width);
+  max-width: 100%;
+  min-height: 72px;
+  padding: 14px 16px 14px 20px;
+  border: 2px solid var(--border-control);
+  border-radius: var(--control-radius);
+  background: var(--surface-control);
+  color: var(--control-text);
+  font-size: 20px;
+  line-height: 1.3;
+
+  [dir="rtl"] & {
+    padding-right: 20px;
+    padding-left: 16px;
+  }
+
+  &[data-focused="true"] {
+    background: var(--choice-focused-surface);
+  }
+
+  &[aria-disabled="true"] {
+    opacity: 0.55;
+  }
+}
+
+.state {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+
+  > span:first-child {
+    margin-right: 6px;
+  }
+
+  [dir="rtl"] & > span:first-child {
+    margin-right: 0;
+    margin-left: 6px;
+  }
+}
+
+.track {
+  position: relative;
+  display: block;
+  flex-shrink: 1;
+  box-sizing: border-box;
+  width: 60px;
+  min-width: 44px;
+  height: 36px;
+  overflow: hidden;
+  border: 2px solid var(--settings-toggle-off-border);
+  border-radius: var(--settings-toggle-radius);
+  background: var(--settings-toggle-off-surface);
+  box-shadow: var(--settings-toggle-track-shadow, none);
+  transition:
+    background-color var(--motion-duration-feedback) linear,
+    border-color var(--motion-duration-feedback) linear;
+
+  [aria-checked="true"] & {
+    border-color: var(--settings-toggle-on-border);
+    background: var(--settings-toggle-on-surface);
+  }
+}
+
+.thumb {
+  --thumb-size: 24px;
+
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  /* Keep thumb travel inside the track when a translated label needs more room. */
+  width: calc(100% - 8px);
+  height: var(--thumb-size);
+  transition: transform var(--motion-duration-feedback) ease-out;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    width: var(--thumb-size);
+    height: 100%;
+    /* Inset track corners by default; themes can soften the thumb. */
+    border-radius: var(--settings-toggle-thumb-radius, calc(var(--settings-toggle-radius) - 6px));
+    background: var(--settings-toggle-off-thumb);
+    box-shadow: var(--settings-toggle-thumb-shadow, none);
+    transition: background-color var(--motion-duration-feedback) linear;
+  }
+
+  [dir="rtl"] & {
+    transform: translateX(calc(100% - var(--thumb-size)));
+  }
+
+  [aria-checked="true"] & {
+    transform: translateX(calc(100% - var(--thumb-size)));
+
+    &::before {
+      background: var(--settings-toggle-on-thumb);
+    }
+  }
+
+  [dir="rtl"] [aria-checked="true"] & {
+    transform: none;
+  }
+}

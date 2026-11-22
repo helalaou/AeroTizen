@@ -30,7 +30,11 @@
 
   [data-theme="glass"] &,
   [data-theme="gloss"] &,
-  [data-theme="amethyst"] & {
+  [data-theme="amethyst"] &,
+  [data-theme="mint"] &,
+  [data-theme="halo"] &,
+  [data-theme="pop"] &,
+  [data-theme="frost"] & {
     z-index: 1;
     max-width: none;
     height: 120px;

@@ -105,6 +105,7 @@ and how to restore the original settings before uninstalling AeroTizen.
 - [Troubleshoot and export logs](docs/diagnostics.md)
 - [Reduce ads and tracking in Samsung settings](docs/settings.md) and [DNS blocklists](dns/)
 - [Optional root setup and recovery](docs/root-cli.md)
+- [Remap or disable remote app buttons](docs/root-cli.md#change-app-buttons-on-the-remote)
 
 ## Contributing
 
@@ -139,6 +140,7 @@ or see [CONTRIBUTING.md](CONTRIBUTING.md) for development and testing.
 - [samsung-tizen-tv-debloat](https://github.com/ardazeytin/samsung-tizen-tv-debloat), for which packages are safe to remove
 - App artwork is read from Samsung's cache on each TV; none is bundled or downloaded. Fallback logos
   are from [Simple Icons](https://simpleicons.org). Artwork and trademarks belong to their owners
+- Cinema looks up backdrop artwork through [Cinemeta](https://v3-cinemeta.strem.io/manifest.json), Stremio's catalogue. MetaHub serves the images.
 - Weather and location search from [Open-Meteo](https://open-meteo.com), automatic location from [ipapi](https://ipapi.co)
 
 This project isn't affiliated with Samsung. Use it at your own risk.

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
@@ -92,6 +93,18 @@ internal static class RootTests
             var value = fixture.RootElement;
             int identityCalls = 0;
             var settings = new RootSettings(System.Text.Encoding.UTF8.GetBytes(value.GetProperty("public_config").GetRawText()));
+            ushort learnedCode = value.TryGetProperty("learned_code", out var code) ? code.GetUInt16() : (ushort)240;
+            string keyLayout = value.TryGetProperty("key_layout", out var layout) ? layout.GetString() : TestRemoteKeyLayout;
+            var keyCodes = value.TryGetProperty("key_codes", out var keys)
+                ? new HashSet<int>(keys.EnumerateArray().Select(key => key.GetInt32()))
+                : new HashSet<int> { 158, 226, 240, 241, 242, 243, 244, 245, 246, 247 };
+            var inputDevices = value.TryGetProperty("input_devices", out var report)
+                ? (report.GetProperty("exit_code").GetInt32(), report.GetProperty("output").GetString())
+                : (0, "no devices");
+            using var buttons = value.TryGetProperty("buttons_file", out var buttonFile)
+                ? TestButtons(buttonFile.GetString(), learnedCode, keyLayout, keyCodes, inputDevices) : null;
+            buttons?.Start();
+            Func<object> readHome = value.TryGetProperty("home_settings", out var home) ? () => home.Clone() : null;
             using (var certificate = new X509Certificate2(Convert.FromBase64String(value.GetProperty("server_pfx").GetString()),
                 (string)null, System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX)
                     ? X509KeyStorageFlags.DefaultKeySet : X509KeyStorageFlags.EphemeralKeySet))
@@ -118,7 +131,7 @@ internal static class RootTests
                 var client = new TcpClient();
                 await client.ConnectAsync(IPAddress.Loopback, value.GetProperty("sdb_port").GetInt32(), cancel); return client;
             }, (phase, error) => File.WriteAllText(value.GetProperty("diagnostic_file").GetString(),
-                JsonSerializer.Serialize(new { phase, error_type = error.GetType().Name }))))
+                JsonSerializer.Serialize(new { phase, error_type = error.GetType().Name })), buttons: buttons, homeStatus: readHome))
             {
                 Task serving = server.Run();
                 Console.WriteLine("ROOT_TEST_SERVER_PORT=" + server.Port); Console.Out.Flush();
@@ -126,10 +139,55 @@ internal static class RootTests
             }
         }
     }
+    private static ButtonService TestButtons(string path, ushort learnedCode, string keyLayout, HashSet<int> keyCodes,
+        (int ExitCode, string Output) inputDevices) => new ButtonService(
+        () => File.Exists(path) ? JsonSerializer.Deserialize<ButtonRule[]>(File.ReadAllBytes(path)) : Array.Empty<ButtonRule>(),
+        rules => File.WriteAllBytes(path, JsonSerializer.SerializeToUtf8Bytes(rules)),
+        _ => new ButtonPress(new string('a', 64), new ButtonKey(learnedCode, 42)),
+        () => TestButtonInventory(keyLayout, keyCodes),
+        () => keyLayout,
+        _ => inputDevices,
+        (_, codes, active, _, stop) => { if (codes.Count != 0) active(); stop.WaitHandle.WaitOne(); },
+        app =>
+        {
+            if (app != "test.app") throw new InvalidDataException("Target app is not installed.");
+        },
+        (_, _) => throw new InvalidOperationException("Hardware is unavailable in this test"));
+
+    private const string TestRemoteKeyLayout = "# key names\nXF86Netflix 226\nXF86Media 226\nXF86Netflix 226\n"
+        + "XF86Amazon 221\nXF86Netflix 240\nXF86Amazon 241\nXF86PrimeVideo 241\n"
+        + "XF86DisneyPlus 242\nXF86Hulu 243\nXF86Guide 243\nXF86LaunchApp1 244\n"
+        + "XF86TVPlus 245\nXF86TVPlus 246\nXF86Rakuten 247\nXF86YouTube 158\nXF86Hulu 248\n";
+
+    private static ButtonInventory TestButtonInventory(string layout, HashSet<int> primary)
+    {
+        var secondary = new HashSet<int> { 247 };
+        return new ButtonInventory(ButtonLayout.Find(layout, new (string, Func<int, bool>)[]
+        {
+            (new string('a', 64), primary.Contains), (new string('b', 64), secondary.Contains),
+        }));
+    }
+
+    private static int TestButtonFilter()
+    {
+        var Netflix = new ButtonKey(240, 42);
+        var Prime = new ButtonKey(240, 43);
+        var Back = new ButtonKey(158, null);
+        var filter = new ButtonFilter(new Dictionary<ButtonKey, string> { [Netflix] = "test.app", [Prime] = null });
+        if (filter.OnKey(Back, 1) != (true, null) || filter.OnKey(Back, 0) != (true, null)
+            || filter.OnKey(Prime, 1) != (false, null) || filter.OnKey(Prime, 2) != (false, null)
+            || filter.OnKey(Prime with { Scan = null }, 0) != (false, null) || filter.OnKey(Netflix, 1) != (false, "test.app")
+            || filter.OnKey(Netflix, 1) != (false, null) || filter.OnKey(Netflix, 2) != (false, null)
+            || filter.OnKey(Netflix, 0) != (false, null) || filter.OnKey(Netflix, 1) != (false, "test.app"))
+            throw new InvalidOperationException("Incorrect remote key forwarding or launch decision");
+        return 0;
+    }
+
     public static int Main(string[] args)
     {
         try
         {
+            if (args.Length == 1 && args[0] == "--buttons-filter") return TestButtonFilter();
             if (args.Length == 1 && args[0] == "--sql") { Console.Write(BridgeProgram.RegistrationSql()); return 0; }
             if (args.Length == 3 && args[0] == "--setup-launch") { Console.Write(BridgeProgram.SetupLaunch(args[1], args[2])); return 0; }
             if (args.Length == 5 && args[0] == "--fetch")

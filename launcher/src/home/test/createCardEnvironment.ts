@@ -2,7 +2,7 @@ import { vi } from "vitest";
 
 import type { AppPresentation, InstalledApp } from "../../contracts/launcher";
 import { createStore } from "../../shared/state/createStore";
-import type { HomeEnvironment, HomeState } from "../types";
+import type { HomeEnvironment, HomeState, Inventory } from "../types";
 
 export const createCardEnvironment = (selected = "", presentation: Partial<AppPresentation> = {}) => {
   const state = createStore<HomeState>({
@@ -36,8 +36,12 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     },
   };
   // Isolated cards use only these Home controller fields.
-  const environment: Pick<HomeEnvironment, "state" | "nodes" | "activate" | "select" | "runtime" | "describe"> = {
+  const environment: Pick<
+    HomeEnvironment,
+    "state" | "nodes" | "activate" | "select" | "runtime" | "describe" | "inventory"
+  > = {
     state,
+    inventory: createStore<Inventory>({ apps: [], inputs: [], items: [], ready: true }),
     nodes: new Map<string, HTMLElement>(),
     activate: vi.fn(),
     select: vi.fn(),

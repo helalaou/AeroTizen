@@ -59,6 +59,50 @@ Mode menu before using normal SDB. The saved address is the actual setup-time va
 not a hardcoded default for a model. After restoring access, pass a copied private
 receipt with `--receipt PATH` when needed. Keep its directory private.
 
+## Change app buttons on the remote
+
+App buttons are experimental. Use a CLI and a paired TV helper that both support
+automatic discovery. Start with `buttons list` to see the app buttons that the
+TV identifies on the connected remote and any saved shortcuts.
+
+```sh
+aerotizen --tv TV_IP buttons list
+aerotizen --tv TV_IP buttons map netflix --app Stremio --yes
+aerotizen --tv TV_IP buttons status
+```
+
+If the list does not show a button, run `buttons learn "My streaming button" --yes`
+and press the physical app button when prompted. Use the same name in later
+commands and quote it if it has spaces. Discovery and previews leave the TV's
+settings alone.
+
+If `learn` rejects a key code, use `buttons key-names CODE` to read the names
+Samsung gives it in the TV's key layout. You can look up to four codes at once.
+If a saved rule stays pending, use `buttons input-devices` to see which devices
+the TV compositor currently sees. Add `--json` for the tool's output and status.
+
+Use an installed app name or its Tizen app ID. Quote names that contain spaces.
+If two apps share a name, run `aerotizen --tv TV_IP apps --json` and pass the
+chosen `app_id` to `buttons map --app`. Omit `--yes` to preview a change.
+To make Netflix do nothing, use `buttons disable netflix --yes`. To restore the
+original Netflix action, use `buttons unmap netflix --yes`. This keeps the saved
+button so you can map it again. `buttons reset --yes` restores all app buttons and
+clears what the TV learned.
+
+Use `buttons rename "My streaming button" --name "Streaming" --yes` to change a saved
+or discovered button's name while keeping its physical key and action. Omit `--yes`
+to preview. Renaming requires an updated helper with rename support. Names must be
+unique; use the new name in later CLI commands.
+
+The TV saves the rules and applies them when its paired helper and the learned
+remote are available. The computer can be switched off. `buttons status` shows
+which saved rules are active. Learning briefly restores original button actions.
+Press only the app button that you want to learn. Support depends on the TV,
+firmware and remote. If the helper cannot start the input handler, for example
+because a mapped app has been removed, that remote uses its original button
+actions while the helper retries. You can use `buttons unmap` to clear a rule for
+an app you no longer have.
+
 ## Components and bounds
 
 - **Per-boot service:** normal app UID. It skips the installation boot, records a
@@ -69,8 +113,8 @@ receipt with `--receipt PATH` when needed. Keep its directory private.
   assemblies. Only a fixed signed helper install/serve/remove operation is added
   around that payload. No firmware files or UEP settings are changed.
 - **Root backend:** independent background process. It stores pairing files in a
-  root-owned private directory and offers three operations: status, SDB relay and
-  removal. It has no shell-command endpoint. SDB relay always targets the TV's own
+  root-owned private directory and offers status, SDB relay, app button settings
+  and removal. It has no shell-command endpoint. SDB relay always targets the TV's own
   `127.0.0.1:26101`. Both setup and per-boot launches use a dedicated transient
   systemd scope so an SDB daemon restart cannot also stop the root bridge.
   The scope needs `/usr/bin/systemd-run` and lasts only for the running process;

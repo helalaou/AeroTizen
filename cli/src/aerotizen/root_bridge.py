@@ -12,6 +12,8 @@ from aerotizen.root_state import APP_ID
 from aerotizen.sdb import AUTH, CNXN, MAX_DATA, NAMES, VERSION, Sdb, SdbError
 
 MAX_REPLY = 8192
+HOME_STATUS_PROTOCOL = 1
+HOME_STATUS_TIMEOUT_SECONDS = 4
 
 
 class BridgeError(SdbError):
@@ -22,9 +24,11 @@ class BridgeClient:
     def __init__(self, host, receipt, *, timeout=8):
         self.host, self.receipt, self.timeout = host, receipt, timeout
 
-    def open(self, operation):
-        if operation not in ("status", "sdb", "remove"):
+    def open(self, operation, *, button_request=None):
+        if operation not in ("status", "sdb", "remove", "buttons", "home_status"):
             raise BridgeError("Unknown root bridge operation")
+        if (operation == "buttons") != (button_request is not None):
+            raise BridgeError("Invalid button request")
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE  # Exact certificate pin is checked before authentication.
@@ -38,6 +42,8 @@ class BridgeClient:
                 raise BridgeError("Root bridge certificate does not match this TV's saved pairing")
             nonce = secrets.token_hex(16)
             request = {"protocol": 1, "operation": operation, "token": self.receipt["token"], "nonce": nonce}
+            if button_request is not None:
+                request["buttons"] = button_request
             secured.sendall(json.dumps(request, separators=(",", ":")).encode() + b"\n")
             reply = bytearray()
             while len(reply) <= MAX_REPLY:
@@ -75,8 +81,8 @@ class BridgeClient:
         except (KeyError, TypeError, ValueError, AttributeError) as exc:
             raise BridgeError("Root bridge returned an invalid current boot identity") from exc
 
-    def request(self, operation="status"):
-        connection, result = self.open(operation)
+    def request(self, operation="status", *, button_request=None):
+        connection, result = self.open(operation, button_request=button_request)
         connection.close()
         return result
 
@@ -95,3 +101,12 @@ class BridgeSdb(Sdb):
         self.max_data = min(MAX_DATA, limit or MAX_DATA)
         self.banner = payload.decode(errors="replace").strip("\0")
         return self
+
+    def read_home_status(self):
+        protocol = self.root_status.get("home_status_protocol")
+        if type(protocol) is not int or protocol != HOME_STATUS_PROTOCOL:
+            return None
+        result = BridgeClient(self.host, self.receipt, timeout=HOME_STATUS_TIMEOUT_SECONDS).request(
+            "home_status"
+        )
+        return result.get("home_settings") if result["boot_id"] == self.root_status["boot_id"] else None

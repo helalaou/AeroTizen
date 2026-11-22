@@ -16,9 +16,7 @@ const make = (app, id, title, timestamp) => ({
   image_url: "https://artwork.test/" + id + ".svg",
 });
 
-test("opt-in discovery, selection, merged row, remote navigation, launch and restart persistence", async ({
-  page,
-}, info) => {
+test("opt-in discovery, selection, merged row, remote navigation, launch and restart persistence", async ({ page }) => {
   const errors = [],
     reads = [];
   let primePlayback = 75;
@@ -152,17 +150,17 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   expect(reads).toEqual([]);
   await page.locator("#gear").click();
   await openCategory(page, "apps");
-  await page.locator('[data-key="continue-watching:true"]').click();
+  await page.locator('[data-key="continue-watching"]').click();
   await expect(page.locator("[data-settings-card=source]")).toHaveCount(3);
   await expect(page.locator("[data-settings-card=source]")).not.toContainText(["BBC iPlayer"]);
   expect(reads).toEqual([]);
   for (const id of [prime, itv, channel4]) await page.locator('[data-key="continue-app:' + id + '"]').click();
   await waitForEmptyChannel4();
   await expect(page.locator("[data-settings-card=source]")).not.toContainText(["5 items"]);
-  await expect(page.locator("[data-settings-card=source]").first()).toHaveCSS("width", "160px");
-  await expect(page.locator("[data-settings-card=source]").first()).toHaveCSS("height", "160px");
+  const sourceSize = await page.locator("[data-settings-card=source]").first().boundingBox();
+  expect(sourceSize.width).toBeGreaterThanOrEqual(160);
+  expect(sourceSize.height).toBe(sourceSize.width);
   await expect(page.locator("[data-settings-card=source][data-artwork-loaded=true]")).toHaveCount(3);
-  await page.screenshot({ path: info.outputPath("continue-watching-selection.png") });
   await closeSettings(page);
   await expect(page.locator("#continue-items > [data-key]")).toHaveCount(7);
   await expect(page.locator("#continue-items > [data-key]").first()).toContainText("Recent episode 0");
@@ -199,6 +197,10 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   expect(await episodeTitle.evaluate((n) => n.scrollWidth > n.clientWidth && n.clientHeight <= 31)).toBe(true);
   const video = page.locator("#continue-items > [data-key]").last(),
     videoTitle = video.locator("[data-continue-part=title]");
+  const homeArtwork = page.locator(`#grid > [data-id="${prime}"] [data-app-artwork]`);
+  const sourceArtwork = video.locator("[data-continue-part=source-badge] [data-app-artwork]");
+  await expect(homeArtwork).toBeVisible();
+  await expect(sourceArtwork).toHaveAttribute("src", await homeArtwork.getAttribute("src"));
   await expect(video.locator("[data-continue-part=episode]")).toHaveCount(0);
   await expect(videoTitle).toHaveCSS("-webkit-line-clamp", "2");
   expect(
@@ -261,7 +263,6 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   await page.keyboard.press("ArrowLeft");
   await page.keyboard.press("ArrowLeft");
   await expect(page.locator("#continue-items > [data-key]").first()).toHaveAttribute("data-focused", "true");
-  await page.screenshot({ path: info.outputPath("continue-watching-episode-title.png") });
   for (let i = 0; i < 6; i++) await page.keyboard.press("ArrowRight");
   const last = page.locator("#continue-items > [data-key]").last();
   await expect(last).toHaveAttribute("data-focused", "true");
@@ -271,7 +272,6 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
       return rect.x + rect.width;
     })
     .toBeLessThanOrEqual(1870);
-  await page.screenshot({ path: info.outputPath("continue-watching-home.png") });
   await page.keyboard.press("Enter");
   await expect
     .poll(() => page.evaluate(() => window.testLaunches.at(-1)))
@@ -287,7 +287,7 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
   await expect(page.locator("#continue-items > [data-key]")).toHaveCount(7);
   await page.locator("#gear").click();
   await openCategory(page, "apps");
-  await page.locator('[data-key="continue-watching:false"]').click();
+  await page.locator('[data-key="continue-watching"]').click();
   const stopped = reads.length;
   await closeSettings(page);
   await expect(page.locator("#continue-section")).toBeHidden();

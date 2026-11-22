@@ -58,7 +58,7 @@ test("Home layout persists independently of app size and rejects unknown layout 
 
 test("card columns validate the current values and preserve other preferences", () => {
   const key = "aerotizen.settings.v1";
-  for (const homeCardColumns of [undefined, null, 3, 4, 5, "4", 0, 6, "invalid"]) {
+  for (const homeCardColumns of [undefined, null, 3, 4, 5, 6, 7, 8, "4", 0, 9, "invalid"]) {
     const values = {
       homeCardColumns,
       home: ["video.app", "__fire"],
@@ -68,7 +68,7 @@ test("card columns validate the current values and preserve other preferences", 
       timeFormat: "12",
     };
     const { settings, store } = loadSettings({ [key]: JSON.stringify(values) });
-    const expected = [3, 4, 5].includes(homeCardColumns) ? homeCardColumns : 3;
+    const expected = [3, 4, 5, 6, 7, 8].includes(homeCardColumns) ? homeCardColumns : 3;
     assert.equal(settings.getSnapshot().homeCardColumns, expected);
     const saved = JSON.parse(store[key]);
     assert.equal(saved.homeCardColumns, expected);
@@ -147,7 +147,7 @@ test("the theme persists and falls back to the default for unknown values", () =
   assert.equal(settings.getSnapshot().theme, "classic");
   settings.update({ theme: "glass" });
   assert.equal(loadSettings(store).settings.getSnapshot().theme, "glass");
-  for (const theme of ["gloss", "amethyst"]) {
+  for (const theme of ["pop", "frost", "gloss", "amethyst", "mint", "halo"]) {
     settings.update({ theme });
     assert.equal(loadSettings(store).settings.getSnapshot().theme, theme);
   }

@@ -114,6 +114,7 @@ body[data-theme="gloss"] {
   --settings-sidebar-focus-surface: rgba(255, 255, 255, 0.1);
   --settings-focus-border: #fff;
   --settings-content-focus-shadow: 0 0 0 3px rgba(10, 4, 14, 0.25), 0 0 0 5px #fff;
+  --settings-selected-focus-outline: none;
   --settings-scroll-ring-room: 2px;
   --settings-sidebar-line-height: 1.2;
   --surface-control: rgba(255, 255, 255, 0.06);
@@ -132,6 +133,15 @@ body[data-theme="gloss"] {
   --control-text: var(--fg);
   --settings-slider-surface: rgba(255, 255, 255, 0.06);
   --settings-slider-track: rgba(255, 255, 255, 0.16);
+  --settings-toggle-off-surface: #302638;
+  --settings-toggle-off-border: #b7a0c9;
+  --settings-toggle-off-thumb: #f5edf9;
+  --settings-toggle-on-surface: var(--choice-selected-surface);
+  --settings-toggle-on-border: rgba(255, 255, 255, 0.4);
+  --settings-toggle-on-thumb: #fff;
+  --settings-toggle-radius: 22px;
+  --settings-toggle-track-shadow: inset 0 1px rgba(255, 255, 255, 0.45);
+  --settings-toggle-thumb-shadow: 0 1px 4px rgba(10, 4, 14, 0.45);
 
   --menu-focus-surface: rgba(255, 255, 255, 0.14);
   --menu-option-text: rgba(255, 244, 238, 0.86);

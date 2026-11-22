@@ -23,7 +23,7 @@ export const StoreCard = ({ size, renderControl }: Props) => {
     className: styles.card + " " + styles[size],
     label: t("apps.add"),
     children: (
-      <>
+      <div class={styles.content}>
         <Icon icon={CirclePlus} class={styles.icon} data-app-store-part="icon" />
         <div class={styles.label} data-app-store-part="label">
           {t("apps.add")}
@@ -31,7 +31,7 @@ export const StoreCard = ({ size, renderControl }: Props) => {
             {t("apps.store")}
           </div>
         </div>
-      </>
+      </div>
     ),
   });
 };

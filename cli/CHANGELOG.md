@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.1.1](https://github.com/helalaou/AeroTizen/compare/cli-v3.1.0...cli-v3.1.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* **cli:** use SDB model when HTTP metadata is blank ([#304](https://github.com/helalaou/AeroTizen/issues/304)) ([bd8f7bf](https://github.com/helalaou/AeroTizen/commit/bd8f7bf699c09f24196b46a3600f4463b22a3a6a))
+* **launcher:** report IP Control failures in support logs ([#306](https://github.com/helalaou/AeroTizen/issues/306)) ([6be4ca8](https://github.com/helalaou/AeroTizen/commit/6be4ca82a727b58241a751c6fce9fc619ff89103))
+
+## [3.1.0](https://github.com/helalaou/AeroTizen/compare/cli-v3.0.1...cli-v3.1.0) (2026-11-18)
+
+
+### Features
+
+* **cli:** read current Home settings through the paired helper ([#281](https://github.com/helalaou/AeroTizen/issues/281)) ([a1c0df7](https://github.com/helalaou/AeroTizen/commit/a1c0df7bc094e11b0c788fff885d712a4ebc17af))
+* **cli:** remap or disable remote app buttons ([#276](https://github.com/helalaou/AeroTizen/issues/276)) ([0e7277e](https://github.com/helalaou/AeroTizen/commit/0e7277e1e19c2b0efb2b0b3e101a4ce147a1ea9d))
+* **cli:** rename remote app buttons ([#297](https://github.com/helalaou/AeroTizen/issues/297)) ([46a58aa](https://github.com/helalaou/AeroTizen/commit/46a58aa361e250c2208e0b2d2c306fff35f595d8))
+
 ## [3.0.1](https://github.com/helalaou/AeroTizen/compare/cli-v3.0.0...cli-v3.0.1) (2026-11-12)
 
 

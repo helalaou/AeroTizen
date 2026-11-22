@@ -20,6 +20,13 @@ body[data-theme="classic"] {
   --settings-close-surface: rgba(255, 255, 255, 0.07);
   --app-label-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   --settings-slider-track: #3a3a40;
+  --settings-toggle-off-surface: #3a3a40;
+  --settings-toggle-off-border: #9a9aa8;
+  --settings-toggle-off-thumb: #fff;
+  --settings-toggle-on-surface: #7c5cff;
+  --settings-toggle-on-border: #7c5cff;
+  --settings-toggle-on-thumb: #fff;
+  --settings-toggle-radius: 22px;
   --settings-slider-thumb: #fff;
   --settings-slider-thumb-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   --wallpaper-label-text: #fff;
@@ -70,6 +77,7 @@ body[data-theme="classic"] {
   --settings-content-focus-surface: rgba(124, 92, 255, 0.12);
   --settings-sidebar-focus-shadow: none;
   --settings-content-focus-shadow: none;
+  --settings-selected-focus-outline: 2px solid var(--choice-selected-text, var(--control-focused-text));
   --choice-selected-surface: var(--focus);
   --choice-selected-border: var(--border-control);
   --choice-focused-surface: rgba(124, 92, 255, 0.25);

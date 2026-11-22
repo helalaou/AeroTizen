@@ -85,6 +85,8 @@ test("discovery keeps hidden provider records, resolves watcher IDs and saves on
   h.requests[0].done(records);
   const snapshot = h.service.getSnapshot();
   assert.equal(snapshot.ready, true);
+  assert.equal("all" in h.service, false);
+  assert.equal("ready" in h.service, false);
   assert.deepEqual(
     snapshot.all.map((app) => app.id),
     ["preloaded", "video", "youtube"],

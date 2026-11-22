@@ -1,6 +1,7 @@
 import { useMemo } from "preact/hooks";
 
 import { useStore } from "../shared/hooks/useStore";
+import { isDateVisible } from "../shared/time/clockVisibility";
 
 import { useSettingsEnvironment } from "./hooks/useSettingsEnvironment";
 import { useSettingsNavigation } from "./hooks/useSettingsNavigation";
@@ -37,6 +38,10 @@ export const SettingsContent = ({ active, openedAt }: { active: boolean; openedA
     continueEnabled: settings.continueWatching,
     animated,
     locationLabel,
+    weatherEnabled: settings.showWeather,
+    timeEnabled: settings.showTime,
+    dateEnabled: isDateVisible(settings),
+    hdmiExceptionsEnabled: settings.hideDisconnectedHdmi,
   });
   const homeApps = useMemo(
     () => (

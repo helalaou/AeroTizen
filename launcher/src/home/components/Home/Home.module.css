@@ -11,6 +11,36 @@
   &[data-expanded="true"] {
     --home-content-padding: 24px;
   }
+
+  &[data-scroll-mode="native"] {
+    .viewport {
+      mask-image: none;
+      overflow-y: auto;
+      scroll-behavior: var(--motion-scroll-behavior);
+    }
+
+    .viewport::-webkit-scrollbar {
+      display: none;
+    }
+
+    .mask,
+    .maskContent,
+    .rows,
+    .page {
+      height: 100%;
+    }
+
+    .mask,
+    .maskContent,
+    .rows {
+      mask-image: none;
+      transform: none;
+    }
+
+    .rows {
+      will-change: auto;
+    }
+  }
 }
 
 .viewport {

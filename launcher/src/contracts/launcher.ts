@@ -31,6 +31,7 @@ export interface ContinueSource {
   readonly name: string;
   readonly status: string;
   readonly storeId: string;
+  readonly supportsSeparateBackdrop?: boolean;
 }
 type BackgroundId = Extract<MessageKey, `scene.${string}`> extends `scene.${infer Id}` ? Id : never;
 
@@ -105,6 +106,7 @@ export interface SettingsBridge {
   register(handlers: NavigationHandlers): () => void;
 }
 export interface ContinueItem {
+  readonly backdropImage?: string;
   readonly backgroundImage?: string;
   readonly duration: number;
   readonly episode: number;

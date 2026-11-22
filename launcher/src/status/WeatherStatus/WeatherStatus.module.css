@@ -1,5 +1,9 @@
 .compact {
+  --weather-reading-width: calc(46px + 12px + 3ch);
+
   display: flex;
+  flex: 0 100000 auto;
+  min-width: var(--weather-reading-width);
   align-items: center;
   font-size: 36px;
   margin-right: 18px;
@@ -13,6 +17,7 @@
   }
 
   > svg {
+    flex-shrink: 0;
     width: 46px;
     height: 46px;
   }
@@ -28,12 +33,14 @@
 }
 
 .compactTemperature {
+  flex-shrink: 0;
   font-weight: 700;
 }
 
 .compactLocation {
   color: var(--muted);
   font-weight: 400;
+  unicode-bidi: plaintext;
 }
 
 .expanded {

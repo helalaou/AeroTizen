@@ -3,6 +3,7 @@
   aerotizen discover            find TVs on your network
   aerotizen status              model, Developer Mode, sdb capabilities
   aerotizen apps                list installed packages, classified
+  aerotizen apps --json         list installed apps with their Tizen IDs
   aerotizen debloat             pick packages to remove, then remove them
   aerotizen debloat --remove PKGID[,PKGID...] [--yes]
   aerotizen certs               sign in to Samsung, create signing certs for this TV
@@ -14,6 +15,8 @@
   aerotizen update cli          replace the standalone CLI with a newer release
   aerotizen uninstall launcher  remove the launcher (or: uninstall APPID for another app you installed)
   aerotizen key KEY_VOLUP [n]   press a remote button
+  aerotizen buttons list        discover app buttons and show saved shortcuts
+  aerotizen buttons status      show learned app buttons and their actions
   aerotizen launch APPID        open an app and check that it came up
   aerotizen inspect launcher    restart the launcher with Chrome DevTools
   aerotizen inspect APPID       inspect another app (--port defaults to 9222)
@@ -44,7 +47,7 @@ from collections import OrderedDict
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from aerotizen import __version__, catalog, diagnostics, discover, remote
+from aerotizen import __version__, buttons, catalog, diagnostics, discover, remote
 from aerotizen.device import DeviceSession
 from aerotizen.sdb import SdbError
 
@@ -119,6 +122,10 @@ def cmd_apps(args):
     host = pick_tv(args)
     with require_sdb(host) as s:
         text = s.applist()
+    if args.json:
+        apps = sorted(catalog.parse_applist(text), key=lambda app: (app["name"].casefold(), app["appid"]))
+        print(json.dumps({"apps": [{"app_id": app["appid"], "name": app["name"]} for app in apps]}, indent=2))
+        return
     print("snapshot:", snapshot(host, text))
     pkgs = packages(text)
     if args.raw:
@@ -434,6 +441,16 @@ def cmd_key(args):
         r.key(args.key, args.times)
 
 
+def cmd_buttons(args):
+    try:
+        result = buttons.run(args, pick_tv(args), STATE_DIR)
+        buttons.report(result, as_json=args.json)
+        if result.get("error"):
+            raise SystemExit(1)
+    except (OSError, SdbError, ValueError, KeyError) as exc:
+        sys.exit(f"App buttons: {exc}")
+
+
 def wait_on_screen(host, app_id, seconds=12.0):
     """Poll the TV until app_id reports visible; returns the last status (None if unknown)."""
     deadline, status = time.monotonic() + seconds, None
@@ -518,11 +535,44 @@ def cmd_home_probe(args):
         sys.exit(f"Home probe failed: {error}")
 
 
+def _report_paired_home_status(status, as_json):
+    if as_json:
+        print(json.dumps(status, indent=2))
+        return
+
+    def value(item):
+        if item is None:
+            return "Unavailable"
+        if type(item) is bool:
+            return "On" if item else "Off"
+        return item or "Not set"
+
+    button, startup = status["home_button"], status["startup"]
+    print("Home button")
+    print(f"  Assigned app = {value(button['assigned_app'])}")
+    print(f"  Configured Home app = {value(button['configured_app'])}")
+    print("Startup")
+    print(f"  Startup app = {value(startup['app'])}")
+    print(f"  Backup startup app = {value(startup['backup_app'])}")
+    print(f"  Smart Hub autostart = {value(startup['smart_hub_autostart'])}")
+    print("AeroTizen routing")
+    print(f"  Mode = {value(status['aerotizen_routing_mode'])}")
+    if status["native_settings_source"] is None:
+        print("The paired TV helper did not report native Home settings.", file=sys.stderr)
+
+
 def cmd_home(args):
     from aerotizen import home, home_control
     from aerotizen.root import SamsungTvRoot
 
     try:
+        if args.home_command == "status" and getattr(args, "paired", False):
+            from aerotizen import home_status
+
+            with require_sdb(pick_tv(args)) as session:
+                status = home_status.read_paired(session)
+            _report_paired_home_status(status, args.json)
+            return
         writing = args.home_command in ("apply", "restore")
         if getattr(args, "boot", False):
             print("The --boot option is deprecated. Home apply includes startup setup.", file=sys.stderr)
@@ -714,7 +764,9 @@ def main():
     sub.add_parser("status").set_defaults(fn=cmd_status)
     p = sub.add_parser("apps")
     p.add_argument("--all", action="store_true")
-    p.add_argument("--raw", action="store_true")
+    formats = p.add_mutually_exclusive_group()
+    formats.add_argument("--raw", action="store_true", help="print the TV's original app list")
+    formats.add_argument("--json", action="store_true", help="list apps and Tizen IDs as JSON")
     p.set_defaults(fn=cmd_apps)
     p = sub.add_parser("debloat")
     p.add_argument("--remove")
@@ -745,6 +797,9 @@ def main():
     p.add_argument("key")
     p.add_argument("times", nargs="?", type=int, default=1)
     p.set_defaults(fn=cmd_key)
+    buttons.configure_parser(
+        sub.add_parser("buttons", help="remap or disable physical app buttons"), cmd_buttons
+    )
     p = sub.add_parser("launch")
     p.add_argument("appid")
     p.set_defaults(fn=cmd_launch)
@@ -763,7 +818,13 @@ def main():
     for name in ("status", "backup", "apply", "restore"):
         command = commands.add_parser(name)
         if name in ("status", "backup"):
-            command.add_argument(
+            root_options = command
+            if name == "status":
+                root_options = command.add_mutually_exclusive_group()
+                root_options.add_argument(
+                    "--paired", action="store_true", help="read current settings using the paired TV helper"
+                )
+            root_options.add_argument(
                 "--root", action="store_true", help="use temporary root instead of the default SDK user"
             )
             command.add_argument("--root-tool", type=Path, help="verified samsung-tv-root v0.0.12 executable")

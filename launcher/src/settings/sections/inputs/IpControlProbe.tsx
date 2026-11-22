@@ -4,8 +4,8 @@ import type { LearnIpControlResult } from "../../../contracts/ipControl";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { ChoiceOption } from "../../components/ChoiceOption/ChoiceOption";
 import { ControlGroup } from "../../components/ControlGroup/ControlGroup";
+import { SettingsField } from "../../components/SettingsField/SettingsField";
 import { SettingsHint } from "../../components/SettingsHint/SettingsHint";
-import { SettingsSection } from "../../components/SettingsSection/SettingsSection";
 import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
 
 export const IpControlProbe = () => {
@@ -33,15 +33,21 @@ export const IpControlProbe = () => {
     t(`inputs.ipProbe.${result.status}`, "port" in result ? { port: result.port } : undefined);
 
   return (
-    <SettingsSection title={t("inputs.ipProbeTitle")} description={t("inputs.ipProbeHint")}>
-      <SettingsHint role="status" hidden={!message}>
-        {message}
-      </SettingsHint>
+    <SettingsField
+      title={t("inputs.ipProbeTitle")}
+      description={t("inputs.ipProbeHint")}
+      detailsHidden={!message}
+      details={
+        <SettingsHint role="status" hidden={!message}>
+          {message}
+        </SettingsHint>
+      }
+    >
       <ControlGroup id="ip-control-probe-actions">
-        <ChoiceOption id="ip-control-probe" onSelect={() => void run()}>
+        <ChoiceOption id="ip-control-probe" fill onSelect={() => void run()}>
           {t("inputs.ipProbeStart")}
         </ChoiceOption>
       </ControlGroup>
-    </SettingsSection>
+    </SettingsField>
   );
 };

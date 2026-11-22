@@ -4,6 +4,7 @@
     <StartupObject>RootTests</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../cli/native/home-common/HomeSettings.cs" Link="HomeSettings.cs" />
     <Compile Include="../../cli/native/root-bridge/*.cs" Link="Bridge/%(Filename)%(Extension)" />
     <Compile Include="../../cli/native/stremio-bridge/*.cs" Link="Stremio/%(Filename)%(Extension)" />
     <Compile Include="../../cli/native/root-common/*.cs" Link="Common/%(Filename)%(Extension)" />

@@ -1,0 +1,261 @@
+body[data-theme="mint"] {
+  --font-ui: "Noto Sans KR", "Alexandria", SamsungOne, Arial, sans-serif;
+  --home-section-heading-weight: 700;
+  --header-tab-weight: 700;
+  --clock-time-weight: 800;
+
+  --bg: #0c0d10;
+  --fg: #f4f6f7;
+  --muted: rgba(230, 235, 238, 0.62);
+  --focus-rgb: 25, 227, 177;
+  --focus: rgb(var(--focus-rgb));
+  --theme-end-rgb: 21, 201, 224;
+  --theme-gradient: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3ClinearGradient id='a' gradientUnits='userSpaceOnUse' x1='0' y1='50' x2='100' y2='50'%3E%3Cstop offset='0' stop-color='rgb(25,227,177)' stop-opacity='1'/%3E%3Cstop offset='1' stop-color='rgb(21,201,224)' stop-opacity='1'/%3E%3C/linearGradient%3E%3Crect width='100' height='100' fill='url(%23a)'/%3E%3C/svg%3E")
+    0 0 / 100% 100%;
+
+  --header-tab-surface: rgba(30, 31, 34, 0.72);
+  --header-tab-border: rgba(255, 255, 255, 0.08);
+  --header-tab-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+  --header-tab-text: rgba(240, 244, 246, 0.72);
+  --header-focus-surface: rgba(var(--focus-rgb), 0.16);
+  --header-focus-shadow: none;
+  --header-tab-radius: 38px;
+  --header-tab-plate-radius: 30px;
+  --header-tab-plate-surface: var(--theme-gradient);
+  --header-tab-plate-shadow: 0 8px 22px rgba(var(--focus-rgb), 0.35);
+  --header-tab-plate-text: #05211b;
+
+  --home-section-heading-tracking: 1.5px;
+  --home-card-radius: 14px;
+  --home-card-focus-shadow:
+    0 0 0 5px var(--focus), 0 0 30px 8px rgba(var(--focus-rgb), 0.45), 0 22px 40px rgba(0, 0, 0, 0.5);
+  --home-card-focus-shadow-top:
+    0 0 0 5px var(--focus), 0 21px 30px 8px rgba(var(--focus-rgb), 0.45), 0 22px 40px rgba(0, 0, 0, 0.5);
+  --home-card-focus-transform: translateZ(0) scale(1.05);
+  --home-card-move-shadow: var(--home-card-focus-shadow);
+  --home-row-clearance: 96px;
+
+  --continue-surface: #232529;
+  --continue-shadow: none;
+  --continue-label-surface: #2a2c31;
+  --continue-episode-text: rgb(var(--theme-end-rgb));
+  --continue-progress-track: rgba(255, 255, 255, 0.12);
+  --continue-card-radius: 14px;
+  --continue-badge-radius: 10px;
+  --continue-focus-shadow: 0 0 0 5px var(--focus), 0 0 30px 8px rgba(var(--focus-rgb), 0.45);
+  --continue-focus-label-surface: #fff;
+  --continue-focus-title-text: #111316;
+  --continue-focus-episode-text: #087f6b;
+  --continue-artwork-mark: var(--focus)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 6.5v11l9-5.5z' fill='white'/%3E%3C/svg%3E")
+    center / 28px no-repeat;
+  --continue-artwork-mark-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+
+  --input-dock-surface: rgba(30, 31, 34, 0.82);
+  --input-dock-border: rgba(255, 255, 255, 0.08);
+  --input-dock-radius: 26px;
+  --input-dock-shadow: none;
+  --input-dock-shine: none;
+  --input-card-radius: 14px;
+  --input-card-border: rgba(255, 255, 255, 0.06);
+  --input-card-surface: #26282c;
+  --input-empty-border: var(--input-card-border);
+  --input-empty-surface: var(--input-card-surface);
+  --input-card-shadow: none;
+  --input-text: var(--fg);
+  --input-label-shadow: none;
+  --input-subtitle-text: rgba(230, 235, 238, 0.6);
+  --input-icon-text: var(--focus);
+  --input-connected-border: rgba(var(--focus-rgb), 0.55);
+  --input-connected-surface: #26282c;
+  --input-connected-shadow: none;
+  --input-recognized-border: rgba(var(--theme-end-rgb), 0.45);
+  --input-recognized-surface: #26282c;
+  --input-focus-border: var(--focus);
+  --input-focus-surface: #2c2f33;
+  --input-focus-shadow: 0 0 26px 6px rgba(var(--focus-rgb), 0.35);
+  --input-focus-subtitle-text: rgba(255, 255, 255, 0.8);
+  --input-focus-icon-text: var(--focus);
+  --input-connected-status-text: var(--focus);
+  --input-connected-status-border: rgba(var(--focus-rgb), 0.4);
+  --input-connected-status-surface: rgba(var(--focus-rgb), 0.1);
+  --input-recognized-status-text: rgb(var(--theme-end-rgb));
+  --input-recognized-status-border: rgba(var(--theme-end-rgb), 0.4);
+  --input-recognized-status-surface: rgba(var(--theme-end-rgb), 0.1);
+  --input-focus-status-border: rgba(var(--focus-rgb), 0.6);
+  --input-focus-status-surface: rgba(var(--focus-rgb), 0.16);
+
+  --back-to-top-surface: #26282c;
+  --back-to-top-border: rgba(var(--focus-rgb), 0.55);
+
+  --settings-overlay: rgba(0, 0, 0, 0.45);
+  --settings-surface: #1d1e21;
+  --settings-main-surface: #17181b;
+  --settings-border: rgba(255, 255, 255, 0.07);
+  --settings-radius: 16px;
+  --settings-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  --settings-text: var(--fg);
+  --settings-muted: rgba(230, 235, 238, 0.6);
+  --settings-kicker: rgba(230, 235, 238, 0.6);
+  --settings-subtitle: rgba(220, 226, 230, 0.66);
+  --input-placeholder: rgba(220, 226, 230, 0.66);
+  --settings-category-text: rgba(244, 246, 247, 0.86);
+  --settings-divider: rgba(255, 255, 255, 0.07);
+  --settings-heading-divider: rgba(255, 255, 255, 0.08);
+  --settings-close-surface: rgba(255, 255, 255, 0.06);
+  --settings-sidebar-focus-surface: rgba(var(--focus-rgb), 0.12);
+  --settings-sidebar-focus-shadow: none;
+  --settings-content-focus-shadow: none;
+  --settings-selected-focus-outline: 2px solid var(--choice-selected-text, var(--control-focused-text));
+  --settings-sidebar-line-height: 1.2;
+  --settings-return-label-wrap: nowrap;
+  --settings-focus-border: var(--focus);
+  --surface-control: #26282c;
+  --settings-card-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  --border-control: rgba(255, 255, 255, 0.07);
+  --choice-selected-surface: var(--theme-gradient);
+  --choice-selected-border: transparent;
+  --choice-selected-text: #05211b;
+  --choice-focused-surface: #2f3236;
+  --selection-surface: var(--theme-gradient);
+  --settings-category-icon: var(--focus);
+  --control-text: var(--fg);
+  --selection-text: #05211b;
+  --settings-slider-track: rgba(255, 255, 255, 0.12);
+  --settings-toggle-off-surface: #32383b;
+  --settings-toggle-off-border: #94a7a4;
+  --settings-toggle-off-thumb: #edf5f3;
+  --settings-toggle-on-surface: var(--theme-gradient);
+  --settings-toggle-on-border: #19e3b1;
+  --settings-toggle-on-thumb: #05211b;
+  --settings-toggle-radius: 22px;
+
+  --menu-focus-surface: rgba(var(--focus-rgb), 0.12);
+  --menu-option-text: rgba(244, 246, 247, 0.86);
+  --toast-surface: #232529;
+  --toast-radius: 14px;
+  --toast-shadow: inset 0 0 0 1px rgba(var(--focus-rgb), 0.35), 0 18px 40px rgba(0, 0, 0, 0.5);
+  --card: #1c1c1e;
+  --focus-glow: rgba(237, 242, 255, 0.23);
+  --update-notice: #ffd34f;
+  --fireplace-notice-surface: rgba(0, 0, 0, 0.55);
+  --app-label-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --settings-slider-thumb: #fff;
+  --settings-slider-thumb-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --wallpaper-label-text: #fff;
+  --wallpaper-label-surface: rgba(0, 0, 0, 0.72);
+  --wallpaper-label-shadow: 0 1px 4px #000;
+  --settings-focused-surface: rgba(236, 242, 255, 0.15);
+  --header-tab-isolation: isolate;
+  --clock-text: #f3f7ff;
+  --clock-shadow: 0 3px 16px rgba(0, 0, 0, 0.6);
+  --clock-minimal-text: rgba(248, 251, 255, 0.93);
+  --clock-minimal-shadow: 0 2px 11px rgba(0, 0, 0, 0.33);
+  --clock-minimal-date-text: rgba(238, 244, 251, 0.85);
+  --clock-bold-text: #fff;
+  --clock-bold-stroke: rgba(255, 255, 255, 0.85);
+  --clock-bold-shadow: 0 5px 18px rgba(0, 0, 0, 0.4);
+  --weather-expanded-text: #e8eff8;
+  --weather-location-text: rgba(235, 241, 249, 0.82);
+  --weather-minimal-text: rgba(245, 250, 255, 0.88);
+  --weather-icon-sun: #ffd34d;
+  --weather-icon-cloud: #e4e9f0;
+  --weather-icon-rain: #6cb6ff;
+  --weather-icon-snow: #fff;
+  --header-gear-border: 2px;
+  --back-to-top-focus-shadow: 0 0 0 2px var(--bg), 0 0 0 5px var(--focus);
+  --home-section-heading-text: rgba(250, 252, 255, 0.85);
+  --home-section-heading-shadow: 0 2px 9px rgba(0, 0, 0, 0.42);
+  --reorder-surface: rgba(255, 255, 255, 0.95);
+  --reorder-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  --reorder-icon: #111;
+  --settings-content-focus-surface: rgba(236, 242, 255, 0.055);
+  --control-focused-text: #fff;
+  --control-radius: 17px;
+  --input-underline: #4a4a50;
+  --input-icon-badge: transparent;
+  --input-connected-text: var(--input-text);
+  --input-connected-icon-text: var(--input-icon-text);
+  --input-connected-subtitle-text: var(--input-subtitle-text);
+  --input-empty-text: rgba(255, 255, 255, 0.89);
+  --input-empty-subtitle-text: rgba(237, 242, 250, 0.64);
+  --input-focus-text: #fff;
+  --input-empty-focus-subtitle-text: rgba(255, 255, 255, 0.88);
+  --input-status-text: rgba(255, 255, 255, 0.87);
+  --input-status-border: rgba(255, 255, 255, 0.2);
+  --input-status-surface: rgba(0, 0, 0, 0.25);
+  --app-placeholder-surface: var(--continue-surface);
+  --continue-artwork-surface: #101014;
+  --continue-badge-shadow: 0 2px 8px #0008;
+  --menu-surface: var(--settings-surface);
+  --menu-border: var(--settings-border);
+  --menu-shadow: var(--settings-shadow);
+  --menu-text: #fff;
+  --menu-backdrop: rgba(5, 8, 16, 0.53);
+  --network-offline: #ff6b6b;
+}
+
+:root:not([data-light-background="true"]) body[data-theme="mint"] {
+  --header-icon-text: var(--focus);
+  --header-status-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  --home-section-heading-text: #fff;
+  --home-section-heading-shadow: none;
+}
+
+:root[data-light-background="true"] body[data-theme="mint"] {
+  --home-section-heading-text: #000;
+  --input-dock-surface: rgba(30, 31, 34, 0.92);
+  --clock-text: #15151b;
+  --clock-shadow: none;
+  --clock-minimal-text: #15151b;
+  --clock-minimal-shadow: none;
+  --clock-minimal-date-text: #303038;
+  --clock-bold-text: #15151b;
+  --clock-bold-stroke: #15151b;
+  --clock-bold-shadow: none;
+  --weather-expanded-text: #15151b;
+  --weather-location-text: #303038;
+  --weather-minimal-text: #15151b;
+  --weather-icon-contrast: currentColor;
+  --home-section-heading-shadow: none;
+  --network-offline: #a01429;
+}
+
+:root[data-light-background="true"] body[data-theme="mint"] [data-header-shortcuts],
+:root[data-light-background="true"] body[data-theme="mint"] [data-header-status] {
+  --fg: #15151b;
+  --muted: #303038;
+}
+
+:root[data-light-background="true"] body[data-theme="mint"] [data-header-shortcuts] {
+  --header-focus-surface: rgba(0, 0, 0, 0.12);
+  --header-focus-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.55);
+}
+
+:root[data-light-background="true"] body[data-theme="mint"] [data-header-status] {
+  --muted: #25252c;
+  --clock-minimal-date-text: #000;
+  --weather-location-text: #000;
+  --weather-minimal-text: #000;
+}
+
+:root:not([data-light-background="true"]) body[data-theme="mint"] [data-header-status] {
+  --muted: rgba(230, 235, 238, 0.85);
+}
+
+:root:not([data-light-background="true"]) body[data-theme="mint"] [data-header-status] [data-clock] {
+  --clock-minimal-date-text: #fff;
+  --weather-location-text: #fff;
+  --weather-minimal-text: #fff;
+}
+
+:root:not([data-light-background="true"]) body[data-theme="mint"] [data-header-shortcuts] {
+  --header-icon-surface: rgba(12, 13, 16, 0.3);
+  --header-focus-surface:
+    linear-gradient(rgba(var(--focus-rgb), 0.16), rgba(var(--focus-rgb), 0.16)), rgba(12, 13, 16, 0.4);
+}
+
+body[data-theme="mint"] [data-input-dock] {
+  --input-empty-opacity: 1;
+  --input-status-text: #fff;
+}

@@ -5,7 +5,7 @@ import styles from "./SettingsHeading.module.css";
 interface Props extends Omit<JSX.HTMLAttributes<HTMLHeadingElement>, "children" | "class" | "title"> {
   children?: ComponentChildren;
   class?: string;
-  description?: string;
+  description?: ComponentChildren;
   descriptionId?: string;
   kicker?: string;
   title: string;

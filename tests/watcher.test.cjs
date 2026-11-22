@@ -153,6 +153,10 @@ function harness(options = {}) {
             read: (done) => done(null, "VERSION_ID=9.0.0\nBUILD_ID=test"),
           });
       if (name === "./diagnostics-store") return (tz, ready) => ready(options.diagnosticsStorage || null);
+      if (name === "./ip-control") {
+        if (options.ipControlLoadError) throw options.ipControlLoadError;
+        return () => {};
+      }
       if (name === "./artmode")
         return (config) => {
           artOptions = config;
@@ -181,10 +185,10 @@ function harness(options = {}) {
   };
   context.exports = context.module.exports;
   vm.runInNewContext(source, context, { filename: "watcher.js" });
-  function control(path = "/") {
+  function control(path = "/", headers) {
     let body;
     servers[0].handler(
-      { method: "GET", url: path },
+      { method: "GET", url: path, headers },
       {
         writeHead() {},
         end(value) {
@@ -983,6 +987,18 @@ test("pending diagnostic storage does not delay Home requests or native mode con
   completions.shift()(null);
   h.advance(500);
   assert.equal(saves.length, 2);
+});
+
+test("the watcher starts and exports diagnostics when the optional IP Control module fails to load", () => {
+  const h = harness({ capability: false, ipControlLoadError: new ReferenceError("PRIVATE") });
+  h.api.onStart();
+  h.advance(0);
+  assert.equal(h.state().homeControl.mode, "watcher");
+  const logs = h.control("/diagnostics/logs", { "x-aerotizen-diagnostics": "1" });
+  const failure = logs.records.find(({ event }) => event === "ip_control.start_failed");
+  assert.deepEqual(failure.data, { reason: "ip_control_initialization_failed", error: "ReferenceError" });
+  h.advance(30000);
+  assert.ok(h.state().heartbeats > 0);
 });
 
 test("repeated app query fields cannot clear inventory or an active watch", () => {

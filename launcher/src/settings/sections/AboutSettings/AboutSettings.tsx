@@ -5,8 +5,9 @@ import { useStore } from "../../../shared/hooks/useStore";
 import type { MessageKey } from "../../../shared/i18n/catalogues";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { ChoiceOption } from "../../components/ChoiceOption/ChoiceOption";
+import { ControlGroup } from "../../components/ControlGroup/ControlGroup";
+import { SettingsField } from "../../components/SettingsField/SettingsField";
 import { SettingsHint } from "../../components/SettingsHint/SettingsHint";
-import { SettingsSection } from "../../components/SettingsSection/SettingsSection";
 import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
 
 import styles from "./AboutSettings.module.css";
@@ -33,21 +34,29 @@ export const AboutSettings = ({ active }: { active: boolean }) => {
     }
   }, [active, drawer, state, unread, updates]);
   return (
-    <SettingsSection title={t("settings.about.installedVersion", { version: installedVersion })}>
-      <div class={styles.check}>
-        <ChoiceOption
-          id="about:check-updates"
-          inline
-          busy={check === "checking"}
-          disabled={check === "checking"}
-          onSelect={updates.checkNow}
-        >
-          {t("settings.about.checkForUpdates")}
-        </ChoiceOption>
-        <SettingsHint class={styles.checkStatus} role="status" data-update-check={check} hidden={!checkMessage}>
-          {checkMessage && t(checkMessage)}
-        </SettingsHint>
-      </div>
+    <>
+      <SettingsField
+        title={t("settings.about.installedVersion", { version: installedVersion })}
+        detailsHidden={!checkMessage}
+        details={
+          <SettingsHint class={styles.checkStatus} role="status" data-update-check={check} hidden={!checkMessage}>
+            {checkMessage && t(checkMessage)}
+          </SettingsHint>
+        }
+      >
+        <ControlGroup id="about-update-actions">
+          <ChoiceOption
+            id="about:check-updates"
+            fill
+            inline
+            busy={check === "checking"}
+            disabled={check === "checking"}
+            onSelect={updates.checkNow}
+          >
+            {t("settings.about.checkForUpdates")}
+          </ChoiceOption>
+        </ControlGroup>
+      </SettingsField>
       {latestVersion && (
         <div class={styles.update} data-launcher-update>
           <h4 class={styles.updateTitle}>{t("settings.about.updateVersion", { version: latestVersion })}</h4>
@@ -86,6 +95,6 @@ export const AboutSettings = ({ active }: { active: boolean }) => {
         </dl>
         <p class={styles.paragraph + " " + styles.community}>{t("settings.about.community")}</p>
       </div>
-    </SettingsSection>
+    </>
   );
 };

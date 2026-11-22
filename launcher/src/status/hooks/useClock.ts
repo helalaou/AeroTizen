@@ -2,6 +2,7 @@ import type { ClockService } from "../../contracts/launcher";
 import type { SettingsSnapshot, TimeFormat } from "../../contracts/preferences";
 import { useStore } from "../../shared/hooks/useStore";
 import type { Store } from "../../shared/state/createStore";
+import { isDateVisible } from "../../shared/time/clockVisibility";
 import { zonedDate } from "../../shared/time/zonedDate";
 
 const getTimeFields = (clock: ClockService, now: Date, format: TimeFormat, text: string) => {
@@ -23,7 +24,7 @@ export const useClock = (time: Store<number>, clock: ClockService, settings: Set
   return {
     timestamp,
     text,
-    date: settings.dateFormat === "none" ? "" : clock.formatDate(now, settings.dateFormat),
+    date: isDateVisible(settings) ? clock.formatDate(now, settings.dateFormat) : "",
     ...fields,
   };
 };

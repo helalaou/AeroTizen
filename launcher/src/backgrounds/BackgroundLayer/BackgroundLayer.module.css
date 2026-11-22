@@ -7,4 +7,8 @@
   overflow: hidden;
   z-index: -1;
   pointer-events: none;
+
+  &[data-cinema-covered="true"] {
+    --wallpaper-animation-play-state: paused;
+  }
 }

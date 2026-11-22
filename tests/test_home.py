@@ -8,7 +8,7 @@ import re
 import shlex
 import shutil
 import subprocess
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 
 import pytest
@@ -98,8 +98,85 @@ def status():
     }
 
 
+@pytest.fixture
+def sdk_home_session(monkeypatch):
+    class Session:
+        banner = "device::UE43U8000FKXXU::0"
+
+        def duid(self):
+            return "test-device"
+
+        def capability(self):
+            return {"cpu_arch": "armv7"}
+
+    document = query()
+    document["uid"] = 901
+    monkeypatch.setattr(home, "load_helper", lambda: {name: b"dll" for name in home.HELPER_FILES})
+    monkeypatch.setattr(
+        sdk,
+        "run",
+        lambda *args: {
+            "exit_code": 0,
+            "stdout": output(document).replace(home.CLEANUP_MARKER, sdk.CLEANUP_MARKER),
+            "staging_cleaned": True,
+        },
+    )
+    return Session()
+
+
+@pytest.mark.parametrize("model_metadata", [{}, {"modelName": ""}, {"modelName": None}, {"modelName": " \t"}])
+def test_cli_backup_uses_sdb_model_when_http_model_is_missing(
+    monkeypatch, tmp_path, capsys, sdk_home_session, model_metadata
+):
+    metadata = {"model": "25_KSUE_UB", "name": "", **model_metadata}
+    original_metadata = copy.deepcopy(metadata)
+    monkeypatch.setattr(cli, "STATE_DIR", tmp_path)
+    monkeypatch.setattr(cli, "require_sdb", lambda host: nullcontext(sdk_home_session))
+    monkeypatch.setattr(cli.remote, "info", lambda host: metadata)
+    monkeypatch.setattr("sys.argv", ["aerotizen", "--tv", "192.0.2.10", "home", "backup", "--json"])
+
+    cli.main()
+
+    result = json.loads(capsys.readouterr().out)
+    baseline = json.loads(Path(result["backup"]["path"]).read_text())
+    assert result["backup"]["created"] and result["backup"]["matches_current"]
+    assert baseline["device"]["model"] == "UE43U8000FKXXU"
+    assert baseline["device"]["platform"] == "25_KSUE_UB"
+    assert baseline["device"]["identity_sha256"] == hashlib.sha256(b"test-device").hexdigest()
+    assert baseline["evidence"]["model_metadata_source"] == "live SDB banner; HTTP model metadata unavailable"
+    assert metadata == original_metadata
+
+
+@pytest.mark.parametrize("source", [None, "identity-bound original backup; HTTP metadata unavailable"])
+def test_read_status_preserves_supplied_model_metadata(sdk_home_session, source):
+    metadata = {"modelName": "TEST-FRAME", "model": "TEST"}
+    if source is not None:
+        metadata["_aerotizen_metadata_source"] = source
+
+    result = home.read_status(sdk_home_session, None, metadata)
+
+    assert result["device"]["model"] == "TEST-FRAME"
+    assert result["evidence"]["model_metadata_source"] == (source or "live HTTP metadata")
+
+
+@pytest.mark.parametrize(
+    "banner",
+    ["", "host::UE43U8000FKXXU::0", "device::::0", "device::UE43U8000FKXXU::0::extra"],
+)
+def test_missing_model_and_invalid_sdb_banner_cannot_become_original(tmp_path, sdk_home_session, banner):
+    sdk_home_session.banner = banner
+    result = home.read_status(sdk_home_session, None, {"modelName": "", "model": "25_KSUE_UB"})
+
+    with pytest.raises(home.HomeError, match="Invalid baseline metadata or device binding"):
+        home.save_backup(result, state_dir=tmp_path)
+
+    assert not (tmp_path / "backups").exists()
+
+
 def test_native_helper_imports_only_getters_and_memory_functions():
-    source = (ROOT / "cli/native/home-query/HomeQuery.cs").read_text()
+    source = (ROOT / "cli/native/home-query/HomeQuery.cs").read_text() + (
+        ROOT / "cli/native/home-common/HomeSettings.cs"
+    ).read_text()
     imports = set(re.findall(r"extern\s+(?:uint|void|IntPtr|int)\s+(\w+)\(", source))
     assert imports == {"getuid", "free", "vconf_get_str", "vconf_get_int", "app_operation_get_current_app"}
 
@@ -112,6 +189,8 @@ def test_packaged_helper_matches_current_source_and_loads():
         + (ROOT / "cli/native/home-query/HomeQuery.csproj").read_bytes()
         + b"\0"
         + (ROOT / "cli/native/home-common/Installation.cs").read_bytes()
+        + b"\0"
+        + (ROOT / "cli/native/home-common/HomeSettings.cs").read_bytes()
     )
     assert manifest["source_sha256"] == hashlib.sha256(sources).hexdigest()
     files = home.load_helper()

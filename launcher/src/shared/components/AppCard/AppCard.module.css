@@ -36,6 +36,7 @@
     z-index: 2;
 
     [data-app-grid][data-scroll="false"][data-columns="5"] > &:nth-child(-n + 5):not([data-moving="true"]),
+    [data-app-grid][data-scroll="false"][data-columns="6"] > &:nth-child(-n + 6):not([data-moving="true"]),
     [data-app-grid][data-scroll="false"][data-columns="4"] > &:nth-child(-n + 4):not([data-moving="true"]),
     [data-app-grid][data-scroll="false"][data-columns="3"] > &:nth-child(-n + 3):not([data-moving="true"]),
     [data-app-grid][data-scroll="true"] > &:not([data-moving="true"]) {
@@ -55,17 +56,22 @@
 }
 
 .choice {
-  flex-basis: 160px;
-  width: 160px;
-  height: 160px;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: auto;
   border-radius: var(--control-radius);
-  flex-direction: var(--settings-card-direction, row);
-  padding: var(--settings-card-padding, 0px);
   background: var(--settings-card-surface, var(--app-placeholder-surface));
   box-shadow: var(--settings-card-shadow, none);
 
+  &::before {
+    content: "";
+    display: block;
+    padding-top: 100%;
+  }
+
   &[aria-pressed="false"] {
-    opacity: 0.5;
+    opacity: var(--settings-card-unselected-opacity, 0.5);
 
     &[data-focused="true"] {
       opacity: 0.85;
@@ -73,11 +79,24 @@
   }
 
   &[data-focused="true"] {
-    background: var(--settings-focused-surface);
+    background: var(--settings-card-focused-surface, var(--settings-focused-surface));
   }
 
   &[aria-disabled="true"],
   &[aria-disabled="true"][data-focused="true"] {
     opacity: 0.35;
   }
+}
+
+.choiceContent {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: var(--settings-card-direction, row);
+  padding: var(--settings-card-padding, 0px);
 }

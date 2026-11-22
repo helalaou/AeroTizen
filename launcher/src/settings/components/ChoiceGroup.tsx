@@ -5,7 +5,6 @@ import { ChoiceOption } from "./ChoiceOption/ChoiceOption";
 import { ControlGroup } from "./ControlGroup/ControlGroup";
 
 interface Props<T extends string | boolean> {
-  grid?: boolean;
   id: string;
   label: string;
   onSelect: (value: T) => void;
@@ -13,15 +12,16 @@ interface Props<T extends string | boolean> {
   value: T;
 }
 
-export const ChoiceGroup = <T extends string | boolean>({ id, value, options, onSelect, label, grid }: Props<T>) => {
+export const ChoiceGroup = <T extends string | boolean>({ id, value, options, onSelect, label }: Props<T>) => {
   const { t } = useTranslation();
   return (
-    <ControlGroup id={id} label={label} grid={grid}>
+    <ControlGroup id={id} label={label}>
       {options.map((option) => (
         <ChoiceOption
           key={String(option.value)}
           id={id + ":" + option.value}
           selected={value === option.value}
+          fill
           onSelect={() => onSelect(option.value)}
         >
           {"labelKey" in option ? t(option.labelKey) : option.label}

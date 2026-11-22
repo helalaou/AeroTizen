@@ -5,11 +5,11 @@ async function openCategory(page, category) {
   await page.locator(`[data-key="section:${category}"]`).click();
   await expect(page.locator(`[data-section-pane="${category}"]`)).toBeVisible();
 }
-async function closeSettings(page) {
+async function closeSettings(page, keyboard = page.keyboard) {
   if ((await page.locator("[data-settings-drawer=frame]").getAttribute("data-expanded")) === "true") {
-    await page.keyboard.press("Escape");
+    await keyboard.press("Escape");
   }
-  await page.keyboard.press("Escape");
+  await keyboard.press("Escape");
   await expect(page.locator("#editor")).toBeHidden();
 }
 module.exports = { openCategory, closeSettings };
