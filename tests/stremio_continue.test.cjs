@@ -154,6 +154,7 @@ test("Stremio discovery requires exact installation and private credentials; it 
   h.respond(0, capabilities);
   assert.equal(source.id, app.id);
   assert.equal(source.storeId, "3202306031311");
+  assert.equal(source.supportsSeparateBackdrop, true);
   assert.equal(Object.hasOwn(source, "token"), false);
   assert.equal(h.requests.length, 1);
   h.provider.read(source, (error, records) => {

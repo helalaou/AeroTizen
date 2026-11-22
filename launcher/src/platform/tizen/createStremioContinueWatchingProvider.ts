@@ -247,6 +247,7 @@ export const createStremioContinueWatchingProvider = ({
           icon: app.iconPath || "",
           storeId: catalog.storeId(app.id) || "",
           status: INITIAL_STATUS,
+          supportsSeparateBackdrop: true,
         }));
     },
     check(source, done) {

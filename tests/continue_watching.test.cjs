@@ -255,6 +255,16 @@ test("normalization keeps zero progress and distinct episodes, rejects other app
   assert.throws(() => h.normalize({}), /Invalid feed/);
   assert.equal(h.normalize([card("millis", 1700000000000)])[0].timestamp, 1700000000);
 });
+test("only a source with separate artwork supplies a Cinema backdrop", () => {
+  const background = "https://artwork.test/series.jpg";
+  const records = [card("episode", 0, { background_url: background })];
+  const [samsungItem] = normalizeContinueItems(source, records, 0);
+  assert.equal(samsungItem.backgroundImage, background);
+  assert.equal(samsungItem.backdropImage, undefined);
+
+  const [stremioItem] = normalizeContinueItems({ ...source, supportsSeparateBackdrop: true }, records, 0);
+  assert.equal(stremioItem.backdropImage, background);
+});
 test("empty feed retries are bounded; settled feeds do not poll; returning refreshes them", () => {
   const h = harness();
   h.cw.start();

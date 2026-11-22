@@ -21,6 +21,7 @@ export const mountHome = (
   status: StatusStores,
   translations: Translations,
   updates: LauncherUpdateNotice,
+  onBackdropVisibilityChange: (visible: boolean) => void,
 ) => {
   const document = mount.ownerDocument;
   const artworkEnvironment = { tv: !!runtime.tizen };
@@ -47,6 +48,7 @@ export const mountHome = (
       appViewport: createRef<HTMLDivElement>(),
       continueItems: createRef<HTMLDivElement>(),
       continueViewport: createRef<HTMLDivElement>(),
+      viewport: createRef<HTMLDivElement>(),
       nodes: new Map(),
       showMoveInstructions: () => runtime.toast(translations.getSnapshot().t("home.moveInstructions")),
       describe: (app) => describeApp(app, artworkEnvironment),
@@ -70,7 +72,7 @@ export const mountHome = (
     render(
       <TranslationContext.Provider value={translations}>
         <InputScopeContext.Provider value={environment.bridge.inputScope}>
-          <Home env={environment} />
+          <Home env={environment} onBackdropVisibilityChange={onBackdropVisibilityChange} />
         </InputScopeContext.Provider>
       </TranslationContext.Provider>,
       mount,

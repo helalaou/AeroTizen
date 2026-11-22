@@ -141,7 +141,8 @@ keeps images rounded when moving cards expose their overflow.
 app and Continue Watching rows.
 
 `ContinueWatchingRow` owns its track spacing. `ContinueWatchingCard` owns focus,
-artwork, source badges, titles and progress. Episode titles combine a local display
+artwork, titles and progress. `ContinueWatchingSourceBadge` serves the card corner and
+the Cinema details. Episode titles combine a local display
 modifier with the shared `truncate` utility; other titles keep their two-line clamp.
 Tests use `#continue-items > [data-key]`, `data-focused` and `data-continue-part`
 hooks. Keep card focus paint and motion with the card, rather than in `base.css`.

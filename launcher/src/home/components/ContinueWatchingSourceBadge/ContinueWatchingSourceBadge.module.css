@@ -1,0 +1,21 @@
+.badge {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: var(--continue-badge-radius, 7px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--app-placeholder-surface);
+  box-shadow: var(--continue-badge-shadow);
+  transform: translateZ(0);
+  transition: transform var(--motion-duration-focus) ease-out;
+  pointer-events: none;
+
+  &[data-placement="corner"] {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+  }
+}

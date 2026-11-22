@@ -54,6 +54,7 @@ export const normalizeContinueItems = (source: ContinueSource, records: unknown,
       image: imageUrl(record.image_url),
       ...(thumbnail ? { thumbnailImage: thumbnail } : {}),
       ...(background ? { backgroundImage: background } : {}),
+      ...(background && source.supportsSeparateBackdrop ? { backdropImage: background } : {}),
     };
     const previous = result.get(id);
     if (!previous || item.timestamp > previous.timestamp) {
