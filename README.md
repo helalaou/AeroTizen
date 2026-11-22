@@ -129,6 +129,7 @@ or see [CONTRIBUTING.md](CONTRIBUTING.md) for development and testing.
     <td align="center"><a href="https://github.com/DdotCDotP2015"><img src="https://github.com/DdotCDotP2015.png?size=100" width="64" height="64" alt="DdotCDotP2015"><br><sub>DdotCDotP2015</sub></a></td>
     <td align="center"><a href="https://github.com/DmzTheo"><img src="https://github.com/DmzTheo.png?size=100" width="64" height="64" alt="DmzTheo"><br><sub>DmzTheo</sub></a></td>
     <td align="center"><a href="https://github.com/twomore"><img src="https://github.com/twomore.png?size=100" width="64" height="64" alt="twomore"><br><sub>twomore</sub></a></td>
+    <td align="center"><a href="https://github.com/dbdefault"><img src="https://github.com/dbdefault.png?size=100" width="64" height="64" alt="dbdefault"><br><sub>dbdefault</sub></a></td>
   </tr>
 </table>
 <!-- contributors:end -->
