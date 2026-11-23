@@ -1,5 +1,6 @@
 pub mod apps;
 pub mod buttons;
+pub mod discovery;
 pub mod home;
 pub mod launcher;
 pub mod local_apps;

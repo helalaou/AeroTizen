@@ -20,7 +20,6 @@ from aerotizen import (
     buttons,
     catalog,
     certs,
-    discover,
     home,
     home_control,
     home_status,
@@ -39,7 +38,6 @@ PROTOCOL_VERSION = 1
 WORKER_NAME = "aerotizen-desktop-worker"
 MAX_REQUEST_BYTES = 16 * 1024
 MAX_TEXT_CHARACTERS = 256
-MAX_DISCOVERED_TVS = 32
 BUTTON_APP_LOOKUP_TIMEOUT_SECONDS = 4
 BUTTON_CHANGE_ACTIONS = {"app": "map", "disabled": "disable", "default": "unmap"}
 BUTTON_CHANGE_UNVERIFIED = (
@@ -55,7 +53,6 @@ OPERATIONS = (
     "handshake",
     "samsung_sign_in",
     "prepare_signing_profile",
-    "discover",
     "connect",
     "list_apps",
     "list_buttons",
@@ -114,17 +111,6 @@ def validate_request(request):
     ):
         raise RequestError("invalid_request", "The desktop request is invalid or incompatible.")
     return request.get("params", {})
-
-
-def find_tvs():
-    return [
-        {
-            "host": host_value(tv.get("ip")),
-            "name": text_value(tv.get("name"), "Samsung TV"),
-            "model": text_value(tv.get("model"), "Samsung TV"),
-        }
-        for tv in discover.discover()[:MAX_DISCOVERED_TVS]
-    ]
 
 
 def technical_details(session, info):
@@ -1027,8 +1013,6 @@ def handle(request):
                 result = samsung_sign_in()
             elif request["operation"] == "prepare_signing_profile":
                 result = prepare_signing_profile(params)
-            elif request["operation"] == "discover":
-                result = find_tvs()
             elif request["operation"] == "list_apps":
                 result = list_apps(params)
             elif request["operation"] == "list_buttons":
@@ -1074,17 +1058,7 @@ def handle(request):
                 "message": "Could not load launcher versions.",
             },
         }
-    except OSError as error:
-        if request["operation"] == "discover":
-            return {
-                **response,
-                "error": {
-                    "code": "discovery_failed",
-                    "message": "TV search could not access the local network. Allow network access for "
-                    "AeroTizen Desktop in system settings, then retry or enter the TV IP address.",
-                    "system_error": error.errno,
-                },
-            }
+    except OSError:
         return connection_error(response)
     except (SdbError, SystemExit):
         return connection_error(response)

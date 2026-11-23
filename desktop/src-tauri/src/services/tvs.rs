@@ -1,3 +1,4 @@
+use super::discovery;
 use crate::{
     models::{AppError, AppResult, SavedTv, TvCandidate, VerifiedTv},
     state::{busy, AppState},
@@ -11,7 +12,7 @@ pub fn list_tvs(state: &AppState) -> AppResult<Vec<SavedTv>> {
 
 pub async fn discover_tvs(state: &AppState) -> AppResult<Vec<TvCandidate>> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
-    worker::request(&state.worker_path, "discover", json!({})).await
+    discovery::discover().await
 }
 
 pub async fn connect_tv(
