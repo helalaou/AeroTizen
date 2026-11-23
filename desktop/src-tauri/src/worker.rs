@@ -13,7 +13,6 @@ const PACKAGE_ACTION_TIMEOUT_SECONDS: u64 = 300;
 const SIGNING_PROFILE_TIMEOUT_SECONDS: u64 = 320;
 const ROOT_WRITE_TIMEOUT_SECONDS: u64 = 600;
 const MAX_RESPONSE_BYTES: usize = 64 * 1024;
-const MAX_APP_LIST_RESPONSE_BYTES: usize = 256 * 1024;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
@@ -53,8 +52,7 @@ fn request_local_network_access(operation: &str, params: &Value) {
 
     const DISCARD_SERVICE_PORT: u16 = 9;
     let address = match operation {
-        "install_launcher" | "install_local_app" | "setup_root" | "upgrade_root"
-        | "remove_apps" => params
+        "install_launcher" | "install_local_app" | "setup_root" | "upgrade_root" => params
             .get("host")
             .and_then(Value::as_str)
             .and_then(|host| host.parse::<Ipv4Addr>().ok()),
@@ -102,7 +100,7 @@ pub async fn request<Result: DeserializeOwned>(
     drop(input);
     let timeout_seconds = match operation {
         "setup_root" | "upgrade_root" => ROOT_WRITE_TIMEOUT_SECONDS,
-        "install_launcher" | "install_local_app" | "remove_apps" => PACKAGE_ACTION_TIMEOUT_SECONDS,
+        "install_launcher" | "install_local_app" => PACKAGE_ACTION_TIMEOUT_SECONDS,
         "prepare_signing_profile" => SIGNING_PROFILE_TIMEOUT_SECONDS,
         _ => WORKER_TIMEOUT_SECONDS,
     };
@@ -121,17 +119,12 @@ pub async fn request<Result: DeserializeOwned>(
                 "install_launcher" | "install_local_app" => {
                     "Installation timed out. Refresh the TV to check its version before retrying."
                 }
-                "remove_apps" => "Removal timed out. Check the installed apps before retrying.",
                 _ => "The request timed out. Check the network and retry.",
             },
         )
         })?
         .map_err(|_| unavailable())?;
-    let response_limit = match operation {
-        "remove_apps" => MAX_APP_LIST_RESPONSE_BYTES,
-        _ => MAX_RESPONSE_BYTES,
-    };
-    if !output.status.success() || output.stdout.len() > response_limit {
+    if !output.status.success() || output.stdout.len() > MAX_RESPONSE_BYTES {
         return Err(unavailable());
     }
     let reply: Reply = serde_json::from_slice(&output.stdout).map_err(|_| unavailable())?;

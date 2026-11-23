@@ -86,6 +86,14 @@ pub(crate) async fn serve_script(
     services
 }
 
+pub(crate) async fn next_service(io: &mut (impl SdbIo + ?Sized)) -> String {
+    let frame = receive(io).await.unwrap();
+    assert_eq!(frame.command, OPEN);
+    String::from_utf8_lossy(&frame.payload)
+        .trim_end_matches('\0')
+        .into()
+}
+
 #[tokio::test]
 async fn native_read_services_match_the_cli_wire_and_preserve_split_utf8() {
     let fixture = fixture();

@@ -2,6 +2,7 @@
 mod home_backup;
 mod profile;
 pub(super) mod projection;
+mod removal;
 
 use super::{
     digest::sha256_hex,

@@ -278,8 +278,12 @@ proof before opening SDB. Each read checks the TV identity before and after fetc
 shares the CLI TV lock and leaves recovery files unchanged. Leaving the page closes the
 socket and releases ownership. Connection attempts, total time, frame sizes and app counts
 are bounded. Package grouping, protected labels and revision hashes match the CLI, so
-removal can keep using its existing checks. The worker no longer offers `list_apps` or
-`list_button_apps`; installation and removal still use the worker. The Python CLI and TV
+removal can keep using its existing checks. The worker no longer offers `list_apps`,
+`list_button_apps` or `remove_apps`; installation still uses the worker. Removal uses the
+same native session, validates the full reviewed batch before any uninstall, and verifies
+each result from a complete inventory. A lost reply, incomplete list, changed identity
+or unrelated missing package stops the batch with an unverified result. Uninstalls are
+never retried automatically. The Python CLI and TV
 helper are unchanged. This read path works with helper 3.0.9.
 
 Reviewing a local `.wgt` also runs in Rust. It hashes a private snapshot, checks archive

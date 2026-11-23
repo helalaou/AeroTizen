@@ -157,95 +157,6 @@ def test_certificate_setup_refuses_a_different_identity(connected_tv):
     assert "result" not in reply
 
 
-@pytest.fixture
-def removal_request(connected_tv):
-    raw = (
-        "apps count: 3\n"
-        "app_id=DclHome001.Home app_title=AeroTizen\n"
-        "app_id=Abcdefghij.Player app_title=Player\n"
-        "app_id=KLMNOPQRST.Media app_title=Media\n"
-    )
-    connected_tv.replies["0 vd_applist"] = raw
-    entries = {row["id"]: row["revision"] for row in worker.app_rows(worker.packages(raw))}
-    return request(
-        "remove_apps",
-        host="127.0.0.1",
-        expected_identity=hashlib.sha256(b"test-duid").hexdigest(),
-        packages=[{"id": key, "revision": entries[key]} for key in ("Abcdefghij", "KLMNOPQRST")],
-    )
-
-
-@pytest.mark.parametrize(
-    ("kind", "code"),
-    [("identity", "identity_mismatch"), ("stale", "apps_changed"), ("protected", "protected_package")],
-)
-def test_remove_apps_validates_all_packages_before_uninstall(
-    connected_tv, removal_request, monkeypatch, kind, code
-):
-    monkeypatch.setattr(DeviceSession, "uninstall", lambda *_: pytest.fail("Unexpected uninstall"))
-    params = removal_request["params"]
-    if kind == "identity":
-        params["expected_identity"] = "0" * 64
-    elif kind == "stale":
-        params["packages"][1]["revision"] = "0" * 64
-    else:
-        launcher = worker.packages(connected_tv.replies["0 vd_applist"])["DclHome001"]
-        params["packages"][1] = {"id": "DclHome001", "revision": worker.package_revision(launcher)}
-    assert worker.handle(removal_request)["error"]["code"] == code
-
-
-@pytest.mark.parametrize(
-    ("lost_inventory", "reply", "expected"),
-    [
-        (True, "", None),
-        (False, "uninstall Media\nCan not uninstall app\x00\nuninstall completed\n", {"status": "refused"}),
-        (False, "uninstall completed\n", {"status": "still_installed"}),
-        (
-            False,
-            "Uninstall failed (1009)\n",
-            {"status": "still_installed", "detail": "Uninstall failed (1009)"},
-        ),
-    ],
-)
-def test_remove_apps_verifies_results_and_stops_when_inventory_is_unavailable(
-    connected_tv, removal_request, monkeypatch, lost_inventory, reply, expected
-):
-    calls = []
-    standard_uninstall = DeviceSession.uninstall
-    connected_tv.replies["0 vd_appuninstall Abcdefghij.Player"] = "Can not uninstall app\n"
-    connected_tv.replies["0 vd_appuninstall KLMNOPQRST.Media"] = reply
-
-    def uninstall(session, app_id):
-        calls.append(app_id)
-        reply = standard_uninstall(session, app_id)
-        if app_id == "Abcdefghij.Player":
-            connected_tv.replies["0 vd_applist"] = (
-                "apps count: 2\n"
-                "app_id=DclHome001.Home app_title=AeroTizen\n"
-                + ("" if lost_inventory else "app_id=KLMNOPQRST.Media app_title=Media\n")
-            )
-        return reply
-
-    monkeypatch.setattr(DeviceSession, "uninstall", uninstall)
-    result = worker.handle(removal_request)["result"]
-    if lost_inventory:
-        assert calls == ["Abcdefghij.Player"]
-        assert result == {
-            "apps": None,
-            "results": [
-                {"id": "Abcdefghij", "status": "unverified"},
-                {"id": "KLMNOPQRST", "status": "not_attempted"},
-            ],
-        }
-    else:
-        assert calls == ["Abcdefghij.Player", "KLMNOPQRST.Media"]
-        assert [item["id"] for item in result["apps"]] == ["DclHome001", "KLMNOPQRST"]
-        assert result["results"] == [
-            {"id": "Abcdefghij", "status": "removed"},
-            {"id": "KLMNOPQRST", **expected},
-        ]
-
-
 @pytest.mark.parametrize("host", [True, 123, None, "tv.local", "0.0.0.0", "255.255.255.255", "224.0.0.1"])
 def test_invalid_hosts_fail_before_network_access(monkeypatch, host):
     monkeypatch.setattr(worker.remote, "info", lambda _: pytest.fail("Unexpected network access"))
@@ -278,7 +189,6 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
     assert reply["result"]["operations"] == [
         "handshake",
         "prepare_signing_profile",
-        "remove_apps",
         "install_launcher",
         "install_local_app",
         "setup_root",
@@ -296,6 +206,7 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "change_button",
         "list_apps",
         "list_button_apps",
+        "remove_apps",
         "inspect_local_app",
         "connect",
         "prepare_native_home",
