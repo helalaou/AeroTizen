@@ -1,0 +1,89 @@
+{
+  "m_search": "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\nST: upnp:rootdevice\r\n\r\n",
+  "text": [
+    {
+      "input": null,
+      "expected": "Samsung TV"
+    },
+    {
+      "input": false,
+      "expected": "Samsung TV"
+    },
+    {
+      "input": 42,
+      "expected": "Samsung TV"
+    },
+    {
+      "input": {},
+      "expected": "Samsung TV"
+    },
+    {
+      "input": "",
+      "expected": "Samsung TV"
+    },
+    {
+      "input": " \t\n",
+      "expected": "Samsung TV"
+    },
+    {
+      "input": "Living room",
+      "expected": "Living room"
+    },
+    {
+      "input": "  65&quot; The Frame &amp; Lounge  ",
+      "expected": "65\" The Frame & Lounge"
+    },
+    {
+      "input": "&quot;quoted&quot;",
+      "expected": "\"quoted\""
+    },
+    {
+      "input": "&#34;Frame&#x22;",
+      "expected": "\"Frame\""
+    },
+    {
+      "input": "&amp;quot;",
+      "expected": "&quot;"
+    },
+    {
+      "input": "&notit; &times2",
+      "expected": "¬it; ×2"
+    },
+    {
+      "input": "&#128; &#0; &#xD800; &#x110000;",
+      "expected": "€ � � �"
+    },
+    {
+      "input": "Lounge\u0000\n\t TV",
+      "expected": "Lounge TV"
+    },
+    {
+      "input": "\u001c\u001d\u001e\u001f",
+      "expected": "Samsung TV"
+    },
+    {
+      "input": "A‍B‮C﻿D",
+      "expected": "ABCD"
+    },
+    {
+      "input": "A B C D",
+      "expected": "ABCD"
+    },
+    {
+      "input": "AB﷐C",
+      "expected": "ABC"
+    },
+    {
+      "input": "客厅电视 📺",
+      "expected": "客厅电视 📺"
+    },
+    {
+      "input": "غرفة المعيشة",
+      "expected": "غرفة المعيشة"
+    },
+    {
+      "input": "📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺",
+      "expected": "📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺📺"
+    }
+  ]
+}

@@ -578,7 +578,6 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "handshake",
         "samsung_sign_in",
         "prepare_signing_profile",
-        "discover",
         "connect",
         "list_apps",
         "list_buttons",
@@ -990,18 +989,6 @@ def test_local_preview_marks_replacements_and_rejects_missing_inventory(connecte
         worker.handle(local_request("inspect_local_app", local_widget))["error"]["code"]
         == "inventory_unavailable"
     )
-
-
-def test_discovery_network_error_explains_permissions_without_exposing_raw_exception(monkeypatch):
-    def denied():
-        raise PermissionError(1, "private internal detail")
-
-    monkeypatch.setattr(worker.discover, "discover", denied)
-    reply = worker.handle(request("discover"))
-    assert reply["error"]["code"] == "discovery_failed"
-    assert "system settings" in reply["error"]["message"]
-    assert reply["error"]["system_error"] == 1
-    assert "private internal detail" not in json.dumps(reply)
 
 
 @pytest.fixture

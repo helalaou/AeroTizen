@@ -54,9 +54,7 @@ fn request_local_network_access(operation: &str, params: &Value) {
     use std::net::{Ipv4Addr, UdpSocket};
 
     const DISCARD_SERVICE_PORT: u16 = 9;
-    const DISCOVERY_MULTICAST_ADDRESS: Ipv4Addr = Ipv4Addr::new(239, 255, 255, 250);
     let address = match operation {
-        "discover" => Some(DISCOVERY_MULTICAST_ADDRESS),
         "connect"
         | "install_launcher"
         | "inspect_local_app"

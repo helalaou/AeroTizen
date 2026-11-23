@@ -2,7 +2,8 @@
 
 Use AeroTizen Desktop to find and save Samsung TVs, install the launcher and local apps,
 manage installed apps, configure Home and remote buttons, and set up or update root access.
-The app uses Tauri, React, Mantine and a bundled Python worker. SQLite stores saved TV profiles.
+The app uses Tauri, React and Mantine. Rust handles TV discovery; a bundled Python worker
+provides the remaining CLI services. SQLite stores saved TV profiles.
 
 See screenshots of [TV selection](screenshots/tv-selection.png), [Overview](screenshots/overview.png),
 and [Launcher](screenshots/launcher.png).
@@ -194,6 +195,11 @@ The desktop has separate UI, native command, service and transport layers:
 Keep new TV logic in services and leave commands thin. Migrate each service from the Python
 worker to Rust while preserving its command names and result contract. Keep identity checks,
 backup checks and verification of TV changes at the service boundary.
+
+**Search for TVs** uses native Rust SSDP discovery and reads Samsung's device-info API on
+port 8001. It returns the same TV candidate fields as before, with duplicate replies removed
+and bounded search time, concurrent requests and response sizes. The desktop worker no longer
+offers discovery. The Python CLI's `aerotizen discover` command is unchanged.
 
 ```sh
 npm run typecheck
