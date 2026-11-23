@@ -266,7 +266,8 @@ describe("TV selection", () => {
     expect(search).toHaveValue("YouTube");
     await user.click(assign);
     expect(await row.findByText("YouTube")).toBeVisible();
-    expect(screen.getByText("Change saved. Checking that it is active on your TV…")).toBeVisible();
+    expect(await row.findByText("Checking…")).toBeVisible();
+    expect(screen.queryByText(/Change saved\. Checking/)).not.toBeInTheDocument();
     expect(screen.queryByRole("status", { name: "Loading button mappings" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Launcher" })).toBeEnabled();
     expect(await row.findByText("Active", {}, { timeout: 4000 })).toBeVisible();
@@ -296,7 +297,7 @@ describe("TV selection", () => {
     expect(await row.findByText("Checking…")).toBeVisible();
     expect(await row.findByText("Not confirmed", {}, { timeout: 3000 })).toBeVisible();
     expect(row.getByText("Disabled")).toBeVisible();
-    expect(screen.getByText(/Changes marked Not confirmed are saved on your TV/)).toBeVisible();
+    expect(screen.queryByText(/Changes marked Not confirmed/)).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(reads).toHaveBeenCalledTimes(2);
   });

@@ -24,7 +24,6 @@ import type {
 } from "../contracts";
 import styles from "../styles.module.css";
 import type { ButtonActivation } from "../services/buttonActivation";
-import { needsActivationCheck } from "../services/buttonActivation";
 import { ButtonInventoryDialog } from "./ButtonInventoryDialog";
 import { ChooseButtonAppDialog } from "./ChooseButtonAppDialog";
 import { RenameButtonDialog } from "./RenameButtonDialog";
@@ -139,13 +138,6 @@ export function ButtonMappingPanel({
         )}
         {mappings?.status === "ready" && (
           <Stack gap="sm">
-            {mappings.buttons.some(needsActivationCheck) && (
-              <Text role="status" size="sm" c="dimmed">
-                {activation?.state === "checking"
-                  ? "Change saved. Checking that it is active on your TV…"
-                  : "Changes marked Not confirmed are saved on your TV. Refresh to check if they are active."}
-              </Text>
-            )}
             {mappings.discovery_detail && (
               <Text size="sm" c="dimmed">
                 {mappings.discovery_detail}
