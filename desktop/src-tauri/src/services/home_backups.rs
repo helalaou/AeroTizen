@@ -21,7 +21,7 @@ const FIRST_SCREEN_KEY: &str = "db/first_screen/type";
 const AUTOSTART_KEY: &str = "db/menu/smart_hub/ontvsetting/auto_start";
 const SETTING_COUNT: usize = 5;
 
-/// Reads the CLI's existing backups. This owner never creates or replaces a file.
+/// Owns original Home backups. Existing originals are never replaced.
 #[derive(Clone)]
 pub struct HomeBackups {
     directory: PathBuf,
@@ -240,6 +240,8 @@ fn review(bytes: &[u8], identity: &str, captured_at: &str) -> AppResult<HomeBack
     }
     Ok(settings)
 }
+
+mod capture;
 
 #[cfg(test)]
 mod tests;

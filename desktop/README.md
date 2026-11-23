@@ -237,7 +237,11 @@ Reviewing the original Home backup also runs in Rust. It reads the CLI's existin
 or worker process. It verifies the backup schema, device identity, original settings,
 read/cleanup evidence and capture time before returning the six settings shown in the
 dialog. File reads run on the blocking thread pool and are limited to 128 KiB, including
-the actual bytes read. No backup file is written or replaced. Backup capture, Apply and
+the actual bytes read. Review never changes the backup. First-apply preparation also
+runs in Rust: it reads complete original settings through the paired helper, checks TV
+identity and provenance, and publishes a durable backup only if none exists. Later
+applies reuse the exact original bytes and hash. Invalid originals stop preparation
+instead of being replaced. The worker no longer offers `prepare_native_home`; Apply and
 Restore still use the worker and its existing verification.
 
 Samsung sign-in also runs in Rust. The Tauri command opens the normal Samsung browser

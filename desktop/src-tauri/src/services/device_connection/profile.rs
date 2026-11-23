@@ -1,6 +1,5 @@
 use super::{
-    connection_failed, invalid_response, projection, read_identity, root_bridge, sdb::ReadCommand,
-    TvConnection,
+    connection_failed, invalid_response, projection, read_identity, sdb::ReadCommand, TvConnection,
 };
 use crate::models::{
     AppResult, HomeRoutingMode, NativeHomeSettings, TechnicalDetails, VerifiedTv, LAUNCHER_APP_ID,
@@ -18,7 +17,6 @@ use tokio::time::timeout;
 const PROFILE_TIMEOUT: Duration = Duration::from_secs(120);
 const CAPABILITY_TIMEOUT: Duration = Duration::from_secs(5);
 const WATCHER_TIMEOUT: Duration = Duration::from_secs(2);
-const HOME_STATUS_PROTOCOL: u64 = 1;
 const ROUTING_PROTOCOL: u64 = 1;
 const TEXT_CHARACTERS: usize = 256;
 const ARCHITECTURES: [&str; 9] = [
@@ -222,24 +220,13 @@ impl TvConnection {
             })
             .collect();
         read_identity(&mut session.connection, Some(&identity)).await?;
-        let mut native_home_settings = None;
-        if let (Some(receipt), Some(proof)) =
-            (session.receipt.as_ref(), session.bridge_proof.as_ref())
-        {
-            if proof["home_status_protocol"].as_u64() == Some(HOME_STATUS_PROTOCOL) {
-                if let Ok(reply) = root_bridge::read(
-                    super::root_pairing::host_address(host)?,
-                    &receipt.pairing,
-                    root_bridge::ReadRequest::HomeStatus,
-                )
-                .await
-                {
-                    if reply["boot_id"] == proof["boot_id"] {
-                        native_home_settings = native_settings(&reply);
-                    }
-                }
-            }
-        }
+        let native_home_settings = session
+            .home_status()
+            .await
+            .ok()
+            .flatten()
+            .as_ref()
+            .and_then(native_settings);
         session.unchanged().await?;
         let home_routing_mode = if launcher_version.is_some() {
             timeout(WATCHER_TIMEOUT, session.connection.watcher_status())

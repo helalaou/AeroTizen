@@ -23,12 +23,10 @@ pub async fn read_home_backup(
 pub async fn prepare_native_home(state: &AppState, id: String) -> AppResult<PreparedHomeApply> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
     let saved = state.profiles.get(&id).await?;
-    let prepared: PreparedHomeApply = worker::request(
-        &state.worker_path,
-        "prepare_native_home",
-        json!({ "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256 }),
-    )
-    .await?;
+    let prepared = state
+        .device_connection
+        .prepare_home_backup(&saved.tv.host, &saved.tv.identity_sha256)
+        .await?;
     let invalid_backup = || {
         AppError::new(
             "invalid_response",

@@ -48,7 +48,6 @@ OPERATIONS = (
     "install_local_app",
     "setup_root",
     "upgrade_root",
-    "prepare_native_home",
     "apply_native_home",
     "restore_home_backup",
 )
@@ -136,35 +135,6 @@ def _verified_backup_document(identity, captured_at):
     if verified_at != captured_at:
         raise RequestError("backup_changed", "The backup changed. Refresh the TV connection to review it.")
     return document
-
-
-def prepare_native_home(params):
-    """Verify or save this TV's backup using only reads and a local file write."""
-    host = host_value(params.get("host"))
-    expected = checked_identity(params.get("expected_identity"))
-    path = _home_backup_path(expected)
-    with DeviceSession(host) as session:
-        _, identity = read_identity(session, expected)
-        try:
-            if not path.exists() and not path.is_symlink():
-                try:
-                    info = remote.info(host)
-                except (OSError, SystemExit) as error:
-                    raise home.HomeError(
-                        "The TV model could not be read. Open Samsung Home and try again."
-                    ) from error
-                status = home.read_paired_backup_status(session, identity, info)
-                read_identity(session, expected)
-                home.save_backup(status, output=path)
-            document, digest = home._load_backup(path, identity)
-            captured_at = datetime.fromisoformat(document["captured_at"]).isoformat()
-        except home.HomeError as error:
-            raise RequestError("backup_unavailable", str(error)) from error
-        except (ValueError, RecursionError) as error:
-            raise RequestError(
-                "backup_unavailable", "The original Home backup could not be verified."
-            ) from error
-    return {"id": identity, "captured_at": captured_at, "backup_sha256": digest}
 
 
 def _verified_backup_digest(identity, backup_sha256):
@@ -772,8 +742,6 @@ def handle(request):
                 result = setup_root(params)
             elif request["operation"] == "upgrade_root":
                 result = upgrade_root(params)
-            elif request["operation"] == "prepare_native_home":
-                result = prepare_native_home(params)
             elif request["operation"] == "apply_native_home":
                 result = apply_native_home(params)
             elif request["operation"] == "restore_home_backup":

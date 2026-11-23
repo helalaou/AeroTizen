@@ -46,7 +46,7 @@ async fn bundled_worker_returns_the_native_backend_contract_without_a_tv() {
     assert_eq!(status["name"], "aerotizen-desktop-worker");
     assert!(!status["version"].as_str().unwrap().is_empty());
     let operations = status["operations"].as_array().unwrap();
-    assert!(operations.iter().any(|name| name == "prepare_native_home"));
+    assert!(operations.iter().any(|name| name == "apply_native_home"));
     for retired in [
         "discover",
         "launcher_catalog",
@@ -59,6 +59,7 @@ async fn bundled_worker_returns_the_native_backend_contract_without_a_tv() {
         "list_button_apps",
         "inspect_local_app",
         "connect",
+        "prepare_native_home",
     ] {
         assert!(!operations.iter().any(|name| name == retired));
     }
