@@ -1,6 +1,6 @@
 //! Private snapshots and bounded validation of a user-selected Tizen widget.
 use super::{device_connection::projection::protected_package, text::display_text};
-use crate::models::{AppError, AppResult, LocalPackageReview, LAUNCHER_APP_ID};
+use crate::models::{AppError, AppResult, LocalPackageReview};
 use roxmltree::{Document, ParsingOptions};
 use sha2::{Digest, Sha256};
 use std::{
@@ -59,7 +59,7 @@ fn version(value: &str) -> bool {
             .all(|part| !part.is_empty() && part.bytes().all(|b| b.is_ascii_digit()))
 }
 
-fn xml_text(bytes: &[u8]) -> AppResult<String> {
+pub(super) fn xml_text(bytes: &[u8]) -> AppResult<String> {
     if bytes.starts_with(&[0xff, 0xfe]) || bytes.starts_with(&[0xfe, 0xff]) {
         let little = bytes[0] == 0xff;
         let (pairs, remainder) = bytes[2..].as_chunks::<2>();
@@ -113,7 +113,7 @@ fn metadata(bytes: &[u8], sha256: String) -> AppResult<LocalPackageReview> {
     {
         return Err(invalid());
     }
-    let launcher_package = LAUNCHER_APP_ID.split('.').next().unwrap();
+    let launcher_package = crate::models::LAUNCHER_PACKAGE_ID;
     if protected_package(package_id) && package_id != launcher_package {
         return Err(AppError::new(
             "protected_package",
@@ -171,6 +171,10 @@ fn preflight(file: &mut File) -> AppResult<()> {
     }
     file.rewind().map_err(|_| invalid())?;
     Ok(())
+}
+
+pub(super) fn review_file(path: &Path) -> AppResult<LocalPackageReview> {
+    inspect_snapshot(path, String::new())
 }
 
 pub(super) fn validate(path: &Path) -> AppResult<()> {

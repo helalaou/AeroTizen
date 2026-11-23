@@ -493,9 +493,7 @@ pub(super) fn launcher(raw: &str) -> AppResult<Option<String>> {
     let Some(app) = apps.next() else {
         return Ok(None);
     };
-    if app.package != crate::models::LAUNCHER_APP_ID.split('.').next().unwrap()
-        || apps.next().is_some()
-    {
+    if app.package != crate::models::LAUNCHER_PACKAGE_ID || apps.next().is_some() {
         return Err(AppError::new(
             "unexpected_package",
             "The TV reported an unexpected launcher package.",

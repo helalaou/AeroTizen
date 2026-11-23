@@ -46,6 +46,38 @@ fn verify(
     Ok(())
 }
 impl TvConnection {
+    pub async fn install_published_launcher(
+        &self,
+        host: &str,
+        expected: &str,
+        path: PathBuf,
+        mut review: LocalPackageReview,
+        current: Option<&str>,
+    ) -> AppResult<InstalledLocalApp> {
+        if review.app_id != crate::models::LAUNCHER_APP_ID
+            || review.package_id != crate::models::LAUNCHER_PACKAGE_ID
+        {
+            return Err(AppError::new(
+                "unexpected_package",
+                "The release does not contain the launcher.",
+            ));
+        }
+        {
+            let mut session = self.session(host, expected).await?;
+            let raw = session.inventory().await?;
+            if projection::launcher(&raw)?.as_deref() != current {
+                return Err(AppError::new(
+                    "launcher_changed",
+                    "The installed version changed. Refresh the TV and try again.",
+                ));
+            }
+            (review.current_revision, review.current_version) =
+                projection::installed(&raw, &review.package_id, &review.app_id)?;
+        }
+        // Reuse reviewed installation, including a second revision check before upload.
+        self.install_local(host, expected, path, review, true).await
+    }
+
     pub async fn install_local(
         &self,
         host: &str,
