@@ -95,6 +95,7 @@ jobs:
           # Desktop builds and tests run locally.
           desktop_files = {
               b"cli/src/aerotizen/desktop_worker.py",
+              b"cli/src/aerotizen/desktop_payloads.py",
               b"cli/src/aerotizen/local_package.py",
               b"cli/tools/build_desktop_worker.py",
               b"tests/test_desktop_worker.py",

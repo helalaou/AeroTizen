@@ -1,11 +1,14 @@
 use crate::{
-    models::{AppError, AppResult, VerifiedTv},
-    worker, AppState,
+    models::{
+        AppError, AppResult, InstalledLocalApp, LocalAppInstallResult, LocalAppPackage,
+        LocalPackageReview, VerifiedTv,
+    },
+    state::AppState,
+    worker,
 };
-use serde_json::{json, Value};
+use serde_json::json;
 use std::path::PathBuf;
-use tauri_plugin_dialog::DialogExt;
-use tokio::sync::{oneshot, Mutex};
+use tokio::sync::Mutex;
 
 const LAUNCHER_APP_ID: &str = "DclHome001.Home";
 
@@ -13,63 +16,52 @@ const LAUNCHER_APP_ID: &str = "DclHome001.Home";
 struct Selection {
     tv_id: String,
     path: PathBuf,
-    review: Value,
+    review: LocalPackageReview,
 }
 
 impl Selection {
-    fn public_review(&self) -> Value {
-        json!({
-            "selection_id": self.review["sha256"],
-            "name": self.review["name"],
-            "app_id": self.review["app_id"],
-            "package_id": self.review["package_id"],
-            "version": self.review["version"],
-            "current_version": self.review["current_version"],
-            "replacing": !self.review["current_revision"].is_null(),
-        })
+    fn public_review(&self) -> LocalAppPackage {
+        LocalAppPackage {
+            selection_id: self.review.sha256.clone(),
+            name: self.review.name.clone(),
+            app_id: self.review.app_id.clone(),
+            package_id: self.review.package_id.clone(),
+            version: self.review.version.clone(),
+            current_version: self.review.current_version.clone(),
+            replacing: self.review.current_revision.is_some(),
+        }
     }
 
     fn matches(&self, tv_id: &str, selection_id: &str) -> bool {
-        self.tv_id == tv_id && self.review["sha256"].as_str() == Some(selection_id)
+        self.tv_id == tv_id && self.review.sha256 == selection_id
     }
 }
 
 #[derive(Default)]
 pub struct LocalAppsState(Mutex<Option<Selection>>);
 
-#[tauri::command]
-pub async fn choose_local_app(
-    app: tauri::AppHandle,
-    state: tauri::State<'_, AppState>,
+impl LocalAppsState {
+    pub async fn clear(&self) {
+        *self.0.lock().await = None;
+    }
+}
+
+pub async fn inspect_local_app(
+    state: &AppState,
     id: String,
-) -> AppResult<Option<Value>> {
-    let _guard = state.operation.try_lock().map_err(|_| crate::busy())?;
+    path: Option<PathBuf>,
+) -> AppResult<Option<LocalAppPackage>> {
     let saved = state.profiles.get(&id)?;
-    *state.local_apps.0.lock().await = None;
-    let (send, receive) = oneshot::channel();
-    app.dialog()
-        .file()
-        .set_title("Choose a Tizen app")
-        .add_filter("Tizen app", &["wgt"])
-        .pick_file(move |file| {
-            let _ = send.send(file);
-        });
-    let Some(file) = receive
-        .await
-        .map_err(|_| AppError::new("file_picker_failed", "Could not open the file picker."))?
-    else {
+    let Some(path) = path else {
         return Ok(None);
     };
-    let path = file
-        .into_path()
-        .map_err(|_| AppError::new("invalid_package", "Choose a local .wgt app file."))?;
     if path.to_str().is_none() {
         return Err(AppError::new(
             "invalid_package",
             "The file name is unsupported. Rename the file and try again.",
         ));
     }
-    let review = worker::request(
+    let review: LocalPackageReview = worker::request(
         &state.worker_path,
         "inspect_local_app",
         json!({
@@ -87,14 +79,16 @@ pub async fn choose_local_app(
     Ok(Some(public))
 }
 
-#[tauri::command]
 pub async fn install_local_app(
-    state: tauri::State<'_, AppState>,
+    state: &AppState,
     id: String,
     selection_id: String,
     confirm_install: bool,
-) -> AppResult<Value> {
-    let _guard = state.operation.try_lock().map_err(|_| crate::busy())?;
+) -> AppResult<LocalAppInstallResult> {
+    let _guard = state
+        .operation
+        .try_lock()
+        .map_err(|_| crate::state::busy())?;
     let selection = state
         .local_apps
         .0
@@ -110,25 +104,25 @@ pub async fn install_local_app(
             )
         })?;
     let saved = state.profiles.get(&id)?;
-    let installed = worker::request(&state.worker_path, "install_local_app", json!({
+    let installed: InstalledLocalApp = worker::request(&state.worker_path, "install_local_app", json!({
         "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256,
-        "path": selection.path, "sha256": selection.review["sha256"],
-        "current_revision": selection.review["current_revision"], "confirm_install": confirm_install,
+        "path": selection.path, "sha256": selection.review.sha256,
+        "current_revision": selection.review.current_revision, "confirm_install": confirm_install,
     })).await?;
-    if ["app_id", "package_id", "version"]
-        .iter()
-        .any(|key| installed[key] != selection.review[key])
+    if installed.app_id != selection.review.app_id
+        || installed.package_id != selection.review.package_id
+        || installed.version != selection.review.version
     {
         return Err(AppError::new(
             "version_unverified",
             "Could not verify the installed app. Refresh Apps to check.",
         ));
     }
-    let is_launcher = installed["app_id"].as_str() == Some(LAUNCHER_APP_ID);
+    let is_launcher = installed.app_id == LAUNCHER_APP_ID;
     let profile = state.profiles.save(VerifiedTv {
         launcher_signing_ready: true,
         launcher_version: if is_launcher {
-            installed["version"].as_str().map(String::from)
+            Some(installed.version.clone())
         } else {
             saved.tv.launcher_version
         },
@@ -145,9 +139,11 @@ pub async fn install_local_app(
         ..saved.tv
     })?;
     *state.local_apps.0.lock().await = None;
-    Ok(
-        json!({ "profile": profile, "app_id": installed["app_id"], "version": installed["version"] }),
-    )
+    Ok(LocalAppInstallResult {
+        profile,
+        app_id: installed.app_id,
+        version: installed.version,
+    })
 }
 
 #[cfg(test)]
@@ -159,11 +155,21 @@ mod tests {
         let selection = Selection {
             tv_id: "tv-one".into(),
             path: "/private/app.wgt".into(),
-            review: json!({"sha256": "checksum"}),
+            review: LocalPackageReview {
+                sha256: "checksum".into(),
+                name: "Test".into(),
+                app_id: "test.app".into(),
+                package_id: "test".into(),
+                version: "1.0.0".into(),
+                current_revision: None,
+                current_version: None,
+            },
         };
         assert!(selection.matches("tv-one", "checksum"));
         assert!(!selection.matches("tv-two", "checksum"));
         assert!(!selection.matches("tv-one", "other-file"));
-        assert!(!selection.public_review().to_string().contains("/private/"));
+        assert!(!serde_json::to_string(&selection.public_review())
+            .unwrap()
+            .contains("/private/"));
     }
 }

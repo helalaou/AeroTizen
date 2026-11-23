@@ -1,5 +1,5 @@
 use crate::models::{AppError, AppResult};
-use serde::Deserialize;
+use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -85,16 +85,20 @@ fn request_local_network_access(operation: &str, params: &Value) {
     }
 }
 
-pub async fn request(path: &Path, operation: &str, params: Value) -> AppResult<Value> {
+pub async fn request<Result: DeserializeOwned>(
+    path: &Path,
+    operation: &str,
+    params: Value,
+) -> AppResult<Result> {
     request_with_cancellation(path, operation, params, None).await
 }
 
-pub async fn request_with_cancellation(
+pub async fn request_with_cancellation<Result: DeserializeOwned>(
     path: &Path,
     operation: &str,
     params: Value,
     cancellation: Option<(watch::Receiver<String>, String)>,
-) -> AppResult<Value> {
+) -> AppResult<Result> {
     #[cfg(target_os = "macos")]
     request_local_network_access(operation, &params);
     let request_id = SystemTime::now()
@@ -121,7 +125,7 @@ pub async fn request_with_cancellation(
         .await
         .map_err(|_| unavailable())?;
     let cancellation_task = cancellation.map(|(mut cancelled, id)| {
-        tauri::async_runtime::spawn(async move {
+        tokio::spawn(async move {
             let _ = cancelled.wait_for(|request| *request == id).await;
             // Closing the pipe stops the worker, including the child of the frozen executable.
             drop(input);
@@ -173,8 +177,17 @@ pub async fn request_with_cancellation(
         ));
     }
     match (reply.result, reply.error) {
-        (Some(value), None) => Ok(value),
+        (Some(value), None) => decode_result(value),
         (None, Some(error)) => Err(error),
         _ => Err(unavailable()),
     }
+}
+
+pub fn decode_result<Result: DeserializeOwned>(value: Value) -> AppResult<Result> {
+    serde_json::from_value(value).map_err(|_| {
+        AppError::new(
+            "invalid_response",
+            "The TV backend returned an invalid response.",
+        )
+    })
 }

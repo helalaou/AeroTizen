@@ -1,0 +1,17 @@
+use serde::{Deserialize, Serialize};
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BackendStatus {
+    pub name: String,
+    pub version: String,
+    pub operations: Vec<String>,
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ReleaseSection {
+    pub heading: Option<String>,
+    pub changes: Vec<String>,
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LauncherRelease {
+    pub version: String,
+    pub sections: Vec<ReleaseSection>,
+}
