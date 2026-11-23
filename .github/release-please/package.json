@@ -1,0 +1,10 @@
+{
+  "name": "aerotizen-release-please",
+  "private": true,
+  "scripts": {
+    "test": "node --test --test-reporter=dot"
+  },
+  "dependencies": {
+    "release-please": "17.3.0"
+  }
+}
