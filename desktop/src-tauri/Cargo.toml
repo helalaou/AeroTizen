@@ -16,7 +16,8 @@ required-features = ["bundled-worker"]
 
 [features]
 bundled-worker = []
-worker-smoke = ["bundled-worker"]
+# Enabling the app target here makes Cargo's integration test build replace the standalone binary.
+worker-smoke = []
 
 [[test]]
 name = "worker_smoke"

@@ -250,6 +250,8 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --features bundled-worker --al
 The Tauri build command rebuilds the worker and frontend automatically. The worker build
 uses a temporary PyInstaller cache and tests the frozen executable outside the checkout
 with Python removed from PATH. The separate Rust smoke test checks its public handshake.
+Its feature does not enable the app binary, so this check cannot replace a standalone app
+build with a development executable that expects Vite to be running.
 
 From the repository root, run the backend regression checks:
 
