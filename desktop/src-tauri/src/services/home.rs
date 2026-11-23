@@ -13,7 +13,7 @@ pub async fn read_home_backup(
     id: String,
     captured_at: String,
 ) -> AppResult<HomeBackupSettings> {
-    let saved = state.profiles.get(&id)?;
+    let saved = state.profiles.get(&id).await?;
     worker::request(
         &state.worker_path,
         "read_home_backup",
@@ -24,7 +24,7 @@ pub async fn read_home_backup(
 
 pub async fn prepare_native_home(state: &AppState, id: String) -> AppResult<PreparedHomeApply> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
-    let saved = state.profiles.get(&id)?;
+    let saved = state.profiles.get(&id).await?;
     let prepared: PreparedHomeApply = worker::request(
         &state.worker_path,
         "prepare_native_home",
@@ -58,7 +58,7 @@ pub async fn apply_native_home(
             "The Home backup verification is invalid.",
         ));
     }
-    let saved = state.profiles.get(&id)?;
+    let saved = state.profiles.get(&id).await?;
     let tv: VerifiedTv = worker::request(
         &state.worker_path,
         "apply_native_home",
@@ -75,7 +75,7 @@ pub async fn apply_native_home(
             "The TV check returned a different address or identity.",
         ));
     }
-    state.profiles.save(tv)
+    state.profiles.save(tv).await
 }
 
 pub async fn restore_home_backup(
@@ -84,7 +84,7 @@ pub async fn restore_home_backup(
     captured_at: String,
 ) -> AppResult<SavedTv> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
-    let saved = state.profiles.get(&id)?;
+    let saved = state.profiles.get(&id).await?;
     let tv: VerifiedTv = worker::request(
         &state.worker_path,
         "restore_home_backup",
@@ -101,5 +101,5 @@ pub async fn restore_home_backup(
             "The TV check returned a different address or identity.",
         ));
     }
-    state.profiles.save(tv)
+    state.profiles.save(tv).await
 }

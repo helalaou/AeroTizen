@@ -6,8 +6,8 @@ use crate::{
 };
 use serde_json::json;
 
-pub fn list_tvs(state: &AppState) -> AppResult<Vec<SavedTv>> {
-    state.profiles.list()
+pub async fn list_tvs(state: &AppState) -> AppResult<Vec<SavedTv>> {
+    state.profiles.list().await
 }
 
 pub async fn discover_tvs(state: &AppState) -> AppResult<Vec<TvCandidate>> {
@@ -21,10 +21,10 @@ pub async fn connect_tv(
     profile_id: Option<String>,
 ) -> AppResult<SavedTv> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
-    let expected = profile_id
-        .as_deref()
-        .map(|id| state.profiles.get(id))
-        .transpose()?;
+    let expected = match profile_id {
+        Some(id) => Some(state.profiles.get(&id).await?),
+        None => None,
+    };
     let expected_identity = expected.map(|profile| profile.tv.identity_sha256);
     let tv: VerifiedTv = worker::request(
         &state.worker_path,
@@ -42,17 +42,17 @@ pub async fn connect_tv(
             "The TV check returned a different address or identity.",
         ));
     }
-    state.profiles.save(tv)
+    state.profiles.save(tv).await
 }
 
-pub fn rename_tv(state: &AppState, id: String, name: String) -> AppResult<()> {
+pub async fn rename_tv(state: &AppState, id: String, name: String) -> AppResult<()> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
-    state.profiles.rename(&id, &name)
+    state.profiles.rename(&id, &name).await
 }
 
-pub fn forget_tv(state: &AppState, id: String) -> AppResult<()> {
+pub async fn forget_tv(state: &AppState, id: String) -> AppResult<()> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
-    state.profiles.forget(&id)
+    state.profiles.forget(&id).await
 }
 
 pub fn cancel_tv_read(state: &AppState, request_id: String) {

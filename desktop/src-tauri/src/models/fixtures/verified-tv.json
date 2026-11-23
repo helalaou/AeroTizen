@@ -1,0 +1,12 @@
+{
+  "identity_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "host": "192.0.2.20",
+  "name": "Samsung TV",
+  "model": "Frame",
+  "launcher_version": null,
+  "launcher_signing_ready": false,
+  "transport": "developer",
+  "developer_mode": "1",
+  "developer_host": "192.0.2.1",
+  "checked_at": "2026-11-23T10:00:00Z"
+}

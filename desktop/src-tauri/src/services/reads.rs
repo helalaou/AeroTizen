@@ -12,7 +12,7 @@ pub async fn read_tv<Result: serde::de::DeserializeOwned>(
     request_id: String,
 ) -> AppResult<Result> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
-    let saved = state.profiles.get(&id)?;
+    let saved = state.profiles.get(&id).await?;
     let cancelled = state.cancelled_tv_read.subscribe();
     if *cancelled.borrow() == request_id {
         return Err(AppError::new("tv_read_cancelled", "TV refresh cancelled."));

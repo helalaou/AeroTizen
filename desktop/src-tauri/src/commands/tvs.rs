@@ -5,8 +5,8 @@ use crate::{
 };
 
 #[tauri::command]
-pub fn list_tvs(state: tauri::State<'_, AppState>) -> AppResult<Vec<SavedTv>> {
-    services::tvs::list_tvs(&state)
+pub async fn list_tvs(state: tauri::State<'_, AppState>) -> AppResult<Vec<SavedTv>> {
+    services::tvs::list_tvs(&state).await
 }
 
 #[tauri::command]
@@ -24,16 +24,23 @@ pub async fn connect_tv(
 }
 
 #[tauri::command]
-pub fn rename_tv(state: tauri::State<'_, AppState>, id: String, name: String) -> AppResult<()> {
-    services::tvs::rename_tv(&state, id, name)
+pub async fn rename_tv(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    name: String,
+) -> AppResult<()> {
+    services::tvs::rename_tv(&state, id, name).await
 }
 
 #[tauri::command]
-pub fn forget_tv(state: tauri::State<'_, AppState>, id: String) -> AppResult<()> {
-    services::tvs::forget_tv(&state, id)
+pub async fn forget_tv(state: tauri::State<'_, AppState>, id: String) -> AppResult<()> {
+    services::tvs::forget_tv(&state, id).await
 }
 
 #[tauri::command]
 pub fn cancel_tv_read(state: tauri::State<'_, AppState>, request_id: String) {
     services::tvs::cancel_tv_read(&state, request_id)
 }
+
+#[cfg(test)]
+mod tests;

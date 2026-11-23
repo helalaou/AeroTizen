@@ -30,7 +30,7 @@ pub async fn change_tv_button(
     change: ButtonChange,
 ) -> AppResult<ButtonChangeResult> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
-    let saved = state.profiles.get(&id)?;
+    let saved = state.profiles.get(&id).await?;
     let result = worker::request(
         &state.worker_path,
         "change_button",

@@ -5,8 +5,8 @@ use crate::{
 };
 
 #[tauri::command]
-pub async fn choose_local_app(
-    app: tauri::AppHandle,
+pub async fn choose_local_app<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, AppState>,
     id: String,
 ) -> AppResult<Option<LocalAppPackage>> {
@@ -15,7 +15,7 @@ pub async fn choose_local_app(
         .operation
         .try_lock()
         .map_err(|_| crate::state::busy())?;
-    state.profiles.get(&id)?;
+    state.profiles.get(&id).await?;
     state.local_apps.clear().await;
     let (send, receive) = tokio::sync::oneshot::channel();
     app.dialog()
