@@ -155,7 +155,7 @@ pub async fn prepare_signing_profile(state: &AppState, id: String) -> AppResult<
         .operation
         .try_lock()
         .map_err(|_| crate::state::busy())?;
-    let saved = state.profiles.get(&id)?;
+    let saved = state.profiles.get(&id).await?;
     let auth = state
         .samsung
         .session

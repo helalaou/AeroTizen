@@ -11,14 +11,6 @@ const TEST_DEADLINE: Duration = Duration::from_secs(2);
 const MAX_REQUEST_HEADER_BYTES: usize = 8192;
 type Requests = Arc<Mutex<Vec<Vec<u8>>>>;
 
-fn run(test: impl Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(test);
-}
-
 fn compatibility() -> Value {
     // Captured from the CLI's MSEARCH and desktop_worker.text_value before migration.
     serde_json::from_str(include_str!("fixtures/cli-compatibility.json")).unwrap()
@@ -135,118 +127,109 @@ fn device_info_returns_only_candidate_fields_and_tolerates_missing_labels() {
     }
 }
 
-#[test]
-fn native_discovery_uses_ssdp_and_the_fixed_api_once_per_host() {
-    run(async {
-        let mut servers = JoinSet::new();
-        let body =
-            br#"{"device":{"name":"65&quot; Frame &amp; Lounge","modelName":"QE65LS03DAUXXU"}}"#;
-        let (port, requests) =
-            http_server(&mut servers, Some(response("200 OK", body, true, ""))).await;
-        let udp = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).await.unwrap();
-        let SocketAddr::V4(target) = udp.local_addr().unwrap() else {
-            unreachable!()
-        };
-        servers.spawn(async move {
-            let mut request = [0; 1024];
-            let (size, sender) = udp.recv_from(&mut request).await.unwrap();
-            assert_eq!(&request[..size], compatibility()["m_search"].as_str().unwrap().as_bytes());
-            let reply = format!("HTTP/1.1 200 OK\r\nSERVER: Samsung\r\nLOCATION: http://127.0.0.1:{port}/ignored\r\n\r\n");
-            udp.send_to(b"HTTP/1.1 200 OK\r\nSERVER: Another vendor\r\n\r\n", sender).await.unwrap();
-            let mut oversized = reply.as_bytes().to_vec();
-            oversized.resize(MAX_SSDP_RESPONSE_BYTES + 1, b' ');
-            udp.send_to(&oversized, sender).await.unwrap();
-            udp.send_to(reply.as_bytes(), sender).await.unwrap();
-            udp.send_to(reply.as_bytes(), sender).await.unwrap();
-        });
-        let options = DiscoveryOptions {
-            target,
-            search_window: TEST_SEARCH_WINDOW,
-            device_info_port: port,
-            ..DEFAULT_OPTIONS
-        };
-        let result = tokio::time::timeout(TEST_DEADLINE, discover_with_options(options))
+#[tokio::test]
+async fn native_discovery_uses_ssdp_and_the_fixed_api_once_per_host() {
+    let mut servers = JoinSet::new();
+    let body = br#"{"device":{"name":"65&quot; Frame &amp; Lounge","modelName":"QE65LS03DAUXXU"}}"#;
+    let (port, requests) =
+        http_server(&mut servers, Some(response("200 OK", body, true, ""))).await;
+    let udp = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).await.unwrap();
+    let SocketAddr::V4(target) = udp.local_addr().unwrap() else {
+        unreachable!()
+    };
+    servers.spawn(async move {
+        let mut request = [0; 1024];
+        let (size, sender) = udp.recv_from(&mut request).await.unwrap();
+        assert_eq!(&request[..size], compatibility()["m_search"].as_str().unwrap().as_bytes());
+        let reply = format!("HTTP/1.1 200 OK\r\nSERVER: Samsung\r\nLOCATION: http://127.0.0.1:{port}/ignored\r\n\r\n");
+        udp.send_to(b"HTTP/1.1 200 OK\r\nSERVER: Another vendor\r\n\r\n", sender).await.unwrap();
+        let mut oversized = reply.as_bytes().to_vec();
+        oversized.resize(MAX_SSDP_RESPONSE_BYTES + 1, b' ');
+        udp.send_to(&oversized, sender).await.unwrap();
+        udp.send_to(reply.as_bytes(), sender).await.unwrap();
+        udp.send_to(reply.as_bytes(), sender).await.unwrap();
+    });
+    let options = DiscoveryOptions {
+        target,
+        search_window: TEST_SEARCH_WINDOW,
+        device_info_port: port,
+        ..DEFAULT_OPTIONS
+    };
+    let result = tokio::time::timeout(TEST_DEADLINE, discover_with_options(options))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(result.len(), 1);
+    assert_eq!(result[0].name, "65\" Frame & Lounge");
+    assert_eq!(result[0].model, "QE65LS03DAUXXU");
+    let captured = requests.lock().unwrap().clone();
+    assert_eq!(captured.len(), 1);
+    assert!(captured[0].starts_with(b"GET /api/v2/ HTTP/1.1\r\n"));
+    servers.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_quiet_network_returns_an_empty_list() {
+    let mut servers = JoinSet::new();
+    let udp = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).await.unwrap();
+    let SocketAddr::V4(target) = udp.local_addr().unwrap() else {
+        unreachable!()
+    };
+    servers.spawn(async move {
+        let _ = udp.recv_from(&mut [0; 1024]).await.unwrap();
+    });
+    let options = DiscoveryOptions {
+        target,
+        search_window: TEST_SEARCH_WINDOW,
+        ..DEFAULT_OPTIONS
+    };
+    assert!(
+        tokio::time::timeout(TEST_DEADLINE, discover_with_options(options))
             .await
             .unwrap()
-            .unwrap();
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].name, "65\" Frame & Lounge");
-        assert_eq!(result[0].model, "QE65LS03DAUXXU");
-        let captured = requests.lock().unwrap().clone();
-        assert_eq!(captured.len(), 1);
-        assert!(captured[0].starts_with(b"GET /api/v2/ HTTP/1.1\r\n"));
-        servers.shutdown().await;
-    });
+            .unwrap()
+            .is_empty()
+    );
+    servers.shutdown().await;
 }
 
-#[test]
-fn a_quiet_network_returns_an_empty_list() {
-    run(async {
+#[tokio::test]
+async fn metadata_rejects_redirects_errors_invalid_json_and_oversized_bodies() {
+    let valid = br#"{"device":{"name":"TV","modelName":"Frame"}}"#;
+    let oversized = [vec![b' '; MAX_DEVICE_INFO_BYTES], valid.to_vec()].concat();
+    let replies = [
+        response("302 Found", valid, true, "Location: /redirected\r\n"),
+        response("500 Error", valid, true, ""),
+        response("200 OK", b"invalid JSON", true, ""),
+        response("200 OK", &oversized, true, ""),
+        response("200 OK", &oversized, false, ""),
+    ];
+    let client = metadata_client(TEST_REQUEST_TIMEOUT).unwrap();
+    for reply in replies {
         let mut servers = JoinSet::new();
-        let udp = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).await.unwrap();
-        let SocketAddr::V4(target) = udp.local_addr().unwrap() else {
-            unreachable!()
-        };
-        servers.spawn(async move {
-            let _ = udp.recv_from(&mut [0; 1024]).await.unwrap();
-        });
-        let options = DiscoveryOptions {
-            target,
-            search_window: TEST_SEARCH_WINDOW,
-            ..DEFAULT_OPTIONS
-        };
-        assert!(
-            tokio::time::timeout(TEST_DEADLINE, discover_with_options(options))
-                .await
-                .unwrap()
-                .unwrap()
-                .is_empty()
-        );
-        servers.shutdown().await;
-    });
-}
-
-#[test]
-fn metadata_rejects_redirects_errors_invalid_json_and_oversized_bodies() {
-    run(async {
-        let valid = br#"{"device":{"name":"TV","modelName":"Frame"}}"#;
-        let oversized = [vec![b' '; MAX_DEVICE_INFO_BYTES], valid.to_vec()].concat();
-        let replies = [
-            response("302 Found", valid, true, "Location: /redirected\r\n"),
-            response("500 Error", valid, true, ""),
-            response("200 OK", b"invalid JSON", true, ""),
-            response("200 OK", &oversized, true, ""),
-            response("200 OK", &oversized, false, ""),
-        ];
-        let client = metadata_client(TEST_REQUEST_TIMEOUT).unwrap();
-        for reply in replies {
-            let mut servers = JoinSet::new();
-            let (port, requests) = http_server(&mut servers, Some(reply)).await;
-            assert!(read_candidate(&client, Ipv4Addr::LOCALHOST, port)
-                .await
-                .is_none());
-            assert_eq!(requests.lock().unwrap().len(), 1);
-            servers.shutdown().await;
-        }
-    });
-}
-
-#[test]
-fn metadata_requests_time_out_without_retaining_the_connection() {
-    run(async {
-        let mut servers = JoinSet::new();
-        let (port, requests) = http_server(&mut servers, None).await;
-        let client = metadata_client(TEST_REQUEST_TIMEOUT).unwrap();
-        let result = tokio::time::timeout(
-            TEST_DEADLINE,
-            read_candidate(&client, Ipv4Addr::LOCALHOST, port),
-        )
-        .await
-        .unwrap();
-        assert!(result.is_none());
+        let (port, requests) = http_server(&mut servers, Some(reply)).await;
+        assert!(read_candidate(&client, Ipv4Addr::LOCALHOST, port)
+            .await
+            .is_none());
         assert_eq!(requests.lock().unwrap().len(), 1);
         servers.shutdown().await;
-    });
+    }
+}
+
+#[tokio::test]
+async fn metadata_requests_time_out_without_retaining_the_connection() {
+    let mut servers = JoinSet::new();
+    let (port, requests) = http_server(&mut servers, None).await;
+    let client = metadata_client(TEST_REQUEST_TIMEOUT).unwrap();
+    let result = tokio::time::timeout(
+        TEST_DEADLINE,
+        read_candidate(&client, Ipv4Addr::LOCALHOST, port),
+    )
+    .await
+    .unwrap();
+    assert!(result.is_none());
+    assert_eq!(requests.lock().unwrap().len(), 1);
+    servers.shutdown().await;
 }
 
 struct ActiveProbe(Arc<AtomicUsize>);
@@ -264,60 +247,58 @@ fn candidate(host: Ipv4Addr) -> TvCandidate {
     }
 }
 
-#[test]
-fn probe_deadline_keeps_completed_results_and_cleans_up_bounded_tasks() {
-    run(async {
-        let active = Arc::new(AtomicUsize::new(0));
-        let peak = Arc::new(AtomicUsize::new(0));
-        let hosts = (1..=MAX_CONCURRENT_PROBES as u8 * 2)
-            .map(|last| Ipv4Addr::new(192, 0, 2, last))
-            .collect();
-        let result = tokio::time::timeout(
-            TEST_DEADLINE,
-            probe_hosts(hosts, TEST_SEARCH_WINDOW, |host| {
-                let active = active.clone();
-                let peak = peak.clone();
-                async move {
-                    let now = active.fetch_add(1, Ordering::SeqCst) + 1;
-                    peak.fetch_max(now, Ordering::SeqCst);
-                    let _guard = ActiveProbe(active);
-                    if host.octets()[3] == 1 {
-                        return Some(candidate(host));
-                    }
-                    std::future::pending::<()>().await;
-                    None
+#[tokio::test(start_paused = true)]
+async fn probe_deadline_keeps_completed_results_and_cleans_up_bounded_tasks() {
+    let started = Instant::now();
+    let active = Arc::new(AtomicUsize::new(0));
+    let peak = Arc::new(AtomicUsize::new(0));
+    let hosts = (1..=MAX_CONCURRENT_PROBES as u8 * 2)
+        .map(|last| Ipv4Addr::new(192, 0, 2, last))
+        .collect();
+    let result = tokio::time::timeout(
+        TEST_DEADLINE,
+        probe_hosts(hosts, TEST_SEARCH_WINDOW, |host| {
+            let active = active.clone();
+            let peak = peak.clone();
+            async move {
+                let now = active.fetch_add(1, Ordering::SeqCst) + 1;
+                peak.fetch_max(now, Ordering::SeqCst);
+                let _guard = ActiveProbe(active);
+                if host.octets()[3] == 1 {
+                    return Some(candidate(host));
                 }
-            }),
-        )
-        .await
-        .unwrap()
-        .unwrap();
-        assert_eq!(result.len(), 1);
-        assert!(peak.load(Ordering::SeqCst) > 0);
-        assert!(peak.load(Ordering::SeqCst) <= MAX_CONCURRENT_PROBES);
-        assert_eq!(active.load(Ordering::SeqCst), 0);
-    });
+                std::future::pending::<()>().await;
+                None
+            }
+        }),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(result.len(), 1);
+    assert!(peak.load(Ordering::SeqCst) > 0);
+    assert!(peak.load(Ordering::SeqCst) <= MAX_CONCURRENT_PROBES);
+    assert_eq!(active.load(Ordering::SeqCst), 0);
+    assert_eq!(Instant::now() - started, TEST_SEARCH_WINDOW);
 }
 
-#[test]
-fn results_keep_the_cli_address_order_and_tv_limit() {
-    run(async {
-        let hosts: BTreeSet<_> = (1..=MAX_DISCOVERED_TVS as u8 * 2)
-            .map(|last| Ipv4Addr::new(192, 0, 2, last))
-            .collect();
-        let mut expected: Vec<_> = hosts.iter().map(ToString::to_string).collect();
-        expected.sort();
-        expected.truncate(MAX_DISCOVERED_TVS);
-        let result = probe_hosts(
-            hosts,
-            TEST_DEADLINE,
-            |host| async move { Some(candidate(host)) },
-        )
-        .await
-        .unwrap();
-        assert_eq!(
-            result.into_iter().map(|tv| tv.host).collect::<Vec<_>>(),
-            expected
-        );
-    });
+#[tokio::test(start_paused = true)]
+async fn results_keep_the_cli_address_order_and_tv_limit() {
+    let hosts: BTreeSet<_> = (1..=MAX_DISCOVERED_TVS as u8 * 2)
+        .map(|last| Ipv4Addr::new(192, 0, 2, last))
+        .collect();
+    let mut expected: Vec<_> = hosts.iter().map(ToString::to_string).collect();
+    expected.sort();
+    expected.truncate(MAX_DISCOVERED_TVS);
+    let result = probe_hosts(
+        hosts,
+        TEST_DEADLINE,
+        |host| async move { Some(candidate(host)) },
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        result.into_iter().map(|tv| tv.host).collect::<Vec<_>>(),
+        expected
+    );
 }

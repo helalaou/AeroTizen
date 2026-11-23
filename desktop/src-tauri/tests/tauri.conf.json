@@ -1,0 +1,5 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "org.aerotizen.desktop.tests",
+  "bundle": { "icon": ["../icons/icon.png", "../icons/icon.icns", "../icons/icon.ico"] }
+}

@@ -196,6 +196,10 @@ Keep new TV logic in services and leave commands thin. Migrate each service from
 worker to Rust while preserving its command names and result contract. Keep identity checks,
 backup checks and verification of TV changes at the service boundary.
 
+Profile storage initializes its schema during app startup. Runtime reads and writes use
+Tokio's blocking thread pool; commands and services await them without blocking the UI or
+async executor. SQLite connections stay inside each blocking operation.
+
 **Search for TVs** uses native Rust SSDP discovery and reads Samsung's device-info API on
 port 8001. It returns the same TV candidate fields as before, with duplicate replies removed
 and bounded search time, concurrent requests and response sizes. The desktop worker no longer
@@ -214,9 +218,27 @@ cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
 npm run tauri -- build
 ```
 
-Run `npm run worker:build` and `npm run build` before direct Cargo checks. The Tauri
-build command runs them automatically. The worker build uses a temporary PyInstaller
-cache and tests the frozen executable outside the checkout with Python removed from PATH.
+`cargo test` runs Rust unit tests, loopback protocol tests and Tauri mock-runtime command
+tests without a TV, Python worker or frontend build. Unit tests stay beside their modules:
+larger modules use a `module/tests.rs` file. Timer-only tests use Tokio's paused clock;
+socket tests use local servers and bounded real time. Command tests use the production
+registration list, temporary databases and an absent worker path.
+
+The `bundled-worker` Cargo feature selects the production Tauri configuration and enables
+the app binary. Tauri's development and build commands enable it automatically. Bare Cargo
+checks use `src-tauri/tests/tauri.conf.json`, which needs no generated sidecar or frontend assets.
+
+Run the frozen-worker integration check explicitly:
+
+```sh
+npm run worker:build
+cargo test --manifest-path src-tauri/Cargo.toml --features worker-smoke --test worker_smoke
+cargo clippy --manifest-path src-tauri/Cargo.toml --features bundled-worker --all-targets -- -D warnings
+```
+
+The Tauri build command rebuilds the worker and frontend automatically. The worker build
+uses a temporary PyInstaller cache and tests the frozen executable outside the checkout
+with Python removed from PATH. The separate Rust smoke test checks its public handshake.
 
 From the repository root, run the backend regression checks:
 

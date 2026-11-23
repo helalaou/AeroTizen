@@ -20,7 +20,7 @@ pub async fn remove_tv_apps(
     packages: Vec<AppPackageSelection>,
 ) -> AppResult<AppRemovalResult> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
-    let saved = state.profiles.get(&id)?;
+    let saved = state.profiles.get(&id).await?;
     worker::request(
         &state.worker_path,
         "remove_apps",

@@ -51,7 +51,7 @@ pub async fn inspect_local_app(
     id: String,
     path: Option<PathBuf>,
 ) -> AppResult<Option<LocalAppPackage>> {
-    let saved = state.profiles.get(&id)?;
+    let saved = state.profiles.get(&id).await?;
     let Some(path) = path else {
         return Ok(None);
     };
@@ -103,7 +103,7 @@ pub async fn install_local_app(
                 "Choose the app file again and review it.",
             )
         })?;
-    let saved = state.profiles.get(&id)?;
+    let saved = state.profiles.get(&id).await?;
     let installed: InstalledLocalApp = worker::request(&state.worker_path, "install_local_app", json!({
         "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256,
         "path": selection.path, "sha256": selection.review.sha256,
@@ -119,25 +119,28 @@ pub async fn install_local_app(
         ));
     }
     let is_launcher = installed.app_id == LAUNCHER_APP_ID;
-    let profile = state.profiles.save(VerifiedTv {
-        launcher_signing_ready: true,
-        launcher_version: if is_launcher {
-            Some(installed.version.clone())
-        } else {
-            saved.tv.launcher_version
-        },
-        home_routing_mode: if is_launcher {
-            None
-        } else {
-            saved.tv.home_routing_mode
-        },
-        native_home_settings: if is_launcher {
-            None
-        } else {
-            saved.tv.native_home_settings
-        },
-        ..saved.tv
-    })?;
+    let profile = state
+        .profiles
+        .save(VerifiedTv {
+            launcher_signing_ready: true,
+            launcher_version: if is_launcher {
+                Some(installed.version.clone())
+            } else {
+                saved.tv.launcher_version
+            },
+            home_routing_mode: if is_launcher {
+                None
+            } else {
+                saved.tv.home_routing_mode
+            },
+            native_home_settings: if is_launcher {
+                None
+            } else {
+                saved.tv.native_home_settings
+            },
+            ..saved.tv
+        })
+        .await?;
     *state.local_apps.0.lock().await = None;
     Ok(LocalAppInstallResult {
         profile,
