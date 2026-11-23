@@ -34,6 +34,33 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           target-branch: main
+          # The proposal job filters desktop-scoped commits before version selection.
+          skip-github-pull-request: true
+
+  release-prs:
+    needs: release-please
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: .github/release-please
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm test
+      - name: Update release pull requests
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+        run: node propose.mjs
 
   cli:
     needs: release-please

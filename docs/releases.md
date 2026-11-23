@@ -113,8 +113,10 @@ Release Please tracks `cli/` and `launcher/` as separate packages. CLI source,
 package metadata, native helpers, and CLI build tools belong under `cli/`. Launcher
 source and release metadata belong under `launcher/`. Root documentation, tests, and
 shared tooling do not trigger either release. A change needed in both components must
-also change the relevant source or metadata in both package directories. A commit
-scope such as `fix(launcher):` is useful context, but paths determine component ownership.
+also change the relevant source or metadata in both package directories. The
+`desktop` scope excludes a change from both release PRs, even when it changes
+shared source in those directories. Use a separate PR for shared changes that
+need a CLI or launcher release.
 
 The manifest key for the CLI is `cli`; existing `cli-vX.Y.Z` tags and version history
 continue to identify the same component. Its workflow outputs use the `cli--` prefix.
