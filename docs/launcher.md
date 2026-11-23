@@ -14,7 +14,7 @@ These browser previews use sample data.
 
 ## Personalise Home
 
-- **Appearance.** Choose **Small**, **Medium**, or **Large** under **App size**.
+- **Appearance.** Choose an **App size** from **Tiny** to **Very large**.
   Choose **Grid** or **Scroll** under **Home app layout**.
 - **Backgrounds.** Choose a solid colour, gradient, or animated background. Select
   **Custom** under **Solid colour** or **Gradients** to make your own. Adjust the
@@ -61,3 +61,35 @@ when available. Opening the correct programme still needs confirmation per app.
 Stremio requires launcher 2.7.0 and the root helper from CLI 3.0.0, or development
 builds with both changes. Set up or upgrade the helper using the [root guide](root-cli.md),
 then select **Stremio** in Continue Watching.
+
+### Cover art
+
+In **Settings → Apps → Continue Watching**, turn on **Cover art** to show portrait
+cards in Standard and Cinema. The launcher looks up Cinemeta posters for visible
+cards. A title without a poster keeps its source artwork inside the portrait card.
+In Standard, portrait cards omit the title and progress below the artwork. The
+poster fills the full height of the original card.
+
+## Cinema layout
+
+Select **Settings → Appearance → Launcher layout → Cinema** to put Continue
+Watching above a fixed-size, horizontally scrolling app row. Scroll down from
+apps to reach configured inputs. The Standard layout is the default. Cinema
+keeps your Standard app size and arrangement preferences for when you switch back.
+
+When a Continue Watching card is in focus, Cinema centres its title and source
+vertically between the header controls and the row. The backdrop fades into black
+and the saved wallpaper returns when focus moves away from the card. Cinema can
+use a separate series backdrop while keeping the app or episode image on the card.
+
+### Cinema backdrops
+
+When you focus a Continue Watching card in Cinema, the launcher checks its local
+backdrop cache. A missing or expired entry can trigger a Cinemeta lookup for a
+movie or show by IMDb ID or title. The launcher uses the release year if it needs
+to distinguish titles with the same name. It saves the image reference by app ID
+and content ID for up to 30 days. A complete title search with no match uses the
+source app’s artwork for 24 hours before it can search again.
+
+YouTube and titles without a clear backdrop match use the source app's artwork.
+Separate backdrops are available in Cinema.

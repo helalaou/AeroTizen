@@ -1017,7 +1017,7 @@ def root_reading(monkeypatch, tmp_path):
     }
     live = {
         "root_available": True,
-        "runtime_version": "3.0.1",
+        "runtime_version": worker.root_state.RUNTIME_VERSION,
         "installed": True,
         "automatic_startup_enabled": True,
         "automatic_boot_verified": True,
@@ -1040,7 +1040,7 @@ def test_root_status_exposes_only_live_public_fields(root_reading):
         "phase": "active",
         "root_available": True,
         "setup_complete": True,
-        "runtime_version": "3.0.1",
+        "runtime_version": worker.root_state.RUNTIME_VERSION,
         "target_runtime_version": worker.root_state.RUNTIME_VERSION,
         "update_available": False,
         "update_pending": False,

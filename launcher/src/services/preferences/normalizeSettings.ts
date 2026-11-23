@@ -1,6 +1,7 @@
 import { normalizeColour } from "../../backgrounds/colours";
 import { normalizeGradient } from "../../backgrounds/gradients";
 import type { SettingsDefaults, SettingsPreferences, WeatherLocation } from "../../contracts/preferences";
+import { HOME_LAYOUT_IDS } from "../../shared/homeLayout";
 
 const record = (value: unknown): Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -66,8 +67,10 @@ export const normalizeSettings = (
       defaults.theme,
     ),
     performanceMode: boolean(data.performanceMode, defaults.performanceMode),
-    homeCardColumns: typeof columns === "number" && [3, 4, 5].includes(columns) ? columns : defaults.homeCardColumns,
+    homeCardColumns:
+      typeof columns === "number" && [3, 4, 5, 6, 7, 8].includes(columns) ? columns : defaults.homeCardColumns,
     homeAppLayout: choice(data.homeAppLayout, ["grid", "scroll"], defaults.homeAppLayout),
+    homeLayout: choice(data.homeLayout, HOME_LAYOUT_IDS, defaults.homeLayout),
     background: text(data.background, defaults.background),
     customColour: normalizeColour(data.customColour, defaults.customColour),
     customGradient: normalizeGradient(data.customGradient, defaults.customGradient),
@@ -99,6 +102,9 @@ export const normalizeSettings = (
         : defaults.timeFormat || locale.timeFormat(),
     continueWatching: boolean(data.continueWatching, defaults.continueWatching),
     continueWatchingApps: ids(data.continueWatchingApps, 100),
+    continueWatchingCoverArt: boolean(data.continueWatchingCoverArt, defaults.continueWatchingCoverArt),
+    showContinueWatchingHeading: boolean(data.showContinueWatchingHeading, defaults.showContinueWatchingHeading),
+    showInputsHeading: boolean(data.showInputsHeading, defaults.showInputsHeading),
     showLiveTv: boolean(data.showLiveTv, defaults.showLiveTv),
     hideDisconnectedHdmi: boolean(data.hideDisconnectedHdmi, defaults.hideDisconnectedHdmi),
     hdmiKeepVisible: dictionary<boolean>(data.hdmiKeepVisible, "boolean"),

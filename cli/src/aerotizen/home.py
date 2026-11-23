@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import secrets
 import shlex
 import tempfile
@@ -31,6 +32,7 @@ PAYLOAD_PATH = Path(__file__).parent / "helpers/home-query.json"
 HELPER_FILES = ("AeroTizenHomeQuery.dll", "AeroTizenHomeQuery.runtimeconfig.json")
 QUERY_PREFIX = "AEROTIZEN_HOME_QUERY="
 CLEANUP_MARKER = "AEROTIZEN_HOME_QUERY_CLEANED"
+SDB_DEVICE_BANNER = re.compile(r"device::(?P<model>[A-Za-z0-9][A-Za-z0-9_.-]*)::[0-9]+")
 
 
 class HomeError(DeviceSessionError):
@@ -209,6 +211,16 @@ def device_info(session, host, *, backup=None, state_dir=None):
         }
 
 
+def _model_metadata(info, banner):
+    model = info.get("modelName")
+    if isinstance(model, str) and model.strip():
+        return model, info.get("_aerotizen_metadata_source", "live HTTP metadata")
+    match = SDB_DEVICE_BANNER.fullmatch(banner)
+    if match:
+        return match["model"], "live SDB banner; HTTP model metadata unavailable"
+    return None, "unavailable"
+
+
 def read_status(session, provider, info):
     files = load_helper()  # Check package data before starting any root operation.
     identity = session.duid().strip()
@@ -244,13 +256,14 @@ def read_status(session, provider, info):
         }
     if session.duid().strip() != identity:
         raise HomeError("The TV identity changed during the Home query.")
+    model, model_source = _model_metadata(info, getattr(session, "banner", ""))
     main, settings = query["main_operation"], query["settings"]
     return {
         "schema_version": 1,
         "queried_at": datetime.now(timezone.utc).isoformat(),
         "device": {
             "identity_sha256": hashlib.sha256(identity.encode()).hexdigest(),
-            "model": info.get("modelName"),
+            "model": model,
             "platform": info.get("model"),
             "cpu_arch": capabilities.get("cpu_arch"),
             "os_version": query["os_release"]["VERSION_ID"],
@@ -268,7 +281,7 @@ def read_status(session, provider, info):
         "complete": all(item["status"] == "ok" for item in [main, *settings.values()]),
         "evidence": {
             **provenance,
-            "model_metadata_source": info.get("_aerotizen_metadata_source", "live HTTP metadata"),
+            "model_metadata_source": model_source,
             "helper_sha256": hashlib.sha256(files[HELPER_FILES[0]]).hexdigest(),
         },
     }

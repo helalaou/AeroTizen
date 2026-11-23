@@ -30,6 +30,22 @@ export const ContinueWatchingSettings = ({ settings, actions, sources, message, 
       </SettingsField>
       {settings.continueWatching && (
         <>
+          <SettingsField title={t("continue.showHeading")}>
+            <SettingsToggle
+              focusKey="continue-watching-heading-visibility"
+              label={t("continue.showHeading")}
+              checked={settings.showContinueWatchingHeading}
+              onChange={actions.setContinueWatchingHeadingVisible}
+            />
+          </SettingsField>
+          <SettingsField title={t("continue.coverArt")}>
+            <SettingsToggle
+              focusKey="continue-watching-cover-art"
+              label={t("continue.coverArt")}
+              checked={settings.continueWatchingCoverArt}
+              onChange={actions.setContinueWatchingCoverArt}
+            />
+          </SettingsField>
           {sources.length > 0 && <SettingsHint class={styles.hint}>{t("continue.chooseApps")}</SettingsHint>}
           {message && (
             <SettingsHint class={styles.hint} role="status">

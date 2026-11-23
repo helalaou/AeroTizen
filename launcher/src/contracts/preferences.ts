@@ -1,3 +1,4 @@
+import type { HomeAppArrangement, HomeLayoutId } from "../shared/homeLayout";
 import type { Store } from "../shared/state/createStore";
 
 export type TimeFormat = "12" | "24";
@@ -25,19 +26,23 @@ export interface SettingsValues {
   clockLayout: "classic" | "custom";
   continueWatching: boolean;
   continueWatchingApps: string[];
+  continueWatchingCoverArt: boolean;
   customColour: string;
   customGradient: CustomGradient;
   dateFormat: DateFormat;
   hdmiKeepVisible: Record<string, boolean>;
   hideDisconnectedHdmi: boolean;
   home: string[];
-  homeAppLayout: "grid" | "scroll";
+  homeAppLayout: HomeAppArrangement;
   homeCardColumns: number;
+  homeLayout: HomeLayoutId;
   inputNames: Record<string, string>;
   language: string;
   numerals: "latn" | "arab";
   performanceMode: boolean;
+  showContinueWatchingHeading: boolean;
   showDate: boolean;
+  showInputsHeading: boolean;
   showLiveTv: boolean;
   showNetwork: boolean;
   showTime: boolean;

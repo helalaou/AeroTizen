@@ -41,6 +41,7 @@ export const ChoiceOption = ({
       class={styles.option}
       focusKey={id}
       role="button"
+      data-settings-choice="true"
       aria-label={ariaLabel}
       data-align={align}
       data-fill={fill ? "true" : undefined}

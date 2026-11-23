@@ -28,6 +28,7 @@ interface Host {
     tizen?: IpControlTizen | null;
   };
   clearTimeout(id: number): void;
+  diagnostic?(event: string, data: unknown): void;
   setTimeout(callback: () => void, timeoutMs: number): number;
 }
 
@@ -73,40 +74,51 @@ export const createIpControlPlatform = (host: Host): IpControlPlatform | undefin
           resolve(value);
         };
         const cancel = () => finish(null);
+        const fail = (reason: string, error?: unknown) => {
+          if (!active) {
+            return;
+          }
+          finish(null);
+          const name = error && typeof error === "object" && "name" in error ? error.name : undefined;
+          host.diagnostic?.("ip_control.message_failed", { action: command.action, reason, error: name });
+        };
         pending.add(cancel);
-        timeout = host.setTimeout(cancel, STARTUP_TIMEOUT_MS);
+        timeout = host.setTimeout(() => fail("service_start_timeout"), STARTUP_TIMEOUT_MS);
         const send = () => {
           if (!active || disposed) {
             return;
           }
           host.clearTimeout(timeout!);
-          timeout = host.setTimeout(cancel, REQUEST_TIMEOUT_MS[command.action]);
+          timeout = host.setTimeout(() => fail("message_reply_timeout"), REQUEST_TIMEOUT_MS[command.action]);
+          let reason = "message_remote_port_failed";
           try {
             const remote = ports.requestTrustedRemoteMessagePort(runtime.config.SERVICE_ID, IP_CONTROL_PORT_NAME);
+            reason = "message_port_registration_failed";
             local = ports.requestTrustedLocalMessagePort(IP_CONTROL_REPLY_PORT_NAME);
             listener = local.addMessagePortListener((items) => {
               const reply = items.find((item) => item.key === id);
               if (reply) {
                 try {
                   finish(JSON.parse(reply.value) as unknown);
-                } catch {
-                  finish(null);
+                } catch (error) {
+                  fail("message_reply_invalid", error);
                 }
               }
             });
+            reason = "message_request_send_failed";
             remote.sendMessage([{ key: id, value: JSON.stringify(command) }], local);
-          } catch {
-            finish(null);
+          } catch (error) {
+            fail(reason, error);
           }
         };
         try {
           if (runtime.homewatch.start) {
-            runtime.homewatch.start(send, cancel);
+            runtime.homewatch.start(send, () => fail("service_start_rejected"));
           } else {
             send();
           }
-        } catch {
-          finish(null);
+        } catch (error) {
+          fail("service_start_rejected", error);
         }
       });
     },

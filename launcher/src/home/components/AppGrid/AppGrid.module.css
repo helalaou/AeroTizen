@@ -1,8 +1,11 @@
 .grid {
-  --app-card-small: 332px;
-  --app-card-medium: 368px;
-  --app-card-large: 400px;
-  --app-card-size: var(--app-card-small);
+  --app-card-tiny: 184px;
+  --app-card-very-small: 225px;
+  --app-card-small: 265px;
+  --app-card-medium: 332px;
+  --app-card-large: 368px;
+  --app-card-very-large: 400px;
+  --app-card-size: var(--app-card-medium);
   --app-columns: 5;
   --app-column-gap: 32px;
 
@@ -18,34 +21,57 @@
   }
 
   &[data-columns="3"] {
-    --app-card-size: var(--app-card-large);
+    --app-card-size: var(--app-card-very-large);
     --app-columns: 3;
   }
 
   &[data-columns="4"] {
-    --app-card-size: var(--app-card-medium);
+    --app-card-size: var(--app-card-large);
     --app-columns: 4;
   }
 
   &[data-columns="6"] {
+    --app-card-size: var(--app-card-small);
     --app-columns: 6;
   }
 
+  &[data-columns="7"] {
+    --app-card-size: var(--app-card-very-small);
+    --app-columns: 7;
+  }
+
+  &[data-columns="8"] {
+    --app-card-size: var(--app-card-tiny);
+    --app-columns: 8;
+  }
+
+  &[data-columns="9"] {
+    --app-columns: 9;
+  }
+
   &[data-expanded="true"] {
-    --app-card-small: 216px;
-    --app-card-medium: 240px;
-    --app-card-large: 264px;
+    --app-card-tiny: 144px;
+    --app-card-very-small: 168px;
+    --app-card-small: 192px;
+    --app-card-medium: 216px;
+    --app-card-large: 240px;
+    --app-card-very-large: 264px;
 
     margin-top: 6px;
   }
 
   &[data-scroll="true"] {
-    --app-card-small: 308px;
+    --app-card-very-small: 212px;
+    --app-card-small: 252px;
+    --app-card-medium: 308px;
 
     &[data-expanded="true"] {
-      --app-card-small: 252px;
-      --app-card-medium: 292px;
-      --app-card-large: 312px;
+      --app-card-tiny: 160px;
+      --app-card-very-small: 180px;
+      --app-card-small: 208px;
+      --app-card-medium: 252px;
+      --app-card-large: 292px;
+      --app-card-very-large: 312px;
     }
   }
 

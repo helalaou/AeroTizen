@@ -11,9 +11,10 @@ const source = bundled
   ? readFileSync(path.join(__dirname, "../dist/launcher/service/ip-control.js"), "utf8")
   : compileTypeScript("launcher/src/service/createIpControl.ts");
 
-function harness(replies, storage = { data: null }) {
+function harness(replies, storage = { data: null }, { portError, replyError } = {}) {
   const calls = [];
   const messages = [];
+  const diagnostics = [];
   const module = { exports: {} };
   let receive;
   const https = {
@@ -81,7 +82,7 @@ function harness(replies, storage = { data: null }) {
     setTimeout,
     clearTimeout,
   });
-  const dispose = (bundled ? module.exports : module.exports.default)({
+  const host = {
     filesystem: {
       resolve(_, ready) {
         ready({ toURI: () => "file:///tmp/aerotizen-ip-test" });
@@ -90,19 +91,25 @@ function harness(replies, storage = { data: null }) {
     messageport: {
       requestTrustedLocalMessagePort(name) {
         assert.equal(name, "AeroTizen.IpControlProbe");
+        if (portError) throw portError;
         return { addMessagePortListener: (listener) => (receive = listener), removeMessagePortListener() {} };
       },
     },
+  };
+  const dispose = (bundled ? module.exports : module.exports.default)(host, (event, data) => {
+    diagnostics.push({ event, data });
   });
   return {
     calls,
     messages,
+    diagnostics,
     dispose,
     async run(command = { action: "learn", nativePorts: [1, 2, 3, 4] }, appId = "DclHome001.Home") {
       const previous = messages.length;
       await receive([{ key: "test-request", value: JSON.stringify(command) }], {
         appId,
         sendMessage(items) {
+          if (replyError) throw replyError;
           messages.push(JSON.parse(JSON.stringify(items)));
         },
       });
@@ -192,4 +199,22 @@ test("service disposal prevents later pairing and message delivery", async () =>
   h.dispose();
   assert.equal(await h.run(), undefined);
   assert.equal(h.calls.length, 0);
+});
+
+test("failed registration reports that the service port never became ready", () => {
+  const portError = Object.assign(new Error("PRIVATE"), { name: "SecurityError" });
+  const h = harness([], undefined, { portError });
+  assert.deepEqual(JSON.parse(JSON.stringify(h.diagnostics)), [
+    { event: "ip_control.start_failed", data: { reason: "message_port_registration_failed", error: "SecurityError" } },
+  ]);
+});
+
+test("failed replies are logged without recording the token or the request", async () => {
+  const replyError = Object.assign(new Error("PRIVATE"), { name: "NotFoundError" });
+  const h = harness([], { data: JSON.stringify({ token: "PRIVATE-TOKEN", ports: [5] }) }, { replyError });
+  assert.equal(await h.run({ action: "list" }), undefined);
+  assert.deepEqual(JSON.parse(JSON.stringify(h.diagnostics)), [
+    { event: "ip_control.ready" },
+    { event: "ip_control.message_failed", data: { reason: "message_reply_send_failed", error: "NotFoundError" } },
+  ]);
 });

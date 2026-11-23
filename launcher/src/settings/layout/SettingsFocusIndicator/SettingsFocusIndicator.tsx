@@ -7,10 +7,13 @@ import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
 
 import styles from "./SettingsFocusIndicator.module.css";
 
+const FOCUS_SIZE_TOLERANCE_PX = 1;
+
 interface FocusPlate {
   key: string | undefined;
   motion: boolean;
   scope: string;
+  selected: boolean;
   style: {
     borderRadius: string;
     height: string;
@@ -19,6 +22,11 @@ interface FocusPlate {
   };
   visible: boolean;
 }
+
+// Equal grid tracks can differ by a fraction of a CSS pixel after layout rounding.
+const sameControlSize = (first: FocusPlate["style"], second: FocusPlate["style"]) =>
+  Math.abs(parseFloat(first.width) - parseFloat(second.width)) < FOCUS_SIZE_TOLERANCE_PX &&
+  Math.abs(parseFloat(first.height) - parseFloat(second.height)) < FOCUS_SIZE_TOLERANCE_PX;
 
 export const SettingsFocusIndicator = ({
   container,
@@ -35,6 +43,7 @@ export const SettingsFocusIndicator = ({
     key: undefined,
     scope: "",
     motion: false,
+    selected: false,
     visible: false,
     style: { transform: "", width: "0px", height: "0px", borderRadius: "17px" },
   });
@@ -66,7 +75,7 @@ export const SettingsFocusIndicator = ({
           characterData: true,
           subtree: true,
           attributes: true,
-          attributeFilter: ["hidden"],
+          attributeFilter: ["hidden", "aria-pressed"],
         });
       }
       const rect = target.getBoundingClientRect();
@@ -83,11 +92,13 @@ export const SettingsFocusIndicator = ({
         borderRadius: getComputedStyle(target).borderRadius,
       };
       const visible = Boolean(rect.width && rect.height && target.dataset.settingsFocusOwner !== "control");
+      const selected = target.dataset.settingsChoice === "true" && target.getAttribute("aria-pressed") === "true";
       setPlate((previous) => {
         if (
           previous.key === key &&
           previous.scope === scope &&
           previous.visible === visible &&
+          previous.selected === selected &&
           previous.style.transform === style.transform &&
           previous.style.width === style.width &&
           previous.style.height === style.height &&
@@ -101,9 +112,8 @@ export const SettingsFocusIndicator = ({
             previous.visible &&
             previous.key !== key &&
             previous.scope === scope &&
-            previous.style.width === style.width &&
-            previous.style.height === style.height);
-        return { key, scope, style, visible, motion };
+            sameControlSize(previous.style, style));
+        return { key, scope, selected, style, visible, motion };
       });
     };
     const schedule = (allowMotion: boolean) => {
@@ -145,6 +155,7 @@ export const SettingsFocusIndicator = ({
       class={styles.indicator + " " + (sidebar ? styles.sidebar : styles.content)}
       data-settings-focus={sidebar ? "sidebar" : "content"}
       data-visible={plate.visible ? "true" : undefined}
+      data-selected={plate.selected ? "true" : undefined}
       data-motion={sidebar || plate.motion ? "true" : "false"}
       style={plate.style}
     />

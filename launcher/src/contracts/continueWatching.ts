@@ -4,7 +4,10 @@ import type { AppRecord } from "./apps";
 import type { ContinueItem, ContinueSource } from "./launcher";
 
 export interface ContinueFeedItem extends ContinueItem {
+  readonly imdbId?: string;
+  readonly mediaKind?: "movie" | "tv";
   readonly payload: string;
+  readonly releaseYear?: number;
   readonly timestamp: number;
 }
 
@@ -30,9 +33,13 @@ export interface ContinueWatchingPlatform {
   subscribeVisibility(listener: () => void): () => void;
 }
 
+export type ContinueArtwork = { readonly status: "pending" } | { readonly status: "ready"; readonly url?: string };
+
 export interface ContinueWatchingService extends Store<ContinueWatchingSnapshot> {
   dispose(): void;
   open(item: ContinueItem): void;
   refresh(choicesChanged?: boolean): void;
   start(): void;
+  watchBackdrop?(item: ContinueItem, show: (result: ContinueArtwork) => void): () => void;
+  watchPoster?(item: ContinueItem, show: (result: ContinueArtwork) => void): () => void;
 }

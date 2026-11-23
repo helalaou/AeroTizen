@@ -96,6 +96,38 @@ test("navigation groups vertically centred controls of different heights in left
   assert.equal(nav.current(), speed);
 });
 
+test("vertical navigation follows aligned controls in rows with different lengths", () => {
+  const nav = createNavigation(() => {});
+  for (const [key, top, left] of [
+    ["frost", 0, 0],
+    ["gloss", 0, 100],
+    ["amethyst", 0, 200],
+    ["mint", 100, 100],
+    ["halo", 100, 200],
+    ["single", 200, 200],
+  ]) {
+    nav.register(key, element(top, left));
+  }
+
+  for (const [from, direction, expected] of [
+    ["gloss", "down", "mint"],
+    ["amethyst", "down", "halo"],
+    ["mint", "up", "gloss"],
+    ["halo", "up", "amethyst"],
+    ["frost", "down", "mint"],
+    ["mint", "down", "single"],
+    ["single", "up", "halo"],
+    ["gloss", "up", "gloss"],
+    ["single", "down", "single"],
+    ["mint", "right", "halo"],
+    ["halo", "left", "mint"],
+  ]) {
+    nav.select(from);
+    nav.move(direction);
+    assert.equal(nav.getSnapshot(), expected, `${from} -> ${direction}`);
+  }
+});
+
 test("category entry uses the first visible registered control inside its pane", () => {
   const close = element(0, 0),
     hidden = element(50, 0),

@@ -2,6 +2,7 @@ import type { AppsService } from "../../contracts/apps";
 import type { ContinueWatchingProvider } from "../../contracts/continueWatching";
 import type { AppCatalog } from "../../shared/apps/appCatalog";
 import { shortAppName } from "../../shared/apps/appNames";
+import { readImdbId } from "../../shared/continueWatchingArtwork";
 
 import type { ReadonlyTizenFilesystem } from "./readonlyFilesystem";
 
@@ -24,7 +25,6 @@ const MAX_CAPABILITIES_CHARACTERS = 4_096;
 const MAX_FEED_CHARACTERS = 2_000_000;
 const MAX_FEED_RECORDS = 200;
 const INITIAL_STATUS = "Not selected";
-const IMDB_ID_PATTERN = /^tt[0-9]{7,12}$/;
 const BACKGROUND_BASE_URL = "https://images.metahub.space/background/medium/";
 const EPISODE_BASE_URL = "https://episodes.metahub.space/";
 const EPISODE_IMAGE_FILE = "w780.jpg";
@@ -72,7 +72,8 @@ const withArtwork = (value: unknown): unknown => {
     return value;
   }
   const record = value as Readonly<Record<string, unknown>>;
-  if (typeof record.content_id !== "string" || !IMDB_ID_PATTERN.test(record.content_id)) {
+  const imdbId = readImdbId(record.content_id);
+  if (!imdbId) {
     return value;
   }
   const season =
@@ -81,10 +82,10 @@ const withArtwork = (value: unknown): unknown => {
   const thumbnail =
     Number.isInteger(season) && typeof episode === "number" && Number.isInteger(episode) && episode > 0
       ? {
-          thumbnail_url: EPISODE_BASE_URL + record.content_id + "/" + season + "/" + episode + "/" + EPISODE_IMAGE_FILE,
+          thumbnail_url: EPISODE_BASE_URL + imdbId + "/" + season + "/" + episode + "/" + EPISODE_IMAGE_FILE,
         }
       : {};
-  return { ...record, background_url: BACKGROUND_BASE_URL + record.content_id + "/img", ...thumbnail };
+  return { ...record, background_url: BACKGROUND_BASE_URL + imdbId + "/img", ...thumbnail };
 };
 
 export const createStremioContinueWatchingProvider = ({
@@ -247,6 +248,7 @@ export const createStremioContinueWatchingProvider = ({
           icon: app.iconPath || "",
           storeId: catalog.storeId(app.id) || "",
           status: INITIAL_STATUS,
+          supportsSeparateBackdrop: true,
         }));
     },
     check(source, done) {

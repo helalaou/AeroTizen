@@ -6,6 +6,7 @@
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
   animation-direction: alternate;
+  animation-play-state: var(--wallpaper-animation-play-state, running);
 
   &[data-static="true"] {
     animation: none;

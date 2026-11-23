@@ -77,6 +77,7 @@ body[data-theme="classic"] {
   --settings-content-focus-surface: rgba(124, 92, 255, 0.12);
   --settings-sidebar-focus-shadow: none;
   --settings-content-focus-shadow: none;
+  --settings-selected-focus-outline: 2px solid var(--choice-selected-text, var(--control-focused-text));
   --choice-selected-surface: var(--focus);
   --choice-selected-border: var(--border-control);
   --choice-focused-surface: rgba(124, 92, 255, 0.25);

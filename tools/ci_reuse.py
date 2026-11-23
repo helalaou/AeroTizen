@@ -1,4 +1,4 @@
-"""Find a successful PR CI run for a single squash-merged push."""
+"""Find successful PR CI for a squash-merged push or an exact release commit."""
 
 import json
 import os
@@ -51,20 +51,25 @@ def git(*args):
 
 
 def main():
-    commit = os.environ["GITHUB_SHA"]
-    base = os.environ["BEFORE"]
-    if git("rev-list", "--parents", "-n", "1", "HEAD").split() != [commit, base]:
+    release_ref = os.environ.get("RELEASE_REF", "")
+    commit = release_ref or os.environ["GITHUB_SHA"]
+    parents = git("rev-list", "--parents", "-n", "1", "HEAD").split()
+    if len(parents) != 2 or parents[0] != commit:
         return
+    base = parents[1]
+    if not release_ref and base != os.environ["BEFORE"]:
+        return
+    branch = os.environ["RELEASE_BRANCH"] if release_ref else os.environ["GITHUB_REF_NAME"]
     try:
         run = verified_pr_run(
             os.environ["GITHUB_REPOSITORY"],
-            os.environ["GITHUB_REF_NAME"],
+            branch,
             commit,
             base,
             git("rev-parse", "HEAD^{tree}"),
         )
     except (OSError, KeyError, TypeError, ValueError) as error:
-        print(f"Could not verify previous PR CI. Running the selected push jobs. {error}")
+        print(f"Could not verify previous PR CI. Running the selected test jobs. {error}")
         return
     if run is not None:
         print(f"PR CI run {run} already passed for this base and tree.")

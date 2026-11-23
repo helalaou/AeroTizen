@@ -16,6 +16,9 @@ programmes; it cannot control a TV.
 
 ## Quick Start
 
+The launcher requires a Samsung TV with **Tizen 5.0 or later**. Check the
+[TV compatibility table](docs/tv-compatibility.md) for your model's Home and startup results.
+
 This guide uses CLI 3.0.0 and launcher 2.7.0. You need a Samsung account and a
 computer on the same network as the TV. The CLI includes its dependencies.
 Developer Mode is sufficient for setup.
@@ -129,6 +132,7 @@ or see [CONTRIBUTING.md](CONTRIBUTING.md) for development and testing.
     <td align="center"><a href="https://github.com/DdotCDotP2015"><img src="https://github.com/DdotCDotP2015.png?size=100" width="64" height="64" alt="DdotCDotP2015"><br><sub>DdotCDotP2015</sub></a></td>
     <td align="center"><a href="https://github.com/DmzTheo"><img src="https://github.com/DmzTheo.png?size=100" width="64" height="64" alt="DmzTheo"><br><sub>DmzTheo</sub></a></td>
     <td align="center"><a href="https://github.com/twomore"><img src="https://github.com/twomore.png?size=100" width="64" height="64" alt="twomore"><br><sub>twomore</sub></a></td>
+    <td align="center"><a href="https://github.com/dbdefault"><img src="https://github.com/dbdefault.png?size=100" width="64" height="64" alt="dbdefault"><br><sub>dbdefault</sub></a></td>
   </tr>
 </table>
 <!-- contributors:end -->
@@ -140,6 +144,7 @@ or see [CONTRIBUTING.md](CONTRIBUTING.md) for development and testing.
 - [samsung-tizen-tv-debloat](https://github.com/ardazeytin/samsung-tizen-tv-debloat), for which packages are safe to remove
 - App artwork is read from Samsung's cache on each TV; none is bundled or downloaded. Fallback logos
   are from [Simple Icons](https://simpleicons.org). Artwork and trademarks belong to their owners
+- Cinema looks up backdrop artwork through [Cinemeta](https://v3-cinemeta.strem.io/manifest.json), Stremio's catalogue. MetaHub serves the images.
 - Weather and location search from [Open-Meteo](https://open-meteo.com), automatic location from [ipapi](https://ipapi.co)
 
 This project isn't affiliated with Samsung. Use it at your own risk.

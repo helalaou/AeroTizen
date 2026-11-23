@@ -79,7 +79,14 @@ test("old storage keys are ignored when the current key is missing", () => {
 test("old fields use defaults on load and cannot affect runtime updates", () => {
   const oldFields = { favorites: ["video.app"], cardSize: "small", homeCardMode: "rectangle", glassSettings: false };
   const h = harness(
-    { "aerotizen.settings.v1": JSON.stringify({ ...oldFields, homeCardColumns: "5", dateFormat: "dmy" }) },
+    {
+      "aerotizen.settings.v1": JSON.stringify({
+        ...oldFields,
+        homeCardColumns: "5",
+        homeLayout: "unknown",
+        dateFormat: "dmy",
+      }),
+    },
     { defaults: { homeCardColumns: 4, theme: "glass", dateFormat: "iso" } },
   );
   h.service.load();
@@ -87,8 +94,17 @@ test("old fields use defaults on load and cannot affect runtime updates", () => 
   assert.equal(h.service.getSnapshot().homeCardColumns, 4);
   assert.equal(h.service.getSnapshot().theme, "glass");
   assert.equal(h.service.getSnapshot().dateFormat, "iso");
-  h.service.update({ homeCardColumns: 5, home: ["current.app"] });
+  assert.equal(h.service.getSnapshot().homeLayout, "standard");
+  assert.equal(h.service.getSnapshot().continueWatchingCoverArt, false);
+  h.service.update({
+    homeCardColumns: 5,
+    homeLayout: "cinema",
+    continueWatchingCoverArt: true,
+    home: ["current.app"],
+  });
   const current = h.service.getSnapshot();
+  assert.equal(current.homeLayout, "cinema");
+  assert.equal(current.continueWatchingCoverArt, true);
   h.service.update(oldFields);
   assert.equal(h.service.getSnapshot(), current);
   const saved = JSON.parse(h.data.get("aerotizen.settings.v1"));
