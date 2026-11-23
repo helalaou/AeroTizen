@@ -14,12 +14,10 @@ pub async fn read_home_backup(
     captured_at: String,
 ) -> AppResult<HomeBackupSettings> {
     let saved = state.profiles.get(&id).await?;
-    worker::request(
-        &state.worker_path,
-        "read_home_backup",
-        json!({ "expected_identity": saved.tv.identity_sha256, "captured_at": captured_at }),
-    )
-    .await
+    state
+        .home_backups
+        .read(&saved.tv.identity_sha256, &captured_at)
+        .await
 }
 
 pub async fn prepare_native_home(state: &AppState, id: String) -> AppResult<PreparedHomeApply> {

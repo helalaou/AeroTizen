@@ -2,8 +2,9 @@
 
 Use AeroTizen Desktop to find and save Samsung TVs, install the launcher and local apps,
 manage installed apps, configure Home and remote buttons, and set up or update root access.
-The app uses Tauri, React and Mantine. Rust handles TV discovery and launcher release
-lookup; a bundled Python worker provides the remaining CLI services. SQLite stores saved TV profiles.
+The app uses Tauri, React and Mantine. Rust handles TV discovery, launcher release
+lookup and Home backup review; a bundled Python worker provides the remaining CLI services.
+SQLite stores saved TV profiles.
 
 See screenshots of [TV selection](screenshots/tv-selection.png), [Overview](screenshots/overview.png),
 and [Launcher](screenshots/launcher.png).
@@ -215,6 +216,14 @@ operation or keeps its old response-size allowance. Its unused Python catalogue 
 release-note helpers have also been removed from the shared release module. Launcher
 installation and the Python CLI's release commands still use the existing verified
 download and signing flow.
+
+Reviewing the original Home backup also runs in Rust. It reads the CLI's existing
+`~/.config/aerotizen/backups/<TV identity>/original-home.json` without a TV connection
+or worker process. It verifies the backup schema, device identity, original settings,
+read/cleanup evidence and capture time before returning the six settings shown in the
+dialog. File reads run on the blocking thread pool and are limited to 128 KiB, including
+the actual bytes read. No backup file is written or replaced. Backup capture, Apply and
+Restore still use the worker and its existing verification.
 
 ```sh
 npm run typecheck

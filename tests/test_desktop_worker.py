@@ -146,20 +146,6 @@ def test_connection_reports_only_original_backup_status_and_capture_time(connect
     expected = {"status": "saved", "captured_at": captured_at} if matches_tv else {"status": "unreadable"}
     assert reply["result"]["home_backup"] == expected
     assert str(backup) not in json.dumps(reply)
-    saved = worker.handle(request("read_home_backup", expected_identity=identity, captured_at=captured_at))
-    if matches_tv:
-        assert saved["result"] == {
-            "home_button_app": "stock-home",
-            "home_app": "stock-home",
-            "startup_app": "stock-home",
-            "startup_backup_app": "stock-home",
-            "first_screen": "stock-home",
-            "smart_hub_autostart": False,
-        }
-        changed = worker.handle(request("read_home_backup", expected_identity=identity, captured_at="stale"))
-        assert changed["error"]["code"] == "backup_changed"
-    else:
-        assert saved["error"]["code"] == "backup_unreadable"
 
 
 def _write_backup(tmp_path, identity, captured_at):
@@ -234,23 +220,6 @@ def test_prepare_native_home_saves_once_and_reuses_original(paired_home_backup, 
         "authenticated": True,
         "helper_sha256": settings["helper_sha256"],
     }
-    review = worker.handle(
-        request("read_home_backup", expected_identity=identity, captured_at=result["captured_at"])
-    )
-    assert review["result"] == {
-        field: value
-        for field, value in settings.items()
-        if field
-        in (
-            "home_button_app",
-            "home_app",
-            "startup_app",
-            "startup_backup_app",
-            "first_screen",
-            "smart_hub_autostart",
-        )
-    }
-
     session.read_root_home_status = lambda: pytest.fail(
         "The existing backup must be reused without a settings read"
     )
@@ -590,11 +559,12 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "root_status",
         "setup_root",
         "upgrade_root",
-        "read_home_backup",
         "prepare_native_home",
         "apply_native_home",
         "restore_home_backup",
     ]
+    for retired in ("discover", "launcher_catalog", "read_home_backup"):
+        assert worker.handle(request(retired))["error"]["code"] == "invalid_request"
 
 
 @pytest.mark.parametrize(
