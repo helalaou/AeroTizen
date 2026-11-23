@@ -1,19 +1,30 @@
 .header {
+  --app-shell-border-color: #456fb0;
+
+  background: linear-gradient(108deg, #14284a, #183c76 60%, #2456a4);
+  color: #f5f9ff;
+}
+.headerContent {
   height: 100%;
   padding: 0 28px;
-  color: #101828;
 }
 .wordmark {
-  font-size: 24px;
-  font-weight: 750;
-  letter-spacing: -0.9px;
+  font-family: var(--mantine-font-family-headings);
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+.headerControl:focus-visible {
+  outline: 2px solid #b5deff;
+  outline-offset: 2px;
 }
 .main {
   background: #fff;
   color: #172b4d;
 }
 .body {
-  min-height: calc(100svh - 64px);
+  min-height: calc(100svh - var(--app-shell-header-offset));
   display: flex;
   flex-direction: column;
 }
@@ -163,7 +174,7 @@
   }
 }
 @media (max-width: 700px) {
-  .header {
+  .headerContent {
     padding: 0 20px;
   }
   .selection,
