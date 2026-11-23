@@ -49,7 +49,7 @@ from tempfile import TemporaryDirectory
 
 from aerotizen import __version__, buttons, catalog, diagnostics, discover, remote
 from aerotizen.device import DeviceSession
-from aerotizen.sdb import SdbError
+from aerotizen.sdb import SdbError, uninstall_failure_line
 
 STATE_DIR = remote.CONFIG_DIR
 
@@ -188,7 +188,7 @@ def _debloat(args, host, s):
         gone = pkgid not in packages(after)
         print(f"{'removed' if gone else 'STILL PRESENT'}  {pkgs[pkgid]['name']} ({pkgid})")
         if not gone:
-            reason = next((ln for ln in out.splitlines() if "fail" in ln or "can not" in ln), out[-120:])
+            reason = uninstall_failure_line(out) or out[-120:]
             print("   TV said:", reason or "(nothing)")
             refused.append(pkgs[pkgid]["name"])
         current = after
@@ -258,7 +258,7 @@ def verify_install(app_id, version, output, applist):
         if installed_version != version:
             raise ValueError(f"The TV reports version {installed_version}; expected {version}.")
         print(f"\nInstalled: {app_id} (version {installed_version} verified)")
-        return
+        return installed_version
     # Captured vd_appinstall reply from a Samsung Frame; progress alone is not confirmation.
     completed = re.search(rf"app_id\[{re.escape(app_id)}\]\s+install completed\b", output, re.I)
     if not completed:
@@ -268,21 +268,28 @@ def verify_install(app_id, version, output, applist):
 
 def _install_signed(session, src, temporary, host):
     """Update in place with the saved signing profile and verify the TV's reply."""
+    cdir = cert_dir_for(session.duid())
+    if not os.path.exists(os.path.join(cdir, "distributor.p12")):
+        sys.exit(f"No certificates for this TV yet. Run: aerotizen --tv {host} certs")
+    return install_signed_package(session, src, temporary, cdir)
+
+
+def install_signed_package(session, src, temporary, cdir):
+    """Use the standard Samsung developer install command with a local signing profile."""
     from aerotizen import signer
 
     app_id, version = app_metadata_of(src)
-    duid = session.duid()
     tool_path = session.capability().get("sdk_toolpath", "/home/owner/share/tmp/sdk_tools")
-    cdir = cert_dir_for(duid)
-    if not os.path.exists(os.path.join(cdir, "distributor.p12")):
-        sys.exit(f"No certificates for this TV yet. Run: aerotizen --tv {host} certs")
+    if not re.fullmatch(r"(?:/[A-Za-z0-9_-][A-Za-z0-9_.-]*)+/?", tool_path):
+        raise ValueError("The TV reported an invalid SDK tools path.")
+    tool_path = tool_path.rstrip("/")
     signed = Path(temporary) / f"{app_id.split('.')[0]}-signed.wgt"
     signer.sign_wgt(src, signed, cdir)
     with open(os.path.join(cdir, "device-profile.xml"), "rb") as f:
         session.push(f.read(), f"{tool_path}/device-profile.xml")
     output = session.install(app_id, signed.read_bytes(), tool_path)
     print(output.strip())
-    verify_install(app_id, version, output, session.applist())
+    return verify_install(app_id, version, output, session.applist())
 
 
 def cmd_install(args):
@@ -431,7 +438,7 @@ def cmd_uninstall(args):
                 )
         out = s.uninstall(app_id).strip()
         if app_id in {a["appid"] for a in catalog.parse_applist(s.applist())}:
-            reason = next((ln for ln in out.splitlines() if "fail" in ln or "can not" in ln), out[-120:])
+            reason = uninstall_failure_line(out) or out[-120:]
             sys.exit(f"{name} is still installed. TV said: {reason or '(nothing)'}")
         print(f"Uninstalled {name} ({app_id}).")
 

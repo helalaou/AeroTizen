@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "https://github.com/helalaou/AeroTizen/issues/new[?]*" },
+        { "url": "https://github.com/helalaou/AeroTizen/releases/tag/launcher-v[0-9]*" }
+      ]
+    }
+  ]
+}

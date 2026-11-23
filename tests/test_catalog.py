@@ -46,11 +46,28 @@ def test_non_removable_and_infrastructure_are_protected():
     assert catalog.classify(infra) == "protected"
     own = {"appid": "DclHome001.Home", "pkgid": "DclHome001", "name": "AeroTizen", "removable": True}
     assert catalog.classify(own) == "protected"
+    helper_id = "org.aerotizen.roothelper"
+    root_helper = catalog.parse_applist(_block(helper_id, "AeroTizen Root Helper", helper_id, helper_id))[0]
+    assert root_helper["removable"] is True
+    assert catalog.classify(root_helper) == "protected"
+    security_id = "com.samsung.tv.SecurityCenter"
+    security_center = catalog.parse_applist(_block(security_id, "SecurityCenter", security_id, security_id))[
+        0
+    ]
+    assert security_center["removable"] is True
+    assert catalog.classify(security_center) == "protected"
 
 
 def test_legacy_line_format_falls_back_to_store_pattern():
     apps = catalog.parse_applist("Jz7aUrV2Q4.Twitch\tTwitch\norg.tizen.settings\tSettings\n")
     assert {a["name"]: catalog.classify(a) for a in apps} == {"Twitch": "bloat", "Settings": "protected"}
+
+
+def test_built_in_browser_is_protected_even_if_reported_removable():
+    app_id = "org.tizen.browser"
+    browser = catalog.parse_applist(_block(app_id, "Browser", app_id, app_id))[0]
+    assert browser["removable"] is True
+    assert catalog.classify(browser) == "protected"
 
 
 def test_app_versions_are_optional_in_block_and_key_value_formats():

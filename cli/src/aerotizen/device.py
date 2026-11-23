@@ -173,6 +173,13 @@ class DeviceSession:
         with self._mutex:
             return self._require_connection().banner
 
+    @property
+    def root_runtime_version(self):
+        """Version from the authenticated bridge reply for this connection, if available."""
+        with self._mutex:
+            connection = self._require_connection()
+            return connection.root_status.get("runtime_version") if self.managed_root else None
+
     def read_root_home_status(self):
         """Read fixed Home settings through the paired helper, when supported."""
         with self._mutex:

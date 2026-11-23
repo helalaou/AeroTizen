@@ -26,7 +26,15 @@ PACKAGE_ID = "DclHome001"
 MAX_JSON_BYTES = 2 * 1024 * 1024
 MAX_PACKAGE_BYTES = 64 * 1024 * 1024
 MAX_UNPACKED_BYTES = 128 * 1024 * 1024
+MAX_RELEASE_BODY_CHARACTERS = 8_000
 VERSION = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
+RELEASE_NOTES_HEADING = re.compile(r"#{3,6}\s+(.+)")
+RELEASE_NOTES_BULLET = re.compile(r"[*+-]\s+(.+)")
+GITHUB_CHANGE_REFERENCE = re.compile(
+    r"\s*\(\[[^\]]+\]\(https://github\.com/[^)]+\)\)"
+    r"|,?\s+(?:closes|fixes|resolves)\s+\[#[0-9]+\]\(https://github\.com/[^)]+\).*$",
+    re.IGNORECASE,
+)
 
 
 class ReleaseError(ValueError):
@@ -127,12 +135,16 @@ def _json_url(url):
         raise ReleaseError("GitHub returned invalid release JSON.") from exc
 
 
-def _release(repository, version, component="launcher"):
+def _release_api(repository):
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository) or any(
         part in (".", "..") for part in repository.split("/")
     ):
         raise ReleaseError("Release repository must be OWNER/REPO, for example helalaou/AeroTizen.")
-    api = f"https://api.github.com/repos/{repository}/releases"
+    return f"https://api.github.com/repos/{repository}/releases"
+
+
+def _release(repository, version, component="launcher"):
+    api = _release_api(repository)
     prefix = f"{component}-v"
     label = "CLI" if component == "cli" else "launcher"
     if version is not None:
@@ -147,6 +159,20 @@ def _release(repository, version, component="launcher"):
             raise ReleaseError(f"The requested version is not a published stable {label} release.")
         return release, version
 
+    candidates = _stable_releases(api, component)
+    if not candidates:
+        hint = (
+            " Use an explicit local path (install ./launcher) for a development build."
+            if component == "launcher"
+            else ""
+        )
+        raise ReleaseError(f"No stable {label} release is published in {repository}.{hint}")
+    _, release, found = max(candidates, key=lambda entry: entry[0])
+    return release, found
+
+
+def _stable_releases(api, component):
+    prefix = f"{component}-v"
     candidates = []
     # Components share this listing. Read all pages, then compare versions in one stream.
     for page in range(1, 101):
@@ -172,15 +198,7 @@ def _release(repository, version, component="launcher"):
     else:
         hint = " Use --version X.Y.Z." if component == "launcher" else ""
         raise ReleaseError(f"Too many releases to select safely.{hint}")
-    if not candidates:
-        hint = (
-            " Use an explicit local path (install ./launcher) for a development build."
-            if component == "launcher"
-            else ""
-        )
-        raise ReleaseError(f"No stable {label} release is published in {repository}.{hint}")
-    _, release, found = max(candidates, key=lambda entry: entry[0])
-    return release, found
+    return candidates
 
 
 def _asset_url(release, repository, name):
@@ -291,11 +309,58 @@ def _check_package(data, version):
         raise ReleaseError("The launcher release is not a valid application package.") from exc
 
 
+def _change_sections(body):
+    """Extract Release Please headings and readable change entries."""
+    if not isinstance(body, str):
+        return []
+    sections = []
+    heading = None
+    changes = []
+    for line in body[:MAX_RELEASE_BODY_CHARACTERS].splitlines():
+        line = line.strip()
+        match = RELEASE_NOTES_HEADING.fullmatch(line)
+        if match:
+            if changes:
+                sections.append({"heading": heading, "changes": changes})
+            heading = match[1]
+            changes = []
+        elif match := RELEASE_NOTES_BULLET.fullmatch(line):
+            change = GITHUB_CHANGE_REFERENCE.sub("", match[1])
+            change = re.sub(r"^\*\*[^*]+:\*\*\s*", "", change)
+            change = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", change)
+            change = re.sub(r"\*\*([^*]+)\*\*|`([^`]+)`", r"\1\2", change).strip()
+            if change:
+                changes.append(change)
+    if changes:
+        sections.append({"heading": heading, "changes": changes})
+    return sections
+
+
+def launcher_catalog(*, repository=DEFAULT_REPOSITORY):
+    """List published stable launcher packages and their changes, newest first."""
+    candidates = _stable_releases(_release_api(repository), "launcher")
+    entries = {}
+    for _, release, version in sorted(candidates, key=lambda entry: entry[0], reverse=True):
+        if version in entries:
+            continue
+        try:
+            _asset_url(release, repository, "launcher-release.json")
+            _asset_url(release, repository, _launcher_asset_name(version))
+        except ReleaseError:
+            continue
+        entries[version] = {"version": version, "sections": _change_sections(release.get("body"))}
+    return list(entries.values())
+
+
+def _launcher_asset_name(version):
+    return f"aerotizen-launcher-{version}.wgt"
+
+
 def resolve_launcher(*, version=None, repository=DEFAULT_REPOSITORY):
     """Validate release metadata without downloading the widget or requiring a newer CLI."""
     release, version = _release(repository, version)
     manifest = _json_url(_asset_url(release, repository, "launcher-release.json"))
-    name = f"aerotizen-launcher-{version}.wgt"
+    name = _launcher_asset_name(version)
     if (
         not isinstance(manifest, dict)
         or type(manifest.get("schema_version")) is not int

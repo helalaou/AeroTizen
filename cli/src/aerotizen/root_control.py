@@ -17,6 +17,15 @@ from aerotizen.root_bridge import BridgeClient, BridgeError
 
 APP_ID = root_state.APP_ID
 ROW = ("app_id", "package", "app_type", "app_component", "app_onboot", "app_autorestart", "app_exec")
+DUID_SHA256_PATTERN = re.compile(r"[a-f0-9]{64}")
+
+
+class RootIdentityError(DeviceSessionError):
+    """The selected desktop TV does not match the live TV or its saved receipt."""
+
+
+class RootSetupStateError(DeviceSessionError):
+    """A verification request cannot start or replace a root installation."""
 
 
 def preview(operation, host, *, receipt=None):
@@ -229,9 +238,27 @@ def status(host, *, receipt_path=None, wait=0, state_dir=None):
                 time.sleep(min(2, max(0, deadline - time.monotonic())))
 
 
-def setup(host, *, state_dir=None, receipt_path=None, runtime=None, release=None, wait=0):
+def setup(
+    host,
+    *,
+    state_dir=None,
+    receipt_path=None,
+    runtime=None,
+    release=None,
+    wait=0,
+    expected_duid_sha256=None,
+    verify_only=False,
+):
+    if expected_duid_sha256 is not None and (
+        not isinstance(expected_duid_sha256, str) or not DUID_SHA256_PATTERN.fullmatch(expected_duid_sha256)
+    ):
+        raise ValueError("Invalid selected TV identity")
     path = Path(receipt_path) if receipt_path else root_state.selected_path(host, state_dir)
     receipt = root_state.load(path) if path.exists() else None
+    if receipt and expected_duid_sha256 is not None and receipt["duid_sha256"] != expected_duid_sha256:
+        raise RootIdentityError("The saved root recovery record belongs to a different TV")
+    if verify_only and (receipt is None or receipt["phase"] not in ("waiting_boot", "active")):
+        raise RootSetupStateError("There is no root setup waiting for verification")
     if receipt and receipt["phase"] == "removing":
         raise DeviceSessionError("Finish root remove --yes before starting root setup again")
     managed, xml, icon = root_package.runtime_files(runtime)
@@ -281,6 +308,10 @@ def setup(host, *, state_dir=None, receipt_path=None, runtime=None, release=None
         Path(state_dir or remote.CONFIG_DIR) / "root-cache", release=release
     )
     with DeviceSession(host, source_address=source, direct=True) as session:
+        if expected_duid_sha256 is not None and (
+            hashlib.sha256(session.duid().encode()).hexdigest() != expected_duid_sha256
+        ):
+            raise RootIdentityError("This address belongs to a different TV. Root setup stopped.")
         before = home.read_status(session, None, info)
         if not before["complete"]:
             raise DeviceSessionError("Save a complete Home snapshot before root setup")
@@ -406,7 +437,20 @@ def _clean_upload(session, managed, name, checksum):
     )
 
 
-def upgrade(host, *, state_dir=None, receipt_path=None, runtime=None, release=None):
+def upgrade(
+    host,
+    *,
+    state_dir=None,
+    receipt_path=None,
+    runtime=None,
+    release=None,
+    expected_duid_sha256=None,
+    resume_only=False,
+):
+    if expected_duid_sha256 is not None and (
+        not isinstance(expected_duid_sha256, str) or not DUID_SHA256_PATTERN.fullmatch(expected_duid_sha256)
+    ):
+        raise ValueError("Invalid selected TV identity")
     path = Path(receipt_path) if receipt_path else root_state.selected_path(host, state_dir)
     if not path.exists():
         raise DeviceSessionError("Complete root setup before upgrading the helper")
@@ -414,9 +458,13 @@ def upgrade(host, *, state_dir=None, receipt_path=None, runtime=None, release=No
     # Load the receipt under the device lock. A concurrent upgrade may have updated it.
     with DeviceSession(host).ownership() as session:
         receipt = root_state.load(path)
+        if expected_duid_sha256 is not None and receipt["duid_sha256"] != expected_duid_sha256:
+            raise RootIdentityError("The saved root recovery record belongs to a different TV")
         if receipt["phase"] != "active":
             raise DeviceSessionError("Complete root setup before upgrading the helper")
         pending = receipt.get("upgrade")
+        if resume_only and not pending:
+            raise RootSetupStateError("There is no root update waiting for verification")
         config = root_package.public_config(receipt, managed)
         target = root_package.digest(root_package.config_bytes(config))
         if pending and pending["configuration_sha256"] != target:

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace AeroTizen.Home
 {
@@ -13,6 +15,11 @@ namespace AeroTizen.Home
         private const string FirstScreenKey = "db/first_screen/type";
         private const string AutoStartKey = "db/menu/smart_hub/ontvsetting/auto_start";
         private const int MaxAppIdCharacters = 256;
+        private const int MaxOsReleaseBytes = 8192;
+        private const string OsReleasePath = "/etc/os-release";
+        private const string BuildIdPrefix = "BUILD_ID=";
+        private static readonly Lazy<string> FirmwareBuild = new Lazy<string>(ReadFirmwareBuild);
+        private static readonly Lazy<string> HelperChecksum = new Lazy<string>(ReadHelperChecksum);
 
         [DllImport("libc.so.6")] private static extern void free(IntPtr value);
         [DllImport("libvconf.so.0", SetLastError = true)]
@@ -68,6 +75,35 @@ namespace AeroTizen.Home
         private static string BoundedAppId(Dictionary<string, object> field) =>
             field["value"] is string value && value.Length <= MaxAppIdCharacters ? value : null;
 
+        private static string ReadFirmwareBuild()
+        {
+            try
+            {
+                if (new FileInfo(OsReleasePath).Length > MaxOsReleaseBytes) return null;
+                foreach (string line in File.ReadLines(OsReleasePath))
+                {
+                    if (!line.StartsWith(BuildIdPrefix, StringComparison.Ordinal)) continue;
+                    string build = line.Substring(BuildIdPrefix.Length).Trim().Trim('"', '\'');
+                    return build.Length > 0 && build.Length <= MaxAppIdCharacters ? build : null;
+                }
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            return null;
+        }
+
+        private static string ReadHelperChecksum()
+        {
+            try
+            {
+                using (var stream = File.OpenRead(typeof(HomeSettings).Assembly.Location))
+                using (var hash = SHA256.Create())
+                    return BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+            }
+            catch (IOException) { return null; }
+            catch (UnauthorizedAccessException) { return null; }
+        }
+
         internal static object ReadBridgeStatus()
         {
             var autostart = IntegerValue(AutoStartKey)["value"];
@@ -78,6 +114,9 @@ namespace AeroTizen.Home
                 startup_app = BoundedAppId(StringValue(StartupKey)),
                 startup_backup_app = BoundedAppId(StringValue(StartupBackupKey)),
                 smart_hub_autostart = enabled,
+                first_screen = BoundedAppId(StringValue(FirstScreenKey)),
+                firmware_build = FirmwareBuild.Value,
+                helper_sha256 = HelperChecksum.Value,
             };
         }
     }
