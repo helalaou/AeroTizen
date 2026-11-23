@@ -56,14 +56,11 @@ where
         };
         for button in buttons {
             button.app_name = button.app_id.as_ref().and_then(|id| {
-                if id == LAUNCHER_APP_ID {
-                    Some("AeroTizen".into())
-                } else {
-                    names
-                        .iter()
-                        .find(|app| &app.id == id)
-                        .map(|app| app.name.clone())
-                }
+                names
+                    .iter()
+                    .find(|app| &app.id == id)
+                    .map(|app| app.name.clone())
+                    .or_else(|| (id == LAUNCHER_APP_ID).then(|| "AeroTizen".into()))
             });
         }
     }
