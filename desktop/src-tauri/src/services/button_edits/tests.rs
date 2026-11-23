@@ -53,7 +53,7 @@ fn edits_preserve_the_cli_payloads_and_verify_the_saved_action_without_claiming_
 }
 
 #[test]
-fn old_helpers_require_supported_protocol_names_and_rename_capability() {
+fn helper_compatibility_gates_features_and_accepts_case_insensitive_names() {
     let change = disabled();
     for protocol in [Value::Null, json!(true), json!(2)] {
         let mut caps = capabilities();
@@ -93,6 +93,15 @@ fn old_helpers_require_supported_protocol_names_and_rename_capability() {
             label
         );
     }
+    let learned: ButtonChange =
+        serde_json::from_value(json!({"action":"learn","button":"streaming"})).unwrap();
+    assert!(matches!(
+        verified_change(
+            &learned,
+            &json!({"rules":[{"button":"Streaming","mode":"default","active":false}]})
+        ),
+        Ok(ButtonChangeResult::Inventory(true))
+    ));
 }
 
 #[tokio::test]
