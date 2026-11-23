@@ -65,7 +65,6 @@ OPERATIONS = (
     "root_status",
     "setup_root",
     "upgrade_root",
-    "read_home_backup",
     "prepare_native_home",
     "apply_native_home",
     "restore_home_backup",
@@ -154,22 +153,6 @@ def _verified_backup_document(identity, captured_at):
     if verified_at != captured_at:
         raise RequestError("backup_changed", "The backup changed. Refresh the TV connection to review it.")
     return document
-
-
-def read_home_backup(params):
-    identity = checked_identity(params.get("expected_identity"))
-    document = _verified_backup_document(identity, params.get("captured_at"))
-    values = document["home"]["settings"]
-    startup, startup_backup = home.STARTUP_KEYS
-    autostart = values[home.AUTOSTART_KEY]["value"]
-    return {
-        "home_button_app": document["home"]["default_app"],
-        "home_app": values[home.HOME_KEY]["value"],
-        "startup_app": values[startup]["value"],
-        "startup_backup_app": values[startup_backup]["value"],
-        "first_screen": values[home.FIRST_SCREEN_KEY]["value"],
-        "smart_hub_autostart": bool(autostart) if autostart in (0, 1) else None,
-    }
 
 
 def prepare_native_home(params):
@@ -1034,8 +1017,6 @@ def handle(request):
                 result = setup_root(params)
             elif request["operation"] == "upgrade_root":
                 result = upgrade_root(params)
-            elif request["operation"] == "read_home_backup":
-                result = read_home_backup(params)
             elif request["operation"] == "prepare_native_home":
                 result = prepare_native_home(params)
             elif request["operation"] == "apply_native_home":

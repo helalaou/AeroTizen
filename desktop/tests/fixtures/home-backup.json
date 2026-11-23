@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "aerotizen.home-baseline",
+  "captured_at": "2026-11-16T10:00:00.123456+00:00",
+  "device": {
+    "identity_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "model": "TEST-FRAME",
+    "firmware_build": "T-TEST-001"
+  },
+  "home": {
+    "operation": "http://tizen.org/appcontrol/operation/main",
+    "default_app": "com.samsung.tv.csfs",
+    "settings": {
+      "db/appfw/home_appid": { "type": "string", "value": "com.samsung.tv.csfs" },
+      "db/appfw/startup_appid": { "type": "string", "value": "org.tizen.tv-viewer" },
+      "db/appfw/booting_appid_backup": { "type": "string", "value": "org.tizen.tv-viewer" },
+      "db/first_screen/type": { "type": "string", "value": "com.samsung.tv.csfs" },
+      "db/menu/smart_hub/ontvsetting/auto_start": { "type": "int", "value": 0 }
+    }
+  },
+  "evidence": {
+    "access": "sdk_uid_901",
+    "uid": 901,
+    "authenticated": true,
+    "query_staging_cleaned": true,
+    "sdk_staging_cleaned": true,
+    "helper_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  }
+}

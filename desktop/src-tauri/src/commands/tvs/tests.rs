@@ -24,6 +24,9 @@ impl Fixture {
         let app = commands::register(mock_builder())
             .manage(AppState {
                 profiles,
+                home_backups: crate::services::home_backups::HomeBackups::new(
+                    directory.path().join("cli-state"),
+                ),
                 worker_path: directory.path().join("no-worker-in-unit-tests"),
                 operation: Default::default(),
                 cancelled_tv_read: tokio::sync::watch::Sender::new(String::new()),
@@ -105,6 +108,58 @@ fn connect_uses_the_frontend_profile_id_argument_before_starting_a_worker() {
             json!({
                 "host": "192.0.2.20", "profileId": "missing-profile"
             })
+        ),
+        Err(json!({
+            "code": "profile_missing", "message": "This saved TV is no longer available."
+        }))
+    );
+}
+
+#[test]
+fn home_backup_review_reads_cli_state_without_a_worker() {
+    let fixture = Fixture::new();
+    let saved = fixture.invoke("list_tvs", json!({})).unwrap();
+    let id = saved[0]["id"].as_str().unwrap();
+    let path = fixture
+        ._directory
+        .path()
+        .join("cli-state")
+        .join("backups")
+        .join(id)
+        .join("original-home.json");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(
+        &path,
+        include_str!("../../../../tests/fixtures/home-backup.json"),
+    )
+    .unwrap();
+    let settings = fixture
+        .invoke(
+            "read_home_backup",
+            json!({"id": id, "capturedAt": "2026-11-16T10:00:00.123456+00:00"}),
+        )
+        .unwrap();
+    assert_eq!(
+        settings,
+        json!({
+            "home_button_app": "com.samsung.tv.csfs",
+            "home_app": "com.samsung.tv.csfs",
+            "startup_app": "org.tizen.tv-viewer",
+            "startup_backup_app": "org.tizen.tv-viewer",
+            "first_screen": "com.samsung.tv.csfs",
+            "smart_hub_autostart": false,
+        })
+    );
+    assert_eq!(
+        fixture.invoke("read_home_backup", json!({"id": id, "capturedAt": "stale"})),
+        Err(json!({
+            "code": "backup_changed", "message": "The backup changed. Refresh the TV connection to review it."
+        }))
+    );
+    assert_eq!(
+        fixture.invoke(
+            "read_home_backup",
+            json!({"id": "missing", "capturedAt": "stale"})
         ),
         Err(json!({
             "code": "profile_missing", "message": "This saved TV is no longer available."

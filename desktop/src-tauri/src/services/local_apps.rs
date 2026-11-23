@@ -1,7 +1,7 @@
 use crate::{
     models::{
         AppError, AppResult, InstalledLocalApp, LocalAppInstallResult, LocalAppPackage,
-        LocalPackageReview, VerifiedTv,
+        LocalPackageReview, VerifiedTv, LAUNCHER_APP_ID,
     },
     state::AppState,
     worker,
@@ -9,8 +9,6 @@ use crate::{
 use serde_json::json;
 use std::path::PathBuf;
 use tokio::sync::Mutex;
-
-const LAUNCHER_APP_ID: &str = "DclHome001.Home";
 
 #[derive(Clone)]
 struct Selection {

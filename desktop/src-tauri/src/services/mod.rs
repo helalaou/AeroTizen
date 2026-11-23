@@ -2,6 +2,7 @@ pub mod apps;
 pub mod buttons;
 pub mod discovery;
 pub mod home;
+pub mod home_backups;
 mod http;
 pub mod launcher;
 pub mod launcher_catalog;

@@ -37,6 +37,9 @@ pub fn run() {
                     worker::binary_path().map_err(|error| std::io::Error::other(error.message))?;
                 app.manage(AppState {
                     profiles,
+                    home_backups: services::home_backups::HomeBackups::new(
+                        app.path().home_dir()?.join(".config").join("aerotizen"),
+                    ),
                     worker_path,
                     operation: tokio::sync::Mutex::new(()),
                     cancelled_tv_read: watch::Sender::new(String::new()),
