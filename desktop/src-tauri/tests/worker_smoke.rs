@@ -59,6 +59,7 @@ async fn bundled_worker_returns_the_native_backend_contract_without_a_tv() {
         "list_button_apps",
         "remove_apps",
         "inspect_local_app",
+        "install_local_app",
         "connect",
         "prepare_native_home",
     ] {

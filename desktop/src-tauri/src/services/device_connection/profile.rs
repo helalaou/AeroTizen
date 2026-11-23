@@ -1,6 +1,4 @@
-use super::{
-    connection_failed, invalid_response, projection, read_identity, sdb::ReadCommand, TvConnection,
-};
+use super::{connection_failed, invalid_response, projection, sdb::ReadCommand, TvConnection};
 use crate::models::{
     AppResult, HomeRoutingMode, NativeHomeSettings, TechnicalDetails, VerifiedTv, LAUNCHER_APP_ID,
 };
@@ -22,7 +20,7 @@ const TEXT_CHARACTERS: usize = 256;
 const ARCHITECTURES: [&str; 9] = [
     "arm", "armv7", "armv7l", "aarch64", "arm64", "x86", "x86_64", "x64", "ia32",
 ];
-const CERTIFICATE_FILES: [&str; 4] = [
+pub(super) const CERTIFICATE_FILES: [&str; 4] = [
     "author.p12",
     "distributor.p12",
     "password.txt",
@@ -174,14 +172,17 @@ fn chunks(mut input: &[u8]) -> Option<Vec<u8>> {
     }
 }
 
-pub(super) fn signing_ready(directory: &Path, duid: &str) -> bool {
-    let supported = !duid.is_empty()
+pub(super) fn supported_duid(duid: &str) -> bool {
+    !duid.is_empty()
         && !duid.starts_with('.')
         && !duid.ends_with('.')
         && duid
             .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b"_#.-".contains(&b));
-    supported
+            .all(|b| b.is_ascii_alphanumeric() || b"_#.-".contains(&b))
+}
+
+pub(super) fn signing_ready(directory: &Path, duid: &str) -> bool {
+    supported_duid(duid)
         && CERTIFICATE_FILES
             .iter()
             .all(|file| directory.join("certs").join(duid).join(file).is_file())
@@ -219,7 +220,7 @@ impl TvConnection {
                 )
             })
             .collect();
-        read_identity(&mut session.connection, Some(&identity)).await?;
+        session.identity().await?;
         let native_home_settings = session
             .home_status()
             .await

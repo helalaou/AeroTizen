@@ -9,8 +9,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const MAX_WIDGET_BYTES: u64 = 256 * 1024 * 1024;
-const MAX_UNPACKED_BYTES: u64 = 512 * 1024 * 1024;
+pub(super) const MAX_WIDGET_BYTES: u64 = 256 * 1024 * 1024;
+pub(super) const MAX_UNPACKED_BYTES: u64 = 512 * 1024 * 1024;
 const MAX_WIDGET_ENTRIES: usize = 10_000;
 const MAX_DIRECTORY_BYTES: u32 = 8 * 1024 * 1024;
 const MAX_CONFIG_BYTES: u64 = 256 * 1024;
@@ -171,6 +171,14 @@ fn preflight(file: &mut File) -> AppResult<()> {
     }
     file.rewind().map_err(|_| invalid())?;
     Ok(())
+}
+
+pub(super) fn validate(path: &Path) -> AppResult<()> {
+    let metadata = std::fs::metadata(path).map_err(|_| invalid())?;
+    if !metadata.is_file() || metadata.len() == 0 || metadata.len() > MAX_WIDGET_BYTES {
+        return Err(invalid());
+    }
+    inspect_snapshot(path, String::new()).map(|_| ())
 }
 
 fn inspect_snapshot(path: &Path, sha256: String) -> AppResult<LocalPackageReview> {

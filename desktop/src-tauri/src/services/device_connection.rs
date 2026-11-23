@@ -1,5 +1,6 @@
 //! Owned native TV connections through Developer Mode or the paired relay.
 mod home_backup;
+mod installation;
 mod profile;
 pub(super) mod projection;
 mod removal;
@@ -36,6 +37,7 @@ const CONNECT_TIMEOUT: Duration = Duration::from_secs(8);
 const CONNECT_ATTEMPTS: usize = 3;
 const CONNECT_RETRY_DELAY: Duration = Duration::from_secs(2);
 const MAX_IDENTITY_CHARACTERS: usize = 256;
+const IDENTITY_TIMEOUT: Duration = Duration::from_secs(15);
 
 #[derive(Clone, Copy)]
 struct Options {
@@ -72,7 +74,12 @@ impl Session<'_> {
     }
 
     async fn identity(&mut self) -> AppResult<String> {
-        let duid = read_identity(&mut self.connection, self.expected.as_deref()).await?;
+        let duid = timeout(
+            IDENTITY_TIMEOUT,
+            read_identity(&mut self.connection, self.expected.as_deref()),
+        )
+        .await
+        .map_err(|_| connection_failed())??;
         if self.expected.is_none() {
             self.expected = Some(sha256_hex(duid.as_bytes()));
         }
@@ -395,4 +402,4 @@ async fn read_identity(connection: &mut Sdb, expected: Option<&str>) -> AppResul
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
