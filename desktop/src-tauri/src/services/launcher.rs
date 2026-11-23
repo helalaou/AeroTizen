@@ -1,5 +1,5 @@
 use crate::{
-    models::{AppError, AppResult, BackendStatus, LauncherRelease, SavedTv, VerifiedTv},
+    models::{AppError, AppResult, BackendStatus, SavedTv, VerifiedTv},
     state::{busy, AppState},
     worker,
 };
@@ -14,10 +14,6 @@ pub async fn backend_status(state: &AppState) -> AppResult<BackendStatus> {
         ));
     }
     Ok(result)
-}
-
-pub async fn launcher_catalog(state: &AppState) -> AppResult<Vec<LauncherRelease>> {
-    worker::request(&state.worker_path, "launcher_catalog", json!({})).await
 }
 
 pub async fn install_launcher(

@@ -16,7 +16,8 @@ required-features = ["bundled-worker"]
 
 [features]
 bundled-worker = []
-worker-smoke = ["bundled-worker"]
+# Enabling the app target here makes Cargo's integration test build replace the standalone binary.
+worker-smoke = []
 
 [[test]]
 name = "worker_smoke"
@@ -32,7 +33,8 @@ tauri-plugin-opener = "2"
 tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-reqwest = { version = "0.13", default-features = false }
+reqwest = { version = "0.13", default-features = false, features = ["native-tls", "system-proxy"] }
+regex = "1"
 htmlize = { version = "1.1", default-features = false, features = ["unescape"] }
 unicode-general-category = "1.1"
 rusqlite = { version = "0.42", features = ["bundled"] }

@@ -584,7 +584,6 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "list_button_apps",
         "change_button",
         "remove_apps",
-        "launcher_catalog",
         "install_launcher",
         "inspect_local_app",
         "install_local_app",
@@ -674,13 +673,6 @@ def test_list_buttons_reads_only_the_selected_tv(monkeypatch, scenario, outcome,
         else:
             assert len(result["buttons"]) == 1
             assert "Update" in result["discovery_detail"]
-
-
-def test_launcher_catalog_does_not_open_a_tv_connection(monkeypatch):
-    monkeypatch.setattr(worker, "DeviceSession", lambda _: pytest.fail("Unexpected TV connection"))
-    entries = [{"version": "3.2.0", "sections": []}]
-    monkeypatch.setattr(worker.releases, "launcher_catalog", lambda: entries)
-    assert worker.handle(request("launcher_catalog"))["result"] == entries
 
 
 def test_certificate_setup_is_atomic_and_reuses_the_original(connected_tv, tmp_path, monkeypatch):
