@@ -68,105 +68,11 @@ jobs:
       - name: >-
           ${{ steps.pr-checkout.outputs.tree != '' && format('Select test jobs for PR #{0} (base {1}, tree {2})', github.event.pull_request.number, steps.pr-checkout.outputs.base, steps.pr-checkout.outputs.tree) || 'Select test jobs' }}
         id: select
-        shell: python
         env:
           BEFORE: ${{ github.event.before }}
           REUSED_PR_CI_RUN: ${{ steps.reuse.outputs.run }}
           RELEASE_REF: ${{ inputs.ref }}
-        run: |
-          import os
-          import subprocess
-
-          if os.environ["REUSED_PR_CI_RUN"]:
-              with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-                  print("cli=false\nlauncher=false", file=output)
-              raise SystemExit(0)
-
-          # Unverified release commits retain the full component test selection.
-          paths = []
-          if not os.environ["RELEASE_REF"]:
-              # Compare the PR merge checkout to its base, or use the push's previous tip.
-              base = "HEAD^1" if os.environ["GITHUB_EVENT_NAME"] == "pull_request" else os.environ["BEFORE"]
-              diff = subprocess.run(
-                  ["git", "diff", "--no-renames", "--name-only", "-z", base, "HEAD", "--"],
-                  capture_output=True,
-              )
-              paths = diff.stdout.split(b"\0")[:-1] if diff.returncode == 0 else []
-          # Desktop builds and tests run locally.
-          desktop_files = {
-              b"cli/src/aerotizen/desktop_worker.py",
-              b"cli/src/aerotizen/desktop_payloads.py",
-              b"cli/src/aerotizen/local_package.py",
-              b"cli/tools/build_desktop_worker.py",
-              b"tests/test_desktop_worker.py",
-          }
-          code_paths = [
-              path for path in paths
-              if path not in (b"README.md", b"CONTRIBUTING.md")
-              and path not in desktop_files
-              and not path.startswith((b"docs/", b"desktop/"))
-          ]
-
-          launcher_files = {
-              b".prettierignore",
-              b".prettierrc.json",
-              b"eslint.config.js",
-              b"launcher-browser.json",
-              b"package-lock.json",
-              b"package.json",
-              b"playwright.config.cjs",
-              b"stylelint.config.cjs",
-              b"tools/build-launcher.mjs",
-              b"tools/check_launcher_ci.py",
-              b"tools/dev-build-badge.mjs",
-              b"tools/launcher-css-rules.cjs",
-              b"tools/translation-lint.cjs",
-              b"tsconfig.json",
-              b"tsconfig.node.json",
-              b"vite.config.mts",
-          }
-          # These files define launcher contracts tested by the CLI or Windows Home jobs.
-          shared_launcher_files = {
-              b"launcher/config.xml",
-              b"launcher/src/contracts/diagnostics.ts",
-              b"tests/diagnostics.test.cjs",
-              b"tests/artmode.test.cjs",
-              b"tests/helpers/load_typescript.cjs",
-              b"tests/helpers/load_service.cjs",
-              b"tests/helpers/run_packaged_service_tests.cjs",
-              b"tests/home_store.test.cjs",
-              b"tests/service_diagnostics.test.cjs",
-              b"tests/watcher.test.cjs",
-          }
-
-          def test_scope(path):
-              if path in shared_launcher_files or path.startswith((b"launcher/service/", b"launcher/js/diagnostics", b"launcher/src/diagnostics/", b"launcher/src/service/")):
-                  return "shared"
-              if path.startswith(b"cli/"):
-                  return "cli"
-              if path in launcher_files or path.startswith((b"launcher/", b"tests/browser/", b"tests/reporters/")):
-                  return "launcher"
-              if path.startswith(b"tests/helpers/") and path.endswith(b".cjs"):
-                  return "launcher"
-              if path.startswith(b"tests/") and path.count(b"/") == 1 and path.endswith((b".test.cjs", b".browser.js")):
-                  return "launcher"
-              return "shared"
-
-          # Shared or unknown paths, empty diffs, and unavailable history run the full suite.
-          scopes = {test_scope(path) for path in code_paths}
-          shared = not paths or "shared" in scopes
-          cli = shared or "cli" in scopes
-          launcher = shared or "launcher" in scopes
-          outputs = {
-              "cli": cli,
-              "launcher": launcher,
-              "readme_only": not (cli or launcher) and b"README.md" in paths,
-              "format_contributing": not launcher and b"CONTRIBUTING.md" in paths,
-          }
-          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-              for name, value in outputs.items():
-                  print(f"{name}={str(value).lower()}", file=output)
-                  print(f"{name}={value}")
+        run: python3 tools/ci_scope.py
 
   # GitHub skips a matrix before expanding it. Use fixed names for required checks.
   # Missing change outputs enable all checks for the selected component.
@@ -205,7 +111,7 @@ jobs:
         run: |
           ruff check .
           ruff format --check .
-          pytest --ignore=tests/test_desktop_worker.py
+          pytest --ignore-glob='tests/test_desktop_*.py'
 
   python-312:
     name: python (3.12)
