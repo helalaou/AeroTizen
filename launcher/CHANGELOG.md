@@ -1,5 +1,23 @@
 # Changelog
 
+## [3.4.0](https://github.com/helalaou/AeroTizen/compare/launcher-v3.3.2...launcher-v3.4.0) (2026-11-23)
+
+
+### Features
+
+* **demo:** add real Continue Watching titles and fix Firefox spacing ([#330](https://github.com/helalaou/AeroTizen/issues/330)) ([85aaa7a](https://github.com/helalaou/AeroTizen/commit/85aaa7a75d4ff9e3d9285b2fab3d66cbb94630f7))
+* **launcher:** add Cinema Home layout ([#312](https://github.com/helalaou/AeroTizen/issues/312)) ([274f1d1](https://github.com/helalaou/AeroTizen/commit/274f1d1f49a8fcac31ca4855be05f54834db4260))
+* **launcher:** add Cinemeta backdrops in Cinema ([#313](https://github.com/helalaou/AeroTizen/issues/313)) ([deeaf74](https://github.com/helalaou/AeroTizen/commit/deeaf74155d71ecacefb8f70231349b9137a7929))
+* **launcher:** add Continue Watching cover art ([#315](https://github.com/helalaou/AeroTizen/issues/315)) ([21e2ecf](https://github.com/helalaou/AeroTizen/commit/21e2ecf48dc59f084cb243da3fb2287ea71a5841))
+* **launcher:** add Home section heading toggles ([#309](https://github.com/helalaou/AeroTizen/issues/309)) ([19d2512](https://github.com/helalaou/AeroTizen/commit/19d2512aec962659dd525b5ed5091c752c843d5a))
+* **launcher:** add three smaller app sizes ([#317](https://github.com/helalaou/AeroTizen/issues/317)) ([ae58929](https://github.com/helalaou/AeroTizen/commit/ae5892953e4b8978f78b935a01915fbd57bcfd2a))
+
+
+### Bug Fixes
+
+* **launcher:** keep Home return responsive when the TV API is slow ([#273](https://github.com/helalaou/AeroTizen/issues/273)) ([e2600a3](https://github.com/helalaou/AeroTizen/commit/e2600a3ada1eb00e122502534ddb91a624494e32))
+* **launcher:** remove button styling from the Halo network icon ([#311](https://github.com/helalaou/AeroTizen/issues/311)) ([59d00af](https://github.com/helalaou/AeroTizen/commit/59d00af4ced764ec652c81b257abb55c58eadca9))
+
 ## [3.3.2](https://github.com/helalaou/AeroTizen/compare/launcher-v3.3.1...launcher-v3.3.2) (2026-11-19)
 
 
