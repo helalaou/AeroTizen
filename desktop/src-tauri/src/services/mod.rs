@@ -11,5 +11,6 @@ pub mod profiles;
 pub mod reads;
 pub mod root;
 pub mod samsung;
+mod samsung_auth;
 mod text;
 pub mod tvs;

@@ -509,9 +509,7 @@ def test_protocol_keeps_stdout_machine_readable_and_rejects_oversized_input():
         assert process.stderr == ""
 
 
-@pytest.mark.parametrize(
-    "operation", ["list_apps", "list_buttons", "list_button_apps", "samsung_sign_in", "root_status"]
-)
+@pytest.mark.parametrize("operation", ["list_apps", "list_buttons", "list_button_apps", "root_status"])
 def test_cancellable_tv_read_exits_when_its_input_pipe_closes(operation):
     # Keep the read blocked after it starts, as it can be while the TV is slow to respond.
     script = """
@@ -545,7 +543,6 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
     assert reply["result"]["name"] == worker.WORKER_NAME
     assert reply["result"]["operations"] == [
         "handshake",
-        "samsung_sign_in",
         "prepare_signing_profile",
         "connect",
         "list_apps",
@@ -563,7 +560,7 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "apply_native_home",
         "restore_home_backup",
     ]
-    for retired in ("discover", "launcher_catalog", "read_home_backup"):
+    for retired in ("discover", "launcher_catalog", "read_home_backup", "samsung_sign_in"):
         assert worker.handle(request(retired))["error"]["code"] == "invalid_request"
 
 

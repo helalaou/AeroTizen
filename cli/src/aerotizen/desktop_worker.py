@@ -51,7 +51,6 @@ UNINSTALL_REFUSAL = re.compile(r"can\s*not\s+uninstall\s+app[.!]?", re.IGNORECAS
 CERTIFICATE_FILES = ("author.p12", "distributor.p12", "password.txt", "device-profile.xml")
 OPERATIONS = (
     "handshake",
-    "samsung_sign_in",
     "prepare_signing_profile",
     "connect",
     "list_apps",
@@ -249,18 +248,6 @@ def signing_profile(duid):
     if all((directory / name).is_file() for name in CERTIFICATE_FILES):
         return directory
     return None
-
-
-def samsung_sign_in():
-    try:
-        auth = certs.samsung_login()
-        return {
-            key: auth[key] for key in ("access_token", "userId", "inputEmailID", "expires_in") if key in auth
-        }
-    except (OSError, SystemExit) as error:
-        raise RequestError(
-            "samsung_sign_in_failed", "Samsung sign-in did not complete. Close the browser tab and try again."
-        ) from error
 
 
 def prepare_signing_profile(params):
@@ -991,8 +978,6 @@ def handle(request):
         with contextlib.redirect_stdout(io.StringIO()):
             if request["operation"] == "handshake":
                 result = {"name": WORKER_NAME, "version": __version__, "operations": list(OPERATIONS)}
-            elif request["operation"] == "samsung_sign_in":
-                result = samsung_sign_in()
             elif request["operation"] == "prepare_signing_profile":
                 result = prepare_signing_profile(params)
             elif request["operation"] == "list_apps":
@@ -1066,8 +1051,7 @@ def main():
         request = None
     if (
         isinstance(request, dict)
-        and request.get("operation")
-        in ("list_apps", "list_buttons", "list_button_apps", "samsung_sign_in", "root_status")
+        and request.get("operation") in ("list_apps", "list_buttons", "list_button_apps", "root_status")
         and request.get("cancellable") is True
     ):
         Thread(target=stop_on_input_close, daemon=True).start()

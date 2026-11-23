@@ -166,3 +166,26 @@ fn home_backup_review_reads_cli_state_without_a_worker() {
         }))
     );
 }
+
+#[test]
+fn registered_samsung_commands_keep_cancellation_and_account_shapes_without_a_worker() {
+    let fixture = Fixture::new();
+    assert_eq!(
+        fixture
+            .invoke("cancel_samsung_sign_in", json!({"requestId": "cancelled"}))
+            .unwrap(),
+        Value::Null
+    );
+    assert_eq!(
+        fixture.invoke("samsung_sign_in", json!({"requestId": "cancelled"})),
+        Err(json!({"code": "sign_in_cancelled", "message": "Samsung sign-in cancelled."}))
+    );
+    assert_eq!(
+        fixture.invoke("samsung_account", json!({})).unwrap(),
+        Value::Null
+    );
+    assert_eq!(
+        fixture.invoke("samsung_sign_out", json!({})).unwrap(),
+        Value::Null
+    );
+}
