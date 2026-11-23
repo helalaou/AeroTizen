@@ -1,5 +1,9 @@
 # TV compatibility
 
+**The launcher requires Tizen 5.0 or later.** It targets Chromium 63, the web
+engine on Tizen 5.0 TVs. Tizen 4.0 uses Chromium 56 and falls below this target.
+[Samsung web engine specifications](https://developer.samsung.com/smarttv/develop/specifications/web-engine-specifications.html).
+
 The table lists results for the TV, firmware and AeroTizen versions tested. Use
 the full model code from your TV to find a match. For current setup steps, see
 [Native Home setup](home-pc-flow.md#native-home-setup).
@@ -13,6 +17,7 @@ unplugged. Startup results apply to the setup in the linked report.
 
 | TV | Year | Tizen | Launcher opens | Native Home | Watcher | Startup from standby | Cold boot | Notes |
 | --- | --- | --- | :---: | :---: | :---: | :---: | :---: | --- |
+| Samsung 55" Crystal UHD U8000H (UA55U8000HKXXM) | 2026 | Tizen 10.0 | ✅ | — | ❌ | — | — | Watcher did not return from Samsung Home on launcher 3.3.2 ([#319](https://github.com/helalaou/AeroTizen/issues/319)). |
 | Samsung 55" Crystal UHD U8000F (UE55U8000FKXXU) | 2026 | Tizen 9.0 | — | — | — | — | — | — |
 | Samsung 75" QLED Q7F (QE75Q7FAAUXXH) | 2025 | Tizen 9.0 | — | — | — | — | — | — |
 | Samsung 55" Crystal UHD U8092F (UE55U8092FUXXH) | 2025 | Tizen 9.0 | ✅ | ❌ | — | — | — | Native Home setup rolled back in the original test ([#69](https://github.com/helalaou/AeroTizen/issues/69)). |
@@ -25,6 +30,7 @@ unplugged. Startup results apply to the setup in the linked report.
 | Samsung 70" Crystal UHD CU7000 (UN70CU7000DXZA) | 2023 | Tizen 9.0 | — | — | — | — | — | — |
 | Samsung 65" Crystal UHD CU7000 (UN65CU7000DXZA) | 2023 | Tizen 9.0 | ✅ | ✅ | ❌ | — | — | Watcher failed on launcher 2.4.0 soon after install. A restart before the test was unconfirmed ([#82](https://github.com/helalaou/AeroTizen/issues/82)). |
 | Samsung 65" Crystal UHD CU7172 (UE65CU7172UXXH) | 2023 | Tizen 9.0 | ✅ | ✅ | — | — | — | — |
+| Samsung 75" Crystal UHD CU7650 (UA75CU7650KXXL) | 2023 | Tizen 9.0 | ✅ | ❌ | ✅ | — | — | Native Home backup and root setup failed on CLI 3.0.1 and launcher 3.1.0. SDB recovered after a power cycle ([#270](https://github.com/helalaou/AeroTizen/issues/270)). |
 | Samsung 65" OLED S90C (QE65S90CATXZT) | 2023 | Tizen 7.0 / 9.0 | ✅ | ✅ | — | — | ✅ | [Native Home, startup and restore tested on Tizen 9](home-s90c-tv-20261027.json). |
 | Samsung 55" OLED S90C (TQ55S90CATXXC) | 2023 | Tizen 9.0 | ✅ | ✅ | — | ✅ | — | Tested with CLI and launcher 2.6.0 ([#118](https://github.com/helalaou/AeroTizen/issues/118)). |
 | Samsung 55" BU8000 (UE55BU8000KXXC) | 2022 | Tizen 6.5 | ✅ | ✅ | — | — | ✅ | Home return varied by HDMI device in the test ([#192](https://github.com/helalaou/AeroTizen/issues/192)). |
@@ -36,6 +42,7 @@ unplugged. Startup results apply to the setup in the linked report.
 | Samsung 50" The Serif LS01B (QE50LS01BAUXXH) | 2022 | Tizen 6.5 | ✅ | ✅ | — | — | — | — |
 | Samsung 65" The Frame LS03A (QN65LS03AAFXZC) | 2021 | Tizen 6.0 | ✅ | — | ❌ | — | — | [#52](https://github.com/helalaou/AeroTizen/issues/52) |
 | Samsung 65" Crystal UHD AU7172 (UE65AU7172UXXH) | 2021 | Tizen 6.0 | ✅ | — | — | — | — | Home return failed and startup worked. The Home mode and power method are unclear ([#63](https://github.com/helalaou/AeroTizen/issues/63)). |
+| Samsung 75" Crystal UHD AU8000 (UN75AU8000FXZA) | 2021 | Tizen 6.0 | ✅ | ❌ | ✅ | — | — | Native Home backup failed. Power-on reopened AeroTizen with Autorun Last App on. The power method is unclear ([#65](https://github.com/helalaou/AeroTizen/issues/65#issuecomment-7085833155)). |
 | Samsung 43" Crystal UHD AU8000 (UN43AU8000FXZC) | 2021 | Tizen 6.0 | ✅ | — | ❌ | — | ❌ | Watcher return failed from YouTube, Disney+ and Netflix ([#61](https://github.com/helalaou/AeroTizen/issues/61)). |
 | Samsung 82" Crystal UHD TU8070 (UE82TU8070UXZT) | 2020 | Tizen 5.5 | ✅ | — | — | — | — | Manual IP worked ([#124](https://github.com/helalaou/AeroTizen/issues/124)). |
 | Samsung 70" Crystal UHD TU700D (UN70TU700DBXZA) | 2020 | Tizen 5.5 | ✅ | ❌ | ❌ | — | ❌ | Warm and cold boots returned to the last selected input ([#122](https://github.com/helalaou/AeroTizen/issues/122#issuecomment-6649571277)). |
