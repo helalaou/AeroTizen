@@ -509,7 +509,7 @@ def test_protocol_keeps_stdout_machine_readable_and_rejects_oversized_input():
         assert process.stderr == ""
 
 
-@pytest.mark.parametrize("operation", ["list_apps", "list_buttons", "list_button_apps", "root_status"])
+@pytest.mark.parametrize("operation", ["list_apps", "list_buttons", "list_button_apps"])
 def test_cancellable_tv_read_exits_when_its_input_pipe_closes(operation):
     # Keep the read blocked after it starts, as it can be while the TV is slow to respond.
     script = """
@@ -553,14 +553,13 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "install_launcher",
         "inspect_local_app",
         "install_local_app",
-        "root_status",
         "setup_root",
         "upgrade_root",
         "prepare_native_home",
         "apply_native_home",
         "restore_home_backup",
     ]
-    for retired in ("discover", "launcher_catalog", "read_home_backup", "samsung_sign_in"):
+    for retired in ("discover", "launcher_catalog", "read_home_backup", "samsung_sign_in", "root_status"):
         assert worker.handle(request(retired))["error"]["code"] == "invalid_request"
 
 
@@ -979,9 +978,9 @@ def root_reading(monkeypatch, tmp_path):
     return identity, saved, live
 
 
-def test_root_status_exposes_only_live_public_fields(root_reading):
+def test_post_change_root_status_exposes_only_live_public_fields(root_reading):
     identity, _, _ = root_reading
-    result = worker.handle(request("root_status", host="192.0.2.20", expected_identity=identity))["result"]
+    result = worker._root_status_after_change({"host": "192.0.2.20", "expected_identity": identity})
     assert result == {
         "phase": "active",
         "root_available": True,
@@ -1010,10 +1009,10 @@ def test_root_status_exposes_only_live_public_fields(root_reading):
         "bootstrap_completed",
     ],
 )
-def test_root_status_never_uses_old_saved_progress_as_completion(root_reading, proof):
+def test_post_change_root_status_never_uses_old_saved_progress_as_completion(root_reading, proof):
     identity, _, live = root_reading
     live[proof] = False
-    result = worker.handle(request("root_status", host="192.0.2.20", expected_identity=identity))["result"]
+    result = worker._root_status_after_change({"host": "192.0.2.20", "expected_identity": identity})
     assert result["setup_complete"] is False
     if proof == "root_available":
         assert result["runtime_version"] is None
@@ -1026,7 +1025,7 @@ def test_root_without_a_local_record_cannot_claim_verified_access(root_reading, 
     monkeypatch.setattr(
         worker.root_control, "status", lambda *_args, **_kwargs: pytest.fail("No pairing exists")
     )
-    result = worker.handle(request("root_status", host="192.0.2.20", expected_identity=identity))["result"]
+    result = worker._root_status_after_change({"host": "192.0.2.20", "expected_identity": identity})
     assert result["phase"] == "not_configured"
     assert result["root_available"] is False
     assert result["setup_complete"] is False
@@ -1083,11 +1082,11 @@ def test_root_update_offer_requires_a_known_older_live_version(root_reading, ver
     identity, saved, live = root_reading
     live["runtime_version"] = version
     params = {"host": "192.0.2.20", "expected_identity": identity}
-    assert worker.read_root_status(params)["update_available"] is available
+    assert worker._root_status_after_change(params)["update_available"] is available
     live["root_available"] = False
-    assert worker.read_root_status(params)["update_available"] is False
+    assert worker._root_status_after_change(params)["update_available"] is False
     saved["upgrade"] = {"private": "private-token"}
-    result = worker.read_root_status(params)
+    result = worker._root_status_after_change(params)
     assert result["update_pending"] is True and result["update_available"] is False
     assert "private-token" not in json.dumps(result)
 

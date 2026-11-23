@@ -1,6 +1,5 @@
-use super::reads::read_tv;
 use crate::{
-    models::{AppResult, RootAccessStatus, RootSetupAction, RootUpdateAction},
+    models::{AppError, AppResult, RootAccessStatus, RootSetupAction, RootUpdateAction},
     state::{busy, AppState},
     worker,
 };
@@ -11,7 +10,18 @@ pub async fn root_access_status(
     id: String,
     request_id: String,
 ) -> AppResult<RootAccessStatus> {
-    read_tv(state, "root_status", id, request_id).await
+    let _guard = state.operation.try_lock().map_err(|_| busy())?;
+    let saved = state.profiles.get(&id).await?;
+    let mut cancelled = state.cancelled_tv_read.subscribe();
+    let cancellation = || AppError::new("tv_read_cancelled", "TV refresh cancelled.");
+    if *cancelled.borrow() == request_id {
+        return Err(cancellation());
+    }
+    tokio::select! {
+        biased;
+        _ = cancelled.wait_for(|request| *request == request_id) => Err(cancellation()),
+        result = state.root_status.read(&saved.tv.host, &saved.tv.identity_sha256) => result,
+    }
 }
 
 pub async fn setup_root_access(
@@ -51,3 +61,6 @@ pub async fn upgrade_root_access(
     )
     .await
 }
+
+#[cfg(test)]
+mod tests;

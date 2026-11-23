@@ -58,7 +58,6 @@ fn request_local_network_access(operation: &str, params: &Value) {
         | "install_launcher"
         | "inspect_local_app"
         | "install_local_app"
-        | "root_status"
         | "setup_root"
         | "upgrade_root"
         | "list_apps"

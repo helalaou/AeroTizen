@@ -1,4 +1,4 @@
-use crate::{commands, models::VerifiedTv, services::profiles::Profiles, state::AppState};
+use crate::{commands, models::VerifiedTv, state::AppState};
 use serde_json::{json, Value};
 use tauri::test::{
     get_ipc_response, mock_builder, mock_context, noop_assets, MockRuntime, INVOKE_KEY,
@@ -17,22 +17,12 @@ struct Fixture {
 impl Fixture {
     fn new() -> Self {
         let directory = tempfile::tempdir().unwrap();
-        let profiles = Profiles::new(directory.path().join("profiles.sqlite3")).unwrap();
+        let state = AppState::for_test(directory.path());
         let tv: VerifiedTv =
             serde_json::from_str(include_str!("../../models/fixtures/verified-tv.json")).unwrap();
-        tauri::async_runtime::block_on(profiles.save(tv)).unwrap();
+        tauri::async_runtime::block_on(state.profiles.save(tv)).unwrap();
         let app = commands::register(mock_builder())
-            .manage(AppState {
-                profiles,
-                home_backups: crate::services::home_backups::HomeBackups::new(
-                    directory.path().join("cli-state"),
-                ),
-                worker_path: directory.path().join("no-worker-in-unit-tests"),
-                operation: Default::default(),
-                cancelled_tv_read: tokio::sync::watch::Sender::new(String::new()),
-                samsung: Default::default(),
-                local_apps: Default::default(),
-            })
+            .manage(state)
             .build(mock_context(noop_assets()))
             .unwrap();
         let window = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
@@ -187,5 +177,38 @@ fn registered_samsung_commands_keep_cancellation_and_account_shapes_without_a_wo
     assert_eq!(
         fixture.invoke("samsung_sign_out", json!({})).unwrap(),
         Value::Null
+    );
+}
+
+#[test]
+fn root_status_and_cancellation_keep_the_registered_contract_without_a_worker() {
+    let fixture = Fixture::new();
+    let saved = fixture.invoke("list_tvs", json!({})).unwrap();
+    let id = saved[0]["id"].as_str().unwrap();
+    let result = fixture
+        .invoke(
+            "root_access_status",
+            json!({"id": id, "requestId": "root-read"}),
+        )
+        .unwrap();
+    assert_eq!(
+        result,
+        json!({
+            "phase": "not_configured", "root_available": false, "setup_complete": false,
+            "runtime_version": null, "target_runtime_version": env!("ROOT_RUNTIME_VERSION"),
+            "update_available": false, "update_pending": false, "automatic_startup": null,
+            "automatic_boot_verified": false, "bootstrap_completed": false,
+            "recovery_saved": false, "original_pc_host": null,
+        })
+    );
+    fixture
+        .invoke("cancel_tv_read", json!({"requestId": "cancelled"}))
+        .unwrap();
+    assert_eq!(
+        fixture.invoke(
+            "root_access_status",
+            json!({"id": id, "requestId": "cancelled"})
+        ),
+        Err(json!({"code": "tv_read_cancelled", "message": "TV refresh cancelled."}))
     );
 }

@@ -61,7 +61,6 @@ OPERATIONS = (
     "install_launcher",
     "inspect_local_app",
     "install_local_app",
-    "root_status",
     "setup_root",
     "upgrade_root",
     "prepare_native_home",
@@ -841,7 +840,8 @@ def _public_root_status(result, receipt):
     }
 
 
-def read_root_status(params):
+def _root_status_after_change(params):
+    """Return the verified status after setup or update; standalone reads are native."""
     host = host_value(params.get("host"))
     expected = checked_identity(params.get("expected_identity"))
     receipt = _root_receipt(host, expected)
@@ -910,7 +910,7 @@ def setup_root(params):
             "root_setup_failed",
             "Root setup could not finish. Refresh Root access to check the saved progress before retrying.",
         ) from error
-    return read_root_status(params)
+    return _root_status_after_change(params)
 
 
 def upgrade_root(params):
@@ -967,7 +967,7 @@ def upgrade_root(params):
             "The root helper update could not finish. "
             "Refresh Root access to check saved progress before retrying.",
         ) from error
-    return read_root_status(params)
+    return _root_status_after_change(params)
 
 
 def handle(request):
@@ -996,8 +996,6 @@ def handle(request):
                 result = inspect_local_app(params)
             elif request["operation"] == "install_local_app":
                 result = install_local_app(params)
-            elif request["operation"] == "root_status":
-                result = read_root_status(params)
             elif request["operation"] == "setup_root":
                 result = setup_root(params)
             elif request["operation"] == "upgrade_root":
@@ -1051,7 +1049,7 @@ def main():
         request = None
     if (
         isinstance(request, dict)
-        and request.get("operation") in ("list_apps", "list_buttons", "list_button_apps", "root_status")
+        and request.get("operation") in ("list_apps", "list_buttons", "list_button_apps")
         and request.get("cancellable") is True
     ):
         Thread(target=stop_on_input_close, daemon=True).start()

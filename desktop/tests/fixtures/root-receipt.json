@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "app_id": "org.aerotizen.roothelper",
+  "version": "0.1.0",
+  "host": "192.0.2.20",
+  "original_pc_host": "192.0.2.10",
+  "phase": "active",
+  "installation_id": "11111111111111111111111111111111",
+  "device_identity_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "duid_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "certificate_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "token": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "baseline_boot_id": "00000000-0000-4000-8000-000000000001",
+  "bridge_port": 26104,
+  "server_pfx": "synthetic-test-placeholder"
+}
