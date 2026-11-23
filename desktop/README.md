@@ -95,6 +95,7 @@ the page menu restores every original action and forgets manually learned button
 
 See screenshots of [Button mapping](screenshots/button-mapping.png),
 [choosing an app](screenshots/button-mapping-app-picker.png),
+[renaming a button](screenshots/button-mapping-rename.png),
 [learning a button](screenshots/button-mapping-learn.png), and
 [resetting all buttons](screenshots/button-mapping-reset.png).
 
