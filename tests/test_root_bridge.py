@@ -235,6 +235,11 @@ def test_cli_button_rules_preview_apply_and_restore(bridge_server, tmp_path, mon
     assert learned["button"] == "Amazon Prime" and learned["mode"] == "default"
     assert command("map", "amazon prime", "--app", "Test App")["rules"][0]["mode"] == "default"
     assert command("map", "Amazon Prime", "--app", "test.app", "--yes")["rules"][0]["app_id"] == "test.app"
+    before_rename = json.loads(stored.read_text())[0]
+    renamed = command("rename", "Amazon Prime", "--name", "My streaming button", "--yes")["rules"][0]
+    assert renamed["button"] == "My streaming button" and renamed["app_id"] == "test.app"
+    assert json.loads(stored.read_text())[0] == {**before_rename, "Button": "My streaming button"}
+    command("rename", "My streaming button", "--name", "Amazon Prime", "--yes")
     assert command("disable", "AMAZON PRIME", "--yes")["rules"][0]["mode"] == "disabled"
     deadline = time.monotonic() + 2
     while not command("status")["rules"][0]["active"] and time.monotonic() < deadline:
@@ -246,104 +251,24 @@ def test_cli_button_rules_preview_apply_and_restore(bridge_server, tmp_path, mon
     assert json.loads(stored.read_text()) == []
 
 
-@pytest.mark.parametrize("bridge_server", [{"buttons": True, "learned_code": 245}], indirect=True)
-def test_desktop_worker_changes_only_the_selected_buttons(bridge_server, tmp_path, monkeypatch):
+@pytest.mark.parametrize("bridge_server", [{"buttons": True}], indirect=True)
+def test_desktop_worker_lists_button_apps_without_changing_rules(bridge_server, tmp_path, monkeypatch):
     receipt, fixture, _ = bridge_server
     host = "127.0.0.1"
     identity = hashlib.sha256(b"paired-tv").hexdigest()
     root_state.save(root_state.receipt_path(host, tmp_path), {**receipt, "duid_sha256": identity})
     monkeypatch.setattr(desktop_worker.remote, "CONFIG_DIR", tmp_path)
     monkeypatch.setattr(desktop_worker.remote, "info", lambda _: {"developerIP": host})
-
-    def send(operation, **params):
-        return desktop_worker.handle(
-            {
-                "protocol": 1,
-                "id": "desktop-button-test",
-                "operation": operation,
-                "params": {
-                    "host": host,
-                    "expected_identity": identity,
-                    **params,
-                },
-            }
-        )
-
-    assert [app["id"] for app in send("list_button_apps")["result"]] == ["test.app"]
-
-    def read_buttons():
-        # Inspect writes through the helper; desktop mapping reads now run in Rust.
-        status = BridgeClient(host, receipt).request(
-            "buttons", button_request={"action": "list", "apply": False}
-        )["buttons"]
-        return desktop_worker.button_rows(status)
-
-    for change in (
-        {"mode": "app", "app_id": "test.app"},
-        {"mode": "disabled"},
-        {"mode": "default"},
-    ):
-        reply = send("change_button", change={"button": "netflix", **change})
-        row = reply["result"]
-        assert row["button"] == "netflix"
-        assert row["mode"] == change["mode"]
-        assert row["app_id"] == change.get("app_id")
-        rows = read_buttons()
-        assert {row["button"]: row["mode"] for row in rows} == {
-            "netflix": change["mode"],
-            "disney-plus": "default",
-            "prime-video": "default",
+    result = desktop_worker.handle(
+        {
+            "protocol": 1,
+            "id": "desktop-button-apps",
+            "operation": "list_button_apps",
+            "params": {"host": host, "expected_identity": identity},
         }
-
-    rules = Path(fixture["buttons_file"])
-    saved = rules.read_bytes()
-    bad_identity = send(
-        "change_button", expected_identity="0" * 64, change={"button": "netflix", "mode": "disabled"}
     )
-    assert bad_identity["error"]["code"] == "identity_mismatch"
-    invalid = send("change_button", change={"button": "netflix", "mode": "reset"})
-    assert invalid["error"]["code"] == "invalid_request"
-    missing_app = send("change_button", change={"button": "netflix", "mode": "app", "app_id": "missing.app"})
-    assert missing_app["error"] == {"code": "button_change_failed", "message": "Target app is not installed."}
-    assert rules.read_bytes() == saved
-
-    assert send("change_button", change={"action": "learn", "button": "Streaming"})["result"] is True
-    learned = read_buttons()
-    assert any(row["button"] == "Streaming" and row["mode"] == "default" for row in learned)
-    assert (
-        send("change_button", change={"button": "Streaming", "mode": "app", "app_id": "test.app"})["result"][
-            "mode"
-        ]
-        == "app"
-    )
-    before_rename = next(rule for rule in json.loads(rules.read_text()) if rule["Button"] == "Streaming")
-    assert (
-        send(
-            "change_button",
-            change={"action": "rename", "button": "Streaming", "new_name": "My streaming button"},
-        )["result"]
-        is True
-    )
-    renamed = next(rule for rule in json.loads(rules.read_text()) if rule["Button"] == "My streaming button")
-    assert renamed == {**before_rename, "Button": "My streaming button"}
-    assert (
-        send("change_button", change={"button": "netflix", "mode": "disabled"})["result"]["mode"]
-        == "disabled"
-    )
-    saved = rules.read_bytes()
-    wrong_tv = send("change_button", expected_identity="0" * 64, change={"action": "reset"})
-    assert wrong_tv["error"]["code"] == "identity_mismatch"
-    ambiguous = send("change_button", change={"action": "reset", "button": "netflix"})
-    assert ambiguous["error"]["code"] == "invalid_request"
-    assert rules.read_bytes() == saved
-    assert send("change_button", change={"action": "reset"})["result"] is True
-    assert json.loads(rules.read_text()) == []
-    after_reset = read_buttons()
-    assert {row["button"]: row["mode"] for row in after_reset} == {
-        "netflix": "default",
-        "disney-plus": "default",
-        "prime-video": "default",
-    }
+    assert result["result"] == [{"id": "test.app", "name": "Example.tv"}]
+    assert not Path(fixture["buttons_file"]).exists()
 
 
 @pytest.mark.parametrize("bridge_server", [{"buttons": True}], indirect=True)

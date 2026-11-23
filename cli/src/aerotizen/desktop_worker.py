@@ -13,7 +13,6 @@ from html import unescape
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Thread
-from types import SimpleNamespace
 
 from aerotizen import (
     __version__,
@@ -39,10 +38,6 @@ WORKER_NAME = "aerotizen-desktop-worker"
 MAX_REQUEST_BYTES = 16 * 1024
 MAX_TEXT_CHARACTERS = 256
 BUTTON_APP_LOOKUP_TIMEOUT_SECONDS = 4
-BUTTON_CHANGE_ACTIONS = {"app": "map", "disabled": "disable", "default": "unmap"}
-BUTTON_CHANGE_UNVERIFIED = (
-    "The TV could not confirm the change. Refresh Button mapping to check the current assignment."
-)
 IDENTITY_PATTERN = re.compile(r"[a-f0-9]{64}")
 PACKAGE_IDENTIFIER = re.compile(rf"[A-Za-z0-9][A-Za-z0-9_.-]{{0,{MAX_TEXT_CHARACTERS - 1}}}")
 APP_COUNT_HEADER = re.compile(r"^\s*apps count\s*:\s*(\d+)\s*$", re.IGNORECASE | re.MULTILINE)
@@ -55,7 +50,6 @@ OPERATIONS = (
     "connect",
     "list_apps",
     "list_button_apps",
-    "change_button",
     "remove_apps",
     "install_launcher",
     "inspect_local_app",
@@ -332,35 +326,6 @@ def list_apps(params):
     return app_rows(installed)
 
 
-def button_rows(status):
-    rows = {}
-    for rule in status["rules"]:
-        label = rule["button"]
-        mode = rule["mode"]
-        app_id = rule.get("app_id")
-        if (
-            not buttons.valid_label(label)
-            or mode not in BUTTON_CHANGE_ACTIONS
-            or type(rule["active"]) is not bool
-        ):
-            raise ValueError("Invalid app button")
-        if mode == "app" and (not isinstance(app_id, str) or not buttons.APP_ID.fullmatch(app_id)):
-            raise ValueError("Invalid app button target")
-        rows[label.casefold()] = {
-            "button": label,
-            "mode": mode,
-            "app_id": app_id if mode == "app" else None,
-            "active": mode != "default" and rule["active"],
-        }
-    for button in status.get("discovered") or []:
-        label = button["button"]
-        if buttons.valid_label(label):
-            rows.setdefault(
-                label.casefold(), {"button": label, "mode": "default", "app_id": None, "active": False}
-            )
-    return sorted(rows.values(), key=lambda row: row["button"].casefold())
-
-
 def button_app_names(host, expected):
     with DeviceSession(host, timeout=BUTTON_APP_LOOKUP_TIMEOUT_SECONDS) as session:
         read_identity(session, expected)
@@ -382,88 +347,6 @@ def list_button_apps(params):
             button_app_names(host, expected).items(), key=lambda app: (app[1].casefold(), app[0])
         )
     ]
-
-
-def run_button_edit(host, expected, action, *, label="", app_id=None, new_name=None):
-    args = SimpleNamespace(button_action=action, button=label, receipt=None, yes=True, new_name=new_name)
-    try:
-        status = buttons.run(
-            args,
-            host,
-            remote.CONFIG_DIR,
-            expected_identity=expected,
-            target_app_id=app_id,
-        )
-    except buttons.ButtonAvailabilityError as error:
-        raise RequestError(error.code, str(error)) from error
-    except (OSError, SdbError) as error:
-        raise RequestError("button_change_unverified", BUTTON_CHANGE_UNVERIFIED) from error
-    if detail := status.get("error"):
-        raise RequestError("button_change_failed", text_value(detail, BUTTON_CHANGE_UNVERIFIED))
-    return status
-
-
-def change_button_inventory(host, expected, change):
-    action = change.get("action")
-    if action == "reset" and set(change) == {"action"}:
-        status = run_button_edit(host, expected, "reset")
-        if status.get("rules") == []:
-            return True
-    elif action == "learn" and set(change) == {"action", "button"}:
-        label = change.get("button")
-        if not buttons.valid_label(label):
-            raise RequestError(
-                "invalid_request", f"Use a button name of up to {buttons.MAX_LABEL_LENGTH} characters."
-            )
-        status = run_button_edit(host, expected, "learn", label=label)
-        if any(
-            row["button"].casefold() == label.casefold() and row["mode"] == "default"
-            for row in button_rows(status)
-        ):
-            return True
-    elif action == "rename" and set(change) == {"action", "button", "new_name"}:
-        label, replacement = change.get("button"), change.get("new_name")
-        if not buttons.valid_label(label) or not buttons.valid_label(replacement):
-            raise RequestError(
-                "invalid_request", f"Use a button name of up to {buttons.MAX_LABEL_LENGTH} characters."
-            )
-        status = run_button_edit(host, expected, "rename", label=label, new_name=replacement)
-        rows = button_rows(status)
-        if any(row["button"] == replacement for row in rows) and (
-            label.casefold() == replacement.casefold()
-            or not any(row["button"].casefold() == label.casefold() for row in rows)
-        ):
-            return True
-    else:
-        raise RequestError("invalid_request", "Choose a button action.")
-    raise RequestError("button_change_unverified", BUTTON_CHANGE_UNVERIFIED)
-
-
-def change_button(params):
-    host = host_value(params.get("host"))
-    expected = checked_identity(params.get("expected_identity"))
-    change = params.get("change")
-    if not isinstance(change, dict):
-        raise RequestError("invalid_request", "Choose a remote button and an action.")
-    if "action" in change:
-        return change_button_inventory(host, expected, change)
-    label = change.get("button")
-    mode = change.get("mode")
-    app_id = change.get("app_id")
-    if not buttons.valid_label(label) or not isinstance(mode, str) or mode not in BUTTON_CHANGE_ACTIONS:
-        raise RequestError("invalid_request", "Choose a remote button and an action.")
-    if mode == "app" and (not isinstance(app_id, str) or not buttons.APP_ID.fullmatch(app_id)):
-        raise RequestError("invalid_request", "Choose an installed app.")
-
-    status = run_button_edit(
-        host, expected, BUTTON_CHANGE_ACTIONS[mode], label=label, app_id=app_id if mode == "app" else None
-    )
-    saved = next((row for row in button_rows(status) if row["button"].casefold() == label.casefold()), None)
-    if saved is None and mode == "default":
-        saved = {"button": label, "mode": "default", "app_id": None, "active": False}
-    if saved is None or saved["mode"] != mode or (mode == "app" and saved["app_id"] != app_id):
-        raise RequestError("button_change_unverified", BUTTON_CHANGE_UNVERIFIED)
-    return {**saved, "button": label, "app_name": "AeroTizen" if saved["app_id"] == releases.APP_ID else None}
 
 
 def removal_selection(value):
@@ -953,8 +836,6 @@ def handle(request):
                 result = list_apps(params)
             elif request["operation"] == "list_button_apps":
                 result = list_button_apps(params)
-            elif request["operation"] == "change_button":
-                result = change_button(params)
             elif request["operation"] == "remove_apps":
                 result = remove_apps(params)
             elif request["operation"] == "install_launcher":

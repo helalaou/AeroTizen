@@ -547,7 +547,6 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "connect",
         "list_apps",
         "list_button_apps",
-        "change_button",
         "remove_apps",
         "install_launcher",
         "inspect_local_app",
@@ -565,6 +564,7 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "samsung_sign_in",
         "root_status",
         "list_buttons",
+        "change_button",
     ):
         assert worker.handle(request(retired))["error"]["code"] == "invalid_request"
 
@@ -958,49 +958,6 @@ def test_root_without_a_local_record_cannot_claim_verified_access(root_reading, 
     assert result["root_available"] is False
     assert result["setup_complete"] is False
     assert result["recovery_saved"] is False
-
-
-def test_rename_requires_updated_helper_without_sending_a_write(monkeypatch, tmp_path):
-    expected = "a" * 64
-    monkeypatch.setattr(
-        worker.buttons.root_state, "find", lambda *_: {"phase": "active", "duid_sha256": expected}
-    )
-    monkeypatch.setattr(
-        worker.buttons, "DeviceSession", lambda *_a, **_k: SimpleNamespace(ownership=nullcontext)
-    )
-    calls = []
-
-    def bridge_request(operation="status", **_kwargs):
-        calls.append(operation)
-        return {"buttons_protocol": worker.buttons.PROTOCOL, "buttons_friendly_names": True}
-
-    monkeypatch.setattr(
-        worker.buttons, "BridgeClient", lambda *_a, **_k: SimpleNamespace(request=bridge_request)
-    )
-    reply = worker.handle(
-        request(
-            "change_button",
-            host="192.0.2.20",
-            expected_identity=expected,
-            change={"action": "rename", "button": "Netflix", "new_name": "Streaming"},
-        )
-    )
-    assert reply["error"]["code"] == "helper_update_required"
-    assert calls == ["status"]
-
-
-@pytest.mark.parametrize("new_name", ["", " ", "a" * 49, "line\nbreak", "bad\ud800"])
-def test_rename_rejects_invalid_names_before_contacting_tv(monkeypatch, new_name):
-    monkeypatch.setattr(worker.buttons, "run", lambda *_a, **_k: pytest.fail("Invalid name reached TV"))
-    reply = worker.handle(
-        request(
-            "change_button",
-            host="192.0.2.20",
-            expected_identity="a" * 64,
-            change={"action": "rename", "button": "Netflix", "new_name": new_name},
-        )
-    )
-    assert reply["error"]["code"] == "invalid_request"
 
 
 @pytest.mark.parametrize(

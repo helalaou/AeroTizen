@@ -62,7 +62,6 @@ fn request_local_network_access(operation: &str, params: &Value) {
         | "upgrade_root"
         | "list_apps"
         | "list_button_apps"
-        | "change_button"
         | "remove_apps"
         | "prepare_native_home" => params
             .get("host")

@@ -1,14 +1,11 @@
-mod projection;
-
 use super::{
+    button_rules::{self, BUTTON_PROTOCOL_VERSION},
     json::truthy,
     root_bridge::{self, ReadRequest},
     root_pairing, tv_session,
 };
 use crate::models::{AppError, AppResult, ButtonMappings, RootPhase};
 use std::path::PathBuf;
-
-const BUTTON_PROTOCOL_VERSION: u64 = 1;
 
 pub struct ButtonReads {
     directory: PathBuf,
@@ -51,7 +48,7 @@ impl ButtonReads {
             let reply = root_bridge::read(address, &receipt.pairing, operation)
                 .await
                 .map_err(connection_failed)?;
-            result = projection::mappings(&reply["buttons"], discovery);
+            result = button_rules::mappings(&reply["buttons"], discovery);
         }
         let current = root_pairing::load(&self.directory, host, expected).await?;
         root_pairing::unchanged(before.as_ref(), current.as_ref())?;

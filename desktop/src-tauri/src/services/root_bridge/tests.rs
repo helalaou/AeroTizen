@@ -30,6 +30,42 @@ fn native_button_payloads_match_the_cli_wire_fixture_and_can_never_apply_changes
     }
 }
 
+#[test]
+fn button_edits_match_the_cli_wire_contract_and_use_the_learn_deadline_only_for_learning() {
+    let expected: Value = serde_json::from_str(include_str!(
+        "../../../../tests/fixtures/button-read-request.json"
+    ))
+    .unwrap();
+    let edits: Vec<Value> = serde_json::from_str(include_str!(
+        "../../../../tests/fixtures/button-edit-requests.json"
+    ))
+    .unwrap();
+    let pairing = Pairing {
+        port: 26104,
+        installation_id: "1".repeat(32),
+        device_identity: "b".repeat(64),
+        certificate_sha256: "d".repeat(64),
+        token: "c".repeat(64),
+    };
+    for fixture in edits {
+        let edit: ButtonEdit = serde_json::from_value(fixture["buttons"].clone()).unwrap();
+        let mut wire = expected.clone();
+        wire["buttons"] = fixture["buttons"].clone();
+        assert_eq!(
+            Request::ButtonEdit(&edit).payload(&pairing, expected["nonce"].as_str().unwrap()),
+            wire
+        );
+        assert_eq!(
+            edit_timeout(&edit),
+            Duration::from_secs(if fixture["buttons"]["action"] == "learn" {
+                25
+            } else {
+                8
+            })
+        );
+    }
+}
+
 pub(crate) fn reply(request: &Value) -> Value {
     json!({
         "protocol": 1, "authenticated": true, "app_id": HELPER_APP_ID,

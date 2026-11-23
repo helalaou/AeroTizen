@@ -3,7 +3,7 @@
 Use AeroTizen Desktop to find and save Samsung TVs, install the launcher and local apps,
 manage installed apps, configure Home and remote buttons, and set up or update root access.
 The app uses Tauri, React and Mantine. Rust handles TV discovery, launcher release
-lookup, Home backup review, Samsung sign-in, Root access status and button mapping reads; a bundled Python worker
+lookup, Home backup review, Samsung sign-in, Root access status and button mapping; a bundled Python worker
 provides the remaining CLI services.
 SQLite stores saved TV profiles.
 
@@ -249,13 +249,16 @@ cancels the read and releases its socket and locks. Recovery files are not chang
 The worker no longer offers `root_status`; setup and update still use the worker,
 including their final status check. The Python CLI's root commands are unchanged.
 
-Button mapping discovery and saved assignments also use the native paired connection.
-Only read requests are available to this Rust transport. It shares recovery validation,
-certificate pins and TV locks with Root access. Older helpers fall back to saved assignments
-with an update notice. The worker no longer offers `list_buttons`; installed-app name lookup,
-the app picker and button changes still use their existing worker operations. A failed app
+Button discovery, saved assignments and edits use the native paired connection.
+It shares recovery validation, certificate pins and TV locks with Root access.
+Older helpers fall back to saved assignments
+with an update notice. The worker no longer offers `list_buttons` or `change_button`;
+installed-app name lookup and the app picker still use their existing worker operation. A failed app
 name lookup leaves authenticated assignments visible by app ID. CLI button commands and
-the TV helper are unchanged.
+the TV helper are unchanged. Rust validates each edit, checks helper support and sends one
+authenticated write request. Learn keeps its 25-second deadline; other requests use eight
+seconds. A lost reply is reported as unconfirmed and is never retried automatically.
+The saved assignment is checked before the UI begins its separate activation check.
 
 ```sh
 npm run typecheck

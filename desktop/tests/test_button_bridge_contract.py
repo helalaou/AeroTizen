@@ -12,10 +12,14 @@ from aerotizen import root_bridge
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
-@pytest.mark.parametrize("action", ["list", "status"])
-def test_button_read_request_matches_the_cli_wire_format(monkeypatch, action):
+@pytest.mark.parametrize(
+    "buttons",
+    [{"action": action, "apply": False} for action in ("list", "status")]
+    + [case["buttons"] for case in json.loads((FIXTURES / "button-edit-requests.json").read_text())],
+)
+def test_button_request_matches_the_cli_wire_format(monkeypatch, buttons):
     expected = json.loads((FIXTURES / "button-read-request.json").read_text())
-    expected["buttons"]["action"] = action
+    expected["buttons"] = buttons
     receipt = json.loads((FIXTURES / "root-receipt.json").read_text())
     certificate = b"synthetic-test-certificate"
     receipt["certificate_sha256"] = hashlib.sha256(certificate).hexdigest()
