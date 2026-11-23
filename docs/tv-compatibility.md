@@ -1,5 +1,9 @@
 # TV compatibility
 
+**The launcher requires Tizen 5.0 or later.** It targets Chromium 63, the web
+engine on Tizen 5.0 TVs. Tizen 4.0 uses Chromium 56 and falls below this target.
+[Samsung web engine specifications](https://developer.samsung.com/smarttv/develop/specifications/web-engine-specifications.html).
+
 The table lists results for the TV, firmware and AeroTizen versions tested. Use
 the full model code from your TV to find a match. For current setup steps, see
 [Native Home setup](home-pc-flow.md#native-home-setup).

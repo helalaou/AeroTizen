@@ -16,6 +16,9 @@ programmes; it cannot control a TV.
 
 ## Quick Start
 
+The launcher requires a Samsung TV with **Tizen 5.0 or later**. Check the
+[TV compatibility table](docs/tv-compatibility.md) for your model's Home and startup results.
+
 This guide uses CLI 3.0.0 and launcher 2.7.0. You need a Samsung account and a
 computer on the same network as the TV. The CLI includes its dependencies.
 Developer Mode is sufficient for setup.
