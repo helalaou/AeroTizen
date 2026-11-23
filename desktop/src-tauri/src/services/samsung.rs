@@ -1,3 +1,4 @@
+use super::samsung_auth;
 use crate::{
     models::{AppError, AppResult, SigningProfile},
     state::AppState,
@@ -5,6 +6,7 @@ use crate::{
 };
 use serde::Serialize;
 use serde_json::{json, Value};
+use std::future::Future;
 use std::time::{Duration, Instant};
 use tokio::sync::{watch, Mutex};
 
@@ -41,11 +43,7 @@ impl Default for SamsungState {
 }
 
 fn session(auth: Value) -> AppResult<Session> {
-    if ["access_token", "userId"].iter().any(|key| {
-        auth.get(key)
-            .and_then(Value::as_str)
-            .is_none_or(|value| value.trim().is_empty())
-    }) {
+    if !samsung_auth::valid_auth(&auth) {
         return Err(AppError::new(
             "invalid_response",
             "Samsung did not return a valid sign-in.",
@@ -89,26 +87,42 @@ pub async fn samsung_account(state: &AppState) -> AppResult<Option<Account>> {
     Ok(saved.as_ref().map(|session| session.account.clone()))
 }
 
-pub async fn samsung_sign_in(state: &AppState, request_id: String) -> AppResult<Account> {
+pub async fn samsung_sign_in<Open, Opened>(
+    state: &AppState,
+    request_id: String,
+    open_browser: Open,
+) -> AppResult<Account>
+where
+    Open: FnOnce(String) -> Opened + Send,
+    Opened: Future<Output = bool> + Send,
+{
+    sign_in(state, request_id, samsung_auth::authenticate(open_browser)).await
+}
+
+async fn sign_in(
+    state: &AppState,
+    request_id: String,
+    authentication: impl Future<Output = AppResult<Value>> + Send,
+) -> AppResult<Account> {
     let _guard = state
         .samsung
         .operation
         .try_lock()
         .map_err(|_| crate::state::busy())?;
-    let cancelled = state.samsung.cancelled.subscribe();
+    let mut cancelled = state.samsung.cancelled.subscribe();
     if *cancelled.borrow() == request_id {
         return Err(AppError::new(
             "sign_in_cancelled",
             "Samsung sign-in cancelled.",
         ));
     }
-    let auth: Value = worker::request_with_cancellation(
-        &state.worker_path,
-        "samsung_sign_in",
-        json!({}),
-        Some((cancelled, request_id.clone())),
-    )
-    .await?;
+    let auth = tokio::select! {
+        biased;
+        _ = cancelled.wait_for(|id| *id == request_id) => {
+            return Err(AppError::new("sign_in_cancelled", "Samsung sign-in cancelled."));
+        }
+        result = authentication => result?,
+    };
     let mut current = state.samsung.session.lock().await;
     if *state.samsung.cancelled.borrow() == request_id {
         return Err(AppError::new(
@@ -182,33 +196,4 @@ pub async fn prepare_signing_profile(state: &AppState, id: String) -> AppResult<
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn account_serialization_excludes_authentication_secrets() {
-        let saved = session(json!({
-            "access_token": "private-token", "userId": "private-user",
-            "inputEmailID": "demo@example.com", "expires_in": "60",
-        }))
-        .unwrap();
-        assert_eq!(
-            serde_json::to_value(saved.account).unwrap(),
-            json!({"email": "demo@example.com"})
-        );
-        assert!(saved.expires > Instant::now());
-    }
-
-    #[test]
-    fn malformed_sign_in_is_rejected() {
-        assert!(session(json!({"access_token": "", "userId": "user"})).is_err());
-        assert!(session(json!({"access_token": "token"})).is_err());
-    }
-
-    #[test]
-    fn expired_sign_in_is_unavailable_for_certificate_setup() {
-        let saved =
-            session(json!({"access_token": "token", "userId": "user", "expires_in": 0})).unwrap();
-        assert!(saved.expires <= Instant::now());
-    }
-}
+mod tests;

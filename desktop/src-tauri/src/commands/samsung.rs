@@ -11,11 +11,18 @@ pub async fn samsung_account(state: tauri::State<'_, AppState>) -> AppResult<Opt
 }
 
 #[tauri::command]
-pub async fn samsung_sign_in(
+pub async fn samsung_sign_in<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     state: tauri::State<'_, AppState>,
     request_id: String,
 ) -> AppResult<Account> {
-    services::samsung::samsung_sign_in(&state, request_id).await
+    use tauri_plugin_opener::OpenerExt;
+    services::samsung::samsung_sign_in(&state, request_id, move |url| async move {
+        tokio::task::spawn_blocking(move || app.opener().open_url(url, None::<&str>))
+            .await
+            .is_ok_and(|result| result.is_ok())
+    })
+    .await
 }
 
 #[tauri::command]

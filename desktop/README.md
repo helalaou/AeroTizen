@@ -3,7 +3,7 @@
 Use AeroTizen Desktop to find and save Samsung TVs, install the launcher and local apps,
 manage installed apps, configure Home and remote buttons, and set up or update root access.
 The app uses Tauri, React and Mantine. Rust handles TV discovery, launcher release
-lookup and Home backup review; a bundled Python worker provides the remaining CLI services.
+lookup, Home backup review and Samsung sign-in; a bundled Python worker provides the remaining CLI services.
 SQLite stores saved TV profiles.
 
 See screenshots of [TV selection](screenshots/tv-selection.png), [Overview](screenshots/overview.png),
@@ -225,6 +225,14 @@ dialog. File reads run on the blocking thread pool and are limited to 128 KiB, i
 the actual bytes read. No backup file is written or replaced. Backup capture, Apply and
 Restore still use the worker and its existing verification.
 
+Samsung sign-in also runs in Rust. The Tauri command opens the normal Samsung browser
+flow, and a callback listener binds only to `127.0.0.1:4794`. Each attempt uses a fresh
+random state checked before accepting credentials. Callback bodies are limited to
+64 KiB, each connection to five seconds, and the whole attempt to five minutes.
+Cancel, timeout and browser-launch failure close the listener. Tokens stay in the
+existing in-memory session; the UI receives only the account email. Certificate
+issuance still uses the worker, and the Python CLI keeps its own browser sign-in.
+
 ```sh
 npm run typecheck
 npm run lint
@@ -254,6 +262,7 @@ Run the frozen-worker integration check explicitly:
 npm run worker:build
 cargo test --manifest-path src-tauri/Cargo.toml --features worker-smoke --test worker_smoke
 cargo clippy --manifest-path src-tauri/Cargo.toml --features bundled-worker --all-targets -- -D warnings
+cargo check --manifest-path src-tauri/Cargo.toml --features bundled-worker --lib
 ```
 
 The Tauri build command rebuilds the worker and frontend automatically. The worker build
@@ -261,6 +270,8 @@ uses a temporary PyInstaller cache and tests the frozen executable outside the c
 with Python removed from PATH. The separate Rust smoke test checks its public handshake.
 Its feature does not enable the app binary, so this check cannot replace a standalone app
 build with a development executable that expects Vite to be running.
+The separate production library check also catches runtime features that unit-test
+dependencies could otherwise enable only during tests.
 
 From the repository root, run the backend regression checks:
 

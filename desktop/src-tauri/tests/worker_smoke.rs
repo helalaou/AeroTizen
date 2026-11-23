@@ -47,7 +47,12 @@ async fn bundled_worker_returns_the_native_backend_contract_without_a_tv() {
     assert!(!status["version"].as_str().unwrap().is_empty());
     let operations = status["operations"].as_array().unwrap();
     assert!(operations.iter().any(|name| name == "prepare_native_home"));
-    for retired in ["discover", "launcher_catalog", "read_home_backup"] {
+    for retired in [
+        "discover",
+        "launcher_catalog",
+        "read_home_backup",
+        "samsung_sign_in",
+    ] {
         assert!(!operations.iter().any(|name| name == retired));
     }
 }
