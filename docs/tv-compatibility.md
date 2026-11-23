@@ -49,7 +49,6 @@ unplugged. Startup results apply to the setup in the linked report.
 | Samsung 65" Crystal UHD TU7179 (GU65TU7179UXZG) | 2020 | Tizen 5.5 | ✅ | ❌ | — | — | — | Native Home setup was blocked when the helper failed to start ([#84](https://github.com/helalaou/AeroTizen/issues/84)). |
 | Samsung 32" The Frame LS03T (QE32LS03TCUXZT) | 2020 | Tizen 5.5 | ✅ | ❌ | — | — | — | Native Home query failed ([#75](https://github.com/helalaou/AeroTizen/issues/75)). |
 | Samsung 65" UHD RU8000 (UE65RU8000UXZT) | 2019 | Tizen 5.0 | ✅ | — | — | — | — | Manual IP worked ([#123](https://github.com/helalaou/AeroTizen/issues/123)). |
-| Samsung 43" UHD NU7470 (UA43NU7470) | 2018 | Tizen 4.0 | ❌ | — | — | — | — | Installation and power-on start worked. Syntax errors stopped the launcher UI and diagnostics ([#264](https://github.com/helalaou/AeroTizen/issues/264)). |
 
 [Report a TV model](https://github.com/helalaou/AeroTizen/issues/new?template=model_report.yml).
 Include the full model code, firmware, CLI and launcher versions. Select an outcome
