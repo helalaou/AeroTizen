@@ -6,25 +6,64 @@ body:
     id: model
     attributes:
       label: TV model, size and year
+      description: Include the full model code from your TV.
     validations:
       required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Firmware, Tizen and AeroTizen versions
+      description: Include the firmware build, Tizen version, CLI and launcher versions, and any build changes.
   - type: textarea
     id: status
     attributes:
       label: "`aerotizen status` output"
       render: shell
+  - type: dropdown
+    id: launcher-opens
+    attributes:
+      label: Launcher opens
+      description: Check that AeroTizen installs and opens from Samsung Apps.
+      options: [Not tested, Works, Failed]
+      default: 0
+  - type: dropdown
+    id: native-home
+    attributes:
+      label: Native Home
+      description: Apply Native Home and press Home from another app. Select Failed if setup fails.
+      options: [Not tested, Works, Failed]
+      default: 0
+  - type: dropdown
+    id: watcher
+    attributes:
+      label: Watcher
+      description: With the default Watcher active, press Home from another app.
+      options: [Not tested, Works, Failed]
+      default: 0
+  - type: dropdown
+    id: standby-startup
+    attributes:
+      label: Startup from standby
+      description: Use the remote to turn the TV off and on with power connected. Check if AeroTizen opens automatically.
+      options: [Not tested, Works, Failed]
+      default: 0
+  - type: dropdown
+    id: cold-boot
+    attributes:
+      label: Cold boot
+      description: Unplug the TV or One Connect box for 60 seconds. Reconnect power, start the TV and check if AeroTizen opens automatically.
+      options: [Not tested, Works, Failed]
+      default: 0
   - type: checkboxes
     id: works
     attributes:
-      label: What works
+      label: Other checks that work
       options:
         - label: Developer Mode connection (sdb)
-        - label: Launcher installs and runs
-        - label: Starts on power-on
-        - label: Home returns to the launcher (note which apps)
         - label: Inputs list and switching
         - label: Uninstall over sdb (older firmware only)
   - type: textarea
     id: notes
     attributes:
-      label: Notes (menu labels that differ, apps that misbehave, ...)
+      label: Notes
+      description: List the apps or inputs you tested in each Home mode. Include setup errors, and say which Home mode you used for each startup check.
