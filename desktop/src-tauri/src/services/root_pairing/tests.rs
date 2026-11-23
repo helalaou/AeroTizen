@@ -4,7 +4,7 @@ use serde_json::json;
 pub(crate) const IDENTITY: &str =
     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 pub(crate) const HOST: &str = "192.0.2.20";
-const FIXTURE: &str = include_str!("../../../../../tests/fixtures/root-receipt.json");
+const FIXTURE: &str = include_str!("../../../../tests/fixtures/root-receipt.json");
 
 pub(crate) fn document() -> Value {
     serde_json::from_str(FIXTURE).unwrap()

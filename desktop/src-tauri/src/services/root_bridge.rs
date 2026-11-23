@@ -61,7 +61,34 @@ fn verified_reply(
     Ok(reply)
 }
 
-async fn request(host: Ipv4Addr, pairing: &Pairing) -> Result<Value, BridgeError> {
+#[derive(Clone, Copy)]
+pub(super) enum ReadRequest {
+    Status,
+    DiscoverButtons,
+    SavedButtons,
+}
+
+impl ReadRequest {
+    fn payload(self, pairing: &Pairing, nonce: &str) -> Value {
+        let mut value = json!({"protocol": PROTOCOL_VERSION, "operation": "status", "token": pairing.token, "nonce": nonce});
+        if let Self::DiscoverButtons | Self::SavedButtons = self {
+            value["operation"] = json!("buttons");
+            let action = if matches!(self, Self::DiscoverButtons) {
+                "list"
+            } else {
+                "status"
+            };
+            value["buttons"] = json!({"action": action, "apply": false});
+        }
+        value
+    }
+}
+
+async fn request(
+    host: Ipv4Addr,
+    pairing: &Pairing,
+    operation: ReadRequest,
+) -> Result<Value, BridgeError> {
     // The helper uses a self-signed certificate. Match the exact saved DER pin
     // before sending the token; ordinary CA/hostname verification cannot identify it.
     let connector = native_tls::TlsConnector::builder()
@@ -93,7 +120,7 @@ async fn request(host: Ipv4Addr, pairing: &Pairing) -> Result<Value, BridgeError
         return Err(BridgeError::Certificate);
     }
     let nonce = nonce()?;
-    let request = json!({"protocol": PROTOCOL_VERSION, "operation": "status", "token": pairing.token, "nonce": nonce});
+    let request = operation.payload(pairing, &nonce);
     secured
         .write_all(format!("{request}\n").as_bytes())
         .await
@@ -115,12 +142,22 @@ pub(super) async fn status(host: Ipv4Addr, pairing: &Pairing) -> Result<Value, B
     timed_status(host, pairing, REQUEST_TIMEOUT).await
 }
 
+pub(super) async fn read(
+    host: Ipv4Addr,
+    pairing: &Pairing,
+    operation: ReadRequest,
+) -> Result<Value, BridgeError> {
+    tokio::time::timeout(REQUEST_TIMEOUT, request(host, pairing, operation))
+        .await
+        .map_err(|_| BridgeError::Timeout)?
+}
+
 async fn timed_status(
     host: Ipv4Addr,
     pairing: &Pairing,
     timeout: Duration,
 ) -> Result<Value, BridgeError> {
-    tokio::time::timeout(timeout, request(host, pairing))
+    tokio::time::timeout(timeout, request(host, pairing, ReadRequest::Status))
         .await
         .map_err(|_| BridgeError::Timeout)?
 }

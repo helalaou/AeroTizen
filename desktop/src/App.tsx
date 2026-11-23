@@ -159,6 +159,7 @@ export function App({ service }: AppProps) {
           mappings={manager.buttonMappings}
           loading={manager.buttonsLoading}
           error={manager.buttonsError}
+          activation={manager.buttonActivation}
           onRefresh={() => manager.loadButtons(selected.id)}
           actions={
             service.buttonActions
@@ -169,7 +170,7 @@ export function App({ service }: AppProps) {
                   appsError: manager.buttonAppsError,
                   changeError: manager.buttonChangeError,
                   loadApps: () => manager.loadButtonApps(selected.id),
-                  cancelApps: manager.cancelPageRead,
+                  cancelApps: manager.cancelButtonApps,
                   change: (change, reportError) => manager.changeButton(selected.id, change, reportError),
                   updateInventory: (change, reportError) =>
                     manager.updateButtonInventory(selected.id, change, reportError),

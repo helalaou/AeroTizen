@@ -270,6 +270,14 @@ def test_desktop_worker_changes_only_the_selected_buttons(bridge_server, tmp_pat
         )
 
     assert [app["id"] for app in send("list_button_apps")["result"]] == ["test.app"]
+
+    def read_buttons():
+        # Inspect writes through the helper; desktop mapping reads now run in Rust.
+        status = BridgeClient(host, receipt).request(
+            "buttons", button_request={"action": "list", "apply": False}
+        )["buttons"]
+        return desktop_worker.button_rows(status)
+
     for change in (
         {"mode": "app", "app_id": "test.app"},
         {"mode": "disabled"},
@@ -280,7 +288,7 @@ def test_desktop_worker_changes_only_the_selected_buttons(bridge_server, tmp_pat
         assert row["button"] == "netflix"
         assert row["mode"] == change["mode"]
         assert row["app_id"] == change.get("app_id")
-        rows = send("list_buttons")["result"]["buttons"]
+        rows = read_buttons()
         assert {row["button"]: row["mode"] for row in rows} == {
             "netflix": change["mode"],
             "disney-plus": "default",
@@ -300,7 +308,7 @@ def test_desktop_worker_changes_only_the_selected_buttons(bridge_server, tmp_pat
     assert rules.read_bytes() == saved
 
     assert send("change_button", change={"action": "learn", "button": "Streaming"})["result"] is True
-    learned = send("list_buttons")["result"]["buttons"]
+    learned = read_buttons()
     assert any(row["button"] == "Streaming" and row["mode"] == "default" for row in learned)
     assert (
         send("change_button", change={"button": "Streaming", "mode": "app", "app_id": "test.app"})["result"][
@@ -330,7 +338,7 @@ def test_desktop_worker_changes_only_the_selected_buttons(bridge_server, tmp_pat
     assert rules.read_bytes() == saved
     assert send("change_button", change={"action": "reset"})["result"] is True
     assert json.loads(rules.read_text()) == []
-    after_reset = send("list_buttons")["result"]["buttons"]
+    after_reset = read_buttons()
     assert {row["button"]: row["mode"] for row in after_reset} == {
         "netflix": "default",
         "disney-plus": "default",

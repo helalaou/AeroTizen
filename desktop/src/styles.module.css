@@ -122,6 +122,17 @@
   overscroll-behavior-y: contain;
   scrollbar-gutter: stable;
 }
+.buttonStatus {
+  height: auto;
+  min-width: min-content;
+  min-height: var(--badge-height);
+  padding-block: 3px;
+  line-height: 1.25;
+}
+.buttonStatusLabel {
+  min-width: min-content;
+  white-space: normal;
+}
 .appPackageRow,
 .appPackageRow label {
   cursor: pointer;

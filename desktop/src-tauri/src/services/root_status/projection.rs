@@ -1,3 +1,4 @@
+use super::super::json::truthy;
 use super::records::{Receipt, PAIRING_VERSION};
 use crate::models::{AppError, AppResult, RootAccessStatus, RootPhase};
 use serde_json::Value;
@@ -33,17 +34,6 @@ fn older_version(version: &str, target: &str) -> bool {
         })
         .find(|ordering| !ordering.is_eq())
         .is_some_and(|ordering| ordering.is_lt())
-}
-
-fn truthy(value: &Value) -> bool {
-    match value {
-        Value::Null => false,
-        Value::Bool(value) => *value,
-        Value::Number(value) => value.as_f64() != Some(0.0),
-        Value::String(value) => !value.is_empty(),
-        Value::Array(value) => !value.is_empty(),
-        Value::Object(value) => !value.is_empty(),
-    }
 }
 
 pub(super) fn public_status(

@@ -83,12 +83,13 @@ export function useTvManager(service: DesktopService) {
     update: (result: Result | null) => void,
     showError: (error: string | null) => void,
     setLoading: (loading: boolean) => void,
+    options?: { preserveResult?: boolean },
   ) {
     const previous = pageRead.current;
     if (active.current || (previous && !previous.controller.signal.aborted)) return;
     const controller = new AbortController();
     const { signal } = controller;
-    update(null);
+    if (!options?.preserveResult) update(null);
     showError(null);
     setLoading(true);
     const stopLoading = () => setLoading(false);
@@ -117,7 +118,7 @@ export function useTvManager(service: DesktopService) {
     setSelected((current) => (current?.id === id ? update(current) : current));
   };
 
-  const context: FeatureContext = { selected, mounted, run, loadPage, updateProfile };
+  const context: FeatureContext = { selected, mounted, run, loadPage, cancelPageRead, updateProfile };
   const launcher = useLauncher(service, context);
   const { resetApps, ...apps } = useApps(service, context);
   const buttons = useButtons(service, context);

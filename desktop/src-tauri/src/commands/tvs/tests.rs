@@ -212,3 +212,29 @@ fn root_status_and_cancellation_keep_the_registered_contract_without_a_worker() 
         Err(json!({"code": "tv_read_cancelled", "message": "TV refresh cancelled."}))
     );
 }
+
+#[test]
+fn button_reads_preserve_the_registered_contract_without_a_worker() {
+    let fixture = Fixture::new();
+    let saved = fixture.invoke("list_tvs", json!({})).unwrap();
+    let id = saved[0]["id"].as_str().unwrap();
+    assert_eq!(
+        fixture
+            .invoke(
+                "list_tv_buttons",
+                json!({"id":id,"requestId":"buttons-read"})
+            )
+            .unwrap(),
+        json!({"status":"pairing_required"})
+    );
+    fixture
+        .invoke("cancel_tv_read", json!({"requestId":"cancelled-buttons"}))
+        .unwrap();
+    assert_eq!(
+        fixture.invoke(
+            "list_tv_buttons",
+            json!({"id":id,"requestId":"cancelled-buttons"})
+        ),
+        Err(json!({"code":"tv_read_cancelled","message":"TV refresh cancelled."}))
+    );
+}

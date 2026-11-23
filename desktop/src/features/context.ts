@@ -21,6 +21,8 @@ export interface FeatureContext {
     update: (result: Result | null) => void,
     showError: (error: string | null) => void,
     setLoading: (loading: boolean) => void,
+    options?: { preserveResult?: boolean },
   ): void;
+  cancelPageRead(): Promise<void> | undefined;
   updateProfile(id: string, profile: ProfileUpdate): void;
 }

@@ -39,7 +39,8 @@ pub fn run() {
                 app.manage(AppState {
                     profiles,
                     home_backups: services::home_backups::HomeBackups::new(cli_directory.clone()),
-                    root_status: services::root_status::RootStatus::new(cli_directory),
+                    root_status: services::root_status::RootStatus::new(cli_directory.clone()),
+                    button_reads: services::button_reads::ButtonReads::new(cli_directory),
                     worker_path,
                     operation: tokio::sync::Mutex::new(()),
                     cancelled_tv_read: watch::Sender::new(String::new()),

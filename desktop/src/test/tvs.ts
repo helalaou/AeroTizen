@@ -152,6 +152,7 @@ const SIMULATED_REMOTE_PRESS_DELAY_MS = 1_500;
 const SIMULATED_SIGN_IN_DELAY_MS = 1_500;
 const SIMULATED_CERTIFICATE_DELAY_MS = 700;
 const SIMULATED_ROOT_SETUP_DELAY_MS = 1000;
+const SIMULATED_BUTTON_ACTIVATION_DELAY_MS = 1500;
 
 function originalButton(button: string): TvButtonMapping {
   return { button, mode: "default", app_id: null, app_name: null, active: false };
@@ -178,6 +179,7 @@ export function testService(): DesktopService {
   const profiles = new Map([livingRoom, bedroom].map((tv) => [tv.id, tv]));
   const originalSettings = new Map<string, NativeHomeSettings>([[livingRoom.id, testBackupSettings]]);
   let buttonMappings = testButtonMappings.buttons;
+  const buttonActivationTimes = new Map<string, number>();
   let samsungAccount: SamsungAccount | null = null;
   const appInventories = new Map<string, TvAppPackage[]>();
   const rootProgress = new Map<string, RootAccessStatus>([
@@ -317,10 +319,19 @@ export function testService(): DesktopService {
     list: async () => [...profiles.values()],
     discover: async () => [livingRoom, bedroom, office],
     listApps: async (id) => appInventories.get(id) ?? testPackages,
-    listButtons: async (id) =>
-      profiles.get(id)?.transport === "paired_root"
+    listButtons: async (id) => {
+      buttonMappings = buttonMappings.map((row) => {
+        const readyAt = buttonActivationTimes.get(row.button);
+        if (readyAt !== undefined && Date.now() >= readyAt) {
+          buttonActivationTimes.delete(row.button);
+          return { ...row, active: row.mode !== "default" };
+        }
+        return row;
+      });
+      return profiles.get(id)?.transport === "paired_root"
         ? { ...testButtonMappings, buttons: buttonMappings }
-        : { status: "pairing_required" },
+        : { status: "pairing_required" };
+    },
     buttonActions: {
       listApps: async (id) => {
         if (profiles.get(id)?.transport !== "paired_root") throw new Error("A paired TV helper is required.");
@@ -340,8 +351,10 @@ export function testService(): DesktopService {
           mode: change.mode,
           app_id: app?.id ?? null,
           app_name: app?.name ?? null,
-          active: change.mode !== "default",
+          active: false,
         };
+        if (change.mode === "default") buttonActivationTimes.delete(change.button);
+        else buttonActivationTimes.set(change.button, Date.now() + SIMULATED_BUTTON_ACTIVATION_DELAY_MS);
         buttonMappings = buttonMappings.map((row) => (row.button === change.button ? updated : row));
         return updated;
       },
@@ -363,7 +376,11 @@ export function testService(): DesktopService {
           )
             throw new Error("A button already has this name.");
           buttonMappings = buttonMappings.map((row) => (row === current ? { ...row, button: change.new_name } : row));
+          const readyAt = buttonActivationTimes.get(change.button);
+          buttonActivationTimes.delete(change.button);
+          if (readyAt !== undefined) buttonActivationTimes.set(change.new_name, readyAt);
         } else {
+          buttonActivationTimes.clear();
           buttonMappings = testButtonMappings.buttons.map((row) => originalButton(row.button));
         }
         return true;

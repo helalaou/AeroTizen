@@ -1,5 +1,5 @@
-use super::super::digest::sha256_hex;
-use super::super::root_bridge::{Pairing, HELPER_APP_ID};
+use super::digest::sha256_hex;
+use super::root_bridge::{Pairing, HELPER_APP_ID};
 use crate::models::{valid_identity, AppError, AppResult, RootPhase};
 use serde_json::Value;
 use std::{
@@ -23,6 +23,31 @@ pub(super) struct Receipt {
     pub phase: RootPhase,
     pub pairing: Pairing,
     pub original_pc_host: String,
+}
+
+pub(super) fn address(host: &str, expected: &str) -> AppResult<Ipv4Addr> {
+    let invalid = || AppError::new("invalid_address", "Enter a valid TV IPv4 address.");
+    let address: Ipv4Addr = host.parse().map_err(|_| invalid())?;
+    if address.is_unspecified() || address.is_multicast() || address == Ipv4Addr::BROADCAST {
+        return Err(invalid());
+    }
+    if !valid_identity(expected) {
+        return Err(AppError::new(
+            "invalid_request",
+            "The saved TV identity is invalid.",
+        ));
+    }
+    Ok(address)
+}
+
+pub(super) fn unchanged(before: Option<&Receipt>, after: Option<&Receipt>) -> AppResult<()> {
+    if before.map(|receipt| &receipt.document) != after.map(|receipt| &receipt.document) {
+        return Err(AppError::new(
+            "root_state_changed",
+            "Root setup changed. Refresh Root access to check its current status.",
+        ));
+    }
+    Ok(())
 }
 
 pub(super) fn unavailable() -> AppError {
