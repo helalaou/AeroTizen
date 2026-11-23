@@ -10,7 +10,6 @@ use tokio::process::Command;
 const PROTOCOL_VERSION: u32 = 1;
 const WORKER_TIMEOUT_SECONDS: u64 = 120;
 const PACKAGE_ACTION_TIMEOUT_SECONDS: u64 = 300;
-const SIGNING_PROFILE_TIMEOUT_SECONDS: u64 = 320;
 const ROOT_WRITE_TIMEOUT_SECONDS: u64 = 600;
 const MAX_RESPONSE_BYTES: usize = 64 * 1024;
 #[cfg(windows)]
@@ -101,7 +100,6 @@ pub async fn request<Result: DeserializeOwned>(
     let timeout_seconds = match operation {
         "setup_root" | "upgrade_root" => ROOT_WRITE_TIMEOUT_SECONDS,
         "install_launcher" => PACKAGE_ACTION_TIMEOUT_SECONDS,
-        "prepare_signing_profile" => SIGNING_PROFILE_TIMEOUT_SECONDS,
         _ => WORKER_TIMEOUT_SECONDS,
     };
     let output = tokio::time::timeout(

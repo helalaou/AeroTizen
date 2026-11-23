@@ -15,7 +15,6 @@ from tempfile import TemporaryDirectory
 from aerotizen import (
     __version__,
     catalog,
-    certs,
     home,
     home_status,
     releases,
@@ -36,7 +35,6 @@ IDENTITY_PATTERN = re.compile(r"[a-f0-9]{64}")
 CERTIFICATE_FILES = ("author.p12", "distributor.p12", "password.txt", "device-profile.xml")
 OPERATIONS = (
     "handshake",
-    "prepare_signing_profile",
     "install_launcher",
     "setup_root",
     "upgrade_root",
@@ -142,52 +140,6 @@ def signing_profile(duid):
     if all((directory / name).is_file() for name in CERTIFICATE_FILES):
         return directory
     return None
-
-
-def prepare_signing_profile(params):
-    host = host_value(params.get("host"))
-    expected = checked_identity(params.get("expected_identity"))
-    with DeviceSession(host) as session:
-        duid, _ = read_identity(session, expected)
-        if signing_profile(duid) is not None:
-            return {"identity_sha256": expected, "launcher_signing_ready": True}
-        if not re.fullmatch(r"[A-Za-z0-9_#-][A-Za-z0-9_#.-]*", duid) or duid.endswith("."):
-            raise RequestError("identity_unavailable", "The TV did not return a supported device identity.")
-        auth = params.get("auth")
-        if not isinstance(auth, dict) or any(
-            not isinstance(auth.get(key), str) or not auth[key].strip() for key in ("access_token", "userId")
-        ):
-            raise RequestError("samsung_sign_in_required", "Sign in to Samsung to set up this TV.")
-        destination = Path(remote.CONFIG_DIR) / "certs" / duid
-        if destination.exists() or destination.is_symlink():
-            raise RequestError(
-                "signing_profile_incomplete",
-                "The existing signing profile is incomplete. Restore its original files before continuing.",
-            )
-        try:
-            destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-            with TemporaryDirectory(prefix=".signing-", dir=destination.parent) as temporary:
-                profile = Path(temporary) / "profile"
-                certs.create_profile(duid, profile, auth=auth)
-                if not all((profile / name).is_file() for name in CERTIFICATE_FILES):
-                    raise ValueError("Incomplete signing profile")
-                read_identity(session, expected)
-                if signing_profile(duid) is None:
-                    profile.rename(destination)
-        except SystemExit as error:
-            raise RequestError(
-                "certificates_failed",
-                "Samsung could not create the signing certificates. Sign in again and retry.",
-            ) from error
-        except RequestError:
-            raise
-        except (OSError, ValueError) as error:
-            raise RequestError(
-                "certificates_failed", "Could not save this TV's signing certificates. Try again."
-            ) from error
-        if signing_profile(duid) is None:
-            raise RequestError("certificates_failed", "The signing certificates could not be verified.")
-    return {"identity_sha256": expected, "launcher_signing_ready": True}
 
 
 def installed_launcher_version(session):
@@ -481,8 +433,6 @@ def handle(request):
         with contextlib.redirect_stdout(io.StringIO()):
             if request["operation"] == "handshake":
                 result = {"name": WORKER_NAME, "version": __version__, "operations": list(OPERATIONS)}
-            elif request["operation"] == "prepare_signing_profile":
-                result = prepare_signing_profile(params)
             elif request["operation"] == "install_launcher":
                 result = install_launcher(params)
             elif request["operation"] == "setup_root":

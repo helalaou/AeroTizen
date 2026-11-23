@@ -37,12 +37,6 @@ def connected_tv(monkeypatch, fake_tv, tmp_path):
     return tv
 
 
-def test_certificate_setup_refuses_a_different_identity(connected_tv):
-    reply = worker.handle(request("prepare_signing_profile", host="127.0.0.1", expected_identity="0" * 64))
-    assert reply["error"]["code"] == "identity_mismatch"
-    assert "result" not in reply
-
-
 @pytest.mark.parametrize("host", [True, 123, None, "tv.local", "0.0.0.0", "255.255.255.255", "224.0.0.1"])
 def test_invalid_hosts_fail_before_network_access(monkeypatch, host):
     monkeypatch.setattr(worker.remote, "info", lambda _: pytest.fail("Unexpected network access"))
@@ -74,7 +68,6 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
     assert reply["result"]["name"] == worker.WORKER_NAME
     assert reply["result"]["operations"] == [
         "handshake",
-        "prepare_signing_profile",
         "install_launcher",
         "setup_root",
         "upgrade_root",
@@ -93,80 +86,12 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "inspect_local_app",
         "connect",
         "prepare_native_home",
+        "prepare_signing_profile",
         "install_local_app",
         "apply_native_home",
         "restore_home_backup",
     ):
         assert worker.handle(request(retired))["error"]["code"] == "invalid_request"
-
-
-def test_certificate_setup_is_atomic_and_reuses_the_original(connected_tv, tmp_path, monkeypatch):
-    connected_tv.allow_reconnect = True
-    identity = hashlib.sha256(b"test-duid").hexdigest()
-    auth = {"access_token": "private-token", "userId": "private-user"}
-    created = []
-
-    def create_profile(duid, output, *, auth):
-        created.append((duid, auth))
-        output.mkdir()
-        for filename in worker.CERTIFICATE_FILES:
-            (output / filename).write_text("original " + filename)
-
-    monkeypatch.setattr(worker.certs, "create_profile", create_profile)
-    params = {"host": "127.0.0.1", "expected_identity": identity}
-    reply = worker.handle(request("prepare_signing_profile", **params, auth=auth))
-    assert reply["result"] == {"identity_sha256": identity, "launcher_signing_ready": True}
-    path = tmp_path / "certs" / "test-duid"
-    files = {name: (path / name).read_bytes() for name in worker.CERTIFICATE_FILES}
-    assert created == [("test-duid", auth)]
-    assert worker.handle(request("prepare_signing_profile", **params)) == reply
-    assert len(created) == 1
-    assert {name: (path / name).read_bytes() for name in files} == files
-    assert "private-token" not in json.dumps(reply)
-    assert "private-user" not in json.dumps(reply)
-
-
-def test_failed_certificate_setup_leaves_no_partial_profile(connected_tv, tmp_path, monkeypatch):
-    identity = hashlib.sha256(b"test-duid").hexdigest()
-
-    def interrupted(_duid, output, *, auth):
-        output.mkdir()
-        (output / "author.p12").write_text("partial certificate")
-        raise SystemExit("The server returned private account information")
-
-    monkeypatch.setattr(worker.certs, "create_profile", interrupted)
-    reply = worker.handle(
-        request(
-            "prepare_signing_profile",
-            host="127.0.0.1",
-            expected_identity=identity,
-            auth={"access_token": "private-token", "userId": "private-user"},
-        )
-    )
-    assert reply["error"]["code"] == "certificates_failed"
-    assert list((tmp_path / "certs").iterdir()) == []
-    assert "private account" not in json.dumps(reply)
-
-
-def test_certificate_setup_preserves_an_incomplete_existing_profile(connected_tv, tmp_path, monkeypatch):
-    identity = hashlib.sha256(b"test-duid").hexdigest()
-    path = tmp_path / "certs" / "test-duid"
-    path.mkdir(parents=True)
-    original = path / "author.p12"
-    original.write_text("original author")
-    monkeypatch.setattr(
-        worker.certs, "create_profile", lambda *_args, **_kwargs: pytest.fail("Replaced an original")
-    )
-    reply = worker.handle(
-        request(
-            "prepare_signing_profile",
-            host="127.0.0.1",
-            expected_identity=identity,
-            auth={"access_token": "token", "userId": "user"},
-        )
-    )
-    assert reply["error"]["code"] == "signing_profile_incomplete"
-    assert original.read_text() == "original author"
 
 
 @pytest.fixture

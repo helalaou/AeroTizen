@@ -159,6 +159,10 @@ selects that virtual environment automatically. Set `AEROTIZEN_PYTHON` to use an
 Python executable that has the project and PyInstaller installed.
 Set `AEROTIZEN_DOTNET` to the .NET executable if it is not on `PATH`.
 
+Native certificate cryptography builds a bundled OpenSSL library. Building it requires
+a C compiler and Perl on the build computer, including Windows. Installed desktop apps
+do not need a separate OpenSSL installation.
+
 The native development and packaging commands rebuild the Home reader, Home writer and
 root runtime before freezing the standalone worker. The build validates each payload and
 compares the frozen inventory against this checkout, then checks the worker protocol with
@@ -250,8 +254,13 @@ flow, and a callback listener binds only to `127.0.0.1:4794`. Each attempt uses 
 random state checked before accepting credentials. Callback bodies are limited to
 64 KiB, each connection to five seconds, and the whole attempt to five minutes.
 Cancel, timeout and browser-launch failure close the listener. Tokens stay in the
-existing in-memory session; the UI receives only the account email. Certificate
-issuance still uses the worker, and the Python CLI keeps its own browser sign-in.
+existing in-memory session; the UI receives only the account email. Certificate issuance
+also runs in Rust. It uses Samsung's existing CSR/form contract over HTTPS, refuses
+redirects and automatic retries, and bounds replies and deadlines. Keys stay local;
+encrypted author/distributor profiles are published together after TV identity is
+rechecked. Existing complete profiles are reused, and incomplete originals stop setup.
+The worker no longer offers `prepare_signing_profile`. The Python CLI keeps its own
+sign-in and certificate commands.
 
 Root access status runs in Rust through the existing paired helper. It reads the CLI's
 private recovery record, checks the saved TV identity and shares the CLI's TV session

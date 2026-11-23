@@ -1,4 +1,5 @@
 //! Owned native TV connections through Developer Mode or the paired relay.
+mod certificates;
 mod home_backup;
 mod home_control;
 mod installation;

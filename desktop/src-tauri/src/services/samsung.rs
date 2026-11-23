@@ -2,10 +2,9 @@ use super::samsung_auth;
 use crate::{
     models::{AppError, AppResult, SigningProfile},
     state::AppState,
-    worker,
 };
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::future::Future;
 use std::time::{Duration, Instant};
 use tokio::sync::{watch, Mutex};
@@ -178,14 +177,10 @@ pub async fn prepare_signing_profile(state: &AppState, id: String) -> AppResult<
         .as_ref()
         .filter(|session| session.expires > Instant::now())
         .map(|session| session.auth.clone());
-    let result: SigningProfile = worker::request(
-        &state.worker_path,
-        "prepare_signing_profile",
-        json!({
-            "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256, "auth": auth,
-        }),
-    )
-    .await?;
+    let result = state
+        .device_connection
+        .prepare_certificates(&saved.tv.host, &saved.tv.identity_sha256, auth)
+        .await?;
     if result.identity_sha256 != id || !result.launcher_signing_ready {
         return Err(AppError::new(
             "invalid_response",

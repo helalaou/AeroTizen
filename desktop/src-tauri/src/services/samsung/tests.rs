@@ -1,4 +1,5 @@
 use super::*;
+use serde_json::json;
 
 #[test]
 fn account_serialization_excludes_authentication_secrets() {
@@ -116,4 +117,71 @@ async fn only_the_matching_request_can_cancel_a_pending_or_completed_sign_in() {
         .await
         .unwrap();
     assert!(samsung_account(&state).await.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn certificate_setup_reuses_an_original_profile_natively_and_preserves_both_busy_guards() {
+    use crate::{
+        models::VerifiedTv,
+        services::{
+            device_connection::tests::Peer, device_connection::TvConnection, digest::sha256_hex,
+            sdb::tests::serve_script,
+        },
+    };
+    let directory = tempfile::tempdir().unwrap();
+    let mut state = AppState::for_test(directory.path());
+    let profile = directory.path().join("cli-state/certs/test-duid");
+    std::fs::create_dir_all(&profile).unwrap();
+    for filename in [
+        "author.p12",
+        "distributor.p12",
+        "password.txt",
+        "device-profile.xml",
+    ] {
+        std::fs::write(profile.join(filename), b"original").unwrap();
+    }
+    let mut tv = Peer::start(1, |mut io, _| async move {
+        serve_script(
+            &mut io,
+            vec![("shell:0 getduid".into(), "test-duid".into())],
+        )
+        .await
+    })
+    .await;
+    state.device_connection =
+        TvConnection::with_ports(directory.path().join("cli-state"), tv.port, 1);
+    let mut saved: VerifiedTv =
+        serde_json::from_str(include_str!("../../models/fixtures/verified-tv.json")).unwrap();
+    saved.host = "127.0.0.1".into();
+    saved.identity_sha256 = sha256_hex(b"test-duid");
+    let saved = state.profiles.save(saved).await.unwrap();
+    let guard = state.operation.lock().await;
+    assert_eq!(
+        prepare_signing_profile(&state, saved.id.clone())
+            .await
+            .unwrap_err()
+            .code,
+        "operation_busy"
+    );
+    drop(guard);
+    let guard = state.samsung.operation.lock().await;
+    assert_eq!(
+        prepare_signing_profile(&state, saved.id.clone())
+            .await
+            .unwrap_err()
+            .code,
+        "operation_busy"
+    );
+    drop(guard);
+    let result = prepare_signing_profile(&state, saved.id.clone())
+        .await
+        .unwrap();
+    assert_eq!(result.identity_sha256, saved.id);
+    assert!(result.launcher_signing_ready);
+    assert!(!state.worker_path.exists());
+    assert_eq!(
+        std::fs::read(profile.join("author.p12")).unwrap(),
+        b"original"
+    );
+    tv.finish().await;
 }
