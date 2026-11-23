@@ -1,0 +1,800 @@
+{
+  "protected_packages": [
+    "30IKH0OX8U",
+    "DclHome001",
+    "ZODRT12q2l",
+    "aQjWjLsPaO",
+    "com.samsung.tv.SecurityCenter",
+    "org.aerotizen.roothelper",
+    "org.tizen.browser"
+  ],
+  "protected_hints": [
+    "lowmem",
+    "webaccount",
+    "multiscreen",
+    "adplayer",
+    "launcher"
+  ],
+  "cases": [
+    {
+      "name": "legacy-packages",
+      "raw": "app_id=Abcdefghij.Player app_title=Player\napp_id=Abcdefghij.Home app_title=Launcher Companion\napp_id=DclHome001.Home app_title=AeroTizen\napp_id=KLMNOPQRST.Media app_title=Video &amp; Music\n",
+      "packages": [
+        {
+          "id": "DclHome001",
+          "name": "AeroTizen",
+          "apps": [
+            "AeroTizen"
+          ],
+          "protected": true,
+          "revision": "cfab13dbe06fba26358b909f75b8f20d9c0f53d25885d14f6af78ec0b3bfeee9"
+        },
+        {
+          "id": "Abcdefghij",
+          "name": "Player",
+          "apps": [
+            "Player",
+            "Launcher Companion"
+          ],
+          "protected": true,
+          "revision": "5ffc4faad32a53c58578b6a2c0d724a9aeec4550cf41f015f2b152089d37f0e4"
+        },
+        {
+          "id": "KLMNOPQRST",
+          "name": "Video & Music",
+          "apps": [
+            "Video & Music"
+          ],
+          "protected": false,
+          "revision": "f8949c63f48f543d1040ac6e214ec6b1ea384c436de1052ff9e05c7914fabbc4"
+        }
+      ],
+      "targets": [
+        {
+          "id": "DclHome001.Home",
+          "name": "AeroTizen"
+        },
+        {
+          "id": "Abcdefghij.Home",
+          "name": "Launcher Companion"
+        },
+        {
+          "id": "Abcdefghij.Player",
+          "name": "Player"
+        },
+        {
+          "id": "KLMNOPQRST.Media",
+          "name": "Video & Music"
+        }
+      ]
+    },
+    {
+      "name": "columns-and-plain",
+      "raw": "# comment\nTotal: 4\nJz7aUrV2Q4.Twitch\tTwitch\norg.tizen.settings  Settings\nDclHome001.Home\n = header\n--- divider\n",
+      "packages": [
+        {
+          "id": "DclHome001",
+          "name": "DclHome001.Home",
+          "apps": [
+            "DclHome001.Home"
+          ],
+          "protected": true,
+          "revision": "ba587cce9e23213baf41cce81bb6b6828c00077ed83ec8a5b0c5f892065d2d78"
+        },
+        {
+          "id": "org",
+          "name": "Settings",
+          "apps": [
+            "Settings"
+          ],
+          "protected": true,
+          "revision": "7cadb68833d7cebdc142e9496cb83ee8de1889f5ee6c11cf7f28f2d90890c3f2"
+        },
+        {
+          "id": "Jz7aUrV2Q4",
+          "name": "Twitch",
+          "apps": [
+            "Twitch"
+          ],
+          "protected": false,
+          "revision": "0036372f88f5b3f4919ea8b867587ab356f9cf54ea87b8aaab9e617835915532"
+        }
+      ],
+      "targets": [
+        {
+          "id": "DclHome001.Home",
+          "name": "DclHome001.Home"
+        },
+        {
+          "id": "org.tizen.settings",
+          "name": "Settings"
+        },
+        {
+          "id": "Jz7aUrV2Q4.Twitch",
+          "name": "Twitch"
+        }
+      ]
+    },
+    {
+      "name": "bracket-fields",
+      "raw": "appid:[Abcdefghij.Media], name:[Some Media], app_version:[2.1.0]\nid=KLMNOPQRST.Other title=Other\n",
+      "packages": [
+        {
+          "id": "KLMNOPQRST",
+          "name": "Other",
+          "apps": [
+            "Other"
+          ],
+          "protected": false,
+          "revision": "4c3a6b9be65e162255eb7910c86eaf6bb6e1f26aa97d49648bb88236239d5e39"
+        },
+        {
+          "id": "Abcdefghij",
+          "name": "Some Media",
+          "apps": [
+            "Some Media"
+          ],
+          "protected": false,
+          "revision": "43de377bf9c1c2b453320a6dbd96e01fa9d7d80ca3d6914b83e366640e18d90a"
+        }
+      ],
+      "targets": [
+        {
+          "id": "KLMNOPQRST.Other",
+          "name": "Other"
+        },
+        {
+          "id": "Abcdefghij.Media",
+          "name": "Some Media"
+        }
+      ]
+    },
+    {
+      "name": "unicode-revisions",
+      "raw": "app_id=Abcdefghij.One app_title=Stra\u00dfe \ud83d\ude00 app_version=1.0.0\napp_id=Abcdefghij.Two app_title=Quote \" and \\ slash / app_version=2.0.0\napp_id=KLMNOPQRST.App app_title=STRASSE \ud83d\ude00\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Stra\u00dfe \ud83d\ude00",
+          "apps": [
+            "Stra\u00dfe \ud83d\ude00",
+            "Quote \" and \\ slash /"
+          ],
+          "protected": false,
+          "revision": "49e54e923bf26190649b109502d2a85207164c03b26a4dcd847c6837636f3103"
+        },
+        {
+          "id": "KLMNOPQRST",
+          "name": "STRASSE \ud83d\ude00",
+          "apps": [
+            "STRASSE \ud83d\ude00"
+          ],
+          "protected": false,
+          "revision": "a2743cae5d3ce63b82169ad197304a690a97a7a7913b73527a3939a466f9aca2"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.Two",
+          "name": "Quote \" and \\ slash /"
+        },
+        {
+          "id": "Abcdefghij.One",
+          "name": "Stra\u00dfe \ud83d\ude00"
+        },
+        {
+          "id": "KLMNOPQRST.App",
+          "name": "STRASSE \ud83d\ude00"
+        }
+      ]
+    },
+    {
+      "name": "duplicate-app-id",
+      "raw": "app_id=Abcdefghij.App app_title=Old\napp_id=Abcdefghij.App app_title=New app_version=2.0\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Old",
+          "apps": [
+            "Old",
+            "New"
+          ],
+          "protected": false,
+          "revision": "347e5a7cd50240ab24cd05a29cc970a28c763b2d9ddd24c9e9b47e67975b8045"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "New"
+        }
+      ]
+    },
+    {
+      "name": "names-and-controls",
+      "raw": "app_id=Abcdefghij.App app_title=Video &amp; Music\napp_id=KLMNOPQRST.App app_title=zero\u200bwidth\napp_id=1234567890.App app_title=&#x1f600; TV\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Video & Music",
+          "apps": [
+            "Video & Music"
+          ],
+          "protected": false,
+          "revision": "3bd7e88918879fe610bb8b77fac39cba2d178329b9b21d9baa43b801776596ad"
+        },
+        {
+          "id": "KLMNOPQRST",
+          "name": "zerowidth",
+          "apps": [
+            "zerowidth"
+          ],
+          "protected": false,
+          "revision": "3bf23ffd311d5fe269bb9ee3a0ba80df0fae86d7b4b75f069f98a3e475b2194b"
+        },
+        {
+          "id": "1234567890",
+          "name": "\ud83d\ude00 TV",
+          "apps": [
+            "\ud83d\ude00 TV"
+          ],
+          "protected": false,
+          "revision": "2d460dfa94f97d422ca4954ef80f9cb76637ac722c8cb8fd92066c4ec037e8de"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "Video & Music"
+        },
+        {
+          "id": "KLMNOPQRST.App",
+          "name": "zerowidth"
+        },
+        {
+          "id": "1234567890.App",
+          "name": "\ud83d\ude00 TV"
+        }
+      ]
+    },
+    {
+      "name": "legacy-unicode-ids",
+      "raw": "\u00e4.Sample\tUnicode\n\u00bc.Sample\tFraction\na\u0301.App\tIgnored\n",
+      "packages": [
+        {
+          "id": "\u00bc",
+          "name": "Fraction",
+          "apps": [
+            "Fraction"
+          ],
+          "protected": true,
+          "revision": "43d21bf0ac5f00b8badb4da9648f7ff9864ba41213338cf03b87c5868688998c"
+        },
+        {
+          "id": "\u00e4",
+          "name": "Unicode",
+          "apps": [
+            "Unicode"
+          ],
+          "protected": true,
+          "revision": "518d37bcc7420784866e584478f6ecbd3204b0721f6172d3c0b485b7aa83b499"
+        }
+      ],
+      "targets": []
+    },
+    {
+      "name": "empty",
+      "raw": "",
+      "packages": [],
+      "targets": []
+    },
+    {
+      "name": "zero-header",
+      "raw": "apps count: 0\n",
+      "packages": [],
+      "targets": []
+    },
+    {
+      "name": "optional-version",
+      "raw": "app_id=DclHome001.Home app_version=3.0.0\n",
+      "packages": [
+        {
+          "id": "DclHome001",
+          "name": "DclHome001.Home",
+          "apps": [
+            "DclHome001.Home"
+          ],
+          "protected": true,
+          "revision": "ef03e3a8738a79d1ff09376bbc744f4783d17365b07a66ce808ab85ccc7876a7"
+        }
+      ],
+      "targets": [
+        {
+          "id": "DclHome001.Home",
+          "name": "DclHome001.Home"
+        }
+      ]
+    },
+    {
+      "name": "long-display-name",
+      "raw": "app_id=Abcdefghij.App app_title=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+          "apps": [
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+          ],
+          "protected": false,
+          "revision": "ad008872dd4c37f27b57ee0df3de0334463f0bd8fa494ac92bf17a799d409e25"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+        }
+      ]
+    },
+    {
+      "name": "unicode-lines",
+      "raw": "Abcdefghij.App\tMedia\u0085KLMNOPQRST.App\tOther\u2028\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Media",
+          "apps": [
+            "Media"
+          ],
+          "protected": false,
+          "revision": "f034340f0b58e4a66182e257a36c656c898126e832d9bdd2bf313eb901278116"
+        },
+        {
+          "id": "KLMNOPQRST",
+          "name": "Other",
+          "apps": [
+            "Other"
+          ],
+          "protected": false,
+          "revision": "aec46eab416af48ea48884a754d93a719a4214726b5587e9b29c24318c3a1de6"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "Media"
+        },
+        {
+          "id": "KLMNOPQRST.App",
+          "name": "Other"
+        }
+      ]
+    },
+    {
+      "name": "protected-modern",
+      "raw": "apps count: 10\n---------------------------------------------------------------------------------------------\n--------------app_id                              =30IKH0OX8U.App-------------\n--------------app_tizen_id                        =30IKH0OX8U.App-------------\n--------------app_title                           =Media-------------\n--------------app_package_name                    =30IKH0OX8U-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n---------------------------------------------------------------------------------------------\n--------------app_id                              =DclHome001.App-------------\n--------------app_tizen_id                        =DclHome001.App-------------\n--------------app_title                           =Media-------------\n--------------app_package_name                    =DclHome001-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n---------------------------------------------------------------------------------------------\n--------------app_id                              =ZODRT12q2l.App-------------\n--------------app_tizen_id                        =ZODRT12q2l.App-------------\n--------------app_title                           =Media-------------\n--------------app_package_name                    =ZODRT12q2l-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n---------------------------------------------------------------------------------------------\n--------------app_id                              =aQjWjLsPaO.App-------------\n--------------app_tizen_id                        =aQjWjLsPaO.App-------------\n--------------app_title                           =Media-------------\n--------------app_package_name                    =aQjWjLsPaO-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n---------------------------------------------------------------------------------------------\n--------------app_id                              =com.samsung.tv.SecurityCenter.App-------------\n--------------app_tizen_id                        =com.samsung.tv.SecurityCenter.App-------------\n--------------app_title                           =Media-------------\n--------------app_package_name                    =com.samsung.tv.SecurityCenter-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n---------------------------------------------------------------------------------------------\n--------------app_id                              =org.aerotizen.roothelper.App-------------\n--------------app_tizen_id                        =org.aerotizen.roothelper.App-------------\n--------------app_title                           =Media-------------\n--------------app_package_name                    =org.aerotizen.roothelper-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n---------------------------------------------------------------------------------------------\n--------------app_id                              =org.tizen.browser.App-------------\n--------------app_tizen_id                        =org.tizen.browser.App-------------\n--------------app_title                           =Media-------------\n--------------app_package_name                    =org.tizen.browser-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n---------------------------------------------------------------------------------------------\n--------------app_id                              =Workspace01.App-------------\n--------------app_tizen_id                        =Workspace01.App-------------\n--------------app_title                           =Workspace-------------\n--------------app_package_name                    =org.tizen.workspace-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n---------------------------------------------------------------------------------------------\n--------------app_id                              =GuideApp01.App-------------\n--------------app_tizen_id                        =GuideApp01.App-------------\n--------------app_title                           =User Guide-------------\n--------------app_package_name                    =org.tizen.guide-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n---------------------------------------------------------------------------------------------\n--------------app_id                              =LockedPkg1.App-------------\n--------------app_tizen_id                        =LockedPkg1.App-------------\n--------------app_title                           =Locked-------------\n--------------app_package_name                    =LockedPkg1-------------\n--------------is_removable                        =0-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n",
+      "packages": [
+        {
+          "id": "LockedPkg1",
+          "name": "Locked",
+          "apps": [
+            "Locked"
+          ],
+          "protected": true,
+          "revision": "418bc5d65630a277cedfa0a51d570332fb61b3ad63d78efc1685a9f41de54a8d"
+        },
+        {
+          "id": "30IKH0OX8U",
+          "name": "Media",
+          "apps": [
+            "Media"
+          ],
+          "protected": true,
+          "revision": "44292ceb00747c81185a80904f681bed52e742cd963a8ae87271949fbeee49e1"
+        },
+        {
+          "id": "DclHome001",
+          "name": "Media",
+          "apps": [
+            "Media"
+          ],
+          "protected": true,
+          "revision": "2f0b04683657012bd322b2a0477d8811d2a0031489f5fc4f9de631a4101a8d4c"
+        },
+        {
+          "id": "ZODRT12q2l",
+          "name": "Media",
+          "apps": [
+            "Media"
+          ],
+          "protected": true,
+          "revision": "988fcee515886976befe2dfbcbf4b0113b84d58954f093e4b3b8e43c2734b309"
+        },
+        {
+          "id": "aQjWjLsPaO",
+          "name": "Media",
+          "apps": [
+            "Media"
+          ],
+          "protected": true,
+          "revision": "e44f31babb68955eb06e8a7cb983ab57439ca33b8a0c88563e7225847772f623"
+        },
+        {
+          "id": "com.samsung.tv.SecurityCenter",
+          "name": "Media",
+          "apps": [
+            "Media"
+          ],
+          "protected": true,
+          "revision": "d93431717aa11cc20aefbed09761d789e071858ead58cc3d6e7b00efec6585df"
+        },
+        {
+          "id": "org.aerotizen.roothelper",
+          "name": "Media",
+          "apps": [
+            "Media"
+          ],
+          "protected": true,
+          "revision": "0519725de262f35ffac87a691a500892ea89a3ab1c6aac979af4aeff99ce1ac4"
+        },
+        {
+          "id": "org.tizen.browser",
+          "name": "Media",
+          "apps": [
+            "Media"
+          ],
+          "protected": true,
+          "revision": "c5acd8b044f11a28f9f36bbcffd269e726c46814ffb7d0646afd88158726615b"
+        },
+        {
+          "id": "org.tizen.guide",
+          "name": "User Guide",
+          "apps": [
+            "User Guide"
+          ],
+          "protected": false,
+          "revision": "2a4caefd7788e172089f379d3a3efc037ac72fcf9bf434312dfd15237b797045"
+        },
+        {
+          "id": "org.tizen.workspace",
+          "name": "Workspace",
+          "apps": [
+            "Workspace"
+          ],
+          "protected": false,
+          "revision": "4c4171edf269f45ddb42f56bf710d0ba3a54f9919bee64e2fe00068a404f21b9"
+        }
+      ],
+      "targets": [
+        {
+          "id": "LockedPkg1.App",
+          "name": "Locked"
+        },
+        {
+          "id": "30IKH0OX8U.App",
+          "name": "Media"
+        },
+        {
+          "id": "DclHome001.App",
+          "name": "Media"
+        },
+        {
+          "id": "ZODRT12q2l.App",
+          "name": "Media"
+        },
+        {
+          "id": "aQjWjLsPaO.App",
+          "name": "Media"
+        },
+        {
+          "id": "com.samsung.tv.SecurityCenter.App",
+          "name": "Media"
+        },
+        {
+          "id": "org.aerotizen.roothelper.App",
+          "name": "Media"
+        },
+        {
+          "id": "org.tizen.browser.App",
+          "name": "Media"
+        },
+        {
+          "id": "GuideApp01.App",
+          "name": "User Guide"
+        },
+        {
+          "id": "Workspace01.App",
+          "name": "Workspace"
+        }
+      ]
+    },
+    {
+      "name": "grouped-modern",
+      "raw": "---------------------------------------------------------------------------------------------\n--------------app_id                              =Abcdefghij.One-------------\n--------------app_tizen_id                        =Abcdefghij.One-------------\n--------------app_title                           =\u00d1-------------\n--------------app_package_name                    =Abcdefghij-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n--------------app_version                         =1.0-------------\n---------------------------------------------------------------------------------------------\n--------------app_id                              =Abcdefghij.Two-------------\n--------------app_tizen_id                        =Abcdefghij.Two-------------\n--------------app_title                           =AA-------------\n--------------app_package_name                    =Abcdefghij-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n--------------app_version                         =2.0-------------\n---------------------------------------------------------------------------------------------\n--------------app_id                              =KLMNOPQRST.Home-------------\n--------------app_tizen_id                        =KLMNOPQRST.Home-------------\n--------------app_title                           =Hidden Launcher-------------\n--------------app_package_name                    =KLMNOPQRST-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n",
+      "packages": [
+        {
+          "id": "KLMNOPQRST",
+          "name": "Hidden Launcher",
+          "apps": [
+            "Hidden Launcher"
+          ],
+          "protected": true,
+          "revision": "3e980fa2bddbf22c02b2ad26cb68082bc29e22cee1c3a1a49921c3e6416b80ed"
+        },
+        {
+          "id": "Abcdefghij",
+          "name": "\u00d1",
+          "apps": [
+            "\u00d1",
+            "AA"
+          ],
+          "protected": false,
+          "revision": "2e23e44d8fc2798adbbb86156d3b397d44ba98118e8715cd64dc45f31728d542"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.Two",
+          "name": "AA"
+        },
+        {
+          "id": "KLMNOPQRST.Home",
+          "name": "Hidden Launcher"
+        },
+        {
+          "id": "Abcdefghij.One",
+          "name": "\u00d1"
+        }
+      ]
+    },
+    {
+      "name": "modern-versions",
+      "raw": "---------------------------------------------------------------------------------------------\n--------------app_id                              =Abcdefghij.App-------------\n--------------app_tizen_id                        =Abcdefghij.App-------------\n--------------app_title                           =Media-------------\n--------------app_package_name                    =Abcdefghij-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n--------------app_version                         =-------------\n---------------------------------------------------------------------------------------------\n--------------app_id                              =KLMNOPQRST.App-------------\n--------------app_tizen_id                        =KLMNOPQRST.App-------------\n--------------app_title                           =Another-------------\n--------------app_package_name                    =KLMNOPQRST-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1048576-------------\n--------------use_count                           =7-------------\n--------------app_version                         =2.2.0-------------\n",
+      "packages": [
+        {
+          "id": "KLMNOPQRST",
+          "name": "Another",
+          "apps": [
+            "Another"
+          ],
+          "protected": false,
+          "revision": "0007d8d0ccfbdf833b91fa2ec8eeddb115d05b139777108f9282e6bf3f4f9e72"
+        },
+        {
+          "id": "Abcdefghij",
+          "name": "Media",
+          "apps": [
+            "Media"
+          ],
+          "protected": false,
+          "revision": "f034340f0b58e4a66182e257a36c656c898126e832d9bdd2bf313eb901278116"
+        }
+      ],
+      "targets": [
+        {
+          "id": "KLMNOPQRST.App",
+          "name": "Another"
+        },
+        {
+          "id": "Abcdefghij.App",
+          "name": "Media"
+        }
+      ]
+    },
+    {
+      "name": "modern-integers",
+      "raw": "---------------------------------------------------------------------------------------------\n--------------app_id                              =Abcdefghij.App-------------\n--------------app_tizen_id                        =Abcdefghij.App-------------\n--------------app_title                           =Media-------------\n--------------app_package_name                    =Abcdefghij-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =1_000-------------\n--------------use_count                           =+12-------------\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Media",
+          "apps": [
+            "Media"
+          ],
+          "protected": false,
+          "revision": "f034340f0b58e4a66182e257a36c656c898126e832d9bdd2bf313eb901278116"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "Media"
+        }
+      ]
+    },
+    {
+      "name": "invalid-statistic",
+      "raw": "---------------------------------------------------------------------------------------------\n--------------app_id                              =Abcdefghij.App-------------\n--------------app_tizen_id                        =Abcdefghij.App-------------\n--------------app_title                           =Media-------------\n--------------app_package_name                    =Abcdefghij-------------\n--------------is_removable                        =1-------------\n--------------app_size                            =bad-------------\n--------------use_count                           =7-------------\n",
+      "error": "invalid_response"
+    },
+    {
+      "name": "fields-app_id-app_title",
+      "raw": "app_id=Abcdefghij.App app_title=Player app_version=1.2.3\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Player",
+          "apps": [
+            "Player"
+          ],
+          "protected": false,
+          "revision": "12ad659352365917225fc0800e146367094e22b4e30b48ee215db9a6b1eed69c"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "Player"
+        }
+      ]
+    },
+    {
+      "name": "fields-app_id-name",
+      "raw": "app_id=Abcdefghij.App name=Player app_version=1.2.3\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Player",
+          "apps": [
+            "Player"
+          ],
+          "protected": false,
+          "revision": "12ad659352365917225fc0800e146367094e22b4e30b48ee215db9a6b1eed69c"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "Player"
+        }
+      ]
+    },
+    {
+      "name": "fields-app_id-title",
+      "raw": "app_id=Abcdefghij.App title=Player app_version=1.2.3\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Player",
+          "apps": [
+            "Player"
+          ],
+          "protected": false,
+          "revision": "12ad659352365917225fc0800e146367094e22b4e30b48ee215db9a6b1eed69c"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "Player"
+        }
+      ]
+    },
+    {
+      "name": "fields-appid-app_title",
+      "raw": "appid=Abcdefghij.App app_title=Player app_version=1.2.3\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Player",
+          "apps": [
+            "Player"
+          ],
+          "protected": false,
+          "revision": "12ad659352365917225fc0800e146367094e22b4e30b48ee215db9a6b1eed69c"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "Player"
+        }
+      ]
+    },
+    {
+      "name": "fields-appid-name",
+      "raw": "appid=Abcdefghij.App name=Player app_version=1.2.3\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Player",
+          "apps": [
+            "Player"
+          ],
+          "protected": false,
+          "revision": "12ad659352365917225fc0800e146367094e22b4e30b48ee215db9a6b1eed69c"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "Player"
+        }
+      ]
+    },
+    {
+      "name": "fields-appid-title",
+      "raw": "appid=Abcdefghij.App title=Player app_version=1.2.3\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Player",
+          "apps": [
+            "Player"
+          ],
+          "protected": false,
+          "revision": "12ad659352365917225fc0800e146367094e22b4e30b48ee215db9a6b1eed69c"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "Player"
+        }
+      ]
+    },
+    {
+      "name": "fields-id-app_title",
+      "raw": "id=Abcdefghij.App app_title=Player app_version=1.2.3\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Player",
+          "apps": [
+            "Player"
+          ],
+          "protected": false,
+          "revision": "12ad659352365917225fc0800e146367094e22b4e30b48ee215db9a6b1eed69c"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "Player"
+        }
+      ]
+    },
+    {
+      "name": "fields-id-name",
+      "raw": "id=Abcdefghij.App name=Player app_version=1.2.3\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Player",
+          "apps": [
+            "Player"
+          ],
+          "protected": false,
+          "revision": "12ad659352365917225fc0800e146367094e22b4e30b48ee215db9a6b1eed69c"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "Player"
+        }
+      ]
+    },
+    {
+      "name": "fields-id-title",
+      "raw": "id=Abcdefghij.App title=Player app_version=1.2.3\n",
+      "packages": [
+        {
+          "id": "Abcdefghij",
+          "name": "Player",
+          "apps": [
+            "Player"
+          ],
+          "protected": false,
+          "revision": "12ad659352365917225fc0800e146367094e22b4e30b48ee215db9a6b1eed69c"
+        }
+      ],
+      "targets": [
+        {
+          "id": "Abcdefghij.App",
+          "name": "Player"
+        }
+      ]
+    }
+  ]
+}

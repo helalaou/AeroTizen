@@ -101,12 +101,18 @@ pub(super) enum ButtonEdit {
 enum Request<'a> {
     Read(ReadRequest),
     ButtonEdit(&'a ButtonEdit),
+    Sdb,
 }
 
 impl Request<'_> {
     fn payload(self, pairing: &Pairing, nonce: &str) -> Value {
         match self {
             Self::Read(operation) => operation.payload(pairing, nonce),
+            Self::Sdb => {
+                let mut value = ReadRequest::Status.payload(pairing, nonce);
+                value["operation"] = json!("sdb");
+                value
+            }
             Self::ButtonEdit(edit) => {
                 let mut value = ReadRequest::Status.payload(pairing, nonce);
                 value["operation"] = json!("buttons");
@@ -118,11 +124,13 @@ impl Request<'_> {
     }
 }
 
-async fn request(
+pub(super) type BridgeStream = BufReader<tokio_native_tls::TlsStream<TcpStream>>;
+
+async fn open_request(
     host: Ipv4Addr,
     pairing: &Pairing,
     operation: Request<'_>,
-) -> Result<Value, BridgeError> {
+) -> Result<(BridgeStream, Value), BridgeError> {
     // The helper uses a self-signed certificate. Match the exact saved DER pin
     // before sending the token; ordinary CA/hostname verification cannot identify it.
     let connector = native_tls::TlsConnector::builder()
@@ -159,8 +167,9 @@ async fn request(
         .write_all(format!("{request}\n").as_bytes())
         .await
         .map_err(|_| BridgeError::Connection)?;
+    let mut stream = BufReader::new(secured);
     let mut reply = Vec::new();
-    BufReader::new(secured)
+    (&mut stream)
         .take((MAX_REPLY_BYTES + 2) as u64)
         .read_until(b'\n', &mut reply)
         .await
@@ -169,7 +178,27 @@ async fn request(
         return Err(BridgeError::Reply);
     }
     let reply = serde_json::from_slice(&reply).map_err(|_| BridgeError::Reply)?;
-    verified_reply(reply, &nonce, pairing)
+    Ok((stream, verified_reply(reply, &nonce, pairing)?))
+}
+
+async fn request(
+    host: Ipv4Addr,
+    pairing: &Pairing,
+    operation: Request<'_>,
+) -> Result<Value, BridgeError> {
+    let (_, reply) = open_request(host, pairing, operation).await?;
+    Ok(reply)
+}
+
+pub(super) async fn open_sdb(
+    host: Ipv4Addr,
+    pairing: &Pairing,
+) -> Result<BridgeStream, BridgeError> {
+    let (stream, _) =
+        tokio::time::timeout(REQUEST_TIMEOUT, open_request(host, pairing, Request::Sdb))
+            .await
+            .map_err(|_| BridgeError::Timeout)??;
+    Ok(stream)
 }
 
 pub(super) async fn status(host: Ipv4Addr, pairing: &Pairing) -> Result<Value, BridgeError> {

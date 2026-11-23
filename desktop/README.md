@@ -3,7 +3,7 @@
 Use AeroTizen Desktop to find and save Samsung TVs, install the launcher and local apps,
 manage installed apps, configure Home and remote buttons, and set up or update root access.
 The app uses Tauri, React and Mantine. Rust handles TV discovery, launcher release
-lookup, Home backup review, Samsung sign-in, Root access status and button mapping; a bundled Python worker
+lookup, Home backup review, Samsung sign-in, Root access status, button mapping and installed-app reads; a bundled Python worker
 provides the remaining CLI services.
 SQLite stores saved TV profiles.
 
@@ -252,13 +252,23 @@ including their final status check. The Python CLI's root commands are unchanged
 Button discovery, saved assignments and edits use the native paired connection.
 It shares recovery validation, certificate pins and TV locks with Root access.
 Older helpers fall back to saved assignments
-with an update notice. The worker no longer offers `list_buttons` or `change_button`;
-installed-app name lookup and the app picker still use their existing worker operation. A failed app
+with an update notice. The worker no longer offers `list_buttons` or `change_button`. A failed app
 name lookup leaves authenticated assignments visible by app ID. CLI button commands and
 the TV helper are unchanged. Rust validates each edit, checks helper support and sends one
 authenticated write request. Learn keeps its 25-second deadline; other requests use eight
 seconds. A lost reply is reported as unconfirmed and is never retried automatically.
 The saved assignment is checked before the UI begins its separate activation check.
+
+The Apps list, button app names and app picker share native, read-only SDB inventory reads.
+They use Developer Mode directly or the existing paired helper relay, following the live
+Host PC IP setting. The relay checks the saved TLS certificate and fresh authenticated
+proof before opening SDB. Each read checks the TV identity before and after fetching apps,
+shares the CLI TV lock and leaves recovery files unchanged. Leaving the page closes the
+socket and releases ownership. Connection attempts, total time, frame sizes and app counts
+are bounded. Package grouping, protected labels and revision hashes match the CLI, so
+removal can keep using its existing checks. The worker no longer offers `list_apps` or
+`list_button_apps`; installation and removal still use the worker. The Python CLI and TV
+helper are unchanged. This read path works with helper 3.0.9.
 
 ```sh
 npm run typecheck

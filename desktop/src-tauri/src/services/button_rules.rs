@@ -1,9 +1,8 @@
 use crate::models::{AppError, AppResult, ButtonMappings, ButtonMode, TvButtonMapping};
 use crate::services::{
     json::truthy,
-    text::{display_text, python_whitespace},
+    text::{case_fold, display_text, python_whitespace},
 };
-use icu_casemap::CaseMapper;
 use serde_json::Value;
 use std::collections::BTreeMap;
 use unicode_general_category::{get_general_category, GeneralCategory};
@@ -46,10 +45,6 @@ pub(super) fn valid_app_id(value: &str) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || b"_.-".contains(&byte))
 }
 
-pub(super) fn key(value: &str) -> String {
-    CaseMapper::new().fold_string(value).into_owned()
-}
-
 pub(super) fn rows(status: &Value) -> AppResult<Vec<TvButtonMapping>> {
     if truthy(&status["error"]) {
         return Err(AppError::new(
@@ -79,7 +74,7 @@ pub(super) fn rows(status: &Value) -> AppResult<Vec<TvButtonMapping>> {
         };
         let active = !matches!(mode, ButtonMode::Default) && active;
         rows.insert(
-            key(label),
+            case_fold(label),
             TvButtonMapping {
                 button: label.into(),
                 mode,
@@ -93,13 +88,14 @@ pub(super) fn rows(status: &Value) -> AppResult<Vec<TvButtonMapping>> {
         for discovered in status["discovered"].as_array().ok_or_else(invalid)? {
             let label = discovered.get("button").ok_or_else(invalid)?;
             if let Some(label) = label.as_str().filter(|label| valid_label(label)) {
-                rows.entry(key(label)).or_insert_with(|| TvButtonMapping {
-                    button: label.into(),
-                    mode: ButtonMode::Default,
-                    app_id: None,
-                    app_name: None,
-                    active: false,
-                });
+                rows.entry(case_fold(label))
+                    .or_insert_with(|| TvButtonMapping {
+                        button: label.into(),
+                        mode: ButtonMode::Default,
+                        app_id: None,
+                        app_name: None,
+                        active: false,
+                    });
             }
         }
     }

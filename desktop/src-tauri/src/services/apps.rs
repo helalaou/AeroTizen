@@ -1,4 +1,4 @@
-use super::reads::read_tv;
+use super::reads::read_native_tv;
 use crate::{
     models::{AppPackageSelection, AppRemovalResult, AppResult, TvAppPackage},
     state::{busy, AppState},
@@ -11,7 +11,13 @@ pub async fn list_tv_apps(
     id: String,
     request_id: String,
 ) -> AppResult<Vec<TvAppPackage>> {
-    read_tv(state, "list_apps", id, request_id).await
+    read_native_tv(state, id, request_id, |saved| async move {
+        state
+            .app_reads
+            .packages(&saved.tv.host, &saved.tv.identity_sha256)
+            .await
+    })
+    .await
 }
 
 pub async fn remove_tv_apps(

@@ -5,18 +5,15 @@ import hashlib
 import io
 import ipaddress
 import json
-import os
 import re
 import sys
 from datetime import datetime, timezone
 from html import unescape
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from threading import Thread
 
 from aerotizen import (
     __version__,
-    buttons,
     catalog,
     certs,
     home,
@@ -37,7 +34,6 @@ PROTOCOL_VERSION = 1
 WORKER_NAME = "aerotizen-desktop-worker"
 MAX_REQUEST_BYTES = 16 * 1024
 MAX_TEXT_CHARACTERS = 256
-BUTTON_APP_LOOKUP_TIMEOUT_SECONDS = 4
 IDENTITY_PATTERN = re.compile(r"[a-f0-9]{64}")
 PACKAGE_IDENTIFIER = re.compile(rf"[A-Za-z0-9][A-Za-z0-9_.-]{{0,{MAX_TEXT_CHARACTERS - 1}}}")
 APP_COUNT_HEADER = re.compile(r"^\s*apps count\s*:\s*(\d+)\s*$", re.IGNORECASE | re.MULTILINE)
@@ -48,8 +44,6 @@ OPERATIONS = (
     "handshake",
     "prepare_signing_profile",
     "connect",
-    "list_apps",
-    "list_button_apps",
     "remove_apps",
     "install_launcher",
     "inspect_local_app",
@@ -314,39 +308,6 @@ def app_rows(installed):
         for pkgid, package in installed.items()
     ]
     return sorted(entries, key=lambda entry: entry["name"].casefold())
-
-
-def list_apps(params):
-    host = host_value(params.get("host"))
-    expected = checked_identity(params.get("expected_identity"))
-    with DeviceSession(host) as session:
-        read_identity(session, expected)
-        installed = packages(session.applist())
-        read_identity(session, expected)
-    return app_rows(installed)
-
-
-def button_app_names(host, expected):
-    with DeviceSession(host, timeout=BUTTON_APP_LOOKUP_TIMEOUT_SECONDS) as session:
-        read_identity(session, expected)
-        installed = catalog.parse_applist(session.applist())
-        read_identity(session, expected)
-    return {
-        app["appid"]: text_value(app["name"], app["appid"])
-        for app in installed
-        if buttons.APP_ID.fullmatch(app["appid"])
-    }
-
-
-def list_button_apps(params):
-    host = host_value(params.get("host"))
-    expected = checked_identity(params.get("expected_identity"))
-    return [
-        {"id": app_id, "name": name}
-        for app_id, name in sorted(
-            button_app_names(host, expected).items(), key=lambda app: (app[1].casefold(), app[0])
-        )
-    ]
 
 
 def removal_selection(value):
@@ -832,10 +793,6 @@ def handle(request):
                 result = {"name": WORKER_NAME, "version": __version__, "operations": list(OPERATIONS)}
             elif request["operation"] == "prepare_signing_profile":
                 result = prepare_signing_profile(params)
-            elif request["operation"] == "list_apps":
-                result = list_apps(params)
-            elif request["operation"] == "list_button_apps":
-                result = list_button_apps(params)
             elif request["operation"] == "remove_apps":
                 result = remove_apps(params)
             elif request["operation"] == "install_launcher":
@@ -881,12 +838,6 @@ def connection_error(response):
     }
 
 
-def stop_on_input_close():
-    # Read from the raw pipe so interpreter shutdown can close buffered stdin when the request finishes.
-    os.read(sys.stdin.fileno(), 1)
-    os._exit(0)
-
-
 def main():
     line = sys.stdin.buffer.readline(MAX_REQUEST_BYTES + 1)
     try:
@@ -895,12 +846,6 @@ def main():
         request = json.loads(line)
     except (ValueError, UnicodeError):
         request = None
-    if (
-        isinstance(request, dict)
-        and request.get("operation") in ("list_apps", "list_button_apps")
-        and request.get("cancellable") is True
-    ):
-        Thread(target=stop_on_input_close, daemon=True).start()
     print(json.dumps(handle(request), separators=(",", ":")), flush=True)
 
 

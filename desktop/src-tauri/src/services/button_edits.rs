@@ -3,7 +3,7 @@ use super::{
     json::truthy,
     root_bridge::{self, ButtonEdit},
     root_pairing,
-    text::display_text,
+    text::{case_fold, display_text},
     tv_session,
 };
 use crate::models::{
@@ -125,16 +125,15 @@ fn verified_change(change: &ButtonChange, status: &Value) -> AppResult<ButtonCha
     let confirmed = match change {
         ButtonChange::Inventory(ButtonInventoryChange::Learn { button }) => {
             buttons.iter().any(|row| {
-                button_rules::key(&row.button) == button_rules::key(button)
-                    && row.mode == ButtonMode::Default
+                case_fold(&row.button) == case_fold(button) && row.mode == ButtonMode::Default
             })
         }
         ButtonChange::Inventory(ButtonInventoryChange::Rename { button, new_name }) => {
             buttons.iter().any(|row| row.button == *new_name)
-                && (button_rules::key(button) == button_rules::key(new_name)
+                && (case_fold(button) == case_fold(new_name)
                     || !buttons
                         .iter()
-                        .any(|row| button_rules::key(&row.button) == button_rules::key(button)))
+                        .any(|row| case_fold(&row.button) == case_fold(button)))
         }
         ButtonChange::Assignment(assignment) => {
             return verified_assignment(assignment, buttons).map(ButtonChangeResult::Mapping);
@@ -159,7 +158,7 @@ fn verified_assignment(
     };
     let mut saved = if let Some(index) = buttons
         .iter()
-        .position(|row| button_rules::key(&row.button) == button_rules::key(label))
+        .position(|row| case_fold(&row.button) == case_fold(label))
     {
         buttons.swap_remove(index)
     } else if mode == ButtonMode::Default {

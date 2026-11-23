@@ -5,6 +5,22 @@ use tokio_rustls::{rustls, TlsAcceptor};
 
 const TEST_TIMEOUT: Duration = Duration::from_secs(3);
 
+pub(crate) fn server_tls() -> (TlsAcceptor, String) {
+    let rcgen::CertifiedKey { cert, key_pair } =
+        rcgen::generate_simple_self_signed(vec!["localhost".into()]).unwrap();
+    let pin = sha256_hex(cert.der());
+    let key = rustls::pki_types::PrivatePkcs8KeyDer::from(key_pair.serialize_der());
+    let config = rustls::ServerConfig::builder_with_provider(Arc::new(
+        rustls::crypto::ring::default_provider(),
+    ))
+    .with_safe_default_protocol_versions()
+    .unwrap()
+    .with_no_client_auth()
+    .with_single_cert(vec![cert.der().clone()], key.into())
+    .unwrap();
+    (TlsAcceptor::from(Arc::new(config)), pin)
+}
+
 #[test]
 fn native_button_payloads_match_the_cli_wire_fixture_and_can_never_apply_changes() {
     let mut expected: Value = serde_json::from_str(include_str!(
@@ -97,19 +113,7 @@ impl Server {
         count: usize,
         mut response: impl FnMut(&Value) -> Vec<u8> + Send + 'static,
     ) -> Self {
-        let rcgen::CertifiedKey { cert, key_pair } =
-            rcgen::generate_simple_self_signed(vec!["localhost".into()]).unwrap();
-        let pin = sha256_hex(cert.der());
-        let key = rustls::pki_types::PrivatePkcs8KeyDer::from(key_pair.serialize_der());
-        let config = rustls::ServerConfig::builder_with_provider(Arc::new(
-            rustls::crypto::ring::default_provider(),
-        ))
-        .with_safe_default_protocol_versions()
-        .unwrap()
-        .with_no_client_auth()
-        .with_single_cert(vec![cert.der().clone()], key.into())
-        .unwrap();
-        let acceptor = TlsAcceptor::from(Arc::new(config));
+        let (acceptor, pin) = server_tls();
         let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).await.unwrap();
         let port = listener.local_addr().unwrap().port();
         let (sender, received) = mpsc::channel(count.max(1));

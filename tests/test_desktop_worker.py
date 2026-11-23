@@ -344,47 +344,6 @@ def test_different_saved_identity_is_refused(connected_tv):
     assert "result" not in reply
 
 
-def test_list_apps_groups_packages_and_preserves_protection(connected_tv, monkeypatch):
-    connected_tv.replies["0 vd_applist"] = (
-        "app_id=Abcdefghij.Player app_title=Player\n"
-        "app_id=Abcdefghij.Home app_title=Launcher Companion\n"
-        "app_id=DclHome001.Home app_title=AeroTizen\n"
-        "app_id=KLMNOPQRST.Media app_title=Video &amp; Music\n"
-    )
-    monkeypatch.setattr(DeviceSession, "uninstall", lambda *_: pytest.fail("Unexpected uninstall"))
-    identity = hashlib.sha256(b"test-duid").hexdigest()
-    reply = worker.handle(request("list_apps", host="127.0.0.1", expected_identity=identity))
-    assert all(worker.IDENTITY_PATTERN.fullmatch(row["revision"]) for row in reply["result"])
-    assert [{key: value for key, value in row.items() if key != "revision"} for row in reply["result"]] == [
-        {
-            "id": "DclHome001",
-            "name": "AeroTizen",
-            "apps": ["AeroTizen"],
-            "protected": True,
-        },
-        {
-            "id": "Abcdefghij",
-            "name": "Player",
-            "apps": ["Player", "Launcher Companion"],
-            "protected": True,
-        },
-        {
-            "id": "KLMNOPQRST",
-            "name": "Video & Music",
-            "apps": ["Video & Music"],
-            "protected": False,
-        },
-    ]
-    assert connected_tv.uploads == {}
-    assert "test-duid" not in json.dumps(reply)
-
-
-def test_list_apps_checks_identity_before_reading_packages(connected_tv, monkeypatch):
-    monkeypatch.setattr(DeviceSession, "applist", lambda *_: pytest.fail("Unexpected inventory read"))
-    reply = worker.handle(request("list_apps", host="127.0.0.1", expected_identity="0" * 64))
-    assert reply["error"]["code"] == "identity_mismatch"
-
-
 @pytest.fixture
 def removal_request(connected_tv):
     raw = (
@@ -509,34 +468,6 @@ def test_protocol_keeps_stdout_machine_readable_and_rejects_oversized_input():
         assert process.stderr == ""
 
 
-@pytest.mark.parametrize("operation", ["list_apps", "list_button_apps"])
-def test_cancellable_tv_read_exits_when_its_input_pipe_closes(operation):
-    # Keep the read blocked after it starts, as it can be while the TV is slow to respond.
-    script = """
-from threading import Event
-from aerotizen import desktop_worker
-
-def blocked_read(request):
-    print("reading", flush=True)
-    Event().wait()
-
-desktop_worker.handle = blocked_read
-desktop_worker.main()
-"""
-    with subprocess.Popen(
-        [sys.executable, "-c", script], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True
-    ) as process:
-        try:
-            process.stdin.write(json.dumps({**request(operation), "cancellable": True}) + "\n")
-            process.stdin.flush()
-            assert process.stdout.readline().strip() == "reading"
-            process.stdin.close()
-            assert process.wait(timeout=5) == 0
-        finally:
-            if process.poll() is None:
-                process.kill()
-
-
 def test_handshake_does_not_open_a_connection(monkeypatch):
     monkeypatch.setattr(worker, "DeviceSession", lambda _: pytest.fail("Unexpected TV connection"))
     reply = worker.handle(request("handshake"))
@@ -545,8 +476,6 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "handshake",
         "prepare_signing_profile",
         "connect",
-        "list_apps",
-        "list_button_apps",
         "remove_apps",
         "install_launcher",
         "inspect_local_app",
@@ -565,6 +494,8 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "root_status",
         "list_buttons",
         "change_button",
+        "list_apps",
+        "list_button_apps",
     ):
         assert worker.handle(request(retired))["error"]["code"] == "invalid_request"
 

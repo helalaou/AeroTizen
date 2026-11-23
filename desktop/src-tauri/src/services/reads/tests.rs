@@ -1,12 +1,13 @@
 use super::*;
 use crate::models::VerifiedTv;
+use serde_json::json;
 use tokio::{io::AsyncReadExt, net::TcpListener};
 
 #[tokio::test]
-async fn cancelling_native_root_and_button_reads_releases_the_socket_and_both_operation_locks() {
-    for buttons in [false, true] {
+async fn cancelling_native_tv_reads_releases_the_socket_and_both_operation_locks() {
+    for operation in ["root", "buttons", "apps", "targets"] {
         let directory = tempfile::tempdir().unwrap();
-        let state = AppState::for_test(directory.path());
+        let mut state = AppState::for_test(directory.path());
         let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
             .await
             .unwrap();
@@ -19,21 +20,40 @@ async fn cancelling_native_root_and_button_reads_releases_the_socket_and_both_op
             .join("cli-state/root")
             .join(super::super::digest::sha256_hex(b"127.0.0.1"))
             .join("receipt.json");
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(path, receipt.to_string()).unwrap();
+        if matches!(operation, "root" | "buttons") {
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, receipt.to_string()).unwrap();
+        }
+        state.app_reads = super::super::app_reads::AppReads::with_ports(
+            directory.path().join("cli-state"),
+            listener.local_addr().unwrap().port(),
+            1,
+        );
         let mut tv: VerifiedTv =
             serde_json::from_str(include_str!("../../models/fixtures/verified-tv.json")).unwrap();
         tv.host = "127.0.0.1".into();
         let saved = state.profiles.save(tv).await.unwrap();
         let request = async {
-            if buttons {
+            if operation == "buttons" {
                 super::super::buttons::list_tv_buttons(&state, saved.id, "active-root-read".into())
                     .await
                     .map(|value| serde_json::to_value(value).unwrap())
-            } else {
+            } else if operation == "root" {
                 super::super::root::root_access_status(&state, saved.id, "active-root-read".into())
                     .await
                     .map(|value| serde_json::to_value(value).unwrap())
+            } else if operation == "apps" {
+                super::super::apps::list_tv_apps(&state, saved.id, "active-root-read".into())
+                    .await
+                    .map(|value| serde_json::to_value(value).unwrap())
+            } else {
+                super::super::buttons::list_tv_button_apps(
+                    &state,
+                    saved.id,
+                    "active-root-read".into(),
+                )
+                .await
+                .map(|value| serde_json::to_value(value).unwrap())
             }
         };
         tokio::pin!(request);
