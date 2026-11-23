@@ -64,7 +64,11 @@ The capture path has been verified on the 2024 Samsung Frame QE65LS03DAUXXU runn
 
 Changes limited to `README.md`, `CONTRIBUTING.md`, and `docs/` skip the test suites.
 CI still checks README contributor markers and contributor guide formatting when
-those files change. Store data that tests read in `tests/fixtures/`.
+those files change. Desktop-only changes also skip the component suites: `desktop/`,
+the `desktop_` Python modules, `build_desktop_` tools, `test_desktop_` tests, and the
+desktop's `local_package.py`. Desktop checks run locally until desktop CI is enabled.
+Mixed changes still select checks for the CLI, launcher or shared files they change.
+Store data that tests read in `tests/fixtures/`.
 
 Put component tests next to the source file, for example `ChoiceOption.test.tsx`.
 Use Preact Testing Library to check what the user sees or can activate. Use
