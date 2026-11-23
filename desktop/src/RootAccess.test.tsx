@@ -3,9 +3,9 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
-import { bedroom, livingRoom, testRootNotConfigured, testRootReady, testService } from "./test/tvs";
+import { bedroom, livingRoom, testRootNotConfigured, testRootOutdated, testRootReady, testService } from "./test/tvs";
 
-async function showRoot(service = testService(), tv = livingRoom) {
+async function showOverview(service = testService(), tv = livingRoom) {
   const user = userEvent.setup();
   render(
     <MantineProvider env="test">
@@ -13,6 +13,11 @@ async function showRoot(service = testService(), tv = livingRoom) {
     </MantineProvider>,
   );
   await user.click(await screen.findByRole("button", { name: `Connect to ${tv.name}` }));
+  return user;
+}
+
+async function showRoot(service = testService(), tv = livingRoom) {
+  const user = await showOverview(service, tv);
   await user.click(screen.getByRole("button", { name: "Root access" }));
   return user;
 }
@@ -22,7 +27,8 @@ describe("Root access", () => {
     const service = testService();
     const upgrade = vi.spyOn(service.rootAccess!, "upgrade");
     const setup = vi.spyOn(service.rootAccess!, "setup");
-    const user = await showRoot(service);
+    const user = await showOverview(service);
+    await user.click(await screen.findByRole("button", { name: "Root helper update available" }));
     await user.click(await screen.findByRole("button", { name: "Update available" }));
     let dialog = within(screen.getByRole("dialog", { name: "Update root helper" }));
     expect(dialog.getByText("3.0.1", { exact: true })).toBeVisible();
@@ -49,6 +55,39 @@ describe("Root access", () => {
     expect(upgrade.mock.calls.map(([, action]) => action)).toEqual(["start", "resume", "resume"]);
     expect(setup).not.toHaveBeenCalled();
   }, 15000);
+
+  it("refreshes the helper version and clears an Overview update offer if the live check fails or is current", async () => {
+    const service = testService();
+    const status = vi
+      .spyOn(service.rootAccess!, "status")
+      .mockResolvedValueOnce({ ...testRootOutdated, runtime_version: "3.0.9" })
+      .mockRejectedValueOnce(new Error("Root status is unavailable."))
+      .mockResolvedValueOnce(testRootReady);
+    const user = await showOverview(service);
+    expect(await screen.findByRole("button", { name: "Root helper update available" })).toBeVisible();
+    expect(screen.getByText("3.0.9", { exact: true })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Refresh TV connection" }));
+    await waitFor(() => expect(status).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole("button", { name: "Root helper update available" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Overview" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Update available" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Refresh TV connection" }));
+    expect(await screen.findByText(testRootReady.runtime_version!, { exact: true })).toBeVisible();
+    expect(status).toHaveBeenCalledTimes(3);
+    expect(screen.queryByRole("button", { name: "Root helper update available" })).not.toBeInTheDocument();
+  });
+
+  it("does not carry an Overview update offer to another TV", async () => {
+    const service = testService();
+    const status = vi.spyOn(service.rootAccess!, "status");
+    const user = await showOverview(service);
+    expect(await screen.findByRole("button", { name: "Root helper update available" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Back to TVs" }));
+    await user.click(await screen.findByRole("button", { name: "Connect to Bedroom" }));
+    await waitFor(() => expect(status).toHaveBeenLastCalledWith(bedroom.id, expect.any(AbortSignal)));
+    expect(screen.queryByRole("button", { name: "Root helper update available" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Root helper version")).not.toBeInTheDocument();
+  });
 
   it("can reload saved update progress after a lost installation reply", async () => {
     const service = testService();
@@ -131,7 +170,7 @@ describe("Root access", () => {
     expect(certificates).toHaveBeenCalledExactlyOnceWith(bedroom.id);
   }, 15000);
 
-  it("cancels a status read when leaving the tab and leaves navigation enabled", async () => {
+  it.each(["overview", "root"])("cancels a status read when leaving %s and leaves navigation enabled", async (page) => {
     const service = testService();
     let pending: AbortSignal | undefined;
     vi.spyOn(service.rootAccess!, "status").mockImplementation(
@@ -141,8 +180,9 @@ describe("Root access", () => {
           signal.addEventListener("abort", () => reject(new DOMException("Cancelled", "AbortError")), { once: true });
         }),
     );
-    const user = await showRoot(service);
-    expect(await screen.findByText("Checking root access…")).toBeInTheDocument();
+    const user = await (page === "root" ? showRoot(service) : showOverview(service));
+    await waitFor(() => expect(pending?.aborted).toBe(false));
+    if (page === "root") expect(await screen.findByText("Checking root access…")).toBeInTheDocument();
     const launcher = screen.getByRole("button", { name: "Launcher" });
     expect(launcher).toBeEnabled();
     await user.click(launcher);

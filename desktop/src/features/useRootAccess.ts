@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { DesktopService, RootAccessStatus, RootSetupAction, RootUpdateAction } from "../contracts";
 import { profileAfterRootSetup } from "../services/rootAccess";
 import type { FeatureContext } from "./context";
@@ -9,9 +9,12 @@ export function useRootAccess(service: DesktopService, context: FeatureContext) 
   const [rootLoading, setRootLoading] = useState(false);
   const [rootError, setRootError] = useState<string | null>(null);
   const rootAccess = service.rootAccess;
-  const loadRootStatus = (id: string) => {
-    if (rootAccess) loadPage((signal) => rootAccess.status(id, signal), setRootStatus, setRootError, setRootLoading);
-  };
+  const loadRootStatus = useCallback(
+    (id: string) => {
+      if (rootAccess) loadPage((signal) => rootAccess.status(id, signal), setRootStatus, setRootError, setRootLoading);
+    },
+    [rootAccess, loadPage],
+  );
 
   const changeRoot = async (
     label: string,

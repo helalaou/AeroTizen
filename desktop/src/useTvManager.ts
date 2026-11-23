@@ -78,7 +78,7 @@ export function useTvManager(service: DesktopService) {
     [cancelPageRead],
   );
 
-  function loadPage<Result>(
+  const loadPage = useCallback(function loadPage<Result>(
     query: (signal: AbortSignal) => Promise<Result>,
     update: (result: Result | null) => void,
     showError: (error: string | null) => void,
@@ -108,7 +108,7 @@ export function useTvManager(service: DesktopService) {
       }
     })();
     pageRead.current = { controller, completion, stopLoading };
-  }
+  }, []);
 
   const updateProfile = (id: string, profile: ProfileUpdate) => {
     if (!mounted.current) return;

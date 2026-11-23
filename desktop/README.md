@@ -108,6 +108,8 @@ Open **Root access** for a fresh status check, or use **Refresh root status** to
 The page shows root availability, the live helper version, automatic startup verification
 and whether setup progress is saved on this computer. Missing pairing or an unreachable
 helper shows **Unverified**; a saved recovery record alone does not establish live access.
+Overview also checks live helper status. When an update is available, select
+**Update available** beside **Root helper version** to open Root access.
 
 Choose **Set up root access** and confirm the Developer Mode settings. The app reuses
 the CLI's setup, prepares Samsung signing certificates when needed and saves its private
