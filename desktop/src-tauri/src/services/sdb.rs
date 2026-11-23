@@ -1,4 +1,5 @@
 //! Typed SDB services for app inventory and reviewed removal. No arbitrary shell API.
+pub(super) mod sync;
 use std::io;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 

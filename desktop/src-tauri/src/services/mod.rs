@@ -26,3 +26,4 @@ mod sdb;
 mod text;
 mod tv_session;
 pub mod tvs;
+mod widget_signer;

@@ -6,10 +6,17 @@ from pathlib import Path
 
 import pytest
 
-from aerotizen import desktop_worker, local_package
+from aerotizen import catalog, desktop_worker, local_package, releases
 
 FIXTURES = Path(__file__).parent / "fixtures"
 CASES = json.loads((FIXTURES / "widget-metadata.json").read_text())
+
+
+def metadata(path):
+    result = local_package.inspect(path)
+    if result["package_id"] in catalog.PROTECTED_PKGS - {releases.PACKAGE_ID}:
+        raise ValueError("protected package")
+    return {**result, "name": desktop_worker.text_value(result["name"], result["app_id"])}
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda case: case["name"])
@@ -19,9 +26,9 @@ def test_native_widget_metadata_matches_cli(case, tmp_path):
         archive.writestr("config.xml", case["xml"])
     if "error" in case:
         with pytest.raises(ValueError):
-            desktop_worker._local_app_metadata(path)
+            metadata(path)
     else:
-        assert desktop_worker._local_app_metadata(path) == case["metadata"]
+        assert metadata(path) == case["metadata"]
 
 
 def test_duplicate_widget_fixture_is_rejected_by_cli(tmp_path):
@@ -38,4 +45,4 @@ def test_duplicate_widget_fixture_is_rejected_by_cli(tmp_path):
 def test_native_compression_fixtures_are_valid_cli_widgets(case, tmp_path):
     path = tmp_path / "App.wgt"
     path.write_bytes(bytes.fromhex(case["zip_hex"]))
-    assert desktop_worker._local_app_metadata(path) == CASES[0]["metadata"]
+    assert metadata(path) == CASES[0]["metadata"]

@@ -3,7 +3,8 @@
 Use AeroTizen Desktop to find and save Samsung TVs, install the launcher and local apps,
 manage installed apps, configure Home and remote buttons, and set up or update root access.
 The app uses Tauri, React and Mantine. Rust handles TV discovery, launcher release
-lookup, Home backup review, Samsung sign-in, Root access status, button mapping and installed-app reads; a bundled Python worker
+lookup, Home backup review, Samsung sign-in, Root access status,
+button mapping and local app management; a bundled Python worker
 provides the remaining CLI services.
 SQLite stores saved TV profiles.
 
@@ -279,7 +280,7 @@ shares the CLI TV lock and leaves recovery files unchanged. Leaving the page clo
 socket and releases ownership. Connection attempts, total time, frame sizes and app counts
 are bounded. Package grouping, protected labels and revision hashes match the CLI, so
 removal can keep using its existing checks. The worker no longer offers `list_apps`,
-`list_button_apps` or `remove_apps`; installation still uses the worker. Removal uses the
+`list_button_apps` or `remove_apps`. Removal uses the
 same native session, validates the full reviewed batch before any uninstall, and verifies
 each result from a complete inventory. A lost reply, incomplete list, changed identity
 or unrelated missing package stops the batch with an unverified result. Uninstalls are
@@ -290,8 +291,13 @@ Reviewing a local `.wgt` also runs in Rust. It hashes a private snapshot, checks
 paths, duplicate names, encryption, symbolic links, sizes and entry counts, then reads
 namespaced metadata from `config.xml`. XML DTDs and oversized parser/decoder allocations
 are refused. The installed version and replacement revision come from the native TV
-inventory. The worker no longer offers `inspect_local_app`; installation still verifies
-the reviewed file hash and revision through its existing worker operation.
+inventory. Local installation also runs in Rust: it rechecks the reviewed hash, package
+revision, TV identity and saved signing profile before upload. The native signer matches
+the CLI's canonical author/distributor signatures and supports older RC2-encrypted Tizen
+Studio profiles. Files stream through acknowledged SDB uploads without automatic retries.
+Success requires the exact app and version in a fresh, complete TV inventory. An explicit
+install error cannot be hidden by an older app with the same version. The worker no
+longer offers `inspect_local_app` or `install_local_app`; launcher installation still uses it.
 
 ```sh
 npm run typecheck
