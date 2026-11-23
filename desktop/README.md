@@ -133,8 +133,8 @@ for hardware validation and recovery details.
 
 ## Development
 
-Install the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), Node.js 22.12+
-and Python 3.10+. Create the repository virtual environment and install the worker tools:
+Install the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), Node.js 22.12+,
+Python 3.10+ and the .NET 6 SDK. Create the repository virtual environment and install the worker tools:
 
 ```sh
 python3 -m venv .venv
@@ -147,9 +147,13 @@ npm run tauri -- dev
 On Windows, use `.venv\Scripts\python.exe` for the Python commands. The build script
 selects that virtual environment automatically. Set `AEROTIZEN_PYTHON` to use another
 Python executable that has the project and PyInstaller installed.
+Set `AEROTIZEN_DOTNET` to the .NET executable if it is not on `PATH`.
 
-The native development command builds and smoke-tests the standalone worker before
-opening the app. TV checks use the same network access and Developer Mode settings as
+The native development and packaging commands rebuild the Home reader, Home writer and
+root runtime before freezing the standalone worker. The build validates each payload and
+compares the frozen inventory against this checkout, then checks the worker protocol with
+Python removed from `PATH`. A missing SDK, failed helper build or invalid payload stops the build.
+TV checks use the same network access and Developer Mode settings as
 the CLI. An existing valid root receipt can select the paired connection automatically.
 
 On macOS, allow AeroTizen Desktop to access the Local Network when prompted. If the
@@ -173,6 +177,24 @@ connections are available in the native app.
 
 ## Checks and packaging
 
+The desktop has separate UI, native command, service and transport layers:
+
+| Path                      | Responsibility                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------- |
+| `src/components/`         | Views and dialogs                                                                |
+| `src/features/`           | Launcher, Apps, buttons, Home and root state and actions                         |
+| `src/useTvManager.ts`     | TV selection, shared operation ownership and feature composition                 |
+| `src/services/native.ts`  | Frontend IPC adapter                                                             |
+| `src-tauri/src/lib.rs`    | Tauri setup, plugins, managed state and command registration                     |
+| `src-tauri/src/commands/` | Native command adapters and OS dialogs                                           |
+| `src-tauri/src/services/` | TV operations, account sessions and profile storage; no Tauri API dependency     |
+| `src-tauri/src/models/`   | Typed command inputs and results                                                 |
+| `src-tauri/src/worker.rs` | Python worker protocol, process lifetime, cancellation and typed result decoding |
+
+Keep new TV logic in services and leave commands thin. Migrate each service from the Python
+worker to Rust while preserving its command names and result contract. Keep identity checks,
+backup checks and verification of TV changes at the service boundary.
+
 ```sh
 npm run typecheck
 npm run lint
@@ -194,6 +216,7 @@ From the repository root, run the backend regression checks:
 
 ```sh
 .venv/bin/python -m pytest tests/test_desktop_worker.py tests/test_install.py tests/test_releases.py tests/test_sdb.py tests/test_device_cli.py
+.venv/bin/python -m pytest desktop/tests
 ```
 
 Browser tests use Playwright's separate bundled Chromium and fresh test profiles. Each

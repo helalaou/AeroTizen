@@ -1,6 +1,7 @@
 use crate::{
-    models::{AppError, AppResult},
-    worker, AppState,
+    models::{AppError, AppResult, SigningProfile},
+    state::AppState,
+    worker,
 };
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -77,8 +78,7 @@ fn session(auth: Value) -> AppResult<Session> {
     })
 }
 
-#[tauri::command]
-pub async fn samsung_account(state: tauri::State<'_, AppState>) -> AppResult<Option<Account>> {
+pub async fn samsung_account(state: &AppState) -> AppResult<Option<Account>> {
     let mut saved = state.samsung.session.lock().await;
     if saved
         .as_ref()
@@ -89,16 +89,12 @@ pub async fn samsung_account(state: tauri::State<'_, AppState>) -> AppResult<Opt
     Ok(saved.as_ref().map(|session| session.account.clone()))
 }
 
-#[tauri::command]
-pub async fn samsung_sign_in(
-    state: tauri::State<'_, AppState>,
-    request_id: String,
-) -> AppResult<Account> {
+pub async fn samsung_sign_in(state: &AppState, request_id: String) -> AppResult<Account> {
     let _guard = state
         .samsung
         .operation
         .try_lock()
-        .map_err(|_| crate::busy())?;
+        .map_err(|_| crate::state::busy())?;
     let cancelled = state.samsung.cancelled.subscribe();
     if *cancelled.borrow() == request_id {
         return Err(AppError::new(
@@ -106,7 +102,7 @@ pub async fn samsung_sign_in(
             "Samsung sign-in cancelled.",
         ));
     }
-    let auth = worker::request_with_cancellation(
+    let auth: Value = worker::request_with_cancellation(
         &state.worker_path,
         "samsung_sign_in",
         json!({}),
@@ -127,11 +123,7 @@ pub async fn samsung_sign_in(
     Ok(account)
 }
 
-#[tauri::command]
-pub async fn cancel_samsung_sign_in(
-    state: tauri::State<'_, AppState>,
-    request_id: String,
-) -> AppResult<()> {
+pub async fn cancel_samsung_sign_in(state: &AppState, request_id: String) -> AppResult<()> {
     state.samsung.cancelled.send_replace(request_id.clone());
     let mut current = state.samsung.session.lock().await;
     if current
@@ -143,28 +135,26 @@ pub async fn cancel_samsung_sign_in(
     Ok(())
 }
 
-#[tauri::command]
-pub async fn samsung_sign_out(state: tauri::State<'_, AppState>) -> AppResult<()> {
+pub async fn samsung_sign_out(state: &AppState) -> AppResult<()> {
     let _guard = state
         .samsung
         .operation
         .try_lock()
-        .map_err(|_| crate::busy())?;
+        .map_err(|_| crate::state::busy())?;
     *state.samsung.session.lock().await = None;
     Ok(())
 }
 
-#[tauri::command]
-pub async fn prepare_signing_profile(
-    state: tauri::State<'_, AppState>,
-    id: String,
-) -> AppResult<Value> {
-    let _tv_guard = state.operation.try_lock().map_err(|_| crate::busy())?;
+pub async fn prepare_signing_profile(state: &AppState, id: String) -> AppResult<SigningProfile> {
+    let _tv_guard = state
+        .operation
+        .try_lock()
+        .map_err(|_| crate::state::busy())?;
     let _account_guard = state
         .samsung
         .operation
         .try_lock()
-        .map_err(|_| crate::busy())?;
+        .map_err(|_| crate::state::busy())?;
     let saved = state.profiles.get(&id)?;
     let auth = state
         .samsung
@@ -174,7 +164,7 @@ pub async fn prepare_signing_profile(
         .as_ref()
         .filter(|session| session.expires > Instant::now())
         .map(|session| session.auth.clone());
-    let result = worker::request(
+    let result: SigningProfile = worker::request(
         &state.worker_path,
         "prepare_signing_profile",
         json!({
@@ -182,12 +172,7 @@ pub async fn prepare_signing_profile(
         }),
     )
     .await?;
-    if result.get("identity_sha256").and_then(Value::as_str) != Some(id.as_str())
-        || result
-            .get("launcher_signing_ready")
-            .and_then(Value::as_bool)
-            != Some(true)
-    {
+    if result.identity_sha256 != id || !result.launcher_signing_ready {
         return Err(AppError::new(
             "invalid_response",
             "The TV's signing certificates could not be verified.",

@@ -1,22 +1,4 @@
 use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AppError {
-    pub code: String,
-    pub message: String,
-}
-
-impl AppError {
-    pub fn new(code: &str, message: &str) -> Self {
-        Self {
-            code: code.into(),
-            message: message.into(),
-        }
-    }
-}
-
-pub type AppResult<T> = Result<T, AppError>;
-
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct TechnicalDetails {
     pub model_code: Option<String>,
@@ -89,15 +71,16 @@ pub struct SavedTv {
     pub tv: VerifiedTv,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct AppPackageSelection {
-    id: String,
-    revision: String,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TvCandidate {
+    pub host: String,
+    pub name: String,
+    pub model: String,
 }
 
-pub fn valid_identity(value: &str) -> bool {
-    value.len() == 64
-        && value
-            .bytes()
-            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+#[derive(Debug, Serialize, Deserialize)]
+pub struct HomeBackupSettings {
+    #[serde(flatten)]
+    pub settings: NativeHomeSettings,
+    pub first_screen: String,
 }

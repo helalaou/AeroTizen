@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react()],
-  server: { port: 1420, strictPort: true },
+  server: { port: 1420, strictPort: true, watch: { ignored: ["**/src-tauri/**"] } },
   clearScreen: false,
   build: { target: ["safari15.4", "chrome108"], cssTarget: "safari15.4" },
   test: {
