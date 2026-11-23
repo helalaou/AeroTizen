@@ -2,7 +2,7 @@ import { Alert, AppShell, Loader, LoadingOverlay, Modal, Stack, Text } from "@ma
 import { useEffect, useState } from "react";
 import { AppsPanel } from "./components/AppsPanel";
 import { ButtonMappingPanel } from "./components/ButtonMappingPanel";
-import { Header } from "./components/Header";
+import { DESKTOP_HEADER, Header } from "./components/Header";
 import { LauncherPanel } from "./components/LauncherPanel";
 import { LocalAppInstallDialog } from "./components/LocalAppInstallDialog";
 import { RootAccessPanel } from "./components/RootAccessPanel";
@@ -198,29 +198,25 @@ export function App({ service }: AppProps) {
   }
   return (
     <AppShell
-      header={{ height: 64 }}
+      header={DESKTOP_HEADER}
       navbar={selected ? { width: 224, breakpoint: "sm", collapsed: { mobile: !menuOpened } } : undefined}
       padding={0}
     >
-      <AppShell.Header>
-        <Header
-          selected={Boolean(selected)}
-          menuOpened={menuOpened}
-          toggleMenu={() => setMenuOpened((current) => !current)}
-          onAbout={() => setAbout(true)}
-          samsung={
-            service.samsung
-              ? {
-                  signedIn: samsung.account !== null,
-                  email: samsung.account?.email ?? null,
-                  busy: samsung.loading || samsung.busy || busy,
-                  signIn: () => setSignInDialog({ kind: "account" }),
-                  signOut: () => void samsung.signOut(),
-                }
-              : undefined
-          }
-        />
-      </AppShell.Header>
+      <Header
+        tvMenu={selected ? { opened: menuOpened, toggle: () => setMenuOpened((current) => !current) } : undefined}
+        onAbout={() => setAbout(true)}
+        samsung={
+          service.samsung
+            ? {
+                signedIn: samsung.account !== null,
+                email: samsung.account?.email ?? null,
+                busy: samsung.loading || samsung.busy || busy,
+                signIn: () => setSignInDialog({ kind: "account" }),
+                signOut: () => void samsung.signOut(),
+              }
+            : undefined
+        }
+      />
       {selected && (
         <TvSidebar
           profile={selected}

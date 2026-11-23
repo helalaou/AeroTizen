@@ -9,7 +9,11 @@ const theme = createTheme({
   primaryColor: "blue",
   primaryShade: 6,
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  headings: { fontWeight: "700", sizes: { h1: { fontSize: "2rem", lineHeight: "1.2" } } },
+  headings: {
+    fontFamily: '"Bricolage Grotesque", var(--mantine-font-family)',
+    fontWeight: "700",
+    sizes: { h1: { fontSize: "2rem", lineHeight: "1.2" } },
+  },
   defaultRadius: "md",
   colors: {
     blue: [
