@@ -74,35 +74,6 @@ def manifest(data, version="2.2.0", **fields):
     }
 
 
-def test_launcher_catalog_lists_only_installable_stable_releases(monkeypatch):
-    notes = (
-        "## [2.10.0](https://github.com/example/project/compare/old...new)\n\n"
-        "### Features\n\n"
-        "* **launcher:** add `Gloss` ([#261](https://github.com/example/project/issues/261))\n"
-        "### Bug Fixes\n"
-        "- keep [settings](https://github.com/example/project/wiki) visible\n"
-    )
-    listing = [
-        release("2.9.0", body=None),
-        release("2.10.0", body=notes),
-        release("3.0.0", assets=[]),
-        release("4.0.0", prerelease=True),
-        release("5.0.0", draft=True),
-        cli_release("6.0.0"),
-    ]
-    monkeypatch.setattr(releases, "_json_url", lambda url: {f"{API}?per_page=100&page=1": listing}[url])
-    assert releases.launcher_catalog() == [
-        {
-            "version": "2.10.0",
-            "sections": [
-                {"heading": "Features", "changes": ["add Gloss"]},
-                {"heading": "Bug Fixes", "changes": ["keep settings visible"]},
-            ],
-        },
-        {"version": "2.9.0", "sections": []},
-    ]
-
-
 @pytest.fixture
 def github(monkeypatch):
     data = widget()

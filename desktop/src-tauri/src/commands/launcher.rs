@@ -10,10 +10,8 @@ pub async fn backend_status(state: tauri::State<'_, AppState>) -> AppResult<Back
 }
 
 #[tauri::command]
-pub async fn launcher_catalog(
-    state: tauri::State<'_, AppState>,
-) -> AppResult<Vec<LauncherRelease>> {
-    services::launcher::launcher_catalog(&state).await
+pub async fn launcher_catalog() -> AppResult<Vec<LauncherRelease>> {
+    services::launcher_catalog::load().await
 }
 
 #[tauri::command]

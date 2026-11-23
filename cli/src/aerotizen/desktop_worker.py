@@ -59,7 +59,6 @@ OPERATIONS = (
     "list_button_apps",
     "change_button",
     "remove_apps",
-    "launcher_catalog",
     "install_launcher",
     "inspect_local_app",
     "install_local_app",
@@ -1023,8 +1022,6 @@ def handle(request):
                 result = change_button(params)
             elif request["operation"] == "remove_apps":
                 result = remove_apps(params)
-            elif request["operation"] == "launcher_catalog":
-                result = releases.launcher_catalog()
             elif request["operation"] == "install_launcher":
                 result = install_launcher(params)
             elif request["operation"] == "inspect_local_app":
@@ -1050,14 +1047,6 @@ def handle(request):
         return {**response, "result": result}
     except RequestError as error:
         return {**response, "error": {"code": error.code, "message": str(error)}}
-    except releases.ReleaseError:
-        return {
-            **response,
-            "error": {
-                "code": "release_unavailable",
-                "message": "Could not load launcher versions.",
-            },
-        }
     except OSError:
         return connection_error(response)
     except (SdbError, SystemExit):

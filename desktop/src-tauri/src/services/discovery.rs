@@ -1,5 +1,6 @@
 //! Read-only SSDP discovery and Samsung's public device-info endpoint.
 
+use super::{http::bounded_body, text::python_whitespace};
 use crate::models::{AppError, AppResult, TvCandidate};
 use reqwest::{redirect::Policy, Client};
 use serde_json::Value;
@@ -185,25 +186,15 @@ where
 
 async fn read_candidate(client: &Client, host: Ipv4Addr, port: u16) -> Option<TvCandidate> {
     // Use the UDP sender and fixed API path, never a URL supplied in SSDP headers.
-    let mut response = client
+    let response = client
         .get(format!("http://{host}:{port}{DEVICE_INFO_PATH}"))
         .send()
         .await
         .ok()?;
-    if !response.status().is_success()
-        || response
-            .content_length()
-            .is_some_and(|length| length > MAX_DEVICE_INFO_BYTES as u64)
-    {
+    if !response.status().is_success() {
         return None;
     }
-    let mut body = Vec::new();
-    while let Some(chunk) = response.chunk().await.ok()? {
-        if chunk.len() > MAX_DEVICE_INFO_BYTES - body.len() {
-            return None;
-        }
-        body.extend_from_slice(&chunk);
-    }
+    let body = bounded_body(response, MAX_DEVICE_INFO_BYTES).await?;
     candidate_from_json(host, &body)
 }
 
@@ -215,11 +206,6 @@ fn candidate_from_json(host: Ipv4Addr, body: &[u8]) -> Option<TvCandidate> {
         name: clean_text(device.get("name")),
         model: clean_text(device.get("modelName")),
     })
-}
-
-fn name_whitespace(character: char) -> bool {
-    // Match the CLI's Python whitespace rules, including the four ASCII separators.
-    character.is_whitespace() || matches!(character, '\u{1c}'..='\u{1f}')
 }
 
 fn printable(character: char) -> bool {
@@ -240,12 +226,12 @@ fn printable(character: char) -> bool {
 fn clean_text(value: Option<&Value>) -> String {
     let Some(value) = value
         .and_then(Value::as_str)
-        .filter(|text| !text.trim_matches(name_whitespace).is_empty())
+        .filter(|text| !text.trim_matches(python_whitespace).is_empty())
     else {
         return DEFAULT_TV_LABEL.into();
     };
     htmlize::unescape(value)
-        .trim_matches(name_whitespace)
+        .trim_matches(python_whitespace)
         .chars()
         .filter(|character| printable(*character))
         .take(MAX_TEXT_CHARACTERS)

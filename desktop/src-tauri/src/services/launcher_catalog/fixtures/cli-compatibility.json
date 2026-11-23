@@ -1,0 +1,437 @@
+{
+  "catalogues": [
+    {
+      "name": "stable_installable_releases",
+      "input": [
+        {
+          "tag_name": "launcher-v2.9.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v2.9.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-2.9.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v2.9.0/aerotizen-launcher-2.9.0.wgt"
+            }
+          ],
+          "body": null
+        },
+        {
+          "tag_name": "launcher-v2.10.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v2.10.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-2.10.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v2.10.0/aerotizen-launcher-2.10.0.wgt"
+            }
+          ],
+          "body": "## Release title\n### Features\n* **launcher:** add `Gloss` ([#261](https://github.com/example/project/issues/261))\n### Bug Fixes\n- keep [settings](https://github.com/example/project/wiki) visible\n"
+        },
+        {
+          "tag_name": "launcher-v3.0.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": []
+        },
+        {
+          "tag_name": "launcher-v4.0.0",
+          "draft": false,
+          "prerelease": true,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v4.0.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-4.0.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v4.0.0/aerotizen-launcher-4.0.0.wgt"
+            }
+          ]
+        },
+        {
+          "tag_name": "launcher-v5.0.0",
+          "draft": true,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v5.0.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-5.0.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v5.0.0/aerotizen-launcher-5.0.0.wgt"
+            }
+          ]
+        },
+        {
+          "tag_name": "cli-v6.0.0",
+          "draft": false,
+          "prerelease": false
+        }
+      ],
+      "expected": [
+        {
+          "version": "2.10.0",
+          "sections": [
+            {
+              "heading": "Features",
+              "changes": ["add Gloss"]
+            },
+            {
+              "heading": "Bug Fixes",
+              "changes": ["keep settings visible"]
+            }
+          ]
+        },
+        {
+          "version": "2.9.0",
+          "sections": []
+        }
+      ]
+    },
+    {
+      "name": "first_valid_duplicate_and_numeric_order",
+      "input": [
+        {
+          "tag_name": "launcher-v2.0.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": []
+        },
+        {
+          "tag_name": "launcher-v2.0.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v2.0.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-2.0.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v2.0.0/aerotizen-launcher-2.0.0.wgt"
+            }
+          ],
+          "body": "* First valid"
+        },
+        {
+          "tag_name": "launcher-v2.0.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v2.0.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-2.0.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v2.0.0/aerotizen-launcher-2.0.0.wgt"
+            }
+          ],
+          "body": "* Later duplicate"
+        },
+        {
+          "tag_name": "launcher-v10.0.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v10.0.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-10.0.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v10.0.0/aerotizen-launcher-10.0.0.wgt"
+            }
+          ]
+        },
+        {
+          "tag_name": "launcher-v0.0.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v0.0.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-0.0.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v0.0.0/aerotizen-launcher-0.0.0.wgt"
+            }
+          ]
+        },
+        {
+          "tag_name": "launcher-v184467440737095516160.0.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v184467440737095516160.0.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-184467440737095516160.0.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v184467440737095516160.0.0/aerotizen-launcher-184467440737095516160.0.0.wgt"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "version": "184467440737095516160.0.0",
+          "sections": []
+        },
+        {
+          "version": "10.0.0",
+          "sections": []
+        },
+        {
+          "version": "2.0.0",
+          "sections": [
+            {
+              "heading": null,
+              "changes": ["First valid"]
+            }
+          ]
+        },
+        {
+          "version": "0.0.0",
+          "sections": []
+        }
+      ]
+    },
+    {
+      "name": "asset_identity_and_stable_tags",
+      "input": [
+        {
+          "tag_name": "launcher-v7.0.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v7.0.0/launcher-release.json?other=1"
+            },
+            {
+              "name": "aerotizen-launcher-7.0.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v7.0.0/aerotizen-launcher-7.0.0.wgt"
+            }
+          ]
+        },
+        {
+          "tag_name": "launcher-v8.0.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v8.0.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-8.0.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v8.0.0/aerotizen-launcher-8.0.0.wgt"
+            },
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v8.0.0/launcher-release.json"
+            }
+          ]
+        },
+        {
+          "tag_name": "launcher-v9.0.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v9.0.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-9.0.0.wgt",
+              "browser_download_url": "https://example.com/app.wgt"
+            }
+          ]
+        },
+        {
+          "tag_name": "launcher-v01.0.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v01.0.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-01.0.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v01.0.0/aerotizen-launcher-01.0.0.wgt"
+            }
+          ]
+        },
+        {
+          "tag_name": "launcher-v1.0.0-beta.1",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v1.0.0-beta.1/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-1.0.0-beta.1.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v1.0.0-beta.1/aerotizen-launcher-1.0.0-beta.1.wgt"
+            }
+          ]
+        },
+        {
+          "tag_name": "launcher-v1.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v1.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-1.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v1.0/aerotizen-launcher-1.0.wgt"
+            }
+          ]
+        },
+        {
+          "tag_name": "launcher-v1.0.0+build",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v1.0.0+build/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-1.0.0+build.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v1.0.0+build/aerotizen-launcher-1.0.0+build.wgt"
+            }
+          ]
+        },
+        {
+          "tag_name": "launcher-v2.1.0",
+          "draft": true,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v2.1.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-2.1.0.wgt",
+              "browser_download_url": "https://github.com/helalaou/AeroTizen/releases/download/launcher-v2.1.0/aerotizen-launcher-2.1.0.wgt"
+            }
+          ]
+        },
+        {
+          "tag_name": "launcher-v1.0.0",
+          "draft": false,
+          "prerelease": false,
+          "assets": [
+            {
+              "name": "launcher-release.json",
+              "browser_download_url": "HTTPS://GITHUB.COM/HELALAOU/AEROTIZEN/RELEASES/DOWNLOAD/launcher-v1.0.0/launcher-release.json"
+            },
+            {
+              "name": "aerotizen-launcher-1.0.0.wgt",
+              "browser_download_url": "HTTPS://GITHUB.COM/HELALAOU/AEROTIZEN/RELEASES/DOWNLOAD/launcher-v1.0.0/aerotizen-launcher-1.0.0.wgt"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "version": "1.0.0",
+          "sections": []
+        }
+      ]
+    }
+  ],
+  "notes": [
+    {
+      "input": null,
+      "expected": []
+    },
+    {
+      "input": false,
+      "expected": []
+    },
+    {
+      "input": 42,
+      "expected": []
+    },
+    {
+      "input": "## Release title\n### Features\n* **launcher:** add `Gloss` ([#261](https://github.com/example/project/issues/261))\n### Bug Fixes\n- keep [settings](https://github.com/example/project/wiki) visible\n",
+      "expected": [
+        {
+          "heading": "Features",
+          "changes": ["add Gloss"]
+        },
+        {
+          "heading": "Bug Fixes",
+          "changes": ["keep settings visible"]
+        }
+      ]
+    },
+    {
+      "input": "* Unheaded\n### Empty\n### Features\n- **scope:** **bold** `code` [docs](https://example.com), closes [#44](https://github.com/example/project/issues/44) trailing\n###### Six hashes\n+ Done\n####### Ignored heading\n* Same section\n",
+      "expected": [
+        {
+          "heading": null,
+          "changes": ["Unheaded"]
+        },
+        {
+          "heading": "Features",
+          "changes": ["bold code docs"]
+        },
+        {
+          "heading": "Six hashes",
+          "changes": ["Done", "Same section"]
+        }
+      ]
+    },
+    {
+      "input": "### Ελληνικά\r- Μία αλλαγή ### 日本語+ 更新\u001c* 🦀 emoji\n* [A](http://a) and [B](http://b)\n",
+      "expected": [
+        {
+          "heading": "Ελληνικά",
+          "changes": ["Μία αλλαγή"]
+        },
+        {
+          "heading": "日本語",
+          "changes": ["更新", "🦀 emoji", "A and B"]
+        }
+      ]
+    },
+    {
+      "input": "###\u001fFeatures\n*\u001fWhitespace\n- no **unclosed markup\n*\n### No changes\n",
+      "expected": [
+        {
+          "heading": "Features",
+          "changes": ["Whitespace", "no **unclosed markup"]
+        }
+      ]
+    },
+    {
+      "input": "### Fixes\n* Escape **text** and `code`, FIXES [#1](https://github.com/example/project/issues/1).\n* Fix two ([abc](https://github.com/a/b/commit/1)) ([def](https://github.com/a/b/commit/2))\n",
+      "expected": [
+        {
+          "heading": "Fixes",
+          "changes": ["Escape text and code", "Fix two"]
+        }
+      ]
+    }
+  ]
+}

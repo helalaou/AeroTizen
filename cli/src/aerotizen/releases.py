@@ -26,15 +26,7 @@ PACKAGE_ID = "DclHome001"
 MAX_JSON_BYTES = 2 * 1024 * 1024
 MAX_PACKAGE_BYTES = 64 * 1024 * 1024
 MAX_UNPACKED_BYTES = 128 * 1024 * 1024
-MAX_RELEASE_BODY_CHARACTERS = 8_000
 VERSION = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
-RELEASE_NOTES_HEADING = re.compile(r"#{3,6}\s+(.+)")
-RELEASE_NOTES_BULLET = re.compile(r"[*+-]\s+(.+)")
-GITHUB_CHANGE_REFERENCE = re.compile(
-    r"\s*\(\[[^\]]+\]\(https://github\.com/[^)]+\)\)"
-    r"|,?\s+(?:closes|fixes|resolves)\s+\[#[0-9]+\]\(https://github\.com/[^)]+\).*$",
-    re.IGNORECASE,
-)
 
 
 class ReleaseError(ValueError):
@@ -307,49 +299,6 @@ def _check_package(data, version):
         NotImplementedError,
     ) as exc:
         raise ReleaseError("The launcher release is not a valid application package.") from exc
-
-
-def _change_sections(body):
-    """Extract Release Please headings and readable change entries."""
-    if not isinstance(body, str):
-        return []
-    sections = []
-    heading = None
-    changes = []
-    for line in body[:MAX_RELEASE_BODY_CHARACTERS].splitlines():
-        line = line.strip()
-        match = RELEASE_NOTES_HEADING.fullmatch(line)
-        if match:
-            if changes:
-                sections.append({"heading": heading, "changes": changes})
-            heading = match[1]
-            changes = []
-        elif match := RELEASE_NOTES_BULLET.fullmatch(line):
-            change = GITHUB_CHANGE_REFERENCE.sub("", match[1])
-            change = re.sub(r"^\*\*[^*]+:\*\*\s*", "", change)
-            change = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", change)
-            change = re.sub(r"\*\*([^*]+)\*\*|`([^`]+)`", r"\1\2", change).strip()
-            if change:
-                changes.append(change)
-    if changes:
-        sections.append({"heading": heading, "changes": changes})
-    return sections
-
-
-def launcher_catalog(*, repository=DEFAULT_REPOSITORY):
-    """List published stable launcher packages and their changes, newest first."""
-    candidates = _stable_releases(_release_api(repository), "launcher")
-    entries = {}
-    for _, release, version in sorted(candidates, key=lambda entry: entry[0], reverse=True):
-        if version in entries:
-            continue
-        try:
-            _asset_url(release, repository, "launcher-release.json")
-            _asset_url(release, repository, _launcher_asset_name(version))
-        except ReleaseError:
-            continue
-        entries[version] = {"version": version, "sections": _change_sections(release.get("body"))}
-    return list(entries.values())
 
 
 def _launcher_asset_name(version):

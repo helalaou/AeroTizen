@@ -15,7 +15,6 @@ const SAMSUNG_ACTION_TIMEOUT_SECONDS: u64 = 320;
 const ROOT_WRITE_TIMEOUT_SECONDS: u64 = 600;
 const MAX_RESPONSE_BYTES: usize = 64 * 1024;
 const MAX_APP_LIST_RESPONSE_BYTES: usize = 256 * 1024;
-const MAX_CATALOG_RESPONSE_BYTES: usize = 2 * 1024 * 1024;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
@@ -160,7 +159,6 @@ pub async fn request_with_cancellation<Result: DeserializeOwned>(
         })?
         .map_err(|_| unavailable())?;
     let response_limit = match operation {
-        "launcher_catalog" => MAX_CATALOG_RESPONSE_BYTES,
         "list_apps" | "list_button_apps" | "remove_apps" => MAX_APP_LIST_RESPONSE_BYTES,
         _ => MAX_RESPONSE_BYTES,
     };
