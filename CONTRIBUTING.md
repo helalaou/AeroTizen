@@ -320,8 +320,9 @@ chore(main): release cli 2.2.0
 Use `!` in the title for a breaking change. Squash-merge each PR and keep its validated
 title as the final commit title, so Release Please can select versions and write
 release notes. Individual commits on a development branch do not need this format.
-Source paths determine which component changes; commit scopes alone do not route
-releases.
+Source paths determine which component changes. Use the `desktop` scope for
+desktop-only work, including changes it needs in shared code. Release Please
+excludes this scope from CLI and launcher releases.
 
 See [Release process](docs/releases.md) for required repository settings, assets,
 local package checks, and failed-build recovery. Build outputs belong in release

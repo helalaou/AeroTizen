@@ -9,6 +9,8 @@ test.beforeEach(async ({ page }) => {
   await page.route("https://api.github.com/repos/helalaou/AeroTizen/releases?*", (route) =>
     route.fulfill({ json: [] }),
   );
+  // Keep automatic weather independent of the live geolocation service.
+  await page.route("https://ipapi.co/json/", (route) => route.fulfill({ json: {} }));
 });
 test("static demo loads its own sample data and assets from a project subpath", async ({ page }) => {
   const launcher = page.frameLocator("iframe");
