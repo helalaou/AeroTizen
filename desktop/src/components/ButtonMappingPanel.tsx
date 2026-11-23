@@ -23,6 +23,8 @@ import type {
   TvButtonMapping,
 } from "../contracts";
 import styles from "../styles.module.css";
+import type { ButtonActivation } from "../services/buttonActivation";
+import { needsActivationCheck } from "../services/buttonActivation";
 import { ButtonInventoryDialog } from "./ButtonInventoryDialog";
 import { ChooseButtonAppDialog } from "./ChooseButtonAppDialog";
 import { RenameButtonDialog } from "./RenameButtonDialog";
@@ -32,6 +34,7 @@ interface ButtonMappingPanelProps {
   mappings: ButtonMappings | null;
   loading: boolean;
   error: string | null;
+  activation: ButtonActivation | null;
   onRefresh(): void;
   actions?: {
     busy: boolean;
@@ -52,7 +55,21 @@ function assignment(mapping: TvButtonMapping) {
   return mapping.app_name ?? mapping.app_id ?? "Unknown app";
 }
 
-export function ButtonMappingPanel({ tvName, mappings, loading, error, onRefresh, actions }: ButtonMappingPanelProps) {
+function statusLabel(mapping: TvButtonMapping, activation: ButtonActivation | null): string {
+  if (mapping.active) return "Active";
+  if (activation?.button === mapping.button && activation.state === "checking") return "Checking…";
+  return "Not confirmed";
+}
+
+export function ButtonMappingPanel({
+  tvName,
+  mappings,
+  loading,
+  error,
+  activation,
+  onRefresh,
+  actions,
+}: ButtonMappingPanelProps) {
   const [picker, setPicker] = useState<TvButtonMapping | null>(null);
   const [inventoryAction, setInventoryAction] = useState<"learn" | "reset" | null>(null);
   const [renaming, setRenaming] = useState<TvButtonMapping | null>(null);
@@ -122,6 +139,13 @@ export function ButtonMappingPanel({ tvName, mappings, loading, error, onRefresh
         )}
         {mappings?.status === "ready" && (
           <Stack gap="sm">
+            {mappings.buttons.some(needsActivationCheck) && (
+              <Text role="status" size="sm" c="dimmed">
+                {activation?.state === "checking"
+                  ? "Change saved. Checking that it is active on your TV…"
+                  : "Changes marked Not confirmed are saved on your TV. Refresh to check if they are active."}
+              </Text>
+            )}
             {mappings.discovery_detail && (
               <Text size="sm" c="dimmed">
                 {mappings.discovery_detail}
@@ -152,8 +176,12 @@ export function ButtonMappingPanel({ tvName, mappings, loading, error, onRefresh
                       <Table.Td style={{ overflowWrap: "anywhere" }}>{assignment(mapping)}</Table.Td>
                       <Table.Td>
                         {mapping.mode !== "default" && (
-                          <Badge color={mapping.active ? "green" : "orange"} variant="light">
-                            {mapping.active ? "Active" : "Pending"}
+                          <Badge
+                            color={mapping.active ? "green" : "orange"}
+                            variant="light"
+                            classNames={{ root: styles.buttonStatus, label: styles.buttonStatusLabel }}
+                          >
+                            {statusLabel(mapping, activation)}
                           </Badge>
                         )}
                       </Table.Td>

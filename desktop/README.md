@@ -86,8 +86,12 @@ See screenshots of [Home and startup](screenshots/home-and-startup.png),
 [Apply Native Home](screenshots/apply-native-home.png).
 
 Open **Button mapping** to see the remote's detected app buttons and their saved
-assignments. A rooted TV needs a compatible paired helper. A pending assignment
-is saved and waiting for the remote or helper to activate it.
+assignments. A rooted TV needs a compatible paired helper. Changes are saved before
+the TV finishes restarting button handling. After an app assignment or Disable change,
+the app checks for up to ten seconds and shows **Checking…**, then **Active** when confirmed.
+The list stays visible during these checks. **Not confirmed** means the change is saved
+but has not been confirmed active; use Refresh to check again. Leaving the page or
+starting another action cancels the check. Restoring an original action needs no such check.
 Open a button's action menu to choose an installed app, disable the button, or
 restore its original action.
 Choose **Rename** in the button's action menu to save a new name on the TV while keeping

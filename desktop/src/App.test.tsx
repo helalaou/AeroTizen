@@ -248,6 +248,7 @@ describe("TV selection", () => {
     const actions = service.buttonActions;
     if (!actions) throw new Error("The fixture must support button actions.");
     const save = vi.spyOn(actions, "change").mockRejectedValueOnce(new Error("The TV could not save this mapping."));
+    const reads = vi.spyOn(service, "listButtons");
     mount(service);
     await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
     await user.click(await screen.findByRole("button", { name: "Button mapping" }));
@@ -265,8 +266,69 @@ describe("TV selection", () => {
     expect(search).toHaveValue("YouTube");
     await user.click(assign);
     expect(await row.findByText("YouTube")).toBeVisible();
+    expect(screen.getByText("Change saved. Checking that it is active on your TV…")).toBeVisible();
+    expect(screen.queryByRole("status", { name: "Loading button mappings" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Launcher" })).toBeEnabled();
+    expect(await row.findByText("Active", {}, { timeout: 4000 })).toBeVisible();
     expect(save).toHaveBeenCalledTimes(2);
     expect(save).toHaveBeenLastCalledWith(livingRoom.id, { button: "Netflix", mode: "app", app_id: "test.YouTube" });
+    const readCount = reads.mock.calls.length;
+    await user.click(row.getByRole("button", { name: "Actions for Netflix" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Restore original action" }));
+    expect(await row.findByText("Original action")).toBeVisible();
+    expect(row.queryByText("Checking…")).not.toBeInTheDocument();
+    expect(reads).toHaveBeenCalledTimes(readCount);
+  });
+
+  it("keeps a saved change visible when its activation check fails", async () => {
+    const service = testService();
+    const reads = vi
+      .spyOn(service, "listButtons")
+      .mockResolvedValueOnce(testButtonMappings)
+      .mockRejectedValueOnce(new Error("Offline"));
+    const user = userEvent.setup();
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
+    await user.click(screen.getByRole("button", { name: "Button mapping" }));
+    const row = within(await screen.findByRole("row", { name: /Netflix/ }));
+    await user.click(row.getByRole("button", { name: "Actions for Netflix" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Disable" }));
+    expect(await row.findByText("Checking…")).toBeVisible();
+    expect(await row.findByText("Not confirmed", {}, { timeout: 3000 })).toBeVisible();
+    expect(row.getByText("Disabled")).toBeVisible();
+    expect(screen.getByText(/Changes marked Not confirmed are saved on your TV/)).toBeVisible();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(reads).toHaveBeenCalledTimes(2);
+  });
+
+  it("cancels an activation check before loading another app choice", async () => {
+    const service = testService();
+    let checkingSignal: AbortSignal | undefined;
+    vi.spyOn(service, "listButtons")
+      .mockResolvedValueOnce(testButtonMappings)
+      .mockImplementationOnce(
+        (_id, signal) =>
+          new Promise((_resolve, reject) => {
+            checkingSignal = signal;
+            signal.addEventListener("abort", () => reject(new DOMException("Cancelled", "AbortError")), { once: true });
+          }),
+      );
+    const user = userEvent.setup();
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
+    await user.click(screen.getByRole("button", { name: "Button mapping" }));
+    const row = within(await screen.findByRole("row", { name: /Netflix/ }));
+    await user.click(row.getByRole("button", { name: "Actions for Netflix" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Disable" }));
+    await waitFor(() => expect(checkingSignal).toBeDefined(), { timeout: 3000 });
+    await user.click(row.getByRole("button", { name: "Actions for Netflix" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Choose app" }));
+    const picker = within(screen.getByRole("dialog", { name: "Choose an app for Netflix" }));
+    await waitFor(() => expect(picker.getByRole("combobox", { name: "Installed app" })).toBeEnabled());
+    expect(checkingSignal?.aborted).toBe(true);
+    await user.click(picker.getByRole("button", { name: "Cancel" }));
+    expect(row.getByText("Disabled")).toBeVisible();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("cancels an app list fetch when leaving Apps and starts a fresh request on return", async () => {
