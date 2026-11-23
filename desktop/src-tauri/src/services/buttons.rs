@@ -2,6 +2,7 @@ use super::reads::read_tv;
 use crate::{
     models::{
         AppError, AppResult, ButtonChange, ButtonChangeResult, ButtonMappings, ButtonTargetApp,
+        LAUNCHER_APP_ID,
     },
     state::{busy, AppState},
     worker,
@@ -13,7 +14,60 @@ pub async fn list_tv_buttons(
     id: String,
     request_id: String,
 ) -> AppResult<ButtonMappings> {
-    read_tv(state, "list_buttons", id, request_id).await
+    let mappings =
+        super::reads::read_native_tv(state, id.clone(), request_id.clone(), |saved| async move {
+            state
+                .button_reads
+                .read(&saved.tv.host, &saved.tv.identity_sha256)
+                .await
+        })
+        .await?;
+    // Release native ownership before the existing SDK lookup takes the same TV lock.
+    // Its cancellation waits for the frozen worker to stop before another page can read.
+    with_app_names(mappings, || {
+        read_tv(state, "list_button_apps", id, request_id)
+    })
+    .await
+}
+
+async fn with_app_names<Query, Pending>(
+    mut mappings: ButtonMappings,
+    query: Query,
+) -> AppResult<ButtonMappings>
+where
+    Query: FnOnce() -> Pending,
+    Pending: std::future::Future<Output = AppResult<Vec<ButtonTargetApp>>>,
+{
+    if let ButtonMappings::Ready { buttons, .. } = &mut mappings {
+        let needs_names = buttons.iter().any(|button| {
+            button
+                .app_id
+                .as_ref()
+                .is_some_and(|id| id != LAUNCHER_APP_ID)
+        });
+        let names = if needs_names {
+            match query().await {
+                Ok(names) => names,
+                Err(error) if error.code == "connection_failed" => Vec::new(),
+                Err(error) => return Err(error),
+            }
+        } else {
+            Vec::new()
+        };
+        for button in buttons {
+            button.app_name = button.app_id.as_ref().and_then(|id| {
+                if id == LAUNCHER_APP_ID {
+                    Some("AeroTizen".into())
+                } else {
+                    names
+                        .iter()
+                        .find(|app| &app.id == id)
+                        .map(|app| app.name.clone())
+                }
+            });
+        }
+    }
+    Ok(mappings)
 }
 
 pub async fn list_tv_button_apps(
@@ -23,6 +77,9 @@ pub async fn list_tv_button_apps(
 ) -> AppResult<Vec<ButtonTargetApp>> {
     read_tv(state, "list_button_apps", id, request_id).await
 }
+
+#[cfg(test)]
+mod tests;
 
 pub async fn change_tv_button(
     state: &AppState,

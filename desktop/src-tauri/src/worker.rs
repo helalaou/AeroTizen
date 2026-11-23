@@ -61,7 +61,6 @@ fn request_local_network_access(operation: &str, params: &Value) {
         | "setup_root"
         | "upgrade_root"
         | "list_apps"
-        | "list_buttons"
         | "list_button_apps"
         | "change_button"
         | "remove_apps"

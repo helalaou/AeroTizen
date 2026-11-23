@@ -5,6 +5,31 @@ use tokio_rustls::{rustls, TlsAcceptor};
 
 const TEST_TIMEOUT: Duration = Duration::from_secs(3);
 
+#[test]
+fn native_button_payloads_match_the_cli_wire_fixture_and_can_never_apply_changes() {
+    let mut expected: Value = serde_json::from_str(include_str!(
+        "../../../../tests/fixtures/button-read-request.json"
+    ))
+    .unwrap();
+    let pairing = Pairing {
+        port: 26104,
+        installation_id: "1".repeat(32),
+        device_identity: "b".repeat(64),
+        certificate_sha256: "d".repeat(64),
+        token: "c".repeat(64),
+    };
+    for (operation, action) in [
+        (ReadRequest::DiscoverButtons, "list"),
+        (ReadRequest::SavedButtons, "status"),
+    ] {
+        expected["buttons"]["action"] = json!(action);
+        assert_eq!(
+            operation.payload(&pairing, "00000000000000000000000000000000"),
+            expected
+        );
+    }
+}
+
 pub(crate) fn reply(request: &Value) -> Value {
     json!({
         "protocol": 1, "authenticated": true, "app_id": HELPER_APP_ID,

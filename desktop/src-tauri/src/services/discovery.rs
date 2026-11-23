@@ -1,6 +1,6 @@
 //! Read-only SSDP discovery and Samsung's public device-info endpoint.
 
-use super::{http::bounded_body, text::python_whitespace};
+use super::{http::bounded_body, text::display_text};
 use crate::models::{AppError, AppResult, TvCandidate};
 use reqwest::{redirect::Policy, Client};
 use serde_json::Value;
@@ -11,7 +11,6 @@ use std::time::Duration;
 use tokio::net::UdpSocket;
 use tokio::task::JoinSet;
 use tokio::time::{timeout_at, Instant};
-use unicode_general_category::{get_general_category, GeneralCategory};
 
 const SSDP_ADDRESS: SocketAddrV4 = SocketAddrV4::new(Ipv4Addr::new(239, 255, 255, 250), 1900);
 const SSDP_MULTICAST_TTL: u32 = 2;
@@ -208,34 +207,8 @@ fn candidate_from_json(host: Ipv4Addr, body: &[u8]) -> Option<TvCandidate> {
     })
 }
 
-fn printable(character: char) -> bool {
-    character == ' '
-        || !matches!(
-            get_general_category(character),
-            GeneralCategory::Control
-                | GeneralCategory::Format
-                | GeneralCategory::Surrogate
-                | GeneralCategory::PrivateUse
-                | GeneralCategory::Unassigned
-                | GeneralCategory::LineSeparator
-                | GeneralCategory::ParagraphSeparator
-                | GeneralCategory::SpaceSeparator
-        )
-}
-
 fn clean_text(value: Option<&Value>) -> String {
-    let Some(value) = value
-        .and_then(Value::as_str)
-        .filter(|text| !text.trim_matches(python_whitespace).is_empty())
-    else {
-        return DEFAULT_TV_LABEL.into();
-    };
-    htmlize::unescape(value)
-        .trim_matches(python_whitespace)
-        .chars()
-        .filter(|character| printable(*character))
-        .take(MAX_TEXT_CHARACTERS)
-        .collect()
+    display_text(value, MAX_TEXT_CHARACTERS).unwrap_or_else(|| DEFAULT_TV_LABEL.into())
 }
 
 #[cfg(test)]

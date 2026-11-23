@@ -54,7 +54,6 @@ OPERATIONS = (
     "prepare_signing_profile",
     "connect",
     "list_apps",
-    "list_buttons",
     "list_button_apps",
     "change_button",
     "remove_apps",
@@ -383,36 +382,6 @@ def list_button_apps(params):
             button_app_names(host, expected).items(), key=lambda app: (app[1].casefold(), app[0])
         )
     ]
-
-
-def list_buttons(params):
-    host = host_value(params.get("host"))
-    expected = checked_identity(params.get("expected_identity"))
-    try:
-        status = buttons.run(
-            SimpleNamespace(button_action="list", receipt=None),
-            host,
-            remote.CONFIG_DIR,
-            expected_identity=expected,
-        )
-    except buttons.ButtonAvailabilityError as error:
-        if error.code in ("pairing_required", "helper_update_required"):
-            return {"status": error.code}
-        raise RequestError(error.code, str(error)) from error
-    if status.get("error"):
-        raise RequestError("button_rules_unreadable", "The saved button assignments could not be read.")
-    rows = button_rows(status)
-    app_names = {releases.APP_ID: "AeroTizen"}
-    if any(row["app_id"] and row["app_id"] not in app_names for row in rows):
-        try:
-            app_names.update(button_app_names(host, expected))
-        except (OSError, SdbError):
-            pass  # The authenticated assignments are still available without display names.
-    return {
-        "status": "ready",
-        "buttons": [{**row, "app_name": app_names.get(row["app_id"])} for row in rows],
-        "discovery_detail": text_value(status.get("discovery_detail"), None),
-    }
 
 
 def run_button_edit(host, expected, action, *, label="", app_id=None, new_name=None):
@@ -982,8 +951,6 @@ def handle(request):
                 result = prepare_signing_profile(params)
             elif request["operation"] == "list_apps":
                 result = list_apps(params)
-            elif request["operation"] == "list_buttons":
-                result = list_buttons(params)
             elif request["operation"] == "list_button_apps":
                 result = list_button_apps(params)
             elif request["operation"] == "change_button":
@@ -1049,7 +1016,7 @@ def main():
         request = None
     if (
         isinstance(request, dict)
-        and request.get("operation") in ("list_apps", "list_buttons", "list_button_apps")
+        and request.get("operation") in ("list_apps", "list_button_apps")
         and request.get("cancellable") is True
     ):
         Thread(target=stop_on_input_close, daemon=True).start()

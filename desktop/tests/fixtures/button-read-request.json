@@ -1,0 +1,7 @@
+{
+  "protocol": 1,
+  "operation": "buttons",
+  "token": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "nonce": "00000000000000000000000000000000",
+  "buttons": { "action": "list", "apply": false }
+}

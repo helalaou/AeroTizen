@@ -53,6 +53,7 @@ async fn bundled_worker_returns_the_native_backend_contract_without_a_tv() {
         "read_home_backup",
         "samsung_sign_in",
         "root_status",
+        "list_buttons",
     ] {
         assert!(!operations.iter().any(|name| name == retired));
     }

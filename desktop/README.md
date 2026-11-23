@@ -3,7 +3,7 @@
 Use AeroTizen Desktop to find and save Samsung TVs, install the launcher and local apps,
 manage installed apps, configure Home and remote buttons, and set up or update root access.
 The app uses Tauri, React and Mantine. Rust handles TV discovery, launcher release
-lookup, Home backup review, Samsung sign-in and Root access status; a bundled Python worker
+lookup, Home backup review, Samsung sign-in, Root access status and button mapping reads; a bundled Python worker
 provides the remaining CLI services.
 SQLite stores saved TV profiles.
 
@@ -244,6 +244,14 @@ live proof can establish root availability and automatic startup. Leaving the pa
 cancels the read and releases its socket and locks. Recovery files are not changed.
 The worker no longer offers `root_status`; setup and update still use the worker,
 including their final status check. The Python CLI's root commands are unchanged.
+
+Button mapping discovery and saved assignments also use the native paired connection.
+Only read requests are available to this Rust transport. It shares recovery validation,
+certificate pins and TV locks with Root access. Older helpers fall back to saved assignments
+with an update notice. The worker no longer offers `list_buttons`; installed-app name lookup,
+the app picker and button changes still use their existing worker operations. A failed app
+name lookup leaves authenticated assignments visible by app ID. CLI button commands and
+the TV helper are unchanged.
 
 ```sh
 npm run typecheck
