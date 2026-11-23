@@ -11,6 +11,12 @@ test.beforeEach(async ({ page }) => {
   );
   // Keep automatic weather independent of the live geolocation service.
   await page.route("https://ipapi.co/json/", (route) => route.fulfill({ json: {} }));
+  await page.route("https://images.metahub.space/**", (route) =>
+    route.fulfill({
+      contentType: "image/svg+xml",
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9"/>',
+    }),
+  );
 });
 test("static demo loads its own sample data and assets from a project subpath", async ({ page }) => {
   const launcher = page.frameLocator("iframe");
@@ -34,12 +40,23 @@ test("static demo loads its own sample data and assets from a project subpath", 
   await expect(launcher.locator("vite-error-overlay")).toHaveCount(0);
   await expect(launcher.locator('script[src="js/launcher-ui.js"]')).toHaveCount(1);
   await expect(launcher.locator('script[src*="/src/"]')).toHaveCount(0);
+  const styles = await page.request.get(DEMO_URL + "js/launcher-ui.css");
+  await expect(styles).toBeOK();
+  const css = await styles.text();
+  expect(css).toMatch(/margin-inline-start:\s*var\(--home-side-padding\)/);
+  expect(css).not.toContain("-webkit-margin-start");
+  expect(css).not.toContain("-webkit-margin-end");
   await expect(launcher.locator("#grid > [data-id]").first()).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("ArrowRight");
   await expect(launcher.locator("#grid > [data-id]").nth(1)).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("Enter");
   await expect(launcher.locator("#toast-root")).toContainText("Would open Netflix");
   const programme = launcher.locator("#continue-items > [data-key]").first();
+  await expect(programme).toHaveAccessibleName(/Stranger Things.*S1 E3.*Netflix/);
+  await expect(programme.locator('[data-continue-part="image"]')).toHaveAttribute(
+    "src",
+    "https://images.metahub.space/background/small/tt4574334/img",
+  );
   await programme.click();
   await expect(programme).toHaveAttribute("data-focused", "true");
   await expect.poll(() => programme.evaluate((node) => getComputedStyle(node).boxShadow)).toContain(GLASS_FOCUS_COLOUR);
@@ -47,6 +64,7 @@ test("static demo loads its own sample data and assets from a project subpath", 
     "background-color",
     GLASS_FOCUS_COLOUR,
   );
+  await expect(launcher.locator("#toast-root")).toContainText("Would open Stranger Things");
   await launcher.locator("#samsung-home-shortcut").click();
   await expect(launcher.locator("#toast")).toHaveText("Would open Samsung Home");
   await launcher.locator("#gear").click();

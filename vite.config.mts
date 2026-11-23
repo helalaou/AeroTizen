@@ -1,9 +1,11 @@
 /// <reference types="vitest/config" />
 
 import preact from "@preact/preset-vite";
+import { Features } from "lightningcss";
 import { cp, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse as parseCss } from "postcss";
 import ts from "typescript";
 import type { Plugin } from "vite";
 import { build, defineConfig } from "vite";
@@ -15,6 +17,7 @@ const source = path.join(root, "launcher");
 const outputNames: Readonly<Record<string, string>> = { demo: "demo", "tv-dev": "launcher-dev" };
 const TV_CHROMIUM_MAJOR = launcherBrowser.chromiumMajor;
 const TV_BROWSER_TARGET = "chrome" + TV_CHROMIUM_MAJOR;
+const TV_LOGICAL_MARGIN = /^-webkit-margin-(start|end)$/;
 
 const SERVICE_ENTRIES = {
   diagnostics: "diagnostics/service.ts",
@@ -168,8 +171,26 @@ const developmentEntry: Plugin = {
   },
 };
 
-export default defineConfig(({ mode }) => {
+const previewStyles: Plugin = {
+  name: "aerotizen-preview-styles",
+  enforce: "pre",
+  transform(code, id) {
+    if (!id.endsWith(".module.css") || !code.includes("-webkit-margin-")) {
+      return;
+    }
+    const stylesheet = parseCss(code, { from: id });
+    stylesheet.walkDecls(TV_LOGICAL_MARGIN, (declaration) => {
+      declaration.replaceWith(
+        declaration.clone({ prop: declaration.prop.replace(TV_LOGICAL_MARGIN, "margin-inline-$1") }),
+      );
+    });
+    return stylesheet.toString();
+  },
+};
+
+export default defineConfig(({ command, mode }) => {
   const output = path.join(root, "dist", outputNames[mode] ?? "launcher");
+  const preview = command === "serve" || mode === "demo";
   return {
     root: source,
     base: "./",
@@ -177,9 +198,14 @@ export default defineConfig(({ mode }) => {
     css: {
       transformer: "lightningcss",
       // Lightning CSS encodes major.minor.patch in three bytes, including in development.
-      lightningcss: { targets: { chrome: TV_CHROMIUM_MAJOR << 16 } },
+      lightningcss: {
+        targets: { chrome: TV_CHROMIUM_MAJOR << 16 },
+        // Keep the standard logical margins in the browser preview.
+        ...(preview ? { exclude: Features.LogicalProperties } : {}),
+      },
     },
     plugins: [
+      preview && previewStyles,
       preact({
         devToolsEnabled: false,
         // The legacy runtime loads as classic scripts and cannot accept Prefresh imports.

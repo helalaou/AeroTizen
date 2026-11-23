@@ -189,8 +189,9 @@ page-level owner and its listeners.
 
 ## App inventory ownership
 
-`src/dev/` owns browser-only sample apps, input devices, fictional programmes and
-generated artwork. The Vite entry installs the full preview without a query flag.
+`src/dev/` owns browser-only sample apps, input devices and viewing progress.
+The sample programmes use MetaHub images and the shared Cinemeta artwork lookup.
+The Vite entry installs the full preview without a query flag.
 Production composition accepts optional typed platform overrides but imports no
 preview data. Missing native APIs preserve cached apps and report unavailable
 discovery; they do not create fictional inventory. Both TV build modes reject

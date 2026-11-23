@@ -1,76 +1,97 @@
-import type { ContinueWatchingService, ContinueWatchingSnapshot } from "../contracts/continueWatching";
+import type {
+  ContinueArtwork,
+  ContinueFeedItem,
+  ContinueWatchingService,
+  ContinueWatchingSnapshot,
+} from "../contracts/continueWatching";
+import type { ContinueItem } from "../contracts/launcher";
 import type { LauncherRuntime } from "../platform/tizen/launcherRuntime";
+import { createCinemetaArtworkLookup } from "../services/continueWatching/createCinemetaArtworkLookup";
 import { createStore } from "../shared/state/createStore";
 
 import { previewAppId } from "./previewApps";
 
-const PREVIEW_DURATION_SECONDS = 100;
-const ARTWORK_MOON_POSITIONS = 5;
-// Fictional metadata and generated artwork belong only to the browser preview.
+const CARD_ART_BASE_URL = "https://images.metahub.space/background/small/";
+
+interface PreviewProgramme {
+  readonly artworkId: string;
+  readonly durationSeconds: number;
+  readonly episode?: number;
+  readonly playbackSeconds: number;
+  readonly releaseYear: number;
+  readonly season?: number;
+  readonly sourceName: Parameters<typeof previewAppId>[0];
+  readonly title: string;
+}
+
+// The titles and episodes are real. Viewing history belongs only to the demo.
 /* eslint-disable launcher-i18n/translated-copy -- Programme titles are sample content metadata, like source-provided titles. */
-const programmes = [
+const programmes: readonly PreviewProgramme[] = [
   {
-    title: "After the Tide",
+    title: "Stranger Things",
     sourceName: "Netflix",
+    artworkId: "tt4574334",
+    releaseYear: 2016,
     season: 1,
     episode: 3,
-    playback: 62,
-    dark: "#142854",
-    light: "#6e9ba8",
+    durationSeconds: 3120,
+    playbackSeconds: 1934,
   },
   {
-    title: "Paper Moons",
+    title: "Road House",
     sourceName: "Prime Video",
-    season: 0,
-    episode: 0,
-    playback: 0,
-    dark: "#241a48",
-    light: "#d5837c",
+    artworkId: "tt3359350",
+    releaseYear: 2024,
+    durationSeconds: 7260,
+    playbackSeconds: 0,
   },
   {
-    title: "The Lantern Trail",
-    sourceName: "YouTube",
+    title: "The Expanse",
+    sourceName: "Stremio",
+    artworkId: "tt3230854",
+    releaseYear: 2015,
     season: 2,
     episode: 1,
-    playback: 83,
-    dark: "#0e3531",
-    light: "#bbaf63",
+    durationSeconds: 2640,
+    playbackSeconds: 2191,
   },
   {
-    title: "Signal North and the Last Broadcast from the Edge of the World",
-    sourceName: "Apple TV",
-    season: 0,
-    episode: 0,
-    playback: 43,
-    dark: "#20345b",
-    light: "#7baad9",
-  },
-  {
-    title: "A Quiet Orbit",
+    title: "The Lord of the Rings: The Rings of Power",
     sourceName: "Prime Video",
-    season: 0,
-    episode: 0,
-    playback: 16,
-    dark: "#34233d",
-    light: "#b998ba",
-  },
-  {
-    title: "The Coral Archive",
-    sourceName: "Disney+",
+    artworkId: "tt7631058",
+    releaseYear: 2022,
     season: 1,
     episode: 2,
-    playback: 35,
-    dark: "#17404d",
-    light: "#e09979",
+    durationSeconds: 4020,
+    playbackSeconds: 1729,
   },
   {
-    title: "Midnight Dispatch",
+    title: "Killers of the Flower Moon",
     sourceName: "Apple TV",
+    artworkId: "tt5537002",
+    releaseYear: 2023,
+    durationSeconds: 12360,
+    playbackSeconds: 1978,
+  },
+  {
+    title: "Andor",
+    sourceName: "Disney+",
+    artworkId: "tt9253284",
+    releaseYear: 2022,
+    season: 1,
+    episode: 2,
+    durationSeconds: 2280,
+    playbackSeconds: 798,
+  },
+  {
+    title: "Severance",
+    sourceName: "Apple TV",
+    artworkId: "tt11280740",
+    releaseYear: 2022,
     season: 1,
     episode: 4,
-    playback: 72,
-    dark: "#292045",
-    light: "#a287cb",
+    durationSeconds: 2760,
+    playbackSeconds: 1987,
   },
 ] as const;
 /* eslint-enable launcher-i18n/translated-copy */
@@ -81,44 +102,41 @@ export const previewContinueSources = Object.freeze(
     .map((name) => Object.freeze({ id: previewAppId(name), name, storeId: previewAppId(name), status: "" })),
 );
 
-const artwork = (dark: string, light: string, index: number) => {
-  const position = index % ARTWORK_MOON_POSITIONS;
-  return (
-    "data:image/svg+xml," +
-    encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
-      <defs><linearGradient id="sky" x2="0" y2="1">
-        <stop stop-color="${dark}"/><stop offset="1" stop-color="${light}"/>
-      </linearGradient></defs>
-      <path fill="url(#sky)" d="M0 0h640v360H0z"/>
-      <circle cx="${143 + 87 * position}" cy="${128 - 13 * position}" r="${43 + 6 * position}" fill="#fff5d8" opacity=".78"/>
-      <path fill="${dark}" opacity=".6" d="M0 240 112 157 237 247 390 152 540 234 640 170V360H0Z"/>
-      <path fill="${dark}" d="M0 284 130 227 280 300 432 221 640 279V360H0Z"/>
-    </svg>
-  `)
-  );
-};
-
-export const createPreviewContinueWatching = (
-  runtime: Pick<LauncherRuntime, "settings" | "toast" | "translate">,
-): ContinueWatchingService => {
-  const items = Object.freeze(
-    programmes.map(({ title, sourceName, season, episode, playback, dark, light }, index) =>
+const items: readonly ContinueFeedItem[] = Object.freeze(
+  programmes.map(
+    ({ title, sourceName, artworkId, releaseYear, season = 0, episode = 0, durationSeconds, playbackSeconds }) =>
       Object.freeze({
-        key: "demo-" + index,
+        key: "demo-" + artworkId,
         title,
         sourceId: previewAppId(sourceName),
         sourceName,
         season,
         episode,
-        duration: PREVIEW_DURATION_SECONDS,
-        playback,
-        image: artwork(dark, light, index),
+        releaseYear,
+        mediaKind: episode ? "tv" : "movie",
+        // Like Samsung feeds, the other sample sources match by title and year.
+        imdbId: sourceName === "Stremio" ? artworkId : undefined,
+        duration: durationSeconds,
+        playback: playbackSeconds,
+        backgroundImage: CARD_ART_BASE_URL + artworkId + "/img",
         payload: "",
         timestamp: 0,
       }),
-    ),
-  );
+  ),
+);
+
+export const createPreviewContinueWatching = (
+  runtime: Pick<LauncherRuntime, "settings" | "toast" | "translate">,
+): ContinueWatchingService => {
+  const artwork = createCinemetaArtworkLookup({
+    createRequest: () => new XMLHttpRequest(),
+    excludedSourceIds: new Set(),
+    storage: {
+      getItem: (key) => localStorage.getItem(key),
+      setItem: (key, value) => localStorage.setItem(key, value),
+    },
+    timers: window,
+  });
   const store = createStore<ContinueWatchingSnapshot>(
     Object.freeze({ items: Object.freeze([]), messageKey: "", sources: previewContinueSources }),
   );
@@ -139,12 +157,22 @@ export const createPreviewContinueWatching = (
       }),
     );
   };
+  const watchArtwork =
+    (watch: typeof artwork.watch) => (item: ContinueItem, show: (result: ContinueArtwork) => void) => {
+      const active = store.getSnapshot().items.find((entry) => entry === item);
+      if (!disposed && active) {
+        return watch(active, show);
+      }
+      show({ status: "ready" });
+      return () => {};
+    };
   return {
     ...store,
     open: (item) => runtime.toast(runtime.translate("apps.wouldOpen", { name: item.title })),
     dispose() {
       disposed = true;
       unsubscribe?.();
+      artwork.cancel();
     },
     refresh,
     start() {
@@ -153,5 +181,7 @@ export const createPreviewContinueWatching = (
         refresh();
       }
     },
+    watchBackdrop: watchArtwork(artwork.watch),
+    watchPoster: watchArtwork(artwork.watchPoster),
   };
 };

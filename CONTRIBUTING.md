@@ -260,7 +260,9 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
 - Run `npm run dev`, then open http://localhost:8019 at 1920×1080. The server also
   prints a network URL for another device. Vite supplies hot updates for Home and Settings
   components and the shared TypeScript runtime. The plain URL opens the full browser
-  preview with sample apps, inputs and a fictional Continue Watching feed. It uses one
+  preview with sample apps, inputs and simulated Continue Watching progress for real titles.
+  Cards use MetaHub artwork. Select Cinema in Appearance or turn on Cover art under
+  Apps → Continue Watching to try the Cinemeta lookup. The preview uses one
   settings store; existing local preferences take priority. A fresh browser context uses Glass,
   Medium app cards, the Scroll app layout, six Home favourites and Continue Watching on.
   In Settings → Inputs, Find and add input simulates discovery of a missing HDMI 5 input.
@@ -285,6 +287,7 @@ test integration. See [style rules](docs/styles.md) for the cascade and CSS chec
   `src/index.ts`; the build rejects rendered modules from `src/dev/`. Browser tests
   inject sample platform adapters through a shared fixture, while native SDK tests
   keep their own adapters. Boundary tests disable those samples and check both TV builds.
+  The browser previews also convert legacy WebKit margins to standard logical margins.
 - For TV development, run `npm run build:dev`, then `aerotizen install ./dist/launcher-dev`.
   The app name and orange icon badge show the first eight characters of the content
   build ID, for example `AeroTizen Dev 12AB34CD`. The build prints the app name.
