@@ -238,3 +238,25 @@ fn button_reads_preserve_the_registered_contract_without_a_worker() {
         Err(json!({"code":"tv_read_cancelled","message":"TV refresh cancelled."}))
     );
 }
+
+#[test]
+fn button_edits_use_the_registered_native_command_without_a_worker_and_keep_busy_guard() {
+    use tauri::Manager;
+    let fixture = Fixture::new();
+    let state = fixture._app.state::<AppState>();
+    let saved = fixture.invoke("list_tvs", json!({})).unwrap();
+    let args = json!({"id":saved[0]["id"],"change":{"button":"Netflix","mode":"disabled"}});
+    let guard = tauri::async_runtime::block_on(state.operation.lock());
+    assert_eq!(
+        fixture
+            .invoke("change_tv_button", args.clone())
+            .unwrap_err()["code"],
+        "operation_busy"
+    );
+    drop(guard);
+    assert_eq!(
+        fixture.invoke("change_tv_button", args).unwrap_err(),
+        json!({"code":"pairing_required","message":"Complete Root access setup and verify the paired TV helper before changing buttons."})
+    );
+    assert!(!state.worker_path.exists());
+}

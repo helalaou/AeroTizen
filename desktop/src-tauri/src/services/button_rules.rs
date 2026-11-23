@@ -8,6 +8,7 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 use unicode_general_category::{get_general_category, GeneralCategory};
 
+pub(super) const BUTTON_PROTOCOL_VERSION: u64 = 1;
 const MAX_BUTTON_UTF16_UNITS: usize = 48;
 const MAX_APP_ID_CHARACTERS: usize = 120;
 const MAX_DETAIL_CHARACTERS: usize = 256;
@@ -21,7 +22,7 @@ fn invalid() -> AppError {
     )
 }
 
-fn valid_label(value: &str) -> bool {
+pub(super) fn valid_label(value: &str) -> bool {
     !value.is_empty()
         && value.trim_matches(python_whitespace) == value
         && value.encode_utf16().count() <= MAX_BUTTON_UTF16_UNITS
@@ -36,7 +37,7 @@ fn valid_label(value: &str) -> bool {
         })
 }
 
-fn valid_app_id(value: &str) -> bool {
+pub(super) fn valid_app_id(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= MAX_APP_ID_CHARACTERS
         && value.as_bytes()[0].is_ascii_alphanumeric()
@@ -45,11 +46,11 @@ fn valid_app_id(value: &str) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || b"_.-".contains(&byte))
 }
 
-fn key(value: &str) -> String {
+pub(super) fn key(value: &str) -> String {
     CaseMapper::new().fold_string(value).into_owned()
 }
 
-pub(super) fn mappings(status: &Value, discovery: bool) -> AppResult<ButtonMappings> {
+pub(super) fn rows(status: &Value) -> AppResult<Vec<TvButtonMapping>> {
     if truthy(&status["error"]) {
         return Err(AppError::new(
             "button_rules_unreadable",
@@ -102,8 +103,12 @@ pub(super) fn mappings(status: &Value, discovery: bool) -> AppResult<ButtonMappi
             }
         }
     }
+    Ok(rows.into_values().collect())
+}
+
+pub(super) fn mappings(status: &Value, discovery: bool) -> AppResult<ButtonMappings> {
     Ok(ButtonMappings::Ready {
-        buttons: rows.into_values().collect(),
+        buttons: rows(status)?,
         discovery_detail: if discovery {
             display_text(status.get("discovery_detail"), MAX_DETAIL_CHARACTERS)
         } else {

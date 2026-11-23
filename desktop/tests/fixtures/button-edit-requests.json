@@ -1,0 +1,23 @@
+[
+  {
+    "change": { "button": "Streaming", "mode": "app", "app_id": "test.Player" },
+    "buttons": { "action": "map", "button": "Streaming", "app_id": "test.Player", "apply": true }
+  },
+  {
+    "change": { "button": "Streaming", "mode": "disabled" },
+    "buttons": { "action": "disable", "button": "Streaming", "apply": true }
+  },
+  {
+    "change": { "button": "Streaming", "mode": "default" },
+    "buttons": { "action": "unmap", "button": "Streaming", "apply": true }
+  },
+  {
+    "change": { "action": "learn", "button": "Streaming" },
+    "buttons": { "action": "learn", "button": "Streaming", "apply": true }
+  },
+  {
+    "change": { "action": "rename", "button": "Streaming", "new_name": "My remote" },
+    "buttons": { "action": "rename", "button": "Streaming", "new_name": "My remote", "apply": true }
+  },
+  { "change": { "action": "reset" }, "buttons": { "action": "reset", "apply": true } }
+]

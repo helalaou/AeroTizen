@@ -1,5 +1,5 @@
 use super::*;
-use crate::models::{ButtonMode, TvButtonMapping};
+use crate::models::{AppError, ButtonMode, TvButtonMapping};
 
 fn mappings(id: &str) -> ButtonMappings {
     ButtonMappings::Ready {

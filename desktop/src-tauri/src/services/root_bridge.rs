@@ -1,5 +1,6 @@
 use super::digest::sha256_hex;
 use native_tls::Protocol;
+use serde::Serialize;
 use serde_json::{json, Value};
 use std::{net::Ipv4Addr, time::Duration};
 use subtle::ConstantTimeEq;
@@ -13,6 +14,7 @@ const PROTOCOL_VERSION: u64 = 1;
 const NONCE_BYTES: usize = 16;
 const MAX_REPLY_BYTES: usize = 8192;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(8);
+const LEARN_TIMEOUT: Duration = Duration::from_secs(25);
 
 // Pairing material is never serialized or formatted into an error.
 pub(super) struct Pairing {
@@ -84,10 +86,42 @@ impl ReadRequest {
     }
 }
 
+#[derive(Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[serde(tag = "action", rename_all = "snake_case")]
+pub(super) enum ButtonEdit {
+    Map { button: String, app_id: String },
+    Disable { button: String },
+    Unmap { button: String },
+    Learn { button: String },
+    Rename { button: String, new_name: String },
+    Reset,
+}
+
+enum Request<'a> {
+    Read(ReadRequest),
+    ButtonEdit(&'a ButtonEdit),
+}
+
+impl Request<'_> {
+    fn payload(self, pairing: &Pairing, nonce: &str) -> Value {
+        match self {
+            Self::Read(operation) => operation.payload(pairing, nonce),
+            Self::ButtonEdit(edit) => {
+                let mut value = ReadRequest::Status.payload(pairing, nonce);
+                value["operation"] = json!("buttons");
+                value["buttons"] = json!(edit);
+                value["buttons"]["apply"] = json!(true);
+                value
+            }
+        }
+    }
+}
+
 async fn request(
     host: Ipv4Addr,
     pairing: &Pairing,
-    operation: ReadRequest,
+    operation: Request<'_>,
 ) -> Result<Value, BridgeError> {
     // The helper uses a self-signed certificate. Match the exact saved DER pin
     // before sending the token; ordinary CA/hostname verification cannot identify it.
@@ -147,9 +181,33 @@ pub(super) async fn read(
     pairing: &Pairing,
     operation: ReadRequest,
 ) -> Result<Value, BridgeError> {
-    tokio::time::timeout(REQUEST_TIMEOUT, request(host, pairing, operation))
-        .await
-        .map_err(|_| BridgeError::Timeout)?
+    tokio::time::timeout(
+        REQUEST_TIMEOUT,
+        request(host, pairing, Request::Read(operation)),
+    )
+    .await
+    .map_err(|_| BridgeError::Timeout)?
+}
+
+pub(super) async fn edit_button(
+    host: Ipv4Addr,
+    pairing: &Pairing,
+    edit: &ButtonEdit,
+) -> Result<Value, BridgeError> {
+    tokio::time::timeout(
+        edit_timeout(edit),
+        request(host, pairing, Request::ButtonEdit(edit)),
+    )
+    .await
+    .map_err(|_| BridgeError::Timeout)?
+}
+
+fn edit_timeout(edit: &ButtonEdit) -> Duration {
+    if matches!(edit, ButtonEdit::Learn { .. }) {
+        LEARN_TIMEOUT
+    } else {
+        REQUEST_TIMEOUT
+    }
 }
 
 async fn timed_status(
@@ -157,9 +215,12 @@ async fn timed_status(
     pairing: &Pairing,
     timeout: Duration,
 ) -> Result<Value, BridgeError> {
-    tokio::time::timeout(timeout, request(host, pairing, ReadRequest::Status))
-        .await
-        .map_err(|_| BridgeError::Timeout)?
+    tokio::time::timeout(
+        timeout,
+        request(host, pairing, Request::Read(ReadRequest::Status)),
+    )
+    .await
+    .map_err(|_| BridgeError::Timeout)?
 }
 
 #[cfg(test)]
