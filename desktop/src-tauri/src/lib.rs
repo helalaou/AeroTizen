@@ -42,7 +42,9 @@ pub fn run() {
                     root_status: services::root_status::RootStatus::new(cli_directory.clone()),
                     button_reads: services::button_reads::ButtonReads::new(cli_directory.clone()),
                     button_edits: services::button_edits::ButtonEdits::new(cli_directory.clone()),
-                    app_reads: services::app_reads::AppReads::new(cli_directory),
+                    device_connection: services::device_connection::TvConnection::new(
+                        cli_directory,
+                    ),
                     worker_path,
                     operation: tokio::sync::Mutex::new(()),
                     cancelled_tv_read: watch::Sender::new(String::new()),

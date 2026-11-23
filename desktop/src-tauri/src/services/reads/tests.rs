@@ -24,7 +24,7 @@ async fn cancelling_native_tv_reads_releases_the_socket_and_both_operation_locks
             std::fs::create_dir_all(path.parent().unwrap()).unwrap();
             std::fs::write(path, receipt.to_string()).unwrap();
         }
-        state.app_reads = super::super::app_reads::AppReads::with_ports(
+        state.device_connection = super::super::device_connection::TvConnection::with_ports(
             directory.path().join("cli-state"),
             listener.local_addr().unwrap().port(),
             1,

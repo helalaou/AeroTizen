@@ -53,8 +53,7 @@ fn request_local_network_access(operation: &str, params: &Value) {
 
     const DISCARD_SERVICE_PORT: u16 = 9;
     let address = match operation {
-        "connect"
-        | "install_launcher"
+        "install_launcher"
         | "install_local_app"
         | "setup_root"
         | "upgrade_root"

@@ -68,6 +68,7 @@ pub(super) enum ReadRequest {
     Status,
     DiscoverButtons,
     SavedButtons,
+    HomeStatus,
 }
 
 impl ReadRequest {
@@ -81,6 +82,9 @@ impl ReadRequest {
                 "status"
             };
             value["buttons"] = json!({"action": action, "apply": false});
+        }
+        if matches!(self, Self::HomeStatus) {
+            value["operation"] = json!("home_status");
         }
         value
     }
@@ -193,12 +197,12 @@ async fn request(
 pub(super) async fn open_sdb(
     host: Ipv4Addr,
     pairing: &Pairing,
-) -> Result<BridgeStream, BridgeError> {
-    let (stream, _) =
+) -> Result<(BridgeStream, Value), BridgeError> {
+    let (stream, proof) =
         tokio::time::timeout(REQUEST_TIMEOUT, open_request(host, pairing, Request::Sdb))
             .await
             .map_err(|_| BridgeError::Timeout)??;
-    Ok(stream)
+    Ok((stream, proof))
 }
 
 pub(super) async fn status(host: Ipv4Addr, pairing: &Pairing) -> Result<Value, BridgeError> {

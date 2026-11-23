@@ -61,7 +61,7 @@ pub async fn inspect_local_app(
     }
     let mut review = super::local_widget::inspect(path.clone()).await?;
     (review.current_revision, review.current_version) = state
-        .app_reads
+        .device_connection
         .installed(
             &saved.tv.host,
             &saved.tv.identity_sha256,
@@ -182,7 +182,7 @@ mod tests {
         use crate::{
             models::VerifiedTv,
             services::{
-                app_reads::AppReads,
+                device_connection::TvConnection,
                 digest::sha256_hex,
                 local_widget::tests::{config, widget},
                 sdb::tests::serve,
@@ -199,7 +199,7 @@ mod tests {
             let directory = tempfile::tempdir().unwrap();
             let mut state = AppState::for_test(directory.path());
             let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-            state.app_reads = AppReads::with_ports(
+            state.device_connection = TvConnection::with_ports(
                 directory.path().join("cli-state"),
                 listener.local_addr().unwrap().port(),
                 1,

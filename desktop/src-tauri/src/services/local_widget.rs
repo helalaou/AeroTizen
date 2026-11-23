@@ -1,5 +1,5 @@
 //! Private snapshots and bounded validation of a user-selected Tizen widget.
-use super::{app_reads::projection::protected_package, text::display_text};
+use super::{device_connection::projection::protected_package, text::display_text};
 use crate::models::{AppError, AppResult, LocalPackageReview, LAUNCHER_APP_ID};
 use roxmltree::{Document, ParsingOptions};
 use sha2::{Digest, Sha256};

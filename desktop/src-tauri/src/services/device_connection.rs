@@ -1,4 +1,5 @@
-//! Owned, cancellable app inventory reads over Developer Mode or the paired relay.
+//! Owned native TV connections through Developer Mode or the paired relay.
+mod profile;
 pub(super) mod projection;
 
 use super::{
@@ -44,9 +45,54 @@ const DEFAULT_OPTIONS: Options = Options {
     info_port: DEVICE_INFO_PORT,
 };
 
-pub struct AppReads {
+pub struct TvConnection {
     directory: PathBuf,
     options: Options,
+}
+
+struct Session<'a> {
+    owner: &'a TvConnection,
+    host: &'a str,
+    expected: Option<String>,
+    info: Option<Value>,
+    bridge_proof: Option<Value>,
+    receipt: Option<root_pairing::Receipt>,
+    connection: Sdb,
+    _ownership: tv_session::TvSessionLock,
+}
+
+impl Session<'_> {
+    async fn unchanged(&mut self) -> AppResult<()> {
+        let current =
+            root_pairing::lookup(&self.owner.directory, self.host, self.expected.as_deref())
+                .await?;
+        root_pairing::unchanged(self.receipt.as_ref(), current.as_ref())
+    }
+
+    async fn identity(&mut self) -> AppResult<String> {
+        let duid = read_identity(&mut self.connection, self.expected.as_deref()).await?;
+        if self.expected.is_none() {
+            self.expected = Some(sha256_hex(duid.as_bytes()));
+        }
+        Ok(duid)
+    }
+
+    async fn inventory(&mut self) -> AppResult<String> {
+        timeout(INVENTORY_TIMEOUT, async {
+            self.unchanged().await?;
+            self.identity().await?;
+            let raw = self
+                .connection
+                .read(ReadCommand::AppList)
+                .await
+                .map_err(|_| connection_failed())?;
+            self.identity().await?;
+            self.unchanged().await?;
+            Ok(raw)
+        })
+        .await
+        .map_err(|_| connection_failed())?
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -62,7 +108,7 @@ enum ConnectFailure {
 fn connection_failed() -> AppError {
     AppError::new(
         "connection_failed",
-        "Could not read the TV's apps. Check the TV connection, Developer Mode and Host PC IP, then refresh.",
+        "Could not connect. Check the TV address, Developer Mode and Host PC IP. Also allow AeroTizen Desktop to access the local network in system settings.",
     )
 }
 
@@ -94,7 +140,7 @@ fn route<'a>(
     ))
 }
 
-impl AppReads {
+impl TvConnection {
     pub fn new(directory: PathBuf) -> Self {
         Self {
             directory,
@@ -152,30 +198,58 @@ impl AppReads {
     }
 
     async fn read(&self, host: &str, expected: &str) -> AppResult<String> {
-        let address = root_pairing::address(host, expected)?;
-        let before = root_pairing::load(&self.directory, host, expected).await?;
-        let _ownership = tv_session::acquire(&self.directory, host).await?;
-        let locked = root_pairing::load(&self.directory, host, expected).await?;
+        self.session(host, expected).await?.inventory().await
+    }
+
+    async fn session<'a>(&'a self, host: &'a str, expected: &'a str) -> AppResult<Session<'a>> {
+        self.open(host, Some(expected), false).await
+    }
+
+    async fn open<'a>(
+        &'a self,
+        host: &'a str,
+        expected: Option<&str>,
+        include_info: bool,
+    ) -> AppResult<Session<'a>> {
+        let address = root_pairing::host_address(host)?;
+        if expected.is_some_and(|value| !crate::models::valid_identity(value)) {
+            return Err(AppError::new(
+                "invalid_request",
+                "The saved TV identity is invalid.",
+            ));
+        }
+        let before = root_pairing::lookup(&self.directory, host, expected).await?;
+        let ownership = tv_session::acquire(&self.directory, host).await?;
+        let locked = root_pairing::lookup(&self.directory, host, expected).await?;
         root_pairing::unchanged(before.as_ref(), locked.as_ref())?;
-        let developer = if before.is_some() {
-            self.developer_host(address).await?
+        let info = if before.is_some() || include_info {
+            self.device_info(address).await?
         } else {
             None
         };
-        let selected = route(before.as_ref(), developer.as_ref())?;
-        let mut connection = self.connect(address, selected).await?;
-        verify_identity(&mut connection, expected).await?;
-        let raw = connection
-            .read(ReadCommand::AppList)
-            .await
-            .map_err(|_| connection_failed())?;
-        verify_identity(&mut connection, expected).await?;
-        let after = root_pairing::load(&self.directory, host, expected).await?;
-        root_pairing::unchanged(before.as_ref(), after.as_ref())?;
-        Ok(raw)
+        let selected = route(
+            before.as_ref(),
+            info.as_ref().and_then(|info| info.get("developerIP")),
+        )?;
+        let (connection, bridge_proof) = self.connect(address, selected).await?;
+        let expected = expected.map(str::to_owned).or_else(|| {
+            before
+                .as_ref()
+                .and_then(|r| r.document["duid_sha256"].as_str().map(str::to_owned))
+        });
+        Ok(Session {
+            owner: self,
+            host,
+            expected,
+            info,
+            bridge_proof,
+            receipt: before,
+            connection,
+            _ownership: ownership,
+        })
     }
 
-    async fn developer_host(&self, address: Ipv4Addr) -> AppResult<Option<Value>> {
+    async fn device_info(&self, address: Ipv4Addr) -> AppResult<Option<Value>> {
         let client = Client::builder()
             .no_proxy()
             .redirect(Policy::none())
@@ -204,10 +278,14 @@ impl AppReads {
             .get("device")
             .and_then(Value::as_object)
             .ok_or_else(invalid_response)?;
-        Ok(device.get("developerIP").cloned())
+        Ok(Some(Value::Object(device.clone())))
     }
 
-    async fn connect(&self, address: Ipv4Addr, route: Route<'_>) -> AppResult<Sdb> {
+    async fn connect(
+        &self,
+        address: Ipv4Addr,
+        route: Route<'_>,
+    ) -> AppResult<(Sdb, Option<Value>)> {
         for attempt in 0..CONNECT_ATTEMPTS {
             let outcome = timeout(CONNECT_TIMEOUT, self.connect_once(address, route)).await;
             match outcome {
@@ -224,16 +302,18 @@ impl AppReads {
         &self,
         address: Ipv4Addr,
         route: Route<'_>,
-    ) -> Result<Sdb, ConnectFailure> {
-        let socket: sdb::Socket = match route {
+    ) -> Result<(Sdb, Option<Value>), ConnectFailure> {
+        let (socket, proof): (sdb::Socket, Option<Value>) = match route {
             Route::Paired(pairing) => {
-                Box::new(root_bridge::open_sdb(address, pairing).await.map_err(
-                    |error| match error {
-                        root_bridge::BridgeError::Connection
-                        | root_bridge::BridgeError::Timeout => ConnectFailure::Retry,
-                        _ => ConnectFailure::Refused,
-                    },
-                )?)
+                let (stream, proof) =
+                    root_bridge::open_sdb(address, pairing)
+                        .await
+                        .map_err(|error| match error {
+                            root_bridge::BridgeError::Connection
+                            | root_bridge::BridgeError::Timeout => ConnectFailure::Retry,
+                            _ => ConnectFailure::Refused,
+                        })?;
+                (Box::new(stream), Some(proof))
             }
             Route::Developer(source) => {
                 let bound = source.and_then(|source| {
@@ -248,20 +328,23 @@ impl AppReads {
                     TcpStream::connect(target).await
                 }
                 .map_err(|_| ConnectFailure::Retry)?;
-                Box::new(stream)
+                (Box::new(stream), None)
             }
         };
-        Sdb::connect(socket).await.map_err(|error| {
-            if error.kind() == io::ErrorKind::InvalidData {
-                ConnectFailure::Refused
-            } else {
-                ConnectFailure::Retry
-            }
-        })
+        Sdb::connect(socket)
+            .await
+            .map(|connection| (connection, proof))
+            .map_err(|error| {
+                if error.kind() == io::ErrorKind::InvalidData {
+                    ConnectFailure::Refused
+                } else {
+                    ConnectFailure::Retry
+                }
+            })
     }
 }
 
-async fn verify_identity(connection: &mut Sdb, expected: &str) -> AppResult<()> {
+async fn read_identity(connection: &mut Sdb, expected: Option<&str>) -> AppResult<String> {
     let raw = connection
         .read(ReadCommand::Identity)
         .await
@@ -276,13 +359,13 @@ async fn verify_identity(connection: &mut Sdb, expected: &str) -> AppResult<()> 
             "The TV did not return its device identity.",
         ));
     }
-    if sha256_hex(duid.as_bytes()) != expected {
+    if expected.is_some_and(|expected| sha256_hex(duid.as_bytes()) != expected) {
         return Err(AppError::new(
             "identity_mismatch",
             "This address belongs to a different TV. No changes were made.",
         ));
     }
-    Ok(())
+    Ok(duid.into())
 }
 
 #[cfg(test)]

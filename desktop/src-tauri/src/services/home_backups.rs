@@ -1,9 +1,14 @@
 use crate::models::{
-    valid_identity, AppError, AppResult, HomeBackupSettings, NativeHomeSettings, LAUNCHER_APP_ID,
+    valid_identity, AppError, AppResult, HomeBackup, HomeBackupSettings, NativeHomeSettings,
+    LAUNCHER_APP_ID,
 };
 use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, Timelike};
 use serde_json::Value;
-use std::{fs::File, io::Read, path::PathBuf};
+use std::{
+    fs::File,
+    io::Read,
+    path::{Path, PathBuf},
+};
 
 const MAX_BACKUP_BYTES: u64 = 128 * 1024;
 const BACKUP_SCHEMA_VERSION: u64 = 1;
@@ -40,29 +45,67 @@ impl HomeBackups {
         let identity = identity.to_owned();
         let captured_at = captured_at.to_owned();
         tokio::task::spawn_blocking(move || {
-            let metadata = std::fs::metadata(&path).map_err(|_| unreadable())?;
-            if !metadata.is_file() || metadata.len() > MAX_BACKUP_BYTES {
-                return Err(unreadable());
-            }
-            let mut file = File::open(path).map_err(|_| unreadable())?;
-            let metadata = file.metadata().map_err(|_| unreadable())?;
-            if !metadata.is_file() || metadata.len() > MAX_BACKUP_BYTES {
-                return Err(unreadable());
-            }
-            let mut bytes = Vec::new();
-            // Bound the actual read as well as metadata, in case the file grows.
-            file.by_ref()
-                .take(MAX_BACKUP_BYTES + 1)
-                .read_to_end(&mut bytes)
-                .map_err(|_| unreadable())?;
-            if bytes.len() as u64 > MAX_BACKUP_BYTES {
-                return Err(unreadable());
-            }
+            let bytes = read_bytes(&path)?;
             review(&bytes, &identity, &captured_at)
         })
         .await
         .map_err(|_| unreadable())?
     }
+
+    pub async fn summary(&self, identity: &str) -> HomeBackup {
+        if !valid_identity(identity) {
+            return HomeBackup::Unreadable;
+        }
+        let path = self.directory.join(identity).join("original-home.json");
+        let identity = identity.to_owned();
+        tokio::task::spawn_blocking(move || {
+            if std::fs::symlink_metadata(&path)
+                .is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound)
+            {
+                return HomeBackup::Missing;
+            }
+            let Some((document, captured_at)) = read_bytes(&path)
+                .ok()
+                .and_then(|bytes| serde_json::from_slice::<Value>(&bytes).ok())
+                .and_then(|document| {
+                    let captured_at = document["captured_at"]
+                        .as_str()
+                        .and_then(capture_timestamp)?;
+                    Some((document, captured_at))
+                })
+            else {
+                return HomeBackup::Unreadable;
+            };
+            if verified_settings(&document, &identity).is_none() {
+                return HomeBackup::Unreadable;
+            }
+            HomeBackup::Saved { captured_at }
+        })
+        .await
+        .unwrap_or(HomeBackup::Unreadable)
+    }
+}
+
+fn read_bytes(path: &Path) -> AppResult<Vec<u8>> {
+    let metadata = std::fs::metadata(path).map_err(|_| unreadable())?;
+    if !metadata.is_file() || metadata.len() > MAX_BACKUP_BYTES {
+        return Err(unreadable());
+    }
+    let mut file = File::open(path).map_err(|_| unreadable())?;
+    let metadata = file.metadata().map_err(|_| unreadable())?;
+    if !metadata.is_file() || metadata.len() > MAX_BACKUP_BYTES {
+        return Err(unreadable());
+    }
+    let mut bytes = Vec::new();
+    // Bound the actual read as well as metadata, in case the file grows.
+    file.by_ref()
+        .take(MAX_BACKUP_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|_| unreadable())?;
+    if bytes.len() as u64 > MAX_BACKUP_BYTES {
+        return Err(unreadable());
+    }
+    Ok(bytes)
 }
 
 fn unreadable() -> AppError {

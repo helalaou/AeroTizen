@@ -1,9 +1,9 @@
-pub mod app_reads;
 pub mod apps;
 pub mod button_edits;
 pub mod button_reads;
 mod button_rules;
 pub mod buttons;
+pub mod device_connection;
 mod digest;
 pub mod discovery;
 pub mod home;

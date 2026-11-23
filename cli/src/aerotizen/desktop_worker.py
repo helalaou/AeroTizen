@@ -43,7 +43,6 @@ CERTIFICATE_FILES = ("author.p12", "distributor.p12", "password.txt", "device-pr
 OPERATIONS = (
     "handshake",
     "prepare_signing_profile",
-    "connect",
     "remove_apps",
     "install_launcher",
     "install_local_app",
@@ -436,19 +435,6 @@ def _connected_profile(session, host, expected, info):
     }
 
 
-def connect_tv(params):
-    host = host_value(params.get("host"))
-    expected = params.get("expected_identity")
-    if expected is not None:
-        checked_identity(expected)
-    try:
-        info = remote.info(host)
-    except SystemExit:
-        info = {}
-    with DeviceSession(host) as session:
-        return _connected_profile(session, host, expected, info)
-
-
 def install_launcher(params):
     host = host_value(params.get("host"))
     expected = checked_identity(params.get("expected_identity"))
@@ -793,7 +779,7 @@ def handle(request):
             elif request["operation"] == "restore_home_backup":
                 result = restore_home_backup(params)
             else:
-                result = connect_tv(params)
+                raise RequestError("invalid_request", "The desktop request is invalid or incompatible.")
         return {**response, "result": result}
     except RequestError as error:
         return {**response, "error": {"code": error.code, "message": str(error)}}

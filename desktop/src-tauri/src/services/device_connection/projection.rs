@@ -446,3 +446,25 @@ pub(super) fn installed(
         });
     Ok((Some(row.revision), version))
 }
+
+pub(super) fn launcher(raw: &str) -> AppResult<Option<String>> {
+    let mut apps = parse(raw)?
+        .into_iter()
+        .filter(|app| app.id == crate::models::LAUNCHER_APP_ID);
+    let Some(app) = apps.next() else {
+        return Ok(None);
+    };
+    if app.package != crate::models::LAUNCHER_APP_ID.split('.').next().unwrap()
+        || apps.next().is_some()
+    {
+        return Err(AppError::new(
+            "unexpected_package",
+            "The TV reported an unexpected launcher package.",
+        ));
+    }
+    Ok(Some(
+        app.version
+            .map(|value| display(&value, "Unknown"))
+            .unwrap_or_else(|| "Unknown".into()),
+    ))
+}

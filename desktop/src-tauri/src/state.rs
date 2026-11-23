@@ -1,6 +1,6 @@
 use crate::models::AppError;
 use crate::services::{
-    app_reads::AppReads, button_edits::ButtonEdits, button_reads::ButtonReads,
+    button_edits::ButtonEdits, button_reads::ButtonReads, device_connection::TvConnection,
     home_backups::HomeBackups, local_apps, profiles::Profiles, root_status::RootStatus, samsung,
 };
 use std::path::PathBuf;
@@ -12,7 +12,7 @@ pub struct AppState {
     pub root_status: RootStatus,
     pub button_reads: ButtonReads,
     pub button_edits: ButtonEdits,
-    pub app_reads: AppReads,
+    pub device_connection: TvConnection,
     pub worker_path: PathBuf,
     pub operation: tokio::sync::Mutex<()>,
     pub cancelled_tv_read: watch::Sender<String>,
@@ -29,7 +29,7 @@ impl AppState {
             root_status: RootStatus::new(directory.join("cli-state")),
             button_reads: ButtonReads::new(directory.join("cli-state")),
             button_edits: ButtonEdits::new(directory.join("cli-state")),
-            app_reads: AppReads::new(directory.join("cli-state")),
+            device_connection: TvConnection::new(directory.join("cli-state")),
             worker_path: directory.join("no-worker-in-unit-tests"),
             operation: Default::default(),
             cancelled_tv_read: watch::Sender::new(String::new()),

@@ -1,10 +1,8 @@
 use super::discovery;
 use crate::{
-    models::{AppError, AppResult, SavedTv, TvCandidate, VerifiedTv},
+    models::{AppError, AppResult, SavedTv, TvCandidate},
     state::{busy, AppState},
-    worker,
 };
-use serde_json::json;
 
 pub async fn list_tvs(state: &AppState) -> AppResult<Vec<SavedTv>> {
     state.profiles.list().await
@@ -26,12 +24,10 @@ pub async fn connect_tv(
         None => None,
     };
     let expected_identity = expected.map(|profile| profile.tv.identity_sha256);
-    let tv: VerifiedTv = worker::request(
-        &state.worker_path,
-        "connect",
-        json!({ "host": host, "expected_identity": expected_identity.as_deref() }),
-    )
-    .await?;
+    let tv = state
+        .device_connection
+        .profile(&host, expected_identity.as_deref())
+        .await?;
     if tv.host != host
         || expected_identity
             .as_ref()

@@ -1,4 +1,4 @@
-//! The read-only SDB services used for app inventory. No arbitrary shell or upload API.
+//! Typed SDB services for app inventory and reviewed removal. No arbitrary shell API.
 use std::io;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
@@ -8,6 +8,7 @@ const MAX_FRAME_BYTES: usize = 256 * 1024;
 const MAX_SERVICE_FRAMES: usize = 4096;
 const MAX_INVENTORY_BYTES: usize = 1024 * 1024;
 const MAX_IDENTITY_BYTES: usize = 4096;
+const MAX_CAPABILITY_BYTES: usize = 64 * 1024;
 const HEADER_BYTES: usize = 24;
 const CNXN: u32 = u32::from_le_bytes(*b"CNXN");
 const OPEN: u32 = u32::from_le_bytes(*b"OPEN");
@@ -24,6 +25,7 @@ pub(super) type Socket = Box<dyn SdbIo>;
 pub(super) enum ReadCommand {
     Identity,
     AppList,
+    Capabilities,
 }
 
 impl ReadCommand {
@@ -31,12 +33,14 @@ impl ReadCommand {
         match self {
             Self::Identity => b"shell:0 getduid\0",
             Self::AppList => b"shell:0 vd_applist\0",
+            Self::Capabilities => b"capability:\0",
         }
     }
     fn limit(self) -> usize {
         match self {
             Self::Identity => MAX_IDENTITY_BYTES,
             Self::AppList => MAX_INVENTORY_BYTES,
+            Self::Capabilities => MAX_CAPABILITY_BYTES,
         }
     }
 }
@@ -46,6 +50,16 @@ struct Frame {
     remote: u32,
     local: u32,
     payload: Vec<u8>,
+}
+
+pub(super) fn valid_identifier(value: &str) -> bool {
+    const MAX_IDENTIFIER_BYTES: usize = 256;
+    !value.is_empty()
+        && value.len() <= MAX_IDENTIFIER_BYTES
+        && value.as_bytes()[0].is_ascii_alphanumeric()
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"_.-".contains(&b))
 }
 
 fn protocol_error() -> io::Error {
@@ -113,20 +127,47 @@ impl Sdb {
     }
 
     pub async fn read(&mut self, command: ReadCommand) -> io::Result<String> {
+        self.service(command.service(), command.limit(), None).await
+    }
+
+    pub async fn watcher_status(&mut self) -> io::Result<String> {
+        const WATCHER_SERVICE: &[u8] = b"tcp:47790\0";
+        const WATCHER_REQUEST: &[u8] =
+            b"GET / HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n";
+        const MAX_WATCHER_BYTES: usize = 128 * 1024;
+        self.service(WATCHER_SERVICE, MAX_WATCHER_BYTES, Some(WATCHER_REQUEST))
+            .await
+    }
+
+    async fn service(
+        &mut self,
+        service: &[u8],
+        limit: usize,
+        request: Option<&[u8]>,
+    ) -> io::Result<String> {
         let local = self.next_id;
         self.next_id = self.next_id.checked_add(1).ok_or_else(protocol_error)?;
-        send(&mut *self.io, OPEN, local, 0, command.service()).await?;
+        send(&mut *self.io, OPEN, local, 0, service).await?;
         let mut remote = None;
         let mut output = Vec::new();
+        let mut sent = false;
         for _ in 0..MAX_SERVICE_FRAMES {
             let frame = receive(&mut *self.io).await?;
             if frame.local != local {
                 continue;
             }
             match frame.command {
-                OKAY => remote = Some(frame.remote),
+                OKAY => {
+                    remote = Some(frame.remote);
+                    if !sent {
+                        if let Some(request) = request {
+                            send(&mut *self.io, WRTE, local, frame.remote, request).await?;
+                        }
+                        sent = true;
+                    }
+                }
                 WRTE => {
-                    if frame.payload.len() > command.limit() - output.len() {
+                    if frame.payload.len() > limit - output.len() {
                         return Err(protocol_error());
                     }
                     output.extend_from_slice(&frame.payload);
