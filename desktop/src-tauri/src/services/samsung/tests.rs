@@ -28,16 +28,7 @@ fn expired_sign_in_is_unavailable_for_certificate_setup() {
 }
 
 fn state(directory: &std::path::Path) -> AppState {
-    AppState {
-        profiles: crate::services::profiles::Profiles::new(directory.join("profiles.sqlite3"))
-            .unwrap(),
-        home_backups: crate::services::home_backups::HomeBackups::new(directory.join("cli-state")),
-        worker_path: directory.join("missing-worker"),
-        operation: Default::default(),
-        cancelled_tv_read: tokio::sync::watch::Sender::new(String::new()),
-        samsung: Default::default(),
-        local_apps: Default::default(),
-    }
+    AppState::for_test(directory)
 }
 
 fn auth() -> Value {

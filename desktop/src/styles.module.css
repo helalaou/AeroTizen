@@ -62,10 +62,10 @@
 .candidate {
   gap: 20px;
 }
-.launcherVersion {
+.softwareVersion {
   min-height: 30px;
 }
-.launcherVersion > :last-child {
+.softwareVersion > :last-child {
   margin-inline-start: auto;
 }
 .sidebar {

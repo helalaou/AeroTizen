@@ -1,5 +1,6 @@
 pub mod apps;
 pub mod buttons;
+mod digest;
 pub mod discovery;
 pub mod home;
 pub mod home_backups;
@@ -10,7 +11,10 @@ pub mod local_apps;
 pub mod profiles;
 pub mod reads;
 pub mod root;
+mod root_bridge;
+pub mod root_status;
 pub mod samsung;
 mod samsung_auth;
 mod text;
+mod tv_session;
 pub mod tvs;

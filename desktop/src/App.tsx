@@ -1,5 +1,5 @@
 import { Alert, AppShell, Loader, LoadingOverlay, Modal, Stack, Text } from "@mantine/core";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppsPanel } from "./components/AppsPanel";
 import { ButtonMappingPanel } from "./components/ButtonMappingPanel";
 import { Header } from "./components/Header";
@@ -44,11 +44,16 @@ export function App({ service }: AppProps) {
   const busyMessage = manager.busy?.message ?? (manager.loading ? "Loading saved TVs…" : null);
   const appLoading = manager.loading || manager.busy?.scope === "app";
   const backendVersion = manager.backend?.version;
+  const loadRootStatus = manager.loadRootStatus;
+  useEffect(() => {
+    if (selected && page === "overview" && !busy) loadRootStatus(selected.id);
+  }, [selected, page, busy, loadRootStatus]);
+
   const goToPage = (next: TvPage) => {
     setPage(next);
     setMenuOpened(false);
     if (next === page) return;
-    if (page === "apps" || page === "buttons" || page === "root") manager.cancelPageRead();
+    manager.cancelPageRead();
     if (next === "apps" && selected) {
       manager.clearAppRemoval();
       manager.loadApps(selected.id);
@@ -93,7 +98,9 @@ export function App({ service }: AppProps) {
           profile={selected}
           backendVersion={backendVersion}
           latestLauncher={manager.latestLauncher}
+          rootAccessStatus={!manager.rootLoading && !manager.rootError ? manager.rootStatus : null}
           onLauncher={() => goToPage("launcher")}
+          onRootAccess={() => goToPage("root")}
         />
       );
     }

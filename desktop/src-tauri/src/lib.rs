@@ -35,11 +35,11 @@ pub fn run() {
                     .map_err(|error| std::io::Error::other(error.message))?;
                 let worker_path =
                     worker::binary_path().map_err(|error| std::io::Error::other(error.message))?;
+                let cli_directory = app.path().home_dir()?.join(".config").join("aerotizen");
                 app.manage(AppState {
                     profiles,
-                    home_backups: services::home_backups::HomeBackups::new(
-                        app.path().home_dir()?.join(".config").join("aerotizen"),
-                    ),
+                    home_backups: services::home_backups::HomeBackups::new(cli_directory.clone()),
+                    root_status: services::root_status::RootStatus::new(cli_directory),
                     worker_path,
                     operation: tokio::sync::Mutex::new(()),
                     cancelled_tv_read: watch::Sender::new(String::new()),

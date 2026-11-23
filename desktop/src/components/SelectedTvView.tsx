@@ -1,7 +1,7 @@
 import { Button, Group, Paper, Text, Title } from "@mantine/core";
 import { CircleArrowUp } from "lucide-react";
 import type { ReactNode } from "react";
-import type { SavedTv } from "../contracts";
+import type { RootAccessStatus, SavedTv } from "../contracts";
 import { rootVersion, softwareRows } from "../tvDetails";
 import { launcherUpdate } from "../services/launcherVersions";
 import styles from "../styles.module.css";
@@ -12,11 +12,20 @@ interface SelectedTvViewProps {
   profile: SavedTv;
   backendVersion?: string;
   latestLauncher?: string | null;
+  rootAccessStatus: RootAccessStatus | null;
   onLauncher(): void;
+  onRootAccess(): void;
 }
 
-export function SelectedTvView({ profile, backendVersion, latestLauncher, onLauncher }: SelectedTvViewProps) {
-  const version = rootVersion(profile);
+export function SelectedTvView({
+  profile,
+  backendVersion,
+  latestLauncher,
+  rootAccessStatus,
+  onLauncher,
+  onRootAccess,
+}: SelectedTvViewProps) {
+  const version = rootAccessStatus?.runtime_version ?? rootVersion(profile);
   const update = launcherUpdate(profile.launcher_version, latestLauncher);
   const versionRows: [string, string][] = version ? [["Root helper version", version]] : [];
   const rows: [string, ReactNode][] = [
@@ -41,29 +50,34 @@ export function SelectedTvView({ profile, backendVersion, latestLauncher, onLaun
           <GithubReportButton profile={profile} backendVersion={backendVersion} />
         </Group>
         <dl className={styles.definitionList}>
-          {rows.map(([label, value]) => (
-            <div key={label}>
-              <dt>{label}</dt>
-              <dd>
-                {label === "Launcher version" && update ? (
-                  <Group gap="xs" className={styles.launcherVersion}>
-                    <span>{value}</span>
-                    <Button
-                      size="xs"
-                      variant="light"
-                      color="#a13b0a"
-                      leftSection={<CircleArrowUp size={15} aria-hidden="true" />}
-                      onClick={onLauncher}
-                    >
-                      Update available
-                    </Button>
-                  </Group>
-                ) : (
-                  value
-                )}
-              </dd>
-            </div>
-          ))}
+          {rows.map(([label, value]) => {
+            const rootUpdate = label === "Root helper version" && rootAccessStatus?.update_available;
+            const hasUpdate = rootUpdate || (label === "Launcher version" && update);
+            return (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>
+                  {hasUpdate ? (
+                    <Group gap="xs" className={styles.softwareVersion}>
+                      <span>{value}</span>
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="#a13b0a"
+                        leftSection={<CircleArrowUp size={15} aria-hidden="true" />}
+                        aria-label={rootUpdate ? "Root helper update available" : undefined}
+                        onClick={rootUpdate ? onRootAccess : onLauncher}
+                      >
+                        Update available
+                      </Button>
+                    </Group>
+                  ) : (
+                    value
+                  )}
+                </dd>
+              </div>
+            );
+          })}
         </dl>
       </Paper>
     </div>

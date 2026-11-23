@@ -3,7 +3,8 @@
 Use AeroTizen Desktop to find and save Samsung TVs, install the launcher and local apps,
 manage installed apps, configure Home and remote buttons, and set up or update root access.
 The app uses Tauri, React and Mantine. Rust handles TV discovery, launcher release
-lookup, Home backup review and Samsung sign-in; a bundled Python worker provides the remaining CLI services.
+lookup, Home backup review, Samsung sign-in and Root access status; a bundled Python worker
+provides the remaining CLI services.
 SQLite stores saved TV profiles.
 
 See screenshots of [TV selection](screenshots/tv-selection.png), [Overview](screenshots/overview.png),
@@ -107,6 +108,8 @@ Open **Root access** for a fresh status check, or use **Refresh root status** to
 The page shows root availability, the live helper version, automatic startup verification
 and whether setup progress is saved on this computer. Missing pairing or an unreachable
 helper shows **Unverified**; a saved recovery record alone does not establish live access.
+Overview also checks live helper status. When an update is available, select
+**Update available** beside **Root helper version** to open Root access.
 
 Choose **Set up root access** and confirm the Developer Mode settings. The app reuses
 the CLI's setup, prepares Samsung signing certificates when needed and saves its private
@@ -232,6 +235,15 @@ random state checked before accepting credentials. Callback bodies are limited t
 Cancel, timeout and browser-launch failure close the listener. Tokens stay in the
 existing in-memory session; the UI receives only the account email. Certificate
 issuance still uses the worker, and the Python CLI keeps its own browser sign-in.
+
+Root access status runs in Rust through the existing paired helper. It reads the CLI's
+private recovery record, checks the saved TV identity and shares the CLI's TV session
+lock. TLS checks the saved certificate before sending credentials. Each status request
+uses a fresh nonce, an eight-second deadline and an 8 KiB reply limit. Only authenticated
+live proof can establish root availability and automatic startup. Leaving the page
+cancels the read and releases its socket and locks. Recovery files are not changed.
+The worker no longer offers `root_status`; setup and update still use the worker,
+including their final status check. The Python CLI's root commands are unchanged.
 
 ```sh
 npm run typecheck
