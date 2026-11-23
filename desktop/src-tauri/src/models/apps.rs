@@ -50,7 +50,7 @@ pub struct LocalAppInstallResult {
     pub app_id: String,
     pub version: String,
 }
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LocalPackageReview {
     pub sha256: String,
     pub name: String,

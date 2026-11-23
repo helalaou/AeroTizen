@@ -1,0 +1,102 @@
+[
+  {
+    "name": "standard",
+    "xml": "<widget xmlns=\"http://www.w3.org/ns/widgets\" xmlns:tizen=\"http://tizen.org/ns/widgets\" version=\"1.2.0\"><name>Local &amp; Media</name><tizen:application id=\"LocalApp01.Player\" package=\"LocalApp01\"/></widget>",
+    "metadata": {
+      "app_id": "LocalApp01.Player",
+      "package_id": "LocalApp01",
+      "name": "Local & Media",
+      "version": "1.2.0"
+    }
+  },
+  {
+    "name": "prefixes",
+    "xml": "<widget xmlns=\"http://www.w3.org/ns/widgets\" xmlns:tv=\"http://tizen.org/ns/widgets\" version=\"1.2.0\"><name>Local &amp; Media</name><tv:application id=\"LocalApp01.Player\" package=\"LocalApp01\"/></widget>",
+    "metadata": {
+      "app_id": "LocalApp01.Player",
+      "package_id": "LocalApp01",
+      "name": "Local & Media",
+      "version": "1.2.0"
+    }
+  },
+  {
+    "name": "no-name",
+    "xml": "<widget xmlns=\"http://www.w3.org/ns/widgets\" xmlns:tizen=\"http://tizen.org/ns/widgets\" version=\"1.2.0\"><tizen:application id=\"LocalApp01.Player\" package=\"LocalApp01\"/></widget>",
+    "metadata": {
+      "app_id": "LocalApp01.Player",
+      "package_id": "LocalApp01",
+      "name": "LocalApp01.Player",
+      "version": "1.2.0"
+    }
+  },
+  {
+    "name": "empty-name",
+    "xml": "<widget xmlns=\"http://www.w3.org/ns/widgets\" xmlns:tizen=\"http://tizen.org/ns/widgets\" version=\"1.2.0\"><name>  </name><tizen:application id=\"LocalApp01.Player\" package=\"LocalApp01\"/></widget>",
+    "metadata": {
+      "app_id": "LocalApp01.Player",
+      "package_id": "LocalApp01",
+      "name": "LocalApp01.Player",
+      "version": "1.2.0"
+    }
+  },
+  {
+    "name": "cdata",
+    "xml": "<widget xmlns=\"http://www.w3.org/ns/widgets\" xmlns:tizen=\"http://tizen.org/ns/widgets\" version=\"1.2.0\"><name><![CDATA[Media <Player>]]></name><tizen:application id=\"LocalApp01.Player\" package=\"LocalApp01\"/></widget>",
+    "metadata": {
+      "app_id": "LocalApp01.Player",
+      "package_id": "LocalApp01",
+      "name": "Media <Player>",
+      "version": "1.2.0"
+    }
+  },
+  {
+    "name": "unicode",
+    "xml": "<widget xmlns=\"http://www.w3.org/ns/widgets\" xmlns:tizen=\"http://tizen.org/ns/widgets\" version=\"1.2.0\"><name>Stra\u00dfe \ud83d\ude00</name><tizen:application id=\"LocalApp01.Player\" package=\"LocalApp01\"/></widget>",
+    "metadata": {
+      "app_id": "LocalApp01.Player",
+      "package_id": "LocalApp01",
+      "name": "Stra\u00dfe \ud83d\ude00",
+      "version": "1.2.0"
+    }
+  },
+  {
+    "name": "entities",
+    "xml": "<widget xmlns=\"http://www.w3.org/ns/widgets\" xmlns:tizen=\"http://tizen.org/ns/widgets\" version=\"1.2.0\"><name>&#x1f600; &amp;amp;</name><tizen:application id=\"LocalApp01.Player\" package=\"LocalApp01\"/></widget>",
+    "metadata": {
+      "app_id": "LocalApp01.Player",
+      "package_id": "LocalApp01",
+      "name": "\ud83d\ude00 &",
+      "version": "1.2.0"
+    }
+  },
+  {
+    "name": "version-four",
+    "xml": "<widget xmlns=\"http://www.w3.org/ns/widgets\" xmlns:tizen=\"http://tizen.org/ns/widgets\" version=\"1.2.3.4\"><name>Local &amp; Media</name><tizen:application id=\"LocalApp01.Player\" package=\"LocalApp01\"/></widget>",
+    "metadata": {
+      "app_id": "LocalApp01.Player",
+      "package_id": "LocalApp01",
+      "name": "Local & Media",
+      "version": "1.2.3.4"
+    }
+  },
+  {
+    "name": "version-invalid",
+    "xml": "<widget xmlns=\"http://www.w3.org/ns/widgets\" xmlns:tizen=\"http://tizen.org/ns/widgets\" version=\"v1.2\"><name>Local &amp; Media</name><tizen:application id=\"LocalApp01.Player\" package=\"LocalApp01\"/></widget>",
+    "error": "invalid_package"
+  },
+  {
+    "name": "missing-app",
+    "xml": "<widget xmlns=\"http://www.w3.org/ns/widgets\" xmlns:tizen=\"urn:wrong\" version=\"1.2.0\"><name>Local &amp; Media</name><tizen:application id=\"LocalApp01.Player\" package=\"LocalApp01\"/></widget>",
+    "error": "invalid_package"
+  },
+  {
+    "name": "invalid-package",
+    "xml": "<widget xmlns=\"http://www.w3.org/ns/widgets\" xmlns:tizen=\"http://tizen.org/ns/widgets\" version=\"1.2.0\"><name>Local &amp; Media</name><tizen:application id=\"LocalApp01.Player\" package=\"Other\"/></widget>",
+    "error": "invalid_package"
+  },
+  {
+    "name": "bad-id",
+    "xml": "<widget xmlns=\"http://www.w3.org/ns/widgets\" xmlns:tizen=\"http://tizen.org/ns/widgets\" version=\"1.2.0\"><name>Local &amp; Media</name><tizen:application id=\"LocalApp01.Bad App\" package=\"LocalApp01\"/></widget>",
+    "error": "invalid_package"
+  }
+]

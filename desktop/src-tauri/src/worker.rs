@@ -55,7 +55,6 @@ fn request_local_network_access(operation: &str, params: &Value) {
     let address = match operation {
         "connect"
         | "install_launcher"
-        | "inspect_local_app"
         | "install_local_app"
         | "setup_root"
         | "upgrade_root"
