@@ -1,11 +1,10 @@
 import { Alert, Button, Group, Modal, Stack, Text, TextInput } from "@mantine/core";
 import { useState } from "react";
 import type { ButtonInventoryChange } from "../contracts";
-
-const MAX_BUTTON_NAME_LENGTH = 48;
+import { buttonNameExists, MAX_BUTTON_NAME_LENGTH, validButtonName } from "../services/buttonNames";
 
 interface ButtonInventoryDialogProps {
-  action: ButtonInventoryChange["action"];
+  action: "learn" | "reset";
   tvName: string;
   buttonNames: string[];
   onSubmit(change: ButtonInventoryChange, reportError: (message: string) => void): Promise<boolean>;
@@ -18,8 +17,8 @@ export function ButtonInventoryDialog({ action, tvName, buttonNames, onSubmit, o
   const [error, setError] = useState<string | null>(null);
   const learning = action === "learn";
   const button = name.trim();
-  const duplicate = buttonNames.some((existing) => existing.toLowerCase() === button.toLowerCase());
-  const invalid = learning && (!button || duplicate || button.length > MAX_BUTTON_NAME_LENGTH);
+  const duplicate = buttonNameExists(button, buttonNames);
+  const invalid = learning && (!validButtonName(button) || duplicate);
 
   async function submit() {
     if (invalid || submitting) return;

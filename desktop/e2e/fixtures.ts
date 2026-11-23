@@ -40,6 +40,16 @@ export const test = base.extend<{
         rootOutdated,
       }) => {
         let currentPackages = packages;
+        let currentReleases = releases;
+        const buttonKey = "test-button-mappings";
+        let currentButtonMappings = JSON.parse(
+          sessionStorage.getItem(buttonKey) ?? JSON.stringify(buttonMappings),
+        ) as typeof buttonMappings;
+        Object.defineProperty(window, "__setDemoReleases", {
+          value: (next: typeof releases) => {
+            currentReleases = next;
+          },
+        });
         let samsungAccount: { email: string } | null = null;
         const profileKey = "test-native-profiles";
         const profiles = new Map<string, SavedTv>(
@@ -140,7 +150,7 @@ export const test = base.extend<{
                 case "backend_status":
                   return status;
                 case "launcher_catalog":
-                  return releases;
+                  return currentReleases;
                 case "list_tvs":
                   return [...profiles.values()];
                 case "read_home_backup": {
@@ -204,8 +214,29 @@ export const test = base.extend<{
                   return structuredClone(currentPackages);
                 case "list_tv_buttons":
                   return profiles.get(String(args.id))?.transport === "paired_root"
-                    ? buttonMappings
+                    ? currentButtonMappings
                     : { status: "pairing_required" };
+                case "change_tv_button": {
+                  const change = args.change as { action: string; button: string; new_name: string };
+                  if (profiles.get(String(args.id))?.transport !== "paired_root" || change.action !== "rename")
+                    throw new Error("A paired TV helper is required.");
+                  const current = currentButtonMappings.buttons.find((row) => row.button === change.button);
+                  if (!current) throw new Error("The remote button is unavailable.");
+                  if (
+                    currentButtonMappings.buttons.some(
+                      (row) => row !== current && row.button.toLowerCase() === change.new_name.toLowerCase(),
+                    )
+                  )
+                    throw new Error("A button already has this name.");
+                  currentButtonMappings = {
+                    ...currentButtonMappings,
+                    buttons: currentButtonMappings.buttons.map((row) =>
+                      row === current ? { ...row, button: change.new_name } : row,
+                    ),
+                  };
+                  sessionStorage.setItem(buttonKey, JSON.stringify(currentButtonMappings));
+                  return true;
+                }
                 case "list_tv_button_apps":
                   return buttonApps;
                 case "cancel_tv_read":
@@ -250,7 +281,7 @@ export const test = base.extend<{
                   if (
                     !tv ||
                     tv.launcher_version !== args.currentVersion ||
-                    !releases.some((item) => item.version === version)
+                    !currentReleases.some((item) => item.version === version)
                   ) {
                     throw new Error("Refresh the TV and try again.");
                   }

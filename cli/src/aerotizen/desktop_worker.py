@@ -461,8 +461,8 @@ def list_buttons(params):
     }
 
 
-def run_button_edit(host, expected, action, *, label="", app_id=None):
-    args = SimpleNamespace(button_action=action, button=label, receipt=None, yes=True)
+def run_button_edit(host, expected, action, *, label="", app_id=None, new_name=None):
+    args = SimpleNamespace(button_action=action, button=label, receipt=None, yes=True, new_name=new_name)
     try:
         status = buttons.run(
             args,
@@ -496,6 +496,19 @@ def change_button_inventory(host, expected, change):
         if any(
             row["button"].casefold() == label.casefold() and row["mode"] == "default"
             for row in button_rows(status)
+        ):
+            return True
+    elif action == "rename" and set(change) == {"action", "button", "new_name"}:
+        label, replacement = change.get("button"), change.get("new_name")
+        if not buttons.valid_label(label) or not buttons.valid_label(replacement):
+            raise RequestError(
+                "invalid_request", f"Use a button name of up to {buttons.MAX_LABEL_LENGTH} characters."
+            )
+        status = run_button_edit(host, expected, "rename", label=label, new_name=replacement)
+        rows = button_rows(status)
+        if any(row["button"] == replacement for row in rows) and (
+            label.casefold() == replacement.casefold()
+            or not any(row["button"].casefold() == label.casefold() for row in rows)
         ):
             return True
     else:

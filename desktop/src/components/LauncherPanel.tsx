@@ -1,4 +1,19 @@
-import { Alert, Button, Code, Divider, Group, Modal, NativeSelect, Paper, Stack, Text, Title } from "@mantine/core";
+import {
+  ActionIcon,
+  Alert,
+  Button,
+  Code,
+  Divider,
+  Group,
+  Modal,
+  NativeSelect,
+  Paper,
+  Stack,
+  Text,
+  Title,
+  Tooltip,
+} from "@mantine/core";
+import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 import type { LauncherRelease, SavedTv } from "../contracts";
 import { compareLauncherVersions } from "../services/launcherVersions";
@@ -8,6 +23,7 @@ import { LauncherReleaseNotes } from "./LauncherReleaseNotes";
 interface LauncherPanelProps {
   profile: SavedTv;
   releases: LauncherRelease[] | null | undefined;
+  releasesLoading: boolean;
   busy: boolean;
   canInstall: boolean;
   onInstall(version: string, confirmReplace: boolean): Promise<boolean>;
@@ -33,6 +49,7 @@ function installLabel(target: string, installed: string | null, comparison: numb
 export function LauncherPanel({
   profile,
   releases,
+  releasesLoading,
   busy,
   canInstall,
   onInstall,
@@ -62,7 +79,20 @@ export function LauncherPanel({
   return (
     <div className={styles.detailContent}>
       <Stack gap="lg">
-        <Title order={1}>Launcher</Title>
+        <Group justify="space-between">
+          <Title order={1}>Launcher</Title>
+          <Tooltip label="Refresh launcher releases">
+            <ActionIcon
+              variant="subtle"
+              aria-label="Refresh launcher releases"
+              loading={releasesLoading}
+              disabled={busy || releasesLoading}
+              onClick={onRetryVersions}
+            >
+              <RefreshCw size={18} aria-hidden="true" />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
         <Paper withBorder p="lg">
           <Stack gap="md">
             <div>
@@ -102,12 +132,16 @@ export function LauncherPanel({
                 )}
                 <Group>
                   <Button
-                    disabled={!canInstall || !ready}
+                    disabled={!canInstall || !ready || releasesLoading}
                     onClick={() => (needsConfirmation ? setConfirm(true) : void install(false))}
                   >
                     {action}
                   </Button>
-                  <Button variant="default" disabled={busy} onClick={() => setShowVersions((current) => !current)}>
+                  <Button
+                    variant="default"
+                    disabled={busy || releasesLoading}
+                    onClick={() => setShowVersions((current) => !current)}
+                  >
                     {showVersions ? "Use latest version" : "Choose another version"}
                   </Button>
                 </Group>
@@ -115,7 +149,7 @@ export function LauncherPanel({
             )}
             {releases === null && (
               <Group>
-                <Button variant="default" onClick={onRetryVersions}>
+                <Button variant="default" disabled={busy || releasesLoading} onClick={onRetryVersions}>
                   Retry
                 </Button>
               </Group>

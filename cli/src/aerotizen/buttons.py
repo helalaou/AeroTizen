@@ -35,6 +35,7 @@ def configure_parser(parser, handler):
         "key-names": "read the names Samsung assigns to raw key codes",
         "input-devices": "show the input devices registered with the TV compositor",
         "learn": "learn an app button from a physical press",
+        "rename": "rename an app button without changing its assigned action",
         "map": "open an installed app with an app button",
         "disable": "make an app button do nothing",
         "unmap": "restore the original action of an app button",
@@ -50,6 +51,8 @@ def configure_parser(parser, handler):
             command.add_argument("button", help='name for the physical app button (e.g. "Amazon Prime")')
         if action == "map":
             command.add_argument("--app", required=True, help="installed app name or Tizen app ID")
+        if action == "rename":
+            command.add_argument("--name", dest="new_name", required=True, help="new name for the app button")
         if action == "key-names":
             command.add_argument("codes", metavar="CODE", type=int, nargs="+", help="key codes to look up")
         command.set_defaults(fn=handler, button_action=action)
@@ -101,6 +104,9 @@ def run(args, host, state_dir, *, expected_identity=None, target_app_id=None):
     label = getattr(args, "button", "").strip()
     if action not in READ_ACTIONS and action != "reset" and not valid_label(label):
         raise ValueError(f"Use a single-line button name of up to {MAX_LABEL_LENGTH} characters.")
+    replacement = getattr(args, "new_name", None)
+    if action == "rename" and not valid_label(replacement):
+        raise ValueError(f"Use a single-line button name of up to {MAX_LABEL_LENGTH} characters.")
     receipt = root_state.load(args.receipt) if args.receipt else root_state.find(host, state_dir)
     if not receipt or receipt["phase"] != "active":
         raise ButtonAvailabilityError(
@@ -131,6 +137,12 @@ def run(args, host, state_dir, *, expected_identity=None, target_app_id=None):
                         "helper_update_required", "Update the TV helper to use this button name."
                     )
             payload["button"] = label
+        if action == "rename":
+            if capabilities.get("buttons_rename") is not True:
+                raise ButtonAvailabilityError(
+                    "helper_update_required", "Update the TV helper to rename app buttons."
+                )
+            payload["new_name"] = replacement
         if action == "key-names" and not capabilities.get("buttons_key_names"):
             raise DeviceSessionError("Update the TV helper to look up Samsung key names.")
         if action == "input-devices" and not capabilities.get("buttons_input_devices"):

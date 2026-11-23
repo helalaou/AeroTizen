@@ -25,6 +25,7 @@ import type {
 import styles from "../styles.module.css";
 import { ButtonInventoryDialog } from "./ButtonInventoryDialog";
 import { ChooseButtonAppDialog } from "./ChooseButtonAppDialog";
+import { RenameButtonDialog } from "./RenameButtonDialog";
 
 interface ButtonMappingPanelProps {
   tvName: string;
@@ -53,7 +54,8 @@ function assignment(mapping: TvButtonMapping) {
 
 export function ButtonMappingPanel({ tvName, mappings, loading, error, onRefresh, actions }: ButtonMappingPanelProps) {
   const [picker, setPicker] = useState<TvButtonMapping | null>(null);
-  const [inventoryAction, setInventoryAction] = useState<ButtonInventoryChange["action"] | null>(null);
+  const [inventoryAction, setInventoryAction] = useState<"learn" | "reset" | null>(null);
+  const [renaming, setRenaming] = useState<TvButtonMapping | null>(null);
 
   return (
     <div className={styles.detailContent}>
@@ -168,6 +170,7 @@ export function ButtonMappingPanel({ tvName, mappings, loading, error, onRefresh
                               </ActionIcon>
                             </Menu.Target>
                             <Menu.Dropdown>
+                              <Menu.Item onClick={() => setRenaming(mapping)}>Rename</Menu.Item>
                               <Menu.Item
                                 onClick={() => {
                                   actions.loadApps();
@@ -207,6 +210,15 @@ export function ButtonMappingPanel({ tvName, mappings, loading, error, onRefresh
           buttonNames={mappings?.status === "ready" ? mappings.buttons.map((row) => row.button) : []}
           onSubmit={actions.updateInventory}
           onClose={() => setInventoryAction(null)}
+        />
+      )}
+      {renaming && actions && (
+        <RenameButtonDialog
+          key={renaming.button}
+          button={renaming.button}
+          buttonNames={mappings?.status === "ready" ? mappings.buttons.map((row) => row.button) : []}
+          onSubmit={actions.updateInventory}
+          onClose={() => setRenaming(null)}
         />
       )}
       {picker && actions && (

@@ -14,6 +14,9 @@ and [Launcher](screenshots/launcher.png).
    The change list below the install controls follows your selection.
 3. Wait for the TV to report the selected version. Downgrades require confirmation and may fail on some TVs.
 
+Use **Refresh launcher releases** beside the page title to check for new releases without
+restarting the app. The current release stays visible while the check runs.
+
 If a first install needs signing certificates, the app guides you through Samsung
 sign-in in your browser, creates the TV's signing profile, and continues installation.
 You can also sign in and out through the app menu. The account session lasts until
@@ -84,6 +87,8 @@ assignments. A rooted TV needs a compatible paired helper. A pending assignment
 is saved and waiting for the remote or helper to activate it.
 Open a button's action menu to choose an installed app, disable the button, or
 restore its original action.
+Choose **Rename** in the button's action menu to save a new name on the TV while keeping
+its physical button and assigned action. Renaming needs a helper that supports this action.
 Use **Learn a button** for an app button the TV did not detect. Enter a name
 and press the app button when the dialog prompts you. **Reset all buttons** in
 the page menu restores every original action and forgets manually learned buttons.

@@ -355,6 +355,14 @@ export function testService(): DesktopService {
           buttonMappings = [...buttonMappings, originalButton(change.button)].sort((a, b) =>
             a.button.localeCompare(b.button),
           );
+        } else if (change.action === "rename") {
+          const current = buttonMappings.find((row) => row.button === change.button);
+          if (!current) throw new Error("The remote button is unavailable.");
+          if (
+            buttonMappings.some((row) => row !== current && row.button.toLowerCase() === change.new_name.toLowerCase())
+          )
+            throw new Error("A button already has this name.");
+          buttonMappings = buttonMappings.map((row) => (row === current ? { ...row, button: change.new_name } : row));
         } else {
           buttonMappings = testButtonMappings.buttons.map((row) => originalButton(row.button));
         }

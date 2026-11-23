@@ -11,6 +11,7 @@ import {
   testBackupSha256,
   testButtonMappings,
   testPackages,
+  testReleases,
   testService,
 } from "./test/tvs";
 
@@ -21,6 +22,79 @@ function mount(service: DesktopService = testService()) {
     </MantineProvider>,
   );
 }
+
+describe("Launcher releases and button names", () => {
+  it("refreshes published releases without hiding the current release or blocking navigation", async () => {
+    const service = testService();
+    const catalog = vi.spyOn(service, "launcherCatalog");
+    const user = userEvent.setup();
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
+    await user.click(screen.getByRole("button", { name: "Launcher" }));
+    expect(await screen.findByRole("heading", { name: "Changes in 3.1.0" })).toBeVisible();
+    let finish!: (value: typeof testReleases) => void;
+    catalog.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await user.click(screen.getByRole("button", { name: "Refresh launcher releases" }));
+    expect(screen.getByRole("button", { name: "Refresh launcher releases" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Update to 3.1.0" })).toBeDisabled();
+    expect(screen.getByRole("heading", { name: "Changes in 3.1.0" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Overview" })).toBeEnabled();
+    finish([{ ...testReleases[0]!, version: "3.2.0" }, ...testReleases]);
+    expect(await screen.findByRole("button", { name: "Update to 3.2.0" })).toBeEnabled();
+    expect(screen.getByRole("heading", { name: "Changes in 3.2.0" })).toBeVisible();
+    expect(catalog).toHaveBeenCalledTimes(2);
+    catalog.mockRejectedValueOnce(new Error("Offline"));
+    await user.click(screen.getByRole("button", { name: "Refresh launcher releases" }));
+    expect(await screen.findByText("Could not load launcher versions.")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(await screen.findByRole("button", { name: "Update to 3.1.0" })).toBeEnabled();
+  });
+
+  it("renames a button without changing its assigned app and keeps errors in the dialog", async () => {
+    const service = testService();
+    const change = vi
+      .spyOn(service.buttonActions!, "updateInventory")
+      .mockRejectedValueOnce(new Error("Update the TV helper to rename app buttons."));
+    const user = userEvent.setup();
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
+    await user.click(screen.getByRole("button", { name: "Button mapping" }));
+    await user.click(await screen.findByRole("button", { name: "Actions for Netflix" }));
+    await user.click(screen.getByRole("menuitem", { name: "Rename" }));
+    let dialog = within(screen.getByRole("dialog", { name: "Rename Netflix" }));
+    expect(dialog.getByRole("button", { name: "Save name" })).toBeDisabled();
+    await user.click(dialog.getByRole("button", { name: "Cancel" }));
+    expect(change).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Actions for Netflix" }));
+    await user.click(screen.getByRole("menuitem", { name: "Rename" }));
+    dialog = within(screen.getByRole("dialog", { name: "Rename Netflix" }));
+    const name = dialog.getByRole("textbox", { name: "Button name" });
+    await user.clear(name);
+    expect(dialog.getByRole("button", { name: "Save name" })).toBeDisabled();
+    await user.type(name, "prime video");
+    expect(dialog.getByText("A button already has this name.")).toBeVisible();
+    await user.clear(name);
+    await user.type(name, "Streaming");
+    await user.click(dialog.getByRole("button", { name: "Save name" }));
+    expect(await dialog.findByRole("alert")).toHaveTextContent("Update the TV helper");
+    expect(name).toHaveValue("Streaming");
+    await user.click(dialog.getByRole("button", { name: "Save name" }));
+    const row = await screen.findByRole("row", { name: /Streaming/ });
+    expect(row).toHaveTextContent("Stremio");
+    expect(row).toHaveTextContent("Active");
+    expect(screen.queryByRole("row", { name: /Netflix/ })).not.toBeInTheDocument();
+    expect(change).toHaveBeenLastCalledWith(livingRoom.id, {
+      action: "rename",
+      button: "Netflix",
+      new_name: "Streaming",
+    });
+  });
+});
 
 describe("Home and startup", () => {
   it("prepares the original backup before applying Native Home", async () => {

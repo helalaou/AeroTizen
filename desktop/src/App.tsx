@@ -185,6 +185,7 @@ export function App({ service }: AppProps) {
           return new Promise<boolean>((resolve) => setSignInDialog({ kind: "install", version, confirmed, resolve }));
         }}
         onRetryVersions={manager.retryLauncherVersions}
+        releasesLoading={manager.launcherReleasesLoading}
       />
     );
   }

@@ -131,7 +131,8 @@ export interface ButtonTargetApp {
 }
 
 export type ButtonChange = { button: string } & ({ mode: "app"; app_id: string } | { mode: "default" | "disabled" });
-export type ButtonInventoryChange = { action: "learn"; button: string } | { action: "reset" };
+export type ButtonInventoryChange =
+  { action: "learn"; button: string } | { action: "rename"; button: string; new_name: string } | { action: "reset" };
 
 export interface SamsungAccount {
   email: string | null;

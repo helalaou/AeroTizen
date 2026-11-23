@@ -3,13 +3,52 @@ import { test } from "./fixtures";
 import type { Locator, Page } from "@playwright/test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { testPackages } from "../src/test/tvs";
+import { testPackages, testReleases } from "../src/test/tvs";
 
 async function showAction(page: Page, isMobile: boolean, name: string) {
   if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
   await page.getByRole("navigation", { name: "TV actions" }).getByRole("button", { name, exact: true }).click();
   await expect(page.getByRole("heading", { name, exact: true, level: 1 })).toBeVisible();
 }
+
+test("refreshes launcher releases without restarting the app", async ({ page, isMobile }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Connect to Living room" }).click();
+  await showAction(page, isMobile, "Launcher");
+  await expect(page.getByRole("button", { name: "Update to 3.1.0" })).toBeEnabled();
+  await page.evaluate(
+    (releases) => {
+      (window as unknown as { __setDemoReleases(value: typeof releases): void }).__setDemoReleases(releases);
+    },
+    [{ ...testReleases[0]!, version: "3.2.0" }, ...testReleases],
+  );
+  await page.getByRole("button", { name: "Refresh launcher releases" }).click();
+  await expect(page.getByRole("button", { name: "Update to 3.2.0" })).toBeEnabled();
+  await expect(page.getByRole("heading", { name: "Changes in 3.2.0" })).toBeVisible();
+});
+
+test("renames a button and retains its assigned app after reconnecting", async ({ page, isMobile }, info) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Connect to Living room" }).click();
+  await showAction(page, isMobile, "Button mapping");
+  await page.getByRole("button", { name: "Actions for Netflix" }).click();
+  await page.getByRole("menuitem", { name: "Rename", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Rename Netflix" });
+  await expect(dialog.getByRole("button", { name: "Save name" })).toBeDisabled();
+  await dialog.getByRole("textbox", { name: "Button name" }).fill("Prime Video");
+  await expect(dialog.getByText("A button already has this name.")).toBeVisible();
+  await dialog.getByRole("textbox", { name: "Button name" }).fill("Streaming");
+  await page.screenshot({ path: join(tmpdir(), `button-rename-${info.project.name}.png`) });
+  await dialog.getByRole("button", { name: "Save name" }).click();
+  const renamed = page.getByRole("row", { name: /Streaming/ });
+  await expect(renamed).toContainText("Stremio");
+  await expect(renamed).toContainText("Active");
+  await page.reload();
+  await page.getByRole("button", { name: "Connect to Living room" }).click();
+  await showAction(page, isMobile, "Button mapping");
+  await expect(renamed).toContainText("Stremio");
+  await expect(page.getByRole("row", { name: /Netflix/ })).toHaveCount(0);
+});
 
 test("navigates the selected TV actions and keeps the initial screen TV-only", async ({ page, isMobile }, info) => {
   const errors: string[] = [];

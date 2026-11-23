@@ -46,6 +46,7 @@ export function useTvManager(service: DesktopService) {
   const [backend, setBackend] = useState<BackendStatus | null>(null);
   const [launcherReleases, setLauncherReleases] = useState<LauncherRelease[] | null>();
   const [releaseCheck, setReleaseCheck] = useState(0);
+  const [launcherReleasesLoading, setLauncherReleasesLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<PendingOperation | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,10 +80,16 @@ export function useTvManager(service: DesktopService) {
     let cancelled = false;
     void service.launcherCatalog().then(
       (releases) => {
-        if (!cancelled) setLauncherReleases(releases);
+        if (!cancelled) {
+          setLauncherReleases(releases);
+          setLauncherReleasesLoading(false);
+        }
       },
       () => {
-        if (!cancelled) setLauncherReleases(null);
+        if (!cancelled) {
+          setLauncherReleases(null);
+          setLauncherReleasesLoading(false);
+        }
       },
     );
     return () => {
@@ -274,7 +281,11 @@ export function useTvManager(service: DesktopService) {
   ) => {
     if (!buttonActions || selected?.id !== id) return false;
     const success = await run(
-      change.action === "learn" ? "Waiting for a remote button press…" : "Resetting remote buttons…",
+      {
+        learn: "Waiting for a remote button press…",
+        rename: "Renaming remote button…",
+        reset: "Resetting remote buttons…",
+      }[change.action],
       async () => {
         setButtonChangeError(null);
         await buttonActions.updateInventory(id, change);
@@ -521,9 +532,10 @@ export function useTvManager(service: DesktopService) {
     applyNativeHome,
     restoreHomeBackup,
     retryLauncherVersions: () => {
-      setLauncherReleases(undefined);
+      setLauncherReleasesLoading(true);
       setReleaseCheck((current) => current + 1);
     },
+    launcherReleasesLoading,
     clearError: () => setError(null),
     clearAppRemoval: () => setAppRemoval([]),
     back: () => {
