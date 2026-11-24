@@ -13,13 +13,10 @@ use std::{
 const MAX_BACKUP_BYTES: u64 = 128 * 1024;
 const BACKUP_SCHEMA_VERSION: u64 = 1;
 const BACKUP_KIND: &str = "aerotizen.home-baseline";
-const MAIN_OPERATION: &str = "http://tizen.org/appcontrol/operation/main";
-const HOME_KEY: &str = "db/appfw/home_appid";
-const STARTUP_KEY: &str = "db/appfw/startup_appid";
-const STARTUP_BACKUP_KEY: &str = "db/appfw/booting_appid_backup";
-const FIRST_SCREEN_KEY: &str = "db/first_screen/type";
-const AUTOSTART_KEY: &str = "db/menu/smart_hub/ontvsetting/auto_start";
-const SETTING_COUNT: usize = 5;
+use super::home_protocol::{
+    AUTOSTART_KEY, FIRST_SCREEN_KEY, HOME_KEY, MAIN_OPERATION, SETTING_COUNT, STARTUP_BACKUP_KEY,
+    STARTUP_KEY,
+};
 
 /// Owns original Home backups. Existing originals are never replaced.
 #[derive(Clone)]
@@ -242,6 +239,8 @@ fn review(bytes: &[u8], identity: &str, captured_at: &str) -> AppResult<HomeBack
 }
 
 mod capture;
+mod original;
+pub(super) use original::Original;
 
 #[cfg(test)]
 mod tests;

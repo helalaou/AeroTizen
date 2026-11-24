@@ -141,6 +141,20 @@ impl Sdb {
             .await
     }
 
+    pub async fn sdk_execute(&mut self, launch: &super::sdk::Launch) -> io::Result<String> {
+        const MAX_SDK_OUTPUT_BYTES: usize = 128 * 1024;
+        self.service(&launch.service(), MAX_SDK_OUTPUT_BYTES, None)
+            .await
+    }
+    pub async fn launch_launcher(&mut self) -> io::Result<String> {
+        self.service(
+            format!("shell:0 was_execute {}\0", crate::models::LAUNCHER_APP_ID).as_bytes(),
+            8192,
+            None,
+        )
+        .await
+    }
+
     pub async fn watcher_status(&mut self) -> io::Result<String> {
         const WATCHER_SERVICE: &[u8] = b"tcp:47790\0";
         const WATCHER_REQUEST: &[u8] =

@@ -37,120 +37,6 @@ def connected_tv(monkeypatch, fake_tv, tmp_path):
     return tv
 
 
-def _write_backup(tmp_path, identity, captured_at):
-    backup = tmp_path / "backups" / identity / "original-home.json"
-    backup.parent.mkdir(parents=True)
-    backup.write_text(
-        json.dumps(
-            {
-                "schema_version": 1,
-                "kind": "aerotizen.home-baseline",
-                "captured_at": captured_at,
-                "device": {"identity_sha256": identity, "model": "Frame", "firmware_build": "test"},
-                "home": {
-                    "operation": worker.home.OPERATION,
-                    "default_app": "stock-home",
-                    "settings": {
-                        key: {"type": kind, "value": "stock-home" if kind == "string" else 0}
-                        for key, kind in worker.home.SETTINGS.items()
-                    },
-                },
-                "evidence": {
-                    "access": "sdk_uid_901",
-                    "uid": 901,
-                    "authenticated": True,
-                    "query_staging_cleaned": True,
-                    "sdk_staging_cleaned": True,
-                    "helper_sha256": "0" * 64,
-                },
-            }
-        )
-    )
-    return backup
-
-
-def test_restore_home_backup_calls_change_and_returns_profile(connected_tv, tmp_path, monkeypatch):
-    identity = hashlib.sha256(b"test-duid").hexdigest()
-    captured_at = "2026-11-16T10:00:00+00:00"
-    _write_backup(tmp_path, identity, captured_at)
-    calls = []
-    monkeypatch.setattr(
-        worker.home_control,
-        "change",
-        lambda session, info, action, **kwargs: calls.append((action, kwargs)),
-    )
-    reply = worker.handle(
-        request("restore_home_backup", host="127.0.0.1", expected_identity=identity, captured_at=captured_at)
-    )
-    assert calls == [("restore", {"state_dir": tmp_path})]
-    assert reply["result"]["identity_sha256"] == identity
-
-    stale = worker.handle(
-        request("restore_home_backup", host="127.0.0.1", expected_identity=identity, captured_at="stale")
-    )
-    assert stale["error"]["code"] == "backup_changed"
-    assert calls == [("restore", {"state_dir": tmp_path})]
-
-
-def test_restore_home_backup_reports_the_native_home_error(connected_tv, tmp_path, monkeypatch):
-    identity = hashlib.sha256(b"test-duid").hexdigest()
-    captured_at = "2026-11-16T10:00:00+00:00"
-    _write_backup(tmp_path, identity, captured_at)
-
-    def fail(*_args, **_kwargs):
-        raise worker.home.HomeError("Autostart changed and the matching boot receipt is unavailable.")
-
-    monkeypatch.setattr(worker.home_control, "change", fail)
-    reply = worker.handle(
-        request("restore_home_backup", host="127.0.0.1", expected_identity=identity, captured_at=captured_at)
-    )
-    assert reply["error"] == {
-        "code": "restore_failed",
-        "message": "Autostart changed and the matching boot receipt is unavailable.",
-    }
-
-
-def test_apply_native_home_calls_change_and_returns_profile(connected_tv, tmp_path, monkeypatch):
-    identity = hashlib.sha256(b"test-duid").hexdigest()
-    backup = _write_backup(tmp_path, identity, "2026-11-16T10:00:00+00:00")
-    digest = hashlib.sha256(backup.read_bytes()).hexdigest()
-    calls = []
-    monkeypatch.setattr(
-        worker.home_control,
-        "change",
-        lambda session, info, action, **kwargs: calls.append((action, kwargs)),
-    )
-    reply = worker.handle(
-        request("apply_native_home", host="127.0.0.1", expected_identity=identity, backup_sha256=digest)
-    )
-    assert calls == [("apply", {"state_dir": tmp_path})]
-    assert reply["result"]["identity_sha256"] == identity
-
-    stale = worker.handle(
-        request("apply_native_home", host="127.0.0.1", expected_identity=identity, backup_sha256="f" * 64)
-    )
-    assert stale["error"]["code"] == "backup_changed"
-    assert calls == [("apply", {"state_dir": tmp_path})]
-
-
-def test_apply_native_home_reports_the_native_home_error(connected_tv, tmp_path, monkeypatch):
-    identity = hashlib.sha256(b"test-duid").hexdigest()
-    backup = _write_backup(tmp_path, identity, "2026-11-16T10:00:00+00:00")
-    digest = hashlib.sha256(backup.read_bytes()).hexdigest()
-
-    def fail(*_args, **_kwargs):
-        raise worker.home.HomeError("AeroTizen is installed but its control service is unavailable.")
-
-    monkeypatch.setattr(worker.home_control, "change", fail)
-    reply = worker.handle(
-        request("apply_native_home", host="127.0.0.1", expected_identity=identity, backup_sha256=digest)
-    )
-    assert reply["error"] == {
-        "code": "apply_failed",
-        "message": "AeroTizen is installed but its control service is unavailable.",
-    }
-
-
 def test_certificate_setup_refuses_a_different_identity(connected_tv):
     reply = worker.handle(request("prepare_signing_profile", host="127.0.0.1", expected_identity="0" * 64))
     assert reply["error"]["code"] == "identity_mismatch"
@@ -192,8 +78,6 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "install_launcher",
         "setup_root",
         "upgrade_root",
-        "apply_native_home",
-        "restore_home_backup",
     ]
     for retired in (
         "discover",
@@ -210,6 +94,8 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "connect",
         "prepare_native_home",
         "install_local_app",
+        "apply_native_home",
+        "restore_home_backup",
     ):
         assert worker.handle(request(retired))["error"]["code"] == "invalid_request"
 
