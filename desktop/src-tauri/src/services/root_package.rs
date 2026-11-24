@@ -229,9 +229,11 @@ pub(super) fn setup_bundle(
         })
         .collect();
     let manifest = json!({"schema_version":1,"upstream_version":"0.0.12","runtime":"6.0","package":package,"nonce":nonce,"service":descriptor,"files":hashes});
+    let mut manifest_bytes = serde_json::to_vec_pretty(&manifest).map_err(|_| failed())?;
+    manifest_bytes.push(b'\n');
     files.push(PayloadFile {
         name: "probe.json".into(),
-        bytes: config_bytes(&manifest)?,
+        bytes: manifest_bytes,
     });
     Ok(Bundle { files, manifest })
 }
