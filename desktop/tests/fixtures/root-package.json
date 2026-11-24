@@ -1,0 +1,38 @@
+{
+  "nonce": "22222222222222222222222222222222",
+  "package": "archive-root-3333333333333333",
+  "upstream_hashes": {
+    "SamsungTvArchiveRoot.dll": "5f647158f4c4fd502f1481c2692a95663516e934d11a13b45d5cd821d85d9671",
+    "SamsungTvArchiveRoot.runtimeconfig.json": "681a7f9dd3ecb637e2f1198c9cbd9d0e1b42994c211c64c8ffe2fba3f2c0442b",
+    "SamsungTvArchiveRoot.deps.json": "fc0e154d1a440bbbc23cf6997f85a3d780667f1b324f88d922cda1b2ab52557e"
+  },
+  "proof_script": "#!/bin/sh\nset -eu\numask 077\ntest \"$(id -u)\" = 0\ntest \"$(id -ru)\" = 0\ntest \"$(id -g)\" = 0\nboot=$(cat /proc/sys/kernel/random/boot_id)\ncase \"$boot\" in *[!a-f0-9-]*|'') exit 80;; esac\nproofdir=/home/owner/share/tmp/sdk_tools/aerotizen-probe-proof-22222222222222222222222222222222\ntest ! -e \"$proofdir\"\ntest ! -L \"$proofdir\"\nmkdir -m 755 \"$proofdir\"\nchsmack -a _ \"$proofdir\"\ncd \"$proofdir\"\nproof=proof.json\ntest ! -e \"$proof.new\"\ntest ! -L \"$proof.new\"\nset -C\nprintf '{\"schema_version\":1,\"uid\":0,\"euid\":0,\"gid\":0,\"boot_id\":\"%s\",\"nonce\":\"22222222222222222222222222222222\",\"payload_sha256\":\"5f647158f4c4fd502f1481c2692a95663516e934d11a13b45d5cd821d85d9671\"}\\n' \"$boot\" > \"$proof.new\"\nset +C\nchmod 444 \"$proof.new\"\nchsmack -a _ \"$proof.new\"\nmv -f \"$proof.new\" \"$proof\"\n",
+  "services": [
+    {
+      "descriptor": {
+        "operation": "install",
+        "installation_id": "11111111111111111111111111111111",
+        "setup_stage": "/home/owner/share/tmp/sdk_tools/arsetup-4444444444444444",
+        "files": {
+          "AeroTizenRootBridge.dll": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "AeroTizenRootBridge.runtimeconfig.json": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "AeroTizenRootBridge.deps.json": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "script": "test ! -L '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.dll'\nprintf '%s  %s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.dll' | sha256sum -c - >/dev/null\ntest ! -L '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.runtimeconfig.json'\nprintf '%s  %s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.runtimeconfig.json' | sha256sum -c - >/dev/null\ntest ! -L '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.deps.json'\nprintf '%s  %s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.deps.json' | sha256sum -c - >/dev/null\nexec /usr/bin/dotnet '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.dll' --install '/home/owner/share/tmp/sdk_tools/arsetup-4444444444444444' '11111111111111111111111111111111' '22222222222222222222222222222222'\n"
+    },
+    {
+      "descriptor": {
+        "operation": "upgrade",
+        "installation_id": "11111111111111111111111111111111",
+        "setup_stage": "/home/owner/share/tmp/sdk_tools/arsetup-4444444444444444",
+        "files": {
+          "AeroTizenRootBridge.dll": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "AeroTizenRootBridge.runtimeconfig.json": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "AeroTizenRootBridge.deps.json": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "script": "test ! -L '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.dll'\nprintf '%s  %s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.dll' | sha256sum -c - >/dev/null\ntest ! -L '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.runtimeconfig.json'\nprintf '%s  %s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.runtimeconfig.json' | sha256sum -c - >/dev/null\ntest ! -L '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.deps.json'\nprintf '%s  %s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.deps.json' | sha256sum -c - >/dev/null\nexec /usr/bin/dotnet '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.dll' --repair-startup '/home/owner/share/tmp/sdk_tools/arsetup-4444444444444444' '11111111111111111111111111111111' '22222222222222222222222222222222'\n"
+    }
+  ]
+}

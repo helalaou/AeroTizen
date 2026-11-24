@@ -15,7 +15,7 @@ def request(operation, **params):
 @pytest.mark.parametrize("host", [True, 123, None, "tv.local", "0.0.0.0", "255.255.255.255", "224.0.0.1"])
 def test_invalid_hosts_fail_before_network_access(monkeypatch, host):
     monkeypatch.setattr(worker.remote, "info", lambda _: pytest.fail("Unexpected network access"))
-    assert worker.handle(request("setup_root", host=host))["error"]["code"] == "invalid_address"
+    assert worker.handle(request("upgrade_root", host=host))["error"]["code"] == "invalid_address"
 
 
 @pytest.mark.parametrize("payload", [None, [], {"protocol": 1}, request("shell", command="anything")])
@@ -45,10 +45,10 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
     assert reply["result"]["name"] == worker.WORKER_NAME
     assert reply["result"]["operations"] == [
         "handshake",
-        "setup_root",
         "upgrade_root",
     ]
     for retired in (
+        "setup_root",
         "discover",
         "launcher_catalog",
         "read_home_backup",
@@ -239,84 +239,3 @@ def test_root_update_errors_do_not_expose_private_files(root_reading, monkeypatc
     )
     assert reply["error"]["code"] in ("root_update_requirements", "root_update_failed")
     assert "/private/" not in json.dumps(reply) and "private-token" not in json.dumps(reply)
-
-
-@pytest.mark.parametrize(
-    "action,phase,confirmed,code",
-    [
-        ("start", "prepared", False, "confirmation_required"),
-        ("verify", "not_configured", True, "invalid_request"),
-        ("verify", "installed", True, "invalid_request"),
-        ("start", "waiting_boot", True, "root_state_changed"),
-        ("start", "removing", True, "root_recovery_required"),
-        ("start", "wrong_tv", True, "identity_mismatch"),
-    ],
-)
-def test_root_setup_requires_confirmed_matching_progress(
-    root_reading, monkeypatch, action, phase, confirmed, code
-):
-    identity, saved, _ = root_reading
-    saved["phase"] = phase
-    if phase == "not_configured":
-        saved.clear()
-    if phase == "wrong_tv":
-        saved["duid_sha256"] = "0" * 64
-    monkeypatch.setattr(
-        worker.root_control, "setup", lambda *_args, **_kwargs: pytest.fail("Unexpected root setup")
-    )
-    reply = worker.handle(
-        request(
-            "setup_root", host="192.0.2.20", expected_identity=identity, action=action, confirmed=confirmed
-        )
-    )
-    assert reply["error"]["code"] == code
-
-
-def test_desktop_root_setup_reuses_cli_and_waits_for_verification(root_reading, monkeypatch, tmp_path):
-    identity, saved, _ = root_reading
-    saved["phase"] = "prepared"
-    calls = []
-
-    def setup(host, *, state_dir, expected_duid_sha256, verify_only):
-        calls.append((host, state_dir, expected_duid_sha256, verify_only))
-        saved["phase"] = "active" if saved["phase"] == "waiting_boot" else "waiting_boot"
-
-    monkeypatch.setattr(worker.root_control, "setup", setup)
-    start = worker.handle(
-        request("setup_root", host="192.0.2.20", expected_identity=identity, action="start", confirmed=True)
-    )["result"]
-    assert start["phase"] == "waiting_boot" and start["setup_complete"] is False
-    assert (
-        worker.handle(
-            request(
-                "setup_root", host="192.0.2.20", expected_identity=identity, action="verify", confirmed=True
-            )
-        )["error"]["code"]
-        == "invalid_request"
-    )
-    assert calls == [("192.0.2.20", tmp_path, identity, False)]
-
-
-@pytest.mark.parametrize(
-    "reason,code",
-    [
-        ("A helper already exists; use its original private root receipt", "root_recovery_required"),
-        ("Normal SDB needs Developer Mode On", "root_requirements"),
-        ("Create signing certificates first: aerotizen certs", "certificates_required"),
-        ("unexpected failure at /private/secret with token=private-token", "root_setup_failed"),
-    ],
-)
-def test_root_setup_errors_remain_actionable_without_private_details(root_reading, monkeypatch, reason, code):
-    identity, saved, _ = root_reading
-    saved["phase"] = "prepared"
-
-    def fail(*_args, **_kwargs):
-        raise worker.root_control.DeviceSessionError(reason)
-
-    monkeypatch.setattr(worker.root_control, "setup", fail)
-    reply = worker.handle(
-        request("setup_root", host="192.0.2.20", expected_identity=identity, action="start", confirmed=True)
-    )
-    assert reply["error"]["code"] == code
-    assert "/private/" not in json.dumps(reply)
-    assert "private-token" not in json.dumps(reply)

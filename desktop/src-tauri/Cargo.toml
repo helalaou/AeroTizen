@@ -47,7 +47,10 @@ sha2 = "0.10"
 native-tls = "0.2"
 openssl = { version = "0.10", features = ["vendored"] }
 base64 = "0.22"
+flate2 = { version = "1", default-features = false, features = ["zlib-rs"] }
+tar = { version = "0.4", default-features = false }
 tokio-native-tls = "0.3"
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
 uuid = "1"
 reqwest = { version = "0.13", default-features = false, features = ["native-tls", "system-proxy", "multipart"] }
 regex = "1"
@@ -63,6 +66,5 @@ tauri-plugin-dialog = "2"
 
 [dev-dependencies]
 rcgen = "0.13"
-tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
 tauri = { version = "2", features = ["test"] }
 tokio = { version = "1", features = ["test-util"] }

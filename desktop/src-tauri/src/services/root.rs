@@ -39,15 +39,14 @@ pub async fn setup_root_access(
             .verify_root_setup(&saved.tv.host, &saved.tv.identity_sha256)
             .await;
     }
-    worker::request(
-        &state.worker_path,
-        "setup_root",
-        json!({
-            "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256,
-            "action": action, "confirmed": confirmed,
-        }),
-    )
-    .await
+    state
+        .device_connection
+        .install_root_setup(&saved.tv.host, &saved.tv.identity_sha256)
+        .await?;
+    state
+        .root_status
+        .read(&saved.tv.host, &saved.tv.identity_sha256)
+        .await
 }
 
 pub async fn upgrade_root_access(
@@ -108,6 +107,20 @@ mod tests {
                 .unwrap_err()
                 .code,
             "root_recovery_unavailable"
+        );
+        assert_eq!(
+            setup_root_access(&state, saved.id.clone(), RootSetupAction::Start, false)
+                .await
+                .unwrap_err()
+                .code,
+            "confirmation_required"
+        );
+        assert_eq!(
+            setup_root_access(&state, saved.id.clone(), RootSetupAction::Start, true)
+                .await
+                .unwrap_err()
+                .code,
+            "root_state_changed"
         );
         let _guard = state.operation.lock().await;
         assert_eq!(

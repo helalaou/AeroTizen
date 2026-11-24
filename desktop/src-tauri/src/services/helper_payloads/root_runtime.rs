@@ -67,7 +67,7 @@ fn manifest(xml: &str) -> AppResult<()> {
     }
     Ok(())
 }
-pub(super) fn bridge(bytes: &[u8]) -> AppResult<Vec<PayloadFile>> {
+pub(super) fn runtime(bytes: &[u8]) -> AppResult<Runtime> {
     if bytes.len() > MAX_RUNTIME_BYTES {
         return Err(unavailable());
     }
@@ -80,7 +80,7 @@ pub(super) fn bridge(bytes: &[u8]) -> AppResult<Vec<PayloadFile>> {
         .as_str()
         .filter(|value| value.len() <= MAX_FILE_BYTES.div_ceil(3) * 4)
         .ok_or_else(unavailable)?;
-    STANDARD.decode(icon).map_err(|_| unavailable())?;
+    let icon = STANDARD.decode(icon).map_err(|_| unavailable())?;
     let mut names = Vec::new();
     for (prefix, name) in [
         ("bin/", "AeroTizenRootHelper"),
@@ -94,15 +94,33 @@ pub(super) fn bridge(bytes: &[u8]) -> AppResult<Vec<PayloadFile>> {
     }
     let names: Vec<_> = names.iter().map(String::as_str).collect();
     let files = load(bytes, &names)?;
-    Ok(files
-        .into_iter()
-        .filter(|file| file.name.starts_with("bin/AeroTizenRootBridge"))
-        .map(|file| PayloadFile {
-            name: file.name.rsplit('/').next().unwrap().into(),
-            bytes: file.bytes,
-        })
-        .collect())
+    Ok(Runtime {
+        files,
+        manifest: document["manifest"].as_str().unwrap().as_bytes().to_vec(),
+        icon,
+    })
 }
+pub(in crate::services) struct Runtime {
+    pub files: Vec<PayloadFile>,
+    pub manifest: Vec<u8>,
+    pub icon: Vec<u8>,
+}
+impl Runtime {
+    pub fn flat_group(&self, prefix: &str) -> Vec<PayloadFile> {
+        self.files
+            .iter()
+            .filter(|file| file.name.starts_with(prefix))
+            .map(|file| PayloadFile {
+                name: file.name.rsplit('/').next().unwrap().into(),
+                bytes: file.bytes.clone(),
+            })
+            .collect()
+    }
+}
+pub(super) fn bridge(bytes: &[u8]) -> AppResult<Vec<PayloadFile>> {
+    Ok(runtime(bytes)?.flat_group("bin/AeroTizenRootBridge"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

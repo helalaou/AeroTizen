@@ -22,7 +22,6 @@ MAX_REQUEST_BYTES = 16 * 1024
 IDENTITY_PATTERN = re.compile(r"[a-f0-9]{64}")
 OPERATIONS = (
     "handshake",
-    "setup_root",
     "upgrade_root",
 )
 
@@ -134,62 +133,6 @@ def _root_status_after_change(params):
     return _public_root_status(result, current)
 
 
-def setup_root(params):
-    host = host_value(params.get("host"))
-    expected = checked_identity(params.get("expected_identity"))
-    action = params.get("action")
-    if action == "verify":
-        raise RequestError("invalid_request", "The desktop request is invalid or incompatible.")
-    if action != "start" or params.get("confirmed") is not True:
-        raise RequestError("confirmation_required", "Review and confirm root setup first.")
-    receipt = _root_receipt(host, expected)
-    phase = receipt["phase"] if receipt else "not_configured"
-    if phase == "removing":
-        raise RequestError(
-            "root_recovery_required", "Finish the existing root removal before starting setup."
-        )
-    if action == "start" and phase in ("waiting_boot", "active"):
-        raise RequestError(
-            "root_state_changed", "Root setup already exists. Refresh Root access to continue it."
-        )
-    try:
-        root_control.setup(
-            host, state_dir=remote.CONFIG_DIR, expected_duid_sha256=expected, verify_only=False
-        )
-    except root_control.RootSetupStateError as error:
-        raise RequestError(
-            "root_state_changed", "Root setup changed. Refresh Root access to continue safely."
-        ) from error
-    except root_control.RootIdentityError as error:
-        raise RequestError(
-            "identity_mismatch",
-            "This address or recovery record belongs to a different TV. Root setup stopped.",
-        ) from error
-    except (OSError, ValueError, SdbError) as error:
-        message = str(error)
-        if "A helper already exists" in message:
-            raise RequestError(
-                "root_recovery_required",
-                "The TV already has a root helper. "
-                "Use the computer or recovery files from its original setup.",
-            ) from error
-        if "Create signing certificates first" in message:
-            raise RequestError(
-                "certificates_required",
-                "Set up this TV's Samsung signing certificates before starting root setup.",
-            ) from error
-        if "Normal SDB needs Developer Mode" in message:
-            raise RequestError(
-                "root_requirements",
-                "Turn on Developer Mode and set Host PC IP to this computer's address, then retry.",
-            ) from error
-        raise RequestError(
-            "root_setup_failed",
-            "Root setup could not finish. Refresh Root access to check the saved progress before retrying.",
-        ) from error
-    return _root_status_after_change(params)
-
-
 def upgrade_root(params):
     host = host_value(params.get("host"))
     expected = checked_identity(params.get("expected_identity"))
@@ -255,8 +198,6 @@ def handle(request):
         with contextlib.redirect_stdout(io.StringIO()):
             if request["operation"] == "handshake":
                 result = {"name": WORKER_NAME, "version": __version__, "operations": list(OPERATIONS)}
-            elif request["operation"] == "setup_root":
-                result = setup_root(params)
             elif request["operation"] == "upgrade_root":
                 result = upgrade_root(params)
             else:

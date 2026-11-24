@@ -46,8 +46,9 @@ async fn bundled_worker_returns_the_native_backend_contract_without_a_tv() {
     assert_eq!(status["name"], "aerotizen-desktop-worker");
     assert!(!status["version"].as_str().unwrap().is_empty());
     let operations = status["operations"].as_array().unwrap();
-    assert!(operations.iter().any(|name| name == "setup_root"));
+    assert!(operations.iter().any(|name| name == "upgrade_root"));
     for retired in [
+        "setup_root",
         "discover",
         "launcher_catalog",
         "read_home_backup",

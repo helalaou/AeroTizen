@@ -4,6 +4,7 @@ use std::{
     path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
+const ROOT_INSTALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 const CHUNK_BYTES: usize = 64 * 1024;
 const ACK_FRAMES: usize = 32;
 const MAX_PATH_BYTES: usize = 1024;
@@ -30,6 +31,16 @@ pub(in crate::services) fn tools_path(capabilities: &str) -> io::Result<String> 
         return Err(protocol_error());
     }
     Ok(path.trim_end_matches('/').into())
+}
+pub(in crate::services) fn root_upload_name(installation: &str) -> io::Result<String> {
+    if installation.len() != 32
+        || !installation
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(protocol_error());
+    }
+    Ok(format!("aerotizen-root-{installation}.tpk"))
 }
 impl Sdb {
     async fn sync_frame(&mut self, local: u32) -> io::Result<Frame> {
@@ -121,6 +132,35 @@ impl Sdb {
             }
         }
         Err(protocol_error())
+    }
+    pub async fn install_root_package(
+        &mut self,
+        installation: &str,
+        path: &Path,
+    ) -> io::Result<String> {
+        const MAX_ROOT_PACKAGE_BYTES: u64 = 32 * 1024 * 1024;
+        const MAX_ROOT_REPLY_BYTES: usize = 128 * 1024;
+        let name = root_upload_name(installation)?;
+        let mut file = tokio::fs::File::open(path).await?;
+        if file.metadata().await?.len() > MAX_ROOT_PACKAGE_BYTES {
+            return Err(protocol_error());
+        }
+        self.push(
+            &format!("{DEFAULT_TOOLS_PATH}/{name}"),
+            &mut file,
+            MAX_ROOT_PACKAGE_BYTES,
+        )
+        .await?;
+        tokio::time::timeout(
+            ROOT_INSTALL_TIMEOUT,
+            self.service(
+                format!("shell:0 appinstall tpk {name}\0").as_bytes(),
+                MAX_ROOT_REPLY_BYTES,
+                None,
+            ),
+        )
+        .await
+        .map_err(|_| io::Error::new(io::ErrorKind::TimedOut, "root install timed out"))?
     }
     pub async fn install_widget(
         &mut self,
