@@ -18,7 +18,7 @@ export default function SimulatorApp() {
   const [revision, setRevision] = useState(0);
   return (
     <>
-      <App key={revision} service={service} />
+      <App key={revision} service={service} simulator />
       <SimulatorControls
         store={store}
         onReload={() => {

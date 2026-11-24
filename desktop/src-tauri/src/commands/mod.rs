@@ -3,6 +3,7 @@ pub mod buttons;
 pub mod home;
 pub mod launcher;
 pub mod local_apps;
+mod logs;
 pub mod root;
 pub mod samsung;
 pub mod tvs;
@@ -10,6 +11,7 @@ pub mod tvs;
 pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
     builder.invoke_handler(tauri::generate_handler![
         launcher::backend_status,
+        logs::save_desktop_logs,
         samsung::samsung_account,
         samsung::samsung_sign_in,
         samsung::cancel_samsung_sign_in,

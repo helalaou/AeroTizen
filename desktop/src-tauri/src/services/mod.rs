@@ -5,6 +5,7 @@ pub mod button_reads;
 mod button_rules;
 pub mod buttons;
 pub mod device_connection;
+pub mod diagnostics;
 mod digest;
 pub mod discovery;
 mod durable_json;

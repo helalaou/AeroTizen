@@ -239,6 +239,7 @@ fn review(bytes: &[u8], identity: &str, captured_at: &str) -> AppResult<HomeBack
 }
 
 mod capture;
+mod diagnostics;
 mod original;
 pub(super) use original::Original;
 
