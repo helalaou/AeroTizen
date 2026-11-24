@@ -9,7 +9,6 @@ use tokio::process::Command;
 
 const PROTOCOL_VERSION: u32 = 1;
 const WORKER_TIMEOUT_SECONDS: u64 = 120;
-const ROOT_WRITE_TIMEOUT_SECONDS: u64 = 600;
 const MAX_RESPONSE_BYTES: usize = 64 * 1024;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -44,35 +43,11 @@ fn unavailable() -> AppError {
     )
 }
 
-#[cfg(target_os = "macos")]
-fn request_local_network_access(operation: &str, params: &Value) {
-    use std::net::{Ipv4Addr, UdpSocket};
-
-    const DISCARD_SERVICE_PORT: u16 = 9;
-    let address = match operation {
-        "upgrade_root" => params
-            .get("host")
-            .and_then(Value::as_str)
-            .and_then(|host| host.parse::<Ipv4Addr>().ok()),
-        _ => None,
-    };
-    if let Some(address) = address.filter(|address| !address.is_loopback()) {
-        // A UDP connect sends no traffic. Keeping the responsible app alive lets macOS
-        // present consent even if the short-lived worker's first request is denied.
-        // https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy
-        if let Ok(socket) = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)) {
-            let _ = socket.connect((address, DISCARD_SERVICE_PORT));
-        }
-    }
-}
-
 pub async fn request<Result: DeserializeOwned>(
     path: &Path,
     operation: &str,
     params: Value,
 ) -> AppResult<Result> {
-    #[cfg(target_os = "macos")]
-    request_local_network_access(operation, &params);
     let request_id = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(|_| unavailable())?
@@ -96,10 +71,7 @@ pub async fn request<Result: DeserializeOwned>(
         .await
         .map_err(|_| unavailable())?;
     drop(input);
-    let timeout_seconds = match operation {
-        "upgrade_root" => ROOT_WRITE_TIMEOUT_SECONDS,
-        _ => WORKER_TIMEOUT_SECONDS,
-    };
+    let timeout_seconds = WORKER_TIMEOUT_SECONDS;
     let output = tokio::time::timeout(
         Duration::from_secs(timeout_seconds),
         child.wait_with_output(),
@@ -108,12 +80,9 @@ pub async fn request<Result: DeserializeOwned>(
     let output = output
         .map_err(|_| {
             AppError::new(
-            "connection_timeout",
-            match operation {
-                "upgrade_root" => "Root update timed out. Refresh Root access to check the saved progress before retrying.",
-                _ => "The request timed out. Check the network and retry.",
-            },
-        )
+                "connection_timeout",
+                "The request timed out. Check the network and retry.",
+            )
         })?
         .map_err(|_| unavailable())?;
     if !output.status.success() || output.stdout.len() > MAX_RESPONSE_BYTES {

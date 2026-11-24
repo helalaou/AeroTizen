@@ -45,8 +45,44 @@ pub(super) fn public_config(receipt: &Value, runtime: &RootRuntime) -> Value {
         .collect();
     json!({"schema_version":1,"app_id":HELPER_APP_ID,"version":PAIRING_VERSION,"installation_id":receipt["installation_id"],"device_identity_sha256":receipt["device_identity_sha256"],"duid_sha256":receipt["duid_sha256"],"baseline_boot_id":receipt["baseline_boot_id"],"bridge_port":receipt["bridge_port"],"certificate_sha256":receipt["certificate_sha256"],"files":files})
 }
+// This field order is part of the TV's configuration digest and the CLI recovery format.
+const CONFIGURATION_FIELDS: [&str; 10] = [
+    "schema_version",
+    "app_id",
+    "version",
+    "installation_id",
+    "device_identity_sha256",
+    "duid_sha256",
+    "baseline_boot_id",
+    "bridge_port",
+    "certificate_sha256",
+    "files",
+];
+pub(super) struct Configuration<'a>(pub &'a Value);
+impl serde::Serialize for Configuration<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::{Error, SerializeMap};
+        let document = self
+            .0
+            .as_object()
+            .ok_or_else(|| S::Error::custom("invalid Root configuration"))?;
+        if document
+            .keys()
+            .any(|key| !CONFIGURATION_FIELDS.contains(&key.as_str()))
+        {
+            return Err(S::Error::custom("unsupported Root configuration"));
+        }
+        let mut result = serializer.serialize_map(Some(document.len()))?;
+        for key in CONFIGURATION_FIELDS {
+            if let Some(value) = document.get(key) {
+                result.serialize_entry(key, value)?;
+            }
+        }
+        result.end()
+    }
+}
 pub(super) fn config_bytes(config: &Value) -> AppResult<Vec<u8>> {
-    let mut bytes = serde_json::to_vec_pretty(config).map_err(|_| failed())?;
+    let mut bytes = serde_json::to_vec_pretty(&Configuration(config)).map_err(|_| failed())?;
     bytes.push(b'\n');
     Ok(bytes)
 }

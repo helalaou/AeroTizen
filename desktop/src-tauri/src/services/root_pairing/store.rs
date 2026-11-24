@@ -1,6 +1,27 @@
 //! Guarded local receipt creation, updates and recovery history.
 use super::*;
 use crate::services::durable_json;
+// Keep nested configuration bytes compatible when the CLI reopens this receipt.
+struct StoredReceipt(Value);
+impl serde::Serialize for StoredReceipt {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::{Error, SerializeMap};
+        let document = self
+            .0
+            .as_object()
+            .ok_or_else(|| S::Error::custom("invalid Root receipt"))?;
+        let mut result = serializer.serialize_map(Some(document.len()))?;
+        for (key, value) in document {
+            if key == "public_config" {
+                result
+                    .serialize_entry(key, &crate::services::root_package::Configuration(value))?;
+            } else {
+                result.serialize_entry(key, value)?;
+            }
+        }
+        result.end()
+    }
+}
 fn unlinked(path: &Path) -> AppResult<()> {
     if path.is_symlink() || path.parent().is_some_and(Path::is_symlink) {
         return Err(unavailable());
@@ -96,7 +117,7 @@ impl Store {
         .map_err(|_| unavailable())??;
         durable_json::write(
             path,
-            after.clone(),
+            StoredReceipt(after.clone()),
             self.document.is_none(),
             MAX_RECEIPT_BYTES,
         )
@@ -138,7 +159,13 @@ impl Store {
         .await
         .map_err(|_| unavailable())??;
         if !exists {
-            durable_json::write(destination, document.clone(), true, MAX_RECEIPT_BYTES).await?;
+            durable_json::write(
+                destination,
+                StoredReceipt(document.clone()),
+                true,
+                MAX_RECEIPT_BYTES,
+            )
+            .await?;
         }
         Ok(())
     }
@@ -159,6 +186,40 @@ pub(in crate::services) async fn update(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[tokio::test]
+    async fn persisted_configuration_keeps_cli_field_order_for_later_upgrade_digests() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut record = super::super::tests::document();
+        let fixture: Value =
+            serde_json::from_str(include_str!("../../../../tests/fixtures/root-package.json"))
+                .unwrap();
+        record["public_config"] = fixture["configuration"].clone();
+        let mut store = Store::open(
+            directory.path(),
+            super::super::tests::HOST,
+            super::super::tests::IDENTITY,
+        )
+        .await
+        .unwrap();
+        store.save(record).await.unwrap();
+        let raw = std::fs::read_to_string(&store.path).unwrap();
+        let expected = fixture["configuration_json"]
+            .as_str()
+            .unwrap()
+            .trim_end()
+            .lines()
+            .enumerate()
+            .map(|(index, line)| {
+                if index == 0 {
+                    line.to_owned()
+                } else {
+                    format!("  {line}")
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(raw.contains(&format!("\"public_config\": {expected}")));
+    }
     #[tokio::test]
     async fn first_save_is_private_and_does_not_replace_a_concurrent_receipt() {
         let directory = tempfile::tempdir().unwrap();

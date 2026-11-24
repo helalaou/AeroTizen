@@ -117,6 +117,12 @@ impl Operations for Fake {
         self.events.push("cleanup".into());
         Ok(())
     }
+    async fn proof(&mut self, _: &Value) -> AppResult<Value> {
+        unreachable!()
+    }
+    async fn verified_package(&mut self, _: &str) -> AppResult<()> {
+        unreachable!()
+    }
     async fn live(&mut self, _: &Value) -> bool {
         self.scenario == "recover-live"
     }

@@ -122,3 +122,16 @@ fn signed_bootstrap_archive_verifies_and_contains_only_the_fixed_launch_script()
     assert_eq!(data, script);
     assert!(entries.next().is_none());
 }
+
+#[test]
+fn configuration_bytes_match_the_cli_digest_and_keep_the_same_order_in_private_receipts() {
+    let fixture: Value =
+        serde_json::from_str(include_str!("../../../../tests/fixtures/root-package.json")).unwrap();
+    let receipt = crate::services::root_pairing::tests::document();
+    let configuration = public_config(&receipt, &runtime());
+    assert_eq!(configuration, fixture["configuration"]);
+    assert_eq!(
+        config_bytes(&configuration).unwrap(),
+        fixture["configuration_json"].as_str().unwrap().as_bytes()
+    );
+}
