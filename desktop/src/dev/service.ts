@@ -1,10 +1,18 @@
 import { canApplyNativeHome } from "../contracts";
-import type { AppRemovalOutcome, ButtonTargetApp, DesktopService, SavedTv, TvButtonMapping } from "../contracts";
+import type {
+  AppRemovalOutcome,
+  ButtonTargetApp,
+  DesktopService,
+  LauncherRelease,
+  SavedTv,
+  TvButtonMapping,
+} from "../contracts";
 import { buttonNameExists, validButtonName } from "../services/buttonNames";
 import { compareLauncherVersions } from "../services/launcherVersions";
 import { AEROTIZEN_HOME, createIdentity, rootPreset, SIMULATOR_HELPER_VERSION, synchronizeRoot } from "./scenarios";
 import type { SimulatedTv, SimulatorOperation } from "./scenarios";
 import type { SimulatorStore } from "./store";
+import { loadPublishedReleases } from "./releaseCatalog";
 
 const SIMULATOR_ACCOUNT = { email: "developer@example.test" };
 function cancelled(): DOMException {
@@ -33,8 +41,9 @@ function buttonApps(tv: SimulatedTv): ButtonTargetApp[] {
   return tv.apps.map((app) => ({ id: app.id === "DclHome001" ? "DclHome001.Home" : `${app.id}.App`, name: app.name }));
 }
 
-/** Entirely local. This adapter imports neither Tauri nor any network client. */
-export function createSimulatorService(store: SimulatorStore): DesktopService {
+/** TV/account actions are local; only published release metadata can use a live service. */
+export function createSimulatorService(store: SimulatorStore, loadReleases = loadPublishedReleases): DesktopService {
+  let published: { generation: number; releases: LauncherRelease[] } | null = null;
   async function request<Result>(
     operation: SimulatorOperation,
     action: () => Result,
@@ -120,15 +129,31 @@ export function createSimulatorService(store: SimulatorStore): DesktopService {
       request("forget", () => {
         edit(id, (tv) => ({ ...tv, saved: false }), false);
       }),
-    launcherCatalog: () => request("launcherCatalog", () => store.getSnapshot().releases),
+    launcherCatalog: async () => {
+      const signal = store.getRequestSignal();
+      const state = await request("launcherCatalog", () => ({
+        source: store.getSnapshot().release_source,
+        releases: store.getSnapshot().releases,
+      }));
+      signal.throwIfAborted();
+      if (state.source === "custom") return state.releases;
+      const releases = await loadReleases(signal);
+      signal.throwIfAborted();
+      published = { generation: store.getGeneration(), releases: structuredClone(releases) };
+      return releases;
+    },
     installLauncher: (id, version, currentVersion, confirmed) =>
       request("installLauncher", () => {
         const tv = known(id);
         if (!tv.profile.launcher_signing_ready) throw new Error("Prepare this TV's signing certificates first.");
         if (tv.profile.launcher_version !== currentVersion)
           throw new Error("The installed version changed. Refresh the TV.");
-        if (!store.getSnapshot().releases.some((release) => release.version === version))
-          throw new Error("Choose an available release.");
+        const state = store.getSnapshot();
+        let releases = state.releases;
+        if (state.release_source === "github") {
+          releases = published?.generation === store.getGeneration() ? published.releases : [];
+        }
+        if (!releases.some((release) => release.version === version)) throw new Error("Choose an available release.");
         if (currentVersion && (compareLauncherVersions(version, currentVersion) ?? 0) < 0 && !confirmed)
           throw new Error("Confirm the downgrade first.");
         return edit(id, (current) => ({

@@ -55,6 +55,9 @@ export function parseScenario(json: string): SimulatorState {
   check(new TextEncoder().encode(json).length <= MAX_SCENARIO_BYTES, "Scenario JSON must be no larger than 1 MiB.");
   const state = record(JSON.parse(json));
   check(state.schema_version === 1, "This scenario has an unsupported schema version.");
+  // Scenarios saved before source selection was added also use live releases by default.
+  const release_source = state.release_source ?? "github";
+  check(release_source === "github" || release_source === "custom", "Choose GitHub or custom launcher releases.");
   check(Array.isArray(state.tvs) && state.tvs.length <= MAX_SIMULATED_TVS, `Use at most ${MAX_SIMULATED_TVS} TVs.`);
   const identities = new Set<string>();
   const hosts = new Set<string>();
@@ -231,7 +234,7 @@ export function parseScenario(json: string): SimulatorState {
     "Invalid local app replacement status.",
   );
   const parsed = state as unknown as SimulatorState;
-  return { ...parsed, tvs: parsed.tvs.map(synchronizeRoot) };
+  return { ...parsed, release_source, tvs: parsed.tvs.map(synchronizeRoot) };
 }
 
 type ScenarioStorage = Pick<Storage, "getItem" | "setItem">;

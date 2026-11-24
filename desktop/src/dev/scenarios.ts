@@ -84,6 +84,7 @@ export interface SimulatedTv {
 export interface SimulatorState {
   schema_version: 1;
   tvs: SimulatedTv[];
+  release_source: "github" | "custom";
   releases: LauncherRelease[];
   signed_in: boolean;
   delay_ms: number;
@@ -94,7 +95,7 @@ export const TV_PRESETS = {
   fresh: "New TV — no launcher or Root",
   watcher: "Launcher with Watcher — no Root",
   native: "Native Home — no Root",
-  rooted: "Rooted — up to date",
+  rooted: "Rooted — ready",
   updates: "Launcher and Root updates available",
   waiting: "Root setup awaiting restart",
   offline: "Saved TV — offline",
@@ -241,10 +242,8 @@ export function createScenario(empty = false): SimulatorState {
           const tv = createTv(preset, index, String(index + 1).repeat(64));
           return { ...tv, profile: { ...tv.profile, name: names[index]! } };
         }),
-    releases: [SIMULATOR_LAUNCHER_VERSION, "3.3.2", "3.3.0"].map((version) => ({
-      version,
-      sections: [{ heading: "Simulator release", changes: [`Sample release notes for AeroTizen ${version}.`] }],
-    })),
+    release_source: "github",
+    releases: [],
     signed_in: false,
     delay_ms: DEFAULT_RESPONSE_DELAY_MS,
     fail_next: null,
@@ -258,4 +257,12 @@ export function createScenario(empty = false): SimulatorState {
       replacing: false,
     },
   };
+}
+
+/** Used only when explicitly requested for an offline scenario or deterministic tests. */
+export function sampleReleases(): LauncherRelease[] {
+  return [SIMULATOR_LAUNCHER_VERSION, "3.3.2", "3.3.0"].map((version) => ({
+    version,
+    sections: [{ heading: "Simulator release", changes: [`Sample release notes for AeroTizen ${version}.`] }],
+  }));
 }

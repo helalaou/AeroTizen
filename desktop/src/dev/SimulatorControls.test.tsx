@@ -39,3 +39,23 @@ it("edits a TV, rejects duplicate addresses and applies visibility switches befo
   });
   expect(onReload).toHaveBeenCalledOnce();
 });
+
+it("uses GitHub by default and requires an explicit choice to load sample releases", async () => {
+  const store = createSimulatorStore();
+  const onReload = vi.fn();
+  const user = userEvent.setup();
+  render(
+    <MantineProvider env="test">
+      <SimulatorControls store={store} onReload={onReload} />
+    </MantineProvider>,
+  );
+  await user.click(screen.getByRole("button", { name: "TV simulator" }));
+  const dialog = within(screen.getByRole("dialog", { name: "TV simulator" }));
+  await user.click(dialog.getByRole("tab", { name: "Releases" }));
+  expect(dialog.getByRole("combobox", { name: "Launcher release source" })).toHaveValue("github");
+  expect(store.getSnapshot().releases).toEqual([]);
+  await user.click(dialog.getByRole("button", { name: "Use sample releases" }));
+  expect(store.getSnapshot().release_source).toBe("custom");
+  expect(store.getSnapshot().releases.length).toBeGreaterThan(0);
+  expect(onReload).toHaveBeenCalledOnce();
+});

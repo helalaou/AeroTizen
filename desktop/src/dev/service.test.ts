@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { createScenario, createTv, TV_PRESETS } from "./scenarios";
+import { createScenario, createTv, sampleReleases, TV_PRESETS } from "./scenarios";
 import { createSimulatorService } from "./service";
 import { createSimulatorStore, parseScenario, SIMULATOR_STORAGE_KEY } from "./store";
 
 function setup() {
-  const initial = { ...createScenario(), delay_ms: 0 };
+  const initial = { ...createScenario(), release_source: "custom" as const, releases: sampleReleases(), delay_ms: 0 };
   const store = createSimulatorStore(localStorage, initial);
   return { store, service: createSimulatorService(store), initial };
 }
@@ -49,6 +49,55 @@ describe("TV simulator", () => {
     failing.update((state) => ({ ...state, delay_ms: 0 }));
     expect(await createSimulatorService(failing).list()).toHaveLength(2);
     expect(failing.getWarning()).toContain("will not survive a reload");
+  });
+
+  it("defaults existing scenarios to GitHub and keeps explicit custom catalogues offline", async () => {
+    const { initial } = setup();
+    const legacy: Record<string, unknown> = { ...initial };
+    delete legacy.release_source;
+    expect(parseScenario(JSON.stringify(legacy)).release_source).toBe("github");
+    const store = createSimulatorStore(undefined, initial);
+    const load = vi.fn();
+    expect(await createSimulatorService(store, load).launcherCatalog()).toEqual(initial.releases);
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it("uses live catalogue versions for simulated installation and does not fall back on errors", async () => {
+    const store = createSimulatorStore(undefined, { ...createScenario(), delay_ms: 0 });
+    const live = [{ version: "8.0.0", sections: [{ heading: "Features", changes: ["Published change."] }] }];
+    const load = vi.fn().mockResolvedValue(live);
+    const service = createSimulatorService(store, load);
+    expect(await service.launcherCatalog()).toEqual(live);
+    expect(store.getSnapshot().releases).toEqual([]);
+    const tv = store.getSnapshot().tvs[0]!;
+    expect(
+      (await service.installLauncher(tv.profile.id, "8.0.0", tv.profile.launcher_version, false)).launcher_version,
+    ).toBe("8.0.0");
+    load.mockRejectedValueOnce(new Error("GitHub unavailable"));
+    await expect(service.launcherCatalog()).rejects.toThrow("GitHub unavailable");
+    expect(store.getSnapshot().release_source).toBe("github");
+  });
+
+  it("discards a live catalogue reply after the scenario changes", async () => {
+    const store = createSimulatorStore(undefined, { ...createScenario(), delay_ms: 0 });
+    let reply!: (releases: ReturnType<typeof sampleReleases>) => void;
+    const load = vi.fn(
+      () =>
+        new Promise<ReturnType<typeof sampleReleases>>((resolve) => {
+          reply = resolve;
+        }),
+    );
+    const service = createSimulatorService(store, load);
+    const reading = service.launcherCatalog();
+    await vi.waitFor(() => expect(load).toHaveBeenCalled());
+    const rejection = expect(reading).rejects.toMatchObject({ name: "AbortError" });
+    store.replace({ ...store.getSnapshot() });
+    reply(sampleReleases());
+    await rejection;
+    const tv = store.getSnapshot().tvs[0]!;
+    await expect(service.installLauncher(tv.profile.id, "3.4.0", tv.profile.launcher_version, false)).rejects.toThrow(
+      "available release",
+    );
   });
 
   it("saves and forgets TVs independently of discovery and never exposes mutable stored profiles", async () => {

@@ -201,9 +201,17 @@ only Node and the desktop npm dependencies.
 - **Requests:** set a response delay to inspect loading states and cancellation, or
   fail one selected request with a custom message. Close the panel and use the app to
   trigger that request. The failure clears after it runs; cancelled reads leave it armed.
+- **Releases:** use live GitHub versions and release notes by default. In the native
+  simulator, this reuses the app's read-only Rust release command; the browser preview
+  reads the public GitHub releases API. **Refresh launcher releases** fetches current
+  metadata. Launcher installation still changes only the simulated TV. For an offline
+  or repeatable scenario, select Custom or explicitly load sample releases.
 - **Scenario JSON:** copy or edit the complete state, including app inventories,
   protected labels, packages that refuse removal, button mappings, original Home
-  settings, helper progress, local widget details and launcher releases/change notes.
+  settings, helper progress, local widget details and custom launcher releases/change notes.
+  The `releases` field is used only when `release_source` is `custom`. Existing scenarios
+  without that field default to GitHub. GitHub errors show Retry; they do not silently
+  switch to sample versions.
   **Load JSON** checks the data before replacing the scenario. **Reset starter TVs**
   and **Start empty** provide clean starting points.
 
@@ -232,7 +240,9 @@ in an installed release. These scenarios test UI behavior, not Rust services or 
 compatibility. Desktop CI remains unchanged.
 
 See screenshots of [TV editing](screenshots/simulator-tvs.png),
-[request delays and failures](screenshots/simulator-requests.png), and the
+[request delays and failures](screenshots/simulator-requests.png),
+[release source controls](screenshots/simulator-releases.png),
+[live launcher releases](screenshots/simulator-live-launcher.png), and the
 [mobile simulator controls](screenshots/simulator-mobile.png).
 
 ## Checks and packaging

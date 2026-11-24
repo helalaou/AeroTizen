@@ -17,7 +17,7 @@ import {
 import { FlaskConical, Plus, Trash2 } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { errorMessage } from "../contracts";
-import { createScenario, createTv, MAX_RESPONSE_DELAY_MS, OPERATIONS, TV_PRESETS } from "./scenarios";
+import { createScenario, createTv, MAX_RESPONSE_DELAY_MS, OPERATIONS, sampleReleases, TV_PRESETS } from "./scenarios";
 import type { SimulatorOperation, TvPreset } from "./scenarios";
 import { MAX_SIMULATED_TVS, parseScenario } from "./store";
 import type { SimulatorStore } from "./store";
@@ -126,6 +126,55 @@ function Requests({ store }: Pick<SimulatorControlsProps, "store">) {
   );
 }
 
+function Releases({ store, onReload }: SimulatorControlsProps) {
+  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const [source, setSource] = useState(state.release_source);
+  return (
+    <Stack>
+      <NativeSelect
+        label="Launcher release source"
+        value={source}
+        data={[
+          { value: "github", label: "GitHub — live published releases" },
+          { value: "custom", label: "Custom — use Scenario JSON" },
+        ]}
+        onChange={(event) => setSource(event.currentTarget.value as typeof source)}
+      />
+      <Text size="sm">
+        GitHub is the default. It loads published launcher versions and release notes when you open the app or refresh
+        releases. TV installation stays simulated.
+      </Text>
+      <Button
+        disabled={source === state.release_source}
+        onClick={() => {
+          store.replace({ ...store.getSnapshot(), release_source: source });
+          onReload();
+        }}
+      >
+        Apply release source
+      </Button>
+      <Divider />
+      <Text size="sm">
+        For an offline or repeatable scenario, select Custom and edit the releases in Scenario JSON, or load the sample
+        list below.
+      </Text>
+      <Button
+        variant="default"
+        onClick={() => {
+          store.replace({ ...store.getSnapshot(), release_source: "custom", releases: sampleReleases() });
+          onReload();
+        }}
+      >
+        Use sample releases
+      </Button>
+      <Text size="xs" c="dimmed">
+        Changing the release source returns to the TV list. GitHub errors show the normal Retry action; they do not
+        switch to sample data.
+      </Text>
+    </Stack>
+  );
+}
+
 export function SimulatorControls({ store, onReload }: SimulatorControlsProps) {
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const [opened, setOpened] = useState(false);
@@ -168,8 +217,8 @@ export function SimulatorControls({ store, onReload }: SimulatorControlsProps) {
             </Text>
           </Group>
           <Text size="sm" c="dimmed">
-            All TV and Samsung actions use local data. Changes are saved in this browser. Real TVs and accounts are not
-            used.
+            TV and Samsung actions use local data saved in this browser. Launcher releases come from GitHub unless you
+            select a custom list.
           </Text>
           {store.getWarning() && (
             <Alert color="orange" role="alert">
@@ -180,6 +229,7 @@ export function SimulatorControls({ store, onReload }: SimulatorControlsProps) {
             <Tabs.List grow>
               <Tabs.Tab value="tvs">TVs</Tabs.Tab>
               <Tabs.Tab value="requests">Requests</Tabs.Tab>
+              <Tabs.Tab value="releases">Releases</Tabs.Tab>
               <Tabs.Tab value="json">Scenario JSON</Tabs.Tab>
             </Tabs.List>
             <Tabs.Panel value="tvs" pt="md">
@@ -278,6 +328,9 @@ export function SimulatorControls({ store, onReload }: SimulatorControlsProps) {
             </Tabs.Panel>
             <Tabs.Panel value="requests" pt="md">
               <Requests store={store} />
+            </Tabs.Panel>
+            <Tabs.Panel value="releases" pt="md">
+              <Releases store={store} onReload={reload} />
             </Tabs.Panel>
             <Tabs.Panel value="json" pt="md">
               <ScenarioJson store={store} onReload={reload} />

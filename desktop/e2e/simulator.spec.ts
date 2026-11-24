@@ -12,16 +12,24 @@ test("creates a custom TV, handles a failed request and keeps the scenario after
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
-  // Prove that explicit simulation wins even when a native bridge is present.
-  await page.addInitScript(() =>
+  // Only release metadata may use native IPC; TV and account calls must stay simulated.
+  await page.addInitScript(() => {
+    let version = "9.0.0";
+    Object.defineProperty(window, "__updatePublishedReleases", {
+      value: () => {
+        version = "9.1.0";
+      },
+    });
     Object.defineProperty(window, "__TAURI_INTERNALS__", {
       value: {
-        invoke: () => {
+        invoke: async (command: string) => {
+          if (command === "launcher_catalog")
+            return [{ version, sections: [{ heading: "Features", changes: ["Published change from GitHub."] }] }];
           throw new Error("Simulator called the native backend");
         },
       },
-    }),
-  );
+    });
+  });
   const controls = page.getByRole("dialog", { name: "TV simulator" });
   await test.step("Create a rooted TV through the development controls", async () => {
     await page.goto("/?simulator=1");
@@ -39,6 +47,15 @@ test("creates a custom TV, handles a failed request and keeps the scenario after
     await expect(controls).toBeHidden();
     await page.getByRole("button", { name: "Connect to Kitchen TV", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+    await page
+      .getByRole("navigation", { name: "TV actions" })
+      .getByRole("button", { name: "Launcher", exact: true })
+      .click();
+    await expect(page.getByText("Latest version: 9.0.0", { exact: true })).toBeVisible();
+    await expect(page.getByText("Published change from GitHub.", { exact: true })).toBeVisible();
+    await page.evaluate(() => (window as unknown as { __updatePublishedReleases(): void }).__updatePublishedReleases());
+    await page.getByRole("button", { name: "Refresh launcher releases" }).click();
+    await expect(page.getByText("Latest version: 9.1.0", { exact: true })).toBeVisible();
     await page
       .getByRole("navigation", { name: "TV actions" })
       .getByRole("button", { name: "Apps", exact: true })
