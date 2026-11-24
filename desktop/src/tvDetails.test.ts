@@ -30,16 +30,17 @@ describe("TV report", () => {
   });
 
   it("includes technical details and leaves private state out", () => {
-    const report = githubReport(tv, "3.0.1");
+    const report = githubReport(tv, "3.1.1");
     expect(report).toContain("TV model: QE65LS03DAUXXU");
     expect(report).toContain("Tizen version: 9.0.0");
     expect(report).toContain("Root access version: 3.0.1");
+    expect(report).toContain("Desktop app version: 3.1.1");
     for (const value of [tv.id, tv.name, tv.host, tv.developer_host, tv.identity_sha256]) {
       expect(report).not.toContain(value);
     }
-    const issue = new URL(githubIssueUrl(tv, "3.0.1"));
+    const issue = new URL(githubIssueUrl(tv, "3.1.1"));
     expect(issue.searchParams.get("model")).toBe(tv.model);
-    expect(issue.searchParams.get("versions")).toBe("Launcher: 3.0.0, CLI: 3.0.1, Tizen: 9.0.0");
+    expect(issue.searchParams.get("versions")).toBe("Launcher: 3.0.0, Desktop: 3.1.1, Tizen: 9.0.0");
     expect(issue.searchParams.get("diagnostics")).toContain("Rooted: Yes");
     expect(issue.searchParams.get("diagnostics")).not.toContain("Source:");
     for (const value of [tv.id, tv.name, tv.host, tv.developer_host, tv.identity_sha256]) {
@@ -59,10 +60,10 @@ describe("TV report", () => {
         root_runtime_version: null,
       },
     };
-    const issue = new URL(githubIssueUrl(unexpectedTv, "private backend value"));
+    const issue = new URL(githubIssueUrl(unexpectedTv, "private desktop version"));
     expect(issue.searchParams.get("versions")).toBeNull();
     const report = issue.searchParams.get("diagnostics");
-    for (const value of ["unreviewed", "private token", "@email", "system path", "192.0.2.123"]) {
+    for (const value of ["unreviewed", "private token", "@email", "system path", "192.0.2.123", "private desktop"]) {
       expect(report).not.toContain(value);
     }
   });

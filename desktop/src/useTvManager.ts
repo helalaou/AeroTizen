@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { showToast } from "./Toasts";
 import { errorMessage } from "./contracts";
-import type { BackendStatus, DesktopService, SavedTv, TvCandidate } from "./contracts";
+import type { DesktopStatus, DesktopService, SavedTv, TvCandidate } from "./contracts";
 import type { FeatureContext, PendingOperation, ProfileUpdate } from "./features/context";
 import { useLauncher } from "./features/useLauncher";
 import { useApps } from "./features/useApps";
@@ -13,7 +13,7 @@ export function useTvManager(service: DesktopService) {
   const [profiles, setProfiles] = useState<SavedTv[]>([]);
   const [candidates, setCandidates] = useState<TvCandidate[] | null>(null);
   const [selected, setSelected] = useState<SavedTv | null>(null);
-  const [backend, setBackend] = useState<BackendStatus | null>(null);
+  const [desktop, setDesktop] = useState<DesktopStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<PendingOperation | null>(null);
   const [feedback, setFeedback] = useState<{ message: string; connection?: boolean } | null>(null);
@@ -35,7 +35,7 @@ export function useTvManager(service: DesktopService) {
       if (cancelled) return;
       if (saved.status === "fulfilled") setProfiles(saved.value);
       else setFeedback({ message: errorMessage(saved.reason) });
-      if (status.status === "fulfilled") setBackend(status.value);
+      if (status.status === "fulfilled") setDesktop(status.value);
       else setFeedback({ message: errorMessage(status.reason) });
       setLoading(false);
     });
@@ -216,7 +216,7 @@ export function useTvManager(service: DesktopService) {
     profiles,
     candidates,
     selected,
-    backend,
+    desktop,
     loading,
     busy,
     error: feedback?.message ?? null,
@@ -229,7 +229,7 @@ export function useTvManager(service: DesktopService) {
       setDiagnostics(null);
       setDiagnosticsError(null);
     },
-    ready: !loading && backend !== null,
+    ready: !loading && desktop !== null,
     ...launcher,
     ...apps,
     ...buttons,

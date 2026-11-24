@@ -7,7 +7,8 @@ account sessions, signing and recovery. SQLite stores saved TV profiles. Install
 include the managed TV helpers and need no Python runtime or CLI executable.
 
 See screenshots of [TV selection](screenshots/tv-selection.png), [Overview](screenshots/overview.png),
-and [Launcher](screenshots/launcher.png).
+[Launcher](screenshots/launcher.png), [About](screenshots/about.png), and the
+[sidebar on a narrow screen](screenshots/sidebar-mobile.png).
 
 ## Install or update the launcher
 
@@ -33,14 +34,14 @@ See the [blocked removal](screenshots/launcher-removal-blocked.png) and
 
 If a first install needs signing certificates, the app guides you through Samsung
 sign-in in your browser, creates the TV's signing profile, and continues installation.
-You can also sign in and out through the app menu. The account session lasts until
+You can also sign in and out at the bottom of the sidebar. The account session lasts until
 sign-out, expiry, or closing the app. Certificates are saved per TV for future updates.
 The app reuses signing profiles from the CLI state folder. For an existing installation,
 use its original signing profile. See [Samsung's signing requirements](https://developer.samsung.com/smarttv/develop/getting-started/setting-up-sdk/creating-certificates.html).
 
 See screenshots of [Samsung sign-in](screenshots/samsung-sign-in.png),
 [certificate setup](screenshots/samsung-certificates.png), and the
-[account menu after installation](screenshots/samsung-account-menu.png).
+[sidebar while signed in](screenshots/samsung-account-menu.png).
 
 ## TV details and GitHub reports
 
@@ -62,8 +63,7 @@ results to find the next step for this TV. **Technical details** includes the fi
 build when a compatible paired Root connection reports it.
 See the [Diagnostics view](screenshots/diagnostics.png).
 
-Open **Logs** from the TV sidebar, or from the app menu before connecting, to see desktop
-operations, newest first. The app keeps
+Open **Logs** at the bottom of the sidebar to see desktop operations, newest first. The app keeps
 up to 250 entries on this computer. **Export logs** saves a diagnostic ZIP with desktop
 activity, build and platform details, and up to 20 redacted Home recovery summaries.
 When a TV is selected, you can also include launcher and background service logs and a
@@ -303,7 +303,9 @@ operations; sockets, listeners and cancellation stay with their async service ow
 Discovery, metadata, release lookup/download, Samsung sign-in and certificates, app
 inventory/removal/installation, Home controls, button mapping and Root setup/updates run
 in Rust. The desktop does not start a Python process. The public Python CLI remains a
-separate tool; its commands are unchanged.
+separate tool. Desktop starts at version 3.1.1, matching the CLI release at the time
+of the split. The root helper bundled with Desktop uses the Desktop version. The
+CLI builds its own helper with the CLI version.
 
 The SDK transport stages checked managed helpers with a single-use callback. Home Apply
 and Restore save durable recovery intent before writing, preserve the exact original

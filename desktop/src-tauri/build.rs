@@ -1,20 +1,20 @@
 // Enable bundled legacy PKCS#12 ciphers for imported Tizen Studio profiles.
 use openssl_src as _;
+use std::{fs, path::Path};
 
 fn main() {
-    // Match the CLI's root runtime version without requiring Python for Cargo tests.
-    let metadata = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../cli/src/aerotizen/__init__.py");
+    let crate_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let metadata = crate_dir.join("../package.json");
     println!("cargo:rerun-if-changed={}", metadata.display());
-    let source = std::fs::read_to_string(&metadata).expect("could not read the CLI version");
-    let version = source
-        .lines()
-        .find_map(|line| {
-            line.strip_prefix("__version__ = ")
-                .and_then(|value| value.strip_prefix('"'))
-                .and_then(|value| value.strip_suffix('"'))
-        })
-        .expect("the CLI must declare its root runtime version");
+    let package: serde_json::Value =
+        serde_json::from_slice(&fs::read(metadata).expect("could not read desktop package.json"))
+            .expect("invalid desktop package.json");
+    let version = env!("CARGO_PKG_VERSION");
+    assert_eq!(
+        package["version"].as_str(),
+        Some(version),
+        "desktop package.json and Cargo.toml versions must match"
+    );
     assert!(
         version.split('.').count() == 3
             && version
@@ -25,14 +25,19 @@ fn main() {
     println!("cargo:rustc-env=ROOT_RUNTIME_VERSION={version}");
     let out =
         std::path::PathBuf::from(std::env::var_os("OUT_DIR").expect("Cargo must provide OUT_DIR"));
-    for name in ["home-query.json", "home-control.json", "root-runtime.json"] {
-        let source = metadata.parent().unwrap().join("helpers").join(name);
+    let shared_helpers = crate_dir.join("../../cli/src/aerotizen/helpers");
+    for source in [
+        shared_helpers.join("home-query.json"),
+        shared_helpers.join("home-control.json"),
+        crate_dir.join("generated/root-runtime.json"),
+    ] {
         println!("cargo:rerun-if-changed={}", source.display());
+        let target = out.join(source.file_name().unwrap());
         if cfg!(feature = "desktop-app") {
-            std::fs::copy(&source, out.join(name))
+            fs::copy(&source, target)
                 .expect("build the desktop helper payloads before compiling the app");
         } else {
-            std::fs::write(out.join(name), b"{}").expect("could not prepare test payload metadata");
+            fs::write(target, b"{}").expect("could not prepare test payload metadata");
         }
     }
     // App builds embed managed device payloads; bare unit tests use no generated files.

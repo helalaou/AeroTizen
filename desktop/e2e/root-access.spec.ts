@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 async function showRoot(page: Page, isMobile: boolean) {
-  if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+  if (isMobile) await page.getByRole("button", { name: "Toggle sidebar" }).click();
   await page
     .getByRole("navigation", { name: "TV actions" })
     .getByRole("button", { name: "Root access", exact: true })

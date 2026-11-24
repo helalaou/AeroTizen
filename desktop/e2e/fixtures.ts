@@ -147,7 +147,7 @@ export const test = base.extend<{
                   save({ ...tv, launcher_signing_ready: true });
                   return { identity_sha256: tv.id, launcher_signing_ready: true };
                 }
-                case "backend_status":
+                case "desktop_status":
                   return status;
                 case "launcher_catalog":
                   return currentReleases;

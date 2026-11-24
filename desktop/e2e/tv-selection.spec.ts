@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures";
-import { testRootOutdated } from "../src/test/tvs";
+import { testRootOutdated, testStatus } from "../src/test/tvs";
 import type { Locator } from "@playwright/test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -29,7 +29,17 @@ test("reconnects from the saved TV menu and refreshes from the sidebar", async (
   await expect(page).toHaveTitle("AeroTizen Desktop");
   await expect(page.getByRole("heading", { name: "Your TVs" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Search for TVs" })).toBeEnabled();
-  await expect(page.getByRole("navigation")).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "TV actions" })).toHaveCount(0);
+  await test.step("Places the AeroTizen wordmark in the responsive app shell", async () => {
+    const header = page.getByRole("banner");
+    if (isMobile) {
+      await expect(header.getByText("AeroTizen", { exact: true })).toBeVisible();
+      await expect(header.getByRole("button", { name: "Toggle sidebar" })).toBeVisible();
+    } else {
+      await expect(header).toBeHidden();
+      await expect(page.getByRole("complementary").getByText("AeroTizen", { exact: true })).toBeVisible();
+    }
+  });
   await page.screenshot({ path: join(tmpdir(), `aerotizen-selection-${testInfo.project.name}.png`) });
   await page.getByRole("button", { name: "Options for Living room" }).click();
   await page.getByRole("menuitem", { name: "Connect at another address" }).click();
@@ -45,12 +55,12 @@ test("reconnects from the saved TV menu and refreshes from the sidebar", async (
   await expect(page.getByText("Host PC IP on TV", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Connect at another address" })).toHaveCount(0);
   await page.screenshot({ path: join(tmpdir(), `aerotizen-overview-${testInfo.project.name}.png`) });
-  if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+  if (isMobile) await page.getByRole("button", { name: "Toggle sidebar" }).click();
   const nav = page.getByRole("navigation", { name: "TV actions" });
   await nav.getByRole("button", { name: "Install & update" }).click();
   const version = page.getByRole("button", { name: "2.7.0", exact: true });
   await version.click();
-  if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+  if (isMobile) await page.getByRole("button", { name: "Toggle sidebar" }).click();
   const refresh = page.getByRole("button", { name: "Refresh TV connection" });
   await refresh.click();
   await expect(refresh).toBeEnabled();
@@ -107,7 +117,7 @@ test("shows root access and opens a pre-filled GitHub draft without private fiel
   const report = url.searchParams.get("diagnostics");
   expect(report).toContain("Rooted: Yes");
   expect(report).toContain(`Root access version: ${testRootOutdated.runtime_version}`);
-  expect(url.searchParams.get("versions")).toBe("Launcher: 3.0.0, CLI: 3.0.1, Tizen: 9.0.0");
+  expect(url.searchParams.get("versions")).toBe(`Launcher: 3.0.0, Desktop: ${testStatus.version}, Tizen: 9.0.0`);
   expect(report).not.toMatch(/192\.0\.2\.|Living room|Source:/);
   await draft.close();
 });
@@ -163,7 +173,7 @@ test("discovers, saves and forgets a TV without an automatic connection after re
     connection.release();
   }
   await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
-  if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+  if (isMobile) await page.getByRole("button", { name: "Toggle sidebar" }).click();
   await page.getByRole("button", { name: "Back to TVs" }).click();
   await expect(results).toBeVisible();
   await expect(search).toBeEnabled();

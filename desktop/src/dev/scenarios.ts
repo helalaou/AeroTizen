@@ -1,3 +1,4 @@
+import { version } from "../../package.json";
 import type {
   ButtonMappings,
   HomeBackupSettings,
@@ -8,7 +9,7 @@ import type {
   TvAppPackage,
 } from "../contracts";
 
-export const SIMULATOR_HELPER_VERSION = "3.1.1";
+export const SIMULATOR_HELPER_VERSION = version;
 export const SIMULATOR_LAUNCHER_VERSION = "3.4.0";
 export const DEFAULT_RESPONSE_DELAY_MS = 400;
 export const MAX_RESPONSE_DELAY_MS = 30_000;
@@ -38,7 +39,7 @@ export const AEROTIZEN_HOME: HomeBackupSettings = {
 };
 
 export const OPERATIONS = {
-  status: "Backend status",
+  status: "Desktop app status",
   list: "Load saved TVs",
   discover: "Search for TVs",
   connect: "Connect to a TV",

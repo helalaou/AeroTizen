@@ -5,6 +5,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -28,10 +29,13 @@ def main():
         "--framework", type=Path, help="optional local TV compile references; otherwise use pinned Tizen.NET"
     )
     parser.add_argument("--output", type=Path, default=ROOT / "src/aerotizen/helpers/root-runtime.json")
+    parser.add_argument("--runtime-version", help="version for a desktop build (defaults to the CLI version)")
     args = parser.parse_args()
     if not args.dotnet:
         parser.error("Install .NET SDK 6 or pass --dotnet PATH")
-    version = cli_version(ROOT)
+    version = args.runtime_version if args.runtime_version is not None else cli_version(ROOT)
+    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
+        parser.error("The root runtime version must have three numeric parts")
     template = (ROOT / "native/root-helper/tizen-manifest.xml").read_text(encoding="utf-8")
     if "@CLI_VERSION@" not in template:
         raise ValueError("The root helper manifest must use @CLI_VERSION@")

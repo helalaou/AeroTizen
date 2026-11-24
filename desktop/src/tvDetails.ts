@@ -1,7 +1,8 @@
 import type { RootAccessStatus, SavedTv } from "./contracts";
 
 const UNAVAILABLE = "Unavailable";
-const GITHUB_ISSUE_URL = "https://github.com/helalaou/AeroTizen/issues/new";
+export const GITHUB_REPO_URL = "https://github.com/helalaou/AeroTizen";
+const GITHUB_ISSUE_URL = `${GITHUB_REPO_URL}/issues/new`;
 const GITHUB_BUG_TEMPLATE = "bug_report.yml";
 const VERSION = /^\d{1,3}(?:\.\d{1,3}){1,2}$/;
 const MODEL = /^[A-Z]{2,6}\d[A-Z0-9_-]{2,80}$/;
@@ -72,7 +73,7 @@ function modelCode(profile: SavedTv): string {
   return matches(profile.technical_details?.model_code ?? profile.model, MODEL);
 }
 
-export function githubReport(profile: SavedTv, backendVersion?: string): string {
+export function githubReport(profile: SavedTv, desktopVersion?: string): string {
   const version = rootVersion(profile);
   const { tizen, launcher } = softwareVersions(profile);
   const rows: [string, string][] = [
@@ -83,23 +84,23 @@ export function githubReport(profile: SavedTv, backendVersion?: string): string 
     ["Tizen version", tizen],
     ["Launcher version", launcher],
     ...platformRows(profile),
-    ["CLI backend version", matches(backendVersion, VERSION)],
+    ["Desktop app version", matches(desktopVersion, VERSION)],
   ];
   if (version) rows.push(["Root access version", version]);
   const lines = ["### AeroTizen TV details", ""];
   return [...lines, ...rows.map(([label, value]) => `- ${label}: ${value}`), ""].join("\n");
 }
 
-export function githubIssueUrl(profile: SavedTv, backendVersion?: string): string {
+export function githubIssueUrl(profile: SavedTv, desktopVersion?: string): string {
   const url = new URL(GITHUB_ISSUE_URL);
   url.searchParams.set("template", GITHUB_BUG_TEMPLATE);
-  url.searchParams.set("diagnostics", githubReport(profile, backendVersion));
+  url.searchParams.set("diagnostics", githubReport(profile, desktopVersion));
   const model = modelCode(profile);
   if (model !== UNAVAILABLE) url.searchParams.set("model", model);
   const { launcher, tizen } = softwareVersions(profile);
   const versions = [
     ["Launcher", launcher],
-    ["CLI", matches(backendVersion, VERSION)],
+    ["Desktop", matches(desktopVersion, VERSION)],
     ["Tizen", tizen],
   ]
     .filter(([, version]) => version !== UNAVAILABLE)

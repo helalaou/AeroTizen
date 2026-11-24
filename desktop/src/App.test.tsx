@@ -513,8 +513,7 @@ describe("Samsung setup", () => {
     );
     mount(service);
     await screen.findByRole("heading", { name: "Your TVs" });
-    await user.click(screen.getByRole("button", { name: "App menu" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Sign in to Samsung" }));
+    await user.click(await screen.findByRole("button", { name: "Sign in to Samsung" }));
     const dialog = within(screen.getByRole("dialog", { name: "Samsung sign-in" }));
     await user.click(dialog.getByRole("button", { name: "Sign in with Samsung" }));
     expect(dialog.getByRole("status")).toHaveTextContent("Complete Samsung sign-in in your browser.");
