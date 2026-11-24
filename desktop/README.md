@@ -7,7 +7,8 @@ account sessions, signing and recovery. SQLite stores saved TV profiles. Install
 include the managed TV helpers and need no Python runtime or CLI executable.
 
 See screenshots of [TV selection](screenshots/tv-selection.png), [Overview](screenshots/overview.png),
-and [Launcher](screenshots/launcher.png).
+[Launcher](screenshots/launcher.png), [About](screenshots/about.png), and the
+[sidebar on a narrow screen](screenshots/sidebar-mobile.png).
 
 ## Install or update the launcher
 
@@ -33,14 +34,14 @@ See the [blocked removal](screenshots/launcher-removal-blocked.png) and
 
 If a first install needs signing certificates, the app guides you through Samsung
 sign-in in your browser, creates the TV's signing profile, and continues installation.
-You can also sign in and out through the app menu. The account session lasts until
+You can also sign in and out at the bottom of the sidebar. The account session lasts until
 sign-out, expiry, or closing the app. Certificates are saved per TV for future updates.
 The app reuses signing profiles from the CLI state folder. For an existing installation,
 use its original signing profile. See [Samsung's signing requirements](https://developer.samsung.com/smarttv/develop/getting-started/setting-up-sdk/creating-certificates.html).
 
 See screenshots of [Samsung sign-in](screenshots/samsung-sign-in.png),
 [certificate setup](screenshots/samsung-certificates.png), and the
-[account menu after installation](screenshots/samsung-account-menu.png).
+[sidebar while signed in](screenshots/samsung-account-menu.png).
 
 ## TV details and GitHub reports
 
@@ -62,8 +63,7 @@ results to find the next step for this TV. **Technical details** includes the fi
 build when a compatible paired Root connection reports it.
 See the [Diagnostics view](screenshots/diagnostics.png).
 
-Open **Logs** from the TV sidebar, or from the app menu before connecting, to see desktop
-operations, newest first. The app keeps
+Open **Logs** at the bottom of the sidebar to see desktop operations, newest first. The app keeps
 up to 250 entries on this computer. **Export logs** saves a diagnostic ZIP with desktop
 activity, build and platform details, and up to 20 redacted Home recovery summaries.
 When a TV is selected, you can also include launcher and background service logs and a
