@@ -114,11 +114,11 @@ helper shows **Unverified**; a saved recovery record alone does not establish li
 Overview also checks live helper status. When an update is available, select
 **Update available** beside **Root helper version** to open Root access.
 
-Choose **Set up root access** and confirm the Developer Mode settings. The app reuses
-the CLI's setup, prepares Samsung signing certificates when needed and saves its private
+Choose **Set up root access** and confirm the Developer Mode settings. The app prepares
+Samsung signing certificates when needed and saves its private
 recovery record before root changes. After installation, follow the Host PC IP and
 60-second power-disconnect instructions, then choose **Check after restart**. Setup stays
-pending until the CLI verifies a new automatic boot and finishes its checks. Reopen the
+pending until the app verifies a new automatic boot and finishes its checks. Reopen the
 page and choose **Continue setup** to resume saved progress. Setup preserves Home, launcher
 startup and Art Mode settings.
 
