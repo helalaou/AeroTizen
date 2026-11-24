@@ -376,3 +376,16 @@ async fn the_read_deadline_closes_a_stalled_handshake_and_releases_tv_ownership(
         .await
         .is_ok());
 }
+
+#[tokio::test]
+async fn required_developer_address_cannot_fall_back_to_another_interface() {
+    let directory = tempfile::tempdir().unwrap();
+    let owner = TvConnection::new(directory.path().to_owned());
+    let result = owner
+        .connect_once(
+            Ipv4Addr::LOCALHOST,
+            Route::DeveloperRequired(Ipv4Addr::new(192, 0, 2, 254)),
+        )
+        .await;
+    assert!(matches!(result, Err(ConnectFailure::Refused)));
+}

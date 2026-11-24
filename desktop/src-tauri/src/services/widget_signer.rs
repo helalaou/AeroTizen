@@ -184,6 +184,15 @@ fn is_signature(name: &str) -> bool {
 pub(super) fn sign(source: &Path, destination: &Path, profile: &Path) -> AppResult<PathBuf> {
     // Metadata/archive validation must precede signing; no archive entry is extracted to disk.
     super::local_widget::validate(source)?;
+    sign_archive(source, destination, profile)
+}
+
+// The Root package owner supplies a freshly built, validated archive with fixed names.
+pub(super) fn sign_archive(
+    source: &Path,
+    destination: &Path,
+    profile: &Path,
+) -> AppResult<PathBuf> {
     let password = String::from_utf8(bytes(&profile.join("password.txt"), MAX_PASSWORD_BYTES)?)
         .map_err(|_| failed())?;
     let password = password.trim_matches(super::text::python_whitespace);

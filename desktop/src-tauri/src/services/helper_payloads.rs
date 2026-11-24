@@ -60,6 +60,10 @@ pub(super) fn home_control() -> AppResult<Vec<PayloadFile>> {
     )
 }
 mod root_runtime;
+pub(super) use root_runtime::Runtime as RootRuntime;
+pub(super) fn root_runtime() -> AppResult<RootRuntime> {
+    root_runtime::runtime(ROOT)
+}
 pub(super) fn root_bridge() -> AppResult<Vec<PayloadFile>> {
     root_runtime::bridge(ROOT)
 }

@@ -8,9 +8,14 @@ pub(crate) async fn handshake(io: &mut (impl SdbIo + ?Sized)) {
         .unwrap();
 }
 pub(crate) async fn read_reply(io: &mut (impl SdbIo + ?Sized), expected: &str, output: &str) {
+    assert_eq!(reply_service(io, output).await, expected);
+}
+pub(crate) async fn reply_service(io: &mut (impl SdbIo + ?Sized), output: &str) -> String {
     let frame = receive(io).await.unwrap();
     assert_eq!(frame.command, OPEN);
-    assert_eq!(frame.payload, format!("{expected}\0").as_bytes());
+    let service = String::from_utf8_lossy(&frame.payload)
+        .trim_end_matches('\0')
+        .to_owned();
     let local = frame.remote;
     let remote = local + 100;
     send(io, OKAY, remote, local, &[]).await.unwrap();
@@ -20,6 +25,7 @@ pub(crate) async fn read_reply(io: &mut (impl SdbIo + ?Sized), expected: &str, o
     send(io, CLSE, remote, local, &[]).await.unwrap();
     assert_eq!(receive(io).await.unwrap().command, OKAY);
     assert_eq!(receive(io).await.unwrap().command, CLSE);
+    service
 }
 pub(crate) async fn upload(io: &mut (impl SdbIo + ?Sized), refuse: bool) -> (String, Vec<u8>) {
     let frame = receive(io).await.unwrap();
@@ -114,4 +120,44 @@ fn untrusted_tools_paths_cannot_change_the_install_command() {
             "{value}"
         );
     }
+}
+
+#[tokio::test]
+async fn root_package_upload_uses_only_the_fixed_native_install_command_and_validated_installation_id(
+) {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("helper.tpk");
+    let data = b"signed synthetic root helper";
+    std::fs::write(&path, data).unwrap();
+    let installation = "1".repeat(32);
+    let expected = installation.clone();
+    let (client, mut peer) = duplex(256 * 1024);
+    let server = tokio::spawn(async move {
+        handshake(&mut peer).await;
+        let (path, bytes) = upload(&mut peer, false).await;
+        assert_eq!(
+            path,
+            format!("{DEFAULT_TOOLS_PATH}/aerotizen-root-{expected}.tpk")
+        );
+        assert_eq!(bytes, data);
+        read_reply(
+            &mut peer,
+            &format!("shell:0 appinstall tpk aerotizen-root-{expected}.tpk"),
+            "install completed",
+        )
+        .await;
+    });
+    let mut client = Sdb::connect(Box::new(client)).await.unwrap();
+    assert!(client
+        .install_root_package("../unsafe", &path)
+        .await
+        .is_err());
+    assert_eq!(
+        client
+            .install_root_package(&installation, &path)
+            .await
+            .unwrap(),
+        "install completed"
+    );
+    server.await.unwrap();
 }

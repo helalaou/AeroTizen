@@ -50,7 +50,7 @@ fn request_local_network_access(operation: &str, params: &Value) {
 
     const DISCARD_SERVICE_PORT: u16 = 9;
     let address = match operation {
-        "setup_root" | "upgrade_root" => params
+        "upgrade_root" => params
             .get("host")
             .and_then(Value::as_str)
             .and_then(|host| host.parse::<Ipv4Addr>().ok()),
@@ -97,7 +97,7 @@ pub async fn request<Result: DeserializeOwned>(
         .map_err(|_| unavailable())?;
     drop(input);
     let timeout_seconds = match operation {
-        "setup_root" | "upgrade_root" => ROOT_WRITE_TIMEOUT_SECONDS,
+        "upgrade_root" => ROOT_WRITE_TIMEOUT_SECONDS,
         _ => WORKER_TIMEOUT_SECONDS,
     };
     let output = tokio::time::timeout(
@@ -110,7 +110,6 @@ pub async fn request<Result: DeserializeOwned>(
             AppError::new(
             "connection_timeout",
             match operation {
-                "setup_root" => "Root setup timed out. Refresh Root access to check the saved progress before retrying.",
                 "upgrade_root" => "Root update timed out. Refresh Root access to check the saved progress before retrying.",
                 _ => "The request timed out. Check the network and retry.",
             },

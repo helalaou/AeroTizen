@@ -29,7 +29,7 @@ fn boot_ready(reply: &Value, receipt: &Value) -> bool {
         .iter()
         .all(|key| reply[key] == true)
 }
-fn registry(completion: &sdk::Completion) -> AppResult<Value> {
+pub(super) fn registry(completion: &sdk::Completion) -> AppResult<Value> {
     let records: Vec<_> = completion
         .stdout
         .lines()

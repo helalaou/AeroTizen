@@ -6,6 +6,7 @@ mod installation;
 mod profile;
 pub(super) mod projection;
 mod removal;
+mod root_install;
 mod root_verification;
 
 use super::{
@@ -135,6 +136,7 @@ impl Session<'_> {
 enum Route<'a> {
     Paired(&'a root_bridge::Pairing),
     Developer(Option<Ipv4Addr>),
+    DeveloperRequired(Ipv4Addr),
 }
 enum ConnectFailure {
     Retry,
@@ -350,6 +352,17 @@ impl TvConnection {
                             _ => ConnectFailure::Refused,
                         })?;
                 (Box::new(stream), Some(proof))
+            }
+            Route::DeveloperRequired(source) => {
+                let socket = TcpSocket::new_v4().map_err(|_| ConnectFailure::Refused)?;
+                socket
+                    .bind(SocketAddrV4::new(source, 0).into())
+                    .map_err(|_| ConnectFailure::Refused)?;
+                let stream = socket
+                    .connect(SocketAddrV4::new(address, self.options.sdb_port).into())
+                    .await
+                    .map_err(|_| ConnectFailure::Retry)?;
+                (Box::new(stream), None)
             }
             Route::Developer(source) => {
                 let bound = source.and_then(|source| {
