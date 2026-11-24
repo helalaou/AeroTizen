@@ -270,6 +270,13 @@ removal can keep using its existing checks. The worker no longer offers `list_ap
 `list_button_apps`; installation and removal still use the worker. The Python CLI and TV
 helper are unchanged. This read path works with helper 3.0.9.
 
+Reviewing a local `.wgt` also runs in Rust. It hashes a private snapshot, checks archive
+paths, duplicate names, encryption, symbolic links, sizes and entry counts, then reads
+namespaced metadata from `config.xml`. XML DTDs and oversized parser/decoder allocations
+are refused. The installed version and replacement revision come from the native TV
+inventory. The worker no longer offers `inspect_local_app`; installation still verifies
+the reviewed file hash and revision through its existing worker operation.
+
 ```sh
 npm run typecheck
 npm run lint

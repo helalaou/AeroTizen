@@ -46,7 +46,6 @@ OPERATIONS = (
     "connect",
     "remove_apps",
     "install_launcher",
-    "inspect_local_app",
     "install_local_app",
     "setup_root",
     "upgrade_root",
@@ -534,22 +533,6 @@ def _local_app_revision(session, metadata):
     return package_revision(package), version or None
 
 
-def inspect_local_app(params):
-    host = host_value(params.get("host"))
-    expected = checked_identity(params.get("expected_identity"))
-    with TemporaryDirectory(prefix="aerotizen-local-review-") as directory:
-        try:
-            path, checksum = local_package.snapshot(params.get("path", ""), directory)
-        except (OSError, ValueError) as error:
-            raise RequestError("invalid_package", "Could not read the selected .wgt file.") from error
-        metadata = _local_app_metadata(path)
-        with DeviceSession(host) as session:
-            read_identity(session, expected)
-            revision, version = _local_app_revision(session, metadata)
-            read_identity(session, expected)
-    return {**metadata, "sha256": checksum, "current_revision": revision, "current_version": version}
-
-
 def install_local_app(params):
     host = host_value(params.get("host"))
     expected = checked_identity(params.get("expected_identity"))
@@ -797,8 +780,6 @@ def handle(request):
                 result = remove_apps(params)
             elif request["operation"] == "install_launcher":
                 result = install_launcher(params)
-            elif request["operation"] == "inspect_local_app":
-                result = inspect_local_app(params)
             elif request["operation"] == "install_local_app":
                 result = install_local_app(params)
             elif request["operation"] == "setup_root":

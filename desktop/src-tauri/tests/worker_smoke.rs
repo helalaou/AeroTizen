@@ -57,6 +57,7 @@ async fn bundled_worker_returns_the_native_backend_contract_without_a_tv() {
         "change_button",
         "list_apps",
         "list_button_apps",
+        "inspect_local_app",
     ] {
         assert!(!operations.iter().any(|name| name == retired));
     }

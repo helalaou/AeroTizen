@@ -255,8 +255,12 @@ fn parse(raw: &str) -> AppResult<Vec<App>> {
     }
 }
 
+pub(crate) fn protected_package(id: &str) -> bool {
+    PROTECTED_PACKAGES.contains(&id)
+}
+
 fn protected(app: &App) -> bool {
-    if PROTECTED_PACKAGES.contains(&app.package.as_str()) {
+    if protected_package(&app.package) {
         return true;
     }
     match app.removable {
@@ -337,9 +341,13 @@ fn revision(apps: &[App]) -> String {
 }
 
 pub(super) fn packages(raw: &str) -> AppResult<Vec<TvAppPackage>> {
+    project_packages(parse(raw)?)
+}
+
+fn project_packages(apps: Vec<App>) -> AppResult<Vec<TvAppPackage>> {
     let mut groups: Vec<Vec<App>> = Vec::new();
     let mut positions = HashMap::new();
-    for app in parse(raw)? {
+    for app in apps {
         let index = *positions.entry(app.package.clone()).or_insert_with(|| {
             groups.push(Vec::new());
             groups.len() - 1
@@ -390,3 +398,51 @@ pub(super) fn targets(raw: &str) -> AppResult<Vec<ButtonTargetApp>> {
 
 #[cfg(test)]
 mod tests;
+
+pub(super) struct Inventory {
+    pub rows: Vec<TvAppPackage>,
+}
+
+pub(super) fn checked(raw: &str) -> AppResult<Inventory> {
+    static HEADER: OnceLock<Regex> = OnceLock::new();
+    static ERROR: OnceLock<Regex> = OnceLock::new();
+    let header = HEADER.get_or_init(|| Regex::new(r"(?im)^\s*apps count\s*:\s*(\d+)\s*$").unwrap());
+    let error = ERROR.get_or_init(|| {
+        Regex::new(r"(?i)^\s*(?:error|fail(?:ed|ure)?|permission denied)\b").unwrap()
+    });
+    let apps = parse(raw)?;
+    let unique: HashSet<_> = apps.iter().map(|app| app.id.as_str()).collect();
+    let complete = match header.captures(raw) {
+        Some(count) => count[1].parse::<usize>().ok() == Some(apps.len()),
+        None => !apps.is_empty() && !raw.contains("app_tizen_id") && !error.is_match(raw),
+    };
+    if !complete || unique.len() != apps.len() {
+        return Err(AppError::new(
+            "inventory_unavailable",
+            "Could not verify the TV's app list. Refresh the TV and try again.",
+        ));
+    }
+    Ok(Inventory {
+        rows: project_packages(apps)?,
+    })
+}
+
+pub(super) fn installed(
+    raw: &str,
+    package_id: &str,
+    app_id: &str,
+) -> AppResult<(Option<String>, Option<String>)> {
+    let inventory = checked(raw)?;
+    let row = inventory.rows.into_iter().find(|row| row.id == package_id);
+    let Some(row) = row else {
+        return Ok((None, None));
+    };
+    let version = parse(raw)?
+        .into_iter()
+        .find(|app| app.package == package_id && app.id == app_id)
+        .and_then(|app| app.version)
+        .and_then(|value| {
+            display_text(Some(&serde_json::Value::String(value)), MAX_TEXT_CHARACTERS)
+        });
+    Ok((Some(row.revision), version))
+}

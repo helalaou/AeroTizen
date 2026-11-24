@@ -13,6 +13,7 @@ mod json;
 pub mod launcher;
 pub mod launcher_catalog;
 pub mod local_apps;
+mod local_widget;
 pub mod profiles;
 pub mod reads;
 pub mod root;

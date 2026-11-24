@@ -478,7 +478,6 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "connect",
         "remove_apps",
         "install_launcher",
-        "inspect_local_app",
         "install_local_app",
         "setup_root",
         "upgrade_root",
@@ -496,6 +495,7 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "change_button",
         "list_apps",
         "list_button_apps",
+        "inspect_local_app",
     ):
         assert worker.handle(request(retired))["error"]["code"] == "invalid_request"
 
@@ -686,11 +686,24 @@ def local_request(operation, path, **overrides):
     )
 
 
-def test_local_widget_review_and_install_use_cli_signing_and_real_sdb(
+def local_install_preview(path):
+    from tempfile import TemporaryDirectory
+
+    from aerotizen import local_package
+
+    with TemporaryDirectory() as directory:
+        copied, checksum = local_package.snapshot(path, directory)
+        metadata = worker._local_app_metadata(copied)
+        with worker.DeviceSession("127.0.0.1") as session:
+            revision, version = worker._local_app_revision(session, metadata)
+    return {**metadata, "sha256": checksum, "current_revision": revision, "current_version": version}
+
+
+def test_local_widget_install_uses_cli_signing_and_real_sdb(
     connected_tv, local_widget, monkeypatch, tmp_path
 ):
     connected_tv.allow_reconnect = True
-    preview = worker.handle(local_request("inspect_local_app", local_widget))["result"]
+    preview = local_install_preview(local_widget)
     assert preview["name"] == "Local Player"
     assert preview["version"] == "1.2.0"
     assert preview["current_revision"] is None
@@ -755,7 +768,7 @@ def test_local_install_stops_before_signing_or_upload(
     connected_tv, local_widget, monkeypatch, scenario, code
 ):
     connected_tv.allow_reconnect = True
-    preview = worker.handle(local_request("inspect_local_app", local_widget))["result"]
+    preview = local_install_preview(local_widget)
     params = {
         "sha256": preview["sha256"],
         "current_revision": None,
@@ -790,22 +803,6 @@ def test_local_widget_rejects_unsafe_or_duplicate_entries_before_connecting(loca
     monkeypatch.setattr(worker, "DeviceSession", lambda *_: pytest.fail("Unexpected connection"))
     with pytest.raises(ValueError, match="unsupported or unsafe"):
         local_package.inspect(local_widget)
-    assert (
-        worker.handle(local_request("inspect_local_app", local_widget))["error"]["code"] == "invalid_package"
-    )
-
-
-def test_local_preview_marks_replacements_and_rejects_missing_inventory(connected_tv, local_widget):
-    connected_tv.allow_reconnect = True
-    connected_tv.replies["0 vd_applist"] += "\napp_id=LocalApp01.Player app_version=2.0.0"
-    preview = worker.handle(local_request("inspect_local_app", local_widget))["result"]
-    assert preview["current_version"] == "2.0.0"
-    assert len(preview["current_revision"]) == 64
-    connected_tv.replies["0 vd_applist"] = ""
-    assert (
-        worker.handle(local_request("inspect_local_app", local_widget))["error"]["code"]
-        == "inventory_unavailable"
-    )
 
 
 @pytest.fixture

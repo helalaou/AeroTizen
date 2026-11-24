@@ -59,14 +59,16 @@ pub async fn inspect_local_app(
             "The file name is unsupported. Rename the file and try again.",
         ));
     }
-    let review: LocalPackageReview = worker::request(
-        &state.worker_path,
-        "inspect_local_app",
-        json!({
-            "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256, "path": path,
-        }),
-    )
-    .await?;
+    let mut review = super::local_widget::inspect(path.clone()).await?;
+    (review.current_revision, review.current_version) = state
+        .app_reads
+        .installed(
+            &saved.tv.host,
+            &saved.tv.identity_sha256,
+            review.package_id.clone(),
+            review.app_id.clone(),
+        )
+        .await?;
     let selection = Selection {
         tv_id: id,
         path,
@@ -172,5 +174,72 @@ mod tests {
         assert!(!serde_json::to_string(&selection.public_review())
             .unwrap()
             .contains("/private/"));
+    }
+
+    #[tokio::test]
+    async fn native_review_reads_installed_version_without_worker_and_rejects_incomplete_inventory()
+    {
+        use crate::{
+            models::VerifiedTv,
+            services::{
+                app_reads::AppReads,
+                digest::sha256_hex,
+                local_widget::tests::{config, widget},
+                sdb::tests::serve,
+            },
+        };
+        use tokio::{
+            net::TcpListener,
+            time::{timeout, Duration},
+        };
+        for raw in [
+            "apps count: 1\napp_id=LocalApp01.Player app_title=Player app_version=0.9.0\n",
+            "apps count: 2\n",
+        ] {
+            let directory = tempfile::tempdir().unwrap();
+            let mut state = AppState::for_test(directory.path());
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            state.app_reads = AppReads::with_ports(
+                directory.path().join("cli-state"),
+                listener.local_addr().unwrap().port(),
+                1,
+            );
+            let mut tv: VerifiedTv =
+                serde_json::from_str(include_str!("../models/fixtures/verified-tv.json")).unwrap();
+            tv.host = "127.0.0.1".into();
+            tv.identity_sha256 = sha256_hex(b"test-duid");
+            let saved = state.profiles.save(tv).await.unwrap();
+            let path = directory.path().join("Player.wgt");
+            widget(&path, config().as_bytes(), None);
+            let server = async {
+                let (mut io, _) = listener.accept().await.unwrap();
+                serve(&mut io, ["test-duid", "test-duid"], raw).await
+            };
+            let (result, _) = timeout(Duration::from_secs(3), async {
+                tokio::join!(
+                    inspect_local_app(&state, saved.id.clone(), Some(path)),
+                    server
+                )
+            })
+            .await
+            .unwrap();
+            if raw.contains("app_id") {
+                let review = result.unwrap().unwrap();
+                assert_eq!(review.current_version.as_deref(), Some("0.9.0"));
+                assert!(review.replacing);
+                let selected = state.local_apps.0.lock().await;
+                assert!(selected
+                    .as_ref()
+                    .unwrap()
+                    .matches(&saved.id, &review.selection_id));
+                assert!(!serde_json::to_string(&review)
+                    .unwrap()
+                    .contains(directory.path().to_str().unwrap()));
+            } else {
+                assert_eq!(result.unwrap_err().code, "inventory_unavailable");
+                assert!(state.local_apps.0.lock().await.is_none());
+            }
+            assert!(!state.worker_path.exists());
+        }
     }
 }

@@ -1,5 +1,5 @@
 //! Owned, cancellable app inventory reads over Developer Mode or the paired relay.
-mod projection;
+pub(super) mod projection;
 
 use super::{
     digest::sha256_hex,
@@ -123,6 +123,19 @@ impl AppReads {
     pub async fn targets(&self, host: &str, expected: &str) -> AppResult<Vec<ButtonTargetApp>> {
         let raw = self.read_bounded(host, expected, APP_NAMES_TIMEOUT).await?;
         tokio::task::spawn_blocking(move || projection::targets(&raw))
+            .await
+            .map_err(|_| invalid_response())?
+    }
+
+    pub(super) async fn installed(
+        &self,
+        host: &str,
+        expected: &str,
+        package_id: String,
+        app_id: String,
+    ) -> AppResult<(Option<String>, Option<String>)> {
+        let raw = self.read_bounded(host, expected, INVENTORY_TIMEOUT).await?;
+        tokio::task::spawn_blocking(move || projection::installed(&raw, &package_id, &app_id))
             .await
             .map_err(|_| invalid_response())?
     }
