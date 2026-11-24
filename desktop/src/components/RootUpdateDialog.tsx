@@ -1,7 +1,8 @@
 import { Alert, Button, Checkbox, Code, Group, List, Modal, Stack, Stepper, Text } from "@mantine/core";
-import { Check, RotateCw } from "lucide-react";
+import { RotateCw } from "lucide-react";
 import { useState } from "react";
 import type { RootAccessStatus, RootUpdateAction, SavedTv } from "../contracts";
+import { showToast } from "../Toasts";
 import { rootComputerAddress, ROOT_POWER_OFF_SECONDS } from "../services/rootAccess";
 
 interface RootUpdateDialogProps {
@@ -23,12 +24,10 @@ export function RootUpdateDialog({
 }: RootUpdateDialogProps) {
   const [confirmed, setConfirmed] = useState(false);
   const [pending, setPending] = useState(false);
-  const [complete, setComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   let activeStep = pending ? 1 : 0;
   if (status.update_pending) activeStep = 2;
-  if (complete) activeStep = 3;
   const computer = rootComputerAddress(profile, status);
   const resumeLabel = status.root_available ? "Check after restart" : "Resume update";
 
@@ -42,12 +41,18 @@ export function RootUpdateDialog({
     setPending(false);
     if (!result) return;
     const verified =
-      !result.update_pending && result.setup_complete && result.runtime_version === result.target_runtime_version;
-    setComplete(verified);
-    if (!verified && !result.update_pending)
+      !result.update_pending &&
+      result.root_available &&
+      result.setup_complete &&
+      result.runtime_version === result.target_runtime_version;
+    if (verified) {
+      onClose();
+      showToast(`Root access updated to ${result.target_runtime_version} on ${profile.name}.`);
+      return;
+    }
+    if (!result.update_pending)
       setError("The TV did not confirm the new version. Check saved progress to refresh Root access.");
-    if (resuming && !verified)
-      setNotice("The update is not verified yet. Complete the restart steps, then check again.");
+    if (resuming) setNotice("The update is not verified yet. Complete the restart steps, then check again.");
   }
 
   return (
@@ -70,12 +75,7 @@ export function RootUpdateDialog({
           <Stepper.Step label="Update" />
           <Stepper.Step label="Restart" />
         </Stepper>
-        {complete && (
-          <Alert color="green" icon={<Check size={18} />} role="status">
-            Verified root access version {status.runtime_version} and automatic startup on {profile.name}.
-          </Alert>
-        )}
-        {!complete && status.update_pending && (
+        {status.update_pending && (
           <>
             <Alert color="orange" title="Restart the TV to finish the update">
               Progress is saved on this computer. Keep using this app build to finish the update.
@@ -117,7 +117,7 @@ export function RootUpdateDialog({
             )}
           </>
         )}
-        {!complete && !status.update_pending && !pending && (
+        {!status.update_pending && !pending && (
           <>
             <Text>
               Update from version {status.runtime_version ?? "Unavailable"} to{" "}
@@ -160,7 +160,7 @@ export function RootUpdateDialog({
         )}
         <Group justify="flex-end">
           <Button variant="default" disabled={pending} onClick={onClose}>
-            {complete ? "Done" : "Close"}
+            Close
           </Button>
           {error && (
             <Button
@@ -174,15 +174,13 @@ export function RootUpdateDialog({
               Check saved progress
             </Button>
           )}
-          {!complete && (
-            <Button
-              loading={pending}
-              disabled={!status.update_pending && (!confirmed || !status.update_available)}
-              onClick={() => void apply()}
-            >
-              {status.update_pending ? resumeLabel : "Install update"}
-            </Button>
-          )}
+          <Button
+            loading={pending}
+            disabled={!status.update_pending && (!confirmed || !status.update_available)}
+            onClick={() => void apply()}
+          >
+            {status.update_pending ? resumeLabel : "Install update"}
+          </Button>
         </Group>
       </Stack>
     </Modal>

@@ -2,6 +2,7 @@ import { Alert, Button, Group, Modal, Stack, Text } from "@mantine/core";
 import { useEffect, useId, useRef, useState } from "react";
 import { errorMessage } from "../contracts";
 import type { DesktopService, HomeBackupSettings } from "../contracts";
+import { showToast } from "../Toasts";
 import styles from "../styles.module.css";
 import { autostartLabel, homeAppLabel } from "../tvDetails";
 
@@ -28,7 +29,6 @@ export function HomeBackupDialog({
 }: HomeBackupDialogProps) {
   const [reviewedBackup, setReviewedBackup] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
-  const [restored, setRestored] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<HomeBackupSettings | null>(null);
   const [readError, setReadError] = useState<string | null>(null);
@@ -73,8 +73,8 @@ export function HomeBackupDialog({
     const success = await onRestore(reviewedBackup, setError);
     setRestoring(false);
     if (success) {
-      setReviewedBackup(null);
-      setRestored(true);
+      onClose();
+      showToast("Original Home and startup settings restored.");
     } else {
       setError((message) => message ?? "Could not start the restore. Try again.");
     }
@@ -92,49 +92,33 @@ export function HomeBackupDialog({
       closeButtonProps={{ "aria-label": "Close backup status" }}
     >
       <Stack gap="md" aria-busy={restoring}>
-        {restored && (
-          <>
-            <Alert color="green" role="status">
-              Home backup restored.
-            </Alert>
-            <Group justify="flex-end">
-              <Button variant="default" onClick={onClose}>
-                Done
-              </Button>
-            </Group>
-          </>
+        {reviewedBackup ? (
+          <Text size="sm">
+            Restore these settings on <strong>{tvName}</strong>. If AeroTizen is installed, it will switch to Watcher
+            mode.
+          </Text>
+        ) : (
+          <Text size="sm">{status}</Text>
         )}
-        {!restored && (
-          <>
-            {reviewedBackup ? (
-              <Text size="sm">
-                Restore these settings on <strong>{tvName}</strong>. If AeroTizen is installed, it will switch to
-                Watcher mode.
-              </Text>
-            ) : (
-              <Text size="sm">{status}</Text>
-            )}
-            {settings && (
-              <dl className={styles.definitionList} aria-label="Original Home and startup settings">
-                {savedRows.map(([label, value]) => (
-                  <div key={label}>
-                    <dt>{label}</dt>
-                    <dd>{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-            {capturedAt && readBackup && !settings && !readError && (
-              <Text size="sm" role="status">
-                Loading saved settings…
-              </Text>
-            )}
-            {readError && (
-              <Alert color="red" role="alert">
-                {readError}
-              </Alert>
-            )}
-          </>
+        {settings && (
+          <dl className={styles.definitionList} aria-label="Original Home and startup settings">
+            {savedRows.map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        {capturedAt && readBackup && !settings && !readError && (
+          <Text size="sm" role="status">
+            Loading saved settings…
+          </Text>
+        )}
+        {readError && (
+          <Alert color="red" role="alert">
+            {readError}
+          </Alert>
         )}
         {reviewedBackup && (
           <>
@@ -172,7 +156,7 @@ export function HomeBackupDialog({
             </Group>
           </>
         )}
-        {!restored && !reviewedBackup && capturedAt && settings && (
+        {!reviewedBackup && capturedAt && settings && (
           <Group justify="flex-end">
             <Button onClick={() => setReviewedBackup(capturedAt)}>Restore original settings</Button>
           </Group>

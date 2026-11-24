@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { showToast } from "./Toasts";
 import { errorMessage } from "./contracts";
 import type { BackendStatus, DesktopService, SavedTv, TvCandidate } from "./contracts";
 import type { FeatureContext, PendingOperation, ProfileUpdate } from "./features/context";
@@ -66,7 +67,7 @@ export function useTvManager(service: DesktopService) {
         const cancelling = cancelPageRead();
         if (cancelling) await cancelling;
         await action();
-        return true;
+        return mounted.current;
       } catch (caught) {
         if (mounted.current) reportError(errorMessage(caught));
         return false;
@@ -164,9 +165,10 @@ export function useTvManager(service: DesktopService) {
   const rename = (id: string, name: string) =>
     run("Saving TV name…", async () => {
       await service.rename(id, name);
-      if (!mounted.current) return;
       const saved = await service.list();
+      if (!mounted.current) return;
       setProfiles(saved);
+      showToast(`TV renamed to ${name}.`);
     });
 
   const forget = (id: string) =>
@@ -175,6 +177,7 @@ export function useTvManager(service: DesktopService) {
       if (!mounted.current) return;
       setProfiles((current) => current.filter((profile) => profile.id !== id));
       setSelected((current) => (current?.id === id ? null : current));
+      showToast("TV removed from saved TVs.");
     });
 
   const prepareCertificates = (id: string, reportError: (message: string) => void) =>

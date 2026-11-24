@@ -2,12 +2,11 @@ import { Anchor, List, Stack, Text, Title } from "@mantine/core";
 import { isTauri } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ExternalLink } from "lucide-react";
-import { useState } from "react";
 import type { LauncherRelease } from "../contracts";
+import { showToast } from "../Toasts";
 import styles from "../styles.module.css";
 
 export function LauncherReleaseNotes({ release }: { release: LauncherRelease }) {
-  const [linkFailed, setLinkFailed] = useState(false);
   const url = `https://github.com/helalaou/AeroTizen/releases/tag/launcher-v${encodeURIComponent(release.version)}`;
 
   return (
@@ -44,18 +43,12 @@ export function LauncherReleaseNotes({ release }: { release: LauncherRelease }) 
           onClick={(event) => {
             if (!isTauri()) return;
             event.preventDefault();
-            setLinkFailed(false);
-            void openUrl(url).catch(() => setLinkFailed(true));
+            void openUrl(url).catch(() => showToast("Could not open GitHub. Try again.", "error"));
           }}
         >
           View release on GitHub
           <ExternalLink size={14} aria-hidden="true" />
         </Anchor>
-        {linkFailed && (
-          <Text role="alert" c="red" size="sm">
-            Could not open your browser. Try again.
-          </Text>
-        )}
       </Stack>
     </details>
   );

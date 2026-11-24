@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import type { DesktopService, LauncherRelease } from "../contracts";
 import type { FeatureContext } from "./context";
+import { showToast } from "../Toasts";
 
 export function useLauncher(service: DesktopService, context: FeatureContext) {
-  const { selected, run, updateProfile } = context;
+  const { selected, mounted, run, updateProfile } = context;
   const [launcherReleases, setLauncherReleases] = useState<LauncherRelease[] | null>();
   const [releaseCheck, setReleaseCheck] = useState(0);
   const [launcherReleasesLoading, setLauncherReleasesLoading] = useState(true);
@@ -33,7 +34,11 @@ export function useLauncher(service: DesktopService, context: FeatureContext) {
     const { id } = selected;
     return run(`Installing AeroTizen ${version}…`, async () => {
       const updated = await service.installLauncher(id, version, selected.launcher_version, confirmReplace);
+      if (updated.id !== id || updated.launcher_version !== version) {
+        throw new Error("Could not verify the installed AeroTizen version. Refresh the TV to check.");
+      }
       updateProfile(id, updated);
+      if (mounted.current) showToast(`AeroTizen ${version} installed.`);
     });
   };
 

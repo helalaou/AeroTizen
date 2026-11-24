@@ -319,6 +319,9 @@
   }
 }
 @media (max-width: 700px) {
+  .toastStack[data-position="bottom-center"] {
+    bottom: 7rem;
+  }
   .headerContent {
     padding: 0 20px;
   }

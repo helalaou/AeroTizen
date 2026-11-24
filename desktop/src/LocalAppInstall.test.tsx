@@ -30,10 +30,11 @@ describe("Local app installation", () => {
     expect(dialog.getByText("Living room")).toBeVisible();
     expect(install).not.toHaveBeenCalled();
     await user.click(dialog.getByRole("button", { name: "Install" }));
-    const complete = within(await screen.findByRole("dialog", { name: "App installed" }));
-    expect(complete.getByRole("status")).toHaveTextContent("Sample Player 1.2.0 is installed on Living room.");
+    expect(
+      (await screen.findByText("Sample Player 1.2.0 installed on Living room.")).closest('[role="status"]'),
+    ).toBeVisible();
     expect(install).toHaveBeenCalledExactlyOnceWith(livingRoom.id, testLocalApp.selection_id, true);
-    await user.click(complete.getByRole("button", { name: "Done" }));
+    expect(screen.queryByRole("dialog", { name: "Install local app" })).not.toBeInTheDocument();
     expect(await screen.findByRole("checkbox", { name: "Sample Player" })).toBeEnabled();
   });
 
@@ -77,7 +78,7 @@ describe("Local app installation", () => {
     await user.click(dialog.getByRole("button", { name: "Choose .wgt file" }));
     await user.click(await dialog.findByRole("button", { name: "Install" }));
     expect(await dialog.findByRole("alert")).toHaveTextContent("The app file changed. Choose it again.");
-    expect(screen.queryByRole("dialog", { name: "App installed" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Sample Player 1.2.0 installed on Living room.")).not.toBeInTheDocument();
   });
 
   it("prepares Samsung certificates before installing on a new TV", async () => {
@@ -91,7 +92,8 @@ describe("Local app installation", () => {
     expect(setup.getByText(/then install Sample Player/)).toBeVisible();
     expect(install).not.toHaveBeenCalled();
     await user.click(setup.getByRole("button", { name: "Sign in with Samsung" }));
-    expect(await screen.findByRole("dialog", { name: "App installed" }, { timeout: 4000 })).toBeVisible();
+    expect(await screen.findByText("Sample Player 1.2.0 installed on Bedroom.", {}, { timeout: 4000 })).toBeVisible();
+    expect(screen.queryByText("Signed in to Samsung.")).not.toBeInTheDocument();
     expect(certificates).toHaveBeenCalledExactlyOnceWith(bedroom.id);
     expect(certificates).toHaveBeenCalledBefore(install);
   });

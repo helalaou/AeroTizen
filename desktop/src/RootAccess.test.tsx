@@ -49,8 +49,8 @@ describe("Root access", () => {
     dialog = within(screen.getByRole("dialog", { name: "Update root access" }));
     await user.click(dialog.getByRole("button", { name: "Demo: restart TV" }));
     await user.click(dialog.getByRole("button", { name: "Check after restart" }));
-    expect(await dialog.findByText(/Verified root access version 3.0.1 and automatic startup/)).toBeVisible();
-    await user.click(dialog.getByRole("button", { name: "Done" }));
+    expect(await screen.findByText("Root access updated to 3.0.1 on Living room.")).toBeVisible();
+    expect(screen.queryByRole("dialog", { name: "Update root access" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Update available" })).not.toBeInTheDocument();
     expect(upgrade.mock.calls.map(([, action]) => action)).toEqual(["start", "resume", "resume"]);
     expect(setup).not.toHaveBeenCalled();
@@ -182,8 +182,8 @@ describe("Root access", () => {
     wizard = within(screen.getByRole("dialog", { name: "Set up root access" }));
     await user.click(wizard.getByRole("button", { name: "Demo: restart TV" }));
     await user.click(wizard.getByRole("button", { name: "Check after restart" }));
-    expect(await wizard.findByText(/Root access and automatic startup are verified/)).toBeVisible();
-    await user.click(wizard.getByRole("button", { name: "Done" }));
+    expect(await screen.findByText("Root access is ready on Bedroom.")).toBeVisible();
+    expect(screen.queryByRole("dialog", { name: "Set up root access" })).not.toBeInTheDocument();
     expect(screen.getByText(testRootReady.runtime_version!, { exact: true })).toBeVisible();
     expect(setup.mock.calls.map(([, action]) => action)).toEqual(["start", "verify", "verify"]);
     expect(certificates).toHaveBeenCalledExactlyOnceWith(bedroom.id);

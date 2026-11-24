@@ -1,7 +1,8 @@
 import { Alert, Button, Checkbox, Group, Modal, Stack, Text } from "@mantine/core";
-import { Check, FileUp, TriangleAlert } from "lucide-react";
+import { FileUp, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import type { LocalAppPackage, SavedTv } from "../contracts";
+import { showToast } from "../Toasts";
 import { SamsungSignInDialog } from "./SamsungSignInDialog";
 
 interface LocalAppInstallDialogProps {
@@ -28,7 +29,6 @@ export function LocalAppInstallDialog({
   const [pending, setPending] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [setup, setSetup] = useState(false);
-  const [installed, setInstalled] = useState(false);
 
   async function chooseFile() {
     setPending(true);
@@ -45,20 +45,24 @@ export function LocalAppInstallDialog({
 
   async function installApp(reportError: (message: string) => void) {
     if (!app || (app.replacing && !confirmed)) return false;
-    const success = await install(app, reportError);
-    setInstalled(success);
-    return success;
+    return install(app, reportError);
+  }
+
+  function finishInstall(installedApp: LocalAppPackage) {
+    onClose();
+    showToast(`${installedApp.name} ${installedApp.version} installed on ${profile.name}.`);
   }
 
   async function proceed() {
+    if (!app) return;
     if (!profile.launcher_signing_ready) {
       setSetup(true);
       return;
     }
     setPending(true);
     setError(null);
-    await installApp(setError);
-    setPending(false);
+    if (await installApp(setError)) finishInstall(app);
+    else setPending(false);
   }
 
   if (setup && app) {
@@ -70,7 +74,10 @@ export function LocalAppInstallDialog({
         signIn={signIn}
         prepareCertificates={prepareCertificates}
         install={installApp}
-        onComplete={() => setSetup(false)}
+        onComplete={(success) => {
+          if (success) finishInstall(app);
+          else setSetup(false);
+        }}
       />
     );
   }
@@ -79,63 +86,54 @@ export function LocalAppInstallDialog({
     <Modal
       opened
       centered
-      title={installed ? "App installed" : "Install local app"}
+      title="Install local app"
       onClose={onClose}
       closeOnClickOutside={!pending}
       closeOnEscape={!pending}
       withCloseButton={!pending}
     >
       <Stack gap="md" aria-busy={pending}>
-        {installed && app ? (
-          <Alert color="green" icon={<Check size={18} />} role="status">
-            {app.name} {app.version} is installed on {profile.name}.
-          </Alert>
-        ) : (
-          <>
-            <Text size="sm">
-              Choose a Tizen app (.wgt) to install on <strong>{profile.name}</strong>.
+        <Text size="sm">
+          Choose a Tizen app (.wgt) to install on <strong>{profile.name}</strong>.
+        </Text>
+        <Button
+          variant="default"
+          leftSection={<FileUp size={17} aria-hidden="true" />}
+          loading={pending && !app}
+          disabled={pending}
+          onClick={() => void chooseFile()}
+        >
+          {app ? "Choose another file" : "Choose .wgt file"}
+        </Button>
+        {app && (
+          <Stack gap="xs">
+            <Text fw={600} style={{ overflowWrap: "anywhere" }}>
+              {app.name}
             </Text>
-            <Button
-              variant="default"
-              leftSection={<FileUp size={17} aria-hidden="true" />}
-              loading={pending && !app}
-              disabled={pending}
-              onClick={() => void chooseFile()}
-            >
-              {app ? "Choose another file" : "Choose .wgt file"}
-            </Button>
-            {app && (
-              <Stack gap="xs">
-                <Text fw={600} style={{ overflowWrap: "anywhere" }}>
-                  {app.name}
-                </Text>
-                <Text size="sm">Version: {app.version}</Text>
-                <Text size="xs" c="dimmed" style={{ overflowWrap: "anywhere" }}>
-                  {app.app_id}
-                </Text>
-                {app.replacing && (
-                  <>
-                    <Alert color="orange" icon={<TriangleAlert size={18} aria-hidden="true" />}>
-                      This replaces the installed app{app.current_version ? ` (${app.current_version})` : ""}. Older
-                      versions can be incompatible with saved settings. Updates require the original signing
-                      certificate.
-                    </Alert>
-                    <Checkbox
-                      label="Replace the installed app"
-                      checked={confirmed}
-                      disabled={pending}
-                      onChange={(event) => setConfirmed(event.currentTarget.checked)}
-                    />
-                  </>
-                )}
-                {!profile.launcher_signing_ready && (
-                  <Text size="sm" c="dimmed">
-                    Samsung sign-in and certificate setup will open before installation.
-                  </Text>
-                )}
-              </Stack>
+            <Text size="sm">Version: {app.version}</Text>
+            <Text size="xs" c="dimmed" style={{ overflowWrap: "anywhere" }}>
+              {app.app_id}
+            </Text>
+            {app.replacing && (
+              <>
+                <Alert color="orange" icon={<TriangleAlert size={18} aria-hidden="true" />}>
+                  This replaces the installed app{app.current_version ? ` (${app.current_version})` : ""}. Older
+                  versions can be incompatible with saved settings. Updates require the original signing certificate.
+                </Alert>
+                <Checkbox
+                  label="Replace the installed app"
+                  checked={confirmed}
+                  disabled={pending}
+                  onChange={(event) => setConfirmed(event.currentTarget.checked)}
+                />
+              </>
             )}
-          </>
+            {!profile.launcher_signing_ready && (
+              <Text size="sm" c="dimmed">
+                Samsung sign-in and certificate setup will open before installation.
+              </Text>
+            )}
+          </Stack>
         )}
         {error && (
           <Alert color="red" role="alert">
@@ -144,17 +142,15 @@ export function LocalAppInstallDialog({
         )}
         <Group justify="flex-end">
           <Button variant="default" disabled={pending} onClick={onClose}>
-            {installed ? "Done" : "Cancel"}
+            Cancel
           </Button>
-          {!installed && (
-            <Button
-              disabled={!app || (app.replacing && !confirmed)}
-              loading={pending && Boolean(app)}
-              onClick={() => void proceed()}
-            >
-              Install
-            </Button>
-          )}
+          <Button
+            disabled={!app || (app.replacing && !confirmed)}
+            loading={pending && Boolean(app)}
+            onClick={() => void proceed()}
+          >
+            Install
+          </Button>
         </Group>
       </Stack>
     </Modal>
