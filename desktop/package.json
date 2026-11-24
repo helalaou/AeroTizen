@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "dev:simulator": "vite --mode simulator --host 0.0.0.0 --port 1430",
+    "dev:simulator:desktop": "tauri dev --config src-tauri/tauri.simulator.conf.json",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

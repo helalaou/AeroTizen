@@ -223,7 +223,7 @@ test("shows detected buttons and saved assignments on the selected TV", async ({
   await expect(table.getByRole("row", { name: /Netflix/ })).toContainText("Stremio");
   await expect(table.getByRole("row", { name: /Netflix/ })).toContainText("Active");
   await expect(table.getByRole("row", { name: /Disney/ })).toContainText("Disabled");
-  await expect(table.getByRole("row", { name: /Disney/ })).toContainText("Pending");
+  await expect(table.getByRole("row", { name: /Disney/ })).toContainText("Not confirmed");
   await expect(table.getByRole("row", { name: /Prime Video/ })).toContainText("Original action");
   await page.getByRole("button", { name: "Refresh button mappings" }).click();
   await expect(table).toBeVisible();
