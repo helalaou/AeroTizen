@@ -79,6 +79,8 @@ test("navigates the selected TV actions and keeps the initial screen TV-only", a
     "Home and startup",
     "Root access",
     "Button mapping",
+    "Diagnostics",
+    "Logs",
   ]);
   await expect(nav.getByRole("button", { name: "Install & update", exact: true })).toHaveAttribute(
     "aria-current",

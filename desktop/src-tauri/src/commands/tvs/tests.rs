@@ -187,7 +187,7 @@ fn registered_samsung_commands_keep_cancellation_and_account_shapes_without_a_wo
 }
 
 #[test]
-fn root_status_and_cancellation_keep_the_registered_contract_without_a_worker() {
+fn root_status_and_diagnostics_share_the_native_read_cancellation() {
     let fixture = Fixture::new();
     let saved = fixture.invoke("list_tvs", json!({})).unwrap();
     let id = saved[0]["id"].as_str().unwrap();
@@ -217,6 +217,14 @@ fn root_status_and_cancellation_keep_the_registered_contract_without_a_worker() 
         ),
         Err(json!({"code": "tv_read_cancelled", "message": "TV refresh cancelled."}))
     );
+    assert_eq!(
+        fixture.invoke(
+            "check_tv_diagnostics",
+            json!({"id": id, "requestId": "cancelled"})
+        ),
+        Err(json!({"code": "tv_read_cancelled", "message": "TV refresh cancelled."}))
+    );
+    assert_eq!(fixture.invoke("list_tvs", json!({})).unwrap(), saved);
 }
 
 #[test]

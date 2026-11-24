@@ -16,7 +16,10 @@ export function useTvManager(service: DesktopService) {
   const [backend, setBackend] = useState<BackendStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<PendingOperation | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ message: string; connection?: boolean } | null>(null);
+  const [diagnostics, setDiagnostics] = useState<SavedTv | null>(null);
+  const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
+  const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
   const active = useRef(false);
   const mounted = useRef(false);
   const pageRead = useRef<{
@@ -31,9 +34,9 @@ export function useTvManager(service: DesktopService) {
     void Promise.allSettled([service.list(), service.status()]).then(([saved, status]) => {
       if (cancelled) return;
       if (saved.status === "fulfilled") setProfiles(saved.value);
-      else setError(errorMessage(saved.reason));
+      else setFeedback({ message: errorMessage(saved.reason) });
       if (status.status === "fulfilled") setBackend(status.value);
-      else setError(errorMessage(status.reason));
+      else setFeedback({ message: errorMessage(status.reason) });
       setLoading(false);
     });
     return () => {
@@ -57,12 +60,12 @@ export function useTvManager(service: DesktopService) {
       message: string,
       action: () => Promise<void>,
       scope: PendingOperation["scope"] = "app",
-      reportError: (message: string) => void = setError,
+      reportError: (message: string) => void = (message) => setFeedback({ message }),
     ) => {
       if (active.current) return false;
       active.current = true;
       setBusy({ message, scope });
-      setError(null);
+      setFeedback(null);
       try {
         const cancelling = cancelPageRead();
         if (cancelling) await cancelling;
@@ -135,22 +138,36 @@ export function useTvManager(service: DesktopService) {
       : undefined,
   };
   const connect = (host: string, profileId?: string) =>
-    run("Connecting…", async () => {
-      let profile: SavedTv;
-      try {
-        profile = await service.connect(host, profileId);
-      } catch (error) {
-        if (mounted.current) setSelected((current) => (current?.id === profileId ? null : current));
-        throw error;
-      }
-      if (!mounted.current) return;
-      if (profile.id !== selected?.id) {
-        resetRootStatus();
-        resetApps();
-      }
-      setProfiles((current) => [...current.filter((item) => item.id !== profile.id), profile]);
-      setSelected(profile);
-    });
+    run(
+      "Connecting…",
+      async () => {
+        let profile: SavedTv;
+        try {
+          profile = await service.connect(host, profileId);
+        } catch (error) {
+          if (mounted.current) setSelected((current) => (current?.id === profileId ? null : current));
+          throw error;
+        }
+        if (!mounted.current) return;
+        if (profile.id !== selected?.id) {
+          resetRootStatus();
+          resetApps();
+        }
+        setProfiles((current) => [...current.filter((item) => item.id !== profile.id), profile]);
+        setSelected(profile);
+      },
+      "app",
+      (message) => setFeedback({ message, connection: true }),
+    );
+
+  const loadDiagnostics = (id: string) =>
+    loadPage(
+      (signal) => service.checkDiagnostics(id, signal),
+      setDiagnostics,
+      setDiagnosticsError,
+      setDiagnosticsLoading,
+      { preserveResult: true },
+    );
 
   const discover = () =>
     run(
@@ -202,7 +219,16 @@ export function useTvManager(service: DesktopService) {
     backend,
     loading,
     busy,
-    error,
+    error: feedback?.message ?? null,
+    connectionFailed: feedback?.connection ?? false,
+    diagnostics,
+    diagnosticsError,
+    diagnosticsLoading,
+    loadDiagnostics,
+    clearDiagnostics: () => {
+      setDiagnostics(null);
+      setDiagnosticsError(null);
+    },
     ready: !loading && backend !== null,
     ...launcher,
     ...apps,
@@ -215,10 +241,10 @@ export function useTvManager(service: DesktopService) {
     forget,
     prepareCertificates,
     cancelPageRead,
-    clearError: () => setError(null),
+    clearError: () => setFeedback(null),
     back: () => {
       cancelPageRead();
-      setError(null);
+      setFeedback(null);
       setSelected(null);
       resetApps();
     },

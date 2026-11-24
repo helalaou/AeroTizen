@@ -43,6 +43,7 @@ export interface HomeBackupSettings extends NativeHomeSettings {
 export interface TechnicalDetails {
   model_code: string | null;
   tizen_version: string | null;
+  firmware_build?: string | null;
   architecture: string | null;
   platform: string | null;
   root_runtime_version: string | null;
@@ -168,6 +169,7 @@ export interface DesktopService {
   list(): Promise<SavedTv[]>;
   discover(): Promise<TvCandidate[]>;
   connect(host: string, profileId?: string): Promise<SavedTv>;
+  checkDiagnostics(id: string, signal: AbortSignal): Promise<SavedTv>;
   listApps(id: string, signal: AbortSignal): Promise<TvAppPackage[]>;
   listButtons(id: string, signal: AbortSignal): Promise<ButtonMappings>;
   buttonActions?: {
@@ -200,7 +202,7 @@ export function canApplyNativeHome(profile: SavedTv): boolean {
   );
 }
 
-export type TvPage = "overview" | "launcher" | "apps" | "home" | "buttons" | "root";
+export type TvPage = "overview" | "launcher" | "apps" | "home" | "buttons" | "root" | "diagnostics" | "logs";
 
 export function errorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;

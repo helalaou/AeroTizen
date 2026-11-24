@@ -87,6 +87,12 @@
   flex: 1;
   min-width: 0;
 }
+.sidebarNav {
+  flex: 1 0 auto;
+}
+.sidebarSupport {
+  margin-top: auto;
+}
 .detailContent {
   width: 100%;
   max-width: 1160px;
@@ -163,6 +169,36 @@
 .definitionList dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+.diagnosticChecks {
+  margin: var(--mantine-spacing-xs) 0 0;
+}
+.diagnosticChecks > div {
+  display: grid;
+  grid-template-columns: minmax(0, 27%) minmax(0, 1fr);
+  gap: var(--mantine-spacing-sm);
+  align-items: start;
+  padding-block: var(--mantine-spacing-xs);
+  border-bottom: 1px solid #e5eaf0;
+}
+.diagnosticChecks > div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.diagnosticChecks dt {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+}
+.diagnosticChecks dd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-xs);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.diagnosticChecks dd > :last-child {
+  flex-shrink: 0;
 }
 .overviewDetails {
   margin: 0;
@@ -328,6 +364,10 @@
   .selection,
   .detailContent {
     padding: 32px 20px;
+  }
+  .diagnosticChecks > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
   }
   .releaseHistory {
     grid-template-columns: minmax(0, 1fr);

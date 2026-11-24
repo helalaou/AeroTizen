@@ -42,6 +42,7 @@ export const OPERATIONS = {
   list: "Load saved TVs",
   discover: "Search for TVs",
   connect: "Connect to a TV",
+  checkDiagnostics: "Run TV diagnostics",
   launcherCatalog: "Fetch launcher releases",
   installLauncher: "Install launcher",
   listApps: "Load apps",
@@ -159,6 +160,7 @@ export function createTv(preset: TvPreset, index: number, identity = createIdent
       technical_details: {
         model_code: "QE65LS03DAUXXU",
         tizen_version: "9.0",
+        firmware_build: rooted ? "T-PTMDDEUC-0090-REL-202605141701" : null,
         architecture: "armv7",
         platform: "24_PTM",
         root_runtime_version: null,

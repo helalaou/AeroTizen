@@ -1,5 +1,5 @@
 import { MantineProvider } from "@mantine/core";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { DesktopApp } from "./DesktopApp";
@@ -32,6 +32,63 @@ describe("Desktop app", () => {
     mount();
     expect(screen.getByText("Open the desktop app to connect to your TV.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Search for TVs" })).not.toBeInTheDocument();
+  });
+
+  it("keeps Diagnostics open after a failed check and updates the results on retry", async () => {
+    const service = testService();
+    vi.spyOn(service, "connect").mockResolvedValueOnce({
+      ...livingRoom,
+      technical_details: { ...livingRoom.technical_details!, firmware_build: undefined },
+    });
+    const check = vi
+      .spyOn(service, "checkDiagnostics")
+      .mockRejectedValueOnce({ code: "connection_timeout", message: "The TV did not respond." })
+      .mockResolvedValueOnce({
+        ...livingRoom,
+        native_home_settings: { ...livingRoom.native_home_settings!, startup_app: "DclHome001.Home" },
+      });
+    const user = userEvent.setup();
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
+    const sidebar = within(screen.getByRole("navigation", { name: "TV actions" }));
+    expect(
+      sidebar
+        .getAllByRole("button")
+        .slice(-2)
+        .map((button) => button.textContent),
+    ).toEqual(["Diagnostics", "Logs"]);
+    await user.click(sidebar.getByRole("button", { name: "Diagnostics" }));
+    expect(screen.getByText("The TV returned only some Home and startup settings.")).toBeVisible();
+    await user.click(screen.getByText("Technical details"));
+    expect(screen.getByText("Firmware build").parentElement).toHaveTextContent("Unavailable");
+
+    await user.click(screen.getByRole("button", { name: "Run checks" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("The TV did not respond.");
+    expect(screen.getByRole("heading", { name: "Diagnostics" })).toBeVisible();
+    expect(screen.queryByText("Verified", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByText(/Turn on the TV and check that it is on the same network/)).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Run checks" }));
+    expect(await screen.findByText("The app read the current Home and startup settings.")).toBeVisible();
+    expect(screen.getByText("Firmware build").parentElement).toHaveTextContent("T-PTMDDEUC-0090-REL-202605141701");
+    expect(check).toHaveBeenCalledTimes(2);
+    expect(check).toHaveBeenLastCalledWith(livingRoom.id, expect.any(AbortSignal));
+
+    await user.click(sidebar.getByRole("button", { name: "Logs" }));
+    expect(screen.getByRole("heading", { name: "Logs" })).toBeVisible();
+    expect(screen.getByRole("table", { name: "Desktop logs" })).toHaveTextContent("connection_timeout");
+  });
+
+  it("shows troubleshooting guidance when a TV cannot connect", async () => {
+    const service = testService();
+    vi.spyOn(service, "connect").mockRejectedValueOnce(new Error("Could not reach this TV."));
+    const user = userEvent.setup();
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
+    const feedback = await screen.findByRole("alert");
+    expect(feedback).toHaveTextContent("Could not reach this TV.");
+    expect(feedback).toHaveTextContent("If you use Developer Mode, set Host PC IP");
+    expect(screen.getByRole("heading", { name: "Your TVs" })).toBeVisible();
   });
 
   it("offers Samsung setup when an install needs a signing profile", async () => {

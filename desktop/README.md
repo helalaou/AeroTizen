@@ -47,7 +47,14 @@ Choose **Report issue** in the Overview header to open a GitHub issue draft in y
 model, available software versions and diagnostic report filled in. Add what you observed
 and submit the issue on GitHub.
 It excludes TV names, network addresses, device IDs, credentials and raw command output.
-Open **Logs** from the app menu to see desktop operations, newest first. The app keeps
+Open **Diagnostics** at the bottom of a connected TV's sidebar. **Run checks** verifies
+the connection and reads Developer Mode, signing profile, Root and Home status. Use the
+results to find the next step for this TV. **Technical details** includes the firmware
+build when a compatible paired Root connection reports it.
+See the [Diagnostics view](screenshots/diagnostics.png).
+
+Open **Logs** from the TV sidebar, or from the app menu before connecting, to see desktop
+operations, newest first. The app keeps
 up to 250 entries on this computer. **Export logs** saves a diagnostic ZIP with desktop
 activity, build and platform details, and up to 20 redacted Home recovery summaries.
 When a TV is selected, you can also include launcher and background service logs and a

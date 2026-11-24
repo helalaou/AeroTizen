@@ -2,6 +2,7 @@ import { Alert, Button, Group, Modal, Stack, Text, TextInput } from "@mantine/co
 import { useState } from "react";
 import { validHost } from "../contracts";
 import type { SavedTv } from "../contracts";
+import { ConnectionHelp } from "./ConnectionHelp";
 
 export type TvDialog = { kind: "address"; profile?: SavedTv } | { kind: "rename" | "forget"; profile: SavedTv };
 const DIALOG_LABELS = {
@@ -58,7 +59,10 @@ export function TvDialogs({ dialog, busy, error, onClose, onConnect, onRename, o
         <Stack>
           {error && (
             <Alert color="red" role="alert">
-              {error}
+              <Stack gap="xs">
+                <Text size="sm">{error}</Text>
+                {dialog.kind === "address" && <ConnectionHelp computerIp={dialog.profile?.computer_ip} />}
+              </Stack>
             </Alert>
           )}
           {dialog.kind === "forget" ? (

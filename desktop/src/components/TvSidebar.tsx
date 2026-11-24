@@ -1,5 +1,16 @@
 import { ActionIcon, AppShell, Button, Divider, Group, NavLink, Stack, Text } from "@mantine/core";
-import { ArrowLeft, Gamepad2, House, LayoutDashboard, LayoutGrid, Package, RefreshCw, ShieldCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  Gamepad2,
+  House,
+  LayoutDashboard,
+  LayoutGrid,
+  Package,
+  RefreshCw,
+  ScrollText,
+  ShieldCheck,
+  Stethoscope,
+} from "lucide-react";
 import type { TvPage, SavedTv } from "../contracts";
 import styles from "../styles.module.css";
 
@@ -10,6 +21,8 @@ const PAGES = [
   { key: "home", label: "Home and startup", icon: House },
   { key: "root", label: "Root access", icon: ShieldCheck },
   { key: "buttons", label: "Button mapping", icon: Gamepad2 },
+  { key: "diagnostics", label: "Diagnostics", icon: Stethoscope },
+  { key: "logs", label: "Logs", icon: ScrollText },
 ] as const;
 
 interface TvSidebarProps {
@@ -68,10 +81,10 @@ export function TvSidebar({
           <RefreshCw size={17} aria-hidden="true" />
         </ActionIcon>
       </Group>
-      <Stack component="nav" aria-label="TV actions" gap={2}>
+      <Stack component="nav" aria-label="TV actions" gap={2} className={styles.sidebarNav}>
         {PAGES.map(({ key, label, icon: Icon }) => (
-          <div key={key}>
-            {key === "launcher" && <Divider my="xs" />}
+          <div key={key} className={key === "diagnostics" ? styles.sidebarSupport : undefined}>
+            {(key === "launcher" || key === "diagnostics") && <Divider my="xs" />}
             <NavLink
               component="button"
               type="button"

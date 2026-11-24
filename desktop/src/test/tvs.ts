@@ -29,6 +29,7 @@ export const livingRoom: SavedTv = {
   technical_details: {
     model_code: "QE65LS03DAUXXU",
     tizen_version: "9.0.0",
+    firmware_build: "T-PTMDDEUC-0090-REL-202605141701",
     architecture: "armv7",
     platform: "24_PTM",
     root_runtime_version: "3.0.0",
@@ -53,7 +54,7 @@ export const bedroom: SavedTv = {
   computer_ip: "192.0.2.11",
   launcher_version: null,
   launcher_signing_ready: false,
-  technical_details: { ...livingRoom.technical_details!, root_runtime_version: null },
+  technical_details: { ...livingRoom.technical_details!, firmware_build: null, root_runtime_version: null },
   transport: "developer",
   home_backup: { status: "missing" },
   home_routing_mode: undefined,
@@ -389,6 +390,12 @@ export function testService(): DesktopService {
     },
     removeApps: async () => {
       throw new Error("Set the removal result in the test.");
+    },
+    checkDiagnostics: async (id, signal) => {
+      signal.throwIfAborted();
+      const profile = profiles.get(id);
+      if (!profile) throw new Error("Connect to this TV first.");
+      return { ...profile };
     },
     connect: async (host, id) => {
       const tv = [livingRoom, bedroom, office].find((known) => known.host === host);

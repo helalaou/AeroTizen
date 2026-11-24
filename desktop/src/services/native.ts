@@ -19,7 +19,7 @@ import type {
 } from "../contracts";
 
 async function readTv<Result>(
-  command: "list_tv_apps" | "list_tv_buttons" | "list_tv_button_apps" | "root_access_status",
+  command: "list_tv_apps" | "list_tv_buttons" | "list_tv_button_apps" | "root_access_status" | "check_tv_diagnostics",
   id: string,
   signal: AbortSignal,
 ): Promise<Result> {
@@ -79,6 +79,7 @@ export const nativeService: DesktopService = {
   list: () => invoke<SavedTv[]>("list_tvs"),
   discover: () => invoke<TvCandidate[]>("discover_tvs"),
   connect: (host, profileId) => invoke<SavedTv>("connect_tv", { host, profileId: profileId ?? null }),
+  checkDiagnostics: (id, signal) => readTv<SavedTv>("check_tv_diagnostics", id, signal),
   listApps: (id, signal) => readTv<TvAppPackage[]>("list_tv_apps", id, signal),
   listButtons: (id, signal) => readTv<ButtonMappings>("list_tv_buttons", id, signal),
   buttonActions: {
