@@ -34,5 +34,31 @@
       },
       "script": "test ! -L '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.dll'\nprintf '%s  %s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.dll' | sha256sum -c - >/dev/null\ntest ! -L '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.runtimeconfig.json'\nprintf '%s  %s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.runtimeconfig.json' | sha256sum -c - >/dev/null\ntest ! -L '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.deps.json'\nprintf '%s  %s\\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.deps.json' | sha256sum -c - >/dev/null\nexec /usr/bin/dotnet '/opt/usr/apps/org.aerotizen.roothelper/bin/AeroTizenRootBridge.dll' --repair-startup '/home/owner/share/tmp/sdk_tools/arsetup-4444444444444444' '11111111111111111111111111111111' '22222222222222222222222222222222'\n"
     }
-  ]
+  ],
+  "configuration": {
+    "schema_version": 1,
+    "app_id": "org.aerotizen.roothelper",
+    "version": "0.1.0",
+    "installation_id": "11111111111111111111111111111111",
+    "device_identity_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "duid_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "baseline_boot_id": "00000000-0000-4000-8000-000000000001",
+    "bridge_port": 26104,
+    "certificate_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "files": {
+      "bin/AeroTizenRootBridge.deps.json": "f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3",
+      "bin/AeroTizenRootBridge.dll": "f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3",
+      "bin/AeroTizenRootBridge.runtimeconfig.json": "f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3",
+      "bin/AeroTizenRootHelper.deps.json": "f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3",
+      "bin/AeroTizenRootHelper.dll": "f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3",
+      "bin/AeroTizenRootHelper.runtimeconfig.json": "f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3",
+      "res/runner/AeroTizenRootProbe.deps.json": "f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3",
+      "res/runner/AeroTizenRootProbe.dll": "f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3",
+      "res/runner/AeroTizenRootProbe.runtimeconfig.json": "f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3",
+      "res/setup/AeroTizenBootWriter.deps.json": "f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3",
+      "res/setup/AeroTizenBootWriter.dll": "f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3",
+      "res/setup/AeroTizenBootWriter.runtimeconfig.json": "f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3"
+    }
+  },
+  "configuration_json": "{\n  \"schema_version\": 1,\n  \"app_id\": \"org.aerotizen.roothelper\",\n  \"version\": \"0.1.0\",\n  \"installation_id\": \"11111111111111111111111111111111\",\n  \"device_identity_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n  \"duid_sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"baseline_boot_id\": \"00000000-0000-4000-8000-000000000001\",\n  \"bridge_port\": 26104,\n  \"certificate_sha256\": \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\n  \"files\": {\n    \"bin/AeroTizenRootBridge.deps.json\": \"f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3\",\n    \"bin/AeroTizenRootBridge.dll\": \"f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3\",\n    \"bin/AeroTizenRootBridge.runtimeconfig.json\": \"f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3\",\n    \"bin/AeroTizenRootHelper.deps.json\": \"f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3\",\n    \"bin/AeroTizenRootHelper.dll\": \"f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3\",\n    \"bin/AeroTizenRootHelper.runtimeconfig.json\": \"f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3\",\n    \"res/runner/AeroTizenRootProbe.deps.json\": \"f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3\",\n    \"res/runner/AeroTizenRootProbe.dll\": \"f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3\",\n    \"res/runner/AeroTizenRootProbe.runtimeconfig.json\": \"f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3\",\n    \"res/setup/AeroTizenBootWriter.deps.json\": \"f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3\",\n    \"res/setup/AeroTizenBootWriter.dll\": \"f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3\",\n    \"res/setup/AeroTizenBootWriter.runtimeconfig.json\": \"f79689223c686f89e43f85c51f5490461f36c31f7c8f5fdf4cdf031fcaaf04d3\"\n  }\n}\n"
 }

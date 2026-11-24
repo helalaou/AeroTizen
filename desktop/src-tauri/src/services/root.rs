@@ -1,8 +1,8 @@
 use crate::{
     models::{AppError, AppResult, RootAccessStatus, RootSetupAction, RootUpdateAction},
     state::{busy, AppState},
-    worker,
 };
+#[cfg(test)]
 use serde_json::json;
 
 pub async fn root_access_status(
@@ -57,20 +57,75 @@ pub async fn upgrade_root_access(
 ) -> AppResult<RootAccessStatus> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
     let saved = state.profiles.get(&id).await?;
-    worker::request(
-        &state.worker_path,
-        "upgrade_root",
-        json!({
-            "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256,
-            "action": action, "confirmed": confirmed,
-        }),
-    )
-    .await
+    if !confirmed {
+        return Err(AppError::new(
+            "confirmation_required",
+            "Review and confirm the Root helper update first.",
+        ));
+    }
+    state
+        .device_connection
+        .update_root_helper(
+            &saved.tv.host,
+            &saved.tv.identity_sha256,
+            matches!(action, RootUpdateAction::Resume),
+        )
+        .await?;
+    state
+        .root_status
+        .read(&saved.tv.host, &saved.tv.identity_sha256)
+        .await
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[tokio::test]
+    async fn root_updates_are_native_and_require_confirmation_active_progress_and_a_pending_resume()
+    {
+        let directory = tempfile::tempdir().unwrap();
+        let state = AppState::for_test(directory.path());
+        let tv: crate::models::VerifiedTv =
+            serde_json::from_str(include_str!("../models/fixtures/verified-tv.json")).unwrap();
+        let saved = state.profiles.save(tv).await.unwrap();
+        assert_eq!(
+            upgrade_root_access(&state, saved.id.clone(), RootUpdateAction::Start, false)
+                .await
+                .unwrap_err()
+                .code,
+            "confirmation_required"
+        );
+        assert_eq!(
+            upgrade_root_access(&state, saved.id.clone(), RootUpdateAction::Start, true)
+                .await
+                .unwrap_err()
+                .code,
+            "root_state_changed"
+        );
+        let mut record = crate::services::root_pairing::tests::document();
+        record["duid_sha256"] = json!(saved.tv.identity_sha256);
+        crate::services::root_pairing::tests::save(
+            &directory.path().join("cli-state"),
+            &saved.tv.host,
+            &record,
+        );
+        assert_eq!(
+            upgrade_root_access(&state, saved.id.clone(), RootUpdateAction::Resume, true)
+                .await
+                .unwrap_err()
+                .code,
+            "root_state_changed"
+        );
+        let _guard = state.operation.lock().await;
+        assert_eq!(
+            upgrade_root_access(&state, saved.id, RootUpdateAction::Start, true)
+                .await
+                .unwrap_err()
+                .code,
+            "operation_busy"
+        );
+        assert!(!state.worker_path.exists());
+    }
     #[tokio::test]
     async fn root_verification_is_native_and_keeps_confirmation_and_operation_guards() {
         let directory = tempfile::tempdir().unwrap();

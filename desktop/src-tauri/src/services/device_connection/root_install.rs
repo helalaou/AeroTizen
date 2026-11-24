@@ -34,7 +34,7 @@ fn requirements() -> AppError {
         "Turn on Developer Mode and set Host PC IP to this computer's address, then retry.",
     )
 }
-fn source(info: &Value) -> AppResult<Ipv4Addr> {
+pub(super) fn source(info: &Value) -> AppResult<Ipv4Addr> {
     let address = info["developerIP"]
         .as_str()
         .and_then(|value| value.parse::<Ipv4Addr>().ok())
@@ -60,16 +60,59 @@ fn parse(completion: sdk::Completion, prefix: &str) -> AppResult<Value> {
     }
     serde_json::from_str(records[0]).map_err(|_| root_install::failed())
 }
-struct Native<'a> {
+#[derive(Clone, Copy)]
+pub(super) enum Purpose {
+    Install,
+    Update,
+}
+pub(super) struct Native<'a> {
     session: Session<'a>,
     store: root_pairing::store::Store,
     runtime: Arc<RootRuntime>,
-    upstream: Arc<Upstream>,
+    upstream: Option<Arc<Upstream>>,
+    purpose: Purpose,
     query: Vec<PayloadFile>,
     bridge: Vec<PayloadFile>,
     certificates: Option<PathBuf>,
 }
 impl Native<'_> {
+    pub(super) fn new(
+        session: Session<'_>,
+        store: root_pairing::store::Store,
+        runtime: Arc<RootRuntime>,
+        query: Vec<PayloadFile>,
+        upstream: Option<Arc<Upstream>>,
+        purpose: Purpose,
+    ) -> Native<'_> {
+        let bridge = runtime.flat_group("bin/AeroTizenRootBridge");
+        Native {
+            session,
+            store,
+            runtime,
+            upstream,
+            query,
+            bridge,
+            certificates: None,
+            purpose,
+        }
+    }
+    fn package_path(&self) -> PathBuf {
+        self.store.path.with_file_name(match self.purpose {
+            Purpose::Install => "helper.tpk",
+            Purpose::Update => "upgrade.tpk",
+        })
+    }
+    async fn upstream(&mut self) -> AppResult<Arc<Upstream>> {
+        if let Some(upstream) = &self.upstream {
+            return Ok(upstream.clone());
+        }
+        let upstream = Arc::new(
+            root_package::upstream_files(self.session.owner.directory.join("root-cache")).await?,
+        );
+        self.upstream = Some(upstream.clone());
+        Ok(upstream)
+    }
+
     async fn rpc(&mut self, args: &[&str], prefix: &str) -> AppResult<Value> {
         self.session.identity().await?;
         self.session.unchanged().await?;
@@ -147,10 +190,10 @@ impl Operations for Native<'_> {
     }
     async fn package(&mut self, receipt: &Value) -> AppResult<(Value, String)> {
         let runtime = self.runtime.clone();
-        let upstream = self.upstream.clone();
+        let upstream = self.upstream().await?;
         let receipt = receipt.clone();
         let certificates = self.certificates.clone().ok_or_else(root_install::failed)?;
-        let path = self.store.path.with_file_name("helper.tpk");
+        let path = self.package_path();
         tokio::task::spawn_blocking(move || {
             let config = root_package::build(&path, &receipt, &runtime, &upstream, &certificates)?;
             let bytes = std::fs::read(&path).map_err(|_| root_install::failed())?;
@@ -164,7 +207,7 @@ impl Operations for Native<'_> {
         self.session.unchanged().await?;
         self.session
             .connection
-            .install_root_package(installation, &self.store.path.with_file_name("helper.tpk"))
+            .install_root_package(installation, &self.package_path())
             .await
             .map_err(|_| root_install::failed())
     }
@@ -173,6 +216,48 @@ impl Operations for Native<'_> {
         self.rpc(&["--clean-upload", &name, checksum], RPC_UPLOAD)
             .await
             .map(|_| ())
+    }
+    async fn verified_package(&mut self, checksum: &str) -> AppResult<()> {
+        let path = self.package_path();
+        let checksum = checksum.to_owned();
+        tokio::task::spawn_blocking(move || {
+            use std::io::Read;
+            const MAX_ROOT_PACKAGE_BYTES: u64 = 32 * 1024 * 1024;
+            let mut bytes = Vec::new();
+            let file = std::fs::File::open(&path).map_err(|_| root_install::failed())?;
+            if path.is_symlink()
+                || !file
+                    .metadata()
+                    .map_err(|_| root_install::failed())?
+                    .is_file()
+            {
+                return Err(root_install::failed());
+            }
+            file.take(MAX_ROOT_PACKAGE_BYTES + 1)
+                .read_to_end(&mut bytes)
+                .map_err(|_| root_install::failed())?;
+            if bytes.len() as u64 > MAX_ROOT_PACKAGE_BYTES || sha256_hex(&bytes) != checksum {
+                return Err(root_install::failed());
+            }
+            Ok(())
+        })
+        .await
+        .map_err(|_| root_install::failed())?
+    }
+    async fn proof(&mut self, receipt: &Value) -> AppResult<Value> {
+        let receipt = root_pairing::parse(
+            receipt.clone(),
+            self.session
+                .expected
+                .as_deref()
+                .ok_or_else(root_install::failed)?,
+        )?;
+        root_bridge::status(
+            root_pairing::host_address(self.session.host)?,
+            &receipt.pairing,
+        )
+        .await
+        .map_err(|_| root_install::failed())
     }
     async fn live(&mut self, receipt: &Value) -> bool {
         let Some(expected) = self.session.expected.as_deref() else {
@@ -193,17 +278,35 @@ impl Operations for Native<'_> {
     }
     async fn prepare_bootstrap(&mut self, receipt: &Value) -> AppResult<Bootstrap> {
         let runtime = self.runtime.clone();
-        let upstream = self.upstream.clone();
+        let upstream = self.upstream().await?;
         let receipt = receipt.clone();
+        let operation = match self.purpose {
+            Purpose::Install => "install",
+            Purpose::Update => "upgrade",
+        };
         tokio::task::spawn_blocking(move || {
-            let stage=format!("{}/arsetup-{}",root_package::STAGING_DIRECTORY,root_package::random_hex(8)?);let bundle=root_package::setup_bundle(&receipt,&runtime,&upstream,&stage,"install")?;
-            let bridge:std::collections::BTreeMap<_,_>=runtime.flat_group("bin/AeroTizenRootBridge").into_iter().map(|file|(file.name,STANDARD.encode(file.bytes))).collect();
-            let files:std::collections::BTreeMap<_,_>=bundle.files.into_iter().map(|file|(file.name,STANDARD.encode(file.bytes))).collect();
-            let pairing=json!({"schema_version":1,"installation_id":receipt["installation_id"],"token":receipt["token"],"database_uid":receipt["database_uid"],"database_gid":receipt["database_gid"]});
-            let request=json!({"package":bundle.manifest["package"],"setup_stage":stage,"pairing_json":serde_json::to_string(&pairing).map_err(|_|root_install::failed())?,"server_pfx":receipt["server_pfx"],"root_json":String::from_utf8(root_package::config_bytes(&receipt["public_config"])?).map_err(|_|root_install::failed())?,"bridge_files":bridge,"files":files});
-            let input=serde_json::to_vec(&request).map_err(|_|root_install::failed())?;if input.is_empty()||input.len()>MAX_INPUT_BYTES {return Err(root_install::failed());}
-            let pfx=STANDARD.decode(receipt["server_pfx"].as_str().ok_or_else(root_install::failed)?).map_err(|_|root_install::failed())?;
-            Ok(Bootstrap {nonce:bundle.manifest["nonce"].as_str().ok_or_else(root_install::failed)?.into(),input,pfx,pin:receipt["certificate_sha256"].as_str().ok_or_else(root_install::failed)?.into()})
+            let stage = format!("{}/arsetup-{}", root_package::STAGING_DIRECTORY, root_package::random_hex(8)?);
+            let bundle = root_package::setup_bundle(&receipt, &runtime, &upstream, &stage, operation)?;
+            let bridge: std::collections::BTreeMap<_,_> = runtime.flat_group("bin/AeroTizenRootBridge").into_iter()
+                .map(|file|(file.name,STANDARD.encode(file.bytes))).collect();
+            let files: std::collections::BTreeMap<_,_> = bundle.files.into_iter()
+                .map(|file|(file.name,STANDARD.encode(file.bytes))).collect();
+            let pairing = json!({"schema_version":1,"installation_id":receipt["installation_id"],"token":receipt["token"],"database_uid":receipt["database_uid"],"database_gid":receipt["database_gid"]});
+            let request = json!({
+                "package":bundle.manifest["package"], "setup_stage":stage,
+                "pairing_json":serde_json::to_string(&pairing).map_err(|_|root_install::failed())?,
+                "server_pfx":receipt["server_pfx"],
+                "root_json":String::from_utf8(root_package::config_bytes(&receipt["public_config"])?).map_err(|_|root_install::failed())?,
+                "bridge_files":bridge, "files":files,
+            });
+            let input = serde_json::to_vec(&request).map_err(|_|root_install::failed())?;
+            if input.is_empty() || input.len()>MAX_INPUT_BYTES { return Err(root_install::failed()); }
+            let pfx = STANDARD.decode(receipt["server_pfx"].as_str().ok_or_else(root_install::failed)?)
+                .map_err(|_|root_install::failed())?;
+            Ok(Bootstrap {
+                nonce:bundle.manifest["nonce"].as_str().ok_or_else(root_install::failed)?.into(), input, pfx,
+                pin:receipt["certificate_sha256"].as_str().ok_or_else(root_install::failed)?.into(),
+            })
         }).await.map_err(|_|root_install::failed())?
     }
     async fn bootstrap(&mut self, input: &Bootstrap) -> AppResult<Value> {
@@ -283,16 +386,14 @@ impl TvConnection {
             _ownership: ownership,
         };
         let saved = store.document.clone();
-        let bridge = runtime.flat_group("bin/AeroTizenRootBridge");
-        let mut io = Native {
+        let mut io = Native::new(
             session,
             store,
             runtime,
-            upstream,
             query,
-            bridge,
-            certificates: None,
-        };
+            Some(upstream),
+            Purpose::Install,
+        );
         let source = source.to_string();
         root_install::setup(
             &mut io,

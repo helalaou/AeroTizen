@@ -27,6 +27,7 @@ mod root_package;
 mod root_pairing;
 pub mod root_status;
 mod root_transfer;
+mod root_update;
 pub mod samsung;
 mod samsung_auth;
 mod sdb;

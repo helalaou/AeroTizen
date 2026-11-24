@@ -26,9 +26,9 @@ pub(super) fn read(path: &Path, maximum: u64) -> AppResult<Value> {
     }
     serde_json::from_slice(&bytes).map_err(|_| failed())
 }
-pub(super) async fn write(
+pub(super) async fn write<T: serde::Serialize + Send + 'static>(
     path: PathBuf,
-    document: Value,
+    document: T,
     create: bool,
     maximum: u64,
 ) -> AppResult<()> {

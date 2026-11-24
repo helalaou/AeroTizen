@@ -26,6 +26,8 @@ pub(super) trait Operations {
     async fn package(&mut self, receipt: &Value) -> AppResult<(Value, String)>;
     async fn install(&mut self, installation: &str) -> AppResult<String>;
     async fn clean_upload(&mut self, installation: &str, checksum: &str) -> AppResult<()>;
+    async fn proof(&mut self, receipt: &Value) -> AppResult<Value>;
+    async fn verified_package(&mut self, checksum: &str) -> AppResult<()>;
     async fn live(&mut self, receipt: &Value) -> bool;
     async fn prepare_bootstrap(&mut self, receipt: &Value) -> AppResult<Bootstrap>;
     async fn bootstrap(&mut self, input: &Bootstrap) -> AppResult<Value>;
@@ -47,7 +49,7 @@ fn changed() -> AppError {
         "Root setup already exists. Refresh Root access to continue it.",
     )
 }
-fn complete(status: &Value, expected: &str) -> AppResult<()> {
+pub(super) fn complete(status: &Value, expected: &str) -> AppResult<()> {
     if status["device"]["identity_sha256"] != expected {
         return Err(AppError::new(
             "identity_mismatch",
@@ -59,7 +61,7 @@ fn complete(status: &Value, expected: &str) -> AppResult<()> {
     }
     Ok(())
 }
-fn checked_preflight(preflight: &Value, before: &Value) -> AppResult<()> {
+pub(super) fn checked_preflight(preflight: &Value, before: &Value) -> AppResult<()> {
     let boot = preflight["boot_id"].as_str().ok_or_else(failed)?;
     if preflight["schema_version"].as_u64() != Some(1)
         || !preflight["runtime"]

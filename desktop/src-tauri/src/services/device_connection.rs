@@ -7,6 +7,7 @@ mod profile;
 pub(super) mod projection;
 mod removal;
 mod root_install;
+mod root_update;
 mod root_verification;
 
 use super::{
