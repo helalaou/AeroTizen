@@ -190,7 +190,6 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "handshake",
         "prepare_signing_profile",
         "install_launcher",
-        "install_local_app",
         "setup_root",
         "upgrade_root",
         "apply_native_home",
@@ -210,6 +209,7 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "inspect_local_app",
         "connect",
         "prepare_native_home",
+        "install_local_app",
     ):
         assert worker.handle(request(retired))["error"]["code"] == "invalid_request"
 
@@ -387,118 +387,6 @@ def local_widget(tmp_path):
         )
         archive.writestr("index.html", "<h1>Local Player</h1>")
     return path
-
-
-def local_request(operation, path, **overrides):
-    return request(
-        operation,
-        host="127.0.0.1",
-        expected_identity=hashlib.sha256(b"test-duid").hexdigest(),
-        path=str(path),
-        **overrides,
-    )
-
-
-def local_install_preview(path):
-    from tempfile import TemporaryDirectory
-
-    from aerotizen import local_package
-
-    with TemporaryDirectory() as directory:
-        copied, checksum = local_package.snapshot(path, directory)
-        metadata = worker._local_app_metadata(copied)
-        with worker.DeviceSession("127.0.0.1") as session:
-            revision, version = worker._local_app_revision(session, metadata)
-    return {**metadata, "sha256": checksum, "current_revision": revision, "current_version": version}
-
-
-def test_local_widget_install_uses_cli_signing_and_real_sdb(
-    connected_tv, local_widget, monkeypatch, tmp_path
-):
-    connected_tv.allow_reconnect = True
-    preview = local_install_preview(local_widget)
-    assert preview["name"] == "Local Player"
-    assert preview["version"] == "1.2.0"
-    assert preview["current_revision"] is None
-    assert str(tmp_path) not in json.dumps(preview)
-    profile = tmp_path / "certs" / "test-duid"
-    profile.mkdir(parents=True)
-    for filename in worker.CERTIFICATE_FILES:
-        (profile / filename).write_bytes(b"test-certificate")
-    original = local_widget.read_bytes()
-
-    def sign(source, destination, certificates):
-        assert certificates == profile
-        assert source != local_widget
-        assert source.read_bytes() == original
-        # The installer continues with its private snapshot, not the mutable source.
-        local_widget.write_bytes(b"changed after verification")
-        destination.write_bytes(b"signed local widget")
-
-    monkeypatch.setattr(signer, "sign_wgt", sign)
-    connected_tv.replies["0 vd_appinstall LocalApp01.Player /private/path/LocalApp01.wgt"] = (
-        "app_id[LocalApp01.Player] install completed"
-    )
-    real_install = DeviceSession.install
-
-    def install(session, *args):
-        output = real_install(session, *args)
-        connected_tv.replies["0 vd_applist"] += (
-            "\napp_id=LocalApp01.Player app_version=1.2.0 name=Local Player"
-        )
-        return output
-
-    monkeypatch.setattr(DeviceSession, "install", install)
-    result = worker.handle(
-        local_request(
-            "install_local_app",
-            local_widget,
-            sha256=preview["sha256"],
-            current_revision=None,
-            confirm_install=True,
-        )
-    )
-    assert result["result"] == {
-        "app_id": "LocalApp01.Player",
-        "package_id": "LocalApp01",
-        "name": "Local Player",
-        "version": "1.2.0",
-    }
-    assert connected_tv.uploads["/private/path/LocalApp01.wgt"] == b"signed local widget"
-
-
-@pytest.mark.parametrize(
-    "scenario,code",
-    [
-        ("file", "package_changed"),
-        ("inventory", "apps_changed"),
-        ("confirmation", "confirmation_required"),
-        ("certificates", "certificates_required"),
-        ("identity", "identity_mismatch"),
-    ],
-)
-def test_local_install_stops_before_signing_or_upload(
-    connected_tv, local_widget, monkeypatch, scenario, code
-):
-    connected_tv.allow_reconnect = True
-    preview = local_install_preview(local_widget)
-    params = {
-        "sha256": preview["sha256"],
-        "current_revision": None,
-        "confirm_install": scenario != "confirmation",
-    }
-    if scenario == "file":
-        local_widget.write_bytes(b"different file")
-    elif scenario == "inventory":
-        connected_tv.replies["0 vd_applist"] += "\napp_id=LocalApp01.Player app_version=1.0.0"
-    elif scenario == "identity":
-        connected_tv.replies["0 getduid"] = "other-tv"
-    monkeypatch.setattr(
-        worker, "install_signed_package", lambda *_: pytest.fail("Unexpected signing or install")
-    )
-    reply = worker.handle(local_request("install_local_app", local_widget, **params))
-    assert reply["error"]["code"] == code
-    assert not connected_tv.uploads
 
 
 @pytest.mark.parametrize(

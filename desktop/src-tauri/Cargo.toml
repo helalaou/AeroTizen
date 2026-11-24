@@ -26,6 +26,8 @@ required-features = ["worker-smoke"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
+# Older Tizen Studio profiles can use RC2-encrypted PKCS#12 certificate bags.
+openssl-src = { version = "300.6", features = ["legacy"] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
@@ -43,6 +45,8 @@ subtle = "2"
 fs2 = "0.4"
 sha2 = "0.10"
 native-tls = "0.2"
+openssl = { version = "0.10", features = ["vendored"] }
+base64 = "0.22"
 tokio-native-tls = "0.3"
 uuid = "1"
 reqwest = { version = "0.13", default-features = false, features = ["native-tls", "system-proxy"] }
@@ -54,7 +58,7 @@ rusqlite = { version = "0.42", features = ["bundled"] }
 zip = { version = "9.8", default-features = false, features = ["deflate-flate2-zlib-rs", "bzip2", "lzma"] }
 roxmltree = "0.21"
 tempfile = "3"
-tokio = { version = "1", features = ["process", "time", "io-util", "sync", "net", "macros"] }
+tokio = { version = "1", features = ["process", "time", "io-util", "sync", "net", "macros", "fs"] }
 tauri-plugin-dialog = "2"
 
 [dev-dependencies]

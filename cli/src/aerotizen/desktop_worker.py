@@ -19,13 +19,12 @@ from aerotizen import (
     home,
     home_control,
     home_status,
-    local_package,
     releases,
     remote,
     root_control,
     root_state,
 )
-from aerotizen.cli import install_signed_package, packages
+from aerotizen.cli import install_signed_package
 from aerotizen.device import DeviceSession
 from aerotizen.diagnostic_privacy import Policy
 from aerotizen.sdb import SdbError
@@ -35,14 +34,11 @@ WORKER_NAME = "aerotizen-desktop-worker"
 MAX_REQUEST_BYTES = 16 * 1024
 MAX_TEXT_CHARACTERS = 256
 IDENTITY_PATTERN = re.compile(r"[a-f0-9]{64}")
-APP_COUNT_HEADER = re.compile(r"^\s*apps count\s*:\s*(\d+)\s*$", re.IGNORECASE | re.MULTILINE)
-APP_LIST_ERROR = re.compile(r"^\s*(?:error|fail(?:ed|ure)?|permission denied)\b", re.IGNORECASE)
 CERTIFICATE_FILES = ("author.p12", "distributor.p12", "password.txt", "device-profile.xml")
 OPERATIONS = (
     "handshake",
     "prepare_signing_profile",
     "install_launcher",
-    "install_local_app",
     "setup_root",
     "upgrade_root",
     "apply_native_home",
@@ -256,27 +252,6 @@ def installed_launcher_version(session):
     return text_value(launchers[0].get("version"), "Unknown")
 
 
-def package_revision(package):
-    apps = sorted((app["appid"], app["name"], app.get("version") or "") for app in package["apps"])
-    return hashlib.sha256(json.dumps(apps, separators=(",", ":")).encode()).hexdigest()
-
-
-def checked_app_inventory(session):
-    raw = session.applist()
-    installed = packages(raw)
-    app_ids = [app["appid"] for item in installed.values() for app in item["apps"]]
-    count = APP_COUNT_HEADER.search(raw)
-    if count:
-        complete = int(count[1]) == len(app_ids)
-    else:
-        complete = installed and "app_tizen_id" not in raw and not APP_LIST_ERROR.match(raw)
-    if not complete or len(set(app_ids)) != len(app_ids):
-        raise RequestError(
-            "inventory_unavailable", "Could not verify the TV's app list. Refresh the TV and try again."
-        )
-    return installed
-
-
 def _connected_profile(session, host, expected, info):
     duid, identity = read_identity(session, expected)
     launcher_version = installed_launcher_version(session)
@@ -365,76 +340,6 @@ def install_launcher(params):
                     "The TV did not report the requested version. Refresh the TV to check.",
                 )
             return installed
-
-
-def _local_app_metadata(path):
-    try:
-        metadata = local_package.inspect(path)
-    except (OSError, ValueError) as error:
-        raise RequestError(
-            "invalid_package", str(error) if isinstance(error, ValueError) else "Could not read the app file."
-        ) from error
-    if metadata["package_id"] in catalog.PROTECTED_PKGS - {releases.PACKAGE_ID}:
-        raise RequestError("protected_package", "This package belongs to a protected TV component.")
-    return {**metadata, "name": text_value(metadata["name"], metadata["app_id"])}
-
-
-def _local_app_revision(session, metadata):
-    package = checked_app_inventory(session).get(metadata["package_id"])
-    if package is None:
-        return None, None
-    current = next((app for app in package["apps"] if app["appid"] == metadata["app_id"]), None)
-    version = text_value(current.get("version"), "") if current else ""
-    return package_revision(package), version or None
-
-
-def install_local_app(params):
-    host = host_value(params.get("host"))
-    expected = checked_identity(params.get("expected_identity"))
-    checksum = checked_identity(params.get("sha256"))
-    revision = params.get("current_revision")
-    if "current_revision" not in params or (
-        revision is not None and not IDENTITY_PATTERN.fullmatch(str(revision))
-    ):
-        raise RequestError("invalid_request", "Choose the app file again.")
-    if params.get("confirm_install") is not True:
-        raise RequestError("confirmation_required", "Review and confirm the app installation first.")
-    with TemporaryDirectory(prefix="aerotizen-local-install-") as directory:
-        try:
-            path, _ = local_package.snapshot(params.get("path", ""), directory, checksum)
-        except ValueError as error:
-            raise RequestError("package_changed", str(error)) from error
-        except OSError as error:
-            raise RequestError(
-                "invalid_package", "Could not read the selected .wgt file. Choose it again."
-            ) from error
-        metadata = _local_app_metadata(path)
-        with DeviceSession(host) as session:
-            duid, _ = read_identity(session, expected)
-            current_revision, _ = _local_app_revision(session, metadata)
-            if current_revision != revision:
-                raise RequestError(
-                    "apps_changed", "The installed app changed. Choose the file again to review it."
-                )
-            profile = signing_profile(duid)
-            if profile is None:
-                raise RequestError("certificates_required", "Set up this TV's signing certificates first.")
-            read_identity(session, expected)
-            try:
-                installed = install_signed_package(session, path, directory, profile)
-            except (OSError, ValueError, SdbError) as error:
-                raise RequestError(
-                    "install_failed",
-                    "Could not verify installation. Refresh Apps before retrying. "
-                    "For an existing app, use its original signing profile.",
-                ) from error
-            read_identity(session, expected)
-            if installed != metadata["version"]:
-                raise RequestError(
-                    "version_unverified",
-                    "The TV did not report the selected app version. Refresh Apps to check.",
-                )
-    return metadata
 
 
 def _root_receipt(host, expected):
@@ -633,8 +538,6 @@ def handle(request):
                 result = prepare_signing_profile(params)
             elif request["operation"] == "install_launcher":
                 result = install_launcher(params)
-            elif request["operation"] == "install_local_app":
-                result = install_local_app(params)
             elif request["operation"] == "setup_root":
                 result = setup_root(params)
             elif request["operation"] == "upgrade_root":

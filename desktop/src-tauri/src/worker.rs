@@ -52,7 +52,7 @@ fn request_local_network_access(operation: &str, params: &Value) {
 
     const DISCARD_SERVICE_PORT: u16 = 9;
     let address = match operation {
-        "install_launcher" | "install_local_app" | "setup_root" | "upgrade_root" => params
+        "install_launcher" | "setup_root" | "upgrade_root" => params
             .get("host")
             .and_then(Value::as_str)
             .and_then(|host| host.parse::<Ipv4Addr>().ok()),
@@ -100,7 +100,7 @@ pub async fn request<Result: DeserializeOwned>(
     drop(input);
     let timeout_seconds = match operation {
         "setup_root" | "upgrade_root" => ROOT_WRITE_TIMEOUT_SECONDS,
-        "install_launcher" | "install_local_app" => PACKAGE_ACTION_TIMEOUT_SECONDS,
+        "install_launcher" => PACKAGE_ACTION_TIMEOUT_SECONDS,
         "prepare_signing_profile" => SIGNING_PROFILE_TIMEOUT_SECONDS,
         _ => WORKER_TIMEOUT_SECONDS,
     };
@@ -116,7 +116,7 @@ pub async fn request<Result: DeserializeOwned>(
             match operation {
                 "setup_root" => "Root setup timed out. Refresh Root access to check the saved progress before retrying.",
                 "upgrade_root" => "Root update timed out. Refresh Root access to check the saved progress before retrying.",
-                "install_launcher" | "install_local_app" => {
+                "install_launcher" => {
                     "Installation timed out. Refresh the TV to check its version before retrying."
                 }
                 _ => "The request timed out. Check the network and retry.",

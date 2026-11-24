@@ -4,9 +4,7 @@ use crate::{
         LocalPackageReview, VerifiedTv, LAUNCHER_APP_ID,
     },
     state::AppState,
-    worker,
 };
-use serde_json::json;
 use std::path::PathBuf;
 use tokio::sync::Mutex;
 
@@ -104,11 +102,16 @@ pub async fn install_local_app(
             )
         })?;
     let saved = state.profiles.get(&id).await?;
-    let installed: InstalledLocalApp = worker::request(&state.worker_path, "install_local_app", json!({
-        "host": saved.tv.host, "expected_identity": saved.tv.identity_sha256,
-        "path": selection.path, "sha256": selection.review.sha256,
-        "current_revision": selection.review.current_revision, "confirm_install": confirm_install,
-    })).await?;
+    let installed: InstalledLocalApp = state
+        .device_connection
+        .install_local(
+            &saved.tv.host,
+            &saved.tv.identity_sha256,
+            selection.path,
+            selection.review.clone(),
+            confirm_install,
+        )
+        .await?;
     if installed.app_id != selection.review.app_id
         || installed.package_id != selection.review.package_id
         || installed.version != selection.review.version

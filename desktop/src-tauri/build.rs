@@ -1,3 +1,6 @@
+// Enable bundled legacy PKCS#12 ciphers for imported Tizen Studio profiles.
+use openssl_src as _;
+
 fn main() {
     // Match the CLI's root runtime version without requiring Python for Cargo tests.
     let metadata = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
