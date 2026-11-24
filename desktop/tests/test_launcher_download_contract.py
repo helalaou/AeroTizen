@@ -1,4 +1,5 @@
 """Release widget validation stays aligned with the public CLI."""
+
 import json
 from pathlib import Path
 

@@ -173,7 +173,7 @@ mod tests {
             );
         }
     }
-    #[cfg(feature = "bundled-worker")]
+    #[cfg(feature = "desktop-app")]
     #[test]
     fn compiled_root_bridge_is_present_without_a_worker_request() {
         let files = bridge(ROOT).unwrap();

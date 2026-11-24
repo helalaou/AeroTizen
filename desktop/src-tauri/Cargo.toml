@@ -12,17 +12,10 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [[bin]]
 name = "aerotizen-desktop"
 path = "src/main.rs"
-required-features = ["bundled-worker"]
+required-features = ["desktop-app"]
 
 [features]
-bundled-worker = []
-# Enabling the app target here makes Cargo's integration test build replace the standalone binary.
-worker-smoke = []
-
-[[test]]
-name = "worker_smoke"
-path = "tests/worker_smoke.rs"
-required-features = ["worker-smoke"]
+desktop-app = []
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -61,7 +54,7 @@ rusqlite = { version = "0.42", features = ["bundled"] }
 zip = { version = "9.8", default-features = false, features = ["deflate-flate2-zlib-rs", "bzip2", "lzma"] }
 roxmltree = "0.21"
 tempfile = "3"
-tokio = { version = "1", features = ["process", "time", "io-util", "sync", "net", "macros", "fs"] }
+tokio = { version = "1", features = ["time", "io-util", "sync", "net", "macros", "fs"] }
 tauri-plugin-dialog = "2"
 
 [dev-dependencies]

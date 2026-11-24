@@ -48,9 +48,7 @@ export interface TechnicalDetails {
 }
 
 export interface BackendStatus {
-  name: string;
   version: string;
-  operations: string[];
 }
 
 export interface LauncherRelease {

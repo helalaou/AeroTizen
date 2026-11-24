@@ -28,26 +28,18 @@ fn main() {
     for name in ["home-query.json", "home-control.json", "root-runtime.json"] {
         let source = metadata.parent().unwrap().join("helpers").join(name);
         println!("cargo:rerun-if-changed={}", source.display());
-        if cfg!(feature = "bundled-worker") {
+        if cfg!(feature = "desktop-app") {
             std::fs::copy(&source, out.join(name))
                 .expect("build the desktop helper payloads before compiling the app");
         } else {
             std::fs::write(out.join(name), b"{}").expect("could not prepare test payload metadata");
         }
     }
-    let target = std::env::var("TARGET").expect("Cargo must provide a target");
-    let suffix = if target.contains("windows") {
-        ".exe"
+    // App builds embed managed device payloads; bare unit tests use no generated files.
+    let attributes = tauri_build::Attributes::new().config_path(if cfg!(feature = "desktop-app") {
+        "tauri.conf.json"
     } else {
-        ""
-    };
-    println!("cargo:rustc-env=WORKER_FILENAME=aerotizen-worker-{target}{suffix}");
-    // Tauri enables bundled-worker for app builds; Cargo tests need no generated artifacts.
-    let attributes =
-        tauri_build::Attributes::new().config_path(if cfg!(feature = "bundled-worker") {
-            "tauri.conf.json"
-        } else {
-            "tests/tauri.conf.json"
-        });
+        "tests/tauri.conf.json"
+    });
     tauri_build::try_build(attributes).expect("could not prepare the desktop build");
 }

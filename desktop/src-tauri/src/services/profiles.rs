@@ -116,7 +116,7 @@ impl Profiles {
         if !valid_identity(&tv.identity_sha256) {
             return Err(AppError::new(
                 "invalid_identity",
-                "The worker returned an invalid TV identity.",
+                "The TV returned an invalid identity.",
             ));
         }
         let connection = self.open()?;

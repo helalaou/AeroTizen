@@ -1,5 +1,4 @@
 use super::*;
-use crate::worker::decode_result;
 use serde_json::json;
 
 #[test]
@@ -8,7 +7,7 @@ fn home_reply_keeps_unavailable_unset_and_disabled_distinct() {
         "home_button_app": null, "home_app": "", "startup_app": "stock.home",
         "startup_backup_app": null, "smart_hub_autostart": false, "first_screen": "stock.home",
     });
-    let settings: HomeBackupSettings = decode_result(reply.clone()).unwrap();
+    let settings: HomeBackupSettings = serde_json::from_value(reply.clone()).unwrap();
     assert_eq!(serde_json::to_value(settings).unwrap(), reply);
 }
 
@@ -21,16 +20,12 @@ fn invalid_backend_shapes_fail_before_reaching_the_frontend() {
         "automatic_boot_verified": false, "bootstrap_completed": false,
         "recovery_saved": false, "original_pc_host": null,
     });
-    assert_eq!(
-        decode_result::<RootAccessStatus>(malformed)
-            .unwrap_err()
-            .code,
-        "invalid_response"
-    );
-    assert!(
-        decode_result::<Vec<TvAppPackage>>(json!([{"id":"test", "protected": false}])).is_err()
-    );
-    assert!(decode_result::<ButtonMappings>(json!({"status":"unknown"})).is_err());
+    assert!(serde_json::from_value::<RootAccessStatus>(malformed).is_err());
+    assert!(serde_json::from_value::<Vec<TvAppPackage>>(
+        json!([{"id":"test", "protected": false}])
+    )
+    .is_err());
+    assert!(serde_json::from_value::<ButtonMappings>(json!({"status":"unknown"})).is_err());
 }
 
 #[test]
@@ -39,7 +34,7 @@ fn removal_reply_keeps_refusals_and_an_unavailable_inventory() {
         {"id": "test", "status": "refused"},
         {"id": "other", "status": "unverified", "detail": "Refresh Apps to check."},
     ]});
-    let removal: AppRemovalResult = decode_result(reply.clone()).unwrap();
+    let removal: AppRemovalResult = serde_json::from_value(reply.clone()).unwrap();
     assert_eq!(serde_json::to_value(removal).unwrap(), reply);
 }
 

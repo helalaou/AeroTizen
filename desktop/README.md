@@ -2,11 +2,9 @@
 
 Use AeroTizen Desktop to find and save Samsung TVs, install the launcher and local apps,
 manage installed apps, configure Home and remote buttons, and set up or update root access.
-The app uses Tauri, React and Mantine. Rust handles TV discovery, launcher release
-lookup and installation, Home backup review and controls, Samsung sign-in and certificates, Root access status,
-button mapping and local app management; a bundled Python worker
-provides the remaining CLI services.
-SQLite stores saved TV profiles.
+The app uses Tauri, React and Mantine. Rust owns all desktop TV operations, Samsung
+account sessions, signing and recovery. SQLite stores saved TV profiles. Installed apps
+include the managed TV helpers and need no Python runtime or CLI executable.
 
 See screenshots of [TV selection](screenshots/tv-selection.png), [Overview](screenshots/overview.png),
 and [Launcher](screenshots/launcher.png).
@@ -124,7 +122,7 @@ pending until the CLI verifies a new automatic boot and finishes its checks. Reo
 page and choose **Continue setup** to resume saved progress. Setup preserves Home, launcher
 startup and Art Mode settings.
 
-When the live helper is older than the bundled CLI, choose **Update available**. Review
+When the live helper is older than the bundled runtime, choose **Update available**. Review
 the installed and target versions, confirm, then update using the original signing
 certificates. The update preserves pairing and saves progress. Restart the TV and choose
 **Check after restart**; completion requires the new runtime on a new automatic boot.
@@ -144,31 +142,29 @@ for hardware validation and recovery details.
 ## Development
 
 Install the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), Node.js 22.12+,
-Python 3.10+ and the .NET 6 SDK. Create the repository virtual environment and install the worker tools:
+Python 3.10+ and the .NET 6 SDK. Python is used only by the shared managed-payload
+build scripts, which use its standard library. The desktop build does not install the
+CLI or use PyInstaller.
 
 ```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[dev]' 'pyinstaller>=6.22.1,<7'
 cd desktop
 npm ci
 npm run tauri -- dev
 ```
 
-On Windows, use `.venv\Scripts\python.exe` for the Python commands. The build script
-selects that virtual environment automatically. Set `AEROTIZEN_PYTHON` to use another
-Python executable that has the project and PyInstaller installed.
-Set `AEROTIZEN_DOTNET` to the .NET executable if it is not on `PATH`.
+The build uses the repository virtual environment if present, or `python3` (`python`
+on Windows). Set `AEROTIZEN_PYTHON` to select another Python executable, and
+`AEROTIZEN_DOTNET` to select .NET when it is not on `PATH`.
 
 Native certificate cryptography builds a bundled OpenSSL library. Building it requires
-a C compiler and Perl on the build computer, including Windows. Installed desktop apps
-do not need a separate OpenSSL installation.
+a C compiler and Perl, including on Windows. Installed desktop apps need no separate
+OpenSSL installation.
 
-The native development and packaging commands rebuild the Home reader, Home writer and
-root runtime before freezing the standalone worker. The build validates each payload and
-compares the frozen inventory against this checkout, then checks the worker protocol with
-Python removed from `PATH`. A missing SDK, failed helper build or invalid payload stops the build.
-TV checks use the same network access and Developer Mode settings as
-the CLI. An existing valid root receipt can select the paired connection automatically.
+Native development and packaging rebuild the Home reader, Home writer and Root runtime,
+then embed their JSON payloads in Rust. A missing SDK or failed helper build stops the build.
+The native services check the embedded schema, inventory and hashes before sending files.
+TV checks use the same network access and Developer Mode settings as the CLI. An existing
+valid Root receipt can select the paired connection automatically.
 
 On macOS, allow AeroTizen Desktop to access the Local Network when prompted. If the
 first check fails while the prompt is open, allow access and retry the check. The main
@@ -191,141 +187,43 @@ connections are available in the native app.
 
 ## Checks and packaging
 
-The desktop has separate UI, native command, service and transport layers:
+The desktop has separate UI, command, service and transport layers:
 
-| Path                      | Responsibility                                                                   |
-| ------------------------- | -------------------------------------------------------------------------------- |
-| `src/components/`         | Views and dialogs                                                                |
-| `src/features/`           | Launcher, Apps, buttons, Home and root state and actions                         |
-| `src/useTvManager.ts`     | TV selection, shared operation ownership and feature composition                 |
-| `src/services/native.ts`  | Frontend IPC adapter                                                             |
-| `src-tauri/src/lib.rs`    | Tauri setup, plugins, managed state and command registration                     |
-| `src-tauri/src/commands/` | Native command adapters and OS dialogs                                           |
-| `src-tauri/src/services/` | TV operations, account sessions and profile storage; no Tauri API dependency     |
-| `src-tauri/src/models/`   | Typed command inputs and results                                                 |
-| `src-tauri/src/worker.rs` | Python worker protocol, process lifetime, cancellation and typed result decoding |
+| Path                                | Responsibility                                               |
+| ----------------------------------- | ------------------------------------------------------------ |
+| `src/components/`, `src/features/`  | Views, feature state and actions                             |
+| `src/useTvManager.ts`               | TV selection and shared operation ownership                  |
+| `src/services/native.ts`            | Frontend IPC adapter                                         |
+| `src-tauri/src/lib.rs`, `commands/` | Tauri setup, registration and thin command adapters          |
+| `src-tauri/src/services/`           | Native TV operations, account sessions, signing and recovery |
+| `src-tauri/src/models/`             | Typed command inputs and results                             |
+| `tools/build-helpers.mjs`           | Build-only entry for the shared managed TV payloads          |
 
-Keep new TV logic in services and leave commands thin. Migrate each service from the Python
-worker to Rust while preserving its command names and result contract. Keep identity checks,
-backup checks and verification of TV changes at the service boundary.
+Keep TV rules in services and leave commands thin. Share the CLI's TV lock and state
+formats. Keep identity checks, reviewed input validation, backups and readback at the
+service boundary. SQLite connections and filesystem/crypto work stay in owned blocking
+operations; sockets, listeners and cancellation stay with their async service owner.
 
-Profile storage initializes its schema during app startup. Runtime reads and writes use
-Tokio's blocking thread pool; commands and services await them without blocking the UI or
-async executor. SQLite connections stay inside each blocking operation.
+Discovery, metadata, release lookup/download, Samsung sign-in and certificates, app
+inventory/removal/installation, Home controls, button mapping and Root setup/updates run
+in Rust. The desktop does not start a Python process. The public Python CLI remains a
+separate tool; its commands are unchanged.
 
-**Search for TVs** uses native Rust SSDP discovery and reads Samsung's device-info API on
-port 8001. It returns the same TV candidate fields as before, with duplicate replies removed
-and bounded search time, concurrent requests and response sizes. The desktop worker no longer
-offers discovery. The Python CLI's `aerotizen discover` command is unchanged.
+The SDK transport stages checked managed helpers with a single-use callback. Home Apply
+and Restore save durable recovery intent before writing, preserve the exact original
+backup and verify final Home/startup settings. Root installation uses a signed dedicated
+helper and private pinned TLS bootstrap, checks Home/registration preservation and waits
+for restart proof. Updates preserve pairing, resume committed installs without repeating
+them, and require the target runtime/configuration on a new automatic boot. Root
+configuration bytes and recovery formats match the CLI. Failed writes are never retried
+automatically.
 
-Launcher versions, selected-version release notes and catalogue refresh also run in Rust.
-The service reads GitHub's release metadata over HTTPS using the platform certificate
-store, filters stable releases with the expected manifest and widget links, and sorts
-versions numerically. Requests, pagination, response sizes and total time are bounded.
-It uses `GH_TOKEN` or `GITHUB_TOKEN` from the environment when set; redirects are refused
-so credentials stay at the fixed API endpoint. The worker no longer offers a catalogue
-operation or keeps its old response-size allowance. Its unused Python catalogue and
-release-note helpers have also been removed from the shared release module. Launcher
-installation and the Python CLI's release commands still use the existing verified
-download and signing flow.
-
-TV connection and Overview/Home inspection also run in Rust. The shared native
-connection owner reads live identity, installed launcher version, device capabilities,
-certificate readiness, original backup status and launcher routing. Paired Home settings
-require authenticated helper proof from the same TV boot. Missing optional metadata or
-unsupported Home status stays unavailable; identity failures never save a profile. The
-worker no longer offers `connect`. Its private post-change profile helper remains for
-Home Apply/Restore until those actions move to Rust.
-
-Reviewing the original Home backup also runs in Rust. It reads the CLI's existing
-`~/.config/aerotizen/backups/<TV identity>/original-home.json` without a TV connection
-or worker process. It verifies the backup schema, device identity, original settings,
-read/cleanup evidence and capture time before returning the six settings shown in the
-dialog. File reads run on the blocking thread pool and are limited to 128 KiB, including
-the actual bytes read. Review never changes the backup. First-apply preparation also
-runs in Rust: it reads complete original settings through the paired helper, checks TV
-identity and provenance, and publishes a durable backup only if none exists. Later
-applies reuse the exact original bytes and hash. Invalid originals stop preparation
-instead of being replaced. The worker no longer offers `prepare_native_home`; Apply and
-Restore still use the worker and its existing verification.
-
-Samsung sign-in also runs in Rust. The Tauri command opens the normal Samsung browser
-flow, and a callback listener binds only to `127.0.0.1:4794`. Each attempt uses a fresh
-random state checked before accepting credentials. Callback bodies are limited to
-64 KiB, each connection to five seconds, and the whole attempt to five minutes.
-Cancel, timeout and browser-launch failure close the listener. Tokens stay in the
-existing in-memory session; the UI receives only the account email. Certificate issuance
-also runs in Rust. It uses Samsung's existing CSR/form contract over HTTPS, refuses
-redirects and automatic retries, and bounds replies and deadlines. Keys stay local;
-encrypted author/distributor profiles are published together after TV identity is
-rechecked. Existing complete profiles are reused, and incomplete originals stop setup.
-The worker no longer offers `prepare_signing_profile`. The Python CLI keeps its own
-sign-in and certificate commands.
-
-Root access status runs in Rust through the existing paired helper. It reads the CLI's
-private recovery record, checks the saved TV identity and shares the CLI's TV session
-lock. TLS checks the saved certificate before sending credentials. Each status request
-uses a fresh nonce, an eight-second deadline and an 8 KiB reply limit. Only authenticated
-live proof can establish root availability and automatic startup. Leaving the page
-cancels the read and releases its socket and locks. Recovery files are not changed.
-The worker no longer offers `root_status`; setup and update still use the worker,
-including their final status check. The Python CLI's root commands are unchanged.
-
-Button discovery, saved assignments and edits use the native paired connection.
-It shares recovery validation, certificate pins and TV locks with Root access.
-Older helpers fall back to saved assignments
-with an update notice. The worker no longer offers `list_buttons` or `change_button`. A failed app
-name lookup leaves authenticated assignments visible by app ID. CLI button commands and
-the TV helper are unchanged. Rust validates each edit, checks helper support and sends one
-authenticated write request. Learn keeps its 25-second deadline; other requests use eight
-seconds. A lost reply is reported as unconfirmed and is never retried automatically.
-The saved assignment is checked before the UI begins its separate activation check.
-
-The Apps list, button app names and app picker share native, read-only SDB inventory reads.
-They use Developer Mode directly or the existing paired helper relay, following the live
-Host PC IP setting. The relay checks the saved TLS certificate and fresh authenticated
-proof before opening SDB. Each read checks the TV identity before and after fetching apps,
-shares the CLI TV lock and leaves recovery files unchanged. Leaving the page closes the
-socket and releases ownership. Connection attempts, total time, frame sizes and app counts
-are bounded. Package grouping, protected labels and revision hashes match the CLI, so
-removal can keep using its existing checks. The worker no longer offers `list_apps`,
-`list_button_apps` or `remove_apps`. Removal uses the
-same native session, validates the full reviewed batch before any uninstall, and verifies
-each result from a complete inventory. A lost reply, incomplete list, changed identity
-or unrelated missing package stops the batch with an unverified result. Uninstalls are
-never retried automatically. The Python CLI and TV
-helper are unchanged. This read path works with helper 3.0.9.
-
-Reviewing a local `.wgt` also runs in Rust. It hashes a private snapshot, checks archive
-paths, duplicate names, encryption, symbolic links, sizes and entry counts, then reads
-namespaced metadata from `config.xml`. XML DTDs and oversized parser/decoder allocations
-are refused. The installed version and replacement revision come from the native TV
-inventory. Local installation also runs in Rust: it rechecks the reviewed hash, package
-revision, TV identity and saved signing profile before upload. The native signer matches
-the CLI's canonical author/distributor signatures and supports older RC2-encrypted Tizen
-Studio profiles. Files stream through acknowledged SDB uploads without automatic retries.
-Success requires the exact app and version in a fresh, complete TV inventory. An explicit
-install error cannot be hidden by an older app with the same version. The worker no
-longer offers `inspect_local_app`, `install_local_app` or `install_launcher`. Published launcher
-installs use a fixed GitHub release, validate its manifest, minimum backend version and
-checksum, and require the expected unsigned runtime files and package identity before
-native signing and installation. Download sizes and deadlines are bounded; optional
-GitHub API credentials never pass to asset downloads.
-
-Home Apply and Restore also run in Rust. The native app embeds the existing checked
-managed query and writer payloads, then stages them through the CLI-compatible SDK
-transport. It verifies live identity, runtime, settings and firmware against the reviewed
-original backup, saves a durable recovery receipt before writing, and checks every final
-Home/startup value and watcher mode. Original backup bytes are never replaced. Receipt
-chains support retrying Restore after an interrupted write or launcher removal. Failed or
-cancelled operations keep their recovery data and never replay a writer automatically.
-The worker no longer offers `apply_native_home` or `restore_home_backup`.
-
-Root restart verification runs natively too. It checks fresh paired boot proof, a complete
-SDK Home query, and the helper's automatic-start registration before marking the existing
-recovery record active. It preserves pairing data, uses the shared TV lock, and refuses
-changed or linked recovery records. Unconfirmed boot proof leaves the record unchanged.
-Initial Root installation and helper updates still use the worker.
+Network requests, archives, protocol replies and operation deadlines are bounded.
+Paired TLS checks the saved certificate before sending credentials and requires fresh
+proof. Samsung tokens remain in memory; the UI receives only the account email. Signing
+keys and Root recovery material stay on this computer or pass through the private
+pinned transfer. Optional GitHub API credentials stay at the fixed API endpoint and
+never pass to asset downloads.
 
 ```sh
 npm run typecheck
@@ -340,39 +238,37 @@ cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
 npm run tauri -- build
 ```
 
-`cargo test` runs Rust unit tests, loopback protocol tests and Tauri mock-runtime command
-tests without a TV, Python worker or frontend build. Unit tests stay beside their modules:
-larger modules use a `module/tests.rs` file. Timer-only tests use Tokio's paused clock;
-socket tests use local servers and bounded real time. Command tests use the production
-registration list, temporary databases and an absent worker path.
+`cargo test` runs unit, loopback protocol and registered Tauri command tests without a
+TV, Python, generated helpers or frontend build. Unit tests stay beside their modules;
+larger modules use `module/tests.rs`. Timer tests use Tokio's paused clock. Socket tests
+use bounded local servers. Contract fixtures compare native behavior with the public CLI.
 
-The `bundled-worker` Cargo feature selects the production Tauri configuration and enables
-the app binary. Tauri's development and build commands enable it automatically. Bare Cargo
-checks use `src-tauri/tests/tauri.conf.json`, which needs no generated sidecar or frontend assets.
-
-Run the frozen-worker integration check explicitly:
+The `desktop-app` feature selects the production Tauri configuration, embeds device
+payloads and enables the app binary. Tauri enables it automatically. Bare Cargo checks
+use `src-tauri/tests/tauri.conf.json`, with no generated assets. Check the production
+library and embedded payloads separately:
 
 ```sh
-npm run worker:build
-cargo test --manifest-path src-tauri/Cargo.toml --features worker-smoke --test worker_smoke
-cargo clippy --manifest-path src-tauri/Cargo.toml --features bundled-worker --all-targets -- -D warnings
-cargo check --manifest-path src-tauri/Cargo.toml --features bundled-worker --lib
+npm run helpers:build
+npm run build
+cargo check --manifest-path src-tauri/Cargo.toml --features desktop-app --lib
+cargo test --manifest-path src-tauri/Cargo.toml --features desktop-app --lib
+cargo clippy --manifest-path src-tauri/Cargo.toml --features desktop-app --all-targets -- -D warnings
 ```
 
-The Tauri build command rebuilds the worker and frontend automatically. The worker build
-uses a temporary PyInstaller cache and tests the frozen executable outside the checkout
-with Python removed from PATH. The separate Rust smoke test checks its public handshake.
-Its feature does not enable the app binary, so this check cannot replace a standalone app
-build with a development executable that expects Vite to be running.
-The separate production library check also catches runtime features that unit-test
-dependencies could otherwise enable only during tests.
+Use `--lib` for production-feature tests so Cargo does not replace a standalone app
+binary with an executable that expects Vite. Tauri packaging builds the helpers and
+frontend automatically. Its app bundle contains the native executable and no sidecar.
 
-From the repository root, run the backend regression checks:
+From the repository root, run the CLI compatibility checks in the development environment:
 
 ```sh
-.venv/bin/python -m pytest tests/test_desktop_worker.py tests/test_install.py tests/test_releases.py tests/test_sdb.py tests/test_device_cli.py
 .venv/bin/python -m pytest desktop/tests
 ```
+
+These Python tests compare shared protocol/package fixtures and check the build entry.
+They are development checks and are not shipped with the installed app. Physical TV
+and Windows runtime checks remain separate from host tests and browser fixtures.
 
 Browser tests use Playwright's separate bundled Chromium and fresh test profiles. Each
 test run has a two-minute global limit and closes its owned browser contexts and processes.

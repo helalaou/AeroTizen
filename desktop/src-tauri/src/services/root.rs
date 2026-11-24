@@ -124,7 +124,6 @@ mod tests {
                 .code,
             "operation_busy"
         );
-        assert!(!state.worker_path.exists());
     }
     #[tokio::test]
     async fn root_verification_is_native_and_keeps_confirmation_and_operation_guards() {
@@ -185,6 +184,5 @@ mod tests {
                 .code,
             "operation_busy"
         );
-        assert!(!state.worker_path.exists());
     }
 }

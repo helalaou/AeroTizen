@@ -75,7 +75,6 @@ async fn first_native_connection_keeps_the_public_profile_without_a_worker_or_pr
     let public = serde_json::to_string(&saved).unwrap();
     assert!(!public.contains(DUID));
     assert!(!public.contains("/private/path"));
-    assert!(!state.worker_path.exists());
     assert_eq!(state.profiles.list().await.unwrap().len(), 1);
     assert_eq!(tv.finish().await[0].len(), 7);
     metadata.finish().await;

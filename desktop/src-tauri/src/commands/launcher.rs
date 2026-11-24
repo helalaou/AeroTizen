@@ -5,8 +5,8 @@ use crate::{
 };
 
 #[tauri::command]
-pub async fn backend_status(state: tauri::State<'_, AppState>) -> AppResult<BackendStatus> {
-    services::launcher::backend_status(&state).await
+pub fn backend_status() -> BackendStatus {
+    services::backend::status()
 }
 
 #[tauri::command]

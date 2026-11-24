@@ -3,7 +3,6 @@ use crate::services::{
     button_edits::ButtonEdits, button_reads::ButtonReads, device_connection::TvConnection,
     home_backups::HomeBackups, local_apps, profiles::Profiles, root_status::RootStatus, samsung,
 };
-use std::path::PathBuf;
 use tokio::sync::watch;
 
 pub struct AppState {
@@ -13,7 +12,6 @@ pub struct AppState {
     pub button_reads: ButtonReads,
     pub button_edits: ButtonEdits,
     pub device_connection: TvConnection,
-    pub worker_path: PathBuf,
     pub operation: tokio::sync::Mutex<()>,
     pub cancelled_tv_read: watch::Sender<String>,
     pub samsung: samsung::SamsungState,
@@ -30,7 +28,6 @@ impl AppState {
             button_reads: ButtonReads::new(directory.join("cli-state")),
             button_edits: ButtonEdits::new(directory.join("cli-state")),
             device_connection: TvConnection::new(directory.join("cli-state")),
-            worker_path: directory.join("no-worker-in-unit-tests"),
             operation: Default::default(),
             cancelled_tv_read: watch::Sender::new(String::new()),
             samsung: Default::default(),

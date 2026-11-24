@@ -75,7 +75,7 @@ export const testReleases: LauncherRelease[] = [
   { version: "3.0.0", sections: [] },
   { version: "2.7.0", sections: [{ heading: "Bug Fixes", changes: ["Fix app card spacing."] }] },
 ];
-export const testStatus = { name: "aerotizen-desktop-worker", version: "3.0.1", operations: [] };
+export const testStatus = { version: "3.0.1" };
 export const testRootNotConfigured: RootAccessStatus = {
   phase: "not_configured",
   root_available: false,

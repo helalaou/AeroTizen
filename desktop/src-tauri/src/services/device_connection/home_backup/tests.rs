@@ -39,7 +39,6 @@ async fn existing_original_is_verified_natively_without_worker_or_home_status_re
         .await
         .unwrap();
     assert_eq!(result.backup_sha256, backup.backup_sha256);
-    assert!(!state.worker_path.exists());
     assert_eq!(peer.finish().await[0].len(), 1);
 }
 
