@@ -1,6 +1,5 @@
 """The actual native TLS bridge must authenticate before relaying SDB."""
 
-import hashlib
 import json
 import os
 import queue
@@ -16,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from aerotizen import cli, desktop_worker, root_package, root_state
+from aerotizen import cli, root_package, root_state
 from aerotizen.root_bridge import BridgeClient, BridgeError, BridgeSdb
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -249,26 +248,6 @@ def test_cli_button_rules_preview_apply_and_restore(bridge_server, tmp_path, mon
     assert len(saved) == 1 and saved[0]["button"] == "Amazon Prime" and saved[0]["mode"] == "default"
     assert command("reset", "--yes")["rules"] == []
     assert json.loads(stored.read_text()) == []
-
-
-@pytest.mark.parametrize("bridge_server", [{"buttons": True}], indirect=True)
-def test_desktop_worker_lists_button_apps_without_changing_rules(bridge_server, tmp_path, monkeypatch):
-    receipt, fixture, _ = bridge_server
-    host = "127.0.0.1"
-    identity = hashlib.sha256(b"paired-tv").hexdigest()
-    root_state.save(root_state.receipt_path(host, tmp_path), {**receipt, "duid_sha256": identity})
-    monkeypatch.setattr(desktop_worker.remote, "CONFIG_DIR", tmp_path)
-    monkeypatch.setattr(desktop_worker.remote, "info", lambda _: {"developerIP": host})
-    result = desktop_worker.handle(
-        {
-            "protocol": 1,
-            "id": "desktop-button-apps",
-            "operation": "list_button_apps",
-            "params": {"host": host, "expected_identity": identity},
-        }
-    )
-    assert result["result"] == [{"id": "test.app", "name": "Example.tv"}]
-    assert not Path(fixture["buttons_file"]).exists()
 
 
 @pytest.mark.parametrize("bridge_server", [{"buttons": True}], indirect=True)

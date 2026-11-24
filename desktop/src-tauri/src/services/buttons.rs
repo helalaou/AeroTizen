@@ -1,4 +1,4 @@
-use super::reads::read_tv;
+use super::reads::read_native_tv;
 use crate::{
     models::{
         AppResult, ButtonChange, ButtonChangeResult, ButtonMappings, ButtonTargetApp,
@@ -20,12 +20,8 @@ pub async fn list_tv_buttons(
                 .await
         })
         .await?;
-    // Release native ownership before the existing SDK lookup takes the same TV lock.
-    // Its cancellation waits for the frozen worker to stop before another page can read.
-    with_app_names(mappings, || {
-        read_tv(state, "list_button_apps", id, request_id)
-    })
-    .await
+    // Release the button read's ownership before opening the shared app inventory session.
+    with_app_names(mappings, || list_tv_button_apps(state, id, request_id)).await
 }
 
 async fn with_app_names<Query, Pending>(
@@ -70,7 +66,13 @@ pub async fn list_tv_button_apps(
     id: String,
     request_id: String,
 ) -> AppResult<Vec<ButtonTargetApp>> {
-    read_tv(state, "list_button_apps", id, request_id).await
+    read_native_tv(state, id, request_id, |saved| async move {
+        state
+            .app_reads
+            .targets(&saved.tv.host, &saved.tv.identity_sha256)
+            .await
+    })
+    .await
 }
 
 #[cfg(test)]

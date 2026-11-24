@@ -6,7 +6,6 @@ use std::process::Stdio;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
-use tokio::sync::watch;
 
 const PROTOCOL_VERSION: u32 = 1;
 const WORKER_TIMEOUT_SECONDS: u64 = 120;
@@ -60,8 +59,6 @@ fn request_local_network_access(operation: &str, params: &Value) {
         | "install_local_app"
         | "setup_root"
         | "upgrade_root"
-        | "list_apps"
-        | "list_button_apps"
         | "remove_apps"
         | "prepare_native_home" => params
             .get("host")
@@ -84,15 +81,6 @@ pub async fn request<Result: DeserializeOwned>(
     operation: &str,
     params: Value,
 ) -> AppResult<Result> {
-    request_with_cancellation(path, operation, params, None).await
-}
-
-pub async fn request_with_cancellation<Result: DeserializeOwned>(
-    path: &Path,
-    operation: &str,
-    params: Value,
-    cancellation: Option<(watch::Receiver<String>, String)>,
-) -> AppResult<Result> {
     #[cfg(target_os = "macos")]
     request_local_network_access(operation, &params);
     let request_id = SystemTime::now()
@@ -102,7 +90,6 @@ pub async fn request_with_cancellation<Result: DeserializeOwned>(
         .to_string();
     let payload = json!({
         "protocol": PROTOCOL_VERSION, "id": request_id, "operation": operation, "params": params,
-        "cancellable": cancellation.is_some(),
     });
     let mut command = Command::new(path);
     command
@@ -118,13 +105,7 @@ pub async fn request_with_cancellation<Result: DeserializeOwned>(
         .write_all(format!("{payload}\n").as_bytes())
         .await
         .map_err(|_| unavailable())?;
-    let cancellation_task = cancellation.map(|(mut cancelled, id)| {
-        tokio::spawn(async move {
-            let _ = cancelled.wait_for(|request| *request == id).await;
-            // Closing the pipe stops the worker, including the child of the frozen executable.
-            drop(input);
-        })
-    });
+    drop(input);
     let timeout_seconds = match operation {
         "setup_root" | "upgrade_root" => ROOT_WRITE_TIMEOUT_SECONDS,
         "install_launcher" | "install_local_app" | "remove_apps" => PACKAGE_ACTION_TIMEOUT_SECONDS,
@@ -136,9 +117,6 @@ pub async fn request_with_cancellation<Result: DeserializeOwned>(
         child.wait_with_output(),
     )
     .await;
-    if let Some(task) = cancellation_task {
-        task.abort();
-    }
     let output = output
         .map_err(|_| {
             AppError::new(
@@ -156,7 +134,7 @@ pub async fn request_with_cancellation<Result: DeserializeOwned>(
         })?
         .map_err(|_| unavailable())?;
     let response_limit = match operation {
-        "list_apps" | "list_button_apps" | "remove_apps" => MAX_APP_LIST_RESPONSE_BYTES,
+        "remove_apps" => MAX_APP_LIST_RESPONSE_BYTES,
         _ => MAX_RESPONSE_BYTES,
     };
     if !output.status.success() || output.stdout.len() > response_limit {
