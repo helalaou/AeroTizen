@@ -1,21 +1,8 @@
 use crate::{
-    models::{AppError, AppResult, BackendStatus, SavedTv, VerifiedTv},
+    models::{AppError, AppResult, SavedTv, VerifiedTv},
     state::{busy, AppState},
-    worker,
 };
-use serde_json::json;
 const INSTALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(300);
-
-pub async fn backend_status(state: &AppState) -> AppResult<BackendStatus> {
-    let result: BackendStatus = worker::request(&state.worker_path, "handshake", json!({})).await?;
-    if result.name != "aerotizen-desktop-worker" {
-        return Err(AppError::new(
-            "worker_incompatible",
-            "The bundled TV backend is incompatible.",
-        ));
-    }
-    Ok(result)
-}
 
 pub async fn install_launcher(
     state: &AppState,

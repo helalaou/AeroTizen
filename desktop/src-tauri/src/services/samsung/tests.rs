@@ -178,7 +178,6 @@ async fn certificate_setup_reuses_an_original_profile_natively_and_preserves_bot
         .unwrap();
     assert_eq!(result.identity_sha256, saved.id);
     assert!(result.launcher_signing_ready);
-    assert!(!state.worker_path.exists());
     assert_eq!(
         std::fs::read(profile.join("author.p12")).unwrap(),
         b"original"

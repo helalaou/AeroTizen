@@ -264,7 +264,6 @@ fn button_edits_use_the_registered_native_command_without_a_worker_and_keep_busy
         fixture.invoke("change_tv_button", args).unwrap_err(),
         json!({"code":"pairing_required","message":"Complete Root access setup and verify the paired TV helper before changing buttons."})
     );
-    assert!(!state.worker_path.exists());
 }
 
 #[test]
@@ -284,5 +283,13 @@ fn app_removal_uses_native_validation_without_a_worker_and_preserves_the_busy_gu
         fixture.invoke("remove_tv_apps", args).unwrap_err()["code"],
         "invalid_request"
     );
-    assert!(!state.worker_path.exists());
+}
+
+#[test]
+fn backend_version_is_available_through_registered_ipc_without_external_tools_or_a_tv() {
+    let fixture = Fixture::new();
+    assert_eq!(
+        fixture.invoke("backend_status", json!({})).unwrap(),
+        json!({"version":env!("ROOT_RUNTIME_VERSION")})
+    );
 }

@@ -91,7 +91,7 @@ mod tests {
         assert!(load(&serde_json::to_vec(&original).unwrap(), &["wrong.dll"]).is_err());
     }
 
-    #[cfg(feature = "bundled-worker")]
+    #[cfg(feature = "desktop-app")]
     #[test]
     fn compiled_app_embeds_complete_checked_home_helpers() {
         for files in [home_query().unwrap(), home_control().unwrap()] {

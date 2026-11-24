@@ -242,7 +242,6 @@ mod tests {
                 assert_eq!(result.unwrap_err().code, "inventory_unavailable");
                 assert!(state.local_apps.0.lock().await.is_none());
             }
-            assert!(!state.worker_path.exists());
         }
     }
 }

@@ -2,7 +2,6 @@ mod commands;
 mod models;
 mod services;
 mod state;
-mod worker;
 
 use services::profiles::Profiles;
 use state::AppState;
@@ -10,9 +9,9 @@ use tauri::Manager;
 use tokio::sync::watch;
 
 pub fn run() {
-    #[cfg(feature = "bundled-worker")]
+    #[cfg(feature = "desktop-app")]
     let context = tauri::generate_context!();
-    #[cfg(not(feature = "bundled-worker"))]
+    #[cfg(not(feature = "desktop-app"))]
     let context = tauri::generate_context!("tests/tauri.conf.json");
     commands::register(
         tauri::Builder::default()
@@ -33,8 +32,6 @@ pub fn run() {
                 std::fs::create_dir_all(&directory)?;
                 let profiles = Profiles::new(directory.join("profiles.sqlite3"))
                     .map_err(|error| std::io::Error::other(error.message))?;
-                let worker_path =
-                    worker::binary_path().map_err(|error| std::io::Error::other(error.message))?;
                 let cli_directory = app.path().home_dir()?.join(".config").join("aerotizen");
                 app.manage(AppState {
                     profiles,
@@ -45,7 +42,6 @@ pub fn run() {
                     device_connection: services::device_connection::TvConnection::new(
                         cli_directory,
                     ),
-                    worker_path,
                     operation: tokio::sync::Mutex::new(()),
                     cancelled_tv_read: watch::Sender::new(String::new()),
                     samsung: services::samsung::SamsungState::default(),

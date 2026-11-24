@@ -3,9 +3,7 @@ pub const LAUNCHER_APP_ID: &str = "DclHome001.Home";
 pub const LAUNCHER_PACKAGE_ID: &str = "DclHome001";
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BackendStatus {
-    pub name: String,
     pub version: String,
-    pub operations: Vec<String>,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReleaseSection {
