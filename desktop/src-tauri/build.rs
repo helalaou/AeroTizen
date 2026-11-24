@@ -25,7 +25,7 @@ fn main() {
     println!("cargo:rustc-env=ROOT_RUNTIME_VERSION={version}");
     let out =
         std::path::PathBuf::from(std::env::var_os("OUT_DIR").expect("Cargo must provide OUT_DIR"));
-    for name in ["home-query.json", "home-control.json"] {
+    for name in ["home-query.json", "home-control.json", "root-runtime.json"] {
         let source = metadata.parent().unwrap().join("helpers").join(name);
         println!("cargo:rerun-if-changed={}", source.display());
         if cfg!(feature = "bundled-worker") {

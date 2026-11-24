@@ -23,48 +23,9 @@ struct HomeDevice<'a> {
 }
 impl Device for HomeDevice<'_> {
     async fn status(&mut self) -> AppResult<Value> {
-        self.session.identity().await?;
-        self.session.unchanged().await?;
-        let capabilities = self
-            .session
-            .connection
-            .read(ReadCommand::Capabilities)
-            .await
-            .map_err(|_| super::connection_failed())?;
-        let cpu = capabilities
-            .lines()
-            .filter_map(|line| line.split_once(':'))
-            .find(|(key, _)| key.trim_matches([' ', '\0', '�']) == "cpu_arch")
-            .map(|(_, value)| value.trim());
-        let host = root_pairing::host_address(self.session.host)?;
-        let result = sdk::run(
-            &mut self.session.connection,
-            host,
-            &self.query,
-            helper_payloads::QUERY_ENTRYPOINT,
-            &[],
-        )
-        .await?;
-        if result.exit_code != 0 {
-            return Err(home_protocol::failed(
-                "The SDK Home query failed. Check the TV's current settings before retrying.",
-            ));
-        }
-        let query = home_protocol::query(&result.stdout)?;
-        self.session.identity().await?;
-        self.session.unchanged().await?;
-        let info = self.session.info.as_ref().unwrap_or(&self.fallback);
-        Ok(home_protocol::status(
-            query,
-            self.session
-                .expected
-                .as_deref()
-                .ok_or_else(super::invalid_response)?,
-            info,
-            cpu,
-            &sha256_hex(&self.query[0].bytes),
-        ))
+        self.session.query_home(&self.query, &self.fallback).await
     }
+
     async fn start_launcher(&mut self) -> AppResult<()> {
         self.session.identity().await?;
         self.session.unchanged().await?;
@@ -97,6 +58,53 @@ impl Device for HomeDevice<'_> {
             &["request.json"],
         )
         .await
+    }
+}
+impl Session<'_> {
+    pub(super) async fn query_home(
+        &mut self,
+        query_files: &[PayloadFile],
+        fallback: &Value,
+    ) -> AppResult<Value> {
+        self.identity().await?;
+        self.unchanged().await?;
+        let capabilities = self
+            .connection
+            .read(ReadCommand::Capabilities)
+            .await
+            .map_err(|_| super::connection_failed())?;
+        let cpu = capabilities
+            .lines()
+            .filter_map(|line| line.split_once(':'))
+            .find(|(key, _)| key.trim_matches([' ', '\0', '�']) == "cpu_arch")
+            .map(|(_, value)| value.trim());
+        let host = root_pairing::host_address(self.host)?;
+        let result = sdk::run(
+            &mut self.connection,
+            host,
+            query_files,
+            helper_payloads::QUERY_ENTRYPOINT,
+            &[],
+        )
+        .await?;
+        if result.exit_code != 0 {
+            return Err(home_protocol::failed(
+                "The SDK Home query failed. Check the TV's current settings before retrying.",
+            ));
+        }
+        let query = home_protocol::query(&result.stdout)?;
+        self.identity().await?;
+        self.unchanged().await?;
+        let info = self.info.as_ref().unwrap_or(fallback);
+        Ok(home_protocol::status(
+            query,
+            self.expected
+                .as_deref()
+                .ok_or_else(super::invalid_response)?,
+            info,
+            cpu,
+            &sha256_hex(&query_files[0].bytes),
+        ))
     }
 }
 async fn launch_http(address: Ipv4Addr, port: u16) -> bool {

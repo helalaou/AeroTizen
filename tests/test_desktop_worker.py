@@ -245,8 +245,8 @@ def test_root_update_errors_do_not_expose_private_files(root_reading, monkeypatc
     "action,phase,confirmed,code",
     [
         ("start", "prepared", False, "confirmation_required"),
-        ("verify", "not_configured", True, "root_state_changed"),
-        ("verify", "installed", True, "root_state_changed"),
+        ("verify", "not_configured", True, "invalid_request"),
+        ("verify", "installed", True, "invalid_request"),
         ("start", "waiting_boot", True, "root_state_changed"),
         ("start", "removing", True, "root_recovery_required"),
         ("start", "wrong_tv", True, "identity_mismatch"),
@@ -286,11 +286,15 @@ def test_desktop_root_setup_reuses_cli_and_waits_for_verification(root_reading, 
         request("setup_root", host="192.0.2.20", expected_identity=identity, action="start", confirmed=True)
     )["result"]
     assert start["phase"] == "waiting_boot" and start["setup_complete"] is False
-    verified = worker.handle(
-        request("setup_root", host="192.0.2.20", expected_identity=identity, action="verify", confirmed=True)
-    )["result"]
-    assert verified["phase"] == "active" and verified["setup_complete"] is True
-    assert calls == [("192.0.2.20", tmp_path, identity, False), ("192.0.2.20", tmp_path, identity, True)]
+    assert (
+        worker.handle(
+            request(
+                "setup_root", host="192.0.2.20", expected_identity=identity, action="verify", confirmed=True
+            )
+        )["error"]["code"]
+        == "invalid_request"
+    )
+    assert calls == [("192.0.2.20", tmp_path, identity, False)]
 
 
 @pytest.mark.parametrize(

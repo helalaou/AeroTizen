@@ -138,7 +138,9 @@ def setup_root(params):
     host = host_value(params.get("host"))
     expected = checked_identity(params.get("expected_identity"))
     action = params.get("action")
-    if action not in ("start", "verify") or params.get("confirmed") is not True:
+    if action == "verify":
+        raise RequestError("invalid_request", "The desktop request is invalid or incompatible.")
+    if action != "start" or params.get("confirmed") is not True:
         raise RequestError("confirmation_required", "Review and confirm root setup first.")
     receipt = _root_receipt(host, expected)
     phase = receipt["phase"] if receipt else "not_configured"
@@ -146,17 +148,13 @@ def setup_root(params):
         raise RequestError(
             "root_recovery_required", "Finish the existing root removal before starting setup."
         )
-    if action == "verify" and phase not in ("waiting_boot", "active"):
-        raise RequestError(
-            "root_state_changed", "There is no setup waiting for restart. Refresh Root access first."
-        )
     if action == "start" and phase in ("waiting_boot", "active"):
         raise RequestError(
             "root_state_changed", "Root setup already exists. Refresh Root access to continue it."
         )
     try:
         root_control.setup(
-            host, state_dir=remote.CONFIG_DIR, expected_duid_sha256=expected, verify_only=action == "verify"
+            host, state_dir=remote.CONFIG_DIR, expected_duid_sha256=expected, verify_only=False
         )
     except root_control.RootSetupStateError as error:
         raise RequestError(

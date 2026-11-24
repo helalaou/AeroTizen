@@ -321,6 +321,12 @@ chains support retrying Restore after an interrupted write or launcher removal. 
 cancelled operations keep their recovery data and never replay a writer automatically.
 The worker no longer offers `apply_native_home` or `restore_home_backup`.
 
+Root restart verification runs natively too. It checks fresh paired boot proof, a complete
+SDK Home query, and the helper's automatic-start registration before marking the existing
+recovery record active. It preserves pairing data, uses the shared TV lock, and refuses
+changed or linked recovery records. Unconfirmed boot proof leaves the record unchanged.
+Initial Root installation and helper updates still use the worker.
+
 ```sh
 npm run typecheck
 npm run lint

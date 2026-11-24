@@ -1,10 +1,10 @@
-mod projection;
+pub(super) mod projection;
 
 use super::{root_bridge, root_pairing as records, tv_session};
 use crate::models::{AppResult, RootAccessStatus, RootPhase};
 use std::path::PathBuf;
 
-const TARGET_RUNTIME_VERSION: &str = env!("ROOT_RUNTIME_VERSION");
+pub(super) const TARGET_RUNTIME_VERSION: &str = env!("ROOT_RUNTIME_VERSION");
 
 pub struct RootStatus {
     directory: PathBuf,
