@@ -6,6 +6,8 @@ use serde_json::Value;
 const MAX_FILE_BYTES: usize = 1024 * 1024;
 const QUERY: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/home-query.json"));
 const CONTROL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/home-control.json"));
+const ROOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/root-runtime.json"));
+pub(super) const ROOT_BRIDGE_ENTRYPOINT: &str = "AeroTizenRootBridge.dll";
 pub(super) const QUERY_ENTRYPOINT: &str = "AeroTizenHomeQuery.dll";
 pub(super) const CONTROL_ENTRYPOINT: &str = "AeroTizenHomeControl.dll";
 fn unavailable() -> AppError {
@@ -57,6 +59,11 @@ pub(super) fn home_control() -> AppResult<Vec<PayloadFile>> {
         ],
     )
 }
+mod root_runtime;
+pub(super) fn root_bridge() -> AppResult<Vec<PayloadFile>> {
+    root_runtime::bridge(ROOT)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

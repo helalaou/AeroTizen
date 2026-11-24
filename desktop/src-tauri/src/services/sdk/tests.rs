@@ -182,11 +182,12 @@ async fn unexpected_callback_peer_is_refused_and_the_owned_listener_closes() {
     assert!(TcpStream::connect(address).await.is_err());
 }
 
-pub(crate) async fn serve_helper(
+pub(crate) async fn serve_helper_with_args(
     io: &mut (impl crate::services::sdb::SdbIo + ?Sized),
     entrypoint: &str,
     names: &[&str],
     output: &str,
+    args: &[&str],
 ) -> Vec<PayloadFile> {
     let mut payloads = Vec::new();
     let mut staged_token = String::new();
@@ -222,15 +223,10 @@ pub(crate) async fn serve_helper(
         .unwrap()
         .parse()
         .unwrap();
-    let args = if names.contains(&"request.json") {
-        vec!["request.json"]
-    } else {
-        vec![]
-    };
     let expected = script(
         &payloads,
         entrypoint,
-        &args,
+        args,
         Ipv4Addr::LOCALHOST,
         port,
         &staged_token,
@@ -252,4 +248,18 @@ pub(crate) async fn serve_helper(
         .unwrap();
     socket.shutdown().await.unwrap();
     payloads
+}
+
+pub(crate) async fn serve_helper(
+    io: &mut (impl crate::services::sdb::SdbIo + ?Sized),
+    entrypoint: &str,
+    names: &[&str],
+    output: &str,
+) -> Vec<PayloadFile> {
+    let args = if names.contains(&"request.json") {
+        vec!["request.json"]
+    } else {
+        vec![]
+    };
+    serve_helper_with_args(io, entrypoint, names, output, &args).await
 }

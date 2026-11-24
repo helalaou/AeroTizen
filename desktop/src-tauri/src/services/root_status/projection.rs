@@ -36,7 +36,7 @@ fn older_version(version: &str, target: &str) -> bool {
         .is_some_and(|ordering| ordering.is_lt())
 }
 
-pub(super) fn public_status(
+pub(in crate::services) fn public_status(
     receipt: Option<&Receipt>,
     live: Option<&Value>,
     target: &str,

@@ -1,3 +1,4 @@
+pub(super) mod store;
 use super::digest::sha256_hex;
 use super::root_bridge::{Pairing, HELPER_APP_ID};
 use crate::models::{valid_identity, AppError, AppResult, RootPhase};

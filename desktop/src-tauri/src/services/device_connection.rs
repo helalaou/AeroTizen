@@ -6,6 +6,7 @@ mod installation;
 mod profile;
 pub(super) mod projection;
 mod removal;
+mod root_verification;
 
 use super::{
     digest::sha256_hex,
