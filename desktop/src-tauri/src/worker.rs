@@ -53,12 +53,8 @@ fn request_local_network_access(operation: &str, params: &Value) {
 
     const DISCARD_SERVICE_PORT: u16 = 9;
     let address = match operation {
-        "install_launcher"
-        | "install_local_app"
-        | "setup_root"
-        | "upgrade_root"
-        | "remove_apps"
-        | "prepare_native_home" => params
+        "install_launcher" | "install_local_app" | "setup_root" | "upgrade_root"
+        | "remove_apps" => params
             .get("host")
             .and_then(Value::as_str)
             .and_then(|host| host.parse::<Ipv4Addr>().ok()),

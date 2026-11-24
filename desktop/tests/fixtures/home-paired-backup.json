@@ -1,0 +1,62 @@
+{
+  "identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "info": {
+    "modelName": "Frame",
+    "model": "24_PTM"
+  },
+  "reply": {
+    "home_settings": {
+      "home_button_app": "com.samsung.tv.csfs",
+      "home_app": "com.samsung.tv.csfs",
+      "startup_app": "org.tizen.tv-viewer",
+      "startup_backup_app": "org.tizen.tv-viewer",
+      "first_screen": "com.samsung.tv.csfs",
+      "smart_hub_autostart": false,
+      "firmware_build": "TEST-1000.1",
+      "helper_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  },
+  "document": {
+    "schema_version": 1,
+    "kind": "aerotizen.home-baseline",
+    "captured_at": "2026-11-16T10:00:00.123456+00:00",
+    "device": {
+      "identity_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "model": "Frame",
+      "platform": "24_PTM",
+      "firmware_build": "TEST-1000.1"
+    },
+    "home": {
+      "operation": "http://tizen.org/appcontrol/operation/main",
+      "default_app": "com.samsung.tv.csfs",
+      "settings": {
+        "db/appfw/home_appid": {
+          "type": "string",
+          "value": "com.samsung.tv.csfs"
+        },
+        "db/appfw/startup_appid": {
+          "type": "string",
+          "value": "org.tizen.tv-viewer"
+        },
+        "db/appfw/booting_appid_backup": {
+          "type": "string",
+          "value": "org.tizen.tv-viewer"
+        },
+        "db/first_screen/type": {
+          "type": "string",
+          "value": "com.samsung.tv.csfs"
+        },
+        "db/menu/smart_hub/ontvsetting/auto_start": {
+          "type": "int",
+          "value": 0
+        }
+      }
+    },
+    "evidence": {
+      "access": "paired_helper",
+      "authenticated": true,
+      "uid": 0,
+      "helper_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  }
+}

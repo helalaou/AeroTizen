@@ -1,4 +1,5 @@
 //! Owned native TV connections through Developer Mode or the paired relay.
+mod home_backup;
 mod profile;
 pub(super) mod projection;
 
@@ -75,6 +76,30 @@ impl Session<'_> {
             self.expected = Some(sha256_hex(duid.as_bytes()));
         }
         Ok(duid)
+    }
+
+    async fn home_status(&mut self) -> AppResult<Option<Value>> {
+        self.unchanged().await?;
+        let (Some(receipt), Some(proof)) = (self.receipt.as_ref(), self.bridge_proof.as_ref())
+        else {
+            return Ok(None);
+        };
+        const HOME_STATUS_PROTOCOL: u64 = 1;
+        if proof["home_status_protocol"].as_u64() != Some(HOME_STATUS_PROTOCOL) {
+            return Ok(None);
+        }
+        let reply = root_bridge::read(
+            root_pairing::host_address(self.host)?,
+            &receipt.pairing,
+            root_bridge::ReadRequest::HomeStatus,
+        )
+        .await
+        .map_err(|_| connection_failed())?;
+        if reply["boot_id"] != proof["boot_id"] {
+            return Err(connection_failed());
+        }
+        self.unchanged().await?;
+        Ok(Some(reply))
     }
 
     async fn inventory(&mut self) -> AppResult<String> {
