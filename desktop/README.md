@@ -133,11 +133,7 @@ See screenshots of [Root access](screenshots/root-access.png),
 [update confirmation](screenshots/root-update-review.png), and
 [restart verification on mobile](screenshots/root-restart-mobile.png).
 
-Development fixtures include an older helper on Living room, a fresh Bedroom TV and interrupted
-setup on Office. In the browser preview, **Demo: restart TV** simulates a new boot; it
-does not complete setup until **Check after restart** verifies it. The native adapter
-does not expose the simulation control. See [the CLI root guide](../docs/root-cli.md)
-for hardware validation and recovery details.
+See [the CLI root guide](../docs/root-cli.md) for hardware validation and recovery details.
 
 ## Development
 
@@ -184,6 +180,60 @@ npm run dev
 
 Open `http://localhost:1420/`. Vite prints network URLs for another device. Real TV
 connections are available in the native app.
+
+### Local TV simulator
+
+To work on the UI without a TV or Samsung account, run:
+
+```sh
+npm run dev:simulator
+```
+
+Open `http://localhost:1430/` and choose **TV simulator** at the bottom right. The app
+uses its normal views with a local service adapter. No TV commands, Samsung requests,
+real certificate writes or native profile changes are made. The simulator requires
+only Node and the desktop npm dependencies.
+
+- **TVs:** add a TV from a preset, then edit its name, address, model, Tizen and launcher
+  versions, Root status, Home routing, backup status, power, discovery and certificates.
+  **Save and reload preview** returns to the TV list with the new state. Starter TVs
+  include an older launcher/helper, a fresh TV and a Watcher TV without Root.
+- **Requests:** set a response delay to inspect loading states and cancellation, or
+  fail one selected request with a custom message. Close the panel and use the app to
+  trigger that request. The failure clears after it runs; cancelled reads leave it armed.
+- **Scenario JSON:** copy or edit the complete state, including app inventories,
+  protected labels, packages that refuse removal, button mappings, original Home
+  settings, helper progress, local widget details and launcher releases/change notes.
+  **Load JSON** checks the data before replacing the scenario. **Reset starter TVs**
+  and **Start empty** provide clean starting points.
+
+State persists across reloads in this browser's local storage, separately for each
+hostname. Simulated installs, removals, button changes and Home backup/restore update
+that state. Samsung sign-in is simulated. Local installation selects the sample widget
+defined in the scenario. Learn simulates a remote press. Root setup/update stay pending
+until **Demo: restart TV** and **Check after restart** are used in the normal dialogs.
+The original Home backup is kept after the first apply and reused by later applies.
+
+The same simulator can run inside a native development window, with the usual native
+build prerequisites:
+
+```sh
+npm run dev:simulator:desktop
+```
+
+This uses the normal Vite server on port 1420 with `?simulator=1` and a separate native
+app identifier, so its WebView storage and TV profile database are separate from the
+normal app. The browser simulator on port 1430 can stay open alongside it.
+
+On an existing normal Vite dev server, `/?simulator=1` also opens the simulator.
+`npm run dev` and `npm run tauri -- dev` keep their normal behavior. Production builds
+exclude the simulator, even when built with `--mode simulator`; it cannot be enabled
+in an installed release. These scenarios test UI behavior, not Rust services or TV
+compatibility. Desktop CI remains unchanged.
+
+See screenshots of [TV editing](screenshots/simulator-tvs.png),
+[request delays and failures](screenshots/simulator-requests.png), and the
+[mobile simulator controls](screenshots/simulator-mobile.png).
 
 ## Checks and packaging
 

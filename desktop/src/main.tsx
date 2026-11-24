@@ -1,6 +1,7 @@
 import "@mantine/core/styles.css";
 import { MantineProvider, createTheme } from "@mantine/core";
 import { createRoot } from "react-dom/client";
+import type { ReactNode } from "react";
 import { DesktopApp } from "./DesktopApp";
 import { nativeService } from "./services/native";
 import "./global.css";
@@ -35,8 +36,19 @@ const theme = createTheme({
 const desktopService = "__TAURI_INTERNALS__" in window ? nativeService : undefined;
 const root = document.getElementById("root");
 if (!root) throw new Error("The app root is missing");
-createRoot(root).render(
-  <MantineProvider theme={theme} forceColorScheme="light">
-    <DesktopApp nativeService={desktopService} />
-  </MantineProvider>,
-);
+const appRoot = createRoot(root);
+function render(app: ReactNode) {
+  appRoot.render(
+    <MantineProvider theme={theme} forceColorScheme="light">
+      {app}
+    </MantineProvider>,
+  );
+}
+if (
+  import.meta.env.DEV &&
+  (import.meta.env.MODE === "simulator" || new URLSearchParams(window.location.search).get("simulator") === "1")
+) {
+  void import("./dev/SimulatorApp").then(({ default: SimulatorApp }) => render(<SimulatorApp />));
+} else {
+  render(<DesktopApp nativeService={desktopService} />);
+}
