@@ -169,6 +169,17 @@ fn routing_matches_cli_pairing_and_live_developer_host_rules() {
             Route::Developer(_)
         ));
     }
+    value["phase"] = json!("removing");
+    value["private_state_removed"] = json!(true);
+    let removing = root_pairing::parse(value.clone(), &expected).unwrap();
+    assert!(matches!(
+        route(Some(&removing), Some(&json!("127.0.0.1"))),
+        Err(error) if error.code == "root_removal_awaiting_restart"
+    ));
+    assert!(matches!(
+        route(Some(&removing), Some(&json!("192.0.2.10"))).unwrap(),
+        Route::Developer(Some(_))
+    ));
     value["phase"] = json!("removed");
     let removed = root_pairing::parse(value, &expected).unwrap();
     assert!(route(Some(&removed), Some(&json!("127.0.0.1"))).is_err());

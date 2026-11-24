@@ -136,7 +136,7 @@ pub(super) async fn setup(
         receipt
     } else {
         if !registration["row"].is_null() {
-            return Err(AppError::new("root_recovery_required","The TV already has a root helper. Use the computer or recovery files from its original setup."));
+            return Err(AppError::new("root_recovery_required","The TV already has a root access installation. Use the computer or recovery files from its original setup."));
         }
         if !certificate_identity(&duid) {
             return Err(failed());

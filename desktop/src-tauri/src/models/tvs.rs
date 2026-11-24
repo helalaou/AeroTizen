@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::net::Ipv4Addr;
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct TechnicalDetails {
     pub model_code: Option<String>,
@@ -53,6 +54,8 @@ pub struct VerifiedTv {
     pub transport: String,
     pub developer_mode: String,
     pub developer_host: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub computer_ip: Option<Ipv4Addr>,
     pub checked_at: String,
     #[serde(default)]
     pub technical_details: TechnicalDetails,

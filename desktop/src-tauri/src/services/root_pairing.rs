@@ -26,6 +26,12 @@ pub(super) struct Receipt {
     pub original_pc_host: String,
 }
 
+impl Receipt {
+    pub(super) fn removal_prepared(&self) -> bool {
+        self.phase == RootPhase::Removing && self.document["private_state_removed"] == true
+    }
+}
+
 pub(super) fn address(host: &str, expected: &str) -> AppResult<Ipv4Addr> {
     let address = host_address(host)?;
     if !valid_identity(expected) {
@@ -186,6 +192,16 @@ pub(super) async fn lookup(
     host: &str,
     expected: Option<&str>,
 ) -> AppResult<Option<Receipt>> {
+    Ok(lookup_with_path(directory, host, expected)
+        .await?
+        .map(|(_, receipt)| receipt))
+}
+
+pub(super) async fn lookup_with_path(
+    directory: &Path,
+    host: &str,
+    expected: Option<&str>,
+) -> AppResult<Option<(PathBuf, Receipt)>> {
     let directory = directory.to_owned();
     let host = host.to_owned();
     let expected = expected.map(str::to_owned);
@@ -199,7 +215,7 @@ pub(super) async fn lookup(
                 let identity = expected
                     .or_else(|| document["duid_sha256"].as_str().map(str::to_owned))
                     .ok_or_else(unavailable)?;
-                parse(document, &identity).map(Some)
+                parse(document, &identity).map(|receipt| Some((path, receipt)))
             }
         }
     })

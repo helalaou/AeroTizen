@@ -49,13 +49,13 @@ test("creates a custom TV, handles a failed request and keeps the scenario after
     await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
     await page
       .getByRole("navigation", { name: "TV actions" })
-      .getByRole("button", { name: "Launcher", exact: true })
+      .getByRole("button", { name: "Install & update", exact: true })
       .click();
-    await expect(page.getByText("Latest version: 9.0.0", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "9.0.0, Latest release", exact: true })).toBeVisible();
     await expect(page.getByText("Published change from GitHub.", { exact: true })).toBeVisible();
     await page.evaluate(() => (window as unknown as { __updatePublishedReleases(): void }).__updatePublishedReleases());
-    await page.getByRole("button", { name: "Refresh launcher releases" }).click();
-    await expect(page.getByText("Latest version: 9.1.0", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Refresh releases" }).click();
+    await expect(page.getByRole("button", { name: "9.1.0, Latest release", exact: true })).toBeVisible();
     await page
       .getByRole("navigation", { name: "TV actions" })
       .getByRole("button", { name: "Apps", exact: true })

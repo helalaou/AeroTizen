@@ -2,7 +2,7 @@ import { Alert, Button, Checkbox, Code, Group, List, Modal, Stack, Stepper, Text
 import { Check, RotateCw } from "lucide-react";
 import { useState } from "react";
 import type { RootAccessStatus, RootSetupAction, SavedTv } from "../contracts";
-import { rootComputerAddress, ROOT_POWER_OFF_SECONDS, rootSetupStage } from "../services/rootAccess";
+import { ROOT_POWER_OFF_SECONDS, rootSetupStage } from "../services/rootAccess";
 import { SamsungSignInDialog } from "./SamsungSignInDialog";
 
 interface RootSetupDialogProps {
@@ -36,7 +36,6 @@ export function RootSetupDialog({
   const [notice, setNotice] = useState<string | null>(null);
   const [signing, setSigning] = useState(false);
   const stage = rootSetupStage(status);
-  const computer = rootComputerAddress(profile, status);
   const activeStep = pending === "start" ? 1 : SETUP_STEP[stage];
 
   async function apply(action: RootSetupAction, reportError: (message: string) => void) {
@@ -65,7 +64,7 @@ export function RootSetupDialog({
       <SamsungSignInDialog
         signedIn={signedIn}
         tvName={profile.name}
-        appName="the root helper"
+        setupRoot
         signIn={signIn}
         prepareCertificates={prepareCertificates}
         install={(reportError) => apply("start", reportError)}
@@ -95,24 +94,36 @@ export function RootSetupDialog({
         </Stepper>
         {pending === "start" && (
           <Text size="sm" role="status">
-            Installing the root helper. Keep the TV on and this app open.
+            Setting up root access. Keep the TV on and this app open.
           </Text>
         )}
         {pending !== "start" && stage === "prepare" && (
           <>
-            <Text size="sm">
-              Leave Developer Mode on. Keep Host PC IP set to{" "}
-              {computer ? <Code>{computer}</Code> : "this computer's IP address"} while the helper installs.
-            </Text>
-            <Text size="sm">
-              Setup saves a private recovery record on this computer. It keeps your Home, startup app and Art Mode
-              settings.
-            </Text>
+            <Stack gap="xs">
+              <Text size="sm" fw={600}>
+                Turn on Developer Mode
+              </Text>
+              <List type="ordered" spacing="xs" size="sm">
+                <List.Item>
+                  On your TV, open <strong>Apps</strong> in Smart Hub and go to <strong>App Settings</strong>.
+                </List.Item>
+                <List.Item>
+                  Enter <Code>12345</Code> with your remote or the on-screen keypad.
+                </List.Item>
+                <List.Item>Turn on Developer Mode.</List.Item>
+                <List.Item>
+                  In <strong>Host PC IP</strong>, enter{" "}
+                  {profile.computer_ip ? <Code>{profile.computer_ip}</Code> : "this computer’s local IP address"}.
+                  Select <strong>OK</strong>, then restart the TV.
+                </List.Item>
+              </List>
+            </Stack>
+            <Text size="sm">Setup saves a private recovery record on this computer.</Text>
             {!profile.launcher_signing_ready && (
               <Text size="sm">Samsung sign-in and certificate setup will open first.</Text>
             )}
             <Checkbox
-              label="Developer Mode is on and Host PC IP is set to this computer"
+              label="I’ve completed Developer Mode setup on the TV"
               checked={confirmed}
               disabled={Boolean(pending)}
               onChange={(event) => setConfirmed(event.currentTarget.checked)}
@@ -189,7 +200,7 @@ export function RootSetupDialog({
           )}
           {stage === "prepare" && (
             <Button disabled={!confirmed} loading={pending === "start"} onClick={start}>
-              Install root helper
+              Start setup
             </Button>
           )}
           {stage === "restart" && (

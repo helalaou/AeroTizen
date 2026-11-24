@@ -28,28 +28,28 @@ describe("Root access", () => {
     const upgrade = vi.spyOn(service.rootAccess!, "upgrade");
     const setup = vi.spyOn(service.rootAccess!, "setup");
     const user = await showOverview(service);
-    await user.click(await screen.findByRole("button", { name: "Root helper update available" }));
+    await user.click(await screen.findByRole("button", { name: "Root access update available" }));
     await user.click(await screen.findByRole("button", { name: "Update available" }));
-    let dialog = within(screen.getByRole("dialog", { name: "Update root helper" }));
+    let dialog = within(screen.getByRole("dialog", { name: "Update root access" }));
     expect(dialog.getByText("3.0.1", { exact: true })).toBeVisible();
-    expect(dialog.getByRole("button", { name: "Update helper" })).toBeDisabled();
+    expect(dialog.getByRole("button", { name: "Install update" })).toBeDisabled();
     await user.click(dialog.getByRole("button", { name: "Close" }));
     expect(upgrade).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Update available" }));
-    dialog = within(screen.getByRole("dialog", { name: "Update root helper" }));
+    dialog = within(screen.getByRole("dialog", { name: "Update root access" }));
     await user.click(dialog.getByRole("checkbox"));
-    await user.click(dialog.getByRole("button", { name: "Update helper" }));
+    await user.click(dialog.getByRole("button", { name: "Install update" }));
     expect(await dialog.findByText("Restart the TV to finish the update", {}, { timeout: 5000 })).toBeVisible();
     await user.click(dialog.getByRole("button", { name: "Check after restart" }));
     expect(await dialog.findByText(/update is not verified yet/)).toBeVisible();
     await user.click(dialog.getByRole("button", { name: "Close" }));
-    await user.click(screen.getByRole("button", { name: "Launcher" }));
+    await user.click(screen.getByRole("button", { name: "Install & update" }));
     await user.click(screen.getByRole("button", { name: "Root access" }));
     await user.click(await screen.findByRole("button", { name: "Continue update" }));
-    dialog = within(screen.getByRole("dialog", { name: "Update root helper" }));
+    dialog = within(screen.getByRole("dialog", { name: "Update root access" }));
     await user.click(dialog.getByRole("button", { name: "Demo: restart TV" }));
     await user.click(dialog.getByRole("button", { name: "Check after restart" }));
-    expect(await dialog.findByText(/Root helper 3.0.1 and automatic startup are verified/)).toBeVisible();
+    expect(await dialog.findByText(/Verified root access version 3.0.1 and automatic startup/)).toBeVisible();
     await user.click(dialog.getByRole("button", { name: "Done" }));
     expect(screen.queryByRole("button", { name: "Update available" })).not.toBeInTheDocument();
     expect(upgrade.mock.calls.map(([, action]) => action)).toEqual(["start", "resume", "resume"]);
@@ -64,29 +64,33 @@ describe("Root access", () => {
       .mockRejectedValueOnce(new Error("Root status is unavailable."))
       .mockResolvedValueOnce(testRootReady);
     const user = await showOverview(service);
-    expect(await screen.findByRole("button", { name: "Root helper update available" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Root access update available" })).toBeVisible();
     expect(screen.getByText("3.0.9", { exact: true })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Refresh TV connection" }));
     await waitFor(() => expect(status).toHaveBeenCalledTimes(2));
-    expect(screen.queryByRole("button", { name: "Root helper update available" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Root access update available" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Overview" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Update available" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Refresh TV connection" }));
     expect(await screen.findByText(testRootReady.runtime_version!, { exact: true })).toBeVisible();
     expect(status).toHaveBeenCalledTimes(3);
-    expect(screen.queryByRole("button", { name: "Root helper update available" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Root access update available" })).not.toBeInTheDocument();
   });
 
   it("does not carry an Overview update offer to another TV", async () => {
     const service = testService();
     const status = vi.spyOn(service.rootAccess!, "status");
     const user = await showOverview(service);
-    expect(await screen.findByRole("button", { name: "Root helper update available" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Root access update available" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Back to TVs" }));
     await user.click(await screen.findByRole("button", { name: "Connect to Bedroom" }));
     await waitFor(() => expect(status).toHaveBeenLastCalledWith(bedroom.id, expect.any(AbortSignal)));
-    expect(screen.queryByRole("button", { name: "Root helper update available" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Root helper version")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Root access update available" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Root access version")).not.toBeInTheDocument();
+    expect(screen.getByText("Unverified", { exact: true })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Set up root access" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Check root status" }));
+    expect(await screen.findByRole("heading", { name: "Root access", level: 1 })).toBeVisible();
   });
 
   it("can reload saved update progress after a lost installation reply", async () => {
@@ -95,14 +99,14 @@ describe("Root access", () => {
     const status = vi.spyOn(service.rootAccess!, "status");
     const user = await showRoot(service);
     await user.click(await screen.findByRole("button", { name: "Update available" }));
-    const dialog = within(screen.getByRole("dialog", { name: "Update root helper" }));
+    const dialog = within(screen.getByRole("dialog", { name: "Update root access" }));
     await user.click(dialog.getByRole("checkbox"));
-    await user.click(dialog.getByRole("button", { name: "Update helper" }));
+    await user.click(dialog.getByRole("button", { name: "Install update" }));
     expect(await dialog.findByRole("alert")).toHaveTextContent("Update interrupted.");
     status.mockResolvedValue({ ...testRootReady, update_pending: true, root_available: false, setup_complete: false });
     await user.click(dialog.getByRole("button", { name: "Check saved progress" }));
     await user.click(await screen.findByRole("button", { name: "Continue update" }));
-    const resume = within(screen.getByRole("dialog", { name: "Update root helper" }));
+    const resume = within(screen.getByRole("dialog", { name: "Update root access" }));
     expect(resume.getByText("If the update was interrupted")).toBeVisible();
     expect(resume.getByRole("button", { name: "Resume update" })).toBeEnabled();
   });
@@ -111,7 +115,7 @@ describe("Root access", () => {
     const service = testService();
     const status = vi.spyOn(service.rootAccess!, "status");
     const user = await showRoot(service);
-    expect(await screen.findByRole("heading", { name: "Root access ready" })).toBeVisible();
+    expect(await screen.findByText(testRootOutdated.runtime_version!, { exact: true })).toBeVisible();
     expect(status).toHaveBeenCalledWith(livingRoom.id, expect.any(AbortSignal));
     status.mockResolvedValue({
       ...testRootReady,
@@ -125,7 +129,17 @@ describe("Root access", () => {
     await user.click(screen.getByRole("button", { name: "Refresh root status" }));
     expect(await screen.findByRole("heading", { name: "Could not verify root access" })).toBeVisible();
     expect(screen.getByText("Unverified")).toBeVisible();
-    expect(screen.queryByText("Root access ready")).not.toBeInTheDocument();
+    expect(screen.queryByText(testRootOutdated.runtime_version!, { exact: true })).not.toBeInTheDocument();
+  });
+
+  it("reveals the selected TV's recovery record and shows a file manager error", async () => {
+    const service = testService();
+    const reveal = vi.fn().mockRejectedValue(new Error("Could not show the recovery record in your file manager."));
+    service.rootAccess!.revealRecovery = reveal;
+    const user = await showRoot(service);
+    await user.click(await screen.findByRole("button", { name: "Show in folder" }));
+    expect(reveal).toHaveBeenCalledExactlyOnceWith(livingRoom.id);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not show the recovery record");
   });
 
   it("confirms, prepares signing, waits for an explicit demo restart and resumes the same setup", async () => {
@@ -133,27 +147,36 @@ describe("Root access", () => {
     const setup = vi.spyOn(service.rootAccess!, "setup");
     const certificates = vi.spyOn(service.samsung!, "prepareCertificates");
     const installLauncher = vi.spyOn(service, "installLauncher");
-    const user = await showRoot(service, bedroom);
+    vi.spyOn(service.rootAccess!, "status").mockResolvedValueOnce({
+      ...testRootNotConfigured,
+      root_absence_verified: true,
+    });
+    const user = await showOverview(service, bedroom);
+    await user.click(await screen.findByRole("button", { name: "Set up root access" }));
+    expect(screen.getByRole("heading", { name: "Root access", level: 1 })).toBeVisible();
+    expect(setup).not.toHaveBeenCalled();
     await user.click(await screen.findByRole("button", { name: "Set up root access" }));
     let wizard = within(screen.getByRole("dialog", { name: "Set up root access" }));
-    expect(wizard.getByRole("button", { name: "Install root helper" })).toBeDisabled();
+    expect(wizard.getByText("192.0.2.11", { exact: true })).toBeVisible();
+    expect(wizard.queryByText(bedroom.developer_host, { exact: true })).not.toBeInTheDocument();
+    expect(wizard.getByRole("button", { name: "Start setup" })).toBeDisabled();
     await user.click(wizard.getByRole("button", { name: "Close" }));
     expect(setup).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Set up root access" }));
     wizard = within(screen.getByRole("dialog", { name: "Set up root access" }));
     await user.click(wizard.getByRole("checkbox"));
-    await user.click(wizard.getByRole("button", { name: "Install root helper" }));
+    await user.click(wizard.getByRole("button", { name: "Start setup" }));
     const signing = within(screen.getByRole("dialog", { name: "Set up Bedroom" }));
-    expect(signing.getByText(/then install the root helper/)).toBeVisible();
+    expect(signing.getByText(/then set up root access/)).toBeVisible();
     await user.click(signing.getByRole("button", { name: "Sign in with Samsung" }));
     wizard = within(await screen.findByRole("dialog", { name: "Set up root access" }, { timeout: 5000 }));
     expect(wizard.getByText("Restart the TV to finish setup")).toBeVisible();
     expect(certificates).toHaveBeenCalledBefore(setup);
     await user.click(wizard.getByRole("button", { name: "Check after restart" }));
     expect(await wizard.findByText(/has not confirmed automatic root access/)).toBeVisible();
-    expect(screen.queryByText("Root access ready")).not.toBeInTheDocument();
+    expect(screen.queryByText("Installed version", { exact: true })).not.toBeInTheDocument();
     await user.click(wizard.getByRole("button", { name: "Close" }));
-    await user.click(screen.getByRole("button", { name: "Launcher" }));
+    await user.click(screen.getByRole("button", { name: "Install & update" }));
     await user.click(screen.getByRole("button", { name: "Root access" }));
     await user.click(await screen.findByRole("button", { name: "Continue setup" }));
     wizard = within(screen.getByRole("dialog", { name: "Set up root access" }));
@@ -161,10 +184,10 @@ describe("Root access", () => {
     await user.click(wizard.getByRole("button", { name: "Check after restart" }));
     expect(await wizard.findByText(/Root access and automatic startup are verified/)).toBeVisible();
     await user.click(wizard.getByRole("button", { name: "Done" }));
-    expect(screen.getByRole("heading", { name: "Root access ready" })).toBeVisible();
+    expect(screen.getByText(testRootReady.runtime_version!, { exact: true })).toBeVisible();
     expect(setup.mock.calls.map(([, action]) => action)).toEqual(["start", "verify", "verify"]);
     expect(certificates).toHaveBeenCalledExactlyOnceWith(bedroom.id);
-    await user.click(screen.getByRole("button", { name: "Launcher" }));
+    await user.click(screen.getByRole("button", { name: "Install & update" }));
     await user.click(screen.getByRole("button", { name: "Install 3.1.0" }));
     await waitFor(() => expect(installLauncher).toHaveBeenCalledOnce());
     expect(certificates).toHaveBeenCalledExactlyOnceWith(bedroom.id);
@@ -183,7 +206,7 @@ describe("Root access", () => {
     const user = await (page === "root" ? showRoot(service) : showOverview(service));
     await waitFor(() => expect(pending?.aborted).toBe(false));
     if (page === "root") expect(await screen.findByText("Checking root access…")).toBeInTheDocument();
-    const launcher = screen.getByRole("button", { name: "Launcher" });
+    const launcher = screen.getByRole("button", { name: "Install & update" });
     expect(launcher).toBeEnabled();
     await user.click(launcher);
     await waitFor(() => expect(pending?.aborted).toBe(true));
@@ -203,7 +226,7 @@ describe("Root access", () => {
     await user.click(await screen.findByRole("button", { name: "Set up root access" }));
     const wizard = within(screen.getByRole("dialog", { name: "Set up root access" }));
     await user.click(wizard.getByRole("checkbox"));
-    await user.click(wizard.getByRole("button", { name: "Install root helper" }));
+    await user.click(wizard.getByRole("button", { name: "Start setup" }));
     expect(await wizard.findByRole("alert")).toHaveTextContent("Setup was interrupted.");
     status.mockResolvedValue({ ...testRootNotConfigured, phase: "installed", recovery_saved: true });
     await user.click(wizard.getByRole("button", { name: "Check saved progress" }));

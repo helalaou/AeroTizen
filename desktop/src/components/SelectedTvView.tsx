@@ -1,8 +1,8 @@
-import { Button, Group, Paper, Text, Title } from "@mantine/core";
+import { Button, Group, Paper, Stack, Title } from "@mantine/core";
 import { CircleArrowUp } from "lucide-react";
 import type { ReactNode } from "react";
 import type { RootAccessStatus, SavedTv } from "../contracts";
-import { rootVersion, softwareRows } from "../tvDetails";
+import { rootStatus, rootVersion, softwareVersions } from "../tvDetails";
 import { launcherUpdate } from "../services/launcherVersions";
 import styles from "../styles.module.css";
 import { GithubReportButton } from "./GithubReportButton";
@@ -17,6 +17,39 @@ interface SelectedTvViewProps {
   onRootAccess(): void;
 }
 
+function OverviewRow({ label, value, action }: { label: string; value: ReactNode; action?: ReactNode }) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>
+        {action ? (
+          <Group gap="xs" className={styles.overviewActions}>
+            <span>{value}</span>
+            {action}
+          </Group>
+        ) : (
+          value
+        )}
+      </dd>
+    </div>
+  );
+}
+
+function UpdateButton({ onClick, label }: { onClick(): void; label?: string }) {
+  return (
+    <Button
+      size="xs"
+      variant="light"
+      color="#a13b0a"
+      leftSection={<CircleArrowUp size={15} aria-hidden="true" />}
+      aria-label={label}
+      onClick={onClick}
+    >
+      Update available
+    </Button>
+  );
+}
+
 export function SelectedTvView({
   profile,
   backendVersion,
@@ -25,61 +58,57 @@ export function SelectedTvView({
   onLauncher,
   onRootAccess,
 }: SelectedTvViewProps) {
-  const version = rootAccessStatus?.runtime_version ?? rootVersion(profile);
+  const rooted = rootStatus(profile, rootAccessStatus);
+  const helperVersion = rootAccessStatus?.runtime_version ?? rootVersion(profile);
+  const { tizen, launcher } = softwareVersions(profile);
   const update = launcherUpdate(profile.launcher_version, latestLauncher);
-  const versionRows: [string, string][] = version ? [["Root helper version", version]] : [];
-  const rows: [string, ReactNode][] = [
-    ["Model", profile.model],
-    ["Rooted", <RootStatusBadge profile={profile} />],
-    ...versionRows,
-    ...softwareRows(profile),
-    ["IP address", profile.host],
-    ["Last checked", new Date(profile.checked_at).toLocaleString()],
-  ];
+  let launcherAction: ReactNode;
+  if (profile.launcher_version === null) {
+    launcherAction = (
+      <Button size="xs" variant="light" onClick={onLauncher}>
+        Install AeroTizen
+      </Button>
+    );
+  } else if (update) {
+    launcherAction = <UpdateButton onClick={onLauncher} />;
+  }
+
   return (
-    <div className={styles.detailContent}>
-      <Title order={1}>Overview</Title>
-      <Group gap="xs" mt={8}>
-        <Text c="dimmed">{profile.name}</Text>
+    <Stack className={styles.detailContent} gap="lg">
+      <Group justify="space-between">
+        <Title order={1}>Overview</Title>
+        <GithubReportButton profile={profile} backendVersion={backendVersion} />
       </Group>
       <Paper withBorder radius="md" p="lg" className={styles.details}>
-        <Group justify="space-between">
-          <Title order={2} size="h3">
-            TV details
-          </Title>
-          <GithubReportButton profile={profile} backendVersion={backendVersion} />
-        </Group>
-        <dl className={styles.definitionList}>
-          {rows.map(([label, value]) => {
-            const rootUpdate = label === "Root helper version" && rootAccessStatus?.update_available;
-            const hasUpdate = rootUpdate || (label === "Launcher version" && update);
-            return (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>
-                  {hasUpdate ? (
-                    <Group gap="xs" className={styles.softwareVersion}>
-                      <span>{value}</span>
-                      <Button
-                        size="xs"
-                        variant="light"
-                        color="#a13b0a"
-                        leftSection={<CircleArrowUp size={15} aria-hidden="true" />}
-                        aria-label={rootUpdate ? "Root helper update available" : undefined}
-                        onClick={rootUpdate ? onRootAccess : onLauncher}
-                      >
-                        Update available
-                      </Button>
-                    </Group>
-                  ) : (
-                    value
-                  )}
-                </dd>
-              </div>
-            );
-          })}
+        <dl className={`${styles.definitionList} ${styles.overviewDetails}`}>
+          <OverviewRow label="Model" value={profile.model} />
+          <OverviewRow
+            label="Rooted"
+            value={<RootStatusBadge status={rooted} />}
+            action={
+              rooted !== "Yes" && (
+                <Button size="xs" variant={rooted === "No" ? "light" : "default"} onClick={onRootAccess}>
+                  {rooted === "No" ? "Set up root access" : "Check root status"}
+                </Button>
+              )
+            }
+          />
+          {helperVersion && (
+            <OverviewRow
+              label="Root access version"
+              value={helperVersion}
+              action={
+                rootAccessStatus?.update_available && (
+                  <UpdateButton label="Root access update available" onClick={onRootAccess} />
+                )
+              }
+            />
+          )}
+          <OverviewRow label="Tizen version" value={tizen} />
+          <OverviewRow label="AeroTizen version" value={launcher} action={launcherAction} />
+          <OverviewRow label="IP address" value={profile.host} />
         </dl>
       </Paper>
-    </div>
+    </Stack>
   );
 }

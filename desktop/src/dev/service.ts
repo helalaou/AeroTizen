@@ -15,6 +15,7 @@ import type { SimulatorStore } from "./store";
 import { loadPublishedReleases } from "./releaseCatalog";
 
 const SIMULATOR_ACCOUNT = { email: "developer@example.test" };
+const SIMULATOR_COMPUTER_IP = "192.0.2.10";
 function cancelled(): DOMException {
   return new DOMException("Simulator request cancelled.", "AbortError");
 }
@@ -73,12 +74,12 @@ export function createSimulatorService(store: SimulatorStore, loadReleases = loa
   }
   function rooted(id: string): SimulatedTv {
     const tv = known(id);
-    if (!tv.root.root_available) throw new Error("A paired Root helper is required.");
+    if (!tv.root.root_available) throw new Error("This action needs verified root access.");
     return tv;
   }
   function buttons(id: string) {
     const tv = rooted(id);
-    if (tv.buttons.status !== "ready") throw new Error("Update the Root helper to edit button mappings.");
+    if (tv.buttons.status !== "ready") throw new Error("Update root access to edit button mappings.");
     return tv.buttons;
   }
   function withProfile(tv: SimulatedTv, change: Partial<SavedTv>): SimulatedTv {
@@ -117,7 +118,10 @@ export function createSimulatorService(store: SimulatorStore, loadReleases = loa
         if (profileId && profileId !== tv.profile.id)
           throw new Error("This address belongs to a different TV. No changes were made.");
         return edit(tv.profile.id, (current) => ({
-          ...withProfile(current, { checked_at: new Date().toISOString() }),
+          ...withProfile(current, {
+            checked_at: new Date().toISOString(),
+            computer_ip: SIMULATOR_COMPUTER_IP,
+          }),
           saved: true,
         })).profile;
       }),
@@ -348,7 +352,7 @@ export function createSimulatorService(store: SimulatorStore, loadReleases = loa
               if (
                 (compareLauncherVersions(known(id).root.runtime_version ?? "0.0.0", SIMULATOR_HELPER_VERSION) ?? -1) < 0
               )
-                throw new Error("Update the Root helper to rename buttons.");
+                throw new Error("Update root access to rename buttons.");
               next = next.map((button) => (button.button === change.button ? { ...button, button: name } : button));
             } else next = [...next, originalButton(name)];
           }
@@ -357,7 +361,17 @@ export function createSimulatorService(store: SimulatorStore, loadReleases = loa
         }),
     },
     rootAccess: {
-      status: (id, signal) => request("rootStatus", () => known(id).root, signal),
+      revealRecovery: async () => "The simulator does not create local recovery files.",
+      status: (id, signal) =>
+        request(
+          "rootStatus",
+          () => {
+            const root = known(id).root;
+            const absent = !root.root_available && (root.phase === "not_configured" || root.phase === "removed");
+            return { ...root, root_absence_verified: absent };
+          },
+          signal,
+        ),
       setup: (id, action) =>
         request("rootSetup", () => {
           const tv = known(id);
@@ -402,10 +416,42 @@ export function createSimulatorService(store: SimulatorStore, loadReleases = loa
             return tv.root;
           return edit(id, (current) => ({ ...current, root: rootPreset("ready") })).root;
         }),
+      remove: (id, action) =>
+        request("rootRemove", () => {
+          const tv = known(id);
+          if (tv.root.phase === "removed") return tv.root;
+          if (action === "start") {
+            if (tv.root.phase !== "active" || !tv.root.root_available || tv.root.update_pending)
+              throw new Error("Root access must be ready before removal.");
+            return edit(id, (current) => ({
+              ...current,
+              removal_restarted: false,
+              root: {
+                ...rootPreset("none"),
+                phase: "removing",
+                removal_prepared: true,
+                recovery_saved: true,
+              },
+            })).root;
+          }
+          if (!tv.root.removal_prepared || !tv.removal_restarted)
+            throw new Error("Restart the simulated TV before finishing removal.");
+          return edit(id, (current) => ({
+            ...current,
+            removal_restarted: undefined,
+            root: {
+              ...rootPreset("none"),
+              phase: "removed",
+              recovery_saved: true,
+              root_absence_verified: true,
+            },
+          })).root;
+        }),
       simulateRestart: (id) =>
         request("restart", () => {
           edit(id, (tv) => ({
             ...tv,
+            ...(tv.root.phase === "removing" && { removal_restarted: true }),
             root:
               tv.root.phase === "waiting_boot" || tv.root.update_pending
                 ? {

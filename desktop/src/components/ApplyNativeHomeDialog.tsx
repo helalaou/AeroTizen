@@ -22,7 +22,7 @@ export function ApplyNativeHomeDialog({ tvName, hasBackup, onApply, onClose }: A
       onClose();
     } else {
       setApplying(false);
-      setError((message) => message ?? "Could not start Native Home setup. Try again.");
+      setError((message) => message ?? "Could not change Home and startup settings. Try again.");
     }
   }
 
@@ -30,12 +30,12 @@ export function ApplyNativeHomeDialog({ tvName, hasBackup, onApply, onClose }: A
     <Modal
       opened
       centered
-      title="Apply Native Home?"
+      title="Use AeroTizen for Home and startup?"
       onClose={onClose}
       withCloseButton={!applying}
       closeOnClickOutside={!applying}
       closeOnEscape={!applying}
-      closeButtonProps={{ "aria-label": "Close Native Home setup" }}
+      closeButtonProps={{ "aria-label": "Close Home setup" }}
     >
       <Stack gap="md" aria-busy={applying}>
         <Text size="sm">
@@ -56,7 +56,7 @@ export function ApplyNativeHomeDialog({ tvName, hasBackup, onApply, onClose }: A
             Cancel
           </Button>
           <Button loading={applying} onClick={() => void confirmApply()}>
-            Confirm apply
+            Confirm setup
           </Button>
         </Group>
       </Stack>

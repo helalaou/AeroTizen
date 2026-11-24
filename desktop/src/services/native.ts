@@ -41,8 +41,10 @@ async function readTv<Result>(
 export const nativeService: DesktopService = {
   rootAccess: {
     status: (id, signal) => readTv<RootAccessStatus>("root_access_status", id, signal),
+    revealRecovery: (id) => invoke<void>("reveal_root_recovery", { id }),
     setup: (id, action) => invoke<RootAccessStatus>("setup_root_access", { id, action, confirmed: true }),
     upgrade: (id, action) => invoke<RootAccessStatus>("upgrade_root_access", { id, action, confirmed: true }),
+    remove: (id, action) => invoke<RootAccessStatus>("remove_root_access", { id, action, confirmed: true }),
   },
   localApps: {
     choose: (id) => invoke<LocalAppPackage | null>("choose_local_app", { id }),

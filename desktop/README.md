@@ -11,12 +11,15 @@ and [Launcher](screenshots/launcher.png).
 
 ## Install or update the launcher
 
-1. Connect to your TV and open **Launcher**. **Update available** in Overview also opens this page.
-2. Install the latest release, or select **Choose another version** to pick a published stable release.
-   The change list below the install controls follows your selection.
+1. Connect to your TV and open **Install & update**. **Install AeroTizen** and
+   **Update available** in Overview also open this page.
+   The status shows whether AeroTizen is installed, has an update, or is up to date.
+2. Use the action at the top to install or update to the latest release. Select any published
+   stable version in **Release history** to review its notes and install that version.
+   The sparkles mark the latest release, and the monitor marks the version installed on the TV.
 3. Wait for the TV to report the selected version. Downgrades require confirmation and may fail on some TVs.
 
-Use **Refresh launcher releases** beside the page title to check for new releases without
+Use **Refresh releases** beside the page title to check for new releases without
 restarting the app. The current release stays visible while the check runs.
 
 If a first install needs signing certificates, the app guides you through Samsung
@@ -40,7 +43,7 @@ An ordinary Developer Mode connection leaves root unverified. If a refresh fails
 returns to the TV list and shows the connection error. This check does not attempt root setup
 or verify automatic root at boot.
 
-Choose **TV details → Report issue** to open a GitHub issue draft in your browser with the
+Choose **Report issue** in the Overview header to open a GitHub issue draft in your browser with the
 model, available software versions and diagnostic report filled in. Add what you observed
 and submit the issue on GitHub.
 It excludes TV names, network addresses, device IDs, credentials and raw command output.
@@ -49,14 +52,15 @@ For a full diagnostic ZIP, see
 
 Open **Apps** to search the TV's installed packages by name. A package can contain more
 than one app. The list shows them together and labels packages the CLI protects.
-Select packages and choose **Remove**. Review the apps and TV in the confirmation
+Select packages and choose **Remove selected**. Review the apps and TV in the confirmation
 before you remove them. If the TV refuses removal, the package shows **Delete on TV**.
 Check for **Delete** in **Apps → Settings** on the TV. Use **Refresh apps** to fetch the current list.
 
-See screenshots of [removal confirmation](screenshots/apps-confirm-removal.png) and
+See screenshots of the [installed apps list](screenshots/apps.png),
+[removal confirmation](screenshots/apps-confirm-removal.png) and
 [removal results](screenshots/apps-removal-results.png).
 
-In **Apps**, choose **Install app** to select a local Tizen `.wgt` file. Review the app,
+In **Apps**, choose **Install from file** to select a local Tizen `.wgt` file. Review the app,
 version and target TV before installing. Replacing an installed app requires confirmation;
 older versions can be incompatible with saved settings and updates need the original
 signing certificate. The app guides you through Samsung sign-in and certificate setup
@@ -68,24 +72,24 @@ Local widgets are limited to 256 MiB compressed and 512 MiB unpacked.
 See screenshots of [local app review](screenshots/local-app-install.png) and
 [replacement confirmation on mobile](screenshots/local-app-replace-mobile.png).
 
-Open **Home and startup** to see the AeroTizen routing mode. On a rooted TV with a
-compatible paired helper, the page also shows the current Home button assignment,
-startup apps and Smart Hub autostart. When an original backup exists, select
-**Backup & restore** to review its settings, then **Restore original settings** to
-apply them back to the selected TV after confirmation.
+Open **Home and startup** to see how AeroTizen opens. With a compatible version of
+root access, **Current settings** shows the Home button assignment,
+startup app and Smart Hub auto-start. Open **Advanced details** to see the saved
+Home setting and backup startup app. When an original backup exists, select
+**Restore original settings…** in the header to review it and confirm the restore.
 
-When AeroTizen routing is in Watcher mode, select **Apply Native Home** to switch the
-TV's Home app, startup apps and Smart Hub autostart to AeroTizen after confirmation.
-Apply first prepares the original backup, reusing a valid one for the selected TV; a
-first capture needs an updated paired helper and complete, unchanged Home and startup
-settings. Once applied, AeroTizen routing shows Native Home mode.
+In Watcher mode, AeroTizen reopens after Samsung Home. Select **Use AeroTizen for
+Home and startup** to configure the TV to open AeroTizen directly. The app prepares
+the original backup first and reuses any valid backup for this TV. A first backup
+needs an up-to-date version of root access and complete, unchanged Home and startup settings.
 
 See screenshots of [Home and startup](screenshots/home-and-startup.png),
 [backup and restore](screenshots/home-backup-status.png), and
-[Apply Native Home](screenshots/apply-native-home.png).
+[Home and startup setup](screenshots/apply-native-home.png).
 
 Open **Button mapping** to see the remote's detected app buttons and their saved
-assignments. A rooted TV needs a compatible paired helper. Changes are saved before
+assignments. Button mapping needs a compatible version of root access. If root access is
+unverified, select **Open Root access** to check the TV. Changes are saved before
 the TV finishes restarting button handling. After an app assignment or Disable change,
 the app checks for up to ten seconds and shows **Checking…**, then **Active** when confirmed.
 The list stays visible during these checks. **Not confirmed** means the change is saved
@@ -94,7 +98,7 @@ starting another action cancels the check. Restoring an original action needs no
 Open a button's action menu to choose an installed app, disable the button, or
 restore its original action.
 Choose **Rename** in the button's action menu to save a new name on the TV while keeping
-its physical button and assigned action. Renaming needs a helper that supports this action.
+its physical button and assigned action. Renaming needs a version of root access that supports it.
 Use **Learn a button** for an app button the TV did not detect. Enter a name
 and press the app button when the dialog prompts you. **Reset all buttons** in
 the page menu restores every original action and forgets manually learned buttons.
@@ -108,11 +112,13 @@ See screenshots of [Button mapping](screenshots/button-mapping.png),
 ## Root access
 
 Open **Root access** for a fresh status check, or use **Refresh root status** to check again.
-The page shows root availability, the live helper version, automatic startup verification
-and whether setup progress is saved on this computer. Missing pairing or an unreachable
-helper shows **Unverified**; a saved recovery record alone does not establish live access.
-Overview also checks live helper status. When an update is available, select
-**Update available** beside **Root helper version** to open Root access.
+When root access is ready, the card shows the installed version and whether the recovery
+record is saved on this computer. Select **Show in folder** to find a saved record in the
+desktop file manager. The app verifies automatic startup before it reports setup is complete.
+Root access shows **Unverified** if the app cannot confirm the pairing.
+Overview also checks live root status. Select **Check root status** beside **Unverified**
+to open Root access. When an update is available, select
+**Update available** beside **Root access version** to open Root access.
 
 Choose **Set up root access** and confirm the Developer Mode settings. The app prepares
 Samsung signing certificates when needed and saves its private
@@ -122,15 +128,22 @@ pending until the app verifies a new automatic boot and finishes its checks. Reo
 page and choose **Continue setup** to resume saved progress. Setup preserves Home, launcher
 startup and Art Mode settings.
 
-When the live helper is older than the bundled runtime, choose **Update available**. Review
+When a newer version of root access is available, choose **Update available**. Review
 the installed and target versions, confirm, then update using the original signing
 certificates. The update preserves pairing and saves progress. Restart the TV and choose
 **Check after restart**; completion requires the new runtime on a new automatic boot.
 Use **Continue update** after interruption. The dialog includes recovery steps if root
-access does not return. Root removal remains a CLI feature.
+access does not return.
+
+Choose **Remove root** to remove root access from a paired TV. The app asks
+for confirmation and saves progress before restart. Follow the Developer Mode instructions
+in the dialog, then select **Finish removal** to verify removal. Use
+**Continue removal** to resume saved progress. Remote button remaps and the Stremio feed
+stop working after removal. The launcher stays installed.
 
 See screenshots of [Root access](screenshots/root-access.png),
-[update confirmation](screenshots/root-update-review.png), and
+[update confirmation](screenshots/root-update-review.png),
+[removal confirmation](screenshots/root-remove-confirmation.png), and
 [restart verification on mobile](screenshots/root-restart-mobile.png).
 
 See [the CLI root guide](../docs/root-cli.md) for hardware validation and recovery details.
@@ -197,18 +210,18 @@ only Node and the desktop npm dependencies.
 - **TVs:** add a TV from a preset, then edit its name, address, model, Tizen and launcher
   versions, Root status, Home routing, backup status, power, discovery and certificates.
   **Save and reload preview** returns to the TV list with the new state. Starter TVs
-  include an older launcher/helper, a fresh TV and a Watcher TV without Root.
+  include a TV with updates available, a fresh TV and a Watcher TV without root access.
 - **Requests:** set a response delay to inspect loading states and cancellation, or
   fail one selected request with a custom message. Close the panel and use the app to
   trigger that request. The failure clears after it runs; cancelled reads leave it armed.
 - **Releases:** use live GitHub versions and release notes by default. In the native
   simulator, this reuses the app's read-only Rust release command; the browser preview
-  reads the public GitHub releases API. **Refresh launcher releases** fetches current
+  reads the public GitHub releases API. **Refresh releases** fetches current
   metadata. Launcher installation still changes only the simulated TV. For an offline
   or repeatable scenario, select Custom or explicitly load sample releases.
 - **Scenario JSON:** copy or edit the complete state, including app inventories,
   protected labels, packages that refuse removal, button mappings, original Home
-  settings, helper progress, local widget details and custom launcher releases/change notes.
+  settings, root setup progress, local widget details and custom launcher releases/change notes.
   The `releases` field is used only when `release_source` is `custom`. Existing scenarios
   without that field default to GitHub. GitHub errors show Retry; they do not silently
   switch to sample versions.

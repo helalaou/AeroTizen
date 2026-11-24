@@ -1,6 +1,12 @@
 import { useCallback, useState } from "react";
-import type { DesktopService, RootAccessStatus, RootSetupAction, RootUpdateAction } from "../contracts";
-import { profileAfterRootSetup } from "../services/rootAccess";
+import type {
+  DesktopService,
+  RootAccessStatus,
+  RootRemoveAction,
+  RootSetupAction,
+  RootUpdateAction,
+} from "../contracts";
+import { profileAfterRootChange } from "../services/rootAccess";
 import type { FeatureContext } from "./context";
 
 export function useRootAccess(service: DesktopService, context: FeatureContext) {
@@ -30,7 +36,7 @@ export function useRootAccess(service: DesktopService, context: FeatureContext) 
         result = status;
         if (!mounted.current) return;
         setRootStatus(status);
-        updateProfile(selected.id, (current) => profileAfterRootSetup(current, status));
+        updateProfile(selected.id, (current) => profileAfterRootChange(current, status));
       },
       "app",
       reportError,
@@ -46,9 +52,18 @@ export function useRootAccess(service: DesktopService, context: FeatureContext) 
     );
 
   const previewRestart = rootAccess?.simulateRestart;
+  const remove = rootAccess?.remove;
+  const removeRoot = remove
+    ? (action: RootRemoveAction, reportError: (message: string) => void) =>
+        changeRoot(
+          action === "start" ? "Preparing to remove root access…" : "Removing root access…",
+          () => remove(selected!.id, action),
+          reportError,
+        )
+    : undefined;
   const upgradeRoot = (action: RootUpdateAction, reportError: (message: string) => void) =>
     changeRoot(
-      action === "start" ? "Updating the root helper…" : "Checking the root helper update…",
+      action === "start" ? "Updating root access…" : "Checking the root access update…",
       () => rootAccess!.upgrade(selected!.id, action),
       reportError,
     );
@@ -75,6 +90,7 @@ export function useRootAccess(service: DesktopService, context: FeatureContext) 
     loadRootStatus,
     setupRoot,
     upgradeRoot,
+    removeRoot,
     simulateRootRestart,
     resetRootStatus: () => {
       setRootStatus(null);

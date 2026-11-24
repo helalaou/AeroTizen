@@ -30,8 +30,8 @@ describe("Launcher releases and button names", () => {
     const user = userEvent.setup();
     mount(service);
     await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
-    await user.click(screen.getByRole("button", { name: "Launcher" }));
-    expect(await screen.findByRole("heading", { name: "Changes in 3.1.0" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Install & update" }));
+    expect(await screen.findByRole("heading", { name: "Version 3.1.0" })).toBeVisible();
     let finish!: (value: typeof testReleases) => void;
     catalog.mockImplementationOnce(
       () =>
@@ -39,18 +39,20 @@ describe("Launcher releases and button names", () => {
           finish = resolve;
         }),
     );
-    await user.click(screen.getByRole("button", { name: "Refresh launcher releases" }));
-    expect(screen.getByRole("button", { name: "Refresh launcher releases" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Refresh releases" }));
+    expect(screen.getByRole("button", { name: "Refresh releases" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Update to 3.1.0" })).toBeDisabled();
-    expect(screen.getByRole("heading", { name: "Changes in 3.1.0" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Version 3.1.0" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Overview" })).toBeEnabled();
     finish([{ ...testReleases[0]!, version: "3.2.0" }, ...testReleases]);
     expect(await screen.findByRole("button", { name: "Update to 3.2.0" })).toBeEnabled();
-    expect(screen.getByRole("heading", { name: "Changes in 3.2.0" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Version 3.2.0" })).toBeVisible();
     expect(catalog).toHaveBeenCalledTimes(2);
     catalog.mockRejectedValueOnce(new Error("Offline"));
-    await user.click(screen.getByRole("button", { name: "Refresh launcher releases" }));
-    expect(await screen.findByText("Could not load launcher versions.")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Refresh releases" }));
+    expect(await screen.findByRole("heading", { name: "Couldn’t check for updates" })).toBeVisible();
+    expect(screen.getByText("On this TV: 3.0.0")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "AeroTizen is up to date" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByRole("button", { name: "Update to 3.1.0" })).toBeEnabled();
   });
@@ -59,7 +61,7 @@ describe("Launcher releases and button names", () => {
     const service = testService();
     const change = vi
       .spyOn(service.buttonActions!, "updateInventory")
-      .mockRejectedValueOnce(new Error("Update the TV helper to rename app buttons."));
+      .mockRejectedValueOnce(new Error("Update root access to rename app buttons."));
     const user = userEvent.setup();
     mount(service);
     await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
@@ -81,7 +83,7 @@ describe("Launcher releases and button names", () => {
     await user.clear(name);
     await user.type(name, "Streaming");
     await user.click(dialog.getByRole("button", { name: "Save name" }));
-    expect(await dialog.findByRole("alert")).toHaveTextContent("Update the TV helper");
+    expect(await dialog.findByRole("alert")).toHaveTextContent("Update root access");
     expect(name).toHaveValue("Streaming");
     await user.click(dialog.getByRole("button", { name: "Save name" }));
     const row = await screen.findByRole("row", { name: /Streaming/ });
@@ -106,24 +108,24 @@ describe("Home and startup", () => {
     await user.click(await screen.findByRole("button", { name: "Search for TVs" }));
     await user.click(await screen.findByRole("button", { name: "Connect to Office at 192.0.2.22" }));
     await user.click(await screen.findByRole("button", { name: "Home and startup" }));
-    const applyButton = screen.getByRole("button", { name: "Apply Native Home" });
+    const applyButton = screen.getByRole("button", { name: "Use AeroTizen for Home and startup" });
     await user.click(applyButton);
-    let review = within(screen.getByRole("dialog", { name: "Apply Native Home?" }));
+    let review = within(screen.getByRole("dialog", { name: "Use AeroTizen for Home and startup?" }));
     expect(review.getByText("Office")).toBeVisible();
     await user.click(review.getByRole("button", { name: "Cancel" }));
     expect(prepare).not.toHaveBeenCalled();
     expect(apply).not.toHaveBeenCalled();
-    expect(screen.getByText("Watcher")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "AeroTizen reopens after Samsung Home" })).toBeVisible();
 
     await user.click(applyButton);
-    review = within(screen.getByRole("dialog", { name: "Apply Native Home?" }));
-    await user.click(review.getByRole("button", { name: "Confirm apply" }));
-    expect(await screen.findByText("Native Home mode")).toBeVisible();
+    review = within(screen.getByRole("dialog", { name: "Use AeroTizen for Home and startup?" }));
+    await user.click(review.getByRole("button", { name: "Confirm setup" }));
+    expect(await screen.findByRole("heading", { name: "AeroTizen opens directly" })).toBeVisible();
     expect(prepare).toHaveBeenCalledExactlyOnceWith(office.id);
     expect(apply).toHaveBeenCalledExactlyOnceWith(office.id, testBackupSha256);
     expect(prepare).toHaveBeenCalledBefore(apply);
-    expect(screen.queryByRole("button", { name: "Apply Native Home" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Backup & restore" }));
+    expect(applyButton).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Restore original settings…" }));
     const backup = within(screen.getByRole("dialog", { name: "Original Home backup" }));
     expect(backup.getByText(/Original backup saved/)).toBeVisible();
     expect(await backup.findByRole("button", { name: "Restore original settings" })).toBeEnabled();
@@ -145,9 +147,9 @@ describe("Home and startup", () => {
     await user.click(await screen.findByRole("button", { name: "Search for TVs" }));
     await user.click(await screen.findByRole("button", { name: "Connect to Office at 192.0.2.22" }));
     await user.click(await screen.findByRole("button", { name: "Home and startup" }));
-    await user.click(screen.getByRole("button", { name: "Apply Native Home" }));
-    const review = within(screen.getByRole("dialog", { name: "Apply Native Home?" }));
-    await user.click(review.getByRole("button", { name: "Confirm apply" }));
+    await user.click(screen.getByRole("button", { name: "Use AeroTizen for Home and startup" }));
+    const review = within(screen.getByRole("dialog", { name: "Use AeroTizen for Home and startup?" }));
+    await user.click(review.getByRole("button", { name: "Confirm setup" }));
     expect(await review.findByRole("alert")).toHaveTextContent("Backup could not be saved.");
     expect(prepare).toHaveBeenCalledExactlyOnceWith(office.id);
     expect(apply).not.toHaveBeenCalled();
@@ -160,7 +162,7 @@ describe("Home and startup", () => {
     mount(service);
     await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
     await user.click(await screen.findByRole("button", { name: "Home and startup" }));
-    await user.click(screen.getByRole("button", { name: "Backup & restore" }));
+    await user.click(screen.getByRole("button", { name: "Restore original settings…" }));
     const backup = within(screen.getByRole("dialog", { name: "Original Home backup" }));
     await user.click(await backup.findByRole("button", { name: "Restore original settings" }));
     const review = within(screen.getByRole("dialog", { name: "Restore original settings?" }));
@@ -171,7 +173,7 @@ describe("Home and startup", () => {
     expect(restore).not.toHaveBeenCalled();
     await user.click(review.getByRole("button", { name: "Cancel" }));
     expect(restore).not.toHaveBeenCalled();
-    expect(screen.getByText("Native Home mode")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "AeroTizen opens directly" })).toBeVisible();
     await user.click(await backup.findByRole("button", { name: "Restore original settings" }));
     await user.click(review.getByRole("button", { name: "Confirm restore" }));
     expect(await review.findByRole("alert")).toHaveTextContent("TV disconnected.");
@@ -184,8 +186,9 @@ describe("Home and startup", () => {
       livingRoom.home_backup?.status === "saved" ? livingRoom.home_backup.captured_at : undefined,
     );
     await user.click(backup.getByRole("button", { name: "Done" }));
-    expect(screen.getByText("Watcher")).toBeVisible();
-    expect(within(screen.getByRole("region", { name: "Home button" })).getAllByText("Samsung Home")).toHaveLength(2);
+    expect(screen.getByRole("heading", { name: "AeroTizen reopens after Samsung Home" })).toBeVisible();
+    const current = within(screen.getByRole("region", { name: "Current settings" }));
+    expect(current.getByText("Home button").parentElement).toHaveTextContent("Samsung Home");
   });
 
   it("offers no restore action when there is no backup", async () => {
@@ -193,10 +196,8 @@ describe("Home and startup", () => {
     mount();
     await user.click(await screen.findByRole("button", { name: "Connect to Bedroom" }));
     await user.click(await screen.findByRole("button", { name: "Home and startup" }));
-    await user.click(screen.getByRole("button", { name: "Backup status" }));
-    const backup = within(screen.getByRole("dialog", { name: "Original Home backup" }));
-    expect(backup.getByText("No original Home backup found on this computer.")).toBeVisible();
-    expect(backup.queryByRole("button", { name: "Restore original settings" })).not.toBeInTheDocument();
+    expect(screen.getByText("No original Home backup found on this computer.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /Restore original settings/ })).not.toBeInTheDocument();
   });
 });
 
@@ -213,8 +214,22 @@ describe("TV selection", () => {
     expect(nav.getByRole("button", { name: "Button mapping" })).toBeVisible();
     expect(nav.getByRole("button", { name: "Root access" })).toBeVisible();
     expect(nav.getByRole("button", { name: "Overview" })).toHaveAttribute("aria-current", "page");
-    await user.click(nav.getByRole("button", { name: "Launcher" }));
-    expect(screen.getByRole("heading", { name: "Launcher" })).toBeVisible();
+    await user.click(nav.getByRole("button", { name: "Install & update" }));
+    expect(screen.getByRole("heading", { name: "Install & update" })).toBeVisible();
+  });
+
+  it("opens Root access when button mapping needs verified root", async () => {
+    const service = testService();
+    vi.spyOn(service, "listButtons").mockResolvedValue({ status: "pairing_required" });
+    const setup = vi.spyOn(service.rootAccess!, "setup");
+    const user = userEvent.setup();
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Bedroom" }));
+    await user.click(screen.getByRole("button", { name: "Button mapping" }));
+    expect(await screen.findByRole("heading", { name: "Root access required" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Open Root access" }));
+    expect(screen.getByRole("heading", { name: "Root access", level: 1 })).toBeVisible();
+    expect(setup).not.toHaveBeenCalled();
   });
 
   it("cancels the button read when leaving the page and reloads current mappings on return", async () => {
@@ -232,8 +247,8 @@ describe("TV selection", () => {
     const view = within(nav).getByRole("button", { name: "Button mapping" });
     await user.click(view);
     expect(await screen.findByRole("status", { name: "Loading button mappings" })).toBeVisible();
-    await user.click(within(nav).getByRole("button", { name: "Launcher" }));
-    expect(screen.getByRole("heading", { name: "Launcher" })).toBeVisible();
+    await user.click(within(nav).getByRole("button", { name: "Install & update" }));
+    expect(screen.getByRole("heading", { name: "Install & update" })).toBeVisible();
     expect(listButtons.mock.calls.at(0)?.[1].aborted).toBe(true);
     listButtons.mockResolvedValueOnce(testButtonMappings);
     await user.click(view);
@@ -269,7 +284,7 @@ describe("TV selection", () => {
     expect(await row.findByText("Checking…")).toBeVisible();
     expect(screen.queryByText(/Change saved\. Checking/)).not.toBeInTheDocument();
     expect(screen.queryByRole("status", { name: "Loading button mappings" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Launcher" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Install & update" })).toBeEnabled();
     expect(await row.findByText("Active", {}, { timeout: 4000 })).toBeVisible();
     expect(save).toHaveBeenCalledTimes(2);
     expect(save).toHaveBeenLastCalledWith(livingRoom.id, { button: "Netflix", mode: "app", app_id: "test.YouTube" });
@@ -352,13 +367,13 @@ describe("TV selection", () => {
     const refreshApps = () => screen.getByRole("button", { name: "Refresh apps" });
     expect(refreshApps()).toBeDisabled();
     expect(listApps).toHaveBeenCalledTimes(1);
-    await user.click(nav.getByRole("button", { name: "Launcher" }));
-    expect(screen.getByRole("heading", { name: "Launcher" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Choose another version" })).toBeEnabled();
+    await user.click(nav.getByRole("button", { name: "Install & update" }));
+    expect(screen.getByRole("heading", { name: "Install & update" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "3.1.0, Latest release" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Update to 3.1.0" })).toBeEnabled();
     expect(listApps.mock.calls.at(0)?.[1].aborted).toBe(true);
     await user.click(nav.getByRole("button", { name: "Apps" }));
-    expect(screen.getByRole("button", { name: "Remove" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Remove selected" })).toBeDisabled();
     expect(listApps).toHaveBeenCalledTimes(1);
     listApps.mockResolvedValueOnce(testPackages.slice(0, 1));
     finishLoad();
@@ -487,7 +502,7 @@ describe("Samsung setup", () => {
     vi.spyOn(samsung, "account").mockResolvedValue({ email: "demo@example.com" });
     mount(service);
     await user.click(await screen.findByRole("button", { name: "Connect to Bedroom" }));
-    await user.click(await screen.findByRole("button", { name: "Launcher" }));
+    await user.click(await screen.findByRole("button", { name: "Install & update" }));
     await user.click(screen.getByRole("button", { name: "Install 3.1.0" }));
     const dialog = within(screen.getByRole("dialog", { name: "Set up Bedroom" }));
     await user.click(dialog.getByRole("button", { name: "Continue" }));

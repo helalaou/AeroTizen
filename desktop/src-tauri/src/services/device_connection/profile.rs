@@ -6,15 +6,18 @@ use regex::Regex;
 use serde_json::Value;
 use std::{
     collections::HashMap,
+    net::{Ipv4Addr, SocketAddr},
     path::Path,
     sync::OnceLock,
     time::{Duration, SystemTime},
 };
+use tokio::net::UdpSocket;
 use tokio::time::timeout;
 
 const PROFILE_TIMEOUT: Duration = Duration::from_secs(120);
 const CAPABILITY_TIMEOUT: Duration = Duration::from_secs(5);
 const WATCHER_TIMEOUT: Duration = Duration::from_secs(2);
+const ROUTE_LOOKUP_PORT: u16 = 9;
 const ROUTING_PROTOCOL: u64 = 1;
 const TEXT_CHARACTERS: usize = 256;
 const ARCHITECTURES: [&str; 9] = [
@@ -26,6 +29,18 @@ pub(super) const CERTIFICATE_FILES: [&str; 4] = [
     "password.txt",
     "device-profile.xml",
 ];
+
+async fn computer_ip_for_tv(host: &str) -> Option<Ipv4Addr> {
+    let tv_ip: Ipv4Addr = host.parse().ok()?;
+    // A UDP connect selects the local interface without sending a packet.
+    let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).await.ok()?;
+    socket.connect((tv_ip, ROUTE_LOOKUP_PORT)).await.ok()?;
+    let SocketAddr::V4(local) = socket.local_addr().ok()? else {
+        return None;
+    };
+    let address = *local.ip();
+    (!address.is_loopback() && !address.is_unspecified()).then_some(address)
+}
 
 fn text(value: Option<&Value>, fallback: &str) -> String {
     super::super::text::display_text(value, TEXT_CHARACTERS).unwrap_or_else(|| fallback.into())
@@ -261,6 +276,7 @@ impl TvConnection {
             .into(),
             developer_mode: text(info.get("developerMode"), "Unknown"),
             developer_host: text(info.get("developerIP"), "Unknown"),
+            computer_ip: computer_ip_for_tv(host).await,
             checked_at: chrono::DateTime::<chrono::Utc>::from(SystemTime::now())
                 .to_rfc3339_opts(chrono::SecondsFormat::Micros, false),
             technical_details,

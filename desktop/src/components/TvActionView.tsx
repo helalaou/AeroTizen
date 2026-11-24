@@ -1,6 +1,6 @@
-import { Accordion, Button, Group, Paper, SimpleGrid, Stack, Text, Title } from "@mantine/core";
+import { Accordion, Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
 import { useState } from "react";
-import type { DesktopService, HomeBackup, HomeRoutingMode, SavedTv } from "../contracts";
+import type { DesktopService, HomeBackup, HomeRoutingMode, NativeHomeSettings, SavedTv } from "../contracts";
 import { canApplyNativeHome } from "../contracts";
 import {
   autostartLabel,
@@ -28,11 +28,11 @@ const PAGE_TITLES: Record<ActionPage, string> = {
   diagnostics: "Diagnostics",
 };
 
-const HOME_ROUTING_LABELS: Record<HomeRoutingMode, string> = {
-  watcher: "Watcher",
-  native: "Native Home mode",
-  hold: "On hold",
-  blocked: "Blocked",
+const HOME_STATUS: Record<HomeRoutingMode, string> = {
+  watcher: "AeroTizen reopens after Samsung Home",
+  native: "AeroTizen opens directly",
+  hold: "AeroTizen Home is on hold",
+  blocked: "AeroTizen Home is blocked",
 };
 
 function originalBackupLabel(backup: HomeBackup | undefined): string {
@@ -40,6 +40,45 @@ function originalBackupLabel(backup: HomeBackup | undefined): string {
   if (backup?.status === "missing") return "No original Home backup found on this computer.";
   if (backup?.status === "unreadable") return "The original Home backup could not be verified.";
   return "Refresh the TV connection to check for an original Home backup.";
+}
+
+function HomeSettingRows({ rows }: { rows: [string, string][] }) {
+  return (
+    <dl className={styles.definitionList}>
+      {rows.map(([label, value]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function CurrentHomeSettings({ home }: { home?: NativeHomeSettings }) {
+  return (
+    <Paper component="section" aria-labelledby="current-home-settings" withBorder p="lg">
+      <Title id="current-home-settings" order={2} size="h3">
+        Current settings
+      </Title>
+      <HomeSettingRows
+        rows={[
+          ["Home button", homeAppLabel(home?.home_button_app ?? null)],
+          ["At startup", homeAppLabel(home?.startup_app ?? null)],
+          ["Smart Hub auto-start", autostartLabel(home?.smart_hub_autostart ?? null)],
+        ]}
+      />
+      <details className={styles.homeAdvanced}>
+        <summary>Advanced details</summary>
+        <HomeSettingRows
+          rows={[
+            ["Saved Home setting", homeAppLabel(home?.home_app ?? null)],
+            ["Backup startup app", homeAppLabel(home?.startup_backup_app ?? null)],
+          ]}
+        />
+      </details>
+    </Paper>
+  );
 }
 
 interface TvActionViewProps {
@@ -64,72 +103,46 @@ export function TvActionView({
   const version = rootVersion(profile);
   const originalBackup = originalBackupLabel(profile.home_backup);
   const backupDate = profile.home_backup?.status === "saved" ? profile.home_backup.captured_at : undefined;
-  const home = profile.native_home_settings;
-  const nativeSettings = [
-    {
-      id: "home-button",
-      title: "Home button",
-      rows: [
-        ["Current assignment", homeAppLabel(home?.home_button_app ?? null)],
-        ["Saved Home setting", homeAppLabel(home?.home_app ?? null)],
-      ],
-    },
-    {
-      id: "startup",
-      title: "Startup",
-      rows: [
-        ["Startup app", homeAppLabel(home?.startup_app ?? null)],
-        ["Backup startup app", homeAppLabel(home?.startup_backup_app ?? null)],
-        ["Smart Hub autostart", autostartLabel(home?.smart_hub_autostart ?? null)],
-      ],
-    },
-  ];
+  const canReviewBackup = Boolean(backupDate && readHomeBackup);
+  const canSetUpHome = Boolean(onApplyNativeHome && canApplyNativeHome(profile));
+  const homeStatus = profile.home_routing_mode ? HOME_STATUS[profile.home_routing_mode] : "Home mode is unavailable";
+  let backupNotice = canReviewBackup ? null : originalBackup;
+  if (canSetUpHome && !backupDate) backupNotice = "Your original settings are saved before setup.";
+
   return (
     <div className={styles.detailContent}>
       <Stack gap="lg">
         <Group justify="space-between" gap="sm">
           <Title order={1}>{PAGE_TITLES[page]}</Title>
-          {page === "home" && (
+          {page === "home" && canReviewBackup && (
             <Button variant="default" onClick={() => setShowBackup(true)}>
-              {backupDate && readHomeBackup ? "Backup & restore" : "Backup status"}
+              {onRestoreBackup ? "Restore original settings…" : "View original settings"}
             </Button>
           )}
         </Group>
         {page === "home" && (
           <Stack gap="md">
-            <Paper component="section" aria-labelledby="aerotizen-routing" withBorder p="lg">
+            <Paper component="section" aria-labelledby="home-mode" withBorder p="lg">
               <Group justify="space-between" gap="sm">
-                <Stack gap="xs">
-                  <Title id="aerotizen-routing" order={2} size="h3">
-                    AeroTizen routing
+                <Stack gap="xs" aria-live="polite">
+                  <Title id="home-mode" order={2} size="h3">
+                    {profile.launcher_version === null ? "AeroTizen is not installed" : homeStatus}
                   </Title>
-                  <Text size="sm" role="status">
-                    {profile.home_routing_mode ? HOME_ROUTING_LABELS[profile.home_routing_mode] : "Unavailable"}
-                  </Text>
+                  {backupNotice && (
+                    <Text size="sm" c="dimmed">
+                      {backupNotice}
+                    </Text>
+                  )}
                 </Stack>
-                {onApplyNativeHome && canApplyNativeHome(profile) && (
-                  <Button onClick={() => setShowApply(true)}>Apply Native Home</Button>
-                )}
+                {canSetUpHome && <Button onClick={() => setShowApply(true)}>Use AeroTizen for Home and startup</Button>}
               </Group>
             </Paper>
-            {rootStatus(profile) === "Yes" && (
-              <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
-                {nativeSettings.map(({ id, title, rows }) => (
-                  <Paper key={id} component="section" aria-labelledby={id} withBorder p="lg">
-                    <Title id={id} order={2} size="h3">
-                      {title}
-                    </Title>
-                    <dl className={styles.definitionList}>
-                      {rows.map(([label, value]) => (
-                        <div key={label}>
-                          <dt>{label}</dt>
-                          <dd>{value}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </Paper>
-                ))}
-              </SimpleGrid>
+            {rootStatus(profile) === "Yes" ? (
+              <CurrentHomeSettings home={profile.native_home_settings} />
+            ) : (
+              <Text size="sm" c="dimmed">
+                Verify root access to see the TV’s current Home button and startup settings.
+              </Text>
             )}
             {showApply && onApplyNativeHome && (
               <ApplyNativeHomeDialog
@@ -139,7 +152,7 @@ export function TvActionView({
                 onClose={() => setShowApply(false)}
               />
             )}
-            {showBackup && (
+            {showBackup && canReviewBackup && (
               <HomeBackupDialog
                 key={backupDate}
                 tvId={profile.id}
@@ -169,10 +182,10 @@ export function TvActionView({
               <Title order={2} size="h3">
                 Rooted
               </Title>
-              <RootStatusBadge profile={profile} />
+              <RootStatusBadge status={rootStatus(profile)} />
               {version && (
                 <Text size="sm" c="dimmed">
-                  Root helper version: {version}
+                  Root access version: {version}
                 </Text>
               )}
             </Stack>

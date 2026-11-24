@@ -1,4 +1,4 @@
-import type { SavedTv } from "./contracts";
+import type { RootAccessStatus, SavedTv } from "./contracts";
 
 const UNAVAILABLE = "Unavailable";
 const GITHUB_ISSUE_URL = "https://github.com/helalaou/AeroTizen/issues/new";
@@ -41,8 +41,9 @@ export function developerModeLabel(value: string): string {
   return UNAVAILABLE;
 }
 
-export function rootStatus(profile: SavedTv): "Yes" | "No" | "Unverified" {
-  return profile.transport === "paired_root" ? "Yes" : "Unverified";
+export function rootStatus(profile: SavedTv | null, status?: RootAccessStatus | null): "Yes" | "No" | "Unverified" {
+  if (status?.root_available || profile?.transport === "paired_root") return "Yes";
+  return status?.root_absence_verified ? "No" : "Unverified";
 }
 
 export function rootVersion(profile: SavedTv): string | null {
@@ -50,19 +51,11 @@ export function rootVersion(profile: SavedTv): string | null {
   return version === UNAVAILABLE ? null : version;
 }
 
-function softwareVersions(profile: SavedTv) {
+export function softwareVersions(profile: SavedTv) {
   return {
     tizen: matches(profile.technical_details?.tizen_version, VERSION),
     launcher: profile.launcher_version === null ? "Not installed" : matches(profile.launcher_version, VERSION),
   };
-}
-
-export function softwareRows(profile: SavedTv): [string, string][] {
-  const { tizen, launcher } = softwareVersions(profile);
-  return [
-    ["Tizen version", tizen],
-    ["Launcher version", launcher],
-  ];
 }
 
 export function platformRows(profile: SavedTv): [string, string][] {
@@ -80,16 +73,18 @@ function modelCode(profile: SavedTv): string {
 
 export function githubReport(profile: SavedTv, backendVersion?: string): string {
   const version = rootVersion(profile);
+  const { tizen, launcher } = softwareVersions(profile);
   const rows: [string, string][] = [
     ["TV model", modelCode(profile)],
     ["Connection method", transportLabel(profile.transport)],
     ["Developer Mode", developerModeLabel(profile.developer_mode)],
     ["Rooted", rootStatus(profile)],
-    ...softwareRows(profile),
+    ["Tizen version", tizen],
+    ["Launcher version", launcher],
     ...platformRows(profile),
     ["CLI backend version", matches(backendVersion, VERSION)],
   ];
-  if (version) rows.push(["Root helper version", version]);
+  if (version) rows.push(["Root access version", version]);
   const lines = ["### AeroTizen TV details", ""];
   return [...lines, ...rows.map(([label, value]) => `- ${label}: ${value}`), ""].join("\n");
 }

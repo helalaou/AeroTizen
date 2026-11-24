@@ -49,21 +49,21 @@ test("reconnects from the saved TV menu and refreshes from the sidebar", async (
   const nav = page.getByRole("navigation", { name: "TV actions" });
   await expect(nav.getByRole("button")).toHaveText([
     "Overview",
-    "Launcher",
+    "Install & update",
     "Apps",
     "Home and startup",
-    "Button mapping",
     "Root access",
+    "Button mapping",
   ]);
-  await nav.getByRole("button", { name: "Launcher" }).click();
-  await page.getByRole("button", { name: "Choose another version" }).click();
-  const version = page.getByRole("combobox", { name: "Launcher version" });
-  await version.selectOption("2.7.0");
+  await nav.getByRole("button", { name: "Install & update" }).click();
+  const version = page.getByRole("button", { name: "2.7.0", exact: true });
+  await version.click();
   if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
   const refresh = page.getByRole("button", { name: "Refresh TV connection" });
   await refresh.click();
   await expect(refresh).toBeEnabled();
-  await expect(version).toHaveValue("2.7.0");
+  await expect(version).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("heading", { name: "Version 2.7.0", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Back to TVs" }).click();
   await expect(page.getByRole("heading", { name: "Your TVs" })).toBeVisible();
   await expect(page.locator("vite-error-overlay")).toHaveCount(0);
@@ -101,7 +101,7 @@ test("shows root access and opens a pre-filled GitHub draft without private fiel
   await page.goto("/");
   await page.getByRole("button", { name: "Connect to Living room", exact: true }).click();
   await expect(page.getByText("Yes", { exact: true })).toBeVisible();
-  await expect(page.getByText("Root helper version", { exact: true }).locator("..")).toContainText(
+  await expect(page.getByText("Root access version", { exact: true }).locator("..")).toContainText(
     testRootOutdated.runtime_version!,
   );
   const [draft] = await Promise.all([
@@ -114,7 +114,7 @@ test("shows root access and opens a pre-filled GitHub draft without private fiel
   expect(url.searchParams.get("model")).toBe("QE65LS03DAUXXU");
   const report = url.searchParams.get("diagnostics");
   expect(report).toContain("Rooted: Yes");
-  expect(report).toContain(`Root helper version: ${testRootOutdated.runtime_version}`);
+  expect(report).toContain(`Root access version: ${testRootOutdated.runtime_version}`);
   expect(url.searchParams.get("versions")).toBe("Launcher: 3.0.0, CLI: 3.0.1, Tizen: 9.0.0");
   expect(report).not.toMatch(/192\.0\.2\.|Living room|Source:/);
   await draft.close();

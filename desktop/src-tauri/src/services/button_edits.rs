@@ -53,7 +53,7 @@ fn validate(change: &ButtonChange) -> AppResult<()> {
 fn prepare(change: &ButtonChange, capabilities: &Value) -> AppResult<ButtonEdit> {
     let update = |message| AppError::new("helper_update_required", message);
     if capabilities["buttons_protocol"].as_u64() != Some(BUTTON_PROTOCOL_VERSION) {
-        return Err(update("The TV helper needs an update for app buttons."));
+        return Err(update("Update root access to change app buttons."));
     }
     let label = |button: &str| -> AppResult<String> {
         if truthy(&capabilities["buttons_friendly_names"]) {
@@ -69,7 +69,7 @@ fn prepare(change: &ButtonChange, capabilities: &Value) -> AppResult<ButtonEdit>
                 .bytes()
                 .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
         {
-            return Err(update("Update the TV helper to use this button name."));
+            return Err(update("Update root access to use this button name."));
         }
         Ok(legacy)
     };
@@ -90,7 +90,7 @@ fn prepare(change: &ButtonChange, capabilities: &Value) -> AppResult<ButtonEdit>
         ButtonChange::Inventory(ButtonInventoryChange::Reset {}) => ButtonEdit::Reset,
         ButtonChange::Inventory(ButtonInventoryChange::Rename { button, new_name }) => {
             if capabilities["buttons_rename"] != true {
-                return Err(update("Update the TV helper to rename app buttons."));
+                return Err(update("Update root access to rename app buttons."));
             }
             ButtonEdit::Rename {
                 button: label(button)?,
@@ -203,7 +203,7 @@ impl ButtonEdits {
         let address = root_pairing::address(host, expected)?;
         let before = root_pairing::load(&self.directory, host, expected).await?;
         let receipt = before.as_ref().filter(|receipt| receipt.phase == RootPhase::Active).ok_or_else(|| AppError::new(
-            "pairing_required", "Complete Root access setup and verify the paired TV helper before changing buttons."))?;
+            "pairing_required", "Complete root access setup and verify the connection before changing buttons."))?;
         let _ownership = tv_session::acquire(&self.directory, host).await?;
         let locked = root_pairing::load(&self.directory, host, expected).await?;
         root_pairing::unchanged(before.as_ref(), locked.as_ref())?;

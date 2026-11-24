@@ -12,6 +12,7 @@ export interface SavedTv extends TvCandidate {
   transport: "developer" | "paired_root";
   developer_mode: string;
   developer_host: string;
+  computer_ip?: string;
   checked_at: string;
   technical_details?: TechnicalDetails;
   home_backup?: HomeBackup;
@@ -95,11 +96,14 @@ export interface RootAccessStatus {
   phase:
     "not_configured" | "prepared" | "installed" | "root_requested" | "waiting_boot" | "active" | "removing" | "removed";
   root_available: boolean;
+  /** True when the service can confirm the TV has no root access. */
+  root_absence_verified?: boolean;
   setup_complete: boolean;
   runtime_version: string | null;
   target_runtime_version: string;
   update_available: boolean;
   update_pending: boolean;
+  removal_prepared?: boolean;
   automatic_startup: boolean | null;
   automatic_boot_verified: boolean;
   bootstrap_completed: boolean;
@@ -109,6 +113,7 @@ export interface RootAccessStatus {
 
 export type RootSetupAction = "start" | "verify";
 export type RootUpdateAction = "start" | "resume";
+export type RootRemoveAction = "start" | "finish";
 export type NamedAppRemovalOutcome = AppRemovalOutcome & { name: string };
 
 export interface TvButtonMapping {
@@ -147,8 +152,10 @@ export interface DesktopService {
   samsung?: SamsungService;
   rootAccess?: {
     status(id: string, signal: AbortSignal): Promise<RootAccessStatus>;
+    revealRecovery?(id: string): Promise<void | string>;
     setup(id: string, action: RootSetupAction): Promise<RootAccessStatus>;
     upgrade(id: string, action: RootUpdateAction): Promise<RootAccessStatus>;
+    remove?(id: string, action: RootRemoveAction): Promise<RootAccessStatus>;
     /** Development fixtures only; never supplied by the native adapter. */
     simulateRestart?(id: string): Promise<void>;
   };

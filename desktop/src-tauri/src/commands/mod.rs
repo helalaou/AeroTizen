@@ -20,6 +20,8 @@ pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         buttons::list_tv_buttons,
         buttons::list_tv_button_apps,
         root::root_access_status,
+        root::reveal_root_recovery,
+        root::remove_root_access,
         root::setup_root_access,
         root::upgrade_root_access,
         buttons::change_tv_button,

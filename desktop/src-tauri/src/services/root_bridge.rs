@@ -106,6 +106,7 @@ enum Request<'a> {
     Read(ReadRequest),
     ButtonEdit(&'a ButtonEdit),
     Sdb,
+    Remove,
 }
 
 impl Request<'_> {
@@ -115,6 +116,11 @@ impl Request<'_> {
             Self::Sdb => {
                 let mut value = ReadRequest::Status.payload(pairing, nonce);
                 value["operation"] = json!("sdb");
+                value
+            }
+            Self::Remove => {
+                let mut value = ReadRequest::Status.payload(pairing, nonce);
+                value["operation"] = json!("remove");
                 value
             }
             Self::ButtonEdit(edit) => {
@@ -207,6 +213,16 @@ pub(super) async fn open_sdb(
 
 pub(super) async fn status(host: Ipv4Addr, pairing: &Pairing) -> Result<Value, BridgeError> {
     timed_status(host, pairing, REQUEST_TIMEOUT).await
+}
+
+pub(super) async fn prepare_removal(host: Ipv4Addr, pairing: &Pairing) -> Result<(), BridgeError> {
+    let reply = tokio::time::timeout(REQUEST_TIMEOUT, request(host, pairing, Request::Remove))
+        .await
+        .map_err(|_| BridgeError::Timeout)??;
+    if reply["prepared_for_removal"] != true {
+        return Err(BridgeError::Reply);
+    }
+    Ok(())
 }
 
 pub(super) async fn read(

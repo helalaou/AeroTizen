@@ -5,11 +5,11 @@ import styles from "../styles.module.css";
 
 const PAGES = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
-  { key: "launcher", label: "Launcher", icon: Package },
+  { key: "launcher", label: "Install & update", icon: Package },
   { key: "apps", label: "Apps", icon: LayoutGrid },
   { key: "home", label: "Home and startup", icon: House },
-  { key: "buttons", label: "Button mapping", icon: Gamepad2 },
   { key: "root", label: "Root access", icon: ShieldCheck },
+  { key: "buttons", label: "Button mapping", icon: Gamepad2 },
 ] as const;
 
 interface TvSidebarProps {

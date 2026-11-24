@@ -58,7 +58,8 @@ export const OPERATIONS = {
   restoreHomeBackup: "Restore original Home settings",
   rootStatus: "Read Root status",
   rootSetup: "Set up Root",
-  rootUpdate: "Update Root helper",
+  rootUpdate: "Update root access",
+  rootRemove: "Remove root access",
   restart: "Simulate TV restart",
   account: "Read Samsung account",
   signIn: "Samsung sign-in",
@@ -74,6 +75,7 @@ export interface SimulatedTv {
   online: boolean;
   discoverable: boolean;
   root: RootAccessStatus;
+  removal_restarted?: boolean;
   apps: TvAppPackage[];
   buttons: ButtonMappings;
   original_home: HomeBackupSettings;

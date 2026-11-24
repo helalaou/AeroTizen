@@ -14,7 +14,7 @@ async function openInstall(service = testService(), tv = livingRoom) {
   );
   await user.click(await screen.findByRole("button", { name: `Connect to ${tv.name}` }));
   await user.click(screen.getByRole("button", { name: "Apps" }));
-  await user.click(screen.getByRole("button", { name: "Install app" }));
+  await user.click(screen.getByRole("button", { name: "Install from file" }));
   return { user, dialog: within(screen.getByRole("dialog", { name: "Install local app" })) };
 }
 
