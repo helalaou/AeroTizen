@@ -2,39 +2,14 @@ import hashlib
 import json
 import subprocess
 import sys
-import zipfile
 
 import pytest
 
 from aerotizen import desktop_worker as worker
-from aerotizen import signer
-from aerotizen.device import DeviceSession
 
 
 def request(operation, **params):
     return {"protocol": 1, "id": "test-request", "operation": operation, "params": params}
-
-
-@pytest.fixture
-def connected_tv(monkeypatch, fake_tv, tmp_path):
-    tv = fake_tv(
-        {
-            "0 getduid": "test-duid\n",
-            "0 vd_applist": "app_id=DclHome001.Home app_version=3.0.0",
-            "capability:": "platform_version: 9.0.0\ncpu_arch: armv7\nsdk_toolpath: /private/path\n",
-        }
-    )
-    monkeypatch.setattr(
-        worker.remote, "info", lambda _: {"name": "Living room", "modelName": "Frame", "model": "24_PTM"}
-    )
-    monkeypatch.setattr(worker.remote, "CONFIG_DIR", tmp_path)
-    monkeypatch.setattr(DeviceSession, "tcp_request", lambda *_args, **_kwargs: b"")
-    monkeypatch.setattr(
-        worker,
-        "DeviceSession",
-        lambda host: DeviceSession(host, port=tv.port, direct=True, lock_dir=tmp_path / "locks"),
-    )
-    return tv
 
 
 @pytest.mark.parametrize("host", [True, 123, None, "tv.local", "0.0.0.0", "255.255.255.255", "224.0.0.1"])
@@ -63,12 +38,13 @@ def test_protocol_keeps_stdout_machine_readable_and_rejects_oversized_input():
 
 
 def test_handshake_does_not_open_a_connection(monkeypatch):
-    monkeypatch.setattr(worker, "DeviceSession", lambda _: pytest.fail("Unexpected TV connection"))
+    monkeypatch.setattr(
+        worker.root_control, "status", lambda *_args, **_kwargs: pytest.fail("Unexpected TV connection")
+    )
     reply = worker.handle(request("handshake"))
     assert reply["result"]["name"] == worker.WORKER_NAME
     assert reply["result"]["operations"] == [
         "handshake",
-        "install_launcher",
         "setup_root",
         "upgrade_root",
     ]
@@ -88,133 +64,11 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "prepare_native_home",
         "prepare_signing_profile",
         "install_local_app",
+        "install_launcher",
         "apply_native_home",
         "restore_home_backup",
     ):
         assert worker.handle(request(retired))["error"]["code"] == "invalid_request"
-
-
-@pytest.fixture
-def install_request(monkeypatch):
-    def download(destination, *, version):
-        widget = destination / "launcher.wgt"
-        with zipfile.ZipFile(widget, "w") as archive:
-            archive.writestr(
-                "config.xml",
-                f'<widget xmlns:tizen="http://tizen.org/ns/widgets" version="{version}">'
-                '<tizen:application id="DclHome001.Home"/></widget>',
-            )
-        return worker.releases.DownloadedLauncher(path=widget, version=version)
-
-    monkeypatch.setattr(worker.releases, "download_launcher", download)
-    return request(
-        "install_launcher",
-        host="127.0.0.1",
-        expected_identity=hashlib.sha256(b"test-duid").hexdigest(),
-        current_version="3.0.0",
-        version="3.2.0",
-        confirm_replace=False,
-    )
-
-
-def test_install_checks_the_signed_package_version_over_sdb(fake_tv, install_request, tmp_path, monkeypatch):
-    replies = {
-        "0 getduid": "test-duid",
-        "0 vd_applist": "app_id=DclHome001.Home app_version=3.0.0",
-        "capability:": "sdk_toolpath: /private/path\n",
-        "0 vd_appinstall DclHome001.Home /private/path/DclHome001.wgt": (
-            "app_id[DclHome001.Home] install completed"
-        ),
-    }
-    tv_connections = []
-
-    def connect(host):
-        tv = fake_tv(replies)
-        tv_connections.append(tv)
-        return DeviceSession(host, port=tv.port, direct=True, lock_dir=tmp_path / "locks")
-
-    monkeypatch.setattr(worker, "DeviceSession", connect)
-    monkeypatch.setattr(worker.remote, "info", lambda _: {})
-    monkeypatch.setattr(worker.remote, "CONFIG_DIR", tmp_path)
-    profile = tmp_path / "certs" / "test-duid"
-    profile.mkdir(parents=True)
-    for name in worker.CERTIFICATE_FILES:
-        (profile / name).write_bytes(b"test-file")
-    assert worker.signing_profile("test-duid") == profile
-
-    def sign(_source, destination, certificates):
-        assert certificates == profile
-        destination.write_bytes(b"signed test package")
-
-    monkeypatch.setattr(signer, "sign_wgt", sign)
-    real_install = DeviceSession.install
-    installed_calls = []
-
-    def install(session, app_id, data, tool_path):
-        assert data == b"signed test package"
-        installed_calls.append((app_id, tool_path))
-        output = real_install(session, app_id, data, tool_path)
-        replies["0 vd_applist"] = f"app_id={app_id} app_version=3.2.0"
-        return output
-
-    monkeypatch.setattr(DeviceSession, "install", install)
-    assert worker.handle(install_request)["result"] == "3.2.0"
-    assert installed_calls == [("DclHome001.Home", "/private/path")]
-    assert tv_connections[-1].uploads == {
-        "/private/path/DclHome001.wgt": b"signed test package",
-        "/private/path/device-profile.xml": b"test-file",
-    }
-    assert worker.handle(install_request)["error"]["code"] == "launcher_changed"
-    assert len(installed_calls) == 1
-
-
-@pytest.mark.parametrize(
-    ("override", "code"),
-    [
-        ({"version": "2.7.0"}, "confirmation_required"),
-        ({"version": "3.0.0"}, "already_installed"),
-        ({"version": "../unpublished"}, "invalid_request"),
-        ({"expected_identity": "0" * 64}, "identity_mismatch"),
-        ({"current_version": None}, "launcher_changed"),
-        ({}, "certificates_required"),
-    ],
-)
-def test_install_stops_before_signing_or_upload(connected_tv, install_request, monkeypatch, override, code):
-    monkeypatch.setattr(worker, "install_signed_package", lambda *_: pytest.fail("Unexpected install"))
-    install_request["params"].update(override)
-    assert worker.handle(install_request)["error"]["code"] == code
-
-
-@pytest.fixture
-def local_widget(tmp_path):
-    path = tmp_path / "Player.wgt"
-    with zipfile.ZipFile(path, "w") as archive:
-        archive.writestr(
-            "config.xml",
-            '<widget xmlns="http://www.w3.org/ns/widgets" '
-            'xmlns:tizen="http://tizen.org/ns/widgets" version="1.2.0">'
-            "<name>Local Player</name>"
-            '<tizen:application id="LocalApp01.Player" package="LocalApp01"/></widget>',
-        )
-        archive.writestr("index.html", "<h1>Local Player</h1>")
-    return path
-
-
-@pytest.mark.parametrize(
-    "entry", ["../outside.txt", "/absolute.txt", "C:/drive.txt", "folder\\escape.txt", "config.xml"]
-)
-def test_local_widget_rejects_unsafe_or_duplicate_entries_before_connecting(local_widget, monkeypatch, entry):
-    from aerotizen import local_package
-
-    with zipfile.ZipFile(local_widget, "a") as archive:
-        if entry == "config.xml":
-            with pytest.warns(UserWarning, match="Duplicate name"):
-                archive.writestr(entry, "duplicate")
-        else:
-            archive.writestr(entry, "unsupported")
-    monkeypatch.setattr(worker, "DeviceSession", lambda *_: pytest.fail("Unexpected connection"))
-    with pytest.raises(ValueError, match="unsupported or unsafe"):
-        local_package.inspect(local_widget)
 
 
 @pytest.fixture
@@ -240,9 +94,6 @@ def root_reading(monkeypatch, tmp_path):
     monkeypatch.setattr(worker.remote, "CONFIG_DIR", tmp_path)
     monkeypatch.setattr(worker.root_state, "find", lambda *_: dict(saved) if saved else None)
     monkeypatch.setattr(worker.root_control, "status", lambda *_args, **_kwargs: dict(live))
-    monkeypatch.setattr(
-        worker, "DeviceSession", lambda *_args, **_kwargs: pytest.fail("Unexpected SDK access")
-    )
     return identity, saved, live
 
 

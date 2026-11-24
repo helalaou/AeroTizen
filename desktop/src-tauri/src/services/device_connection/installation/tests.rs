@@ -196,3 +196,97 @@ fn installation_errors_cannot_be_hidden_by_a_preexisting_matching_version() {
         "version_unverified"
     );
 }
+
+#[tokio::test]
+async fn launcher_install_reuses_native_signing_and_refuses_a_changed_version_or_reviewed_revision()
+{
+    const OLD: &str = "apps count: 1\napp_id=DclHome001.Home app_version=2.1.0\n";
+    const NEW: &str = "apps count: 1\napp_id=DclHome001.Home app_version=2.2.0\n";
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../tests/fixtures/launcher-download.json"
+    ))
+    .unwrap();
+    for scenario in ["success", "changed-after-review", "wrong-current"] {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("launcher.wgt");
+        std::fs::write(
+            &path,
+            crate::services::sdb::tests::bytes(fixture["packages"][0]["zip_hex"].as_str().unwrap()),
+        )
+        .unwrap();
+        let review = local_widget::inspect(path.clone()).await.unwrap();
+        profile(&directory.path().join("certs").join(DUID));
+        let mut tv = Peer::start(
+            if scenario == "wrong-current" { 1 } else { 2 },
+            move |mut io, index| async move {
+                handshake(&mut io).await;
+                if index == 0 {
+                    read_reply(&mut io, "shell:0 getduid", DUID).await;
+                    read_reply(&mut io, "shell:0 vd_applist", OLD).await;
+                    read_reply(&mut io, "shell:0 getduid", DUID).await;
+                    return vec![];
+                }
+                read_reply(&mut io, "shell:0 getduid", DUID).await;
+                read_reply(&mut io, "shell:0 getduid", DUID).await;
+                read_reply(
+                    &mut io,
+                    "shell:0 vd_applist",
+                    if scenario == "changed-after-review" {
+                        NEW
+                    } else {
+                        OLD
+                    },
+                )
+                .await;
+                read_reply(&mut io, "shell:0 getduid", DUID).await;
+                if scenario == "changed-after-review" {
+                    return vec![];
+                }
+                read_reply(&mut io, "capability:", "sdk_toolpath:/tmp/sdk\n").await;
+                read_reply(&mut io, "shell:0 getduid", DUID).await;
+                upload(&mut io, false).await;
+                let (path, bytes) = upload(&mut io, false).await;
+                assert_eq!(path, "/tmp/sdk/DclHome001.wgt");
+                assert!(!bytes.is_empty());
+                read_reply(
+                    &mut io,
+                    "shell:0 vd_appinstall DclHome001.Home /tmp/sdk/DclHome001.wgt",
+                    "app_id[DclHome001.Home] install completed",
+                )
+                .await;
+                read_reply(&mut io, "shell:0 getduid", DUID).await;
+                read_reply(&mut io, "shell:0 vd_applist", NEW).await;
+                read_reply(&mut io, "shell:0 getduid", DUID).await;
+                vec![]
+            },
+        )
+        .await;
+        let connection = TvConnection::with_ports(directory.path().into(), tv.port, 1);
+        let result = connection
+            .install_published_launcher(
+                "127.0.0.1",
+                &sha256_hex(DUID.as_bytes()),
+                path,
+                review,
+                Some(if scenario == "wrong-current" {
+                    "2.0.0"
+                } else {
+                    "2.1.0"
+                }),
+            )
+            .await;
+        if scenario == "success" {
+            assert_eq!(result.unwrap().version, "2.2.0");
+        } else {
+            assert_eq!(
+                result.unwrap_err().code,
+                if scenario == "wrong-current" {
+                    "launcher_changed"
+                } else {
+                    "apps_changed"
+                }
+            );
+        }
+        tv.finish().await;
+    }
+}

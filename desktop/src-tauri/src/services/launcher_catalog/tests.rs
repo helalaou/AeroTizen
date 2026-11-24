@@ -15,7 +15,7 @@ fn compatibility() -> Value {
     serde_json::from_str(include_str!("fixtures/cli-compatibility.json")).unwrap()
 }
 
-fn release(version: &str) -> Value {
+pub(super) fn release(version: &str) -> Value {
     let tag = format!("launcher-v{version}");
     let assets = [MANIFEST_ASSET.to_owned(),format!("aerotizen-launcher-{version}.wgt")].map(|name| json!({
         "browser_download_url":format!("https://github.com/{REPOSITORY}/releases/download/{tag}/{name}"),"name":name
@@ -35,7 +35,7 @@ fn limits() -> Limits {
     }
 }
 
-fn client(timeout: Duration) -> Client {
+pub(super) fn client(timeout: Duration) -> Client {
     Client::builder()
         .no_proxy()
         .redirect(Policy::none())
@@ -46,14 +46,14 @@ fn client(timeout: Duration) -> Client {
         .unwrap()
 }
 
-struct Reply {
-    status: u16,
-    body: Option<Vec<u8>>,
-    length: bool,
-    headers: String,
+pub(super) struct Reply {
+    pub(super) status: u16,
+    pub(super) body: Option<Vec<u8>>,
+    pub(super) length: bool,
+    pub(super) headers: String,
 }
 impl Reply {
-    fn json(value: Value) -> Self {
+    pub(super) fn json(value: Value) -> Self {
         Self {
             status: 200,
             body: Some(serde_json::to_vec(&value).unwrap()),
@@ -61,7 +61,7 @@ impl Reply {
             headers: String::new(),
         }
     }
-    fn status(status: u16) -> Self {
+    pub(super) fn status(status: u16) -> Self {
         Self {
             status,
             body: Some(b"private response detail".to_vec()),
@@ -69,7 +69,7 @@ impl Reply {
             headers: "Location: http://127.0.0.1:9/secret\r\n".into(),
         }
     }
-    fn stalled() -> Self {
+    pub(super) fn stalled() -> Self {
         Self {
             status: 200,
             body: None,
@@ -79,9 +79,9 @@ impl Reply {
     }
 }
 
-struct Server {
-    endpoint: String,
-    requests: Arc<Mutex<Vec<String>>>,
+pub(super) struct Server {
+    pub(super) endpoint: String,
+    pub(super) requests: Arc<Mutex<Vec<String>>>,
     task: tokio::task::JoinHandle<()>,
 }
 impl Drop for Server {
@@ -90,7 +90,7 @@ impl Drop for Server {
     }
 }
 
-async fn server(replies: Vec<Reply>) -> Server {
+pub(super) async fn server(replies: Vec<Reply>) -> Server {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let endpoint = format!("http://{}/releases", listener.local_addr().unwrap());
     let requests = Arc::new(Mutex::new(Vec::new()));

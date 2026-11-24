@@ -8,12 +8,14 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::time::Duration;
 
+pub(super) mod download;
 mod notes;
 
 const REPOSITORY: &str = "helalaou/AeroTizen";
 const RELEASES_URL: &str = "https://api.github.com/repos/helalaou/AeroTizen/releases";
 const RELEASE_TAG_PREFIX: &str = "launcher-v";
 const VERSION_COMPONENTS: usize = 3;
+const MAX_VERSION_CHARACTERS: usize = 256;
 const MANIFEST_ASSET: &str = "launcher-release.json";
 const GITHUB_ACCEPT: &str = "application/vnd.github+json";
 const USER_AGENT: &str = concat!("aerotizen-desktop/", env!("CARGO_PKG_VERSION"));
@@ -48,15 +50,19 @@ fn unavailable() -> AppError {
 
 pub async fn load() -> AppResult<Vec<LauncherRelease>> {
     let client = catalog_client()?;
-    let token = std::env::var("GH_TOKEN")
+    let token = github_token();
+    load_with(&client, RELEASES_URL, token.as_deref(), DEFAULT_LIMITS).await
+}
+
+fn github_token() -> Option<String> {
+    std::env::var("GH_TOKEN")
         .ok()
         .filter(|token| !token.is_empty())
         .or_else(|| {
             std::env::var("GITHUB_TOKEN")
                 .ok()
                 .filter(|token| !token.is_empty())
-        });
-    load_with(&client, RELEASES_URL, token.as_deref(), DEFAULT_LIMITS).await
+        })
 }
 
 fn catalog_client() -> AppResult<Client> {
@@ -178,6 +184,38 @@ fn stable_version(version: &str) -> bool {
         }
     }
     parts.next().is_none()
+}
+
+pub(super) fn validate_install(
+    version: &str,
+    current: Option<&str>,
+    confirmed: bool,
+) -> AppResult<()> {
+    if version.len() > MAX_VERSION_CHARACTERS
+        || !stable_version(version)
+        || current.is_some_and(|value| value.len() > MAX_VERSION_CHARACTERS)
+    {
+        return Err(AppError::new(
+            "invalid_request",
+            "Choose a published launcher version.",
+        ));
+    }
+    if current == Some(version) {
+        return Err(AppError::new(
+            "already_installed",
+            "This version is already installed.",
+        ));
+    }
+    if current.is_some_and(|value| {
+        !stable_version(value) || compare_versions(version, value) == Ordering::Less
+    }) && !confirmed
+    {
+        return Err(AppError::new(
+            "confirmation_required",
+            "Confirm replacement of the current version first.",
+        ));
+    }
+    Ok(())
 }
 
 fn compare_versions(left: &str, right: &str) -> Ordering {

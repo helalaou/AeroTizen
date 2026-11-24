@@ -4,6 +4,7 @@ use crate::{
     worker,
 };
 use serde_json::json;
+const INSTALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(300);
 
 pub async fn backend_status(state: &AppState) -> AppResult<BackendStatus> {
     let result: BackendStatus = worker::request(&state.worker_path, "handshake", json!({})).await?;
@@ -31,24 +32,32 @@ pub async fn install_launcher(
             "The installed version changed. Refresh the TV and try again.",
         ));
     }
-    let result: String = worker::request(
-        &state.worker_path,
-        "install_launcher",
-        json!({
-            "host": saved.tv.host,
-            "expected_identity": saved.tv.identity_sha256,
-            "version": version,
-            "current_version": current_version,
-            "confirm_replace": confirm_replace,
-        }),
-    )
-    .await?;
-    if result != version {
-        return Err(AppError::new(
-            "version_unverified",
-            "The TV did not report the requested version. Refresh the TV to check.",
-        ));
-    }
+    super::launcher_catalog::validate_install(
+        &version,
+        current_version.as_deref(),
+        confirm_replace,
+    )?;
+    tokio::time::timeout(INSTALL_TIMEOUT, async {
+        let downloaded = super::launcher_catalog::download::download(&version).await?;
+        state
+            .device_connection
+            .install_published_launcher(
+                &saved.tv.host,
+                &saved.tv.identity_sha256,
+                downloaded.path.clone(),
+                downloaded.review.clone(),
+                current_version.as_deref(),
+            )
+            .await?;
+        Ok::<_, AppError>(())
+    })
+    .await
+    .map_err(|_| {
+        AppError::new(
+            "connection_timeout",
+            "Installation timed out. Refresh the TV to check its version before retrying.",
+        )
+    })??;
     state
         .profiles
         .save(VerifiedTv {
