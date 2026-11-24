@@ -224,6 +224,14 @@ release-note helpers have also been removed from the shared release module. Laun
 installation and the Python CLI's release commands still use the existing verified
 download and signing flow.
 
+TV connection and Overview/Home inspection also run in Rust. The shared native
+connection owner reads live identity, installed launcher version, device capabilities,
+certificate readiness, original backup status and launcher routing. Paired Home settings
+require authenticated helper proof from the same TV boot. Missing optional metadata or
+unsupported Home status stays unavailable; identity failures never save a profile. The
+worker no longer offers `connect`. Its private post-change profile helper remains for
+Home Apply/Restore until those actions move to Rust.
+
 Reviewing the original Home backup also runs in Rust. It reads the CLI's existing
 `~/.config/aerotizen/backups/<TV identity>/original-home.json` without a TV connection
 or worker process. It verifies the backup schema, device identity, original settings,

@@ -18,8 +18,8 @@ use tokio::{
 const DUID: &str = "test-duid";
 const TEST_TIMEOUT: Duration = Duration::from_secs(4);
 
-struct Peer {
-    port: u16,
+pub(crate) struct Peer {
+    pub(crate) port: u16,
     accepted: Arc<AtomicUsize>,
     task: Option<JoinHandle<Vec<Vec<String>>>>,
 }
@@ -31,7 +31,7 @@ impl Drop for Peer {
     }
 }
 impl Peer {
-    async fn start<F, Pending>(count: usize, mut handler: F) -> Self
+    pub(crate) async fn start<F, Pending>(count: usize, mut handler: F) -> Self
     where
         F: FnMut(TcpStream, usize) -> Pending + Send + 'static,
         Pending: std::future::Future<Output = Vec<String>> + Send,
@@ -58,7 +58,7 @@ impl Peer {
             task: Some(task),
         }
     }
-    async fn finish(&mut self) -> Vec<Vec<String>> {
+    pub(crate) async fn finish(&mut self) -> Vec<Vec<String>> {
         timeout(TEST_TIMEOUT, self.task.take().unwrap())
             .await
             .unwrap()
@@ -67,8 +67,12 @@ impl Peer {
 }
 
 async fn metadata(developer: Value) -> Peer {
+    metadata_document(json!({"developerIP":developer})).await
+}
+
+pub(crate) async fn metadata_document(info: Value) -> Peer {
     Peer::start(1, move |mut socket, _| {
-        let body = json!({"device": {"developerIP": developer}}).to_string();
+        let body = json!({"device": info}).to_string();
         async move {
             let mut request = [0; 4096];
             let count = socket.read(&mut request).await.unwrap();
@@ -103,7 +107,7 @@ async fn developer_inventory_uses_one_read_only_session_and_returns_the_cli_proj
     })
     .await;
     let directory = tempfile::tempdir().unwrap();
-    let reader = AppReads::with_ports(directory.path().into(), server.port, 1);
+    let reader = TvConnection::with_ports(directory.path().into(), server.port, 1);
     let result = reader
         .packages("127.0.0.1", &sha256_hex(DUID.as_bytes()))
         .await
@@ -132,7 +136,7 @@ async fn identity_checks_precede_inventory_and_refuse_a_changed_tv_afterwards() 
         })
         .await;
         let directory = tempfile::tempdir().unwrap();
-        let reader = AppReads::with_ports(directory.path().into(), server.port, 1);
+        let reader = TvConnection::with_ports(directory.path().into(), server.port, 1);
         assert_eq!(
             reader
                 .packages("127.0.0.1", &sha256_hex(DUID.as_bytes()))
@@ -213,7 +217,7 @@ async fn paired_app_names_keep_buffered_sdb_bytes_after_the_authenticated_reply_
     value["certificate_sha256"] = json!(pin);
     let path = save(directory.path(), "127.0.0.1", &value);
     let before = std::fs::read(&path).unwrap();
-    let reader = AppReads::with_ports(directory.path().into(), 1, info.port);
+    let reader = TvConnection::with_ports(directory.path().into(), 1, info.port);
     assert_eq!(
         json!(reader.targets("127.0.0.1", &expected).await.unwrap()),
         json!([{ "id":"Abcdefghij.App","name":"Media 😀" }])
@@ -261,7 +265,7 @@ async fn bad_pairing_proof_or_certificate_never_sends_sdb_or_falls_back_to_devel
         value["bridge_port"] = json!(bridge.port);
         value["certificate_sha256"] = json!(if certificate { "0".repeat(64) } else { pin });
         save(directory.path(), "127.0.0.1", &value);
-        let reader = AppReads::with_ports(directory.path().into(), direct.port, info.port);
+        let reader = TvConnection::with_ports(directory.path().into(), direct.port, info.port);
         assert_eq!(
             reader
                 .targets("127.0.0.1", &expected)
@@ -311,7 +315,7 @@ async fn a_changed_recovery_record_cannot_return_inventory_from_a_previous_pairi
     value["bridge_port"] = json!(bridge.port);
     value["certificate_sha256"] = json!(pin);
     save(directory.path(), "127.0.0.1", &value);
-    let reader = AppReads::with_ports(directory.path().into(), 1, info.port);
+    let reader = TvConnection::with_ports(directory.path().into(), 1, info.port);
     assert_eq!(
         reader
             .packages("127.0.0.1", &expected)
@@ -337,7 +341,7 @@ async fn connection_reset_retries_handshake_but_never_repeats_inventory_commands
     })
     .await;
     let directory = tempfile::tempdir().unwrap();
-    let reader = AppReads::with_ports(directory.path().into(), server.port, 1);
+    let reader = TvConnection::with_ports(directory.path().into(), server.port, 1);
     reader
         .packages("127.0.0.1", &sha256_hex(DUID.as_bytes()))
         .await
@@ -357,7 +361,7 @@ async fn the_read_deadline_closes_a_stalled_handshake_and_releases_tv_ownership(
     })
     .await;
     let directory = tempfile::tempdir().unwrap();
-    let reader = AppReads::with_ports(directory.path().into(), server.port, 1);
+    let reader = TvConnection::with_ports(directory.path().into(), server.port, 1);
     let error = reader
         .read_bounded(
             "127.0.0.1",

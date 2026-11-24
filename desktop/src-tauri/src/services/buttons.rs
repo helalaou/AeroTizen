@@ -68,7 +68,7 @@ pub async fn list_tv_button_apps(
 ) -> AppResult<Vec<ButtonTargetApp>> {
     read_native_tv(state, id, request_id, |saved| async move {
         state
-            .app_reads
+            .device_connection
             .targets(&saved.tv.host, &saved.tv.identity_sha256)
             .await
     })

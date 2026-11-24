@@ -24,35 +24,64 @@ pub(crate) async fn serve(
     duids: [&str; 2],
     raw: &str,
 ) -> Vec<String> {
+    let steps = [duids[0], raw, duids[1]]
+        .into_iter()
+        .enumerate()
+        .map(|(i, output)| {
+            (
+                if i == 1 {
+                    "shell:0 vd_applist"
+                } else {
+                    "shell:0 getduid"
+                }
+                .to_owned(),
+                output.to_owned(),
+            )
+        })
+        .collect();
+    serve_script(io, steps).await
+}
+
+pub(crate) async fn serve_script(
+    io: &mut (impl SdbIo + ?Sized),
+    steps: Vec<(String, String)>,
+) -> Vec<String> {
     let connect = receive(io).await.unwrap();
     assert_eq!(connect.command, CNXN);
     send(io, CNXN, VERSION, 4096, b"device::TEST\0")
         .await
         .unwrap();
     let mut services = Vec::new();
-    for (index, output) in [duids[0], raw, duids[1]].into_iter().enumerate() {
+    for (index, (expected, output)) in steps.into_iter().enumerate() {
         let frame = match receive(io).await {
             Ok(frame) => frame,
             Err(_) => break,
         };
         assert_eq!(frame.command, OPEN);
-        assert_eq!(frame.remote, index as u32 + 1);
-        services.push(
-            String::from_utf8_lossy(&frame.payload)
-                .trim_end_matches('\0')
-                .into(),
-        );
+        let service = String::from_utf8_lossy(&frame.payload)
+            .trim_end_matches('\0')
+            .to_owned();
+        assert_eq!(service, expected);
+        services.push(service);
         let local = frame.remote;
+        assert_eq!(local, index as u32 + 1);
         let remote = 100 + local;
         send(io, OKAY, remote, local, &[]).await.unwrap();
+        if expected == "tcp:47790" {
+            let request = receive(io).await.unwrap();
+            assert_eq!(request.command, WRTE);
+            assert_eq!(
+                request.payload,
+                b"GET / HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+            );
+            send(io, OKAY, remote, local, &[]).await.unwrap();
+        }
         send(io, WRTE, remote, local, output.as_bytes())
             .await
             .unwrap();
         send(io, CLSE, remote, local, &[]).await.unwrap();
-        let ack = receive(io).await.unwrap();
-        assert_eq!(ack.command, OKAY);
-        let close = receive(io).await.unwrap();
-        assert_eq!(close.command, CLSE);
+        assert_eq!(receive(io).await.unwrap().command, OKAY);
+        assert_eq!(receive(io).await.unwrap().command, CLSE);
     }
     services
 }

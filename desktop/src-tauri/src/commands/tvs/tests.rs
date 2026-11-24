@@ -90,8 +90,14 @@ fn registered_profile_commands_preserve_saved_tv_and_error_shapes() {
 }
 
 #[test]
-fn connect_uses_the_frontend_profile_id_argument_before_starting_a_worker() {
+fn connect_uses_the_frontend_profile_id_and_native_address_validation() {
     let fixture = Fixture::new();
+    assert_eq!(
+        fixture
+            .invoke("connect_tv", json!({"host":"tv.local","profileId":null}))
+            .unwrap_err()["code"],
+        "invalid_address"
+    );
     assert_eq!(
         fixture.invoke(
             "connect_tv",

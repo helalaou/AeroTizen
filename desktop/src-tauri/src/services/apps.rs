@@ -13,7 +13,7 @@ pub async fn list_tv_apps(
 ) -> AppResult<Vec<TvAppPackage>> {
     read_native_tv(state, id, request_id, |saved| async move {
         state
-            .app_reads
+            .device_connection
             .packages(&saved.tv.host, &saved.tv.identity_sha256)
             .await
     })

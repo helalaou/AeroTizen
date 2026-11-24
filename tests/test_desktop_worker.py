@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 from aerotizen import desktop_worker as worker
-from aerotizen import diagnostics, signer
+from aerotizen import signer
 from aerotizen.device import DeviceSession
 
 
@@ -37,115 +37,6 @@ def connected_tv(monkeypatch, fake_tv, tmp_path):
         lambda host: DeviceSession(host, port=tv.port, direct=True, lock_dir=tmp_path / "locks"),
     )
     return tv
-
-
-def test_connection_uses_real_sdb_and_returns_only_hashed_identity(connected_tv):
-    reply = worker.handle(request("connect", host="127.0.0.1"))
-    assert reply["id"] == "test-request"
-    result = reply["result"]
-    assert result["identity_sha256"] == hashlib.sha256(b"test-duid").hexdigest()
-    assert result["name"] == "Living room"
-    assert result["launcher_version"] == "3.0.0"
-    assert result["launcher_signing_ready"] is False
-    assert result["transport"] == "developer"
-    assert result["home_backup"] == {"status": "missing"}
-    assert result["home_routing_mode"] is None
-    assert result["native_home_settings"] is None
-    assert result["technical_details"] == {
-        "model_code": None,
-        "tizen_version": "9.0.0",
-        "architecture": "armv7",
-        "platform": "24_PTM",
-        "root_runtime_version": None,
-    }
-    assert "test-duid" not in json.dumps(reply)
-    assert "/private/path" not in json.dumps(reply)
-
-
-@pytest.mark.parametrize(
-    ("app_id", "mode", "expected"),
-    [
-        ("DclHome001.Home", "native", "native"),
-        ("DclHome001.Home", "unknown", None),
-        ("OtherApp.Home", "native", None),
-    ],
-)
-def test_connect_reads_only_aerotizen_routing_mode(connected_tv, monkeypatch, app_id, mode, expected):
-    body = json.dumps(
-        {"homeControl": {"protocol": 1, "app_id": app_id, "mode": mode, "transaction": "private"}}
-    )
-
-    def watcher_request(_session, port, request, **_kwargs):
-        assert port == diagnostics.HOME_WATCHER_PORT
-        assert request.startswith(b"GET / HTTP/1.0\r\n")
-        return b"HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\n" + body.encode()
-
-    monkeypatch.setattr(DeviceSession, "tcp_request", watcher_request)
-    result = worker.handle(request("connect", host="127.0.0.1"))["result"]
-    assert result["home_routing_mode"] == expected
-    assert "transaction" not in json.dumps(result)
-
-
-def test_connect_returns_only_typed_home_settings_from_the_paired_helper(connected_tv, monkeypatch):
-    monkeypatch.setattr(
-        DeviceSession,
-        "read_root_home_status",
-        lambda _: {
-            "home_button_app": "DclHome001.Home",
-            "home_app": "com.samsung.tv.csfs",
-            "startup_app": "",
-            "startup_backup_app": "invalid app id",
-            "smart_hub_autostart": False,
-            "unknown": "private",
-        },
-    )
-    result = worker.handle(request("connect", host="127.0.0.1"))["result"]["native_home_settings"]
-    assert result == {
-        "home_button_app": "DclHome001.Home",
-        "home_app": "com.samsung.tv.csfs",
-        "startup_app": "",
-        "startup_backup_app": None,
-        "smart_hub_autostart": False,
-    }
-
-
-@pytest.mark.parametrize("matches_tv", [True, False])
-def test_connection_reports_only_original_backup_status_and_capture_time(connected_tv, tmp_path, matches_tv):
-    identity = hashlib.sha256(b"test-duid").hexdigest()
-    backup = tmp_path / "backups" / identity / "original-home.json"
-    backup.parent.mkdir(parents=True)
-    captured_at = "2026-11-16T10:00:00+00:00"
-    document = {
-        "schema_version": 1,
-        "kind": "aerotizen.home-baseline",
-        "captured_at": captured_at,
-        "device": {
-            "identity_sha256": identity if matches_tv else "1" * 64,
-            "model": "Frame",
-            "firmware_build": "test",
-        },
-        "home": {
-            "operation": worker.home.OPERATION,
-            "default_app": "stock-home",
-            "settings": {
-                key: {"type": kind, "value": "stock-home" if kind == "string" else 0}
-                for key, kind in worker.home.SETTINGS.items()
-            },
-        },
-        "evidence": {
-            "access": "sdk_uid_901",
-            "uid": 901,
-            "authenticated": True,
-            "query_staging_cleaned": True,
-            "sdk_staging_cleaned": True,
-            "helper_sha256": "0" * 64,
-        },
-    }
-    backup.write_text(json.dumps(document))
-    reply = worker.handle(request("connect", host="127.0.0.1"))
-    expected = {"status": "saved", "captured_at": captured_at} if matches_tv else {"status": "unreadable"}
-    assert reply["result"]["home_backup"] == expected
-    assert str(backup) not in json.dumps(reply)
 
 
 def _write_backup(tmp_path, identity, captured_at):
@@ -338,8 +229,8 @@ def test_apply_native_home_reports_the_native_home_error(connected_tv, tmp_path,
     }
 
 
-def test_different_saved_identity_is_refused(connected_tv):
-    reply = worker.handle(request("connect", host="127.0.0.1", expected_identity="0" * 64))
+def test_home_backup_preparation_refuses_a_different_identity(connected_tv):
+    reply = worker.handle(request("prepare_native_home", host="127.0.0.1", expected_identity="0" * 64))
     assert reply["error"]["code"] == "identity_mismatch"
     assert "result" not in reply
 
@@ -436,22 +327,12 @@ def test_remove_apps_verifies_results_and_stops_when_inventory_is_unavailable(
 @pytest.mark.parametrize("host", [True, 123, None, "tv.local", "0.0.0.0", "255.255.255.255", "224.0.0.1"])
 def test_invalid_hosts_fail_before_network_access(monkeypatch, host):
     monkeypatch.setattr(worker.remote, "info", lambda _: pytest.fail("Unexpected network access"))
-    assert worker.handle(request("connect", host=host))["error"]["code"] == "invalid_address"
+    assert worker.handle(request("prepare_native_home", host=host))["error"]["code"] == "invalid_address"
 
 
 @pytest.mark.parametrize("payload", [None, [], {"protocol": 1}, request("shell", command="anything")])
 def test_invalid_or_unknown_operations_are_refused(payload):
     assert worker.handle(payload)["error"]["code"] == "invalid_request"
-
-
-def test_optional_http_metadata_does_not_prevent_identity_check(connected_tv, monkeypatch):
-    def offline(_):
-        raise SystemExit("HTTP unavailable")
-
-    monkeypatch.setattr(worker.remote, "info", offline)
-    result = worker.handle(request("connect", host="127.0.0.1"))["result"]
-    assert result["model"] == "Samsung TV"
-    assert result["identity_sha256"] == hashlib.sha256(b"test-duid").hexdigest()
 
 
 def test_protocol_keeps_stdout_machine_readable_and_rejects_oversized_input():
@@ -475,7 +356,6 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
     assert reply["result"]["operations"] == [
         "handshake",
         "prepare_signing_profile",
-        "connect",
         "remove_apps",
         "install_launcher",
         "install_local_app",
@@ -496,6 +376,7 @@ def test_handshake_does_not_open_a_connection(monkeypatch):
         "list_apps",
         "list_button_apps",
         "inspect_local_app",
+        "connect",
     ):
         assert worker.handle(request(retired))["error"]["code"] == "invalid_request"
 
@@ -615,8 +496,7 @@ def test_install_checks_the_signed_package_version_over_sdb(fake_tv, install_req
     profile.mkdir(parents=True)
     for name in worker.CERTIFICATE_FILES:
         (profile / name).write_bytes(b"test-file")
-    reply = worker.handle(request("connect", host="127.0.0.1"))
-    assert reply["result"]["launcher_signing_ready"] is True
+    assert worker.signing_profile("test-duid") == profile
 
     def sign(_source, destination, certificates):
         assert certificates == profile

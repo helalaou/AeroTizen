@@ -26,16 +26,21 @@ pub(super) struct Receipt {
 }
 
 pub(super) fn address(host: &str, expected: &str) -> AppResult<Ipv4Addr> {
-    let invalid = || AppError::new("invalid_address", "Enter a valid TV IPv4 address.");
-    let address: Ipv4Addr = host.parse().map_err(|_| invalid())?;
-    if address.is_unspecified() || address.is_multicast() || address == Ipv4Addr::BROADCAST {
-        return Err(invalid());
-    }
+    let address = host_address(host)?;
     if !valid_identity(expected) {
         return Err(AppError::new(
             "invalid_request",
             "The saved TV identity is invalid.",
         ));
+    }
+    Ok(address)
+}
+
+pub(super) fn host_address(host: &str) -> AppResult<Ipv4Addr> {
+    let invalid = || AppError::new("invalid_address", "Enter a valid TV IPv4 address.");
+    let address: Ipv4Addr = host.parse().map_err(|_| invalid())?;
+    if address.is_unspecified() || address.is_multicast() || address == Ipv4Addr::BROADCAST {
+        return Err(invalid());
     }
     Ok(address)
 }
@@ -172,15 +177,29 @@ pub(super) async fn load(
     host: &str,
     expected: &str,
 ) -> AppResult<Option<Receipt>> {
+    lookup(directory, host, Some(expected)).await
+}
+
+pub(super) async fn lookup(
+    directory: &Path,
+    host: &str,
+    expected: Option<&str>,
+) -> AppResult<Option<Receipt>> {
     let directory = directory.to_owned();
     let host = host.to_owned();
-    let expected = expected.to_owned();
+    let expected = expected.map(str::to_owned);
     tokio::task::spawn_blocking(move || {
         let path = selected_path(&directory, &host)?;
         match std::fs::symlink_metadata(&path) {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
             Err(_) => Err(unavailable()),
-            Ok(_) => parse(read_document(&path, MAX_RECEIPT_BYTES)?, &expected).map(Some),
+            Ok(_) => {
+                let document = read_document(&path, MAX_RECEIPT_BYTES)?;
+                let identity = expected
+                    .or_else(|| document["duid_sha256"].as_str().map(str::to_owned))
+                    .ok_or_else(unavailable)?;
+                parse(document, &identity).map(Some)
+            }
         }
     })
     .await

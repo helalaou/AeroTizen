@@ -273,3 +273,37 @@ async fn file_reads_are_bounded_readonly_and_do_not_disclose_paths_or_private_da
         );
     }
 }
+
+#[tokio::test]
+async fn connection_summary_distinguishes_missing_verified_and_unreadable_backups() {
+    let directory = tempfile::tempdir().unwrap();
+    let store = HomeBackups::new(directory.path().into());
+    assert!(matches!(store.summary(IDENTITY).await, HomeBackup::Missing));
+    let path = directory
+        .path()
+        .join("backups")
+        .join(IDENTITY)
+        .join("original-home.json");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(&path, FIXTURE).unwrap();
+    assert_eq!(
+        serde_json::to_value(store.summary(IDENTITY).await).unwrap(),
+        json!({"status":"saved","captured_at":CAPTURED_AT})
+    );
+    let mut value = document();
+    value["device"]["identity_sha256"] = json!("b".repeat(64));
+    std::fs::write(&path, value.to_string()).unwrap();
+    assert!(matches!(
+        store.summary(IDENTITY).await,
+        HomeBackup::Unreadable
+    ));
+    std::fs::write(&path, b"bad json").unwrap();
+    assert!(matches!(
+        store.summary(IDENTITY).await,
+        HomeBackup::Unreadable
+    ));
+    assert!(matches!(
+        store.summary("../outside").await,
+        HomeBackup::Unreadable
+    ));
+}
