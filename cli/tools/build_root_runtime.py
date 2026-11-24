@@ -37,8 +37,8 @@ def main():
     if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
         parser.error("The root runtime version must have three numeric parts")
     template = (ROOT / "native/root-helper/tizen-manifest.xml").read_text(encoding="utf-8")
-    if "@RUNTIME_VERSION@" not in template:
-        raise ValueError("The root helper manifest must use @RUNTIME_VERSION@")
+    if "@CLI_VERSION@" not in template:
+        raise ValueError("The root helper manifest must use @CLI_VERSION@")
     values = {}
     with tempfile.TemporaryDirectory(prefix="aerotizen-root-runtime-") as temporary:
         for name, (project, destination) in PROJECTS.items():
@@ -69,7 +69,7 @@ def main():
         "schema_version": 1,
         "version": "0.1.0",
         "files": values,
-        "manifest": template.replace("@RUNTIME_VERSION@", version),
+        "manifest": template.replace("@CLI_VERSION@", version),
         "icon": base64.b64encode((ROOT / "native/root-helper/icon.png").read_bytes()).decode(),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
