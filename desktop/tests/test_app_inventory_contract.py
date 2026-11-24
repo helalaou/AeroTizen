@@ -5,8 +5,9 @@ import json
 from pathlib import Path
 
 import pytest
+from desktop_contract_helpers import display_text
 
-from aerotizen import buttons, catalog, desktop_worker
+from aerotizen import buttons, catalog
 from aerotizen.cli import packages
 
 FIXTURE = json.loads((Path(__file__).parent / "fixtures/app-inventory.json").read_text())
@@ -25,10 +26,8 @@ def test_inventory_projection_matches_current_cli(case):
             [
                 {
                     "id": pkgid,
-                    "name": desktop_worker.text_value(package["name"]),
-                    "apps": list(
-                        dict.fromkeys(desktop_worker.text_value(app["name"]) for app in package["apps"])
-                    ),
+                    "name": display_text(package["name"]),
+                    "apps": list(dict.fromkeys(display_text(app["name"]) for app in package["apps"])),
                     "protected": package["class"] == "protected",
                     "revision": hashlib.sha256(
                         json.dumps(
@@ -45,7 +44,7 @@ def test_inventory_projection_matches_current_cli(case):
             key=lambda row: row["name"].casefold(),
         )
         names = {
-            app["appid"]: desktop_worker.text_value(app["name"], app["appid"])
+            app["appid"]: display_text(app["name"], app["appid"])
             for app in catalog.parse_applist(case["raw"])
             if buttons.APP_ID.fullmatch(app["appid"])
         }

@@ -17,7 +17,6 @@ from aerotizen import (
     catalog,
     certs,
     home,
-    home_control,
     home_status,
     releases,
     remote,
@@ -41,8 +40,6 @@ OPERATIONS = (
     "install_launcher",
     "setup_root",
     "upgrade_root",
-    "apply_native_home",
-    "restore_home_backup",
 )
 
 
@@ -117,56 +114,6 @@ def _home_backup_summary(identity):
     except (OSError, ValueError, home.HomeError):
         return {"status": "unreadable"}
     return {"status": "saved", "captured_at": captured_at}
-
-
-def _verified_backup_document(identity, captured_at):
-    try:
-        document, _ = home._load_backup(_home_backup_path(identity), identity)
-        verified_at = datetime.fromisoformat(document["captured_at"]).isoformat()
-    except (OSError, ValueError, RecursionError, home.HomeError) as error:
-        raise RequestError("backup_unreadable", "The original Home backup could not be verified.") from error
-    if verified_at != captured_at:
-        raise RequestError("backup_changed", "The backup changed. Refresh the TV connection to review it.")
-    return document
-
-
-def _verified_backup_digest(identity, backup_sha256):
-    if not isinstance(backup_sha256, str) or not IDENTITY_PATTERN.fullmatch(backup_sha256):
-        raise RequestError("invalid_request", "The Home backup verification is invalid.")
-    try:
-        _, digest = home._load_backup(_home_backup_path(identity), identity)
-    except (OSError, ValueError, RecursionError, home.HomeError) as error:
-        raise RequestError("backup_unreadable", "The original Home backup could not be verified.") from error
-    if digest != backup_sha256:
-        raise RequestError("backup_changed", "The backup changed. Refresh the TV connection to review it.")
-
-
-def apply_native_home(params):
-    host = host_value(params.get("host"))
-    expected = checked_identity(params.get("expected_identity"))
-    _verified_backup_digest(expected, params.get("backup_sha256"))
-    with DeviceSession(host) as session:
-        read_identity(session, expected)
-        try:
-            info = home.device_info(session, host, state_dir=remote.CONFIG_DIR)
-            home_control.change(session, info, "apply", state_dir=remote.CONFIG_DIR)
-        except home.HomeError as error:
-            raise RequestError("apply_failed", str(error)) from error
-        return _connected_profile(session, host, expected, info)
-
-
-def restore_home_backup(params):
-    host = host_value(params.get("host"))
-    expected = checked_identity(params.get("expected_identity"))
-    _verified_backup_document(expected, params.get("captured_at"))
-    with DeviceSession(host) as session:
-        read_identity(session, expected)
-        try:
-            info = home.device_info(session, host, state_dir=remote.CONFIG_DIR)
-            home_control.change(session, info, "restore", state_dir=remote.CONFIG_DIR)
-        except home.HomeError as error:
-            raise RequestError("restore_failed", str(error)) from error
-        return _connected_profile(session, host, expected, info)
 
 
 def checked_identity(expected):
@@ -542,10 +489,6 @@ def handle(request):
                 result = setup_root(params)
             elif request["operation"] == "upgrade_root":
                 result = upgrade_root(params)
-            elif request["operation"] == "apply_native_home":
-                result = apply_native_home(params)
-            elif request["operation"] == "restore_home_backup":
-                result = restore_home_backup(params)
             else:
                 raise RequestError("invalid_request", "The desktop request is invalid or incompatible.")
         return {**response, "result": result}

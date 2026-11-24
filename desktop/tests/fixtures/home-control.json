@@ -1,0 +1,188 @@
+{
+  "status": {
+    "schema_version": 1,
+    "queried_at": "2026-10-24T18:00:00+00:00",
+    "complete": true,
+    "launcher": {
+      "installed": true,
+      "error": null
+    },
+    "device": {
+      "model": "QE65LS03DAUXXU",
+      "platform": "24_PTM_FTV_T09",
+      "os_version": "9.0.0",
+      "firmware_build": "T-PTMDDEUC-0090-REL-202605141701",
+      "cpu_arch": "armv7",
+      "identity_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "home": {
+      "operation": "http://tizen.org/appcontrol/operation/main",
+      "main_operation": {
+        "type": "string",
+        "status": "ok",
+        "value": "com.samsung.tv.csfs"
+      },
+      "settings": {
+        "db/appfw/home_appid": {
+          "type": "string",
+          "status": "ok",
+          "value": "com.samsung.tv.csfs"
+        },
+        "db/appfw/startup_appid": {
+          "type": "string",
+          "status": "ok",
+          "value": "org.tizen.tv-viewer"
+        },
+        "db/appfw/booting_appid_backup": {
+          "type": "string",
+          "status": "ok",
+          "value": "org.tizen.tv-viewer"
+        },
+        "db/first_screen/type": {
+          "type": "string",
+          "status": "ok",
+          "value": "com.samsung.tv.csfs"
+        },
+        "db/menu/smart_hub/ontvsetting/auto_start": {
+          "type": "int",
+          "status": "ok",
+          "value": 0
+        }
+      },
+      "mode": "stock"
+    },
+    "watcher": {
+      "state": "active",
+      "reachable": true,
+      "control": {
+        "protocol": 1,
+        "app_id": "DclHome001.Home",
+        "persistent": true,
+        "mode": "watcher",
+        "transaction": null,
+        "baseline_sha256": null
+      }
+    },
+    "evidence": {
+      "access": "sdk_uid_901",
+      "root_tool_version": "0.0.12",
+      "helper_sha256": "f6cc3fa62997ab311d39ea76e07fd2e82723be88100fe12fb171aef18072c533",
+      "authenticated": true,
+      "uid": 901,
+      "upstream_staging_cleaned": true,
+      "system_files_unchanged": true,
+      "query_staging_cleaned": true,
+      "sdk_staging_cleaned": true
+    }
+  },
+  "original": {
+    "schema_version": 1,
+    "kind": "aerotizen.home-baseline",
+    "captured_at": "2026-10-24T18:00:00+00:00",
+    "device": {
+      "model": "QE65LS03DAUXXU",
+      "platform": "24_PTM_FTV_T09",
+      "os_version": "9.0.0",
+      "firmware_build": "T-PTMDDEUC-0090-REL-202605141701",
+      "cpu_arch": "armv7",
+      "identity_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "home": {
+      "operation": "http://tizen.org/appcontrol/operation/main",
+      "default_app": "com.samsung.tv.csfs",
+      "settings": {
+        "db/appfw/home_appid": {
+          "type": "string",
+          "value": "com.samsung.tv.csfs"
+        },
+        "db/appfw/startup_appid": {
+          "type": "string",
+          "value": "org.tizen.tv-viewer"
+        },
+        "db/appfw/booting_appid_backup": {
+          "type": "string",
+          "value": "org.tizen.tv-viewer"
+        },
+        "db/first_screen/type": {
+          "type": "string",
+          "value": "com.samsung.tv.csfs"
+        },
+        "db/menu/smart_hub/ontvsetting/auto_start": {
+          "type": "int",
+          "value": 0
+        }
+      }
+    },
+    "evidence": {
+      "access": "sdk_uid_901",
+      "root_tool_version": "0.0.12",
+      "helper_sha256": "f6cc3fa62997ab311d39ea76e07fd2e82723be88100fe12fb171aef18072c533",
+      "authenticated": true,
+      "uid": 901,
+      "upstream_staging_cleaned": true,
+      "system_files_unchanged": true,
+      "query_staging_cleaned": true,
+      "sdk_staging_cleaned": true
+    }
+  },
+  "query": {
+    "schema_version": 1,
+    "read_only": true,
+    "uid": 901,
+    "architecture_bits": 32,
+    "os_release": {
+      "ID": "tizen",
+      "VERSION_ID": "9.0.0",
+      "BUILD_ID": "T-PTMDDEUC-0090-REL-202605141701"
+    },
+    "main_operation": {
+      "type": "string",
+      "status": "ok",
+      "value": "com.samsung.tv.csfs"
+    },
+    "settings": {
+      "db/appfw/home_appid": {
+        "type": "string",
+        "status": "ok",
+        "value": "com.samsung.tv.csfs"
+      },
+      "db/appfw/startup_appid": {
+        "type": "string",
+        "status": "ok",
+        "value": "org.tizen.tv-viewer"
+      },
+      "db/appfw/booting_appid_backup": {
+        "type": "string",
+        "status": "ok",
+        "value": "org.tizen.tv-viewer"
+      },
+      "db/first_screen/type": {
+        "type": "string",
+        "status": "ok",
+        "value": "com.samsung.tv.csfs"
+      },
+      "db/menu/smart_hub/ontvsetting/auto_start": {
+        "type": "int",
+        "status": "ok",
+        "value": 0
+      }
+    },
+    "watcher": {
+      "state": "active",
+      "reachable": true,
+      "control": {
+        "protocol": 1,
+        "app_id": "DclHome001.Home",
+        "persistent": true,
+        "mode": "watcher",
+        "transaction": null,
+        "baseline_sha256": null
+      }
+    },
+    "launcher": {
+      "installed": true,
+      "error": null
+    }
+  },
+  "query_output": "AEROTIZEN_HOME_QUERY={\"schema_version\": 1, \"read_only\": true, \"uid\": 901, \"architecture_bits\": 32, \"os_release\": {\"ID\": \"tizen\", \"VERSION_ID\": \"9.0.0\", \"BUILD_ID\": \"T-PTMDDEUC-0090-REL-202605141701\"}, \"main_operation\": {\"type\": \"string\", \"status\": \"ok\", \"value\": \"com.samsung.tv.csfs\"}, \"settings\": {\"db/appfw/home_appid\": {\"type\": \"string\", \"status\": \"ok\", \"value\": \"com.samsung.tv.csfs\"}, \"db/appfw/startup_appid\": {\"type\": \"string\", \"status\": \"ok\", \"value\": \"org.tizen.tv-viewer\"}, \"db/appfw/booting_appid_backup\": {\"type\": \"string\", \"status\": \"ok\", \"value\": \"org.tizen.tv-viewer\"}, \"db/first_screen/type\": {\"type\": \"string\", \"status\": \"ok\", \"value\": \"com.samsung.tv.csfs\"}, \"db/menu/smart_hub/ontvsetting/auto_start\": {\"type\": \"int\", \"status\": \"ok\", \"value\": 0}}, \"watcher\": {\"state\": \"active\", \"reachable\": true, \"control\": {\"protocol\": 1, \"app_id\": \"DclHome001.Home\", \"persistent\": true, \"mode\": \"watcher\", \"transaction\": null, \"baseline_sha256\": null}}, \"launcher\": {\"installed\": true, \"error\": null}}\nAEROTIZEN_SDK_CLEANED\nAEROTIZEN_SDK_EXIT=0\n"
+}
