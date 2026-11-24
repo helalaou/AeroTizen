@@ -1,5 +1,6 @@
 //! Owned native TV connections through Developer Mode or the paired relay.
 mod home_backup;
+mod home_control;
 mod installation;
 mod profile;
 pub(super) mod projection;

@@ -59,7 +59,7 @@ impl Sdb {
         }
         Ok(())
     }
-    async fn push(
+    pub(in crate::services) async fn push(
         &mut self,
         path: &str,
         input: &mut (impl AsyncRead + Unpin),

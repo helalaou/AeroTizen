@@ -3,9 +3,9 @@
 Use AeroTizen Desktop to find and save Samsung TVs, install the launcher and local apps,
 manage installed apps, configure Home and remote buttons, and set up or update root access.
 The app uses Tauri, React and Mantine. Rust handles TV discovery, launcher release
-lookup, Home backup review, Samsung sign-in, Root access status,
+lookup, Home backup review and controls, Samsung sign-in, Root access status,
 button mapping and local app management; a bundled Python worker
-provides the remaining CLI services.
+provides certificate issuance, launcher installation and Root setup/update.
 SQLite stores saved TV profiles.
 
 See screenshots of [TV selection](screenshots/tv-selection.png), [Overview](screenshots/overview.png),
@@ -231,7 +231,7 @@ certificate readiness, original backup status and launcher routing. Paired Home 
 require authenticated helper proof from the same TV boot. Missing optional metadata or
 unsupported Home status stays unavailable; identity failures never save a profile. The
 worker no longer offers `connect`. Its private post-change profile helper remains for
-Home Apply/Restore until those actions move to Rust.
+launcher installation.
 
 Reviewing the original Home backup also runs in Rust. It reads the CLI's existing
 `~/.config/aerotizen/backups/<TV identity>/original-home.json` without a TV connection
@@ -243,7 +243,7 @@ runs in Rust: it reads complete original settings through the paired helper, che
 identity and provenance, and publishes a durable backup only if none exists. Later
 applies reuse the exact original bytes and hash. Invalid originals stop preparation
 instead of being replaced. The worker no longer offers `prepare_native_home`; Apply and
-Restore still use the worker and its existing verification.
+Restore also run in Rust with final settings verification.
 
 Samsung sign-in also runs in Rust. The Tauri command opens the normal Samsung browser
 flow, and a callback listener binds only to `127.0.0.1:4794`. Each attempt uses a fresh
@@ -298,6 +298,15 @@ Studio profiles. Files stream through acknowledged SDB uploads without automatic
 Success requires the exact app and version in a fresh, complete TV inventory. An explicit
 install error cannot be hidden by an older app with the same version. The worker no
 longer offers `inspect_local_app` or `install_local_app`; launcher installation still uses it.
+
+Home Apply and Restore also run in Rust. The native app embeds the existing checked
+managed query and writer payloads, then stages them through the CLI-compatible SDK
+transport. It verifies live identity, runtime, settings and firmware against the reviewed
+original backup, saves a durable recovery receipt before writing, and checks every final
+Home/startup value and watcher mode. Original backup bytes are never replaced. Receipt
+chains support retrying Restore after an interrupted write or launcher removal. Failed or
+cancelled operations keep their recovery data and never replay a writer automatically.
+The worker no longer offers `apply_native_home` or `restore_home_backup`.
 
 ```sh
 npm run typecheck

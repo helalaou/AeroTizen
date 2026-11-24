@@ -6,7 +6,7 @@ fn main() {
     let metadata = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../cli/src/aerotizen/__init__.py");
     println!("cargo:rerun-if-changed={}", metadata.display());
-    let source = std::fs::read_to_string(metadata).expect("could not read the CLI version");
+    let source = std::fs::read_to_string(&metadata).expect("could not read the CLI version");
     let version = source
         .lines()
         .find_map(|line| {
@@ -23,6 +23,18 @@ fn main() {
         "invalid root runtime version"
     );
     println!("cargo:rustc-env=ROOT_RUNTIME_VERSION={version}");
+    let out =
+        std::path::PathBuf::from(std::env::var_os("OUT_DIR").expect("Cargo must provide OUT_DIR"));
+    for name in ["home-query.json", "home-control.json"] {
+        let source = metadata.parent().unwrap().join("helpers").join(name);
+        println!("cargo:rerun-if-changed={}", source.display());
+        if cfg!(feature = "bundled-worker") {
+            std::fs::copy(&source, out.join(name))
+                .expect("build the desktop helper payloads before compiling the app");
+        } else {
+            std::fs::write(out.join(name), b"{}").expect("could not prepare test payload metadata");
+        }
+    }
     let target = std::env::var("TARGET").expect("Cargo must provide a target");
     let suffix = if target.contains("windows") {
         ".exe"
