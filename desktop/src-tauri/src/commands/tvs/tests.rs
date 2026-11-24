@@ -112,6 +112,22 @@ fn connect_uses_the_frontend_profile_id_and_native_address_validation() {
 }
 
 #[test]
+fn launcher_removal_requires_confirmation_before_connecting() {
+    let fixture = Fixture::new();
+    for (confirmed, revision) in [(false, "a".repeat(64)), (true, String::new())] {
+        assert_eq!(
+            fixture
+                .invoke(
+                    "remove_launcher",
+                    json!({"id":"unsaved-tv","revision":revision,"confirmed":confirmed}),
+                )
+                .unwrap_err()["code"],
+            "confirmation_required"
+        );
+    }
+}
+
+#[test]
 fn home_backup_review_reads_cli_state_without_a_worker() {
     let fixture = Fixture::new();
     let saved = fixture.invoke("list_tvs", json!({})).unwrap();

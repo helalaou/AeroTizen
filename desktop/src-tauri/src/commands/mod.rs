@@ -31,6 +31,8 @@ pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         apps::remove_tv_apps,
         launcher::launcher_catalog,
         launcher::install_launcher,
+        launcher::review_launcher_removal,
+        launcher::remove_launcher,
         local_apps::choose_local_app,
         local_apps::install_local_app,
         tvs::discover_tvs,

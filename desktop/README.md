@@ -22,6 +22,15 @@ and [Launcher](screenshots/launcher.png).
 Use **Refresh releases** beside the page title to check for new releases without
 restarting the app. The current release stays visible while the check runs.
 
+Use **Remove AeroTizen** at the bottom of **Install & update** to remove the launcher
+and its settings from the selected TV. The app checks Home and startup through a
+compatible paired Root connection before it asks you to confirm. If an assignment
+still points to AeroTizen, restore the original settings in **Home and startup**, fully
+restart the TV, and try again. The app repeats the checks before removal and verifies
+that the launcher is gone.
+See the [blocked removal](screenshots/launcher-removal-blocked.png) and
+[confirmation](screenshots/launcher-removal-confirmation.png) dialogs.
+
 If a first install needs signing certificates, the app guides you through Samsung
 sign-in in your browser, creates the TV's signing profile, and continues installation.
 You can also sign in and out through the app menu. The account session lasts until

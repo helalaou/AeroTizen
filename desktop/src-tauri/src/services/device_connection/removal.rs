@@ -6,6 +6,8 @@ use regex::Regex;
 use std::{collections::HashSet, sync::OnceLock, time::Duration};
 use tokio::time::timeout;
 
+mod launcher;
+
 const MAX_SELECTED_PACKAGES: usize = 128;
 const REMOVAL_TIMEOUT: Duration = Duration::from_secs(300);
 const UNINSTALL_TIMEOUT: Duration = Duration::from_secs(120);

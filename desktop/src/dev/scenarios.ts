@@ -45,6 +45,8 @@ export const OPERATIONS = {
   checkDiagnostics: "Run TV diagnostics",
   launcherCatalog: "Fetch launcher releases",
   installLauncher: "Install launcher",
+  reviewLauncherRemoval: "Check Home and startup before removing AeroTizen",
+  removeLauncher: "Remove AeroTizen",
   listApps: "Load apps",
   removeApps: "Remove apps",
   chooseLocalApp: "Choose local app",

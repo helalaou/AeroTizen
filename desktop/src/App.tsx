@@ -6,6 +6,7 @@ import { ConnectionHelp } from "./components/ConnectionHelp";
 import { DiagnosticsView } from "./components/DiagnosticsView";
 import { DESKTOP_HEADER, Header } from "./components/Header";
 import { LauncherPanel } from "./components/LauncherPanel";
+import { LauncherRemovalDialog } from "./components/LauncherRemovalDialog";
 import { LogsView } from "./components/LogsView";
 import { LocalAppInstallDialog } from "./components/LocalAppInstallDialog";
 import { RootAccessPanel } from "./components/RootAccessPanel";
@@ -46,6 +47,7 @@ export function App({ service: adapter, simulator = false }: AppProps) {
   const [about, setAbout] = useState(false);
   const [logsOpened, setLogsOpened] = useState(false);
   const [localInstallOpened, setLocalInstallOpened] = useState(false);
+  const [launcherRemovalOpened, setLauncherRemovalOpened] = useState(false);
   const [rootSetupOpened, setRootSetupOpened] = useState(false);
   const [rootUpdateOpened, setRootUpdateOpened] = useState(false);
   const [rootRemovalOpened, setRootRemovalOpened] = useState(false);
@@ -232,6 +234,7 @@ export function App({ service: adapter, simulator = false }: AppProps) {
           }
         }}
         onRetryVersions={manager.retryLauncherVersions}
+        onRemove={() => setLauncherRemovalOpened(true)}
         releasesLoading={manager.launcherReleasesLoading}
       />
     );
@@ -400,10 +403,28 @@ export function App({ service: adapter, simulator = false }: AppProps) {
           onClose={() => setRootRemovalOpened(false)}
         />
       )}
+      {launcherRemovalOpened && selected && (
+        <LauncherRemovalDialog
+          key={selected.id}
+          profile={selected}
+          review={service.reviewLauncherRemoval}
+          remove={manager.removeLauncher}
+          onHome={() => {
+            setLauncherRemovalOpened(false);
+            goToPage("home");
+          }}
+          onRoot={() => {
+            setLauncherRemovalOpened(false);
+            goToPage("root");
+          }}
+          onClose={() => setLauncherRemovalOpened(false)}
+        />
+      )}
       {appLoading &&
         !dialog &&
         !signInDialog &&
         !localInstallOpened &&
+        !launcherRemovalOpened &&
         !rootSetupOpened &&
         !rootUpdateOpened &&
         !rootRemovalOpened && (

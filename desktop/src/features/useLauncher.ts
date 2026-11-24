@@ -42,11 +42,30 @@ export function useLauncher(service: DesktopService, context: FeatureContext) {
     });
   };
 
+  const removeLauncher = (revision: string, reportError: (message: string) => void) => {
+    if (!selected) return Promise.resolve(false);
+    const { id, name } = selected;
+    return run(
+      "Removing AeroTizen…",
+      async () => {
+        const updated = await service.removeLauncher(id, revision, true);
+        if (updated.id !== id || updated.launcher_version !== null) {
+          throw new Error("Could not verify removal. Refresh the TV connection before trying again.");
+        }
+        updateProfile(id, updated);
+        if (mounted.current) showToast(`AeroTizen removed from ${name}.`);
+      },
+      "app",
+      reportError,
+    );
+  };
+
   return {
     latestLauncher: launcherReleases?.[0]?.version ?? (launcherReleases === undefined ? undefined : null),
     launcherReleases,
     launcherReleasesLoading,
     installLauncher,
+    removeLauncher,
     retryLauncherVersions: () => {
       setLauncherReleasesLoading(true);
       setReleaseCheck((current) => current + 1);

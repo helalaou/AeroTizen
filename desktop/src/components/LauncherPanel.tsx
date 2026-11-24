@@ -26,6 +26,7 @@ interface LauncherPanelProps {
   busy: boolean;
   canInstall: boolean;
   onInstall(version: string, confirmReplace: boolean): void;
+  onRemove(): void;
   onRetryVersions(): void;
   canSetupSigning?: boolean;
 }
@@ -109,6 +110,7 @@ export function LauncherPanel({
   busy,
   canInstall,
   onInstall,
+  onRemove,
   onRetryVersions,
   canSetupSigning,
 }: LauncherPanelProps) {
@@ -229,6 +231,13 @@ export function LauncherPanel({
               </Stack>
             </div>
           </Stack>
+        )}
+        {installed !== null && (
+          <Group justify="flex-end">
+            <Button variant="subtle" color="red" disabled={busy} onClick={onRemove}>
+              Remove AeroTizen
+            </Button>
+          </Group>
         )}
       </Stack>
       {releaseToConfirm && (

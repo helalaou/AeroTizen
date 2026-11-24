@@ -1,8 +1,51 @@
 use crate::{
-    models::{AppError, AppResult, SavedTv, VerifiedTv},
+    models::{valid_identity, AppError, AppResult, LauncherRemovalReview, SavedTv, VerifiedTv},
     state::{busy, AppState},
 };
 const INSTALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(300);
+
+pub async fn review_launcher_removal(
+    state: &AppState,
+    id: String,
+    request_id: String,
+) -> AppResult<LauncherRemovalReview> {
+    super::reads::read_native_tv(state, id, request_id, |saved| async move {
+        state
+            .device_connection
+            .review_launcher_removal(&saved.tv.host, &saved.tv.identity_sha256)
+            .await
+    })
+    .await
+}
+
+pub async fn remove_launcher(
+    state: &AppState,
+    id: String,
+    revision: String,
+    confirmed: bool,
+) -> AppResult<SavedTv> {
+    if !confirmed || !valid_identity(&revision) {
+        return Err(AppError::new(
+            "confirmation_required",
+            "Check Home and startup and confirm removal first.",
+        ));
+    }
+    let _guard = state.operation.try_lock().map_err(|_| busy())?;
+    let saved = state.profiles.get(&id).await?;
+    state
+        .device_connection
+        .remove_launcher(&saved.tv.host, &saved.tv.identity_sha256, &revision)
+        .await?;
+    state
+        .profiles
+        .save(VerifiedTv {
+            launcher_version: None,
+            home_routing_mode: None,
+            native_home_settings: None,
+            ..saved.tv
+        })
+        .await
+}
 
 pub async fn install_launcher(
     state: &AppState,

@@ -416,6 +416,19 @@ export function testService(): DesktopService {
       profiles.set(id, updated);
       return updated;
     },
+    reviewLauncherRemoval: async (id, signal) => {
+      signal.throwIfAborted();
+      const version = profiles.get(id)?.launcher_version;
+      if (!version) throw new Error("The AeroTizen installation changed.");
+      return { version, revision: testBackupSha256 };
+    },
+    removeLauncher: async (id, revision, confirmed) => {
+      const profile = profiles.get(id);
+      if (!profile || !confirmed || revision !== testBackupSha256) throw new Error("Review and confirm removal first.");
+      const updated = { ...profile, launcher_version: null, home_routing_mode: undefined };
+      profiles.set(id, updated);
+      return updated;
+    },
     prepareNativeHome: async (id) => {
       const tv = profiles.get(id);
       if (!tv || !canApplyNativeHome(tv)) throw new Error("Native Home is unavailable for this TV.");

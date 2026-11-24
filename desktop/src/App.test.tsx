@@ -24,6 +24,44 @@ function mount(service: DesktopService = testService()) {
 }
 
 describe("Launcher releases and button names", () => {
+  it("checks Home before offering removal and requires a separate confirmation", async () => {
+    const service = testService();
+    const review = vi.spyOn(service, "reviewLauncherRemoval").mockRejectedValueOnce({
+      code: "launcher_home_assigned",
+      message: "AeroTizen is still assigned to Home or startup.",
+    });
+    const remove = vi.spyOn(service, "removeLauncher");
+    const user = userEvent.setup();
+    mount(service);
+    await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
+    const sidebar = within(screen.getByRole("navigation", { name: "TV actions" }));
+    await user.click(sidebar.getByRole("button", { name: "Install & update" }));
+
+    await user.click(screen.getByRole("button", { name: "Remove AeroTizen" }));
+    const dialog = within(screen.getByRole("dialog", { name: "Remove AeroTizen" }));
+    expect(await dialog.findByRole("alert")).toHaveTextContent("AeroTizen is still assigned");
+    expect(dialog.queryByRole("button", { name: "Remove AeroTizen" })).not.toBeInTheDocument();
+    await user.click(dialog.getByRole("button", { name: "Open Home and startup" }));
+    expect(screen.getByRole("heading", { name: "Home and startup" })).toBeVisible();
+    expect(remove).not.toHaveBeenCalled();
+
+    await user.click(sidebar.getByRole("button", { name: "Install & update" }));
+    await user.click(screen.getByRole("button", { name: "Remove AeroTizen" }));
+    expect(await screen.findByText("This deletes AeroTizen and its settings from this TV.")).toBeVisible();
+    expect(remove).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(remove).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Remove AeroTizen" }));
+    const confirmation = await within(screen.getByRole("dialog", { name: "Remove AeroTizen" })).findByRole("button", {
+      name: "Remove AeroTizen",
+    });
+    await user.click(confirmation);
+    expect(await screen.findByRole("heading", { name: "AeroTizen is not installed" })).toBeVisible();
+    expect(review).toHaveBeenCalledTimes(3);
+    expect(remove).toHaveBeenCalledExactlyOnceWith(livingRoom.id, testBackupSha256, true);
+  });
+
   it("refreshes published releases without hiding the current release or blocking navigation", async () => {
     const service = testService();
     const catalog = vi.spyOn(service, "launcherCatalog");

@@ -4,6 +4,7 @@ import type {
   ButtonTargetApp,
   DesktopService,
   LauncherRelease,
+  LauncherRemovalReview,
   SavedTv,
   TvButtonMapping,
 } from "../contracts";
@@ -16,6 +17,7 @@ import { loadPublishedReleases } from "./releaseCatalog";
 
 const SIMULATOR_ACCOUNT = { email: "developer@example.test" };
 const SIMULATOR_COMPUTER_IP = "192.0.2.10";
+const LAUNCHER_PACKAGE_ID = "DclHome001";
 function cancelled(): DOMException {
   return new DOMException("Simulator request cancelled.", "AbortError");
 }
@@ -40,6 +42,45 @@ function originalButton(button: string): TvButtonMapping {
 }
 function buttonApps(tv: SimulatedTv): ButtonTargetApp[] {
   return tv.apps.map((app) => ({ id: app.id === "DclHome001" ? "DclHome001.Home" : `${app.id}.App`, name: app.name }));
+}
+
+function reviewLauncherRemoval(tv: SimulatedTv): LauncherRemovalReview {
+  const version = tv.profile.launcher_version;
+  const installed = tv.apps.find((app) => app.id === LAUNCHER_PACKAGE_ID);
+  const settings = tv.profile.native_home_settings;
+  if (!installed || version === null) throw new Error("The AeroTizen installation changed. Refresh the TV connection.");
+  const assignments = [
+    settings?.home_button_app,
+    settings?.home_app,
+    settings?.startup_app,
+    settings?.startup_backup_app,
+    settings && "first_screen" in settings ? settings.first_screen : tv.original_home.first_screen,
+  ];
+  if (
+    !tv.root.root_available ||
+    typeof settings?.smart_hub_autostart !== "boolean" ||
+    !assignments.every((value) => typeof value === "string")
+  ) {
+    throw Object.assign(
+      new Error(
+        "Could not verify all Home and startup settings. Connect through compatible paired Root access and try again.",
+      ),
+      {
+        code: "launcher_home_unverified",
+      },
+    );
+  }
+  if (assignments.some((value) => value.split(".")[0] === LAUNCHER_PACKAGE_ID)) {
+    throw Object.assign(
+      new Error(
+        "AeroTizen is still assigned to Home or startup. Restore the original settings in Home and startup, fully restart the TV, then try removal again.",
+      ),
+      {
+        code: "launcher_home_assigned",
+      },
+    );
+  }
+  return { version, revision: installed.revision };
 }
 
 /** TV/account actions are local; only published release metadata can use a live service. */
@@ -166,23 +207,34 @@ export function createSimulatorService(store: SimulatorStore, loadReleases = loa
         if (!releases.some((release) => release.version === version)) throw new Error("Choose an available release.");
         if (currentVersion && (compareLauncherVersions(version, currentVersion) ?? 0) < 0 && !confirmed)
           throw new Error("Confirm the downgrade first.");
+        const launcher = {
+          id: LAUNCHER_PACKAGE_ID,
+          name: "AeroTizen",
+          apps: ["AeroTizen"],
+          protected: true,
+          revision: createIdentity(),
+        };
         return edit(id, (current) => ({
           ...withProfile(current, {
             launcher_version: version,
             home_routing_mode: current.profile.home_routing_mode ?? "watcher",
           }),
-          apps: current.apps.some((app) => app.id === "DclHome001")
-            ? current.apps
-            : [
-                {
-                  id: "DclHome001",
-                  name: "AeroTizen",
-                  apps: ["AeroTizen"],
-                  protected: true,
-                  revision: createIdentity(),
-                },
-                ...current.apps,
-              ],
+          apps: current.apps.some((app) => app.id === LAUNCHER_PACKAGE_ID)
+            ? current.apps.map((app) => (app.id === LAUNCHER_PACKAGE_ID ? launcher : app))
+            : [launcher, ...current.apps],
+        })).profile;
+      }),
+    reviewLauncherRemoval: (id, signal) =>
+      request("reviewLauncherRemoval", () => reviewLauncherRemoval(known(id)), signal),
+    removeLauncher: (id, revision, confirmed) =>
+      request("removeLauncher", () => {
+        if (!confirmed) throw new Error("Check Home and startup and confirm removal first.");
+        if (reviewLauncherRemoval(known(id)).revision !== revision) {
+          throw new Error("The AeroTizen installation changed. Refresh the TV connection.");
+        }
+        return edit(id, (current) => ({
+          ...withProfile(current, { launcher_version: null, home_routing_mode: undefined }),
+          apps: current.apps.filter((app) => app.id !== LAUNCHER_PACKAGE_ID),
         })).profile;
       }),
     listApps: (id, signal) => request("listApps", () => known(id).apps, signal),
