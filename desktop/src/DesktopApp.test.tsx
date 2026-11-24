@@ -24,7 +24,7 @@ describe("Desktop app", () => {
     expect(connect).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "App menu" }));
     expect(await screen.findByRole("menuitem", { name: "About AeroTizen" })).toBeVisible();
-    expect(screen.getAllByRole("menuitem")).toHaveLength(2);
+    expect(screen.getByRole("menuitem", { name: "Logs" })).toBeVisible();
     expect(screen.getByRole("menuitem", { name: "Sign in to Samsung" })).toBeVisible();
   });
 

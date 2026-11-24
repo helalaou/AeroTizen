@@ -1,5 +1,5 @@
 import { ActionIcon, AppShell, Burger, Group, Menu, Text } from "@mantine/core";
-import { Info, LogIn, LogOut, MoreHorizontal } from "lucide-react";
+import { Info, LogIn, LogOut, MoreHorizontal, ScrollText } from "lucide-react";
 import styles from "../styles.module.css";
 
 export const DESKTOP_HEADER = { height: 64 };
@@ -7,10 +7,11 @@ export const DESKTOP_HEADER = { height: 64 };
 interface HeaderProps {
   tvMenu?: { opened: boolean; toggle(): void };
   onAbout?(): void;
+  onLogs?(): void;
   samsung?: { signedIn: boolean; email: string | null; busy: boolean; signIn(): void; signOut(): void };
 }
 
-export function Header({ tvMenu, onAbout, samsung }: HeaderProps) {
+export function Header({ tvMenu, onAbout, onLogs, samsung }: HeaderProps) {
   return (
     <AppShell.Header className={styles.header}>
       <Group className={styles.headerContent} justify="space-between" wrap="nowrap">
@@ -55,6 +56,11 @@ export function Header({ tvMenu, onAbout, samsung }: HeaderProps) {
                   </Menu.Item>
                   <Menu.Divider />
                 </>
+              )}
+              {onLogs && (
+                <Menu.Item leftSection={<ScrollText size={16} />} onClick={onLogs}>
+                  Logs
+                </Menu.Item>
               )}
               <Menu.Item leftSection={<Info size={16} />} onClick={onAbout}>
                 About AeroTizen

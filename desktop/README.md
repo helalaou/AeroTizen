@@ -47,8 +47,15 @@ Choose **Report issue** in the Overview header to open a GitHub issue draft in y
 model, available software versions and diagnostic report filled in. Add what you observed
 and submit the issue on GitHub.
 It excludes TV names, network addresses, device IDs, credentials and raw command output.
-For a full diagnostic ZIP, see
-[CLI log export](../docs/diagnostics.md).
+Open **Logs** from the app menu to see desktop operations, newest first. The app keeps
+up to 250 entries on this computer. **Export logs** saves a diagnostic ZIP with desktop
+activity, build and platform details, and up to 20 redacted Home recovery summaries.
+When a TV is selected, you can also include launcher and background service logs and a
+live Home settings snapshot. The snapshot uses a compatible paired Root connection.
+If a TV check fails, the ZIP records the reason and still includes the desktop data.
+Reports omit account details, TV addresses, raw output and original recovery files.
+The browser simulator downloads a text log of simulated activity.
+See the [Logs view](screenshots/logs.png).
 
 Open **Apps** to search the TV's installed packages by name. A package can contain more
 than one app. The list shows them together and labels packages the CLI protects.

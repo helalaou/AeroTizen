@@ -18,6 +18,7 @@ const OKAY: u32 = u32::from_le_bytes(*b"OKAY");
 const WRTE: u32 = u32::from_le_bytes(*b"WRTE");
 const CLSE: u32 = u32::from_le_bytes(*b"CLSE");
 const HOST_BANNER: &[u8] = b"host::aerotizen\0";
+const WATCHER_SERVICE: &[u8] = b"tcp:47790\0";
 
 pub(super) trait SdbIo: AsyncRead + AsyncWrite + Unpin + Send {}
 impl<T: AsyncRead + AsyncWrite + Unpin + Send> SdbIo for T {}
@@ -156,12 +157,16 @@ impl Sdb {
     }
 
     pub async fn watcher_status(&mut self) -> io::Result<String> {
-        const WATCHER_SERVICE: &[u8] = b"tcp:47790\0";
         const WATCHER_REQUEST: &[u8] =
             b"GET / HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         const MAX_WATCHER_BYTES: usize = 128 * 1024;
         self.service(WATCHER_SERVICE, MAX_WATCHER_BYTES, Some(WATCHER_REQUEST))
             .await
+    }
+
+    pub async fn diagnostics(&mut self, limit: usize) -> io::Result<String> {
+        const REQUEST: &[u8] = b"GET /diagnostics/logs HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\nX-AeroTizen-Diagnostics: 1\r\n\r\n";
+        self.service(WATCHER_SERVICE, limit, Some(REQUEST)).await
     }
 
     async fn service(

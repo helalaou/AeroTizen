@@ -46,6 +46,19 @@ pub(crate) async fn serve_script(
     io: &mut (impl SdbIo + ?Sized),
     steps: Vec<(String, String)>,
 ) -> Vec<String> {
+    serve_script_with_request(
+        io,
+        steps,
+        b"GET / HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+    )
+    .await
+}
+
+pub(crate) async fn serve_script_with_request(
+    io: &mut (impl SdbIo + ?Sized),
+    steps: Vec<(String, String)>,
+    http_request: &[u8],
+) -> Vec<String> {
     let connect = receive(io).await.unwrap();
     assert_eq!(connect.command, CNXN);
     send(io, CNXN, VERSION, 4096, b"device::TEST\0")
@@ -70,10 +83,7 @@ pub(crate) async fn serve_script(
         if expected == "tcp:47790" {
             let request = receive(io).await.unwrap();
             assert_eq!(request.command, WRTE);
-            assert_eq!(
-                request.payload,
-                b"GET / HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n"
-            );
+            assert_eq!(request.payload, http_request);
             send(io, OKAY, remote, local, &[]).await.unwrap();
         }
         send(io, WRTE, remote, local, output.as_bytes())

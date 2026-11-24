@@ -1,9 +1,10 @@
 import { Alert, AppShell, Loader, LoadingOverlay, Modal, Stack, Text } from "@mantine/core";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppsPanel } from "./components/AppsPanel";
 import { ButtonMappingPanel } from "./components/ButtonMappingPanel";
 import { DESKTOP_HEADER, Header } from "./components/Header";
 import { LauncherPanel } from "./components/LauncherPanel";
+import { LogsDialog } from "./components/LogsDialog";
 import { LocalAppInstallDialog } from "./components/LocalAppInstallDialog";
 import { RootAccessPanel } from "./components/RootAccessPanel";
 import { RootRemovalDialog } from "./components/RootRemovalDialog";
@@ -17,6 +18,8 @@ import type { TvDialog } from "./components/TvDialogs";
 import { TvSelection } from "./components/TvSelection";
 import { TvSidebar } from "./components/TvSidebar";
 import type { DesktopService, TvPage } from "./contracts";
+import { createDesktopLog } from "./services/desktopLogs";
+import { loggedService } from "./services/loggedService";
 import { showToast, Toasts } from "./Toasts";
 import { useTvManager } from "./useTvManager";
 import { useSamsungAccount } from "./useSamsungAccount";
@@ -24,9 +27,13 @@ import styles from "./styles.module.css";
 
 interface AppProps {
   service: DesktopService;
+  simulator?: boolean;
 }
 
-export function App({ service }: AppProps) {
+export function App({ service: adapter, simulator = false }: AppProps) {
+  const [log] = useState(() => createDesktopLog(simulator));
+  const service = useMemo(() => loggedService(adapter, log), [adapter, log]);
+  useEffect(() => log.recordOpened(), [log]);
   const manager = useTvManager(service);
   const samsung = useSamsungAccount(service.samsung);
   const [signInDialog, setSignInDialog] = useState<
@@ -35,6 +42,7 @@ export function App({ service }: AppProps) {
   const [page, setPage] = useState<TvPage>("overview");
   const [dialog, setDialog] = useState<TvDialog | null>(null);
   const [about, setAbout] = useState(false);
+  const [logsOpened, setLogsOpened] = useState(false);
   const [localInstallOpened, setLocalInstallOpened] = useState(false);
   const [rootSetupOpened, setRootSetupOpened] = useState(false);
   const [rootUpdateOpened, setRootUpdateOpened] = useState(false);
@@ -216,6 +224,7 @@ export function App({ service }: AppProps) {
       <Header
         tvMenu={selected ? { opened: menuOpened, toggle: () => setMenuOpened((current) => !current) } : undefined}
         onAbout={() => setAbout(true)}
+        onLogs={() => setLogsOpened(true)}
         samsung={
           service.samsung
             ? {
@@ -395,6 +404,9 @@ export function App({ service }: AppProps) {
           onRename={manager.rename}
           onForget={manager.forget}
         />
+      )}
+      {logsOpened && (
+        <LogsDialog log={log} simulator={simulator} tvId={selected?.id} onClose={() => setLogsOpened(false)} />
       )}
       <Modal opened={about} onClose={() => setAbout(false)} title="About AeroTizen" centered>
         <Stack gap="sm">
