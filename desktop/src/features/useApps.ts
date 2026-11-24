@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { DesktopService, TvAppPackage, NamedAppRemovalOutcome, LocalAppPackage } from "../contracts";
 import type { FeatureContext } from "./context";
+import { showToast } from "../Toasts";
 
 export function useApps(service: DesktopService, context: FeatureContext) {
   const { selected, mounted, run, loadPage, updateProfile } = context;
@@ -38,7 +39,15 @@ export function useApps(service: DesktopService, context: FeatureContext) {
         remaining,
         picked.filter(({ id }) => resultById.get(id)?.status === "refused"),
       );
-      setAppRemoval(picked.map(({ id, name }) => ({ ...(resultById.get(id) ?? { id, status: "unverified" }), name })));
+      const outcomes = picked.map(({ id, name }): NamedAppRemovalOutcome => ({
+        ...(resultById.get(id) ?? { id, status: "unverified" }),
+        name,
+      }));
+      if (outcomes.length && outcomes.every(({ status }) => status === "removed")) {
+        showToast(outcomes.length === 1 ? `${outcomes[0]!.name} removed.` : `${outcomes.length} apps removed.`);
+      } else {
+        setAppRemoval(outcomes);
+      }
     });
 
   const chooseLocalApp = async (reportError: (message: string) => void) => {

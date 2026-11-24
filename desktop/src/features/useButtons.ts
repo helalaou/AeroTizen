@@ -10,6 +10,20 @@ import type {
 import { checkButtonActivation, needsActivationCheck } from "../services/buttonActivation";
 import type { ButtonActivation } from "../services/buttonActivation";
 import type { FeatureContext } from "./context";
+import { showToast } from "../Toasts";
+
+function announceAssignment({ button, mode, app_name }: TvButtonMapping) {
+  switch (mode) {
+    case "default":
+      showToast(`${button} restored to its original action.`);
+      break;
+    case "disabled":
+      showToast(`${button} disabled.`);
+      break;
+    case "app":
+      showToast(app_name ? `${button} now opens ${app_name}.` : `${button} assignment is active.`);
+  }
+}
 
 export function useButtons(service: DesktopService, context: FeatureContext) {
   const { selected, mounted, run, loadPage, cancelPageRead } = context;
@@ -61,6 +75,7 @@ export function useButtons(service: DesktopService, context: FeatureContext) {
         if (!result) return;
         if (result.mappings) setButtonMappings(result.mappings);
         setButtonActivation(result.confirmed ? null : { button: expected.button, state: "unconfirmed" });
+        if (result.confirmed) announceAssignment(expected);
       },
       (message) => {
         if (message) setButtonActivation({ button: expected.button, state: "unconfirmed" });
@@ -86,16 +101,15 @@ export function useButtons(service: DesktopService, context: FeatureContext) {
       async () => {
         setButtonChangeError(null);
         const updated = await buttonActions.change(id, change);
-        saved = updated;
-        if (!mounted.current) return;
         const name = updated.app_name ?? buttonApps?.find((app) => app.id === updated.app_id)?.name ?? null;
+        const assignment = { ...updated, app_name: name };
+        saved = assignment;
+        if (!mounted.current) return;
         setButtonMappings((current) =>
           current?.status === "ready"
             ? {
                 ...current,
-                buttons: current.buttons.map((row) =>
-                  row.button === change.button ? { ...updated, app_name: name } : row,
-                ),
+                buttons: current.buttons.map((row) => (row.button === change.button ? assignment : row)),
               }
             : current,
         );
@@ -103,7 +117,10 @@ export function useButtons(service: DesktopService, context: FeatureContext) {
       "app",
       reportError,
     );
-    if (success && mounted.current && saved && needsActivationCheck(saved)) verifyActivation(id, saved);
+    if (success && mounted.current && saved) {
+      if (needsActivationCheck(saved)) verifyActivation(id, saved);
+      else announceAssignment(saved);
+    }
     return success;
   };
 
@@ -126,7 +143,12 @@ export function useButtons(service: DesktopService, context: FeatureContext) {
       "app",
       reportError,
     );
-    if (success && mounted.current) loadButtons(id);
+    if (success && mounted.current) {
+      loadButtons(id);
+      if (change.action === "learn") showToast(`${change.button} learned.`);
+      if (change.action === "rename") showToast(`Button renamed to ${change.new_name}.`);
+      if (change.action === "reset") showToast("Remote buttons reset.");
+    }
     return success;
   };
 

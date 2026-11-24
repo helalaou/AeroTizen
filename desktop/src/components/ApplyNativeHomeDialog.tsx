@@ -1,5 +1,6 @@
 import { Alert, Button, Group, Modal, Stack, Text } from "@mantine/core";
 import { useState } from "react";
+import { showToast } from "../Toasts";
 
 export type ApplyNativeHome = (reportError: (message: string) => void) => Promise<boolean>;
 
@@ -20,6 +21,7 @@ export function ApplyNativeHomeDialog({ tvName, hasBackup, onApply, onClose }: A
     setError(null);
     if (await onApply(setError)) {
       onClose();
+      showToast("Home and startup settings updated.");
     } else {
       setApplying(false);
       setError((message) => message ?? "Could not change Home and startup settings. Try again.");

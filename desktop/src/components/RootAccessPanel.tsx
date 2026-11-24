@@ -17,6 +17,7 @@ import { useState } from "react";
 import type { RootAccessStatus } from "../contracts";
 import { errorMessage } from "../contracts";
 import { rootSetupStage } from "../services/rootAccess";
+import { showToast } from "../Toasts";
 import styles from "../styles.module.css";
 import { rootStatus } from "../tvDetails";
 import { RootStatusBadge } from "./RootStatusBadge";
@@ -44,7 +45,6 @@ export function RootAccessPanel({
   onRemove,
   onRevealRecovery,
 }: RootAccessPanelProps) {
-  const [revealError, setRevealError] = useState<string | null>(null);
   const [revealNotice, setRevealNotice] = useState<string | null>(null);
   const stage = status ? rootSetupStage(status) : null;
   const fresh = Boolean(status && !loading && !error);
@@ -206,13 +206,12 @@ export function RootAccessPanel({
                                 c="blue.7"
                                 underline="always"
                                 onClick={() => {
-                                  setRevealError(null);
                                   setRevealNotice(null);
                                   void onRevealRecovery()
                                     .then((notice) => {
                                       if (notice) setRevealNotice(notice);
                                     })
-                                    .catch((error: unknown) => setRevealError(errorMessage(error)));
+                                    .catch((error: unknown) => showToast(errorMessage(error), "error"));
                                 }}
                               >
                                 Show in folder
@@ -222,11 +221,6 @@ export function RootAccessPanel({
                         </dd>
                       </div>
                     </dl>
-                    {revealError && (
-                      <Alert role="alert" color="red">
-                        {revealError}
-                      </Alert>
-                    )}
                     {revealNotice && (
                       <Text role="status" size="sm">
                         {revealNotice}

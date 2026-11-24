@@ -1,6 +1,7 @@
 import { Alert, Button, Checkbox, Code, Group, Modal, Stack, Text } from "@mantine/core";
 import { useState } from "react";
 import type { RootAccessStatus, RootRemoveAction, SavedTv } from "../contracts";
+import { showToast } from "../Toasts";
 
 interface RootRemovalDialogProps {
   profile: SavedTv;
@@ -23,7 +24,11 @@ export function RootRemovalDialog({ profile, status, remove, simulateRestart, on
     setPending(true);
     setError(null);
     try {
-      await remove(prepared ? "finish" : "start", setError);
+      const result = await remove(prepared ? "finish" : "start", setError);
+      if (result?.phase === "removed") {
+        onClose();
+        showToast(`Root access removed from ${profile.name}.`);
+      }
     } finally {
       setPending(false);
     }
@@ -44,11 +49,6 @@ export function RootRemovalDialog({ profile, status, remove, simulateRestart, on
         <Text size="sm">
           TV: <strong>{profile.name}</strong>
         </Text>
-        {complete && (
-          <Alert color="green" role="status">
-            The TV confirmed that root access was removed.
-          </Alert>
-        )}
         {!complete && !prepared && (
           <>
             <Alert color="red" title="Remove root access from this TV?">
@@ -99,7 +99,7 @@ export function RootRemovalDialog({ profile, status, remove, simulateRestart, on
         )}
         <Group justify="flex-end">
           <Button variant="default" disabled={pending} onClick={onClose}>
-            {complete ? "Done" : "Close"}
+            Close
           </Button>
           {!complete && (
             <Button color="red" loading={pending} disabled={!canRun} onClick={() => void apply()}>

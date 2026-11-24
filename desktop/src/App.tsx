@@ -17,6 +17,7 @@ import type { TvDialog } from "./components/TvDialogs";
 import { TvSelection } from "./components/TvSelection";
 import { TvSidebar } from "./components/TvSidebar";
 import type { DesktopService, TvPage } from "./contracts";
+import { showToast, Toasts } from "./Toasts";
 import { useTvManager } from "./useTvManager";
 import { useSamsungAccount } from "./useSamsungAccount";
 import styles from "./styles.module.css";
@@ -29,9 +30,7 @@ export function App({ service }: AppProps) {
   const manager = useTvManager(service);
   const samsung = useSamsungAccount(service.samsung);
   const [signInDialog, setSignInDialog] = useState<
-    | { kind: "account" }
-    | { kind: "install"; version: string; confirmed: boolean; resolve(success: boolean): void }
-    | null
+    { kind: "account" } | { kind: "install"; version: string; confirmed: boolean } | null
   >(null);
   const [page, setPage] = useState<TvPage>("overview");
   const [dialog, setDialog] = useState<TvDialog | null>(null);
@@ -196,8 +195,11 @@ export function App({ service }: AppProps) {
         canInstall={!busy}
         canSetupSigning={Boolean(service.samsung)}
         onInstall={(version, confirmed) => {
-          if (selected.launcher_signing_ready || !service.samsung) return manager.installLauncher(version, confirmed);
-          return new Promise<boolean>((resolve) => setSignInDialog({ kind: "install", version, confirmed, resolve }));
+          if (selected.launcher_signing_ready || !service.samsung) {
+            void manager.installLauncher(version, confirmed);
+          } else {
+            setSignInDialog({ kind: "install", version, confirmed });
+          }
         }}
         onRetryVersions={manager.retryLauncherVersions}
         releasesLoading={manager.launcherReleasesLoading}
@@ -210,6 +212,7 @@ export function App({ service }: AppProps) {
       navbar={selected ? { width: 224, breakpoint: "sm", collapsed: { mobile: !menuOpened } } : undefined}
       padding={0}
     >
+      <Toasts />
       <Header
         tvMenu={selected ? { opened: menuOpened, toggle: () => setMenuOpened((current) => !current) } : undefined}
         onAbout={() => setAbout(true)}
@@ -299,8 +302,8 @@ export function App({ service }: AppProps) {
               : undefined
           }
           onComplete={(success) => {
-            if (signInDialog.kind === "install") signInDialog.resolve(success);
             setSignInDialog(null);
+            if (success && signInDialog.kind === "account") showToast("Signed in to Samsung.");
           }}
         />
       )}

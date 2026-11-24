@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { errorMessage } from "./contracts";
 import type { SamsungAccount, SamsungService } from "./contracts";
+import { showToast } from "./Toasts";
 
 export function useSamsungAccount(service: SamsungService | undefined) {
   const [account, setAccount] = useState<SamsungAccount | null>(null);
@@ -63,7 +64,10 @@ export function useSamsungAccount(service: SamsungService | undefined) {
     setError(null);
     try {
       await service.signOut();
-      if (mounted.current) setAccount(null);
+      if (mounted.current) {
+        setAccount(null);
+        showToast("Signed out of Samsung.");
+      }
     } catch (caught) {
       if (mounted.current) setError(errorMessage(caught));
     } finally {

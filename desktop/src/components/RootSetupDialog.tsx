@@ -1,7 +1,8 @@
 import { Alert, Button, Checkbox, Code, Group, List, Modal, Stack, Stepper, Text } from "@mantine/core";
-import { Check, RotateCw } from "lucide-react";
+import { RotateCw } from "lucide-react";
 import { useState } from "react";
 import type { RootAccessStatus, RootSetupAction, SavedTv } from "../contracts";
+import { showToast } from "../Toasts";
 import { ROOT_POWER_OFF_SECONDS, rootSetupStage } from "../services/rootAccess";
 import { SamsungSignInDialog } from "./SamsungSignInDialog";
 
@@ -48,8 +49,14 @@ export function RootSetupDialog({
       reportError(message);
     });
     setPending(null);
-    if (action === "verify" && result && !result.setup_complete)
-      setNotice("The TV has not confirmed automatic root access yet. Check the restart steps, then try again.");
+    if (action === "verify" && result) {
+      if (result.setup_complete && result.root_available) {
+        onClose();
+        showToast(`Root access is ready on ${profile.name}.`);
+      } else {
+        setNotice("The TV has not confirmed automatic root access yet. Check the restart steps, then try again.");
+      }
+    }
     return result !== null;
   }
 
@@ -164,11 +171,6 @@ export function RootSetupDialog({
             )}
           </>
         )}
-        {pending !== "start" && stage === "complete" && (
-          <Alert color="green" icon={<Check size={18} />} role="status">
-            Root access and automatic startup are verified on {profile.name}.
-          </Alert>
-        )}
         {pending !== "start" && (stage === "blocked" || stage === "unavailable") && (
           <Text size="sm">Refresh Root access to check the current setup state.</Text>
         )}
@@ -184,7 +186,7 @@ export function RootSetupDialog({
         )}
         <Group justify="flex-end">
           <Button variant="default" disabled={Boolean(pending)} onClick={onClose}>
-            {stage === "complete" ? "Done" : "Close"}
+            Close
           </Button>
           {error && (
             <Button

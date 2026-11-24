@@ -55,8 +55,8 @@ test("confirms a helper update, resumes after reload and verifies a new boot", a
     (window as unknown as { __restartDemoRoot(id: string): void }).__restartDemoRoot(id);
   }, livingRoom.id);
   await dialog.getByRole("button", { name: "Check after restart" }).click();
-  await expect(dialog.getByText(/Verified root access version 3.0.1 and automatic startup/)).toBeVisible();
-  await dialog.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByText("Root access updated to 3.0.1 on Living room.")).toBeVisible();
+  await expect(dialog).toBeHidden();
   await expect(page.getByRole("button", { name: "Update available" })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -98,8 +98,8 @@ test("guides signing and setup, survives reload and requires a verified demo boo
     fixture.__restartDemoRoot(id);
   }, bedroom.id);
   await wizard.getByRole("button", { name: "Check after restart" }).click();
-  await expect(wizard.getByText(/Root access and automatic startup are verified/)).toBeVisible();
-  await wizard.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByText("Root access is ready on Bedroom.")).toBeVisible();
+  await expect(wizard).toBeHidden();
   await expect(page.getByText(testRootReady.runtime_version!, { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });

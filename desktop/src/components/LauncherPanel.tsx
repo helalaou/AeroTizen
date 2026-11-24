@@ -25,7 +25,7 @@ interface LauncherPanelProps {
   releasesLoading: boolean;
   busy: boolean;
   canInstall: boolean;
-  onInstall(version: string, confirmReplace: boolean): Promise<boolean>;
+  onInstall(version: string, confirmReplace: boolean): void;
   onRetryVersions(): void;
   canSetupSigning?: boolean;
 }
@@ -114,7 +114,6 @@ export function LauncherPanel({
 }: LauncherPanelProps) {
   const [choice, setChoice] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
-  const [verified, setVerified] = useState<string | null>(null);
   const installed = profile.launcher_version;
   const latest = releases?.[0];
   const summary = releaseSummary(installed, releases, releasesLoading);
@@ -125,17 +124,16 @@ export function LauncherPanel({
   const installDisabled = !canInstall || releasesLoading || !(profile.launcher_signing_ready || canSetupSigning);
   const releaseToConfirm = releases?.find(({ version }) => version === confirmation && version !== installed);
 
-  async function install(version: string, confirmed: boolean) {
+  function install(version: string, confirmed: boolean) {
     if (installDisabled || version === installed) return;
     setConfirmation(null);
-    setVerified(null);
-    if (await onInstall(version, confirmed)) setVerified(version);
+    onInstall(version, confirmed);
   }
 
   function reviewInstall(version: string) {
     const comparison = installed === null ? 1 : compareLauncherVersions(version, installed);
     if (comparison === null || comparison < 0) setConfirmation(version);
-    else void install(version, false);
+    else install(version, false);
   }
 
   return (
@@ -190,11 +188,6 @@ export function LauncherPanel({
               </>
             )}
             {installed && " For an existing installation, use its original signing profile."}
-          </Alert>
-        )}
-        {verified && installed === verified && (
-          <Alert color="green" role="status">
-            AeroTizen {verified} installed and verified.
           </Alert>
         )}
         {selectedRelease && (
@@ -254,11 +247,7 @@ export function LauncherPanel({
               <Button variant="default" onClick={() => setConfirmation(null)}>
                 Cancel
               </Button>
-              <Button
-                color="red"
-                disabled={installDisabled}
-                onClick={() => void install(releaseToConfirm.version, true)}
-              >
+              <Button color="red" disabled={installDisabled} onClick={() => install(releaseToConfirm.version, true)}>
                 {installLabel(releaseToConfirm.version, installed)}
               </Button>
             </Group>

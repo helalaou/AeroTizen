@@ -90,12 +90,17 @@ test("navigates the selected TV actions and keeps the initial screen TV-only", a
   await expect(page.getByRole("heading", { name: "Version 2.7.0", exact: true })).toBeVisible();
   await expect(updateStatus).toBeVisible();
   await page.getByRole("button", { name: "Update to 3.1.0" }).click();
-  await expect(page.getByText("AeroTizen 3.1.0 installed and verified.")).toBeVisible();
+  const installedToast = page.getByText("AeroTizen 3.1.0 installed.");
+  await expect(installedToast).toBeVisible();
   const upToDate = page.getByRole("heading", { name: "AeroTizen is up to date", exact: true });
   await expect(upToDate).toBeVisible();
   await expect(
     history.getByRole("button", { name: "3.1.0, Latest release, Installed on this TV", exact: true }),
   ).toBeVisible();
+  const historyPosition = await history.boundingBox();
+  await page.getByRole("button", { name: "Dismiss notification" }).click();
+  await expect(installedToast).toBeHidden();
+  expect(await history.boundingBox()).toEqual(historyPosition);
   await expect(
     page.getByRole("main").getByRole("button", { name: /^(Install|Update to|Already installed)/ }),
   ).toHaveCount(0);
@@ -141,7 +146,7 @@ test("installs on a TV without a launcher and shows the version on Overview", as
   const setup = page.getByRole("dialog", { name: "Set up Bedroom" });
   await setup.getByRole("button", { name: "Sign in with Samsung" }).click();
   await expect(setup).toBeHidden();
-  await expect(page.getByText("AeroTizen 3.1.0 installed and verified.")).toBeVisible();
+  await expect(page.getByText("AeroTizen 3.1.0 installed.")).toBeVisible();
   await showAction(page, isMobile, "Overview");
   await expect(page.getByRole("main").getByText("3.1.0", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Update available" })).toHaveCount(0);
@@ -173,8 +178,7 @@ test("shows the connected TV's Home button, startup, routing and backup status",
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
   await backup.getByRole("button", { name: "Restore original settings", exact: true }).click();
   await review.getByRole("button", { name: "Confirm restore", exact: true }).click();
-  await expect(backup.getByText("Home backup restored.")).toBeVisible();
-  await backup.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByText("Original Home and startup settings restored.")).toBeVisible();
   await expect(backup).toBeHidden();
   await expect(page.getByRole("heading", { name: "AeroTizen reopens after Samsung Home", exact: true })).toBeVisible();
   const setting = (section: Locator, label: string) =>

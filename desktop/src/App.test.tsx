@@ -179,13 +179,13 @@ describe("Home and startup", () => {
     expect(await review.findByRole("alert")).toHaveTextContent("TV disconnected.");
 
     await user.click(review.getByRole("button", { name: "Confirm restore" }));
-    expect(await backup.findByText("Home backup restored.")).toBeVisible();
+    expect(await screen.findByText("Original Home and startup settings restored.")).toBeVisible();
     expect(restore).toHaveBeenCalledTimes(2);
     expect(restore).toHaveBeenLastCalledWith(
       livingRoom.id,
       livingRoom.home_backup?.status === "saved" ? livingRoom.home_backup.captured_at : undefined,
     );
-    await user.click(backup.getByRole("button", { name: "Done" }));
+    expect(screen.queryByRole("dialog", { name: "Restore original settings?" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "AeroTizen reopens after Samsung Home" })).toBeVisible();
     const current = within(screen.getByRole("region", { name: "Current settings" }));
     expect(current.getByText("Home button").parentElement).toHaveTextContent("Samsung Home");
@@ -282,10 +282,12 @@ describe("TV selection", () => {
     await user.click(assign);
     expect(await row.findByText("YouTube")).toBeVisible();
     expect(await row.findByText("Checking…")).toBeVisible();
+    expect(screen.queryByText("Netflix now opens YouTube.")).not.toBeInTheDocument();
     expect(screen.queryByText(/Change saved\. Checking/)).not.toBeInTheDocument();
     expect(screen.queryByRole("status", { name: "Loading button mappings" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Install & update" })).toBeEnabled();
     expect(await row.findByText("Active", {}, { timeout: 4000 })).toBeVisible();
+    expect(await screen.findByText("Netflix now opens YouTube.")).toBeVisible();
     expect(save).toHaveBeenCalledTimes(2);
     expect(save).toHaveBeenLastCalledWith(livingRoom.id, { button: "Netflix", mode: "app", app_id: "test.YouTube" });
     const readCount = reads.mock.calls.length;
@@ -509,7 +511,7 @@ describe("Samsung setup", () => {
     expect(await dialog.findByRole("alert")).toHaveTextContent("Samsung could not issue the certificates.");
     expect(install).not.toHaveBeenCalled();
     await user.click(dialog.getByRole("button", { name: "Continue" }));
-    expect(await screen.findByText("AeroTizen 3.1.0 installed and verified.")).toBeVisible();
+    expect(await screen.findByText("AeroTizen 3.1.0 installed.")).toBeVisible();
     expect(certificates).toHaveBeenCalledTimes(2);
     expect(install).toHaveBeenCalledExactlyOnceWith(bedroom.id, "3.1.0", null, false);
     expect(signIn).not.toHaveBeenCalled();

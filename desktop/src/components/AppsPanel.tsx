@@ -85,7 +85,6 @@ export function AppsPanel({
   const results = useRef<HTMLDivElement>(null);
   const currentSelection = selection?.inventory === packages ? selection : null;
   const picked = packages?.filter((item) => !item.protected && currentSelection?.ids.has(item.id)) ?? [];
-  const allRemoved = removal.every((item) => item.status === "removed");
   const query = search.trim().toLowerCase();
   const matches =
     packages?.filter(({ id, name, apps }) =>
@@ -190,7 +189,7 @@ export function AppsPanel({
         </Stack>
         {removal.length > 0 && (
           <Alert
-            color={allRemoved ? "green" : "orange"}
+            color="orange"
             title="Removal results"
             role="status"
             className={styles.appsRemovalResults}
