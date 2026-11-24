@@ -401,6 +401,38 @@ mod tests;
 
 pub(super) struct Inventory {
     pub rows: Vec<TvAppPackage>,
+    first_apps: HashMap<String, String>,
+}
+
+impl Inventory {
+    pub fn removal_target(&self, id: &str, revision: &str) -> AppResult<&str> {
+        let row = self
+            .rows
+            .iter()
+            .find(|row| row.id == id && row.revision == revision)
+            .ok_or_else(|| {
+                AppError::new(
+                    "apps_changed",
+                    "The app list changed. Refresh the TV and review your selection again.",
+                )
+            })?;
+        if row.protected {
+            return Err(AppError::new(
+                "protected_package",
+                "The selection includes a protected package.",
+            ));
+        }
+        self.first_apps
+            .get(id)
+            .map(String::as_str)
+            .filter(|id| super::sdb::valid_identifier(id))
+            .ok_or_else(|| {
+                AppError::new(
+                    "invalid_app_id",
+                    "The TV reported an unsupported app identifier.",
+                )
+            })
+    }
 }
 
 pub(super) fn checked(raw: &str) -> AppResult<Inventory> {
@@ -422,8 +454,15 @@ pub(super) fn checked(raw: &str) -> AppResult<Inventory> {
             "Could not verify the TV's app list. Refresh the TV and try again.",
         ));
     }
+    let mut first_apps = HashMap::new();
+    for app in &apps {
+        first_apps
+            .entry(app.package.clone())
+            .or_insert_with(|| app.id.clone());
+    }
     Ok(Inventory {
         rows: project_packages(apps)?,
+        first_apps,
     })
 }
 

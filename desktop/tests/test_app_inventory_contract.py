@@ -1,5 +1,6 @@
 """Keep native inventory fixtures tied to the current CLI rules and revision bytes."""
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -19,7 +20,30 @@ def test_protection_policy_matches_the_native_contract_fixture():
 @pytest.mark.parametrize("case", FIXTURE["cases"], ids=lambda case: case["name"])
 def test_inventory_projection_matches_current_cli(case):
     def project():
-        rows = desktop_worker.app_rows(packages(case["raw"]))
+        installed = packages(case["raw"])
+        rows = sorted(
+            [
+                {
+                    "id": pkgid,
+                    "name": desktop_worker.text_value(package["name"]),
+                    "apps": list(
+                        dict.fromkeys(desktop_worker.text_value(app["name"]) for app in package["apps"])
+                    ),
+                    "protected": package["class"] == "protected",
+                    "revision": hashlib.sha256(
+                        json.dumps(
+                            sorted(
+                                (app["appid"], app["name"], app.get("version") or "")
+                                for app in package["apps"]
+                            ),
+                            separators=(",", ":"),
+                        ).encode()
+                    ).hexdigest(),
+                }
+                for pkgid, package in installed.items()
+            ],
+            key=lambda row: row["name"].casefold(),
+        )
         names = {
             app["appid"]: desktop_worker.text_value(app["name"], app["appid"])
             for app in catalog.parse_applist(case["raw"])

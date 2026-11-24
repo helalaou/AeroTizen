@@ -266,3 +266,23 @@ fn button_edits_use_the_registered_native_command_without_a_worker_and_keep_busy
     );
     assert!(!state.worker_path.exists());
 }
+
+#[test]
+fn app_removal_uses_native_validation_without_a_worker_and_preserves_the_busy_guard() {
+    use tauri::Manager;
+    let fixture = Fixture::new();
+    let state = fixture._app.state::<AppState>();
+    let saved = fixture.invoke("list_tvs", json!({})).unwrap();
+    let args = json!({"id":saved[0]["id"],"packages":[]});
+    let guard = tauri::async_runtime::block_on(state.operation.lock());
+    assert_eq!(
+        fixture.invoke("remove_tv_apps", args.clone()).unwrap_err()["code"],
+        "operation_busy"
+    );
+    drop(guard);
+    assert_eq!(
+        fixture.invoke("remove_tv_apps", args).unwrap_err()["code"],
+        "invalid_request"
+    );
+    assert!(!state.worker_path.exists());
+}

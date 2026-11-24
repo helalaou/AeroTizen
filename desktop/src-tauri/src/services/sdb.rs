@@ -9,6 +9,7 @@ const MAX_SERVICE_FRAMES: usize = 4096;
 const MAX_INVENTORY_BYTES: usize = 1024 * 1024;
 const MAX_IDENTITY_BYTES: usize = 4096;
 const MAX_CAPABILITY_BYTES: usize = 64 * 1024;
+const MAX_UNINSTALL_BYTES: usize = 64 * 1024;
 const HEADER_BYTES: usize = 24;
 const CNXN: u32 = u32::from_le_bytes(*b"CNXN");
 const OPEN: u32 = u32::from_le_bytes(*b"OPEN");
@@ -128,6 +129,15 @@ impl Sdb {
 
     pub async fn read(&mut self, command: ReadCommand) -> io::Result<String> {
         self.service(command.service(), command.limit(), None).await
+    }
+
+    pub async fn uninstall(&mut self, app_id: &str) -> io::Result<String> {
+        if !valid_identifier(app_id) {
+            return Err(protocol_error());
+        }
+        let service = format!("shell:0 vd_appuninstall {app_id}\0");
+        self.service(service.as_bytes(), MAX_UNINSTALL_BYTES, None)
+            .await
     }
 
     pub async fn watcher_status(&mut self) -> io::Result<String> {
