@@ -1,5 +1,5 @@
 use crate::{
-    models::{AppResult, BackendStatus, LauncherRelease, SavedTv},
+    models::{AppResult, BackendStatus, LauncherRelease, LauncherRemovalReview, SavedTv},
     services,
     state::AppState,
 };
@@ -12,6 +12,25 @@ pub fn backend_status() -> BackendStatus {
 #[tauri::command]
 pub async fn launcher_catalog() -> AppResult<Vec<LauncherRelease>> {
     services::launcher_catalog::load().await
+}
+
+#[tauri::command]
+pub async fn review_launcher_removal(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    request_id: String,
+) -> AppResult<LauncherRemovalReview> {
+    services::launcher::review_launcher_removal(&state, id, request_id).await
+}
+
+#[tauri::command]
+pub async fn remove_launcher(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    revision: String,
+    confirmed: bool,
+) -> AppResult<SavedTv> {
+    services::launcher::remove_launcher(&state, id, revision, confirmed).await
 }
 
 #[tauri::command]

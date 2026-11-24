@@ -24,6 +24,8 @@ export function loggedService(service: DesktopService, log: DesktopLog): Desktop
     forget: track("forget", service.forget),
     launcherCatalog: track("releases", service.launcherCatalog),
     installLauncher: track("launcherInstall", service.installLauncher),
+    reviewLauncherRemoval: read("launcherRemovalReview", service.reviewLauncherRemoval),
+    removeLauncher: track("launcherRemove", service.removeLauncher),
     listApps: read("apps", service.listApps),
     removeApps: (id, packages) =>
       log.track("appsRemove", () => service.removeApps(id, packages), {

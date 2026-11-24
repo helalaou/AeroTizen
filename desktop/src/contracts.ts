@@ -58,6 +58,11 @@ export interface LauncherRelease {
   sections: { heading: string | null; changes: string[] }[];
 }
 
+export interface LauncherRemovalReview {
+  version: string;
+  revision: string;
+}
+
 export interface TvAppPackage {
   id: string;
   name: string;
@@ -184,6 +189,8 @@ export interface DesktopService {
     currentVersion: string | null,
     confirmReplace: boolean,
   ): Promise<SavedTv>;
+  reviewLauncherRemoval(id: string, signal: AbortSignal): Promise<LauncherRemovalReview>;
+  removeLauncher(id: string, revision: string, confirmed: boolean): Promise<SavedTv>;
   prepareNativeHome(id: string): Promise<PreparedHomeApply>;
   /** Verify the prepared backup revision before changing any TV settings. */
   applyNativeHome?(id: string, backupSha256: string): Promise<SavedTv>;

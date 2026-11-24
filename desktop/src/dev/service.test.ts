@@ -11,6 +11,29 @@ function setup() {
 const signal = () => new AbortController().signal;
 
 describe("TV simulator", () => {
+  it("blocks unsafe launcher removal and keeps the original backup after confirmed removal", async () => {
+    const { service, store, initial } = setup();
+    const native = initial.tvs[0]!.profile;
+    const watcher = initial.tvs[2]!.profile;
+    await expect(service.reviewLauncherRemoval(native.id, signal())).rejects.toMatchObject({
+      code: "launcher_home_assigned",
+    });
+    await expect(service.reviewLauncherRemoval(watcher.id, signal())).rejects.toMatchObject({
+      code: "launcher_home_unverified",
+    });
+
+    const backup = native.home_backup!;
+    if (backup.status !== "saved") throw new Error("The fixture must have an original Home backup.");
+    await service.restoreHomeBackup!(native.id, backup.captured_at);
+    const review = await service.reviewLauncherRemoval(native.id, signal());
+    await expect(service.removeLauncher(native.id, review.revision, false)).rejects.toThrow("confirm removal");
+    expect(store.getSnapshot().tvs[0]!.profile.launcher_version).toBe(native.launcher_version);
+    const removed = await service.removeLauncher(native.id, review.revision, true);
+    expect(removed.launcher_version).toBeNull();
+    expect(removed.home_backup).toEqual(backup);
+    expect(store.getSnapshot().tvs[0]!.apps.map((app) => app.id)).not.toContain("DclHome001");
+  });
+
   it("persists all presets and validates imported identities, addresses, inventories and versions", () => {
     const { store, initial } = setup();
     for (const [index, preset] of Object.keys(TV_PRESETS).entries()) {

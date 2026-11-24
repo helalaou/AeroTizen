@@ -1,6 +1,13 @@
 use serde::{Deserialize, Serialize};
 pub const LAUNCHER_APP_ID: &str = "DclHome001.Home";
 pub const LAUNCHER_PACKAGE_ID: &str = "DclHome001";
+
+#[derive(Debug, Serialize)]
+pub struct LauncherRemovalReview {
+    pub version: String,
+    pub revision: String,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BackendStatus {
     pub version: String,

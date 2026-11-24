@@ -7,6 +7,7 @@ import type {
   DesktopService,
   HomeBackupSettings,
   LauncherRelease,
+  LauncherRemovalReview,
   LocalAppPackage,
   LocalAppInstallResult,
   RootAccessStatus,
@@ -19,7 +20,13 @@ import type {
 } from "../contracts";
 
 async function readTv<Result>(
-  command: "list_tv_apps" | "list_tv_buttons" | "list_tv_button_apps" | "root_access_status" | "check_tv_diagnostics",
+  command:
+    | "list_tv_apps"
+    | "list_tv_buttons"
+    | "list_tv_button_apps"
+    | "root_access_status"
+    | "check_tv_diagnostics"
+    | "review_launcher_removal",
   id: string,
   signal: AbortSignal,
 ): Promise<Result> {
@@ -90,6 +97,8 @@ export const nativeService: DesktopService = {
   removeApps: (id, packages) => invoke<AppRemovalResult>("remove_tv_apps", { id, packages }),
   installLauncher: (id, version, currentVersion, confirmReplace) =>
     invoke<SavedTv>("install_launcher", { id, version, currentVersion, confirmReplace }),
+  reviewLauncherRemoval: (id, signal) => readTv<LauncherRemovalReview>("review_launcher_removal", id, signal),
+  removeLauncher: (id, revision, confirmed) => invoke<SavedTv>("remove_launcher", { id, revision, confirmed }),
   readHomeBackup: (id, capturedAt) => invoke<HomeBackupSettings>("read_home_backup", { id, capturedAt }),
   prepareNativeHome: (id) => invoke<PreparedHomeApply>("prepare_native_home", { id }),
   applyNativeHome: (id, backupSha256) => invoke<SavedTv>("apply_native_home", { id, backupSha256 }),
