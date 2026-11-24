@@ -46,6 +46,23 @@ pub async fn rename_tv(state: &AppState, id: String, name: String) -> AppResult<
     state.profiles.rename(&id, &name).await
 }
 
+pub async fn check_tv_diagnostics(
+    state: &AppState,
+    id: String,
+    request_id: String,
+) -> AppResult<SavedTv> {
+    super::reads::read_native_tv(state, id, request_id, |mut saved| async move {
+        let mut tv = state
+            .device_connection
+            .profile(&saved.tv.host, Some(&saved.tv.identity_sha256))
+            .await?;
+        tv.name = saved.tv.name;
+        saved.tv = tv;
+        Ok(saved)
+    })
+    .await
+}
+
 pub async fn forget_tv(state: &AppState, id: String) -> AppResult<()> {
     let _guard = state.operation.try_lock().map_err(|_| busy())?;
     state.profiles.forget(&id).await

@@ -87,7 +87,8 @@ export function parseScenario(json: string): SimulatorState {
       check(
         ["model_code", "tizen_version", "architecture", "platform", "root_runtime_version"].every((key) =>
           nullableText(details[key]),
-        ),
+        ) &&
+          (details.firmware_build === undefined || nullableText(details.firmware_build)),
         "Invalid technical details.",
       );
     }

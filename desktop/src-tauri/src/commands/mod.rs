@@ -35,6 +35,7 @@ pub fn register<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         local_apps::install_local_app,
         tvs::discover_tvs,
         tvs::connect_tv,
+        tvs::check_tv_diagnostics,
         home::read_home_backup,
         home::prepare_native_home,
         home::apply_native_home,

@@ -4,6 +4,8 @@ use std::net::Ipv4Addr;
 pub struct TechnicalDetails {
     pub model_code: Option<String>,
     pub tizen_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub firmware_build: Option<String>,
     pub architecture: Option<String>,
     pub platform: Option<String>,
     pub root_runtime_version: Option<String>,

@@ -125,6 +125,12 @@ export function createSimulatorService(store: SimulatorStore, loadReleases = loa
           saved: true,
         })).profile;
       }),
+    checkDiagnostics: (id, signal) =>
+      request(
+        "checkDiagnostics",
+        () => ({ ...known(id).profile, checked_at: new Date().toISOString(), computer_ip: SIMULATOR_COMPUTER_IP }),
+        signal,
+      ),
     rename: (id, name) =>
       request("rename", () => {
         edit(id, (tv) => withProfile(tv, { name }), false);

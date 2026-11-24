@@ -60,11 +60,17 @@ fn details(
     info: &Value,
     capabilities: &HashMap<String, Value>,
     proof: Option<&Value>,
+    home: Option<&Value>,
 ) -> TechnicalDetails {
     static MODEL: OnceLock<Regex> = OnceLock::new();
     static VERSION: OnceLock<Regex> = OnceLock::new();
     static PLATFORM: OnceLock<Regex> = OnceLock::new();
     const VERSION_PATTERN: &str = r"^[0-9]{1,3}(?:\.[0-9]{1,3}){1,3}$";
+    let platform_identifier = |value| {
+        allow(value, r"^[A-Z0-9][A-Z0-9_.-]{1,127}$", &PLATFORM)
+            .filter(|value| value.bytes().any(|b| b.is_ascii_digit()))
+            .filter(|value| value.parse::<Ipv4Addr>().is_err())
+    };
     TechnicalDetails {
         model_code: allow(
             info.get("modelName"),
@@ -76,17 +82,15 @@ fn details(
             VERSION_PATTERN,
             &VERSION,
         ),
+        firmware_build: platform_identifier(
+            home.and_then(|reply| reply["home_settings"].get("firmware_build")),
+        ),
         architecture: capabilities
             .get("cpu_arch")
             .and_then(Value::as_str)
             .filter(|value| ARCHITECTURES.contains(value))
             .map(str::to_owned),
-        platform: allow(
-            info.get("model"),
-            r"^[A-Z0-9][A-Z0-9_.-]{1,127}$",
-            &PLATFORM,
-        )
-        .filter(|value| value.bytes().any(|b| b.is_ascii_digit())),
+        platform: platform_identifier(info.get("model")),
         root_runtime_version: allow(
             proof.and_then(|proof| proof.get("runtime_version")),
             VERSION_PATTERN,
@@ -173,13 +177,8 @@ impl TvConnection {
             })
             .collect();
         session.identity().await?;
-        let native_home_settings = session
-            .home_status()
-            .await
-            .ok()
-            .flatten()
-            .as_ref()
-            .and_then(native_settings);
+        let home = session.home_status().await.ok().flatten();
+        let native_home_settings = home.as_ref().and_then(native_settings);
         session.unchanged().await?;
         let home_routing_mode = if launcher_version.is_some() {
             timeout(WATCHER_TIMEOUT, session.connection.watcher_status())
@@ -197,7 +196,12 @@ impl TvConnection {
                 .await
                 .map_err(|_| invalid_response())?;
         let info = session.info.as_ref().cloned().unwrap_or(Value::Null);
-        let technical_details = details(&info, &capabilities, session.bridge_proof.as_ref());
+        let technical_details = details(
+            &info,
+            &capabilities,
+            session.bridge_proof.as_ref(),
+            home.as_ref(),
+        );
         Ok(VerifiedTv {
             identity_sha256: identity.clone(),
             host: host.into(),

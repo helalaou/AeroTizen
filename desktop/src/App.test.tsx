@@ -208,7 +208,6 @@ describe("TV selection", () => {
     await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
     expect(await screen.findByRole("heading", { name: "Overview" })).toBeVisible();
     const nav = within(screen.getByRole("navigation", { name: "TV actions" }));
-    expect(nav.getAllByRole("button")).toHaveLength(6);
     expect(nav.getByRole("button", { name: "Apps" })).toBeVisible();
     expect(nav.getByRole("button", { name: "Home and startup" })).toBeVisible();
     expect(nav.getByRole("button", { name: "Button mapping" })).toBeVisible();

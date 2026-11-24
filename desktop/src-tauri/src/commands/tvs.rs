@@ -33,6 +33,15 @@ pub async fn rename_tv(
 }
 
 #[tauri::command]
+pub async fn check_tv_diagnostics(
+    state: tauri::State<'_, AppState>,
+    id: String,
+    request_id: String,
+) -> AppResult<SavedTv> {
+    services::tvs::check_tv_diagnostics(&state, id, request_id).await
+}
+
+#[tauri::command]
 pub async fn forget_tv(state: tauri::State<'_, AppState>, id: String) -> AppResult<()> {
     services::tvs::forget_tv(&state, id).await
 }

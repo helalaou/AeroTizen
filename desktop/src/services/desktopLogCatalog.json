@@ -5,6 +5,7 @@
     "savedTvs": "Load saved TVs",
     "discovery": "Search for TVs",
     "connect": "Connect to TV",
+    "diagnostics": "Run TV diagnostics",
     "rename": "Rename saved TV",
     "forget": "Forget saved TV",
     "releases": "Check AeroTizen releases",

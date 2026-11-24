@@ -2,9 +2,11 @@ import { Alert, AppShell, Loader, LoadingOverlay, Modal, Stack, Text } from "@ma
 import { useEffect, useMemo, useState } from "react";
 import { AppsPanel } from "./components/AppsPanel";
 import { ButtonMappingPanel } from "./components/ButtonMappingPanel";
+import { ConnectionHelp } from "./components/ConnectionHelp";
+import { DiagnosticsView } from "./components/DiagnosticsView";
 import { DESKTOP_HEADER, Header } from "./components/Header";
 import { LauncherPanel } from "./components/LauncherPanel";
-import { LogsDialog } from "./components/LogsDialog";
+import { LogsView } from "./components/LogsView";
 import { LocalAppInstallDialog } from "./components/LocalAppInstallDialog";
 import { RootAccessPanel } from "./components/RootAccessPanel";
 import { RootRemovalDialog } from "./components/RootRemovalDialog";
@@ -12,7 +14,7 @@ import { RootSetupDialog } from "./components/RootSetupDialog";
 import { RootUpdateDialog } from "./components/RootUpdateDialog";
 import { SelectedTvView } from "./components/SelectedTvView";
 import { SamsungSignInDialog } from "./components/SamsungSignInDialog";
-import { TvActionView } from "./components/TvActionView";
+import { HomeAndStartupView } from "./components/HomeAndStartupView";
 import { TvDialogs } from "./components/TvDialogs";
 import type { TvDialog } from "./components/TvDialogs";
 import { TvSelection } from "./components/TvSelection";
@@ -63,6 +65,7 @@ export function App({ service: adapter, simulator = false }: AppProps) {
     setMenuOpened(false);
     if (next === page) return;
     manager.cancelPageRead();
+    if (page === "diagnostics") manager.clearDiagnostics();
     if (next === "apps" && selected) {
       manager.clearAppRemoval();
       manager.loadApps(selected.id);
@@ -84,6 +87,10 @@ export function App({ service: adapter, simulator = false }: AppProps) {
   };
   const checkConnection = async () => {
     if (!selected) return;
+    if (page === "diagnostics") {
+      manager.loadDiagnostics(selected.id);
+      return;
+    }
     const connected = await manager.connect(selected.host, selected.id);
     if (connected && page === "apps") manager.loadApps(selected.id);
     if (connected && page === "buttons") manager.loadButtons(selected.id);
@@ -112,6 +119,22 @@ export function App({ service: adapter, simulator = false }: AppProps) {
           onRootAccess={() => goToPage("root")}
         />
       );
+    }
+    if (page === "diagnostics") {
+      return (
+        <DiagnosticsView
+          profile={manager.diagnostics ?? selected}
+          backendVersion={backendVersion}
+          loading={manager.diagnosticsLoading}
+          error={manager.diagnosticsError}
+          disabled={busy}
+          onCheck={() => manager.loadDiagnostics(selected.id)}
+          onPage={goToPage}
+        />
+      );
+    }
+    if (page === "logs") {
+      return <LogsView log={log} simulator={simulator} tvId={selected.id} />;
     }
     if (page === "apps") {
       return (
@@ -152,9 +175,8 @@ export function App({ service: adapter, simulator = false }: AppProps) {
       const apply = manager.applyNativeHome;
       const restore = manager.restoreHomeBackup;
       return (
-        <TvActionView
+        <HomeAndStartupView
           key={selected.id}
-          page="home"
           profile={selected}
           onApplyNativeHome={apply ? (reportError) => apply(selected.id, reportError) : undefined}
           readHomeBackup={service.readHomeBackup}
@@ -224,7 +246,7 @@ export function App({ service: adapter, simulator = false }: AppProps) {
       <Header
         tvMenu={selected ? { opened: menuOpened, toggle: () => setMenuOpened((current) => !current) } : undefined}
         onAbout={() => setAbout(true)}
-        onLogs={() => setLogsOpened(true)}
+        onLogs={selected ? undefined : () => setLogsOpened(true)}
         samsung={
           service.samsung
             ? {
@@ -243,7 +265,7 @@ export function App({ service: adapter, simulator = false }: AppProps) {
           page={page}
           busy={busy}
           navigationDisabled={appLoading}
-          canCheck={!busy && manager.ready}
+          canCheck={!busy && manager.ready && !manager.diagnosticsLoading}
           onCheck={checkConnection}
           onPage={goToPage}
           onBack={() => {
@@ -281,7 +303,14 @@ export function App({ service: adapter, simulator = false }: AppProps) {
                 closeButtonLabel="Dismiss error"
                 onClose={manager.clearError}
               >
-                {manager.error}
+                {manager.connectionFailed ? (
+                  <Stack gap="xs">
+                    <Text size="sm">{manager.error}</Text>
+                    <ConnectionHelp computerIp={selected?.computer_ip} />
+                  </Stack>
+                ) : (
+                  manager.error
+                )}
               </Alert>
             </div>
           )}
@@ -405,9 +434,7 @@ export function App({ service: adapter, simulator = false }: AppProps) {
           onForget={manager.forget}
         />
       )}
-      {logsOpened && (
-        <LogsDialog log={log} simulator={simulator} tvId={selected?.id} onClose={() => setLogsOpened(false)} />
-      )}
+      {logsOpened && <LogsView log={log} simulator={simulator} onClose={() => setLogsOpened(false)} />}
       <Modal opened={about} onClose={() => setAbout(false)} title="About AeroTizen" centered>
         <Stack gap="sm">
           <Text>Manage your Samsung TVs from your computer.</Text>

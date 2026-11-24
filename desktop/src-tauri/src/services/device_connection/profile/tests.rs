@@ -71,6 +71,7 @@ async fn first_native_connection_keeps_the_public_profile_without_a_worker_or_pr
         Some(HomeRoutingMode::Watcher)
     ));
     assert!(saved.tv.native_home_settings.is_none());
+    assert!(saved.tv.technical_details.firmware_build.is_none());
     assert!(matches!(saved.tv.home_backup, Some(HomeBackup::Missing)));
     let public = serde_json::to_string(&saved).unwrap();
     assert!(!public.contains(DUID));
@@ -160,13 +161,25 @@ fn home_settings_and_technical_fields_exclude_untrusted_values() {
             ("cpu_arch".into(), json!("unknown")),
         ]),
         Some(&json!({"runtime_version":"file://private"})),
+        Some(&json!({"home_settings":{"firmware_build":"192.0.2.20"}})),
     );
     assert!(
         details.model_code.is_none()
             && details.platform.is_none()
             && details.tizen_version.is_none()
+            && details.firmware_build.is_none()
             && details.architecture.is_none()
             && details.root_runtime_version.is_none()
+    );
+}
+
+#[test]
+fn firmware_build_uses_the_authenticated_home_reply() {
+    let home = json!({"home_settings":{"firmware_build":"T-PTMDDEUC-0090-REL-202605141701"}});
+    let result = details(&Value::Null, &HashMap::new(), None, Some(&home));
+    assert_eq!(
+        result.firmware_build.as_deref(),
+        Some("T-PTMDDEUC-0090-REL-202605141701")
     );
 }
 

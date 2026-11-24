@@ -54,6 +54,7 @@ export function rootVersion(profile: SavedTv): string | null {
 export function softwareVersions(profile: SavedTv) {
   return {
     tizen: matches(profile.technical_details?.tizen_version, VERSION),
+    firmware: matches(profile.technical_details?.firmware_build, PLATFORM),
     launcher: profile.launcher_version === null ? "Not installed" : matches(profile.launcher_version, VERSION),
   };
 }
