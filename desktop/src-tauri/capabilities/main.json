@@ -7,6 +7,7 @@
     {
       "identifier": "opener:allow-open-url",
       "allow": [
+        { "url": "https://github.com/helalaou/AeroTizen" },
         { "url": "https://github.com/helalaou/AeroTizen/issues/new[?]*" },
         { "url": "https://github.com/helalaou/AeroTizen/releases/tag/launcher-v[0-9]*" }
       ]

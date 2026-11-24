@@ -49,7 +49,7 @@ export interface TechnicalDetails {
   root_runtime_version: string | null;
 }
 
-export interface BackendStatus {
+export interface DesktopStatus {
   version: string;
 }
 
@@ -169,7 +169,7 @@ export interface DesktopService {
     choose(id: string): Promise<LocalAppPackage | null>;
     install(id: string, selectionId: string, confirmInstall: boolean): Promise<LocalAppInstallResult>;
   };
-  status(): Promise<BackendStatus>;
+  status(): Promise<DesktopStatus>;
   launcherCatalog(): Promise<LauncherRelease[]>;
   list(): Promise<SavedTv[]>;
   discover(): Promise<TvCandidate[]>;

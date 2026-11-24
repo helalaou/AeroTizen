@@ -1,6 +1,7 @@
 """Build ordering checks use no SDK, freezer, TV or network."""
 
 import importlib.util
+import json
 import subprocess
 from pathlib import Path
 
@@ -30,3 +31,20 @@ def test_missing_sdk_fails_before_starting_any_build(monkeypatch):
     monkeypatch.setattr(builder.subprocess, "run", lambda *_args, **_kwargs: pytest.fail("Started a build"))
     with pytest.raises(ValueError, match=r"\.NET 6 SDK"):
         builder.build(None)
+
+
+def test_desktop_root_runtime_uses_desktop_version_and_output(monkeypatch):
+    calls = []
+    monkeypatch.setattr(builder.subprocess, "run", lambda command, **_kwargs: calls.append(command[1:]))
+
+    builder.build("selected-dotnet")
+
+    assert calls[-1] == [
+        str(ROOT / "cli/tools/build_root_runtime.py"),
+        "--dotnet",
+        "selected-dotnet",
+        "--runtime-version",
+        json.loads((ROOT / "desktop/package.json").read_text(encoding="utf-8"))["version"],
+        "--output",
+        str(ROOT / "desktop/src-tauri/generated/root-runtime.json"),
+    ]

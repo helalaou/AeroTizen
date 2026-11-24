@@ -6,8 +6,8 @@ import type { SavedTv } from "../contracts";
 import { showToast } from "../Toasts";
 import { githubIssueUrl } from "../tvDetails";
 
-export function GithubReportButton({ profile, backendVersion }: { profile: SavedTv; backendVersion?: string }) {
-  const href = githubIssueUrl(profile, backendVersion);
+export function GithubReportButton({ profile, desktopVersion }: { profile: SavedTv; desktopVersion?: string }) {
+  const href = githubIssueUrl(profile, desktopVersion);
 
   return (
     <Button

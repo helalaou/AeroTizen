@@ -9,7 +9,7 @@ pub struct LauncherRemovalReview {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct BackendStatus {
+pub struct DesktopStatus {
     pub version: String,
 }
 #[derive(Debug, Serialize, Deserialize)]

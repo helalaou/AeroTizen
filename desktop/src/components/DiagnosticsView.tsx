@@ -112,7 +112,7 @@ function Check({ label, result }: { label: string; result: Result }) {
 
 interface DiagnosticsViewProps {
   profile: SavedTv;
-  backendVersion?: string;
+  desktopVersion?: string;
   error: string | null;
   loading: boolean;
   disabled: boolean;
@@ -122,7 +122,7 @@ interface DiagnosticsViewProps {
 
 export function DiagnosticsView({
   profile,
-  backendVersion,
+  desktopVersion,
   error,
   loading,
   disabled,
@@ -135,7 +135,7 @@ export function DiagnosticsView({
       <Group justify="space-between">
         <Title order={1}>Diagnostics</Title>
         <Group gap="xs">
-          <GithubReportButton profile={profile} backendVersion={backendVersion} />
+          <GithubReportButton profile={profile} desktopVersion={desktopVersion} />
           <Button leftSection={<RefreshCw size={16} />} onClick={onCheck} loading={loading} disabled={disabled}>
             Run checks
           </Button>

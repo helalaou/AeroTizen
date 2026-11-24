@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
   AppRemovalResult,
-  BackendStatus,
+  DesktopStatus,
   ButtonMappings,
   ButtonTargetApp,
   DesktopService,
@@ -81,7 +81,7 @@ export const nativeService: DesktopService = {
     prepareCertificates: (id) =>
       invoke<{ identity_sha256: string; launcher_signing_ready: boolean }>("prepare_signing_profile", { id }),
   },
-  status: () => invoke<BackendStatus>("backend_status"),
+  status: () => invoke<DesktopStatus>("desktop_status"),
   launcherCatalog: () => invoke<LauncherRelease[]>("launcher_catalog"),
   list: () => invoke<SavedTv[]>("list_tvs"),
   discover: () => invoke<TvCandidate[]>("discover_tvs"),

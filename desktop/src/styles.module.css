@@ -1,4 +1,4 @@
-.header {
+.brandSurface {
   --app-shell-border-color: #456fb0;
 
   background: linear-gradient(108deg, #14284a, #183c76 60%, #2456a4);
@@ -6,7 +6,11 @@
 }
 .headerContent {
   height: 100%;
-  padding: 0 28px;
+  padding-inline: 28px;
+}
+.mobileHeaderContent {
+  height: 100%;
+  padding-inline: 12px;
 }
 .wordmark {
   font-family: var(--mantine-font-family-headings);
@@ -14,6 +18,13 @@
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1;
+}
+.mobileHeaderContent .wordmark {
+  font-size: 24px;
+}
+.headerControl {
+  min-width: 44px;
+  min-height: 44px;
 }
 .headerControl:focus-visible {
   outline: 2px solid #b5deff;
@@ -28,12 +39,21 @@
   display: flex;
   flex-direction: column;
 }
-.selection {
+.selection,
+.detailContent,
+.feedback {
+  padding-block-start: var(--mantine-spacing-md);
+  padding-inline: 32px;
+}
+.selection,
+.detailContent {
   width: 100%;
-  max-width: 1024px;
-  padding: 56px 32px 32px;
+  padding-block-end: 32px;
   margin: 0 auto;
   flex: 1;
+}
+.selection {
+  max-width: 1024px;
 }
 .savedSection {
   margin-top: 52px;
@@ -81,7 +101,31 @@
 }
 .sidebar {
   background: #fff;
+}
+.sidebarBrand {
+  display: flex;
+  flex: none;
+  align-items: center;
+  min-height: 64px;
+  padding-inline: var(--mantine-spacing-md);
+}
+.sidebarContent {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
   overflow-y: auto;
+  padding: var(--mantine-spacing-md);
+}
+.sidebarTv {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+.sidebarTv > * {
+  flex-shrink: 0;
 }
 .sidebarName {
   flex: 1;
@@ -93,12 +137,15 @@
 .sidebarSupport {
   margin-top: auto;
 }
+.sidebarActions {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+.sidebarActions :global(.mantine-NavLink-description) {
+  overflow-wrap: anywhere;
+}
 .detailContent {
-  width: 100%;
   max-width: 1160px;
-  padding: 42px 32px;
-  margin: 0 auto;
-  flex: 1;
 }
 .appsContent {
   display: flex;
@@ -302,7 +349,6 @@
   gap: 6px;
 }
 .feedback {
-  padding: 20px 32px 0;
   display: grid;
   gap: 12px;
 }
@@ -359,11 +405,12 @@
     bottom: 7rem;
   }
   .headerContent {
-    padding: 0 20px;
+    padding-inline: 20px;
   }
   .selection,
-  .detailContent {
-    padding: 32px 20px;
+  .detailContent,
+  .feedback {
+    padding-inline: 20px;
   }
   .diagnosticChecks > div {
     grid-template-columns: minmax(0, 1fr);
@@ -399,8 +446,5 @@
   .definitionList > div {
     grid-template-columns: minmax(100px, 35%) minmax(0, 1fr);
     gap: 10px;
-  }
-  .feedback {
-    padding: 16px 20px 0;
   }
 }

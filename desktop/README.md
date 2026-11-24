@@ -303,7 +303,9 @@ operations; sockets, listeners and cancellation stay with their async service ow
 Discovery, metadata, release lookup/download, Samsung sign-in and certificates, app
 inventory/removal/installation, Home controls, button mapping and Root setup/updates run
 in Rust. The desktop does not start a Python process. The public Python CLI remains a
-separate tool; its commands are unchanged.
+separate tool. Desktop starts at version 3.1.1, matching the CLI release at the time
+of the split. The root helper bundled with Desktop uses the Desktop version. The
+CLI builds its own helper with the CLI version.
 
 The SDK transport stages checked managed helpers with a single-use callback. Home Apply
 and Restore save durable recovery intent before writing, preserve the exact original

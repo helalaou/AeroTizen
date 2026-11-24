@@ -1,73 +1,38 @@
-import { ActionIcon, AppShell, Burger, Group, Menu, Text } from "@mantine/core";
-import { Info, LogIn, LogOut, MoreHorizontal, ScrollText } from "lucide-react";
+import { AppShell, Box, Burger, Group, Text } from "@mantine/core";
 import styles from "../styles.module.css";
 
 export const DESKTOP_HEADER = { height: 64 };
+export const MOBILE_HEADER = { height: { base: 52, sm: 0 } };
 
-interface HeaderProps {
-  tvMenu?: { opened: boolean; toggle(): void };
-  onAbout?(): void;
-  onLogs?(): void;
-  samsung?: { signedIn: boolean; email: string | null; busy: boolean; signIn(): void; signOut(): void };
+function Wordmark() {
+  return <Text className={styles.wordmark}>AeroTizen</Text>;
 }
 
-export function Header({ tvMenu, onAbout, onLogs, samsung }: HeaderProps) {
+export function SidebarBrand() {
   return (
-    <AppShell.Header className={styles.header}>
-      <Group className={styles.headerContent} justify="space-between" wrap="nowrap">
-        <Group gap="sm" wrap="nowrap">
-          {tvMenu && (
-            <Burger
-              className={styles.headerControl}
-              hiddenFrom="sm"
-              opened={tvMenu.opened}
-              onClick={tvMenu.toggle}
-              color="white"
-              size="sm"
-              aria-label="Toggle TV menu"
-              aria-expanded={tvMenu.opened}
-            />
-          )}
-          <Text className={styles.wordmark}>AeroTizen</Text>
-        </Group>
-        {onAbout && (
-          <Menu position="bottom-end" shadow="md">
-            <Menu.Target>
-              <ActionIcon
-                className={styles.headerControl}
-                variant="subtle"
-                color="white"
-                size="lg"
-                aria-label="App menu"
-              >
-                <MoreHorizontal size={22} />
-              </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
-              {samsung && (
-                <>
-                  {samsung.signedIn && <Menu.Label>{samsung.email ?? "Signed in to Samsung"}</Menu.Label>}
-                  <Menu.Item
-                    leftSection={samsung.signedIn ? <LogOut size={16} /> : <LogIn size={16} />}
-                    disabled={samsung.busy}
-                    onClick={samsung.signedIn ? samsung.signOut : samsung.signIn}
-                  >
-                    {samsung.signedIn ? "Sign out of Samsung" : "Sign in to Samsung"}
-                  </Menu.Item>
-                  <Menu.Divider />
-                </>
-              )}
-              {onLogs && (
-                <Menu.Item leftSection={<ScrollText size={16} />} onClick={onLogs}>
-                  Logs
-                </Menu.Item>
-              )}
-              <Menu.Item leftSection={<Info size={16} />} onClick={onAbout}>
-                About AeroTizen
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
+    <Box className={`${styles.brandSurface} ${styles.sidebarBrand}`} visibleFrom="sm">
+      <Wordmark />
+    </Box>
+  );
+}
+
+export function Header({ sidebar }: { sidebar?: { opened: boolean; toggle(): void } }) {
+  return (
+    <AppShell.Header className={styles.brandSurface} hiddenFrom={sidebar ? "sm" : undefined}>
+      <Group className={sidebar ? styles.mobileHeaderContent : styles.headerContent} gap="xs" wrap="nowrap">
+        {sidebar && (
+          <Burger
+            className={styles.headerControl}
+            opened={sidebar.opened}
+            onClick={sidebar.toggle}
+            color="white"
+            size="sm"
+            aria-label="Toggle sidebar"
+            aria-expanded={sidebar.opened}
+            aria-controls="desktop-sidebar"
+          />
         )}
+        <Wordmark />
       </Group>
     </AppShell.Header>
   );

@@ -217,7 +217,7 @@ fn root_status_and_diagnostics_share_the_native_read_cancellation() {
         result,
         json!({
             "phase": "not_configured", "root_available": false, "setup_complete": false,
-            "runtime_version": null, "target_runtime_version": env!("ROOT_RUNTIME_VERSION"),
+            "runtime_version": null, "target_runtime_version": env!("CARGO_PKG_VERSION"),
             "update_available": false, "update_pending": false, "automatic_startup": null,
             "automatic_boot_verified": false, "bootstrap_completed": false,
             "recovery_saved": false, "original_pc_host": null,
@@ -310,10 +310,10 @@ fn app_removal_uses_native_validation_without_a_worker_and_preserves_the_busy_gu
 }
 
 #[test]
-fn backend_version_is_available_through_registered_ipc_without_external_tools_or_a_tv() {
+fn desktop_version_is_available_through_registered_ipc_without_external_tools_or_a_tv() {
     let fixture = Fixture::new();
     assert_eq!(
-        fixture.invoke("backend_status", json!({})).unwrap(),
-        json!({"version":env!("ROOT_RUNTIME_VERSION")})
+        fixture.invoke("desktop_status", json!({})).unwrap(),
+        json!({"version":env!("CARGO_PKG_VERSION")})
     );
 }

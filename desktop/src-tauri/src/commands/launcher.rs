@@ -1,11 +1,11 @@
 use crate::{
-    models::{AppResult, BackendStatus, LauncherRelease, LauncherRemovalReview, SavedTv},
+    models::{AppResult, DesktopStatus, LauncherRelease, LauncherRemovalReview, SavedTv},
     services,
     state::AppState,
 };
 
 #[tauri::command]
-pub fn backend_status() -> BackendStatus {
+pub fn desktop_status() -> DesktopStatus {
     services::backend::status()
 }
 

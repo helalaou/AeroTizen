@@ -2,6 +2,7 @@ import { MantineProvider } from "@mantine/core";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { version } from "../package.json";
 import { DesktopApp } from "./DesktopApp";
 import { livingRoom, testService } from "./test/tvs";
 import type { DesktopService } from "./contracts";
@@ -22,10 +23,16 @@ describe("Desktop app", () => {
     mount(service);
     await waitFor(() => expect(screen.getByRole("button", { name: "Connect to Living room" })).toBeEnabled());
     expect(connect).not.toHaveBeenCalled();
-    await user.click(screen.getByRole("button", { name: "App menu" }));
-    expect(await screen.findByRole("menuitem", { name: "About AeroTizen" })).toBeVisible();
-    expect(screen.getByRole("menuitem", { name: "Logs" })).toBeVisible();
-    expect(screen.getByRole("menuitem", { name: "Sign in to Samsung" })).toBeVisible();
+    const actions = within(screen.getByRole("navigation", { name: "Desktop actions" }));
+    expect(actions.getByRole("button", { name: "Sign in to Samsung" })).toBeEnabled();
+    expect(actions.getByRole("button", { name: "Logs" })).toBeVisible();
+    await user.click(actions.getByRole("button", { name: "About AeroTizen" }));
+    const about = within(screen.getByRole("dialog", { name: "About AeroTizen" }));
+    expect(about.getByText(`Version ${version}`)).toBeVisible();
+    expect(about.getByRole("link", { name: "AeroTizen on GitHub" })).toHaveAttribute(
+      "href",
+      "https://github.com/helalaou/AeroTizen",
+    );
   });
 
   it("requires the native app in a browser", () => {
@@ -51,12 +58,6 @@ describe("Desktop app", () => {
     mount(service);
     await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
     const sidebar = within(screen.getByRole("navigation", { name: "TV actions" }));
-    expect(
-      sidebar
-        .getAllByRole("button")
-        .slice(-2)
-        .map((button) => button.textContent),
-    ).toEqual(["Diagnostics", "Logs"]);
     await user.click(sidebar.getByRole("button", { name: "Diagnostics" }));
     expect(screen.getByText("The TV returned only some Home and startup settings.")).toBeVisible();
     await user.click(screen.getByText("Technical details"));
@@ -74,7 +75,8 @@ describe("Desktop app", () => {
     expect(check).toHaveBeenCalledTimes(2);
     expect(check).toHaveBeenLastCalledWith(livingRoom.id, expect.any(AbortSignal));
 
-    await user.click(sidebar.getByRole("button", { name: "Logs" }));
+    const actions = within(screen.getByRole("navigation", { name: "Desktop actions" }));
+    await user.click(actions.getByRole("button", { name: "Logs" }));
     expect(screen.getByRole("heading", { name: "Logs" })).toBeVisible();
     expect(screen.getByRole("table", { name: "Desktop logs" })).toHaveTextContent("connection_timeout");
   });

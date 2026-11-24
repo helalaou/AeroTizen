@@ -1,10 +1,14 @@
-import { Alert, AppShell, Loader, LoadingOverlay, Modal, Stack, Text } from "@mantine/core";
+import { ActionIcon, Alert, AppShell, Group, Loader, LoadingOverlay, Modal, Stack, Text } from "@mantine/core";
+import { isTauri } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { Github } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { version } from "../package.json";
 import { AppsPanel } from "./components/AppsPanel";
 import { ButtonMappingPanel } from "./components/ButtonMappingPanel";
 import { ConnectionHelp } from "./components/ConnectionHelp";
 import { DiagnosticsView } from "./components/DiagnosticsView";
-import { DESKTOP_HEADER, Header } from "./components/Header";
+import { Header, MOBILE_HEADER, SidebarBrand } from "./components/Header";
 import { LauncherPanel } from "./components/LauncherPanel";
 import { LauncherRemovalDialog } from "./components/LauncherRemovalDialog";
 import { LogsView } from "./components/LogsView";
@@ -15,6 +19,7 @@ import { RootSetupDialog } from "./components/RootSetupDialog";
 import { RootUpdateDialog } from "./components/RootUpdateDialog";
 import { SelectedTvView } from "./components/SelectedTvView";
 import { SamsungSignInDialog } from "./components/SamsungSignInDialog";
+import { SidebarActions } from "./components/SidebarActions";
 import { HomeAndStartupView } from "./components/HomeAndStartupView";
 import { TvDialogs } from "./components/TvDialogs";
 import type { TvDialog } from "./components/TvDialogs";
@@ -24,6 +29,7 @@ import type { DesktopService, TvPage } from "./contracts";
 import { createDesktopLog } from "./services/desktopLogs";
 import { loggedService } from "./services/loggedService";
 import { showToast, Toasts } from "./Toasts";
+import { GITHUB_REPO_URL } from "./tvDetails";
 import { useTvManager } from "./useTvManager";
 import { useSamsungAccount } from "./useSamsungAccount";
 import styles from "./styles.module.css";
@@ -56,7 +62,7 @@ export function App({ service: adapter, simulator = false }: AppProps) {
   const busy = Boolean(manager.busy);
   const busyMessage = manager.busy?.message ?? (manager.loading ? "Loading saved TVs…" : null);
   const appLoading = manager.loading || manager.busy?.scope === "app";
-  const backendVersion = manager.backend?.version;
+  const desktopVersion = manager.desktop?.version ?? version;
   const loadRootStatus = manager.loadRootStatus;
   useEffect(() => {
     if (selected && page === "overview" && !busy) loadRootStatus(selected.id);
@@ -114,7 +120,7 @@ export function App({ service: adapter, simulator = false }: AppProps) {
       return (
         <SelectedTvView
           profile={selected}
-          backendVersion={backendVersion}
+          desktopVersion={desktopVersion}
           latestLauncher={manager.latestLauncher}
           rootAccessStatus={!manager.rootLoading && !manager.rootError ? manager.rootStatus : null}
           onLauncher={() => goToPage("launcher")}
@@ -126,7 +132,7 @@ export function App({ service: adapter, simulator = false }: AppProps) {
       return (
         <DiagnosticsView
           profile={manager.diagnostics ?? selected}
-          backendVersion={backendVersion}
+          desktopVersion={desktopVersion}
           loading={manager.diagnosticsLoading}
           error={manager.diagnosticsError}
           disabled={busy}
@@ -241,42 +247,54 @@ export function App({ service: adapter, simulator = false }: AppProps) {
   }
   return (
     <AppShell
-      header={DESKTOP_HEADER}
-      navbar={selected ? { width: 224, breakpoint: "sm", collapsed: { mobile: !menuOpened } } : undefined}
+      header={MOBILE_HEADER}
+      navbar={{ width: 224, breakpoint: "sm", collapsed: { mobile: !menuOpened } }}
       padding={0}
     >
       <Toasts />
-      <Header
-        tvMenu={selected ? { opened: menuOpened, toggle: () => setMenuOpened((current) => !current) } : undefined}
-        onAbout={() => setAbout(true)}
-        onLogs={selected ? undefined : () => setLogsOpened(true)}
-        samsung={
-          service.samsung
-            ? {
-                signedIn: samsung.account !== null,
-                email: samsung.account?.email ?? null,
-                busy: samsung.loading || samsung.busy || busy,
-                signIn: () => setSignInDialog({ kind: "account" }),
-                signOut: () => void samsung.signOut(),
-              }
-            : undefined
-        }
-      />
-      {selected && (
-        <TvSidebar
-          profile={selected}
-          page={page}
-          busy={busy}
-          navigationDisabled={appLoading}
-          canCheck={!busy && manager.ready && !manager.diagnosticsLoading}
-          onCheck={checkConnection}
-          onPage={goToPage}
-          onBack={() => {
-            manager.back();
-            goToPage("overview");
-          }}
-        />
-      )}
+      <Header sidebar={{ opened: menuOpened, toggle: () => setMenuOpened((current) => !current) }} />
+      <AppShell.Navbar
+        id="desktop-sidebar"
+        className={styles.sidebar}
+        visibleFrom={menuOpened ? undefined : "sm"}
+        renderRoot={(props) => <aside {...props} />}
+      >
+        <SidebarBrand />
+        <div className={styles.sidebarContent}>
+          {selected && (
+            <TvSidebar
+              profile={selected}
+              page={page}
+              busy={busy}
+              navigationDisabled={appLoading}
+              canCheck={!busy && manager.ready && !manager.diagnosticsLoading}
+              onCheck={checkConnection}
+              onPage={goToPage}
+              onBack={() => {
+                manager.back();
+                goToPage("overview");
+              }}
+            />
+          )}
+          <SidebarActions
+            onAbout={() => setAbout(true)}
+            onLogs={() => (selected ? goToPage("logs") : setLogsOpened(true))}
+            logsActive={Boolean(selected) && page === "logs"}
+            logsDisabled={Boolean(selected) && appLoading}
+            samsung={
+              service.samsung
+                ? {
+                    signedIn: samsung.account !== null,
+                    email: samsung.account?.email ?? null,
+                    busy: samsung.loading || samsung.busy || busy,
+                    signIn: () => setSignInDialog({ kind: "account" }),
+                    signOut: () => void samsung.signOut(),
+                  }
+                : undefined
+            }
+          />
+        </div>
+      </AppShell.Navbar>
       <AppShell.Main className={styles.main}>
         <div
           className={styles.body}
@@ -459,9 +477,28 @@ export function App({ service: adapter, simulator = false }: AppProps) {
       <Modal opened={about} onClose={() => setAbout(false)} title="About AeroTizen" centered>
         <Stack gap="sm">
           <Text>Manage your Samsung TVs from your computer.</Text>
-          <Text size="sm" c="dimmed">
-            Desktop app 0.1.0 · Backend {manager.backend?.version ?? "unavailable"}
-          </Text>
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">
+              Version {desktopVersion}
+            </Text>
+            <ActionIcon
+              component="a"
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="default"
+              size="lg"
+              aria-label="AeroTizen on GitHub"
+              title="AeroTizen on GitHub"
+              onClick={(event) => {
+                if (!isTauri()) return;
+                event.preventDefault();
+                void openUrl(GITHUB_REPO_URL).catch(() => showToast("Could not open GitHub. Try again.", "error"));
+              }}
+            >
+              <Github size={20} aria-hidden="true" />
+            </ActionIcon>
+          </Group>
         </Stack>
       </Modal>
     </AppShell>

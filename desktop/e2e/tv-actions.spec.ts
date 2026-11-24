@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { testPackages, testReleases } from "../src/test/tvs";
 
 async function showAction(page: Page, isMobile: boolean, name: string) {
-  if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+  if (isMobile) await page.getByRole("button", { name: "Toggle sidebar" }).click();
   await page.getByRole("navigation", { name: "TV actions" }).getByRole("button", { name, exact: true }).click();
   await expect(page.getByRole("heading", { name, exact: true, level: 1 })).toBeVisible();
 }
@@ -70,7 +70,7 @@ test("navigates the selected TV actions and keeps the initial screen TV-only", a
   await expect(latestRelease).toHaveAttribute("aria-pressed", "true");
   await expect(history.getByRole("button", { name: "3.0.0, Installed on this TV", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Update to 3.1.0" })).toBeEnabled();
-  if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+  if (isMobile) await page.getByRole("button", { name: "Toggle sidebar" }).click();
   const nav = page.getByRole("navigation", { name: "TV actions" });
   await expect(nav.getByRole("button")).toHaveText([
     "Overview",
@@ -80,14 +80,13 @@ test("navigates the selected TV actions and keeps the initial screen TV-only", a
     "Root access",
     "Button mapping",
     "Diagnostics",
-    "Logs",
   ]);
   await expect(nav.getByRole("button", { name: "Install & update", exact: true })).toHaveAttribute(
     "aria-current",
     "page",
   );
   await page.screenshot({ path: join(tmpdir(), `aerotizen-tv-sidebar-${info.project.name}.png`) });
-  if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+  if (isMobile) await page.getByRole("button", { name: "Toggle sidebar" }).click();
   await history.getByRole("button", { name: "2.7.0", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Version 2.7.0", exact: true })).toBeVisible();
   await expect(updateStatus).toBeVisible();
@@ -198,7 +197,7 @@ test("shows the connected TV's Home button, startup, routing and backup status",
   await expect(setting(current, "Saved Home setting")).toHaveText("Samsung Home");
   await expect(setting(current, "Backup startup app")).toHaveText("TV viewer");
 
-  if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+  if (isMobile) await page.getByRole("button", { name: "Toggle sidebar" }).click();
   await page.getByRole("button", { name: "Back to TVs" }).click();
   await page.getByRole("button", { name: "Connect to Bedroom" }).click();
   await showAction(page, isMobile, "Home and startup");
@@ -253,7 +252,7 @@ test("shows detected buttons and saved assignments on the selected TV", async ({
   await page.getByRole("button", { name: "Refresh button mappings" }).click();
   await expect(table).toBeVisible();
 
-  if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+  if (isMobile) await page.getByRole("button", { name: "Toggle sidebar" }).click();
   await page.getByRole("button", { name: "Back to TVs" }).click();
   await page.getByRole("button", { name: "Connect to Bedroom" }).click();
   await showAction(page, isMobile, "Button mapping");
@@ -381,7 +380,7 @@ test.describe("Installed apps", () => {
     await expect(preview).toBeHidden();
     await search.clear();
     await expect(player).toBeChecked();
-    if (isMobile) await page.getByRole("button", { name: "Toggle TV menu" }).click();
+    if (isMobile) await page.getByRole("button", { name: "Toggle sidebar" }).click();
     await page.getByRole("button", { name: "Refresh TV connection" }).click();
     await expect(review).toBeDisabled();
     await expect(player).not.toBeChecked();

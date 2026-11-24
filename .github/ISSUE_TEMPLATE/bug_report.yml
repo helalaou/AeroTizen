@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a problem with the launcher or CLI
+description: Report a problem with the launcher, desktop app or CLI
 labels: [bug]
 body:
   - type: input
@@ -12,9 +12,9 @@ body:
   - type: input
     id: versions
     attributes:
-      label: Launcher, CLI and Tizen versions
+      label: Launcher, desktop, CLI and Tizen versions
       description: Include the versions you know. A diagnostic ZIP can provide build details.
-      placeholder: Launcher 2.4.0, CLI 2.4.0, Tizen 9
+      placeholder: Launcher 3.4.0, Desktop 3.1.1, Tizen 9
   - type: textarea
     id: steps
     attributes:

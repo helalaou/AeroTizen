@@ -1,3 +1,4 @@
+import desktopPackage from "../../package.json" with { type: "json" };
 import { canApplyNativeHome } from "../contracts";
 import type {
   ButtonMappings,
@@ -77,13 +78,14 @@ export const testReleases: LauncherRelease[] = [
   { version: "3.0.0", sections: [] },
   { version: "2.7.0", sections: [{ heading: "Bug Fixes", changes: ["Fix app card spacing."] }] },
 ];
-export const testStatus = { version: "3.0.1" };
+export const testStatus = { version: desktopPackage.version };
+const TEST_ROOT_VERSION = "3.0.1";
 export const testRootNotConfigured: RootAccessStatus = {
   phase: "not_configured",
   root_available: false,
   setup_complete: false,
   runtime_version: null,
-  target_runtime_version: testStatus.version,
+  target_runtime_version: TEST_ROOT_VERSION,
   update_available: false,
   update_pending: false,
   automatic_startup: null,
@@ -97,7 +99,7 @@ export const testRootReady: RootAccessStatus = {
   root_available: true,
   setup_complete: true,
   runtime_version: "3.0.1",
-  target_runtime_version: testStatus.version,
+  target_runtime_version: TEST_ROOT_VERSION,
   update_available: false,
   update_pending: false,
   automatic_startup: true,

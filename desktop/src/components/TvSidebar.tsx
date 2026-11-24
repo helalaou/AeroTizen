@@ -1,4 +1,4 @@
-import { ActionIcon, AppShell, Button, Divider, Group, NavLink, Stack, Text } from "@mantine/core";
+import { ActionIcon, Button, Divider, Group, NavLink, Stack, Text } from "@mantine/core";
 import {
   ArrowLeft,
   Gamepad2,
@@ -7,7 +7,6 @@ import {
   LayoutGrid,
   Package,
   RefreshCw,
-  ScrollText,
   ShieldCheck,
   Stethoscope,
 } from "lucide-react";
@@ -22,7 +21,6 @@ const PAGES = [
   { key: "root", label: "Root access", icon: ShieldCheck },
   { key: "buttons", label: "Button mapping", icon: Gamepad2 },
   { key: "diagnostics", label: "Diagnostics", icon: Stethoscope },
-  { key: "logs", label: "Logs", icon: ScrollText },
 ] as const;
 
 interface TvSidebarProps {
@@ -47,7 +45,7 @@ export function TvSidebar({
   onPage,
 }: TvSidebarProps) {
   return (
-    <AppShell.Navbar p="md" className={styles.sidebar}>
+    <div className={styles.sidebarTv}>
       <Button
         variant="subtle"
         justify="flex-start"
@@ -98,6 +96,6 @@ export function TvSidebar({
           </div>
         ))}
       </Stack>
-    </AppShell.Navbar>
+    </div>
   );
 }

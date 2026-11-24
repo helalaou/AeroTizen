@@ -10,7 +10,7 @@ import { RootStatusBadge } from "./RootStatusBadge";
 
 interface SelectedTvViewProps {
   profile: SavedTv;
-  backendVersion?: string;
+  desktopVersion?: string;
   latestLauncher?: string | null;
   rootAccessStatus: RootAccessStatus | null;
   onLauncher(): void;
@@ -52,7 +52,7 @@ function UpdateButton({ onClick, label }: { onClick(): void; label?: string }) {
 
 export function SelectedTvView({
   profile,
-  backendVersion,
+  desktopVersion,
   latestLauncher,
   rootAccessStatus,
   onLauncher,
@@ -77,7 +77,7 @@ export function SelectedTvView({
     <Stack className={styles.detailContent} gap="lg">
       <Group justify="space-between">
         <Title order={1}>Overview</Title>
-        <GithubReportButton profile={profile} backendVersion={backendVersion} />
+        <GithubReportButton profile={profile} desktopVersion={desktopVersion} />
       </Group>
       <Paper withBorder radius="md" p="lg" className={styles.details}>
         <dl className={`${styles.definitionList} ${styles.overviewDetails}`}>

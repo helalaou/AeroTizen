@@ -1,7 +1,7 @@
 {
   "actions": {
     "open": "Open desktop app",
-    "backend": "Check desktop backend",
+    "backend": "Check desktop app",
     "savedTvs": "Load saved TVs",
     "discovery": "Search for TVs",
     "connect": "Connect to TV",
