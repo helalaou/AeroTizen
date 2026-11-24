@@ -50,6 +50,7 @@ export const bedroom: SavedTv = {
   identity_sha256: "2".repeat(64),
   host: "192.0.2.21",
   name: "Bedroom",
+  computer_ip: "192.0.2.11",
   launcher_version: null,
   launcher_signing_ready: false,
   technical_details: { ...livingRoom.technical_details!, root_runtime_version: null },
@@ -243,7 +244,7 @@ export function testService(): DesktopService {
           await new Promise((resolve) => setTimeout(resolve, SIMULATED_ROOT_SETUP_DELAY_MS));
           rootProgress.set(id, { ...current, update_available: false, update_pending: true });
         } else {
-          if (!current.update_pending) throw new Error("There is no pending root helper update.");
+          if (!current.update_pending) throw new Error("There is no pending root access update.");
           if (current.runtime_version === current.target_runtime_version && current.automatic_boot_verified) {
             rootProgress.set(id, { ...testRootReady });
             profiles.set(id, {

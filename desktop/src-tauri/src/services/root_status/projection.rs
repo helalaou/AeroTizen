@@ -86,6 +86,8 @@ pub(in crate::services) fn public_status(
         None => Some(PAIRING_VERSION.into()),
     });
     let update_pending = receipt.is_some_and(|receipt| truthy(&receipt.document["upgrade"]));
+    let removal_prepared =
+        (phase == RootPhase::Removing).then(|| receipt.is_some_and(Receipt::removal_prepared));
     let update_available = setup_complete
         && !update_pending
         && version
@@ -99,6 +101,7 @@ pub(in crate::services) fn public_status(
         target_runtime_version: target.into(),
         update_available,
         update_pending,
+        removal_prepared,
         automatic_startup,
         automatic_boot_verified,
         bootstrap_completed,

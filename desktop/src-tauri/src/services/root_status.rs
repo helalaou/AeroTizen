@@ -1,7 +1,7 @@
 pub(super) mod projection;
 
 use super::{root_bridge, root_pairing as records, tv_session};
-use crate::models::{AppResult, RootAccessStatus, RootPhase};
+use crate::models::{AppError, AppResult, RootAccessStatus, RootPhase};
 use std::path::PathBuf;
 
 pub(super) const TARGET_RUNTIME_VERSION: &str = env!("ROOT_RUNTIME_VERSION");
@@ -15,13 +15,26 @@ impl RootStatus {
         Self { directory }
     }
 
+    pub async fn recovery_record_path(&self, host: &str, expected: &str) -> AppResult<PathBuf> {
+        records::address(host, expected)?;
+        records::lookup_with_path(&self.directory, host, Some(expected))
+            .await?
+            .map(|(path, _)| path)
+            .ok_or_else(|| {
+                AppError::new(
+                    "recovery_record_missing",
+                    "No recovery record for this TV is saved on this computer.",
+                )
+            })
+    }
+
     pub async fn read(&self, host: &str, expected: &str) -> AppResult<RootAccessStatus> {
         let address = records::address(host, expected)?;
         let before = records::load(&self.directory, host, expected).await?;
         let _ownership;
         let live = if let Some(receipt) = before
             .as_ref()
-            .filter(|receipt| receipt.phase != RootPhase::Removed)
+            .filter(|receipt| receipt.phase != RootPhase::Removed && !receipt.removal_prepared())
         {
             _ownership = tv_session::acquire(&self.directory, host).await?;
             let locked = records::load(&self.directory, host, expected).await?;

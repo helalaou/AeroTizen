@@ -30,7 +30,7 @@ impl TvConnection {
             .ok_or_else(|| {
                 AppError::new(
                     "root_state_changed",
-                    "Complete Root setup before updating the helper.",
+                    "Complete root access setup before updating.",
                 )
             })?;
         root_update::review(&before.document, resume)?;

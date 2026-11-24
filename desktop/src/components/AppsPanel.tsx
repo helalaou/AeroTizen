@@ -127,7 +127,7 @@ export function AppsPanel({
               disabled={loading || installDisabled}
               onClick={onInstall}
             >
-              Install app
+              Install from file
             </Button>
           )}
           <ActionIcon
@@ -184,7 +184,7 @@ export function AppsPanel({
               disabled={loading || picked.length === 0}
               onClick={() => showReview(true)}
             >
-              Remove{picked.length > 0 && ` (${picked.length})`}
+              Remove selected{picked.length > 0 && ` (${picked.length})`}
             </Button>
           </Group>
         </Stack>
@@ -288,6 +288,7 @@ export function AppsPanel({
                               label={<PackageNames item={item} />}
                               checked={checked}
                               disabled={item.protected}
+                              styles={item.protected ? { label: { color: "inherit" } } : undefined}
                               onChange={(event) => select(item, event.currentTarget.checked)}
                             />
                           </Table.Td>

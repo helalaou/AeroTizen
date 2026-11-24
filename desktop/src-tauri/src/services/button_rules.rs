@@ -12,7 +12,7 @@ const MAX_BUTTON_UTF16_UNITS: usize = 48;
 const MAX_APP_ID_CHARACTERS: usize = 120;
 const MAX_DETAIL_CHARACTERS: usize = 256;
 const DISCOVERY_UPDATE_MESSAGE: &str =
-    "Update the TV helper to discover app buttons automatically.";
+    "Update root access to discover app buttons automatically.";
 
 fn invalid() -> AppError {
     AppError::new(

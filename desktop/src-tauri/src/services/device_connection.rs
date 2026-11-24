@@ -7,6 +7,7 @@ mod profile;
 pub(super) mod projection;
 mod removal;
 mod root_install;
+mod root_removal;
 mod root_update;
 mod root_verification;
 
@@ -167,6 +168,12 @@ fn route<'a>(
     };
     let loopback = developer.is_some_and(|value| value == "127.0.0.1");
     if receipt.phase != RootPhase::Removed && (developer.is_none_or(Value::is_null) || loopback) {
+        if receipt.removal_prepared() {
+            return Err(AppError::new(
+                "root_removal_awaiting_restart",
+                "Root removal is paused. Set the TV’s Developer Mode Host PC IP to this computer’s IP address, restart the TV, and connect again.",
+            ));
+        }
         return Ok(Route::Paired(&receipt.pairing));
     }
     if loopback {

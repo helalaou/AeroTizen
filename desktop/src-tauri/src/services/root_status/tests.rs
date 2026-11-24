@@ -10,6 +10,29 @@ fn fixture(directory: &std::path::Path, server: &Server) -> PathBuf {
 }
 
 #[tokio::test]
+async fn recovery_path_requires_a_record_for_the_selected_tv() {
+    let directory = tempfile::tempdir().unwrap();
+    let store = RootStatus::new(directory.path().into());
+    let host = records::tests::HOST;
+    let identity = records::tests::IDENTITY;
+    let missing = store
+        .recovery_record_path(host, identity)
+        .await
+        .unwrap_err();
+    assert_eq!(missing.code, "recovery_record_missing");
+    let path = records::tests::save(directory.path(), host, &records::tests::document());
+    assert_eq!(
+        store.recovery_record_path(host, identity).await.unwrap(),
+        path
+    );
+    let mismatch = store
+        .recovery_record_path(host, &"e".repeat(64))
+        .await
+        .unwrap_err();
+    assert_eq!(mismatch.code, "identity_mismatch");
+}
+
+#[tokio::test]
 async fn native_status_reads_live_proof_with_no_worker_and_keeps_receipts_unchanged() {
     let mut server = Server::new(1, |request| format!("{}\n", reply(request)).into_bytes()).await;
     let directory = tempfile::tempdir().unwrap();

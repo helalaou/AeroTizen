@@ -20,15 +20,17 @@ export function rootComputerAddress(profile: SavedTv, status: RootAccessStatus):
   return null;
 }
 
-export function profileAfterRootSetup(profile: SavedTv, status: RootAccessStatus): SavedTv {
-  if (!status.setup_complete || !status.root_available) return profile;
+export function profileAfterRootChange(profile: SavedTv, status: RootAccessStatus): SavedTv {
+  const ready = status.setup_complete && status.root_available;
+  const disabled = status.phase === "removed" || status.removal_prepared;
+  if (!ready && !disabled) return profile;
   return {
     ...profile,
-    transport: "paired_root",
+    transport: ready ? "paired_root" : "developer",
     technical_details: profile.technical_details
       ? {
           ...profile.technical_details,
-          root_runtime_version: status.runtime_version,
+          root_runtime_version: ready ? status.runtime_version : null,
         }
       : undefined,
   };

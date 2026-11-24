@@ -21,7 +21,7 @@ const MAX_MEMBER_BYTES: u64 = 1024 * 1024;
 pub(super) const BRIDGE_PORT: u16 = 26104;
 pub(super) const STAGING_DIRECTORY: &str = "/home/owner/share/tmp/sdk_tools";
 fn failed() -> AppError {
-    AppError::new("root_setup_failed","Could not prepare verified Root helper files. Check the desktop app version and original signing certificates.")
+    AppError::new("root_setup_failed","Could not prepare the root access installation files. Check the desktop app version and original signing certificates.")
 }
 pub(super) fn random_hex(length: usize) -> AppResult<String> {
     let mut bytes = vec![0; length];

@@ -111,6 +111,8 @@ export function parseScenario(json: string): SimulatorState {
       "TV visibility and power settings must be booleans.",
     );
     const root = record(tv.root);
+    check(tv.removal_restarted === undefined || typeof tv.removal_restarted === "boolean", "Invalid removal restart.");
+    check(root.removal_prepared === undefined || typeof root.removal_prepared === "boolean", "Invalid removal status.");
     check(ROOT_PHASES.includes(String(root.phase)), "Invalid Root setup phase.");
     check(
       [
@@ -133,7 +135,7 @@ export function parseScenario(json: string): SimulatorState {
         text(root.target_runtime_version) &&
         version(root.target_runtime_version) &&
         nullableText(root.original_pc_host),
-      "Invalid Root helper version or recovery address.",
+      "Invalid root access version or recovery address.",
     );
     check(Array.isArray(tv.apps), "Apps must be an array.");
     const packages = new Set<string>();

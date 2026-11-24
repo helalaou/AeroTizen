@@ -33,7 +33,7 @@ describe("TV report", () => {
     const report = githubReport(tv, "3.0.1");
     expect(report).toContain("TV model: QE65LS03DAUXXU");
     expect(report).toContain("Tizen version: 9.0.0");
-    expect(report).toContain("Root helper version: 3.0.1");
+    expect(report).toContain("Root access version: 3.0.1");
     for (const value of [tv.id, tv.name, tv.host, tv.developer_host, tv.identity_sha256]) {
       expect(report).not.toContain(value);
     }

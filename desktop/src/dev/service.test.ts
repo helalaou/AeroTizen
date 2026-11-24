@@ -213,6 +213,25 @@ describe("TV simulator", () => {
     expect(store.getSnapshot().tvs[0]!.original_home).toEqual(older.original_home);
   });
 
+  it("resumes simulated root removal after reload and leaves the launcher and Home settings in place", async () => {
+    const { store, service, initial } = setup();
+    store.replace(initial);
+    const tv = initial.tvs[0]!;
+    expect(await service.rootAccess!.revealRecovery!(tv.profile.id)).toMatch(/simulator/i);
+    const pending = await service.rootAccess!.remove!(tv.profile.id, "start");
+    expect(pending).toMatchObject({ phase: "removing", removal_prepared: true, root_available: false });
+
+    const reopened = createSimulatorStore(localStorage);
+    const root = createSimulatorService(reopened).rootAccess!;
+    await expect(root.remove!(tv.profile.id, "finish")).rejects.toThrow(/restart/i);
+    await root.simulateRestart!(tv.profile.id);
+    expect(await root.remove!(tv.profile.id, "finish")).toMatchObject({ phase: "removed", recovery_saved: true });
+    const removed = reopened.getSnapshot().tvs[0]!;
+    expect(removed.profile.launcher_version).toBe(tv.profile.launcher_version);
+    expect(removed.profile.native_home_settings).toEqual(tv.profile.native_home_settings);
+    expect(removed.profile.transport).toBe("developer");
+  });
+
   it("isolates button changes by TV and supports learning, renaming and reset", async () => {
     const { store, service } = setup();
     const tv = createTv("rooted", 5);

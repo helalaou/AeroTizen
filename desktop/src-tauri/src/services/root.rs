@@ -1,7 +1,29 @@
 use crate::{
-    models::{AppError, AppResult, RootAccessStatus, RootSetupAction, RootUpdateAction},
+    models::{
+        AppError, AppResult, RootAccessStatus, RootRemoveAction, RootSetupAction, RootUpdateAction,
+    },
     state::{busy, AppState},
 };
+
+pub async fn remove_root_access(
+    state: &AppState,
+    id: String,
+    action: RootRemoveAction,
+    confirmed: bool,
+) -> AppResult<RootAccessStatus> {
+    if !confirmed {
+        return Err(AppError::new(
+            "confirmation_required",
+            "Review and confirm root removal first.",
+        ));
+    }
+    let _guard = state.operation.try_lock().map_err(|_| busy())?;
+    let saved = state.profiles.get(&id).await?;
+    state
+        .device_connection
+        .remove_root_helper(&saved.tv.host, &saved.tv.identity_sha256, action)
+        .await
+}
 #[cfg(test)]
 use serde_json::json;
 
@@ -60,7 +82,7 @@ pub async fn upgrade_root_access(
     if !confirmed {
         return Err(AppError::new(
             "confirmation_required",
-            "Review and confirm the Root helper update first.",
+            "Review and confirm the root access update first.",
         ));
     }
     state

@@ -20,6 +20,8 @@ pub struct RootAccessStatus {
     pub target_runtime_version: String,
     pub update_available: bool,
     pub update_pending: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub removal_prepared: Option<bool>,
     pub automatic_startup: Option<bool>,
     pub automatic_boot_verified: bool,
     pub bootstrap_completed: bool,
@@ -37,4 +39,11 @@ pub enum RootSetupAction {
 pub enum RootUpdateAction {
     Start,
     Resume,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RootRemoveAction {
+    Start,
+    Finish,
 }

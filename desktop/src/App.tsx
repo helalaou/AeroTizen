@@ -6,6 +6,7 @@ import { DESKTOP_HEADER, Header } from "./components/Header";
 import { LauncherPanel } from "./components/LauncherPanel";
 import { LocalAppInstallDialog } from "./components/LocalAppInstallDialog";
 import { RootAccessPanel } from "./components/RootAccessPanel";
+import { RootRemovalDialog } from "./components/RootRemovalDialog";
 import { RootSetupDialog } from "./components/RootSetupDialog";
 import { RootUpdateDialog } from "./components/RootUpdateDialog";
 import { SelectedTvView } from "./components/SelectedTvView";
@@ -38,6 +39,7 @@ export function App({ service }: AppProps) {
   const [localInstallOpened, setLocalInstallOpened] = useState(false);
   const [rootSetupOpened, setRootSetupOpened] = useState(false);
   const [rootUpdateOpened, setRootUpdateOpened] = useState(false);
+  const [rootRemovalOpened, setRootRemovalOpened] = useState(false);
   const [menuOpened, setMenuOpened] = useState(false);
   const selected = manager.selected;
   const busy = Boolean(manager.busy);
@@ -123,8 +125,10 @@ export function App({ service }: AppProps) {
       );
     }
     if (page === "root") {
+      const revealRecovery = service.rootAccess?.revealRecovery;
       return (
         <RootAccessPanel
+          key={selected.id}
           status={manager.rootStatus}
           loading={manager.rootLoading}
           error={manager.rootError}
@@ -132,6 +136,8 @@ export function App({ service }: AppProps) {
           onRefresh={() => manager.loadRootStatus(selected.id)}
           onSetup={() => setRootSetupOpened(true)}
           onUpdate={() => setRootUpdateOpened(true)}
+          onRemove={manager.removeRoot ? () => setRootRemovalOpened(true) : undefined}
+          onRevealRecovery={revealRecovery ? () => revealRecovery(selected.id) : undefined}
         />
       );
     }
@@ -161,6 +167,7 @@ export function App({ service }: AppProps) {
           error={manager.buttonsError}
           activation={manager.buttonActivation}
           onRefresh={() => manager.loadButtons(selected.id)}
+          onRootAccess={() => goToPage("root")}
           actions={
             service.buttonActions
               ? {
@@ -234,7 +241,11 @@ export function App({ service }: AppProps) {
         />
       )}
       <AppShell.Main className={styles.main}>
-        <div className={styles.body} aria-busy={appLoading}>
+        <div
+          className={styles.body}
+          data-viewport={selected && page === "launcher" ? "launcher" : undefined}
+          aria-busy={appLoading}
+        >
           {samsung.error && (
             <div className={styles.feedback}>
               <Alert
@@ -338,22 +349,38 @@ export function App({ service }: AppProps) {
           onClose={() => setRootUpdateOpened(false)}
         />
       )}
-      {appLoading && !dialog && !signInDialog && !localInstallOpened && !rootSetupOpened && !rootUpdateOpened && (
-        <LoadingOverlay
-          visible
-          pos="fixed"
-          zIndex={110}
-          overlayProps={{ backgroundOpacity: 0.8 }}
-          loaderProps={{
-            children: (
-              <Stack align="center" gap="sm" aria-hidden="true">
-                <Loader />
-                <Text fw={500}>{busyMessage}</Text>
-              </Stack>
-            ),
-          }}
+      {rootRemovalOpened && selected && manager.rootStatus && manager.removeRoot && (
+        <RootRemovalDialog
+          key={selected.id}
+          profile={selected}
+          status={manager.rootStatus}
+          remove={manager.removeRoot}
+          simulateRestart={manager.simulateRootRestart}
+          onClose={() => setRootRemovalOpened(false)}
         />
       )}
+      {appLoading &&
+        !dialog &&
+        !signInDialog &&
+        !localInstallOpened &&
+        !rootSetupOpened &&
+        !rootUpdateOpened &&
+        !rootRemovalOpened && (
+          <LoadingOverlay
+            visible
+            pos="fixed"
+            zIndex={110}
+            overlayProps={{ backgroundOpacity: 0.8 }}
+            loaderProps={{
+              children: (
+                <Stack align="center" gap="sm" aria-hidden="true">
+                  <Loader />
+                  <Text fw={500}>{busyMessage}</Text>
+                </Stack>
+              ),
+            }}
+          />
+        )}
       {dialog && (
         <TvDialogs
           key={`${dialog.kind}-${dialog.profile?.id ?? "new"}`}

@@ -6,6 +6,7 @@ interface SamsungSignInDialogProps {
   signedIn: boolean;
   tvName?: string;
   appName?: string;
+  setupRoot?: boolean;
   signIn(signal: AbortSignal): Promise<unknown>;
   prepareCertificates?(reportError: (message: string) => void): Promise<boolean>;
   install?(reportError: (message: string) => void): Promise<boolean>;
@@ -16,6 +17,7 @@ export function SamsungSignInDialog({
   signedIn,
   tvName,
   appName = "AeroTizen",
+  setupRoot = false,
   signIn,
   prepareCertificates,
   install,
@@ -26,6 +28,8 @@ export function SamsungSignInDialog({
   const request = useRef<AbortController | null>(null);
   const cancellable = phase === "idle" || phase === "signing_in";
   const pending = phase !== "idle";
+  const nextAction = setupRoot ? "set up root access" : `install ${appName}`;
+  const actionInProgress = setupRoot ? "Setting up root access" : `Installing ${appName}`;
 
   useEffect(() => () => request.current?.abort(), []);
 
@@ -81,7 +85,7 @@ export function SamsungSignInDialog({
         {phase === "idle" && (
           <Text size="sm">
             {tvName
-              ? `We'll prepare the signing certificates for ${tvName}, then install ${appName}.`
+              ? `We'll prepare the signing certificates for ${tvName}, then ${nextAction}.`
               : "Sign in to your Samsung account in your browser."}
           </Text>
         )}
@@ -97,7 +101,7 @@ export function SamsungSignInDialog({
         )}
         {phase === "installing" && (
           <Text role="status" size="sm">
-            Installing {appName} on {tvName}…
+            {actionInProgress} on {tvName}…
           </Text>
         )}
         {error && (

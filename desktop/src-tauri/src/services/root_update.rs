@@ -9,7 +9,7 @@ use crate::models::{AppError, AppResult};
 use serde_json::{json, Value};
 
 pub(super) fn failed() -> AppError {
-    AppError::new("root_update_failed", "The Root helper update could not finish. Refresh Root access to check saved progress before retrying.")
+    AppError::new("root_update_failed", "The root access update could not finish. Refresh Root access to check saved progress before retrying.")
 }
 pub(super) fn requirements(message: &str) -> AppError {
     AppError::new("root_update_requirements", message)
@@ -17,7 +17,7 @@ pub(super) fn requirements(message: &str) -> AppError {
 fn changed() -> AppError {
     AppError::new(
         "root_state_changed",
-        "Complete Root setup before updating the helper. Refresh Root access first.",
+        "Complete root access setup before updating. Refresh Root access first.",
     )
 }
 fn canonical_boot(value: &Value) -> bool {
@@ -157,16 +157,16 @@ pub(super) async fn update(
         let version=match live.get("runtime_version") {
             None=>super::root_pairing::PAIRING_VERSION,
             Some(Value::String(version))=>version,
-            _=>return Err(requirements("This helper version cannot be updated by this app. Install a newer desktop release.")),
+            _=>return Err(requirements("This app cannot update the installed version of root access. Install a newer desktop release.")),
         };
         if version == TARGET_RUNTIME_VERSION {
             if installed != target || live["configuration_sha256"] != target {
-                return Err(requirements("The helper differs from this build. Install a newer desktop release to update it."));
+                return Err(requirements("The root access installation differs from this build. Install a newer desktop release to update it."));
             }
             return Ok(());
         }
         if !older(version, TARGET_RUNTIME_VERSION) {
-            return Err(requirements("This helper version cannot be updated by this app. Install a newer desktop release."));
+            return Err(requirements("This app cannot update the installed version of root access. Install a newer desktop release."));
         }
         io.certificates(&duid).await.map_err(|error| if error.code == "certificates_required" {requirements("Restore this TV's original signing certificates on this computer before updating. Do not create replacement certificates.")} else {error})?;
         let (packaged, checksum) = io.package(&receipt).await?;

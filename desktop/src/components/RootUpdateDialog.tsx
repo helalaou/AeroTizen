@@ -1,4 +1,4 @@
-import { Alert, Button, Checkbox, Code, Group, List, Modal, Stack, Text } from "@mantine/core";
+import { Alert, Button, Checkbox, Code, Group, List, Modal, Stack, Stepper, Text } from "@mantine/core";
 import { Check, RotateCw } from "lucide-react";
 import { useState } from "react";
 import type { RootAccessStatus, RootUpdateAction, SavedTv } from "../contracts";
@@ -26,6 +26,9 @@ export function RootUpdateDialog({
   const [complete, setComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  let activeStep = pending ? 1 : 0;
+  if (status.update_pending) activeStep = 2;
+  if (complete) activeStep = 3;
   const computer = rootComputerAddress(profile, status);
   const resumeLabel = status.root_available ? "Check after restart" : "Resume update";
 
@@ -42,7 +45,7 @@ export function RootUpdateDialog({
       !result.update_pending && result.setup_complete && result.runtime_version === result.target_runtime_version;
     setComplete(verified);
     if (!verified && !result.update_pending)
-      setError("The TV did not confirm the helper version. Check saved progress to refresh Root access.");
+      setError("The TV did not confirm the new version. Check saved progress to refresh Root access.");
     if (resuming && !verified)
       setNotice("The update is not verified yet. Complete the restart steps, then check again.");
   }
@@ -52,7 +55,7 @@ export function RootUpdateDialog({
       opened
       centered
       size="lg"
-      title="Update root helper"
+      title="Update root access"
       onClose={onClose}
       closeOnClickOutside={!pending}
       closeOnEscape={!pending}
@@ -62,9 +65,14 @@ export function RootUpdateDialog({
         <Text size="sm">
           TV: <strong>{profile.name}</strong>
         </Text>
+        <Stepper active={activeStep} size="xs" allowNextStepsSelect={false}>
+          <Stepper.Step label="Prepare" />
+          <Stepper.Step label="Update" />
+          <Stepper.Step label="Restart" />
+        </Stepper>
         {complete && (
           <Alert color="green" icon={<Check size={18} />} role="status">
-            Root helper {status.runtime_version} and automatic startup are verified on {profile.name}.
+            Verified root access version {status.runtime_version} and automatic startup on {profile.name}.
           </Alert>
         )}
         {!complete && status.update_pending && (
@@ -109,20 +117,24 @@ export function RootUpdateDialog({
             )}
           </>
         )}
-        {!complete && !status.update_pending && (
+        {!complete && !status.update_pending && !pending && (
           <>
             <Text>
-              Update the root helper from {status.runtime_version ?? "Unavailable"} to{" "}
+              Update from version {status.runtime_version ?? "Unavailable"} to{" "}
               <strong>{status.target_runtime_version}</strong>.
             </Text>
-            <Text size="sm">
-              This version is included with AeroTizen Desktop. The update keeps your pairing, Home settings and startup
-              settings.
-            </Text>
-            <Text size="sm">
-              Use the original signing certificates on this computer. Keep Developer Mode on and Host PC IP set to{" "}
-              <Code>127.0.0.1</Code>. You must restart the TV to finish.
-            </Text>
+            <Stack gap="xs">
+              <Text size="sm" fw={600}>
+                Before you update
+              </Text>
+              <List type="ordered" spacing="xs" size="sm">
+                <List.Item>Use the computer with the original signing certificates.</List.Item>
+                <List.Item>
+                  Keep Developer Mode on and Host PC IP set to <Code>127.0.0.1</Code>.
+                </List.Item>
+              </List>
+            </Stack>
+            <Text size="sm">You’ll restart the TV to finish the update.</Text>
             <Checkbox
               label="I am ready to update and restart this TV"
               checked={confirmed}
@@ -133,7 +145,7 @@ export function RootUpdateDialog({
         )}
         {pending && (
           <Text size="sm" role="status">
-            Updating and checking the helper. Keep this app open and the TV on.
+            Updating root access. Keep this app open and the TV on.
           </Text>
         )}
         {error && (
@@ -168,7 +180,7 @@ export function RootUpdateDialog({
               disabled={!status.update_pending && (!confirmed || !status.update_available)}
               onClick={() => void apply()}
             >
-              {status.update_pending ? resumeLabel : "Update helper"}
+              {status.update_pending ? resumeLabel : "Install update"}
             </Button>
           )}
         </Group>

@@ -5,6 +5,7 @@ import {
   Button,
   Group,
   Menu,
+  Paper,
   Skeleton,
   Stack,
   Table,
@@ -35,6 +36,7 @@ interface ButtonMappingPanelProps {
   error: string | null;
   activation: ButtonActivation | null;
   onRefresh(): void;
+  onRootAccess(): void;
   actions?: {
     busy: boolean;
     apps: ButtonTargetApp[] | null;
@@ -67,6 +69,7 @@ export function ButtonMappingPanel({
   error,
   activation,
   onRefresh,
+  onRootAccess,
   actions,
 }: ButtonMappingPanelProps) {
   const [picker, setPicker] = useState<TvButtonMapping | null>(null);
@@ -129,12 +132,24 @@ export function ButtonMappingPanel({
           </Alert>
         )}
         {mappings?.status === "pairing_required" && (
-          <Alert title="Paired TV helper required">
-            Button mapping is available on rooted TVs with a paired AeroTizen helper.
-          </Alert>
+          <Paper withBorder p="lg">
+            <Group justify="space-between" gap="sm">
+              <Stack gap={4}>
+                <Title order={2} size="h3">
+                  Root access required
+                </Title>
+                <Text size="sm" c="dimmed">
+                  Button mapping needs verified root access on this TV.
+                </Text>
+              </Stack>
+              <Button disabled={actions?.busy} onClick={onRootAccess}>
+                Open Root access
+              </Button>
+            </Group>
+          </Paper>
         )}
         {mappings?.status === "helper_update_required" && (
-          <Alert title="Update the TV helper">The paired helper needs an update to show button mappings.</Alert>
+          <Alert title="Root access update required">Update root access to view button mappings.</Alert>
         )}
         {mappings?.status === "ready" && (
           <Stack gap="sm">

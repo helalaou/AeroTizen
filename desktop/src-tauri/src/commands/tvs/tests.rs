@@ -262,7 +262,7 @@ fn button_edits_use_the_registered_native_command_without_a_worker_and_keep_busy
     drop(guard);
     assert_eq!(
         fixture.invoke("change_tv_button", args).unwrap_err(),
-        json!({"code":"pairing_required","message":"Complete Root access setup and verify the paired TV helper before changing buttons."})
+        json!({"code":"pairing_required","message":"Complete root access setup and verify the connection before changing buttons."})
     );
 }
 

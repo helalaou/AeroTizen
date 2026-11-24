@@ -133,7 +133,7 @@ export function TvEditor({ tv, onSave }: TvEditorProps) {
         </SimpleGrid>
         {draft.root.root_available && (
           <TextInput
-            label="Installed Root helper version"
+            label="Installed root access version"
             value={draft.root.runtime_version ?? ""}
             onChange={(event) => {
               const runtime_version = event.currentTarget.value || null;
