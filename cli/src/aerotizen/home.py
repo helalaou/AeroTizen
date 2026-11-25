@@ -18,6 +18,7 @@ from aerotizen.device import DeviceSessionError
 from aerotizen.root import SUPPORTED_VERSION
 
 OPERATION = "http://tizen.org/appcontrol/operation/main"
+MAIN_OPERATION_KEY = "operation/main"
 HOME_KEY = "db/appfw/home_appid"
 STARTUP_KEYS = ("db/appfw/startup_appid", "db/appfw/booting_appid_backup")
 FIRST_SCREEN_KEY = "db/first_screen/type"
@@ -235,6 +236,11 @@ def _mode(main, settings):
     return {releases.APP_ID: "native", "com.samsung.tv.csfs": "stock"}.get(home["value"], "custom")
 
 
+def default_backup_path(identity, *, state_dir=None):
+    directory = Path(state_dir) if state_dir is not None else Path(remote.CONFIG_DIR)
+    return directory / "backups" / identity / "original-home.json"
+
+
 def device_info(session, host, *, backup=None, state_dir=None):
     """Keep Home recovery usable before Samsung's optional HTTP server starts."""
     try:
@@ -246,10 +252,9 @@ def device_info(session, host, *, backup=None, state_dir=None):
         if not identity or "fail" in identity.lower():
             raise HomeError("TV metadata is offline and SDK identity is unavailable.") from error
         digest = hashlib.sha256(identity.encode()).hexdigest()
-        directory = Path(state_dir) if state_dir is not None else Path(remote.CONFIG_DIR)
-        path = Path(backup) if backup is not None else directory / "backups" / digest / "original-home.json"
+        path = Path(backup) if backup is not None else default_backup_path(digest, state_dir=state_dir)
         try:
-            saved, _ = _load_backup(path.expanduser(), digest)
+            saved, _ = load_backup(path.expanduser(), digest)
         except HomeError as exc:
             raise HomeError(
                 "TV metadata is offline and no valid backup matches the SDK identity. "
@@ -317,7 +322,7 @@ def read_status(session, provider, info):
     main, settings = query["main_operation"], query["settings"]
     unavailable = {
         key: item.get("error")
-        for key, item in (("operation/main", main), *settings.items())
+        for key, item in ((MAIN_OPERATION_KEY, main), *settings.items())
         if item["status"] != "ok"
     }
     diagnostics.event(
@@ -497,7 +502,7 @@ def validate_backup(document, identity):
         raise HomeError(f"Invalid Home backup: {exc}") from exc
 
 
-def _load_backup(path, identity):
+def load_backup(path, identity):
     try:
         if path.stat().st_size > 128 * 1024:
             raise ValueError("Backup file is too large")
@@ -509,13 +514,19 @@ def _load_backup(path, identity):
         raise HomeError(f"Cannot read existing Home backup at {path}: {exc}") from exc
 
 
+def backup_matches_device(backup, device):
+    return all(
+        backup["device"].get(key) == device.get(key)
+        for key in ("identity_sha256", "model", "firmware_build", "cpu_arch", "os_version")
+    )
+
+
 def save_backup(status, *, output=None, state_dir=None):
     identity = status["device"]["identity_sha256"]
-    directory = Path(state_dir) if state_dir is not None else Path(remote.CONFIG_DIR)
     path = (
         Path(output).expanduser().absolute()
         if output is not None
-        else (directory / "backups" / identity / "original-home.json")
+        else default_backup_path(identity, state_dir=state_dir)
     )
     created = False
     if not path.exists():
@@ -555,7 +566,7 @@ def save_backup(status, *, output=None, state_dir=None):
                         os.close(folder)
         finally:
             temporary.unlink(missing_ok=True)
-    document, digest = _load_backup(path, identity)
+    document, digest = load_backup(path, identity)
     return {
         "path": str(path),
         "created": created,

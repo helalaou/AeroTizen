@@ -64,7 +64,7 @@ def preview(action, backup=None):
     if backup is not None:
         try:
             document = json.loads(Path(backup).read_text())
-            original, digest = home._load_backup(Path(backup), document["device"]["identity_sha256"])
+            original, digest = home.load_backup(Path(backup), document["device"]["identity_sha256"])
         except (ValueError, KeyError, TypeError) as exc:
             raise home.HomeError("The preview backup is invalid.") from exc
         result["baseline_sha256"] = digest
@@ -256,12 +256,8 @@ def _check_compatibility(status):
 def _check_preflight(status, original):
     if status["complete"] is not True:
         raise home.HomeError("Incomplete Home state; no write was attempted.")
-    device = status["device"]
-    for key in ("identity_sha256", "model", "firmware_build", "cpu_arch", "os_version"):
-        if device.get(key) != original["device"].get(key):
-            raise home.HomeError(
-                "Device or firmware differs from the original backup; no write was attempted."
-            )
+    if not home.backup_matches_device(original, status["device"]):
+        raise home.HomeError("Device or firmware differs from the original backup; no write was attempted.")
     _check_compatibility(status)
     installed = status.get("launcher", {}).get("installed")
     if type(installed) is not bool:
@@ -326,13 +322,12 @@ def change(session, info, action, *, backup=None, state_dir=None):
     files = load_helper()
     status = home.read_status(session, None, info)
     identity = status["device"]["identity_sha256"]
-    directory = Path(state_dir) if state_dir is not None else Path(remote.CONFIG_DIR)
     backup = (
         Path(backup).expanduser().absolute()
         if backup is not None
-        else directory / "backups" / identity / "original-home.json"
+        else home.default_backup_path(identity, state_dir=state_dir)
     )
-    original, digest = home._load_backup(backup, identity)
+    original, digest = home.load_backup(backup, identity)
     installed = _check_preflight(status, original)
     if not installed and (action == "apply" or status["watcher"]["reachable"]):
         raise home.HomeError(

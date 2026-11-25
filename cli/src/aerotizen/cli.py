@@ -428,14 +428,34 @@ def cmd_uninstall(args):
                 sys.exit(f"Cannot verify native Home assignments; uninstall stopped: {exc}")
             if not status["complete"]:
                 sys.exit("Cannot verify all native Home assignments; uninstall stopped.")
-            values = [status["home"]["main_operation"], *status["home"]["settings"].values()]
-            if any(
-                item["type"] == "string" and item["value"].split(".", 1)[0] == releases.PACKAGE_ID
-                for item in values
-            ):
+            current_home = status["home"]
+            assignments = (
+                (home.MAIN_OPERATION_KEY, current_home["main_operation"]),
+                *current_home["settings"].items(),
+            )
+            blockers = [
+                key
+                for key, item in assignments
+                if item["type"] == "string" and item["value"].split(".", 1)[0] == releases.PACKAGE_ID
+            ]
+            if blockers:
+                message = f"Uninstall stopped. AeroTizen is still assigned to {', '.join(blockers)}."
+                device = status["device"]
+                identity = device["identity_sha256"]
+                path = home.default_backup_path(identity, state_dir=STATE_DIR)
+                try:
+                    backup, _ = home.load_backup(path, identity)
+                    valid_backup = home.backup_matches_device(backup, device)
+                except home.HomeError:
+                    valid_backup = False
+                if valid_backup:
+                    sys.exit(
+                        f"{message} Run 'aerotizen home restore --yes'. "
+                        "Then fully restart the TV and retry uninstall."
+                    )
                 sys.exit(
-                    "AeroTizen is still assigned to native Home or startup. "
-                    "Run 'aerotizen home restore --yes', fully restart the TV, then retry uninstall."
+                    f"{message} No valid original Home backup for this TV and firmware was found "
+                    "in the default location."
                 )
         out = s.uninstall(app_id).strip()
         if app_id in {a["appid"] for a in catalog.parse_applist(s.applist())}:

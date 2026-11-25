@@ -1,5 +1,8 @@
 """Uninstalling apps without a physical TV: the TV expects app IDs, not package IDs."""
 
+import json
+from pathlib import Path
+
 import pytest
 
 from aerotizen import cli, home, releases
@@ -9,7 +12,7 @@ OTHER = "app_id=Abcdefghij.Player app_title=Player"
 
 
 @pytest.fixture
-def tv(monkeypatch):
+def tv(monkeypatch, tmp_path):
     class TV:
         def __init__(self):
             self.installed = [LAUNCHER, OTHER]
@@ -18,6 +21,22 @@ def tv(monkeypatch):
             self.home_error = None
             self.home_status = {
                 "complete": True,
+                "queried_at": "2026-11-25T12:00:00+00:00",
+                "device": {
+                    "identity_sha256": "a" * 64,
+                    "model": "TEST-TV",
+                    "firmware_build": "T-TEST-001",
+                    "cpu_arch": "armv7",
+                    "os_version": "9.0.0",
+                },
+                "evidence": {
+                    "access": "sdk_uid_901",
+                    "uid": 901,
+                    "authenticated": True,
+                    "sdk_staging_cleaned": True,
+                    "query_staging_cleaned": True,
+                    "helper_sha256": "b" * 64,
+                },
                 "home": {
                     "main_operation": {"type": "string", "status": "ok", "value": "com.samsung.tv.csfs"},
                     "settings": {
@@ -60,6 +79,7 @@ def tv(monkeypatch):
     monkeypatch.setattr(home, "read_status", read_status)
     monkeypatch.setattr(cli, "require_sdb", lambda host: fake)
     monkeypatch.setattr(cli, "snapshot", lambda host, text: "snapshot.txt")
+    monkeypatch.setattr(cli, "STATE_DIR", tmp_path)
     return fake
 
 
@@ -104,26 +124,64 @@ def test_debloat_removes_packages_by_app_id(monkeypatch, tv):
 @pytest.mark.parametrize(
     "assignment",
     [
-        "main_operation",
+        "operation/main",
         "db/appfw/home_appid",
         "db/appfw/startup_appid",
         "db/appfw/booting_appid_backup",
         "db/first_screen/type",
     ],
 )
-def test_uninstall_requires_restore_for_each_launcher_assignment(monkeypatch, tv, assignment):
+def test_uninstall_names_each_assignment_without_suggesting_restore_when_backup_is_missing(
+    monkeypatch, tv, assignment
+):
     state = tv.home_status["home"]
-    target = state["main_operation"] if assignment == "main_operation" else state["settings"][assignment]
+    target = state["main_operation"] if assignment == "operation/main" else state["settings"][assignment]
     target["value"] = releases.APP_ID
-    with pytest.raises(SystemExit, match="home restore --yes"):
+    with pytest.raises(SystemExit, match=assignment) as error:
         run(monkeypatch, "uninstall", "launcher", "--yes")
+    assert "No valid original Home backup" in str(error.value)
+    assert "home restore" not in str(error.value)
+    assert tv.removed == []
+
+
+def test_uninstall_names_multiple_assignments_and_suggests_restore_for_a_valid_backup(monkeypatch, tv):
+    home.save_backup(tv.home_status, state_dir=cli.STATE_DIR)
+    assignments = ("db/appfw/home_appid", "db/appfw/booting_appid_backup")
+    for setting in assignments:
+        tv.home_status["home"]["settings"][setting]["value"] = releases.APP_ID
+    with pytest.raises(SystemExit, match="home restore --yes") as error:
+        run(monkeypatch, "uninstall", "launcher", "--yes")
+    for setting in assignments:
+        assert setting in str(error.value)
+    assert tv.removed == []
+
+
+@pytest.mark.parametrize("problem", ["malformed", "wrong_device", "wrong_firmware"])
+def test_uninstall_does_not_suggest_restore_for_an_unusable_backup(monkeypatch, tv, problem):
+    path = Path(home.save_backup(tv.home_status, state_dir=cli.STATE_DIR)["path"])
+    if problem == "malformed":
+        path.write_text("{")
+    else:
+        backup = json.loads(path.read_text())
+        key, value = {
+            "wrong_device": ("identity_sha256", "c" * 64),
+            "wrong_firmware": ("firmware_build", "T-TEST-002"),
+        }[problem]
+        backup["device"][key] = value
+        path.write_text(json.dumps(backup))
+    setting = "db/appfw/booting_appid_backup"
+    tv.home_status["home"]["settings"][setting]["value"] = releases.APP_ID
+    with pytest.raises(SystemExit, match=setting) as error:
+        run(monkeypatch, "uninstall", "launcher", "--yes")
+    assert "No valid original Home backup" in str(error.value)
+    assert "home restore" not in str(error.value)
     assert tv.removed == []
 
 
 def test_uninstall_watcher_cannot_remove_the_active_home_package(monkeypatch, tv):
     tv.installed.append("app_id=DclHome001.Watcher app_title=Watcher")
     tv.home_status["home"]["main_operation"]["value"] = releases.APP_ID
-    with pytest.raises(SystemExit, match="home restore --yes"):
+    with pytest.raises(SystemExit, match="operation/main"):
         run(monkeypatch, "uninstall", "DclHome001.Watcher", "--yes")
     assert tv.removed == []
 
