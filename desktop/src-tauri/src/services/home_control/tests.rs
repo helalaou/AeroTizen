@@ -283,6 +283,14 @@ async fn uncertain_writer_results_keep_recovery_receipts_and_never_retry_or_repl
             }
         );
         assert!(receipt["error"].is_string());
+        assert_eq!(
+            receipt["host_failure_stage"],
+            match scenario {
+                "transport" => "writer_response",
+                "rollback" => "native_result",
+                _ => "final_verification",
+            }
+        );
     }
 }
 #[tokio::test(start_paused = true)]

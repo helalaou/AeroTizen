@@ -88,7 +88,8 @@ impl Session<'_> {
         )
         .await?;
         if result.exit_code != 0 {
-            return Err(home_protocol::failed(
+            return Err(AppError::new(
+                "home_query_failed",
                 "The SDK Home query failed. Check the TV's current settings before retrying.",
             ));
         }

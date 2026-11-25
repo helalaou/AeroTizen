@@ -43,7 +43,10 @@ fn error(message: &str) -> AppError {
 }
 fn preflight(status: &Value, original: &Value) -> AppResult<bool> {
     if status["complete"] != true {
-        return Err(error("Incomplete Home settings. No write was attempted."));
+        return Err(AppError::new(
+            "home_settings_incomplete",
+            "Incomplete Home settings. No write was attempted.",
+        ));
     }
     for key in [
         "identity_sha256",
@@ -107,7 +110,8 @@ fn preflight(status: &Value, original: &Value) -> AppResult<bool> {
             .iter()
             .any(|(key, kind)| !valid(&status["home"]["settings"][key], kind))
     {
-        return Err(error(
+        return Err(AppError::new(
+            "home_settings_incomplete",
             "Required typed Home settings are unavailable or empty.",
         ));
     }
@@ -127,7 +131,7 @@ fn service(watcher: &Value) -> AppResult<()> {
             Some("watcher" | "native" | "hold")
         )
     {
-        return Err(error("The Home control service is incompatible. Use a matching launcher and retry. No Home settings were changed."));
+        return Err(AppError::new("home_service_incompatible", "The Home control service is incompatible. Use a matching launcher and retry. No Home settings were changed."));
     }
     Ok(())
 }
@@ -204,7 +208,7 @@ fn verify_final(
         || final_status["launcher"]["installed"].as_bool() != Some(installed)
         || !watcher
     {
-        return Err(error("The writer completed, but final Home and startup verification failed. Inspect the current settings before retrying."));
+        return Err(AppError::new("home_final_verification_failed", "The writer completed, but final Home and startup verification failed. Inspect the current settings before retrying."));
     }
     Ok(())
 }
@@ -222,15 +226,22 @@ pub(super) async fn change(
     original.unchanged().await?;
     if installed && status["watcher"]["reachable"] != true {
         if action != Action::Apply {
-            return Err(error(
+            return Err(AppError::new(
+                "home_service_unavailable",
                 "Open AeroTizen on the TV, then retry Restore. Its control service is unavailable.",
             ));
         }
         device.start_launcher().await?;
         let deadline = Instant::now() + START_TIMEOUT;
+        let timeout_error = || {
+            AppError::new(
+            "home_service_unavailable",
+            "AeroTizen's Home control service did not become ready. No Home settings were changed.",
+        )
+        };
         loop {
             if Instant::now() >= deadline {
-                return Err(error("AeroTizen's Home control service did not become ready. No Home settings were changed."));
+                return Err(timeout_error());
             }
             status = device.status().await?;
             if !preflight(&status, &original.document)? {
@@ -239,7 +250,7 @@ pub(super) async fn change(
                 ));
             }
             if Instant::now() >= deadline {
-                return Err(error("AeroTizen's Home control service did not become ready. No Home settings were changed."));
+                return Err(timeout_error());
             }
             if status["watcher"]["reachable"] == true {
                 service(&status["watcher"])?;
@@ -280,6 +291,7 @@ pub(super) async fn change(
     let mut receipt = json!({"schema_version":1,"created_at":now(),"backup_path":original.path.to_string_lossy(),"request":request,"state":"pending","helper_sha256":super::digest::sha256_hex(&helper.bytes)});
     original.unchanged().await?;
     durable_json::write(path.clone(), receipt.clone(), true, MAX_RECEIPT_BYTES).await?;
+    let mut host_stage = "writer_response";
     let operation = async {
         files.push(PayloadFile {
             name: "request.json".into(),
@@ -291,6 +303,7 @@ pub(super) async fn change(
             serde_json::to_value(&native).map_err(|_| error("Could not save the Home result."))?;
         durable_json::write(path.clone(), receipt.clone(), false, MAX_RECEIPT_BYTES).await?;
         let result = parse_result(&native, action)?;
+        host_stage = "native_result";
         receipt["native_result"] = result.clone();
         receipt["state"] = json!(if result["Success"] == true {
             if action == Action::Apply {
@@ -305,10 +318,13 @@ pub(super) async fn change(
         });
         durable_json::write(path.clone(), receipt.clone(), false, MAX_RECEIPT_BYTES).await?;
         if result["Success"] != true {
-            return Err(error(result["Error"].as_str().unwrap_or(
-                "Home control failed. Refresh the current settings before retrying.",
-            )));
+            let message = result["Error"]
+                .as_str()
+                .unwrap_or("Home control failed. Refresh the current settings before retrying.");
+            let code = compatibility_error_code(message).unwrap_or("home_unavailable");
+            return Err(AppError::new(code, message));
         }
+        host_stage = "final_verification";
         let final_status = device.status().await?;
         verify_final(
             &final_status,
@@ -329,6 +345,7 @@ pub(super) async fn change(
     .await;
     if let Err(failure) = &operation {
         receipt["error"] = json!(failure.message);
+        receipt["host_failure_stage"] = json!(host_stage);
         durable_json::write(path, receipt, false, MAX_RECEIPT_BYTES).await?;
     }
     operation

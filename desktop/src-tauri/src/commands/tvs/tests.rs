@@ -180,6 +180,45 @@ fn home_backup_review_reads_cli_state_without_a_worker() {
 }
 
 #[test]
+fn home_diagnostics_reads_only_the_selected_tvs_sanitized_receipts() {
+    let fixture = Fixture::new();
+    let saved = fixture.invoke("list_tvs", json!({})).unwrap();
+    let id = saved[0]["id"].as_str().unwrap();
+    let backups = fixture._directory.path().join("cli-state/backups");
+    let other = "b".repeat(64);
+    let foreign = backups.join(other).join("transactions");
+    std::fs::create_dir_all(&foreign).unwrap();
+    std::fs::write(
+        foreign.join("attempt.json"),
+        r#"{"request":{"action":"apply"},"state":"applied_verified"}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        fixture
+            .invoke("read_home_diagnostics", json!({"id":id}))
+            .unwrap(),
+        Value::Null
+    );
+    let own = backups.join(id).join("transactions");
+    std::fs::create_dir_all(&own).unwrap();
+    std::fs::write(
+        own.join("attempt.json"),
+        r#"{"request":{"action":"apply","transaction":"PRIVATE"},"state":"rolled_back",
+            "native_result":{"Steps":[{"Step":"rollback","Outcome":"ok","Message":"PRIVATE"}]}}"#,
+    )
+    .unwrap();
+    let attempt = fixture
+        .invoke("read_home_diagnostics", json!({"id":id}))
+        .unwrap();
+    assert_eq!(attempt["state"], "rolled_back");
+    assert_eq!(
+        attempt["native_result"]["Steps"],
+        json!([{"Step":"rollback","Outcome":"ok"}])
+    );
+    assert!(!attempt.to_string().contains("PRIVATE"));
+}
+
+#[test]
 fn registered_samsung_commands_keep_cancellation_and_account_shapes_without_a_worker() {
     let fixture = Fixture::new();
     assert_eq!(

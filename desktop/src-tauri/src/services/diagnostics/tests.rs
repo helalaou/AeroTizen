@@ -19,9 +19,13 @@ async fn saves_a_pc_only_zip_with_filtered_recent_receipts_and_does_not_overwrit
         .join("cli-state/backups/private-identity/transactions");
     std::fs::create_dir_all(&transactions).unwrap();
     let receipt = json!({
-        "state":"applied_verified","backup_path":"/secret/home.json","transport":{"stdout":"PRIVATE_CONSOLE"},
+        "state":"rolled_back","backup_path":"/secret/home.json","transport":{"stdout":"PRIVATE_CONSOLE"},
+        "host_failure_stage":"native_result",
         "request":{"action":"apply","baseline_sha256":"PRIVATE_HASH","firmware":"T-FW1"},
         "native_result":{"Success":false,"RolledBack":true,"Error":"Final Home readback failed: PRIVATE_REASON",
+            "Steps":[{"Step":"verify_settings","Outcome":"failed","Depth":1,"DurationMs":28,
+                "Differences":["db/appfw/home_appid","PRIVATE_SETTING"],"Message":"PRIVATE_ERROR"},
+                {"Step":"rollback","Outcome":"ok"},{"Step":"PRIVATE_STEP","Outcome":"ok"}],
             "Failure":{"Phase":"final","Differences":{"db/appfw/home_appid":{
                 "Expected":"DclHome001.Home","Observed":"Private.ThirdParty"
             },"unknown":{"Expected":"secret"}}}}
@@ -84,7 +88,15 @@ async fn saves_a_pc_only_zip_with_filtered_recent_receipts_and_does_not_overwrit
         assert!(!receipt.contains(private), "{private}");
     }
     let receipt: Value = serde_json::from_str(&receipt).unwrap();
-    assert_eq!(receipt["state"], "applied_verified");
+    assert_eq!(receipt["state"], "rolled_back");
+    assert_eq!(receipt["host_failure_stage"], "native_result");
+    assert_eq!(
+        receipt["native_result"]["Steps"],
+        json!([
+            {"Step":"verify_settings","Outcome":"failed","Depth":1,"DurationMs":28,"Differences":["db/appfw/home_appid"]},
+            {"Step":"rollback","Outcome":"ok"}
+        ])
+    );
     assert_eq!(
         receipt["native_result"]["Error"],
         "final_home_readback_failed"
@@ -200,6 +212,62 @@ async fn requested_but_missing_tv_does_not_block_zip_and_simulator_ignores_it() 
     assert_eq!(bundle.report["tv"]["state"], "not_requested");
     assert_eq!(bundle.report["native_home"]["state"], "not_requested");
     assert!(bundle.receipts.is_empty());
+}
+
+#[tokio::test]
+async fn offline_export_keeps_selected_tv_versions_and_omits_profile_identifiers() {
+    let root = tempfile::tempdir().unwrap();
+    let state = AppState::for_test(root.path());
+    let mut tv: VerifiedTv =
+        serde_json::from_str(include_str!("../../models/fixtures/verified-tv.json")).unwrap();
+    tv.host = "192.0.2.10".into();
+    tv.name = "Private TV name".into();
+    tv.technical_details.model_code = Some("QE65LS03DAUXXU".into());
+    tv.technical_details.firmware_build = Some("T-PLATFORM-9000".into());
+    tv.checked_at = "2026-11-24T20:00:00Z".into();
+    let identity = tv.identity_sha256.clone();
+    let saved = state.profiles.save(tv).await.unwrap();
+    let bundle = collect(
+        &state,
+        ExportOptions {
+            tv_id: Some(saved.id),
+            ..options()
+        },
+    )
+    .await;
+    assert_eq!(bundle.report["tv"]["state"], "not_requested");
+    assert_eq!(bundle.report["native_home"]["state"], "not_requested");
+    let environment = &bundle.report["environment"];
+    assert_eq!(environment["model"], "QE65LS03DAUXXU");
+    assert_eq!(environment["firmware"], "T-PLATFORM-9000");
+    assert_eq!(
+        environment["saved_profile_checked_at"],
+        "2026-11-24T20:00:00+00:00"
+    );
+    let report = bundle.report.to_string();
+    for private in ["192.0.2.10", "Private TV name", &identity] {
+        assert!(!report.contains(private));
+    }
+}
+
+#[test]
+fn native_eligibility_rejection_survives_receipt_and_activity_filters() {
+    let receipt = Privacy::default().receipt(&json!({
+        "native_result": {"Success": false, "Error": "Installed AeroTizen is not eligible for native Home."}
+    }));
+    assert_eq!(
+        receipt["native_result"]["Error"],
+        "home_eligibility_rejected"
+    );
+    let events = parse_activity(
+        r#"[{"id":1,"timestamp":"2026-11-24T20:00:00Z","action":"homeApply",
+             "outcome":"failed","code":"home_eligibility_rejected"}]"#,
+    )
+    .unwrap();
+    assert_eq!(
+        serde_json::to_value(&events).unwrap()[0]["code"],
+        "home_eligibility_rejected"
+    );
 }
 
 #[tokio::test]

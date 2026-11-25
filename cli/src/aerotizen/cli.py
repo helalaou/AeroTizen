@@ -21,6 +21,7 @@
   aerotizen inspect launcher    restart the launcher with Chrome DevTools
   aerotizen inspect APPID       inspect another app (--port defaults to 9222)
   aerotizen home status         read native Home state as the SDK user
+  aerotizen home diagnose       review Home failures and recent setup steps
   aerotizen home probe          inventory runtime files without .NET or Home changes
   aerotizen home backup         save an immutable local Home baseline
   aerotizen home apply          preview native Home assignment (--yes writes)
@@ -542,6 +543,59 @@ def cmd_home_probe(args):
         sys.exit(f"Home probe failed: {error}")
 
 
+def cmd_home_diagnose(args):
+    report = diagnostics.home_diagnostic_report(STATE_DIR, args.tv)
+    if args.json:
+        print(json.dumps(report, indent=2))
+        return
+    tv = report["tv"]
+    if tv["state"] == "connected":
+        print(f"TV connection: {tv['connection'].replace('_', ' ')}")
+        if model := tv.get("model"):
+            print(f"TV model: {model}")
+        if tizen := tv.get("tizen"):
+            print(f"Tizen version: {tizen}")
+        if arch := tv.get("arch"):
+            print(f"TV architecture: {arch}")
+        print(f"Home control mode: {tv.get('routing_mode') or 'unavailable'}")
+        print(f"Original Home backup: {tv['backup']}")
+        if settings := tv.get("home_settings"):
+            print(f"Current Home settings: {settings['state'].replace('_', ' ')}")
+            if unavailable := settings.get("unavailable_fields"):
+                print(f"  Unavailable: {', '.join(unavailable)}")
+    elif args.tv:
+        print(f"TV check: {tv['state'].replace('_', ' ')}")
+
+    scope = "this TV" if args.tv else "this computer"
+    if attempt := report["latest_saved_attempt"]:
+        action = attempt["command"]["action"]
+        state = (attempt["state"] or "unavailable").replace("_", " ")
+        when = f" ({attempt['created_at']})" if attempt["created_at"] else ""
+        print(f"Last saved Home attempt for {scope}: {action}, {state}{when}")
+        if stage := attempt.get("host_failure_stage"):
+            print(f"  Failed step on this computer: {stage.replace('_', ' ')}")
+        native = attempt["native_result"] or {}
+        if code := native.get("Error") or attempt.get("error_code"):
+            print(f"  Error code: {code}")
+        if native.get("StartupSettingsRestored"):
+            print("  The TV kept Native Home and restored the original startup settings.")
+        for step in native.get("Steps", []):
+            indent = "  " * (1 + step.get("Depth", 0))
+            detail = f" ({step['Setting']})" if "Setting" in step else ""
+            elapsed = f" · {step['DurationMs']} ms" if "DurationMs" in step else ""
+            differing = f" · Differed: {', '.join(step['Differences'])}" if step.get("Differences") else ""
+            print(f"{indent}{step['Step'].replace('_', ' ')}{detail}: {step['Outcome']}{elapsed}{differing}")
+    elif not args.tv or tv["state"] == "connected":
+        print(f"No saved Home attempt for {scope}.")
+
+    if failed := report["latest_home_error_on_computer"]:
+        when = f" ({failed['at']})" if failed["at"] else ""
+        print(f"Most recent Home error on this computer: {failed['action']} · {failed['error_code']}{when}")
+        for key, error in failed["unavailable_settings"].items():
+            native_code = f" ({error['native_code']})" if "native_code" in error else ""
+            print(f"  {key}: {error['code']}{native_code}")
+
+
 def _report_paired_home_status(status, as_json):
     if as_json:
         print(json.dumps(status, indent=2))
@@ -822,6 +876,9 @@ def main():
     )
     command.add_argument("--json", action="store_true", help="also print the report as JSON")
     command.set_defaults(fn=cmd_home_probe)
+    command = commands.add_parser("diagnose", help="review local Home history; add --tv for live checks")
+    command.add_argument("--json", action="store_true", help="print the diagnostic report as JSON")
+    command.set_defaults(fn=cmd_home_diagnose)
     for name in ("status", "backup", "apply", "restore"):
         command = commands.add_parser(name)
         if name in ("status", "backup"):

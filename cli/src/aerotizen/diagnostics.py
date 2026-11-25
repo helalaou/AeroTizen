@@ -1,6 +1,7 @@
 """Bounded local diagnostics. Recovery receipts are deliberately outside log retention."""
 
 import contextvars
+import hashlib
 import http.client
 import io
 import json
@@ -22,6 +23,8 @@ from aerotizen import diagnostic_privacy as privacy
 
 MAX_LOG_BYTES = 256 * 1024
 MAX_LOG_FILES = 10
+MAX_HOME_RECEIPTS = 20
+MAX_HOME_RECEIPT_BYTES = 2 * 1024 * 1024
 MAX_TV_BYTES = 256 * 1024
 HOME_WATCHER_PORT = 47790
 WATCHER_STATUS_TIMEOUT_SECONDS = 2
@@ -34,9 +37,13 @@ def _native_summary(result, policy=None):
 
 
 def _log_line(line, policy):
+    record = _log_record(line, policy)
+    return json.dumps(record, ensure_ascii=True) if record else None
+
+
+def _log_record(line, policy):
     try:
-        record = policy.cli_record(json.loads(line))
-        return json.dumps(record, ensure_ascii=True) if record else None
+        return policy.cli_record(json.loads(line))
     except (ValueError, RecursionError, TypeError):
         return None
 
@@ -168,6 +175,11 @@ def run_logged(args, callback, state_dir):
         if failed and session.path:
             try:
                 print(f"Diagnostic log: {session.path}", file=original_err)
+                if args.cmd == "home":
+                    print(
+                        "For a GitHub report, run 'aerotizen logs export' and attach the ZIP.",
+                        file=original_err,
+                    )
             except OSError:
                 pass
 
@@ -359,18 +371,20 @@ def _native_snapshot(session, *, policy=None):
 
     def setting(item, integer=False):
         item = item if isinstance(item, dict) else {}
+        error = privacy.home_getter_error(item["error"]) if item.get("error") else {}
         return {
             "status": policy.value(item.get("status"), "status"),
             "type": "int" if integer else "string",
             "value": privacy.number(item.get("value")) if integer else policy.app(item.get("value")),
-            "error": privacy.error_code(item.get("error")) if item.get("error") else None,
+            "error": error.get("code"),
+            **({"native_code": error["native_code"]} if "native_code" in error else {}),
         }
 
     current = status["home"]
     watcher = status["watcher"]
     diagnostic = watcher.get("error")
     return {
-        "state": "collected",
+        "state": "collected" if status["complete"] else "partial",
         "queried_at": policy.value(status["queried_at"], "queried_at"),
         "complete": policy.value(status["complete"], "complete"),
         "home": {
@@ -384,7 +398,7 @@ def _native_snapshot(session, *, policy=None):
         },
         "platform": {
             key: policy.value(status["device"].get(key), "arch" if key == "cpu_arch" else key)
-            for key in ("firmware_build", "os_version", "cpu_arch")
+            for key in ("model", "firmware_build", "os_version", "cpu_arch")
         },
         "watcher": {
             **policy.fields(watcher, ("state", "reachable")),
@@ -401,6 +415,152 @@ def _native_snapshot(session, *, policy=None):
         "evidence": policy.fields(
             status["evidence"], ("access", "uid", "sdk_staging_cleaned", "query_staging_cleaned")
         ),
+    }
+
+
+def _receipt_summaries(state_dir, policy, *, identity=None):
+    backups = Path(state_dir) / "backups"
+    if backups.is_symlink():
+        return
+    devices = backups.glob("*") if identity is None else (backups / identity,)
+    receipts = []
+    for device in devices:
+        directory = device / "transactions"
+        if device.is_symlink() or directory.is_symlink():
+            continue
+        for path in directory.glob("*.json"):
+            try:
+                if not path.is_symlink() and path.is_file():
+                    info = path.stat()
+                    if info.st_size <= MAX_HOME_RECEIPT_BYTES:
+                        receipts.append((info.st_mtime, path))
+            except OSError:
+                continue
+    for _, path in sorted(receipts, reverse=True)[:MAX_HOME_RECEIPTS]:
+        try:
+            with path.open("rb") as source:
+                data = source.read(MAX_HOME_RECEIPT_BYTES + 1)
+            if len(data) > MAX_HOME_RECEIPT_BYTES:
+                continue
+            receipt = json.loads(data)
+            if not isinstance(receipt, dict):
+                continue
+        except (OSError, ValueError, RecursionError):
+            continue
+        state = receipt.get("state")
+        stage = receipt.get("host_failure_stage")
+        summary = {
+            "created_at": policy.value(receipt.get("created_at"), "created_at"),
+            "state": state
+            if state in ("applied_verified", "restored_verified")
+            else policy.value(state, "state"),
+            "command": policy.fields(receipt.get("request"), ("action", "boot", "firmware")),
+            "native_result": _native_summary(receipt.get("native_result"), policy),
+        }
+        if stage in privacy.HOME_HOST_FAILURE_STAGES:
+            summary["host_failure_stage"] = stage
+        if isinstance(receipt.get("error"), str):
+            summary["error_code"] = privacy.error_code(receipt["error"])
+        yield summary
+
+
+def _recent_home_error(state_dir, policy):
+    logs = sorted(p for p in log_directory(state_dir).glob("cli-*.log") if p.is_file() and not p.is_symlink())
+    for path in reversed(logs[-MAX_LOG_FILES:]):
+        try:
+            with path.open("rb") as source:
+                lines = source.read(MAX_LOG_BYTES).decode(errors="replace").splitlines()
+        except OSError:
+            continue
+        records = [record for line in lines if (record := _log_record(line, policy))]
+        if not records or records[0]["event"] != "command.start" or records[-1]["event"] != "command.finish":
+            continue
+        start, finish = records[0]["data"], records[-1]["data"]
+        if (
+            start.get("command") != "home"
+            or start.get("action") not in ("status", "backup", "apply", "restore", "probe")
+            or not finish.get("failed")
+        ):
+            continue
+        readback = next((r["data"] for r in reversed(records) if r["event"] == "home.readback"), {})
+        return {
+            "at": records[-1]["at"],
+            "action": start.get("action"),
+            "error_code": finish.get("error"),
+            "unavailable_settings": readback.get("unavailable_settings", {}),
+        }
+    return None
+
+
+def _check_home_tv(state_dir, host, policy):
+    from aerotizen import home, home_status
+    from aerotizen.device import DeviceSession
+    from aerotizen.sdb import SdbError
+
+    result = {"state": "unavailable"}
+    identity = None
+    try:
+        with DeviceSession(host, timeout=3).connect() as session:
+            duid = session.duid().strip()
+            if not duid or "fail" in duid.lower():
+                return {"state": "identity_unavailable"}, None
+            identity = hashlib.sha256(duid.encode()).hexdigest()
+            paired = session.managed_root
+            result = {
+                "state": "connected",
+                "connection": "paired_helper" if paired else "developer",
+                "model": policy.value(home._model_metadata({}, session.banner)[0], "model"),
+                "backup": "missing",
+            }
+            backup = Path(state_dir) / "backups" / identity / "original-home.json"
+            if backup.is_symlink():
+                result["backup"] = "unreadable"
+            elif backup.exists():
+                try:
+                    home._load_backup(backup, identity)
+                    result["backup"] = "saved"
+                except (OSError, ValueError, SdbError):
+                    result["backup"] = "unreadable"
+            try:
+                capabilities = session.capability()
+                result["tizen"] = policy.value(capabilities.get("platform_version"), "tizen")
+                result["arch"] = policy.value(capabilities.get("cpu_arch"), "arch")
+            except (OSError, SdbError):
+                pass
+            settings = home_status.read_native_settings(session) if paired else None
+            if settings is None:
+                result["home_settings"] = {"state": "unavailable" if paired else "paired_helper_required"}
+            else:
+                unavailable = [key for key, value in settings.items() if value is None]
+                result["home_settings"] = {
+                    "state": "partial" if unavailable else "collected",
+                    "unavailable_fields": unavailable,
+                }
+            result["routing_mode"] = home_status.read_routing_mode(session)
+    except (OSError, SdbError, ValueError) as error:
+        result["error_type"] = privacy.error_type(type(error).__name__)
+    return result, identity
+
+
+def home_diagnostic_report(state_dir, host=None):
+    policy = privacy.Policy()
+    tv, identity = _check_home_tv(state_dir, host, policy) if host else ({"state": "not_requested"}, None)
+    latest = None
+    if identity or not host:
+        latest = next(
+            (
+                item
+                for item in _receipt_summaries(state_dir, policy, identity=identity)
+                if item["command"].get("action") in ("apply", "restore")
+            ),
+            None,
+        )
+    return {
+        "schema_version": 1,
+        "tv": tv,
+        "attempt_scope": "selected_tv" if host else "this_computer",
+        "latest_saved_attempt": latest,
+        "latest_home_error_on_computer": _recent_home_error(state_dir, policy),
     }
 
 
@@ -480,6 +640,23 @@ def export_logs(state_dir, output, host=None, *, include_home=False):
                 if include_home:
                     try:
                         report["native_home"] = _native_snapshot(session, policy=policy)
+                        environment = report["environment"]
+                        native_platform = report["native_home"].get("platform", {})
+                        for key, native_key in (
+                            ("model", "model"),
+                            ("firmware", "firmware_build"),
+                            ("tizen", "os_version"),
+                            ("arch", "cpu_arch"),
+                        ):
+                            if not environment.get(key):
+                                environment[key] = native_platform.get(native_key)
+                        if any(environment.get(key) for key in ("model", "firmware", "tizen", "arch")):
+                            environment.pop("reason", None)
+                            environment["state"] = (
+                                "collected"
+                                if all(environment.get(key) for key in ("model", "firmware", "tizen"))
+                                else "partial"
+                            )
                     except (OSError, SdbError, ValueError, KeyError) as error:
                         report["native_home"] = {
                             "state": "unavailable",
@@ -518,31 +695,9 @@ def export_logs(state_dir, output, host=None, *, include_home=False):
                     else:
                         lines.append(clean)
                 archive.writestr(f"cli/session-{index + 1}.log", "\n".join(lines))
-            receipts = []
-            for path in (Path(state_dir) / "backups").glob("*/transactions/*.json"):
-                try:
-                    if not path.is_symlink() and path.is_file() and path.stat().st_size <= 2 * 1024 * 1024:
-                        receipts.append((path.stat().st_mtime, path))
-                except OSError:
-                    continue
-            for index, (_, path) in enumerate(sorted(receipts, reverse=True)[:20]):
-                try:
-                    receipt = json.loads(path.read_text(encoding="utf-8"))
-                    if not isinstance(receipt, dict):
-                        continue
-                    request = receipt.get("request") or {}
-                    summary = {
-                        "created_at": policy.value(receipt.get("created_at"), "created_at"),
-                        "state": policy.value(receipt.get("state"), "state"),
-                        "command": policy.fields(request, ("action", "boot", "firmware"))
-                        if isinstance(request, dict)
-                        else {},
-                        "native_result": _native_summary(receipt.get("native_result"), policy),
-                    }
-                    archive.writestr(f"home/receipt-{index + 1}.json", json.dumps(summary, indent=2))
-                    report["bundle_health"]["receipt_summaries"] += 1
-                except (OSError, ValueError, RecursionError):
-                    continue
+            for index, summary in enumerate(_receipt_summaries(state_dir, policy), 1):
+                archive.writestr(f"home/receipt-{index}.json", json.dumps(summary, indent=2))
+                report["bundle_health"]["receipt_summaries"] += 1
             archive.writestr("report.json", json.dumps(report, indent=2))
     except BaseException:
         output.unlink(missing_ok=True)

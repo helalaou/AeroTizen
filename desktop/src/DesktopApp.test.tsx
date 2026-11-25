@@ -43,6 +43,18 @@ describe("Desktop app", () => {
 
   it("keeps Diagnostics open after a failed check and updates the results on retry", async () => {
     const service = testService();
+    service.readHomeDiagnostics = vi.fn().mockResolvedValue({
+      created_at: "2026-11-24T20:00:00Z",
+      command: { action: "apply" },
+      state: "rolled_back",
+      host_failure_stage: "native_result",
+      native_result: {
+        Steps: [
+          { Step: "verify_boot", Outcome: "failed", Differences: ["db/appfw/booting_appid_backup"] },
+          { Step: "rollback", Outcome: "ok" },
+        ],
+      },
+    });
     vi.spyOn(service, "connect").mockResolvedValueOnce({
       ...livingRoom,
       technical_details: { ...livingRoom.technical_details!, firmware_build: undefined },
@@ -59,7 +71,8 @@ describe("Desktop app", () => {
     await user.click(await screen.findByRole("button", { name: "Connect to Living room" }));
     const sidebar = within(screen.getByRole("navigation", { name: "TV actions" }));
     await user.click(sidebar.getByRole("button", { name: "Diagnostics" }));
-    expect(screen.getByText("The TV returned only some Home and startup settings.")).toBeVisible();
+    expect(screen.getByText(/Unavailable settings include startup app/)).toBeVisible();
+    expect(screen.getByText("Native Home mode")).toBeVisible();
     await user.click(screen.getByText("Technical details"));
     expect(screen.getByText("Firmware build").parentElement).toHaveTextContent("Unavailable");
 
@@ -68,6 +81,11 @@ describe("Desktop app", () => {
     expect(screen.getByRole("heading", { name: "Diagnostics" })).toBeVisible();
     expect(screen.queryByText("Verified", { exact: true })).not.toBeInTheDocument();
     expect(screen.getByText(/Turn on the TV and check that it is on the same network/)).toBeVisible();
+    expect(await screen.findByText("Setup failed. The TV restored the original settings.")).toBeVisible();
+    await user.click(screen.getByText("TV setup steps (2)"));
+    expect(screen.getByText(/Verify startup settings.*Failed/)).toHaveTextContent("db/appfw/booting_appid_backup");
+    expect(screen.getByText(/Roll back changes.*OK/)).toBeVisible();
+    expect(service.readHomeDiagnostics).toHaveBeenCalledWith(livingRoom.id);
 
     await user.click(screen.getByRole("button", { name: "Run checks" }));
     expect(await screen.findByText("The app read the current Home and startup settings.")).toBeVisible();

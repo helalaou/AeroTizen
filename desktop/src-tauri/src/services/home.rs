@@ -106,6 +106,18 @@ async fn change_home(
                     | "root_state_changed"
                     | "root_recovery_unavailable"
                     | "connection_timeout"
+                    | "connection_failed"
+                    | "sdk_failed"
+                    | "sdk_unavailable"
+                    | "home_query_failed"
+                    | "home_query_invalid"
+                    | "home_settings_incomplete"
+                    | "home_service_unavailable"
+                    | "home_service_incompatible"
+                    | "home_eligibility_rejected"
+                    | "home_library_unavailable"
+                    | "home_entrypoint_unavailable"
+                    | "home_final_verification_failed"
             ) {
                 error
             } else {

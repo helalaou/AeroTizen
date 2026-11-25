@@ -175,6 +175,7 @@ export interface DesktopService {
   discover(): Promise<TvCandidate[]>;
   connect(host: string, profileId?: string): Promise<SavedTv>;
   checkDiagnostics(id: string, signal: AbortSignal): Promise<SavedTv>;
+  readHomeDiagnostics?(id: string): Promise<HomeDiagnosticAttempt | null>;
   listApps(id: string, signal: AbortSignal): Promise<TvAppPackage[]>;
   listButtons(id: string, signal: AbortSignal): Promise<ButtonMappings>;
   buttonActions?: {
@@ -199,6 +200,25 @@ export interface DesktopService {
   restoreHomeBackup?(id: string, capturedAt: string): Promise<SavedTv>;
   rename(id: string, name: string): Promise<void>;
   forget(id: string): Promise<void>;
+}
+
+export interface HomeDiagnosticAttempt {
+  created_at: string | null;
+  command: { action: "apply" | "restore" };
+  state: string | null;
+  error_code?: string | null;
+  host_failure_stage?: "writer_response" | "native_result" | "final_verification";
+  native_result: {
+    Error?: string | null;
+    StartupSettingsRestored?: boolean;
+    Steps?: {
+      Step: string;
+      Outcome: "ok" | "failed" | "already_set";
+      Setting?: string;
+      DurationMs?: number;
+      Differences?: string[];
+    }[];
+  } | null;
 }
 
 export function canApplyNativeHome(profile: SavedTv): boolean {

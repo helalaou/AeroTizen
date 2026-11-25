@@ -6,6 +6,7 @@ import type {
   ButtonTargetApp,
   DesktopService,
   HomeBackupSettings,
+  HomeDiagnosticAttempt,
   LauncherRelease,
   LauncherRemovalReview,
   LocalAppPackage,
@@ -87,6 +88,7 @@ export const nativeService: DesktopService = {
   discover: () => invoke<TvCandidate[]>("discover_tvs"),
   connect: (host, profileId) => invoke<SavedTv>("connect_tv", { host, profileId: profileId ?? null }),
   checkDiagnostics: (id, signal) => readTv<SavedTv>("check_tv_diagnostics", id, signal),
+  readHomeDiagnostics: (id) => invoke<HomeDiagnosticAttempt | null>("read_home_diagnostics", { id }),
   listApps: (id, signal) => readTv<TvAppPackage[]>("list_tv_apps", id, signal),
   listButtons: (id, signal) => readTv<ButtonMappings>("list_tv_buttons", id, signal),
   buttonActions: {

@@ -173,6 +173,7 @@ internal static class HomeControl
     }
     public static int Main(string[] args)
     {
+        var trace = new ControlTrace();
         Result result;
         uint? uid = null;
         string action = null;
@@ -181,12 +182,12 @@ internal static class HomeControl
             uid = NativePlatform.getuid();
             if (args.Length != 1 || IntPtr.Size != 4 || uid != 901)
                 throw new Exception("Expected one request file and 32-bit SDK UID 901; root is not used.");
-            var request = ReadRequest(args[0]);
+            var request = trace.Run("read_request", () => ReadRequest(args[0]));
             action = request.Action;
-            using (var guard = new FileStream("/home/owner/share/tmp/sdk_tools/.aerotizen-home-control.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
-            using (var platform = new NativePlatform()) result = Policy.Execute(platform, request);
+            using (var guard = trace.Run("writer_lock", () => new FileStream("/home/owner/share/tmp/sdk_tools/.aerotizen-home-control.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)))
+            using (var platform = new NativePlatform()) result = Policy.Execute(platform, request, trace);
         }
-        catch (Exception error) { result = new Result { Error = error.Message }; }
+        catch (Exception error) { result = new Result { Error = error.Message, Steps = trace.Steps }; }
         Console.WriteLine("AEROTIZEN_HOME_CONTROL=" + JsonSerializer.Serialize(new { schema_version = 1, uid = uid, action = action, result = result }));
         return result.Success ? 0 : 1;
     }

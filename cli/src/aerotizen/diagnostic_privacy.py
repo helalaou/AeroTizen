@@ -11,6 +11,34 @@ HOME_KEYS = (
     "db/first_screen/type",
     "db/menu/smart_hub/ontvsetting/auto_start",
 )
+HOME_SETTING_KEYS = ("operation/main", *HOME_KEYS)
+MAX_HOME_CONTROL_STEPS = 96
+HOME_CONTROL_STEPS = {
+    "read_request",
+    "writer_lock",
+    "runtime_compatibility",
+    "firmware_check",
+    "read_current_settings",
+    "watcher_preflight",
+    "verify_baseline",
+    "launcher_eligibility",
+    "watcher_hold",
+    "verify_handoff_settings",
+    "direct_write",
+    "setting_write",
+    "setting_readback",
+    "verify_settings",
+    "enable_autostart",
+    "verify_boot",
+    "retry_startup_ids",
+    "restore_startup_settings",
+    "watcher_commit",
+    "rollback",
+    "verify_rollback_watcher",
+    "watcher_resume",
+    "restore_without_launcher",
+}
+HOME_HOST_FAILURE_STAGES = ("writer_response", "native_result", "final_verification")
 EVENTS = set(
     [
         "command.start",
@@ -57,6 +85,7 @@ EVENTS = set(
         "diagnostic.unknown",
     ]
 )
+CLI_HOME_EVENTS = {"home.query_device", "home.readback"}
 ERRORS = set(
     [
         "Error",
@@ -307,6 +336,23 @@ def error_code(value):
         ("Autostart write failed", "autostart_write_failed"),
         ("Native boot readback failed", "native_boot_readback_failed"),
         ("rollback incomplete", "rollback_incomplete"),
+        ("/usr/bin/dotnet is missing or not executable on the TV", "sdk_unavailable"),
+        ("SDK query transport failed", "sdk_failed"),
+        ("SDK helper completion or staging cleanup was not confirmed", "sdk_failed"),
+        ("SDK Home query failed", "home_query_failed"),
+        ("The Home query or its temporary-file cleanup was not confirmed", "home_query_unconfirmed"),
+        ("The Home helper returned an invalid query document", "home_query_invalid"),
+        ("Cannot back up incomplete native Home state", "home_settings_incomplete"),
+        ("Some native Home values are unavailable", "home_settings_incomplete"),
+        ("Incomplete Home state", "home_settings_incomplete"),
+        ("Required native Home values are unavailable or empty", "home_settings_incomplete"),
+        ("control service did not become ready", "home_service_unavailable"),
+        ("its control service is unavailable", "home_service_unavailable"),
+        ("The Home control service is incompatible", "home_service_incompatible"),
+        ("Installed AeroTizen is not eligible for native Home", "home_eligibility_rejected"),
+        ("required library is unavailable", "home_library_unavailable"),
+        ("required function is unavailable", "home_entrypoint_unavailable"),
+        ("final Home/watcher verification failed", "home_final_verification_failed"),
         ("Cannot read", "property_access_failed"),
         ("is not defined", "reference_unavailable"),
         ("Unexpected token", "invalid_syntax"),
@@ -316,6 +362,65 @@ def error_code(value):
         if text == code or needle.lower() in text.lower():
             return code
     return "detail_omitted"
+
+
+HOME_GETTER_ERRORS = (
+    ("getter returned null; errno=", "getter_returned_null"),
+    ("native return code ", "native_return_code"),
+    ("DllNotFoundException:", "home_library_unavailable"),
+    ("EntryPointNotFoundException:", "home_entrypoint_unavailable"),
+    ("UnauthorizedAccessException:", "access_denied"),
+)
+SIGNED_NATIVE_CODE = re.compile(r"-?[0-9]{1,10}")
+NATIVE_CODE_MIN = -(2**31)
+NATIVE_CODE_MAX = 2**31 - 1
+
+
+def home_getter_error(value):
+    for prefix, code in HOME_GETTER_ERRORS:
+        if isinstance(value, dict) and value.get("code") == code:
+            result = {"code": code}
+            native_code = value.get("native_code")
+        elif isinstance(value, str) and value.startswith(prefix):
+            result = {"code": code}
+            suffix = value[len(prefix) :]
+            native_code = int(suffix) if SIGNED_NATIVE_CODE.fullmatch(suffix) else None
+        else:
+            continue
+        if (
+            code in {"getter_returned_null", "native_return_code"}
+            and type(native_code) is int
+            and NATIVE_CODE_MIN <= native_code <= NATIVE_CODE_MAX
+        ):
+            result["native_code"] = native_code
+        return result
+    return {"code": "detail_omitted"}
+
+
+def home_control_steps(records):
+    steps = []
+    for item in records[:MAX_HOME_CONTROL_STEPS]:
+        if not isinstance(item, dict):
+            continue
+        step, outcome = item.get("Step"), item.get("Outcome")
+        if not isinstance(step, str) or step not in HOME_CONTROL_STEPS:
+            continue
+        if outcome not in ("ok", "failed", "already_set"):
+            continue
+        entry = {"Step": step, "Outcome": outcome}
+        depth, duration = item.get("Depth"), item.get("DurationMs")
+        if type(depth) is int and 0 <= depth <= MAX_HOME_CONTROL_STEPS:
+            entry["Depth"] = depth
+        if type(duration) is int and number(duration) is not None:
+            entry["DurationMs"] = duration
+        if item.get("Setting") in HOME_SETTING_KEYS:
+            entry["Setting"] = item["Setting"]
+        differences = item.get("Differences")
+        if isinstance(differences, list):
+            first_keys = differences[: len(HOME_SETTING_KEYS)]
+            entry["Differences"] = [key for key in HOME_SETTING_KEYS if key in first_keys]
+        steps.append(entry)
+    return steps
 
 
 def error_type(value):
@@ -450,6 +555,8 @@ class Policy:
         if not isinstance(data, dict):
             return None
         result = self.fields(data, ("Success", "RolledBack"))
+        if isinstance(data.get("Steps"), list):
+            result["Steps"] = home_control_steps(data["Steps"])
         if type(data.get("StartupSettingsRestored")) is bool:
             result["StartupSettingsRestored"] = data["StartupSettingsRestored"]
         if "Error" in data:
@@ -472,7 +579,7 @@ class Policy:
                 "Observed": self.snapshot(failure.get("Observed")),
                 "Differences": {},
             }
-            for key in ("operation/main", *HOME_KEYS):
+            for key in HOME_SETTING_KEYS:
                 diff = differences.get(key)
                 if isinstance(diff, dict):
                     clean = number if key == HOME_KEYS[-1] else self.app
@@ -482,14 +589,18 @@ class Policy:
         return result
 
     def cli_record(self, record):
-        if not isinstance(record, dict) or record.get("event") not in EVENTS:
+        if not isinstance(record, dict):
             return None
-        name = record["event"]
+        name = record.get("event")
+        if not isinstance(name, str) or (name not in EVENTS and name not in CLI_HOME_EVENTS):
+            return None
         data = record.get("data") if isinstance(record.get("data"), dict) else {}
         result = {"event": name, **self.fields(record, ("session", "sequence", "elapsed_ms"))}
         result["at"] = self.value(record.get("at"), "at_text")
         if name == "command.start":
             safe = self.fields(data, ("command", "action", "cli_version", "boot"))
+            if data.get("command") == "home" and data.get("action") in ("probe", "diagnose"):
+                safe["action"] = data["action"]
             safe["build"] = self.build(data.get("build"))
         elif name == "command.finish":
             safe = self.fields(data, ("failed", "duration_ms", "error_type", "stack"))
@@ -499,6 +610,19 @@ class Policy:
             )
         elif name == "home.native_result":
             safe = {"result": self.native(data.get("result"))}
+        elif name == "home.query_device":
+            safe = self.fields(data, ("model", "tizen", "arch"))
+        elif name == "home.readback":
+            safe = self.fields(data, ("firmware", "complete", "access"))
+            for key in ("launcher_installed", "watcher_reachable"):
+                safe[key] = self.value(data.get(key), "reachable")
+            unavailable = data.get("unavailable_settings")
+            if isinstance(unavailable, dict):
+                safe["unavailable_settings"] = {
+                    key: home_getter_error(unavailable[key])
+                    for key in HOME_SETTING_KEYS
+                    if key in unavailable
+                }
         else:
             safe = self.fields(
                 data,

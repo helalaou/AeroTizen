@@ -9,9 +9,10 @@ interface ApplyNativeHomeDialogProps {
   hasBackup: boolean;
   onApply: ApplyNativeHome;
   onClose: () => void;
+  onViewLogs: () => void;
 }
 
-export function ApplyNativeHomeDialog({ tvName, hasBackup, onApply, onClose }: ApplyNativeHomeDialogProps) {
+export function ApplyNativeHomeDialog({ tvName, hasBackup, onApply, onClose, onViewLogs }: ApplyNativeHomeDialogProps) {
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +51,12 @@ export function ApplyNativeHomeDialog({ tvName, hasBackup, onApply, onClose }: A
         </Text>
         {error && (
           <Alert color="red" role="alert">
-            {error}
+            <Stack gap="xs" align="flex-start">
+              <Text size="sm">{error}</Text>
+              <Button size="xs" variant="default" onClick={onViewLogs}>
+                View diagnostic logs
+              </Button>
+            </Stack>
           </Alert>
         )}
         <Group justify="flex-end">

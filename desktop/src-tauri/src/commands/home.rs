@@ -14,6 +14,14 @@ pub async fn read_home_backup(
 }
 
 #[tauri::command]
+pub async fn read_home_diagnostics(
+    state: tauri::State<'_, AppState>,
+    id: String,
+) -> AppResult<Option<serde_json::Value>> {
+    services::diagnostics::latest_home_attempt(&state, &id).await
+}
+
+#[tauri::command]
 pub async fn prepare_native_home(
     state: tauri::State<'_, AppState>,
     id: String,

@@ -340,6 +340,7 @@ def test_failed_native_apply_retains_rollback_result_and_original(monkeypatch, t
         home_control.change(object(), {}, "apply", state_dir=tmp_path)
     receipt = json.loads(next(tmp_path.rglob("transactions/*.json")).read_text())
     assert receipt["state"] == "rolled_back" and Path(saved["path"]).read_bytes() == original
+    assert receipt["host_failure_stage"] == "native_result"
 
 
 def test_transport_failure_keeps_pending_recovery_receipt(monkeypatch, tmp_path, status):
@@ -354,6 +355,8 @@ def test_transport_failure_keeps_pending_recovery_receipt(monkeypatch, tmp_path,
         home_control.change(object(), {}, "apply", state_dir=tmp_path)
     receipt = json.loads(next(tmp_path.rglob("transactions/*.json")).read_text())
     assert receipt["state"] == "pending" and receipt["error"] == "callback lost"
+    assert receipt["host_failure_stage"] == "writer_response"
+    assert "native_result" not in receipt
 
 
 def test_final_readback_cannot_claim_success_on_a_watcher_mismatch(monkeypatch, tmp_path, status):
@@ -364,6 +367,7 @@ def test_final_readback_cannot_claim_success_on_a_watcher_mismatch(monkeypatch, 
         home_control.change(object(), {}, "apply", state_dir=tmp_path)
     receipt = json.loads(next(tmp_path.rglob("transactions/*.json")).read_text())
     assert receipt["state"] == "applied" and "error" in receipt
+    assert receipt["host_failure_stage"] == "final_verification"
 
 
 @pytest.mark.parametrize("partial_startup", [None, home.STARTUP_KEYS[1], home.AUTOSTART_KEY])

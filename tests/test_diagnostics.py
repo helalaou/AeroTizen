@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import zipfile
 
@@ -308,13 +309,24 @@ def test_tcp_request_deadline_closes_stalled_connection():
 def test_export_filters_unknown_nested_fields_but_keeps_failure_evidence(tmp_path, log_folder):
     log_folder.mkdir()
     result = {
+        "Steps": [
+            {
+                "Step": "verify_boot",
+                "Outcome": "failed",
+                "DurationMs": 28,
+                "Differences": ["db/appfw/booting_appid_backup", "private-setting"],
+                "Notes": "private trace text",
+            },
+            {"Step": "retry_startup_ids", "Outcome": "ok"},
+            {"Step": "private-step", "Outcome": "ok"},
+        ],
         "Failure": {
             "Phase": "final",
             "Observed": {"Main": "com.samsung.tv.csfs"},
             "Differences": {
                 "operation/main": {"Expected": "DclHome001.Home", "Observed": "com.samsung.tv.csfs"}
             },
-        }
+        },
     }
     record = {
         "event": "home.native_result",
@@ -325,6 +337,15 @@ def test_export_filters_unknown_nested_fields_but_keeps_failure_evidence(tmp_pat
     with zipfile.ZipFile(target) as archive:
         exported = json.loads(archive.read("cli/session-1.log"))
     assert list(exported["data"]) == ["result"]
+    assert exported["data"]["result"]["Steps"] == [
+        {
+            "Step": "verify_boot",
+            "Outcome": "failed",
+            "DurationMs": 28,
+            "Differences": ["db/appfw/booting_appid_backup"],
+        },
+        {"Step": "retry_startup_ids", "Outcome": "ok"},
+    ]
     assert (
         exported["data"]["result"]["Failure"]["Differences"]["operation/main"]["Observed"]
         == "com.samsung.tv.csfs"
@@ -435,6 +456,93 @@ def test_include_home_requires_explicit_tv_without_discovery(tmp_path, monkeypat
         cli.main()
 
 
+def test_home_diagnose_reads_existing_error_offline_and_omits_private_fields(tmp_path, monkeypatch, capsys):
+    from aerotizen import device
+
+    monkeypatch.setattr(cli, "STATE_DIR", tmp_path)
+    monkeypatch.setattr(device, "DeviceSession", lambda *args, **kwargs: pytest.fail("No TV contact"))
+
+    def failed_backup(args):
+        diagnostics.event(
+            "home.readback", complete=False, unavailable_settings={"operation/main": "native return code -13"}
+        )
+        raise SystemExit("Cannot back up incomplete native Home state. /private/backup")
+
+    with pytest.raises(SystemExit):
+        diagnostics.run_logged(argparse.Namespace(cmd="home", home_command="backup"), failed_backup, tmp_path)
+    monkeypatch.setattr("sys.argv", ["aerotizen", "home", "diagnose", "--json"])
+    cli.main()
+    output = capsys.readouterr().out
+    assert "private" not in output
+    report = json.loads(output)
+    assert report["tv"]["state"] == "not_requested"
+    assert report["latest_saved_attempt"] is None
+    failure = report["latest_home_error_on_computer"]
+    assert failure["action"] == "backup"
+    assert failure["error_code"] == "home_settings_incomplete"
+    assert failure["unavailable_settings"]["operation/main"]["native_code"] == -13
+
+
+def test_home_diagnose_scopes_saved_steps_and_checks_only_existing_read_paths(tmp_path, monkeypatch, capsys):
+    from aerotizen import device, home
+
+    host = "192.0.2.1"
+    identity = hashlib.sha256(b"private-tv").hexdigest()
+    for directory, state in [(identity, "rolled_back"), ("a" * 64, "applied_verified")]:
+        path = tmp_path / "backups" / directory / "transactions" / "attempt.json"
+        path.parent.mkdir(parents=True)
+        path.write_text(
+            json.dumps(
+                {
+                    "request": {"action": "apply", "transaction": "PRIVATE"},
+                    "state": state,
+                    "native_result": {"Steps": [{"Step": "verify_boot", "Outcome": "failed"}]},
+                }
+            )
+        )
+
+    class Session:
+        banner = "device::UE43U8000FKXXU::0"
+        managed_root = False
+
+        def __init__(self, address, timeout):
+            assert address == host and timeout == 3
+
+        def connect(self):
+            return self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def duid(self):
+            return "private-tv"
+
+        def capability(self):
+            return {"platform_version": "9.0", "cpu_arch": "armv7l"}
+
+    monkeypatch.setattr(cli, "STATE_DIR", tmp_path)
+    monkeypatch.setattr(device, "DeviceSession", Session)
+    monkeypatch.setattr(home, "load_helper", lambda: pytest.fail("No TV staging"))
+    monkeypatch.setattr(
+        diagnostics,
+        "fetch_watcher_status",
+        lambda session: {"homeControl": {"protocol": 1, "app_id": "DclHome001.Home", "mode": "watcher"}},
+    )
+    monkeypatch.setattr("sys.argv", ["aerotizen", "--tv", host, "home", "diagnose", "--json"])
+    cli.main()
+    output = capsys.readouterr().out
+    assert all(private not in output for private in (host, "PRIVATE", "private-tv", identity))
+    report = json.loads(output)
+    assert report["tv"]["routing_mode"] == "watcher"
+    assert report["tv"]["backup"] == "missing"
+    assert report["tv"]["home_settings"]["state"] == "paired_helper_required"
+    assert report["latest_saved_attempt"]["state"] == "rolled_back"
+    assert report["latest_saved_attempt"]["native_result"]["Steps"][0]["Step"] == "verify_boot"
+
+
 def test_cli_sequence_error_context_and_health_survive_clock_jumps(tmp_path, monkeypatch, log_folder):
     ticks = iter([10, 10, 10, 11, 12, 12])
     monkeypatch.setattr(diagnostics.time, "monotonic", lambda: next(ticks, 12))
@@ -526,18 +634,35 @@ def test_optional_home_snapshot_never_prevents_partial_zip(tmp_path, monkeypatch
             pass
 
     monkeypatch.setattr(device, "DeviceSession", Session)
-    monkeypatch.setattr(diagnostics, "fetch_tv", lambda session, **kwargs: {"records": []})
+
+    def logs_unavailable(session, **kwargs):
+        raise SdbError("watcher unavailable")
+
+    monkeypatch.setattr(diagnostics, "fetch_tv", logs_unavailable)
 
     def snapshot(session, **kwargs):
         if fails:
             raise SdbError("query unavailable")
-        return {"state": "collected", "home": {"mode": "native"}}
+        return {
+            "state": "partial",
+            "home": {"mode": "native"},
+            "platform": {
+                "model": "UE43U8000FKXXU",
+                "firmware_build": "T-TEST-001",
+                "os_version": "9.0",
+                "cpu_arch": "armv7",
+            },
+        }
 
     monkeypatch.setattr(diagnostics, "_native_snapshot", snapshot)
     target, _ = diagnostics.export_logs(tmp_path, tmp_path / "report.zip", "192.0.2.1", include_home=True)
     with zipfile.ZipFile(target) as archive:
         report = json.loads(archive.read("report.json"))
-    assert report["native_home"]["state"] == ("unavailable" if fails else "collected")
+    assert report["tv"]["state"] == "unavailable"
+    assert report["native_home"]["state"] == ("unavailable" if fails else "partial")
+    if not fails:
+        assert report["environment"]["state"] == "collected"
+        assert report["environment"]["firmware"] == "T-TEST-001"
 
 
 def test_report_retains_known_error_locations_and_home_operations():
