@@ -131,11 +131,14 @@ export function App({ service: adapter, simulator = false }: AppProps) {
     if (page === "diagnostics") {
       return (
         <DiagnosticsView
-          profile={manager.diagnostics ?? selected}
+          key={selected.id}
+          profile={manager.diagnostics?.id === selected.id ? manager.diagnostics : selected}
           desktopVersion={desktopVersion}
           loading={manager.diagnosticsLoading}
           error={manager.diagnosticsError}
           disabled={busy}
+          log={log}
+          readHomeDiagnostics={service.readHomeDiagnostics}
           onCheck={() => manager.loadDiagnostics(selected.id)}
           onPage={goToPage}
         />
@@ -186,6 +189,7 @@ export function App({ service: adapter, simulator = false }: AppProps) {
         <HomeAndStartupView
           key={selected.id}
           profile={selected}
+          onViewLogs={() => goToPage("logs")}
           onApplyNativeHome={apply ? (reportError) => apply(selected.id, reportError) : undefined}
           readHomeBackup={service.readHomeBackup}
           onRestoreBackup={

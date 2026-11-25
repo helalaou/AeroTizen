@@ -398,12 +398,14 @@ def change(session, info, action, *, backup=None, state_dir=None):
         "helper_sha256": hashlib.sha256(files[HELPER_FILES[0]]).hexdigest(),
     }
     _write_receipt(receipt_path, receipt, create=True)  # Durable recovery data precedes the writer.
+    host_stage = "writer_response"
     try:
         files["request.json"] = json.dumps(request).encode()
         native = sdk.run(session, files, HELPER_FILES[0], ("request.json",))
         receipt["transport"] = native
         _write_receipt(receipt_path, receipt)
         result = parse_result(native["stdout"], action, native["exit_code"])
+        host_stage = "native_result"
         receipt["native_result"] = result
         diagnostics.event("home.native_result", result=result)
         receipt["state"] = (
@@ -428,6 +430,7 @@ def change(session, info, action, *, backup=None, state_dir=None):
             raise home.HomeError(
                 (result.get("Error") or "Home control failed.") + details + f" Receipt: {receipt_path}"
             )
+        host_stage = "final_verification"
         final = home.read_status(session, None, info)
         expected = original["home"]["default_app"] if action == "restore" else home.releases.APP_ID
         expected_settings = {key: dict(value) for key, value in original["home"]["settings"].items()}
@@ -484,5 +487,6 @@ def change(session, info, action, *, backup=None, state_dir=None):
         }
     except BaseException as exc:
         receipt["error"] = str(exc) or type(exc).__name__
+        receipt["host_failure_stage"] = host_stage
         _write_receipt(receipt_path, receipt)
         raise

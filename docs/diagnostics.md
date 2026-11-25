@@ -47,6 +47,15 @@ keys **before rollback**. The result also reports whether rollback succeeded. Th
 evidence for errors such as “Final Home readback failed”; it does not establish a fix or
 write permission for that firmware. Native compatibility and recovery checks stay in place.
 
+The CLI and desktop export the TV helper’s ordered steps in `home/receipt-*.json`.
+Each step shows its result and duration. Nested steps show individual writes and readbacks.
+The trace shows which settings were already correct, when autostart was enabled, which
+startup IDs were retried, and whether the helper restored startup settings or rolled back
+the full change. A successful Home setup can still show a failed startup step.
+The receipt also identifies a failed writer response or final check on the computer.
+If the TV disconnects before it returns a valid writer result, the computer records the
+failure but cannot confirm which TV steps ran. Older receipts may have no step list.
+
 ## TV logs
 
 The launcher records startup/load, app launch requests and callback results, visibility
@@ -121,6 +130,22 @@ exporting if you need the newest UI events. This also occurred on the privacy bu
 
 ## Export and recovery
 
+### Check Native Home
+
+In the desktop app, open **Diagnostics → Root and Home**. The last saved Home
+attempt for this TV stays available while the TV is offline. Expand **TV setup
+steps** to see its readbacks, retries and recovery steps. **Run checks** also
+refreshes the current Home control mode and the list of unavailable settings.
+The most recent Home error on the computer can come from a different TV.
+
+In the CLI, use `aerotizen home diagnose` to review saved steps and the most recent
+Home error on this computer. Add `--json` for machine-readable output. To check the
+connection, backup, Home control mode and any available paired Home reads, run
+`aerotizen --tv TV_IP home diagnose`. This reads the attempt saved for that TV.
+These checks do not start the launcher, create a backup or apply Home settings.
+
+### Save the ZIP
+
 `./aerotizen logs export` works without a TV connection. Both forms include recent PC logs,
 CLI/OS/Python versions, and summaries of up to 20 Home recovery records in the default PC
 backup folder. The TV form also includes the latest service/UI events if available.
@@ -143,7 +168,15 @@ A separately copied backup folder is not searched automatically.
 - Privacy policy version, omitted legacy console records, bundle file counts and skipped files. The export command's own log may not yet contain
   its finish event because export happens while that command is running.
 
-For Home or startup problems, use:
+If setup failed, first save the computer logs with `aerotizen logs export`. On
+desktop, choose **View diagnostic logs** in the error and then **Export logs**.
+This captures the failed attempt even if the TV is offline. The CLI records
+which settings it could not read. Both apps keep fixed error codes for known
+failures such as a missing TV runtime, an incomplete query, or an eligibility
+rejection. Desktop exports for a selected TV include its last saved model and
+version details, with the time of that check.
+
+If the TV is reachable, use this command to include a current Home snapshot:
 
 ```sh
 ./aerotizen --tv TV_IP logs export --include-home --output aerotizen-home-report.zip

@@ -8,12 +8,13 @@ import re
 import shlex
 import shutil
 import subprocess
+import zipfile
 from contextlib import contextmanager, nullcontext
 from pathlib import Path
 
 import pytest
 
-from aerotizen import cli, home, home_control, root, sdk
+from aerotizen import cli, diagnostics, home, home_control, root, sdk
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -539,7 +540,60 @@ def test_cli_reports_missing_tv_runtime_without_backup_or_writer(
     assert records[0]["data"]["action"] == action
     assert records[-1]["event"] == "command.finish"
     assert records[-1]["data"]["failed"] is True
-    assert not capsys.readouterr().out
+    assert records[-1]["data"]["error"] == "sdk_unavailable"
+    console = capsys.readouterr()
+    assert not console.out
+    assert "aerotizen logs export" in console.err
+
+
+def test_failed_home_backup_export_keeps_unavailable_getters_without_raw_values(
+    monkeypatch, tmp_path, sdk_home_session
+):
+    document = query()
+    document["uid"] = 901
+    document["settings"][home.HOME_KEY] = {
+        "type": "string",
+        "status": "unavailable",
+        "value": None,
+        "error": "DllNotFoundException: /private/person/tv-library",
+    }
+    document["main_operation"] = {
+        "type": "string",
+        "status": "unavailable",
+        "value": None,
+        "error": "native return code -13",
+    }
+    document["settings"][home.STARTUP_KEYS[0]]["value"] = "Private.ThirdParty"
+    monkeypatch.setattr(
+        sdk,
+        "run",
+        lambda *args: {
+            "exit_code": 0,
+            "stdout": output(document).replace(home.CLEANUP_MARKER, sdk.CLEANUP_MARKER),
+            "staging_cleaned": True,
+        },
+    )
+    monkeypatch.setattr(cli, "STATE_DIR", tmp_path)
+    monkeypatch.setattr(cli, "require_sdb", lambda host: nullcontext(sdk_home_session))
+    monkeypatch.setattr(cli.remote, "info", lambda host: {})
+    monkeypatch.setattr("sys.argv", ["aerotizen", "--tv", "192.0.2.10", "home", "backup"])
+
+    with pytest.raises(SystemExit, match="Cannot back up incomplete native Home state"):
+        cli.main()
+    target, _ = diagnostics.export_logs(tmp_path, tmp_path / "report.zip")
+    with zipfile.ZipFile(target) as archive:
+        text = archive.read("cli/session-1.log").decode()
+    records = {record["event"]: record["data"] for record in map(json.loads, text.splitlines())}
+    assert records["home.query_device"]["model"] == "UE43U8000FKXXU"
+    assert records["home.readback"]["firmware"] == "T-TEST-001"
+    assert records["home.readback"]["complete"] is False
+    assert records["home.readback"]["unavailable_settings"] == {
+        "operation/main": {"code": "native_return_code", "native_code": -13},
+        home.HOME_KEY: {"code": "home_library_unavailable"},
+    }
+    assert records["command.finish"]["error"] == "home_settings_incomplete"
+    for private in ("192.0.2.10", "test-device", "/private/person", "Private.ThirdParty"):
+        assert private not in text
 
 
 def test_zero_autostart_is_preserved_as_an_integer(tmp_path, status):

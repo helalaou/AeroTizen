@@ -19,8 +19,34 @@ const QUERY_PREFIX: &str = "AEROTIZEN_HOME_QUERY=";
 pub(super) fn failed(message: &str) -> AppError {
     AppError::new("home_unavailable", message)
 }
+
+pub(super) fn compatibility_error_code(message: &str) -> Option<&'static str> {
+    for (prefix, code) in [
+        (
+            "Installed AeroTizen is not eligible for native Home.",
+            "home_eligibility_rejected",
+        ),
+        (
+            "Native Home compatibility check failed: required library is unavailable:",
+            "home_library_unavailable",
+        ),
+        (
+            "Native Home compatibility check failed: required function is unavailable:",
+            "home_entrypoint_unavailable",
+        ),
+    ] {
+        if message.starts_with(prefix) || message == code {
+            return Some(code);
+        }
+    }
+    None
+}
+
 fn invalid() -> AppError {
-    failed("The TV returned invalid Home settings. Check its current settings before retrying.")
+    AppError::new(
+        "home_query_invalid",
+        "The TV returned invalid Home settings. Check its current settings before retrying.",
+    )
 }
 fn nonempty(value: &Value) -> bool {
     value.as_str().is_some_and(|value| !value.is_empty())

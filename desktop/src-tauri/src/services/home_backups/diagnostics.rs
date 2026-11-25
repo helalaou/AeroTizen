@@ -1,5 +1,5 @@
 use super::HomeBackups;
-use crate::services::durable_json;
+use crate::{models::valid_identity, services::durable_json};
 use serde_json::Value;
 use std::{fs, path::Path};
 
@@ -10,12 +10,15 @@ fn ordinary_directory(path: &Path) -> bool {
     fs::symlink_metadata(path).is_ok_and(|metadata| metadata.is_dir())
 }
 
-fn recent_receipts(backups: &Path) -> Vec<Value> {
+fn recent_receipts(backups: &Path, identity: Option<&str>) -> Vec<Value> {
     if !ordinary_directory(backups) {
         return Vec::new();
     }
     let mut newest = Vec::new();
     for device in fs::read_dir(backups).into_iter().flatten().flatten() {
+        if identity.is_some_and(|identity| device.file_name() != identity) {
+            continue;
+        }
         let directory = device.path().join("transactions");
         if !device.file_type().is_ok_and(|kind| kind.is_dir()) || !ordinary_directory(&directory) {
             continue;
@@ -28,7 +31,7 @@ fn recent_receipts(backups: &Path) -> Vec<Value> {
             {
                 continue;
             }
-            let Ok(metadata) = file.metadata() else {
+            let Ok(metadata) = fs::symlink_metadata(file.path()) else {
                 continue;
             };
             if !metadata.is_file() || metadata.len() > MAX_RECEIPT_BYTES {
@@ -50,9 +53,16 @@ fn recent_receipts(backups: &Path) -> Vec<Value> {
 }
 
 impl HomeBackups {
-    pub(in crate::services) async fn diagnostic_receipts(&self) -> Vec<Value> {
+    pub(in crate::services) async fn diagnostic_receipts(
+        &self,
+        identity: Option<&str>,
+    ) -> Vec<Value> {
+        if identity.is_some_and(|identity| !valid_identity(identity)) {
+            return Vec::new();
+        }
         let directory = self.directory.clone();
-        tokio::task::spawn_blocking(move || recent_receipts(&directory))
+        let identity = identity.map(str::to_owned);
+        tokio::task::spawn_blocking(move || recent_receipts(&directory, identity.as_deref()))
             .await
             .unwrap_or_default()
     }
@@ -74,7 +84,7 @@ mod tests {
         std::os::unix::fs::symlink(directory.join("receipt.json"), directory.join("link.json"))
             .unwrap();
 
-        let receipts = recent_receipts(&root.path().join("backups"));
+        let receipts = recent_receipts(&root.path().join("backups"), None);
         assert_eq!(receipts, [serde_json::json!({"state":"restored"})]);
     }
 }

@@ -43,13 +43,14 @@ body:
     attributes:
       label: Diagnostic report
       description: |
-        Reproduce the problem, then run `aerotizen --tv TV_IP logs export` and attach the ZIP here.
-        For a Home or startup issue, add `--include-home` to collect a read-only routing snapshot (can take up to 35 seconds).
-        If the TV is unavailable, `aerotizen logs export` still exports PC logs.
+        Attach a diagnostic ZIP after the problem occurs. In the desktop app, open Logs and choose Export logs.
+        In the CLI, run `aerotizen logs export` for the logs on your computer. This works with the TV offline.
+        If the TV is reachable, run `aerotizen --tv TV_IP logs export`. For Home or startup issues, add `--include-home` for a read-only snapshot (up to 35 seconds).
+        For Home or startup issues, say whether setup failed, pressing Home opened the wrong app, or the TV started in the wrong app.
         On the tested Frame, cold-start UI events may stay queued until you open another app and return Home.
         Logs omit console output and raw messages; third-party app IDs use temporary aliases. Name the affected app in your steps.
         Review the ZIP before sharing it. Do not attach certificates, login tokens or your original Home backup folder.
-        This field is optional if you cannot use the CLI or have an older build.
+        This field is optional.
   - type: textarea
     id: output
     attributes:

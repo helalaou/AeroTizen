@@ -67,3 +67,8 @@ body:
     attributes:
       label: Notes
       description: List the apps or inputs you tested in each Home mode. Include setup errors, and say which Home mode you used for each startup check.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostic report (optional)
+      description: If Native Home setup failed, attach a ZIP from desktop Logs → Export logs or from `aerotizen logs export`. Review the ZIP before sharing it. Keep your original Home backup folder.

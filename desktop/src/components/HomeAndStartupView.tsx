@@ -64,6 +64,7 @@ function CurrentHomeSettings({ home }: { home?: NativeHomeSettings }) {
 
 interface HomeAndStartupViewProps {
   profile: SavedTv;
+  onViewLogs: () => void;
   onApplyNativeHome?: ApplyNativeHome;
   readHomeBackup?: DesktopService["readHomeBackup"];
   onRestoreBackup?: RestoreHomeBackup;
@@ -71,6 +72,7 @@ interface HomeAndStartupViewProps {
 
 export function HomeAndStartupView({
   profile,
+  onViewLogs,
   onApplyNativeHome,
   readHomeBackup,
   onRestoreBackup,
@@ -125,6 +127,7 @@ export function HomeAndStartupView({
               hasBackup={profile.home_backup?.status === "saved"}
               onApply={onApplyNativeHome}
               onClose={() => setShowApply(false)}
+              onViewLogs={onViewLogs}
             />
           )}
           {showBackup && canReviewBackup && (
@@ -137,6 +140,7 @@ export function HomeAndStartupView({
               readBackup={readHomeBackup}
               onRestore={onRestoreBackup}
               onClose={() => setShowBackup(false)}
+              onViewLogs={onViewLogs}
             />
           )}
         </Stack>

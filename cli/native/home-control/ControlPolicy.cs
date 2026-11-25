@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace AeroTizen.Home
 {
@@ -58,6 +59,7 @@ namespace AeroTizen.Home
     }
     public sealed class Result
     {
+        public IReadOnlyList<ControlStep> Steps { get; set; }
         public VerificationFailure Failure { get; set; }
         public bool StartupSettingsRestored { get; set; }
         public bool Success { get; set; }
@@ -65,6 +67,57 @@ namespace AeroTizen.Home
         public string Error { get; set; }
         public Snapshot After { get; set; }
         public Watcher Watcher { get; set; }
+    }
+    public sealed class ControlStep
+    {
+        public string Step { get; internal set; }
+        public string Setting { get; internal set; }
+        public string Outcome { get; internal set; }
+        public int Depth { get; internal set; }
+        public long DurationMs { get; internal set; }
+        public IEnumerable<string> Differences { get; internal set; }
+    }
+    public sealed class ControlTrace
+    {
+        private const int MaxSteps = 96;
+        private readonly List<ControlStep> steps = new List<ControlStep>();
+        private int depth;
+        public IReadOnlyList<ControlStep> Steps => steps;
+
+        private ControlStep Add(string step, string outcome, string setting)
+        {
+            var entry = new ControlStep { Step = step, Outcome = outcome, Depth = depth, Setting = setting };
+            if (steps.Count < MaxSteps) steps.Add(entry);
+            return entry;
+        }
+
+        internal void Skip(string step, string setting) => Add(step, "already_set", setting);
+
+        internal T Run<T>(string step, Func<T> action, string setting = null)
+        {
+            var entry = Add(step, "failed", setting);
+            var clock = Stopwatch.StartNew();
+            depth++;
+            try
+            {
+                var result = action();
+                entry.Outcome = "ok";
+                return result;
+            }
+            catch (ReadbackException error)
+            {
+                entry.Differences = error.Failure.Differences.Keys;
+                throw;
+            }
+            finally
+            {
+                depth--;
+                entry.DurationMs = clock.ElapsedMilliseconds;
+            }
+        }
+
+        internal void Run(string step, Action action, string setting = null) =>
+            Run(step, () => { action(); return true; }, setting);
     }
     public interface IPlatform
     {
@@ -148,43 +201,57 @@ namespace AeroTizen.Home
         {
             if (platform.LauncherInstalled()) throw new Exception("AeroTizen is installed; watcher coordination is required.");
         }
-        private static void WriteStrings(IPlatform platform, Snapshot desired, string[] keys, bool requireAbsent = false)
+        private static void WriteStrings(IPlatform platform, Snapshot desired, string[] keys, ControlTrace trace, bool requireAbsent = false)
         {
             foreach (string key in keys)
             {
-                if (platform.Read().Strings[key] == desired.Strings[key]) continue;
+                if (platform.Read().Strings[key] == desired.Strings[key])
+                {
+                    trace.Skip("setting_write", key);
+                    continue;
+                }
                 if (requireAbsent) RequireAbsent(platform);
-                try { platform.SetString(key, desired.Strings[key]); }
+                try { trace.Run("setting_write", () => platform.SetString(key, desired.Strings[key]), key); }
                 catch (Exception error)
                 {
                     throw new ReadbackException("Setting write failed: " + key, key, desired, platform.Read(), error);
                 }
-                var actual = platform.Read();
-                if (actual.Strings[key] != desired.Strings[key]) throw new ReadbackException("Setting readback failed: " + key, key, desired, actual);
+                trace.Run("setting_readback", () => {
+                    var actual = platform.Read();
+                    if (actual.Strings[key] != desired.Strings[key]) throw new ReadbackException("Setting readback failed: " + key, key, desired, actual);
+                }, key);
             }
         }
-        private static Snapshot Write(IPlatform platform, Snapshot desired, bool requireAbsent = false)
+        private static Snapshot Write(IPlatform platform, Snapshot desired, ControlTrace trace, bool requireAbsent = false)
         {
             if (platform.Read().Main != desired.Main)
             {
                 if (requireAbsent) RequireAbsent(platform);
-                platform.SetMain(desired.Main);
-                var actual = platform.Read();
-                if (actual.Main != desired.Main) throw new ReadbackException("Home operation readback failed.", "home_operation", desired, actual);
+                trace.Run("setting_write", () => platform.SetMain(desired.Main), "operation/main");
+                trace.Run("setting_readback", () => {
+                    var actual = platform.Read();
+                    if (actual.Main != desired.Main) throw new ReadbackException("Home operation readback failed.", "home_operation", desired, actual);
+                }, "operation/main");
             }
+            else trace.Skip("setting_write", "operation/main");
             // Read each key after assigning Home. Firmware can set startup IDs itself.
-            WriteStrings(platform, desired, Keys, requireAbsent);
+            WriteStrings(platform, desired, Keys, trace, requireAbsent);
             if (platform.Read().AutoStart != desired.AutoStart)
             {
                 if (requireAbsent) RequireAbsent(platform);
-                platform.SetAutoStart(desired.AutoStart);
-                var actual = platform.Read();
-                if (actual.AutoStart != desired.AutoStart) throw new ReadbackException("Autostart readback failed.", "autostart", desired, actual);
+                trace.Run("setting_write", () => platform.SetAutoStart(desired.AutoStart), AutoStartKey);
+                trace.Run("setting_readback", () => {
+                    var actual = platform.Read();
+                    if (actual.AutoStart != desired.AutoStart) throw new ReadbackException("Autostart readback failed.", "autostart", desired, actual);
+                }, AutoStartKey);
             }
-            var final = platform.Read();
-            if (!Same(final, desired)) throw new ReadbackException("Final Home readback failed.", "final", desired, final);
-            if (requireAbsent) RequireAbsent(platform);
-            return final;
+            else trace.Skip("setting_write", AutoStartKey);
+            return trace.Run("verify_settings", () => {
+                var final = platform.Read();
+                if (!Same(final, desired)) throw new ReadbackException("Final Home readback failed.", "final", desired, final);
+                if (requireAbsent) RequireAbsent(platform);
+                return final;
+            });
         }
         private static bool StartupRejected(VerificationFailure failure, Snapshot original)
         {
@@ -199,11 +266,11 @@ namespace AeroTizen.Home
             }
             return true;
         }
-        private static Snapshot WriteBoot(IPlatform platform, Snapshot desired, Snapshot original)
+        private static Snapshot WriteBoot(IPlatform platform, Snapshot desired, Snapshot original, ControlTrace trace)
         {
             try
             {
-                var after = Write(platform, desired);
+                var after = trace.Run("direct_write", () => Write(platform, desired, trace));
                 if (after.AutoStart == 1) return after;
             }
             catch (ReadbackException error) when (error.Failure.Observed.AutoStart != 1 && StartupRejected(error.Failure, original))
@@ -212,39 +279,56 @@ namespace AeroTizen.Home
             }
 
             desired.AutoStart = 1;
-            try { platform.SetAutoStart(1); }
+            try { trace.Run("enable_autostart", () => platform.SetAutoStart(1)); }
             catch (Exception error)
             {
                 throw new ReadbackException("Autostart write failed.", "boot", desired, platform.Read(), error);
             }
-            var final = platform.Read();
-            if (Same(final, desired)) return final;
-
-            var failure = new ReadbackException("Native boot readback failed.", "boot", desired, final);
+            try
+            {
+                return trace.Run("verify_boot", () => {
+                    var final = platform.Read();
+                    if (!Same(final, desired)) throw new ReadbackException("Native boot readback failed.", "boot", desired, final);
+                    return final;
+                });
+            }
             // Enabling autostart can leave a startup ID at its original value. Retry only when the other values match.
-            if (final.AutoStart != 1 || !StartupRejected(failure.Failure, original)) throw failure;
-
-            WriteStrings(platform, desired, StartupKeys);
-            final = platform.Read();
-            if (!Same(final, desired)) throw new ReadbackException("Native boot retry readback failed.", "boot", desired, final);
-            return final;
+            catch (ReadbackException error) when (error.Failure.Observed.AutoStart == 1 && StartupRejected(error.Failure, original))
+            {
+                return trace.Run("retry_startup_ids", () => {
+                    WriteStrings(platform, desired, StartupKeys, trace);
+                    var final = platform.Read();
+                    if (!Same(final, desired)) throw new ReadbackException("Native boot retry readback failed.", "boot", desired, final);
+                    return final;
+                });
+            }
         }
-        private static Result RestoreAbsent(IPlatform platform, Request request, Snapshot before)
+        private static Result RestoreAbsent(IPlatform platform, Request request, Snapshot before, ControlTrace trace)
         {
             Compatible(before, request.Original, request.RecoveryBoot);
             try
             {
-                RequireAbsent(platform);
-                if (!Same(platform.Read(), before)) throw new Exception("Home changed during restore preflight.");
-                Write(platform, request.Original, true);
-                return new Result { Success = true, After = platform.Read() };
+                return trace.Run("restore_without_launcher", () => {
+                    RequireAbsent(platform);
+                    if (!Same(platform.Read(), before)) throw new Exception("Home changed during restore preflight.");
+                    Write(platform, request.Original, trace, true);
+                    return new Result { Success = true, After = platform.Read() };
+                });
             }
             catch (Exception error)
             {
                 return new Result { Failure = (error as ReadbackException)?.Failure, Error = "Restore incomplete; preserve the PC backup and receipts, inspect status and retry: " + error.Message };
             }
         }
-        public static Result Execute(IPlatform platform, Request request)
+        public static Result Execute(IPlatform platform, Request request, ControlTrace trace = null)
+        {
+            trace = trace ?? new ControlTrace();
+            var result = ExecuteTraced(platform, request, trace);
+            result.Steps = trace.Steps;
+            return result;
+        }
+
+        private static Result ExecuteTraced(IPlatform platform, Request request, ControlTrace trace)
         {
             Validate(request.Original);
             if (request.Action != "apply" && request.Action != "restore") throw new Exception("Unknown Home action.");
@@ -253,24 +337,36 @@ namespace AeroTizen.Home
                 (request.LauncherAbsent && (request.Action != "restore" || request.RestoreBootTransaction != null)) ||
                 (request.RecoveryBoot && !request.LauncherAbsent))
                 throw new Exception("Invalid boot request.");
-            platform.CheckCompatibility(request.Action == "apply");
-            if (platform.Firmware != request.Firmware) throw new Exception("Firmware differs from the saved baseline.");
-            var before = platform.Read();
-            ValidateValues(before);
+            trace.Run("runtime_compatibility", () => platform.CheckCompatibility(request.Action == "apply"));
+            trace.Run("firmware_check", () => {
+                if (platform.Firmware != request.Firmware) throw new Exception("Firmware differs from the saved baseline.");
+            });
+            var before = trace.Run("read_current_settings", () => {
+                var current = platform.Read();
+                ValidateValues(current);
+                return current;
+            });
             if (request.Action == "restore")
             {
                 bool installed = platform.LauncherInstalled();
                 if (installed == request.LauncherAbsent) throw new Exception("AeroTizen installation changed; query status and retry.");
-                if (!installed) return RestoreAbsent(platform, request, before);
+                if (!installed) return RestoreAbsent(platform, request, before, trace);
             }
-            var watcher = CheckWatcher(platform.ReadWatcher());
-            if (watcher.Mode != "watcher" && watcher.BaselineHash != request.BaselineHash)
-                throw new Exception("Watcher belongs to a different Home baseline.");
+            var watcher = trace.Run("watcher_preflight", () => {
+                var current = CheckWatcher(platform.ReadWatcher());
+                if (current.Mode != "watcher" && current.BaselineHash != request.BaselineHash)
+                    throw new Exception("Watcher belongs to a different Home baseline.");
+                return current;
+            });
             if (request.Action == "apply")
             {
-                if (!MatchesApplyBaseline(before, request.Original) || watcher.Mode != "watcher")
-                    throw new Exception("Home has changed since the baseline; apply refused.");
-                if (!platform.LauncherEligible()) throw new Exception("Installed AeroTizen is not eligible for native Home.");
+                trace.Run("verify_baseline", () => {
+                    if (!MatchesApplyBaseline(before, request.Original) || watcher.Mode != "watcher")
+                        throw new Exception("Home has changed since the baseline; apply refused.");
+                });
+                trace.Run("launcher_eligibility", () => {
+                    if (!platform.LauncherEligible()) throw new Exception("Installed AeroTizen is not eligible for native Home.");
+                });
             }
             else
             {
@@ -283,11 +379,13 @@ namespace AeroTizen.Home
             }
             // Persist the hold before the first native write. A crash leaves
             // polling and boot relaunch disabled until an explicit restore.
-            watcher = Change(platform, watcher, "hold", request.Transaction, request.BaselineHash);
+            watcher = trace.Run("watcher_hold", () => Change(platform, watcher, "hold", request.Transaction, request.BaselineHash));
             bool nativeStarted = false;
             try
             {
-                if (!Same(platform.Read(), before)) throw new Exception("Home changed during the watcher handoff; no native write attempted.");
+                trace.Run("verify_handoff_settings", () => {
+                    if (!Same(platform.Read(), before)) throw new Exception("Home changed during the watcher handoff; no native write attempted.");
+                });
                 var desired = request.Original.Copy();
                 if (request.Action == "apply") {
                     desired.Main = Target; desired.Strings[HomeKey] = Target;
@@ -298,19 +396,21 @@ namespace AeroTizen.Home
                 Snapshot after;
                 try
                 {
-                    after = request.Boot ? WriteBoot(platform, desired, request.Original) : Write(platform, desired);
+                    after = request.Boot
+                        ? WriteBoot(platform, desired, request.Original, trace)
+                        : trace.Run("direct_write", () => Write(platform, desired, trace));
                 }
                 catch (ReadbackException error) when (request.Action == "apply" && StartupRejected(error.Failure, request.Original))
                 {
                     // Keep Home only after verifying the saved startup settings with it.
                     foreach (string key in StartupKeys) desired.Strings[key] = request.Original.Strings[key];
                     desired.AutoStart = request.Original.AutoStart;
-                    after = Write(platform, desired);
+                    after = trace.Run("restore_startup_settings", () => Write(platform, desired, trace));
                     startupFailure = error.Failure;
                 }
-                watcher = Change(platform, watcher, request.Action == "apply" ? "native" : "watcher",
+                watcher = trace.Run("watcher_commit", () => Change(platform, watcher, request.Action == "apply" ? "native" : "watcher",
                     request.Action == "apply" ? request.Transaction : null,
-                    request.Action == "apply" ? request.BaselineHash : null);
+                    request.Action == "apply" ? request.BaselineHash : null));
                 return new Result { Success = true, Failure = startupFailure, StartupSettingsRestored = startupFailure != null, After = after, Watcher = watcher };
             }
             catch (Exception error)
@@ -321,15 +421,21 @@ namespace AeroTizen.Home
                     return new Result { Failure = failure, Error = "Restore confirmation incomplete; inspect Home and watcher status before retrying: " + error.Message };
                 try
                 {
-                    var actual = CheckWatcher(platform.ReadWatcher());
-                    if (actual.Transaction != request.Transaction || actual.BaselineHash != request.BaselineHash)
-                        throw new Exception("Watcher transaction changed; automatic rollback refused.");
-                    // A failed commit may already have persisted native mode.
-                    if (actual.Mode != "hold") actual = Change(platform, actual, "hold", request.Transaction, request.BaselineHash);
-                    Write(platform, request.Original);
-                    var restored = platform.Read();
-                    watcher = Change(platform, actual, "watcher", null, null);
-                    return new Result { Failure = failure, RolledBack = true, Error = error.Message, After = restored, Watcher = watcher };
+                    return trace.Run("rollback", () => {
+                        var actual = trace.Run("verify_rollback_watcher", () => {
+                            var current = CheckWatcher(platform.ReadWatcher());
+                            if (current.Transaction != request.Transaction || current.BaselineHash != request.BaselineHash)
+                                throw new Exception("Watcher transaction changed; automatic rollback refused.");
+                            return current;
+                        });
+                        // A failed commit may already have persisted native mode.
+                        if (actual.Mode != "hold")
+                            actual = trace.Run("watcher_hold", () => Change(platform, actual, "hold", request.Transaction, request.BaselineHash));
+                        Write(platform, request.Original, trace);
+                        var restored = platform.Read();
+                        watcher = trace.Run("watcher_resume", () => Change(platform, actual, "watcher", null, null));
+                        return new Result { Failure = failure, RolledBack = true, Error = error.Message, After = restored, Watcher = watcher };
+                    });
                 }
                 catch (Exception recovery)
                 {

@@ -140,12 +140,17 @@ fn environment(
     } else {
         device["arch"].clone()
     };
-    let firmware = if device["firmware"].is_null() {
+    let firmware = if !device["firmware"].is_null() {
+        device["firmware"].clone()
+    } else if !home["platform"]["firmware_build"].is_null() {
         home["platform"]["firmware_build"].clone()
     } else {
-        device["firmware"].clone()
+        privacy.value("firmware", &json!(details.firmware_build))
     };
-    let model = privacy.value("model", &json!(profile.model));
+    let model = privacy.value(
+        "model",
+        &json!(details.model_code.as_deref().unwrap_or(&profile.model)),
+    );
     let state = if model.is_null() || tizen.is_null() || firmware.is_null() {
         "partial"
     } else {
@@ -153,6 +158,7 @@ fn environment(
     };
     json!({
         "state": state, "model": model, "tizen": tizen, "firmware": firmware, "arch": arch,
+        "saved_profile_checked_at": privacy.value("queried_at", &json!(profile.checked_at)),
         "platform": privacy.value("platform", &json!(details.platform)), "launcher": launcher,
         "root_version": privacy.value("version", &json!(details.root_runtime_version)),
     })
@@ -172,13 +178,16 @@ async fn collect_tv(
 ) -> (Option<SavedTv>, Value, Value) {
     let mut tv = not_requested();
     let mut home = not_requested();
-    if options.simulator || !(options.include_tv || options.include_home) {
+    if options.simulator {
         return (None, tv, home);
     }
     let profile = match &options.tv_id {
         Some(id) => state.profiles.get(id).await.ok(),
         None => None,
     };
+    if !(options.include_tv || options.include_home) {
+        return (profile, tv, home);
+    }
     let reason = match (&profile, state.operation.try_lock()) {
         (Some(profile), Ok(_guard)) => {
             let host = &profile.tv.host;
@@ -229,7 +238,7 @@ pub async fn collect(state: &AppState, options: ExportOptions) -> Bundle {
         (Vec::new(), None)
     } else {
         let (raw, build) = tokio::join!(
-            state.home_backups.diagnostic_receipts(),
+            state.home_backups.diagnostic_receipts(None),
             tokio::task::spawn_blocking(build_identity),
         );
         (
@@ -272,6 +281,23 @@ pub async fn collect(state: &AppState, options: ExportOptions) -> Bundle {
         receipts,
         result,
     }
+}
+
+pub async fn latest_home_attempt(state: &AppState, id: &str) -> AppResult<Option<Value>> {
+    let saved = state.profiles.get(id).await?;
+    let receipts = state
+        .home_backups
+        .diagnostic_receipts(Some(&saved.tv.identity_sha256))
+        .await;
+    let mut privacy = Privacy::default();
+    Ok(receipts.iter().find_map(|receipt| {
+        let summary = privacy.receipt(receipt);
+        matches!(
+            summary["command"]["action"].as_str(),
+            Some("apply" | "restore")
+        )
+        .then_some(summary)
+    }))
 }
 
 pub fn export_failed() -> AppError {

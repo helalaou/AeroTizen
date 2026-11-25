@@ -20,6 +20,7 @@ export function loggedService(service: DesktopService, log: DesktopLog): Desktop
     discover: track("discovery", service.discover),
     connect: track("connect", service.connect),
     checkDiagnostics: read("diagnostics", service.checkDiagnostics),
+    readHomeDiagnostics: service.readHomeDiagnostics,
     rename: track("rename", service.rename),
     forget: track("forget", service.forget),
     launcherCatalog: track("releases", service.launcherCatalog),

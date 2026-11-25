@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -266,7 +267,15 @@ static class Program
         });
         Test("changed firmware refuses all writes", () => { Refused(new Fake { Firmware = "TEST-2" }, Request()); });
         Test("changed baseline refuses all writes", () => { var fake = new Fake(); fake.Current.Main = "Other.Home"; Refused(fake, Request()); });
-        Test("ineligible launcher refuses all writes", () => { Refused(new Fake { Eligible = false }, Request()); });
+        Test("ineligible launcher refuses all writes", () => {
+            var fake = new Fake { Eligible = false };
+            var trace = new ControlTrace();
+            bool refused = false;
+            try { Policy.Execute(fake, Request(), trace); }
+            catch (Exception) { refused = true; }
+            Check(refused && fake.Events.Count == 0);
+            Check(trace.Steps.Last().Step == "launcher_eligibility" && trace.Steps.Last().Outcome == "failed");
+        });
         Test("old watcher refuses all writes", () => { var fake = new Fake(); fake.Control.Protocol = 0; Refused(fake, Request()); });
         Test("restore refuses third-party preference changes", () => {
             var fake = new Fake(); Applied(fake); fake.Current.Strings["db/appfw/startup_appid"] = "Other.App";
@@ -316,6 +325,9 @@ static class Program
                 var result = Policy.Execute(fake, Request());
                 Check(result.Success && result.StartupSettingsRestored && fake.Control.Mode == "native");
                 Check(fake.Events.Contains("write:auto") && result.Failure.Differences.ContainsKey("db/appfw/startup_appid"));
+                Check(result.Steps.Where(step => step.Depth == 0).TakeLast(2)
+                    .Select(step => step.Step + ":" + step.Outcome)
+                    .SequenceEqual(new[] { "restore_startup_settings:ok", "watcher_commit:ok" }));
                 var expected = Fake.Original(); expected.Main = Policy.Target; expected.Strings[Policy.HomeKey] = Policy.Target;
                 Check(Policy.Same(result.After, expected));
                 Check(Policy.Execute(fake, Request("restore")).Success && Policy.Same(fake.Current, Fake.Original()));
@@ -327,6 +339,9 @@ static class Program
             Check(!result.Success && result.RolledBack && fake.Control.Mode == "watcher");
             Check(Policy.Same(result.After, Fake.Original()));
             Check(result.Failure.Differences.ContainsKey("db/appfw/booting_appid_backup"));
+            Check(result.Steps.Single(step => step.Step == "restore_startup_settings").Outcome == "failed");
+            Check(result.Steps.Single(step => step.Step == "rollback").Outcome == "ok");
+            Check(result.Steps.Last().Step == "watcher_resume" && result.Steps.Last().Outcome == "ok");
         });
         Test("explicit boot supports coupled Q7F startup and exact installed restore", () => {
             foreach (int autoStart in new[] { 0, 1 }) {
@@ -372,6 +387,12 @@ static class Program
             Check(fake.Current.Strings["db/appfw/startup_appid"] == Policy.Target);
             Check(fake.Current.Strings["db/appfw/booting_appid_backup"] == Policy.Target);
             Check(fake.Events.LastIndexOf("write:db/appfw/booting_appid_backup") > fake.Events.IndexOf("write:auto"));
+            Check(result.Steps.Where(step => step.Depth == 0).TakeLast(5)
+                .Select(step => step.Step + ":" + step.Outcome)
+                .SequenceEqual(new[] { "direct_write:ok", "enable_autostart:ok", "verify_boot:failed",
+                    "retry_startup_ids:ok", "watcher_commit:ok" }));
+            Check(result.Steps.Single(step => step.Step == "verify_boot").Differences
+                .SequenceEqual(new[] { "db/appfw/booting_appid_backup" }));
             var restore = Request("restore"); restore.RestoreBootTransaction = apply.Transaction;
             Check(Policy.Execute(fake, restore).Success && Policy.Same(fake.Current, Fake.Original()));
         });

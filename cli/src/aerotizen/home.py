@@ -13,7 +13,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from aerotizen import home_status, releases, remote
+from aerotizen import diagnostics, home_status, releases, remote
 from aerotizen.device import DeviceSessionError
 from aerotizen.root import SUPPORTED_VERSION
 
@@ -227,6 +227,13 @@ def read_status(session, provider, info):
     if not identity or "fail" in identity.lower():
         raise HomeError("The TV did not return a device identity.")
     capabilities = session.capability()
+    model, model_source = _model_metadata(info, getattr(session, "banner", ""))
+    diagnostics.event(
+        "home.query_device",
+        model=model,
+        tizen=capabilities.get("platform_version"),
+        arch=capabilities.get("cpu_arch"),
+    )
     if provider is None:
         from aerotizen import sdk
 
@@ -256,8 +263,21 @@ def read_status(session, provider, info):
         }
     if session.duid().strip() != identity:
         raise HomeError("The TV identity changed during the Home query.")
-    model, model_source = _model_metadata(info, getattr(session, "banner", ""))
     main, settings = query["main_operation"], query["settings"]
+    unavailable = {
+        key: item.get("error")
+        for key, item in (("operation/main", main), *settings.items())
+        if item["status"] != "ok"
+    }
+    diagnostics.event(
+        "home.readback",
+        firmware=query["os_release"]["BUILD_ID"],
+        complete=not unavailable,
+        access=provenance["access"],
+        launcher_installed=query["launcher"]["installed"],
+        watcher_reachable=query["watcher"]["reachable"],
+        unavailable_settings=unavailable,
+    )
     return {
         "schema_version": 1,
         "queried_at": datetime.now(timezone.utc).isoformat(),
@@ -278,7 +298,7 @@ def read_status(session, provider, info):
         "watcher": query["watcher"],
         "launcher": query["launcher"],
         "boot": query.get("boot"),
-        "complete": all(item["status"] == "ok" for item in [main, *settings.values()]),
+        "complete": not unavailable,
         "evidence": {
             **provenance,
             "model_metadata_source": model_source,

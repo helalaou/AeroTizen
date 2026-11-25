@@ -16,6 +16,7 @@ interface HomeBackupDialogProps {
   readBackup?: DesktopService["readHomeBackup"];
   onRestore?: RestoreHomeBackup;
   onClose: () => void;
+  onViewLogs: () => void;
 }
 
 export function HomeBackupDialog({
@@ -26,6 +27,7 @@ export function HomeBackupDialog({
   readBackup,
   onRestore,
   onClose,
+  onViewLogs,
 }: HomeBackupDialogProps) {
   const [reviewedBackup, setReviewedBackup] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
@@ -115,9 +117,14 @@ export function HomeBackupDialog({
             Loading saved settings…
           </Text>
         )}
-        {readError && (
+        {(readError || error) && (
           <Alert color="red" role="alert">
-            {readError}
+            <Stack gap="xs" align="flex-start">
+              <Text size="sm">{readError || error}</Text>
+              <Button size="xs" variant="default" onClick={onViewLogs}>
+                View diagnostic logs
+              </Button>
+            </Stack>
           </Alert>
         )}
         {reviewedBackup && (
@@ -126,11 +133,6 @@ export function HomeBackupDialog({
               <Text id={restoreAvailabilityId} size="sm" c="dimmed">
                 Restore is unavailable in this desktop build.
               </Text>
-            )}
-            {error && (
-              <Alert color="red" role="alert">
-                {error}
-              </Alert>
             )}
             <Group justify="flex-end">
               <Button

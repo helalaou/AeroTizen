@@ -1,12 +1,15 @@
 import { Alert, Badge, Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
 import { RefreshCw, ScrollText } from "lucide-react";
+import { useState } from "react";
 import type { ReactNode } from "react";
-import type { SavedTv, TvPage } from "../contracts";
+import type { DesktopService, SavedTv, TvPage } from "../contracts";
 import { validHost } from "../contracts";
 import { platformRows, rootVersion, softwareVersions } from "../tvDetails";
 import styles from "../styles.module.css";
+import type { DesktopLog } from "../services/desktopLogs";
 import { ConnectionHelp } from "./ConnectionHelp";
 import { GithubReportButton } from "./GithubReportButton";
+import { HomeDiagnostics } from "./HomeDiagnostics";
 
 const STATUS = {
   verified: { label: "Verified", color: "green" },
@@ -59,21 +62,42 @@ function rootAccess(profile: SavedTv): Result {
 
 function homeSettings(profile: SavedTv): Result {
   const settings = profile.native_home_settings;
-  if (
-    typeof settings?.home_button_app === "string" &&
-    typeof settings.home_app === "string" &&
-    typeof settings.startup_app === "string" &&
-    typeof settings.startup_backup_app === "string" &&
-    typeof settings.smart_hub_autostart === "boolean"
-  ) {
+  if (!settings)
+    return {
+      status: "unverified",
+      detail: "Reading Home and startup settings requires a compatible paired Root connection.",
+    };
+  const missing = [
+    [settings.home_button_app === null, "Home button assignment"],
+    [settings.home_app === null, "saved Home app"],
+    [settings.startup_app === null, "startup app"],
+    [settings.startup_backup_app === null, "backup startup app"],
+    [settings.smart_hub_autostart === null, "Smart Hub autostart"],
+  ]
+    .filter(([unavailable]) => unavailable)
+    .map(([, label]) => label);
+  if (!missing.length) {
     return { status: "verified", detail: "The app read the current Home and startup settings." };
   }
   return {
     status: "unverified",
-    detail: settings
-      ? "The TV returned only some Home and startup settings."
-      : "Reading Home and startup settings requires a compatible paired Root connection.",
+    detail: (
+      <>The TV returned only some Home and startup settings. Unavailable settings include {missing.join(", ")}.</>
+    ),
   };
+}
+
+const ROUTING_MODES = {
+  watcher: "Watcher mode",
+  native: "Native Home mode",
+  hold: "Home routing is on hold",
+  blocked: "Home routing is blocked",
+};
+
+function routing(profile: SavedTv): Result {
+  const mode = profile.home_routing_mode;
+  if (!mode) return { status: "unverified", detail: "The Home control service did not report a routing mode." };
+  return { status: mode === "hold" || mode === "blocked" ? "action" : "verified", detail: ROUTING_MODES[mode] };
 }
 
 function backup(profile: SavedTv): Result {
@@ -116,6 +140,8 @@ interface DiagnosticsViewProps {
   error: string | null;
   loading: boolean;
   disabled: boolean;
+  log: DesktopLog;
+  readHomeDiagnostics?: DesktopService["readHomeDiagnostics"];
   onCheck(): void;
   onPage(page: TvPage): void;
 }
@@ -126,9 +152,12 @@ export function DiagnosticsView({
   error,
   loading,
   disabled,
+  log,
+  readHomeDiagnostics,
   onCheck,
   onPage,
 }: DiagnosticsViewProps) {
+  const [refresh, setRefresh] = useState(0);
   const { tizen, firmware, launcher } = softwareVersions(profile);
   return (
     <Stack className={styles.detailContent} gap="lg">
@@ -136,7 +165,15 @@ export function DiagnosticsView({
         <Title order={1}>Diagnostics</Title>
         <Group gap="xs">
           <GithubReportButton profile={profile} desktopVersion={desktopVersion} />
-          <Button leftSection={<RefreshCw size={16} />} onClick={onCheck} loading={loading} disabled={disabled}>
+          <Button
+            leftSection={<RefreshCw size={16} />}
+            onClick={() => {
+              setRefresh((current) => current + 1);
+              onCheck();
+            }}
+            loading={loading}
+            disabled={disabled}
+          >
             Run checks
           </Button>
         </Group>
@@ -199,8 +236,10 @@ export function DiagnosticsView({
           <dl className={styles.diagnosticChecks}>
             <Check label="Root access" result={error ? UNVERIFIED : rootAccess(profile)} />
             <Check label="Read Home settings" result={error ? UNVERIFIED : homeSettings(profile)} />
+            <Check label="Home control service" result={error ? UNVERIFIED : routing(profile)} />
             <Check label="Original Home backup" result={error ? UNVERIFIED : backup(profile)} />
           </dl>
+          <HomeDiagnostics id={profile.id} log={log} read={readHomeDiagnostics} refresh={refresh} />
         </Paper>
         <details className={styles.homeAdvanced}>
           <summary>Technical details</summary>

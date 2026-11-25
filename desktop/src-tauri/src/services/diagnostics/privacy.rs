@@ -28,6 +28,34 @@ static HTTP_REASON: LazyLock<Regex> =
 const MAX_REFERENCE_BYTES: usize = 256;
 const MAX_NUMBER: f64 = 10_000_000_000_000_000.0;
 const MAX_TV_RECORDS: usize = 400;
+const MAX_HOME_CONTROL_STEPS: usize = 96;
+const HOME_CONTROL_STEPS: &[&str] = &[
+    "read_request",
+    "writer_lock",
+    "runtime_compatibility",
+    "firmware_check",
+    "read_current_settings",
+    "watcher_preflight",
+    "verify_baseline",
+    "launcher_eligibility",
+    "watcher_hold",
+    "verify_handoff_settings",
+    "direct_write",
+    "setting_write",
+    "setting_readback",
+    "verify_settings",
+    "enable_autostart",
+    "verify_boot",
+    "retry_startup_ids",
+    "restore_startup_settings",
+    "watcher_commit",
+    "rollback",
+    "verify_rollback_watcher",
+    "watcher_resume",
+    "restore_without_launcher",
+];
+const HOME_HOST_FAILURE_STAGES: &[&str] =
+    &["writer_response", "native_result", "final_verification"];
 const EVENT_FIELDS: &[&str] = &[
     "action",
     "mode",
@@ -70,6 +98,12 @@ fn number(value: &Value) -> Value {
 }
 
 pub(super) fn error_code(value: &Value) -> &'static str {
+    if let Some(code) = value
+        .as_str()
+        .and_then(crate::services::home_protocol::compatibility_error_code)
+    {
+        return code;
+    }
     let text: String = value
         .as_str()
         .unwrap_or_default()
@@ -350,6 +384,13 @@ impl Privacy {
             return Value::Null;
         }
         let mut result = self.fields(value, &["Success", "RolledBack"]);
+        if let Some(steps) = value["Steps"].as_array() {
+            result["Steps"] = json!(steps
+                .iter()
+                .take(MAX_HOME_CONTROL_STEPS)
+                .filter_map(home_control_step)
+                .collect::<Vec<_>>());
+        }
         if let Some(restored) = value["StartupSettingsRestored"].as_bool() {
             result["StartupSettingsRestored"] = json!(restored);
         }
@@ -404,12 +445,56 @@ impl Privacy {
             Some("restored_verified") => json!("restored_verified"),
             _ => self.value("state", &value["state"]),
         };
-        json!({
+        let mut receipt = json!({
             "created_at": self.value("created_at", &value["created_at"]),
             "state": state,
             "command": self.fields(&value["request"], &["action", "boot", "firmware"]),
             "native_result": self.native_result(&value["native_result"]),
             "error_code": value["error"].is_string().then(|| error_code(&value["error"])),
-        })
+        });
+        if let Some(stage) = value["host_failure_stage"]
+            .as_str()
+            .filter(|stage| HOME_HOST_FAILURE_STAGES.contains(stage))
+        {
+            receipt["host_failure_stage"] = json!(stage);
+        }
+        receipt
     }
+}
+
+fn home_control_step(value: &Value) -> Option<Value> {
+    let step = value["Step"].as_str()?;
+    let outcome = value["Outcome"].as_str()?;
+    if !HOME_CONTROL_STEPS.contains(&step) || !matches!(outcome, "ok" | "failed" | "already_set") {
+        return None;
+    }
+    let keys = || std::iter::once("operation/main").chain(SETTINGS.map(|(key, _)| key));
+    let mut entry = json!({"Step": step, "Outcome": outcome});
+    if let Some(depth) = value["Depth"]
+        .as_u64()
+        .filter(|depth| *depth <= MAX_HOME_CONTROL_STEPS as u64)
+    {
+        entry["Depth"] = json!(depth);
+    }
+    if let Some(duration) = value["DurationMs"]
+        .as_u64()
+        .filter(|duration| *duration as f64 <= MAX_NUMBER)
+    {
+        entry["DurationMs"] = json!(duration);
+    }
+    if let Some(setting) = value["Setting"]
+        .as_str()
+        .filter(|setting| keys().any(|key| key == *setting))
+    {
+        entry["Setting"] = json!(setting);
+    }
+    if let Some(differences) = value["Differences"].as_array() {
+        entry["Differences"] = json!(keys()
+            .filter(|key| differences
+                .iter()
+                .take(SETTINGS.len() + 1)
+                .any(|item| item.as_str() == Some(*key)))
+            .collect::<Vec<_>>());
+    }
+    Some(entry)
 }

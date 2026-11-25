@@ -179,7 +179,7 @@ describe("Home and startup", () => {
     }));
     const prepare = vi
       .spyOn(service, "prepareNativeHome")
-      .mockRejectedValueOnce(new Error("Backup could not be saved."));
+      .mockRejectedValueOnce({ code: "backup_unavailable", message: "Backup could not be saved." });
     const apply = vi.spyOn(service, "applyNativeHome");
     mount(service);
     await user.click(await screen.findByRole("button", { name: "Search for TVs" }));
@@ -191,6 +191,11 @@ describe("Home and startup", () => {
     expect(await review.findByRole("alert")).toHaveTextContent("Backup could not be saved.");
     expect(prepare).toHaveBeenCalledExactlyOnceWith(office.id);
     expect(apply).not.toHaveBeenCalled();
+    await user.click(review.getByRole("button", { name: "View diagnostic logs" }));
+    expect(await screen.findByRole("heading", { name: "Logs" })).toBeVisible();
+    expect(screen.getByText("backup_unavailable")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Export logs" })).toBeEnabled();
+    expect(prepare).toHaveBeenCalledTimes(1);
   });
 
   it("allows cancellation, reports a restore failure, and updates the TV after a confirmed retry", async () => {
