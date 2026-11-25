@@ -105,12 +105,21 @@ internal static class HomeQuery
     {
         try
         {
-            if (args.Length != 0) throw new Exception("This helper only queries; it accepts no commands.");
+            bool eligibility = args.Length == 1 && args[0] == "--eligibility";
+            if (args.Length != 0 && !eligibility) throw new Exception("Unexpected Home query arguments.");
             if (IntPtr.Size != 4) throw new Exception("Expected a 32-bit Tizen process.");
             uint uid = getuid();
             if (uid != 0 && uid != 901) throw new Exception("Expected root or SDK execution context.");
             var os = OsRelease();
             if (!os.ContainsKey("ID") || os["ID"] != "tizen") throw new Exception("Expected Tizen.");
+            if (eligibility)
+            {
+                if (uid != 901 || RuntimeInformation.ProcessArchitecture != Architecture.Arm)
+                    throw new Exception("Eligibility requires the 32-bit ARM SDK user.");
+                var report = new { schema_version = 1, read_only = true, uid = uid, eligibility = Installation.EligibilityStatus() };
+                Console.WriteLine("AEROTIZEN_HOME_ELIGIBILITY=" + JsonSerializer.Serialize(report));
+                return 0;
+            }
             var result = new {
                 schema_version = 1, read_only = true, uid = uid, architecture_bits = IntPtr.Size * 8,
                 os_release = os, main_operation = HomeSettings.ReadMainOperation(),

@@ -276,6 +276,16 @@ static class Program
             Check(refused && fake.Events.Count == 0);
             Check(trace.Steps.Last().Step == "launcher_eligibility" && trace.Steps.Last().Outcome == "failed");
         });
+        Test("eligibility diagnosis distinguishes a skipped check from the firmware return value", () => {
+            var invisible = Installation.CheckEligibility(() => true, () => false,
+                () => throw new Exception("The firmware check must be skipped"));
+            Check(invisible == (true, false, "not_run", null));
+            var refused = Installation.CheckEligibility(() => true, () => true, () => 0);
+            Check(refused == (true, true, "returned", (byte?)0));
+            var unavailable = Installation.CheckEligibility(() => throw new Exception(), () => true,
+                () => throw new EntryPointNotFoundException());
+            Check(unavailable == (null, true, "entrypoint_unavailable", null));
+        });
         Test("old watcher refuses all writes", () => { var fake = new Fake(); fake.Control.Protocol = 0; Refused(fake, Request()); });
         Test("restore refuses third-party preference changes", () => {
             var fake = new Fake(); Applied(fake); fake.Current.Strings["db/appfw/startup_appid"] = "Other.App";

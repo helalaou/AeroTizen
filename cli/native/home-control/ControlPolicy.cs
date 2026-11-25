@@ -134,7 +134,7 @@ namespace AeroTizen.Home
     }
     public static class Policy
     {
-        public const string Target = "DclHome001.Home";
+        public const string Target = Installation.LauncherAppId;
         public const string HomeKey = "db/appfw/home_appid";
         private const string StartupKey = "db/appfw/startup_appid";
         private const string BootBackupKey = "db/appfw/booting_appid_backup";

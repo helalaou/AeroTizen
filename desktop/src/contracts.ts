@@ -18,6 +18,7 @@ export interface SavedTv extends TvCandidate {
   home_backup?: HomeBackup;
   home_routing_mode?: HomeRoutingMode;
   native_home_settings?: NativeHomeSettings;
+  launcher_eligibility?: HomeEligibilityCheck;
 }
 
 export type HomeBackup = { status: "saved"; captured_at: string } | { status: "missing" | "unreadable" };
@@ -35,6 +36,16 @@ export interface NativeHomeSettings {
   startup_backup_app: string | null;
   smart_hub_autostart: boolean | null;
 }
+
+export type HomeEligibilityCheck =
+  | {
+      state: "checked";
+      launcher_registered: boolean | null;
+      package_directory_visible: boolean;
+      boot_check: "returned" | "not_run" | "library_unavailable" | "entrypoint_unavailable";
+      boot_check_value: number | null;
+    }
+  | { state: "unavailable" };
 
 export interface HomeBackupSettings extends NativeHomeSettings {
   first_screen: string;

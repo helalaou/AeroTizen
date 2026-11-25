@@ -136,13 +136,17 @@ In the desktop app, open **Diagnostics → Root and Home**. The last saved Home
 attempt for this TV stays available while the TV is offline. Expand **TV setup
 steps** to see its readbacks, retries and recovery steps. **Run checks** also
 refreshes the current Home control mode and the list of unavailable settings.
+It also checks whether the SDK user can see the AeroTizen app registration and
+package directory, and shows the firmware boot eligibility result.
 The most recent Home error on the computer can come from a different TV.
 
 In the CLI, use `aerotizen home diagnose` to review saved steps and the most recent
 Home error on this computer. Add `--json` for machine-readable output. To check the
-connection, backup, Home control mode and any available paired Home reads, run
+connection, backup, Home control mode, launcher eligibility and any available paired Home reads, run
 `aerotizen --tv TV_IP home diagnose`. This reads the attempt saved for that TV.
 These checks do not start the launcher, create a backup or apply Home settings.
+A firmware result of zero identifies the boot eligibility rejection. A nonzero
+result confirms this check passed. Native Home assignment still needs verification.
 
 ### Save the ZIP
 

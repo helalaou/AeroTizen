@@ -71,6 +71,7 @@ async fn first_native_connection_keeps_the_public_profile_without_a_worker_or_pr
         Some(HomeRoutingMode::Watcher)
     ));
     assert!(saved.tv.native_home_settings.is_none());
+    assert!(saved.tv.launcher_eligibility.is_none());
     assert!(saved.tv.technical_details.firmware_build.is_none());
     assert!(matches!(saved.tv.home_backup, Some(HomeBackup::Missing)));
     let public = serde_json::to_string(&saved).unwrap();
@@ -78,6 +79,59 @@ async fn first_native_connection_keeps_the_public_profile_without_a_worker_or_pr
     assert!(!public.contains("/private/path"));
     assert_eq!(state.profiles.list().await.unwrap().len(), 1);
     assert_eq!(tv.finish().await[0].len(), 7);
+    metadata.finish().await;
+}
+
+#[cfg(feature = "desktop-app")]
+#[tokio::test]
+async fn diagnostics_collects_eligibility_even_without_a_watcher_response() {
+    use crate::services::{
+        helper_payloads::QUERY_ENTRYPOINT, sdb::sync::tests::read_reply,
+        sdk::tests::serve_helper_with_args,
+    };
+
+    let mut metadata = metadata_document(json!({"modelName":"K55UST"})).await;
+    let mut tv = Peer::start(1, |mut socket, _| async move {
+        let mut commands = steps(DUID, false);
+        commands.push((
+            "tcp:47790".into(),
+            "HTTP/1.0 503 Unavailable\r\nContent-Length: 0\r\n\r\n".into(),
+        ));
+        let received = serve_script(&mut socket, commands).await;
+        let document = json!({
+            "schema_version": 1, "read_only": true, "uid": 901,
+            "eligibility": {
+                "launcher_registered": true, "package_directory_visible": true,
+                "boot_check": "returned", "boot_check_value": 0
+            }
+        });
+        serve_helper_with_args(
+            &mut socket,
+            QUERY_ENTRYPOINT,
+            &[QUERY_ENTRYPOINT, "AeroTizenHomeQuery.runtimeconfig.json"],
+            &format!("AEROTIZEN_HOME_ELIGIBILITY={document}"),
+            &["--eligibility"],
+        )
+        .await;
+        read_reply(&mut socket, "shell:0 getduid", DUID).await;
+        received
+    })
+    .await;
+    let directory = tempfile::tempdir().unwrap();
+    let connection = TvConnection::with_ports(directory.path().into(), tv.port, metadata.port);
+    let profile = connection
+        .diagnostics_profile("127.0.0.1", &sha256_hex(DUID.as_bytes()))
+        .await
+        .unwrap();
+    assert!(profile.home_routing_mode.is_none());
+    assert_eq!(
+        serde_json::to_value(profile.launcher_eligibility).unwrap(),
+        json!({
+            "state": "checked", "launcher_registered": true, "package_directory_visible": true,
+            "boot_check": "returned", "boot_check_value": 0
+        })
+    );
+    tv.finish().await;
     metadata.finish().await;
 }
 

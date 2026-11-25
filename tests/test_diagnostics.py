@@ -483,8 +483,11 @@ def test_home_diagnose_reads_existing_error_offline_and_omits_private_fields(tmp
     assert failure["unavailable_settings"]["operation/main"]["native_code"] == -13
 
 
-def test_home_diagnose_scopes_saved_steps_and_checks_only_existing_read_paths(tmp_path, monkeypatch, capsys):
-    from aerotizen import device, home
+@pytest.mark.parametrize("sdk_uid, expected_state", [(901, "checked"), (0, "unavailable")])
+def test_home_diagnose_scopes_saved_steps_and_collects_sdk_eligibility(
+    tmp_path, monkeypatch, capsys, sdk_uid, expected_state
+):
+    from aerotizen import device, home, sdk
 
     host = "192.0.2.1"
     identity = hashlib.sha256(b"private-tv").hexdigest()
@@ -525,7 +528,26 @@ def test_home_diagnose_scopes_saved_steps_and_checks_only_existing_read_paths(tm
 
     monkeypatch.setattr(cli, "STATE_DIR", tmp_path)
     monkeypatch.setattr(device, "DeviceSession", Session)
-    monkeypatch.setattr(home, "load_helper", lambda: pytest.fail("No TV staging"))
+    evidence = {
+        "launcher_registered": True,
+        "package_directory_visible": True,
+        "boot_check": "returned",
+        "boot_check_value": 0,
+        "private": "PRIVATE",
+    }
+
+    def run_eligibility(session, files, entrypoint, args):
+        assert isinstance(session, Session)
+        assert entrypoint == home.HELPER_FILES[0] and args == ("--eligibility",)
+        document = {"schema_version": 1, "read_only": True, "uid": sdk_uid, "eligibility": evidence}
+        return {
+            "stdout": home.ELIGIBILITY_PREFIX + json.dumps(document) + "\n" + sdk.CLEANUP_MARKER,
+            "exit_code": 0,
+            "staging_cleaned": True,
+        }
+
+    monkeypatch.setattr(home, "load_helper", lambda: {name: b"dll" for name in home.HELPER_FILES})
+    monkeypatch.setattr(sdk, "run", run_eligibility)
     monkeypatch.setattr(
         diagnostics,
         "fetch_watcher_status",
@@ -539,6 +561,11 @@ def test_home_diagnose_scopes_saved_steps_and_checks_only_existing_read_paths(tm
     assert report["tv"]["routing_mode"] == "watcher"
     assert report["tv"]["backup"] == "missing"
     assert report["tv"]["home_settings"]["state"] == "paired_helper_required"
+    assert report["tv"]["launcher_eligibility"] == (
+        {"state": "checked", **{key: value for key, value in evidence.items() if key != "private"}}
+        if expected_state == "checked"
+        else {"state": "unavailable"}
+    )
     assert report["latest_saved_attempt"]["state"] == "rolled_back"
     assert report["latest_saved_attempt"]["native_result"]["Steps"][0]["Step"] == "verify_boot"
 

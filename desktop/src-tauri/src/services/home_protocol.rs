@@ -1,5 +1,7 @@
 //! Native Home query schema and setting identifiers shared with backup/control owners.
-use crate::models::{AppError, AppResult, LAUNCHER_APP_ID};
+use crate::models::{
+    AppError, AppResult, BootEligibility, HomeEligibilityEvidence, LAUNCHER_APP_ID,
+};
 use serde_json::{json, Value};
 pub(super) const MAIN_OPERATION: &str = "http://tizen.org/appcontrol/operation/main";
 pub(super) const HOME_KEY: &str = "db/appfw/home_appid";
@@ -16,6 +18,8 @@ pub(super) const SETTINGS: [(&str, &str); SETTING_COUNT] = [
     (AUTOSTART_KEY, "int"),
 ];
 const QUERY_PREFIX: &str = "AEROTIZEN_HOME_QUERY=";
+const ELIGIBILITY_PREFIX: &str = "AEROTIZEN_HOME_ELIGIBILITY=";
+pub(super) const ELIGIBILITY_ARGUMENT: &str = "--eligibility";
 pub(super) fn failed(message: &str) -> AppError {
     AppError::new("home_unavailable", message)
 }
@@ -65,10 +69,10 @@ fn typed(value: &Value, kind: &str) -> bool {
             _ => false,
         }
 }
-pub(super) fn query(output: &str) -> AppResult<Value> {
+fn document(output: &str, prefix: &str) -> AppResult<Value> {
     let records: Vec<_> = output
         .lines()
-        .filter_map(|line| line.strip_prefix(QUERY_PREFIX))
+        .filter_map(|line| line.strip_prefix(prefix))
         .collect();
     if records.len() != 1
         || output
@@ -83,7 +87,31 @@ pub(super) fn query(output: &str) -> AppResult<Value> {
     if document["schema_version"].as_u64() != Some(1)
         || document["read_only"] != true
         || document["uid"].as_u64() != Some(901)
-        || document["architecture_bits"].as_u64() != Some(32)
+    {
+        return Err(invalid());
+    }
+    Ok(document)
+}
+
+pub(super) fn launcher_eligibility(output: &str) -> AppResult<HomeEligibilityEvidence> {
+    let document = document(output, ELIGIBILITY_PREFIX)?;
+    let fields = &document["eligibility"];
+    if fields.get("launcher_registered").is_none() || fields.get("boot_check_value").is_none() {
+        return Err(invalid());
+    }
+    let evidence: HomeEligibilityEvidence =
+        serde_json::from_value(fields.clone()).map_err(|_| invalid())?;
+    if (evidence.boot_check == BootEligibility::NotRun) == evidence.package_directory_visible
+        || (evidence.boot_check == BootEligibility::Returned) != evidence.boot_check_value.is_some()
+    {
+        return Err(invalid());
+    }
+    Ok(evidence)
+}
+
+pub(super) fn query(output: &str) -> AppResult<Value> {
+    let document = document(output, QUERY_PREFIX)?;
+    if document["architecture_bits"].as_u64() != Some(32)
         || document["os_release"]["ID"] != "tizen"
         || !nonempty(&document["os_release"]["BUILD_ID"])
         || !nonempty(&document["os_release"]["VERSION_ID"])

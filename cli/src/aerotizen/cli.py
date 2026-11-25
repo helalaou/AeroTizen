@@ -543,6 +543,24 @@ def cmd_home_probe(args):
         sys.exit(f"Home probe failed: {error}")
 
 
+def _print_home_eligibility(eligibility):
+    if eligibility["state"] != "checked":
+        print("Native Home eligibility: unavailable")
+        return
+    registered = {True: "yes", False: "no", None: "unavailable"}[eligibility["launcher_registered"]]
+    outcome = eligibility["boot_check"]
+    boot = {
+        "not_run": "not run",
+        "library_unavailable": "library unavailable",
+        "entrypoint_unavailable": "function unavailable",
+        "returned": f"returned {eligibility['boot_check_value']}",
+    }
+    print("Native Home eligibility")
+    print(f"  Launcher registered: {registered}")
+    print(f"  Package directory visible: {'yes' if eligibility['package_directory_visible'] else 'no'}")
+    print(f"  Firmware boot check: {boot[outcome]}")
+
+
 def cmd_home_diagnose(args):
     report = diagnostics.home_diagnostic_report(STATE_DIR, args.tv)
     if args.json:
@@ -563,6 +581,8 @@ def cmd_home_diagnose(args):
             print(f"Current Home settings: {settings['state'].replace('_', ' ')}")
             if unavailable := settings.get("unavailable_fields"):
                 print(f"  Unavailable: {', '.join(unavailable)}")
+        if eligibility := tv.get("launcher_eligibility"):
+            _print_home_eligibility(eligibility)
     elif args.tv:
         print(f"TV check: {tv['state'].replace('_', ' ')}")
 
