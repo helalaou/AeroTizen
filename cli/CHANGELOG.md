@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.2.0](https://github.com/helalaou/AeroTizen/compare/cli-v3.1.1...cli-v3.2.0) (2026-11-25)
+
+
+### Features
+
+* add Native Home diagnostics and setup traces ([#364](https://github.com/helalaou/AeroTizen/issues/364)) ([666d11b](https://github.com/helalaou/AeroTizen/commit/666d11b32298ed382e4eab9d7ceac1f6e7034442))
+* diagnose Native Home launcher eligibility ([#366](https://github.com/helalaou/AeroTizen/issues/366)) ([3cf896b](https://github.com/helalaou/AeroTizen/commit/3cf896b6cc1f286af47c42b3b8b295f3721c3bf8))
+
 ## [3.1.1](https://github.com/helalaou/AeroTizen/compare/cli-v3.1.0...cli-v3.1.1) (2026-11-22)
 
 
