@@ -87,6 +87,32 @@ function homeSettings(profile: SavedTv): Result {
   };
 }
 
+function homeEligibility(profile: SavedTv): Result {
+  const evidence = profile.launcher_eligibility;
+  if (!evidence) return UNVERIFIED;
+  if (evidence.state === "unavailable") {
+    return { status: "unverified", detail: "The SDK eligibility check could not be completed." };
+  }
+  const { launcher_registered, package_directory_visible, boot_check, boot_check_value } = evidence;
+  let registration = "unavailable";
+  if (launcher_registered !== null) registration = launcher_registered ? "yes" : "no";
+  const boot = {
+    returned: `returned ${boot_check_value}`,
+    not_run: "not run",
+    library_unavailable: "library unavailable",
+    entrypoint_unavailable: "function unavailable",
+  };
+  const rejected = launcher_registered === false || !package_directory_visible || boot_check_value === 0;
+  const verified = launcher_registered === true && boot_check === "returned" && !rejected;
+  let status: Result["status"] = "unverified";
+  if (rejected) status = "action";
+  else if (verified) status = "verified";
+  return {
+    status,
+    detail: `Launcher registered: ${registration}. Package directory visible: ${package_directory_visible ? "yes" : "no"}. Firmware boot check: ${boot[boot_check]}.`,
+  };
+}
+
 const ROUTING_MODES = {
   watcher: "Watcher mode",
   native: "Native Home mode",
@@ -236,6 +262,7 @@ export function DiagnosticsView({
           <dl className={styles.diagnosticChecks}>
             <Check label="Root access" result={error ? UNVERIFIED : rootAccess(profile)} />
             <Check label="Read Home settings" result={error ? UNVERIFIED : homeSettings(profile)} />
+            <Check label="Native Home eligibility" result={error ? UNVERIFIED : homeEligibility(profile)} />
             <Check label="Home control service" result={error ? UNVERIFIED : routing(profile)} />
             <Check label="Original Home backup" result={error ? UNVERIFIED : backup(profile)} />
           </dl>

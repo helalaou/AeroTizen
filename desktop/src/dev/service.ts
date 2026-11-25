@@ -169,7 +169,22 @@ export function createSimulatorService(store: SimulatorStore, loadReleases = loa
     checkDiagnostics: (id, signal) =>
       request(
         "checkDiagnostics",
-        () => ({ ...known(id).profile, checked_at: new Date().toISOString(), computer_ip: SIMULATOR_COMPUTER_IP }),
+        () => {
+          const { profile } = known(id);
+          const installed = profile.launcher_version !== null;
+          return {
+            ...profile,
+            checked_at: new Date().toISOString(),
+            computer_ip: SIMULATOR_COMPUTER_IP,
+            launcher_eligibility: {
+              state: "checked",
+              launcher_registered: installed,
+              package_directory_visible: installed,
+              boot_check: installed ? "returned" : "not_run",
+              boot_check_value: installed ? 1 : null,
+            },
+          };
+        },
         signal,
       ),
     rename: (id, name) =>

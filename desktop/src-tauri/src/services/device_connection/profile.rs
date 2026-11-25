@@ -1,6 +1,7 @@
 use super::{connection_failed, invalid_response, projection, sdb::ReadCommand, TvConnection};
 use crate::models::{
-    AppResult, HomeRoutingMode, NativeHomeSettings, TechnicalDetails, VerifiedTv, LAUNCHER_APP_ID,
+    AppResult, HomeEligibilityCheck, HomeRoutingMode, NativeHomeSettings, TechnicalDetails,
+    VerifiedTv, LAUNCHER_APP_ID,
 };
 use regex::Regex;
 use serde_json::Value;
@@ -146,11 +147,32 @@ pub(super) fn signing_ready(directory: &Path, duid: &str) -> bool {
 
 impl TvConnection {
     pub async fn profile(&self, host: &str, expected: Option<&str>) -> AppResult<VerifiedTv> {
-        timeout(PROFILE_TIMEOUT, self.profile_inner(host, expected))
-            .await
-            .map_err(|_| connection_failed())?
+        self.profile_with_checks(host, expected, false).await
     }
-    async fn profile_inner(&self, host: &str, expected: Option<&str>) -> AppResult<VerifiedTv> {
+
+    pub async fn diagnostics_profile(&self, host: &str, expected: &str) -> AppResult<VerifiedTv> {
+        self.profile_with_checks(host, Some(expected), true).await
+    }
+
+    async fn profile_with_checks(
+        &self,
+        host: &str,
+        expected: Option<&str>,
+        check_eligibility: bool,
+    ) -> AppResult<VerifiedTv> {
+        timeout(
+            PROFILE_TIMEOUT,
+            self.profile_inner(host, expected, check_eligibility),
+        )
+        .await
+        .map_err(|_| connection_failed())?
+    }
+    async fn profile_inner(
+        &self,
+        host: &str,
+        expected: Option<&str>,
+        check_eligibility: bool,
+    ) -> AppResult<VerifiedTv> {
         let mut session = self.open(host, expected, true).await?;
         let duid = session.identity().await?;
         let identity = super::sha256_hex(duid.as_bytes());
@@ -186,6 +208,18 @@ impl TvConnection {
                 .ok()
                 .and_then(Result::ok)
                 .and_then(|raw| routing(&raw))
+        } else {
+            None
+        };
+        session.unchanged().await?;
+        let launcher_eligibility = if check_eligibility {
+            Some(match session.launcher_eligibility().await {
+                Ok(evidence) => {
+                    session.identity().await?;
+                    HomeEligibilityCheck::Checked { evidence }
+                }
+                Err(_) => HomeEligibilityCheck::Unavailable,
+            })
         } else {
             None
         };
@@ -228,6 +262,7 @@ impl TvConnection {
             ),
             home_routing_mode,
             native_home_settings,
+            launcher_eligibility,
         })
     }
 }

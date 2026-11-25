@@ -11,7 +11,7 @@ namespace AeroTizen.Home
         internal const string Vconf = "libvconf.so.0";
         internal const string AppOperation = "libcapi-appfw-app-operation-tv.so.0";
         internal const string AppManager = "libcapi-appfw-app-manager.so.0";
-        internal const string AppContext = "libapp-context-manager-common.so";
+        internal const string AppContext = Installation.AppContextLibrary;
 
         internal static void RequireRuntime(int pointerSize, Architecture architecture, uint uid, IDictionary<string, string> os)
         {

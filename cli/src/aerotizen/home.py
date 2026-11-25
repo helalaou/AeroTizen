@@ -31,6 +31,9 @@ SETTINGS = {
 PAYLOAD_PATH = Path(__file__).parent / "helpers/home-query.json"
 HELPER_FILES = ("AeroTizenHomeQuery.dll", "AeroTizenHomeQuery.runtimeconfig.json")
 QUERY_PREFIX = "AEROTIZEN_HOME_QUERY="
+ELIGIBILITY_PREFIX = "AEROTIZEN_HOME_ELIGIBILITY="
+ELIGIBILITY_ARGUMENT = "--eligibility"
+BOOT_CHECK_OUTCOMES = ("returned", "not_run", "library_unavailable", "entrypoint_unavailable")
 CLEANUP_MARKER = "AEROTIZEN_HOME_QUERY_CLEANED"
 SDB_DEVICE_BANNER = re.compile(r"device::(?P<model>[A-Za-z0-9][A-Za-z0-9_.-]*)::[0-9]+")
 
@@ -173,6 +176,54 @@ def parse_query(stdout, *, expected_uid=0, cleanup_marker=CLEANUP_MARKER):
         return query
     except (ValueError, KeyError, TypeError) as exc:
         raise HomeError("The Home helper returned an invalid query document.") from exc
+
+
+def read_launcher_eligibility(session):
+    from aerotizen import sdk
+
+    result = sdk.run(session, load_helper(), HELPER_FILES[0], (ELIGIBILITY_ARGUMENT,))
+    lines = result["stdout"].splitlines()
+    records = [line[len(ELIGIBILITY_PREFIX) :] for line in lines if line.startswith(ELIGIBILITY_PREFIX)]
+    try:
+        if (
+            result["exit_code"] != 0
+            or result["staging_cleaned"] is not True
+            or lines.count(sdk.CLEANUP_MARKER) != 1
+            or len(records) != 1
+        ):
+            raise ValueError("Unconfirmed eligibility query")
+        document = json.loads(records[0])
+        evidence = document["eligibility"]
+        registered = evidence["launcher_registered"]
+        visible = evidence["package_directory_visible"]
+        outcome = evidence["boot_check"]
+        value = evidence["boot_check_value"]
+        if (
+            type(document["schema_version"]) is not int
+            or document["schema_version"] != 1
+            or document["read_only"] is not True
+            or type(document["uid"]) is not int
+            or document["uid"] != 901
+            or (registered is not None and type(registered) is not bool)
+            or type(visible) is not bool
+            or outcome not in BOOT_CHECK_OUTCOMES
+            or (outcome == "not_run") == visible
+        ):
+            raise ValueError("Invalid eligibility fields")
+        if outcome == "returned":
+            if type(value) is not int or not 0 <= value <= 255:
+                raise ValueError("Invalid boot eligibility return value")
+        elif value is not None:
+            raise ValueError("Unexpected boot eligibility return value")
+    except (ValueError, KeyError, TypeError) as exc:
+        raise HomeError("The Home helper returned an invalid eligibility report.") from exc
+    return {
+        "state": "checked",
+        "launcher_registered": registered,
+        "package_directory_visible": visible,
+        "boot_check": outcome,
+        "boot_check_value": value,
+    }
 
 
 def _mode(main, settings):

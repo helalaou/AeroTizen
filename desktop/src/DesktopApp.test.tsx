@@ -65,6 +65,13 @@ describe("Desktop app", () => {
       .mockResolvedValueOnce({
         ...livingRoom,
         native_home_settings: { ...livingRoom.native_home_settings!, startup_app: "DclHome001.Home" },
+        launcher_eligibility: {
+          state: "checked",
+          launcher_registered: true,
+          package_directory_visible: true,
+          boot_check: "returned",
+          boot_check_value: 0,
+        },
       });
     const user = userEvent.setup();
     mount(service);
@@ -89,6 +96,7 @@ describe("Desktop app", () => {
 
     await user.click(screen.getByRole("button", { name: "Run checks" }));
     expect(await screen.findByText("The app read the current Home and startup settings.")).toBeVisible();
+    expect(screen.getByText(/Launcher registered: yes.*Package directory visible: yes.*returned 0/)).toBeVisible();
     expect(screen.getByText("Firmware build").parentElement).toHaveTextContent("T-PTMDDEUC-0090-REL-202605141701");
     expect(check).toHaveBeenCalledTimes(2);
     expect(check).toHaveBeenLastCalledWith(livingRoom.id, expect.any(AbortSignal));

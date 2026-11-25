@@ -537,6 +537,14 @@ def _check_home_tv(state_dir, host, policy):
                     "unavailable_fields": unavailable,
                 }
             result["routing_mode"] = home_status.read_routing_mode(session)
+            try:
+                eligibility = home.read_launcher_eligibility(session)
+            except (OSError, SdbError):
+                result["launcher_eligibility"] = {"state": "unavailable"}
+            else:
+                if session.duid().strip() != duid:
+                    return {"state": "identity_unavailable"}, None
+                result["launcher_eligibility"] = eligibility
     except (OSError, SdbError, ValueError) as error:
         result["error_type"] = privacy.error_type(type(error).__name__)
     return result, identity

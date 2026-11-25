@@ -25,8 +25,6 @@ internal sealed class NativePlatform : IPlatform, IDisposable
     private static extern int app_operation_get_current_app(string operation, out IntPtr appId);
     [DllImport(Compatibility.AppOperation)]
     private static extern int app_operation_set_current_app(string operation, string appId);
-    [DllImport(Compatibility.AppContext)]
-    private static extern byte util_is_appbooting_supported_webapp_byappid(string appId);
     internal static void Check(int code) { if (code != 0) throw new Exception("Native call failed: " + code); }
     internal static Dictionary<string, string> OsRelease()
     {
@@ -44,7 +42,7 @@ internal sealed class NativePlatform : IPlatform, IDisposable
         Compatibility.RequireApis(applying, Compatibility.RequireExports);
     }
     public string Firmware => OsRelease()["BUILD_ID"];
-    public bool LauncherEligible() => Directory.Exists("/opt/usr/apps/DclHome001") && util_is_appbooting_supported_webapp_byappid(Policy.Target) != 0;
+    public bool LauncherEligible() => Installation.Eligible();
     public bool LauncherInstalled() => Installation.Exists();
     private string String(string key)
     {

@@ -1,6 +1,6 @@
 use super::{root_pairing, sdb::ReadCommand, Session, TvConnection};
 use crate::{
-    models::{AppError, AppResult},
+    models::{AppError, AppResult, HomeEligibilityEvidence},
     services::{
         digest::sha256_hex,
         helper_payloads,
@@ -61,6 +61,23 @@ impl Device for HomeDevice<'_> {
     }
 }
 impl Session<'_> {
+    pub(super) async fn launcher_eligibility(&mut self) -> AppResult<HomeEligibilityEvidence> {
+        let files = helper_payloads::home_query()?;
+        let host = root_pairing::host_address(self.host)?;
+        let result = sdk::run(
+            &mut self.connection,
+            host,
+            &files,
+            helper_payloads::QUERY_ENTRYPOINT,
+            &[home_protocol::ELIGIBILITY_ARGUMENT],
+        )
+        .await?;
+        if result.exit_code != 0 {
+            return Err(home_protocol::failed("The SDK eligibility check failed."));
+        }
+        home_protocol::launcher_eligibility(&result.stdout)
+    }
+
     pub(super) async fn query_home(
         &mut self,
         query_files: &[PayloadFile],

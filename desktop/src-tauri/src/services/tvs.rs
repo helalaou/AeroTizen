@@ -54,7 +54,7 @@ pub async fn check_tv_diagnostics(
     super::reads::read_native_tv(state, id, request_id, |mut saved| async move {
         let mut tv = state
             .device_connection
-            .profile(&saved.tv.host, Some(&saved.tv.identity_sha256))
+            .diagnostics_profile(&saved.tv.host, &saved.tv.identity_sha256)
             .await?;
         tv.name = saved.tv.name;
         saved.tv = tv;

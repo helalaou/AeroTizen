@@ -44,6 +44,33 @@ pub struct NativeHomeSettings {
     pub smart_hub_autostart: Option<bool>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum BootEligibility {
+    Returned,
+    NotRun,
+    LibraryUnavailable,
+    EntrypointUnavailable,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct HomeEligibilityEvidence {
+    pub launcher_registered: Option<bool>,
+    pub package_directory_visible: bool,
+    pub boot_check: BootEligibility,
+    pub boot_check_value: Option<u8>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "state", rename_all = "snake_case")]
+pub enum HomeEligibilityCheck {
+    Checked {
+        #[serde(flatten)]
+        evidence: HomeEligibilityEvidence,
+    },
+    Unavailable,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VerifiedTv {
     pub identity_sha256: String,
@@ -67,6 +94,8 @@ pub struct VerifiedTv {
     pub home_routing_mode: Option<HomeRoutingMode>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub native_home_settings: Option<NativeHomeSettings>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub launcher_eligibility: Option<HomeEligibilityCheck>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
