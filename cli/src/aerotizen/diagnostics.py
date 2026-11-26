@@ -512,12 +512,12 @@ def _check_home_tv(state_dir, host, policy):
                 "model": policy.value(home._model_metadata({}, session.banner)[0], "model"),
                 "backup": "missing",
             }
-            backup = Path(state_dir) / "backups" / identity / "original-home.json"
+            backup = home.default_backup_path(identity, state_dir=state_dir)
             if backup.is_symlink():
                 result["backup"] = "unreadable"
             elif backup.exists():
                 try:
-                    home._load_backup(backup, identity)
+                    home.load_backup(backup, identity)
                     result["backup"] = "saved"
                 except (OSError, ValueError, SdbError):
                     result["backup"] = "unreadable"
