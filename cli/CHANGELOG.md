@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.1](https://github.com/helalaou/AeroTizen/compare/cli-v3.2.0...cli-v3.2.1) (2026-11-26)
+
+
+### Bug Fixes
+
+* **cli:** name settings that block uninstall ([#367](https://github.com/helalaou/AeroTizen/issues/367)) ([63feef5](https://github.com/helalaou/AeroTizen/commit/63feef5573d32d29c50e4308836f6f374737c303))
+
 ## [3.2.0](https://github.com/helalaou/AeroTizen/compare/cli-v3.1.1...cli-v3.2.0) (2026-11-25)
 
 
