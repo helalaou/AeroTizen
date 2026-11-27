@@ -23,6 +23,41 @@
     --header-align: flex-start;
     --header-shortcuts-offset: 13px;
   }
+
+  &[data-clock-position="start"] {
+    flex-direction: row-reverse;
+
+    & > [data-header-status] {
+      justify-content: flex-start;
+      margin-right: 0;
+      margin-left: 0;
+    }
+
+    & [data-clock="expanded"] {
+      align-items: flex-start;
+      text-align: left;
+    }
+
+    & [data-clock-layout]:not([data-clock-layout="horizontal"]) [data-clock-part="time"] {
+      align-items: flex-start;
+    }
+
+    & [data-weather-part="expanded"] {
+      justify-content: flex-start;
+    }
+
+    [dir="rtl"] & [data-clock="expanded"] {
+      text-align: right;
+    }
+
+    [dir="rtl"] & [data-clock-layout]:not([data-clock-layout="horizontal"]) [data-clock-part="time"] {
+      align-items: flex-end;
+    }
+
+    [dir="rtl"] & [data-clock-layout="horizontal"] [data-clock-part="time"] {
+      justify-content: flex-end;
+    }
+  }
 }
 
 .shortcuts {
@@ -32,6 +67,10 @@
   align-items: center;
   position: relative;
   margin-top: var(--header-shortcuts-offset);
+
+  [data-clock-position="start"] > & {
+    justify-content: flex-end;
+  }
 }
 
 .shortcut {

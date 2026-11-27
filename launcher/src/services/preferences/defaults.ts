@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS: SettingsDefaults = {
   language: "auto",
   numerals: "latn",
   clockLayout: "classic",
+  clockPosition: "end",
   aeroClockStyle: "vertical",
   timeFormat: null,
   timeZone: "tv",

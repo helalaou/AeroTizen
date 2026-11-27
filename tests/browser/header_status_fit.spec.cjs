@@ -1,4 +1,5 @@
 const { test, expect } = require("./launcher_fixture.cjs");
+const { closeSettings, openCategory } = require("./drawer_helpers.cjs");
 
 const LONG_CITY = "A very long fixture city name";
 const LONGEST_DATE_DAY = "2026-09-30T10:20:00Z";
@@ -12,6 +13,9 @@ const openHome = async (page, settings, city, day) => {
   await page.clock.setFixedTime(new Date(day));
   await page.addInitScript(
     ([settings, city, day]) => {
+      if (localStorage.getItem("aerotizen.settings.v1")) {
+        return;
+      }
       localStorage.setItem(
         "aerotizen.settings.v1",
         JSON.stringify({
@@ -67,3 +71,41 @@ for (const [theme, language] of [
     await expect(page.locator("[data-header-tabs]")).toBeInViewport();
   });
 }
+
+test("the clock position setting puts the status first and the remote follows the visible order", async ({ page }) => {
+  await openHome(page, { theme: "classic" }, "London", LONGEST_DATE_DAY);
+  const headerOrder = () =>
+    page.evaluate(() => {
+      const left = (selector) => document.querySelector(selector).getBoundingClientRect().left;
+      return ["[data-header-status]", "[data-header-tabs]", "[data-header-shortcuts]"]
+        .map((selector) => [selector, left(selector)])
+        .sort((a, b) => a[1] - b[1])
+        .map(([selector]) => selector);
+    });
+
+  await test.step("the status is last by default", async () => {
+    expect(await headerOrder()).toEqual(["[data-header-shortcuts]", "[data-header-tabs]", "[data-header-status]"]);
+  });
+
+  await test.step("choosing the start in Settings moves the status first and the setting survives a reload", async () => {
+    await page.locator("#gear").click();
+    await openCategory(page, "status");
+    await page.locator('[data-key="clock-position:start"]').click();
+    await closeSettings(page);
+    expect(await headerOrder()).toEqual(["[data-header-status]", "[data-header-tabs]", "[data-header-shortcuts]"]);
+    await page.reload();
+    await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
+    expect(await headerOrder()).toEqual(["[data-header-status]", "[data-header-tabs]", "[data-header-shortcuts]"]);
+  });
+
+  await test.step("the arrow keys go from the tabs to the shortcuts in the order they are drawn", async () => {
+    await page.keyboard.press("ArrowUp");
+    await expect(page.locator("#home-tab")).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator("#apps-tab")).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator("#gear")).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator("#samsung-home-shortcut")).toBeFocused();
+  });
+});

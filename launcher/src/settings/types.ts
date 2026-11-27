@@ -70,6 +70,7 @@ export interface SettingsActions {
   saveInputName(port: string, value: string): void;
   setBackground(background: string): void;
   setClockLayout(layout: "classic" | SettingsValues["aeroClockStyle"]): void;
+  setClockPosition(position: SettingsValues["clockPosition"]): void;
   setContinueWatching(enabled: boolean): void;
   setContinueWatchingCoverArt(enabled: boolean): void;
   setContinueWatchingHeadingVisible(visible: boolean): void;

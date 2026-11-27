@@ -16,6 +16,11 @@ const CLOCK_LAYOUT_OPTIONS = [
   { value: "bold", labelKey: "clock.bold" },
 ] as const;
 
+const CLOCK_POSITION_OPTIONS = [
+  { value: "start", labelKey: "clock.positionStart" },
+  { value: "end", labelKey: "clock.positionEnd" },
+] as const;
+
 const TIME_FORMATS = ["12", "24"] as const;
 
 const TIME_ZONE_OPTIONS = [
@@ -44,6 +49,15 @@ export const ClockSettings = ({ settings, actions, clock, openedAt }: Props) => 
           value={settings.clockLayout === "classic" ? "classic" : settings.aeroClockStyle}
           options={CLOCK_LAYOUT_OPTIONS}
           onSelect={actions.setClockLayout}
+        />
+      </SettingsField>
+      <SettingsField title={t("clock.position")}>
+        <ChoiceGroup
+          id="clock-position"
+          label={t("clock.position")}
+          value={settings.clockPosition}
+          options={CLOCK_POSITION_OPTIONS}
+          onSelect={actions.setClockPosition}
         />
       </SettingsField>
       <SettingsField title={t("clock.showTime")}>
