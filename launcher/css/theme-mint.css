@@ -45,7 +45,7 @@ body[data-theme="mint"] {
   --continue-focus-shadow: 0 0 0 5px var(--focus), 0 0 30px 8px rgba(var(--focus-rgb), 0.45);
   --continue-focus-label-surface: #000;
   --continue-focus-title-text: #eeece9;
-  --continue-focus-episode-text: #f78094;
+  --continue-focus-episode-text: #087f6b;
   --continue-artwork-mark: var(--focus)
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 6.5v11l9-5.5z' fill='white'/%3E%3C/svg%3E")
     center / 28px no-repeat;
