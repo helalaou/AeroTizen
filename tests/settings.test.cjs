@@ -159,6 +159,18 @@ test("the theme persists and falls back to the default for unknown values", () =
   }
 });
 
+test("the clock position persists and falls back to the default for unknown values", () => {
+  const key = "aerotizen.settings.v1";
+  const { settings, store } = loadSettings({});
+  assert.equal(settings.getSnapshot().clockPosition, "end");
+  settings.update({ clockPosition: "start" });
+  assert.equal(loadSettings(store).settings.getSnapshot().clockPosition, "start");
+  for (const clockPosition of [null, true, "middle"]) {
+    const saved = { [key]: JSON.stringify({ clockPosition }) };
+    assert.equal(loadSettings(saved).settings.getSnapshot().clockPosition, "end");
+  }
+});
+
 test("save writes only known settings under the current key", () => {
   const { settings, store } = loadSettings({});
   settings.update({ background: "snow" });

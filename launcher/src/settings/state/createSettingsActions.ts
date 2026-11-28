@@ -104,6 +104,7 @@ export const createSettingsActions = (
         layout === "classic" ? { clockLayout: "classic" } : { clockLayout: "custom", aeroClockStyle: layout },
         services.applyClock,
       ),
+    setClockPosition: (clockPosition) => commit({ clockPosition }),
     setDateFormat: (dateFormat) => commit({ dateFormat }, services.applyClock),
     setDateVisible(showDate) {
       const { dateFormat } = settings.getSnapshot();

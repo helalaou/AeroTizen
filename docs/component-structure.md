@@ -486,7 +486,7 @@ keys and values also remain compatible.
 | `backgrounds/*/*.module.css`                                                                     | Blob, wave, WebGL canvas and weather-photo presentation                       |
 | `backgrounds/BackgroundLayer/BackgroundLayer.module.css`                                         | Fixed wallpaper container geometry                                            |
 | `home/components/Home/Home.module.css`                                                           | Home viewport, fades, page reveals, section spacing and content clearance     |
-| `home/components/HomeHeader/HomeHeader.module.css`                                               | Header layout, shortcuts, tabs and expanded clock clearance                   |
+| `home/components/HomeHeader/HomeHeader.module.css`                                               | Header layout, shortcuts, tabs, clock position and expanded clock clearance   |
 | `home/components/HeaderFocusIndicator/HeaderFocusIndicator.module.css`                           | Measured shortcut/tab focus plates and shared motion durations                |
 | `status/Clock/Clock.module.css`                                                                  | Compact, vertical, horizontal, minimal and bold time/date layouts             |
 | `status/HeaderStatus/HeaderStatus.module.css`                                                    | Compact/expanded status placement                                             |

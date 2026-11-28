@@ -23,10 +23,11 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
       class={styles.header}
       data-home-header
       data-expanded={settings.clockLayout === "custom" ? "true" : "false"}
+      data-clock-position={settings.clockPosition}
       aria-hidden={!active}
     >
       <div class={styles.shortcuts} data-header-shortcuts>
-        <HeaderFocusIndicator env={env} theme={settings.theme} />
+        <HeaderFocusIndicator key={settings.clockPosition} env={env} theme={settings.theme} />
         <HomeControl
           env={env}
           id="gear"

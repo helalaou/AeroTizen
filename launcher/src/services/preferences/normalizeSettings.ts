@@ -95,6 +95,7 @@ export const normalizeSettings = (
     language: text(data.language, defaults.language),
     numerals: choice(data.numerals, ["latn", "arab"], defaults.numerals),
     clockLayout: choice(data.clockLayout, ["classic", "custom"], defaults.clockLayout),
+    clockPosition: choice(data.clockPosition, ["start", "end"], defaults.clockPosition),
     aeroClockStyle: choice(data.aeroClockStyle, ["vertical", "horizontal", "minimal", "bold"], defaults.aeroClockStyle),
     timeFormat:
       data.timeFormat === "12" || data.timeFormat === "24"

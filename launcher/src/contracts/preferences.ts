@@ -24,6 +24,7 @@ export interface SettingsValues {
   aeroClockStyle: "vertical" | "horizontal" | "minimal" | "bold";
   background: string;
   clockLayout: "classic" | "custom";
+  clockPosition: "start" | "end";
   continueWatching: boolean;
   continueWatchingApps: string[];
   continueWatchingCoverArt: boolean;
