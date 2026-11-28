@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/helalaou/AeroTizen/compare/launcher-v3.4.0...launcher-v3.4.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* **launcher:** add CANAL+ and france.tv app IDs ([#374](https://github.com/helalaou/AeroTizen/issues/374)) ([30f5299](https://github.com/helalaou/AeroTizen/commit/30f529982147fb4fb75c69a2a69552bc4fdc0fee))
+
 ## [3.4.0](https://github.com/helalaou/AeroTizen/compare/launcher-v3.3.2...launcher-v3.4.0) (2026-11-23)
 
 
